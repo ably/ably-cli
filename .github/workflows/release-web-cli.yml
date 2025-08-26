@@ -48,14 +48,19 @@ jobs:
             echo "should-publish=true" >> $GITHUB_OUTPUT
           fi
 
-      # Only publish if the version doesn't already exist on npm.
-      - name: Install dependencies and publish
-        if: steps.version-check.outputs.should-publish == 'true'
+      - name: Install dependencies
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd packages/react-web-cli
           pnpm install --frozen-lockfile
+
+      - name: Publish
+        if: steps.version-check.outputs.should-publish == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          cd packages/react-web-cli
           pnpm run build
           pnpm publish --provenance --access public --no-git-checks
 
