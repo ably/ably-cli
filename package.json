@@ -177,12 +177,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ably/cli.git"
+    "url": "git+https://github.com/ably/ably-cli.git"
   },
   "bugs": {
-    "url": "https://github.com/ably/cli/issues"
+    "url": "https://github.com/ably/ably-cli/issues"
   },
-  "homepage": "https://github.com/ably/cli#readme",
+  "homepage": "https://github.com/ably/ably-cli#readme",
   "keywords": [
     "ably",
     "cli",
