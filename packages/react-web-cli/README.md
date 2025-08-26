@@ -11,7 +11,7 @@ A React component for embedding an interactive Ably CLI terminal in web applicat
 
 * Embed a **fully-featured Ably CLI** session (xterm.js) inside any React app.
 * Secure WebSocket connection to the Ably terminal-server using your **API Key** (required) and an optional **Access Token** for Control-API commands.
-* First-class terminal UX: 
+* First-class terminal UX:
   * Terminal-native status messages with ANSI colors
   * Animated spinner while (re)connecting
   * Live countdown and clear guidance (press **Enter** to cancel / retry)
@@ -158,11 +158,11 @@ For production use, the Ably Web CLI connects to `wss://web-cli.ably.com` by def
 
 ## Debugging & Verbose Logging
 
-The component ships with a built-in verbose logger that is **disabled by default**.  
+The component ships with a built-in verbose logger that is **disabled by default**.
 Enable it in any of the following ways *before* the component mounts:
 
-1. **Query-string flag** – simply add `?cliDebug=true` to the page URL.  
-  Example: `http://localhost:5173/?cliDebug=true`  
+1. **Query-string flag** – simply add `?cliDebug=true` to the page URL.
+  Example: `http://localhost:5173/?cliDebug=true`
   (The flag may be combined with other query parameters.)
 
 2. **Runtime global flag** – from the browser DevTools console run:
@@ -177,7 +177,7 @@ parameter to return to silent mode.
 
 ## Example Project
 
-For a complete example of using this component, see the [web-cli example](https://github.com/ably/cli/tree/main/examples/web-cli) in the Ably CLI repository.
+For a complete example of using this component, see the [web-cli example](https://github.com/ably/ably-cli/tree/main/examples/web-cli) in the Ably CLI repository.
 
 ## Development
 
@@ -194,4 +194,4 @@ pnpm test
 
 ## License
 
-[Apache-2.0](https://github.com/ably/cli/blob/main/LICENSE)
+[Apache-2.0](https://github.com/ably/ably-cli/blob/main/LICENSE)
