@@ -55,7 +55,6 @@ export default class ChannelsPublish extends AblyBaseCommand {
       description: "The event name (if not specified in the message JSON)",
     }),
     transport: Flags.string({
-      default: "rest",
       description: "Transport method to use for publishing (rest or realtime)",
       options: ["rest", "realtime"],
     }),
@@ -88,8 +87,10 @@ export default class ChannelsPublish extends AblyBaseCommand {
     const { args, flags } = await this.parse(ChannelsPublish);
 
     // Use Realtime transport by default when publishing multiple messages to ensure ordering
+    // If transport is not explicitly set and count > 1, use realtime
+    // If transport is explicitly set, respect that choice
     const shouldUseRealtime = flags.transport === "realtime" || 
-      (flags.transport !== "rest" && flags.count > 1);
+      (!flags.transport && flags.count > 1);
     
     await (shouldUseRealtime
       ? this.publishWithRealtime(args, flags)
