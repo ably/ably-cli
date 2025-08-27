@@ -37,7 +37,7 @@ describe('Interactive Mode - Wrapper Integration', function() {
     // Wait for prompt
     await new Promise<void>((resolve) => {
       const checkPrompt = setInterval(() => {
-        if (output.includes('$ ')) {
+        if (output.includes('ably>')) {
           clearInterval(checkPrompt);
           resolve();
         }
@@ -76,7 +76,7 @@ describe('Interactive Mode - Wrapper Integration', function() {
     
     proc.stdout.on('data', (data) => {
       // Count how many times we see the prompt
-      const matches = data.toString().match(/\$ /g);
+      const matches = data.toString().match(/ably> /g);
       if (matches) {
         promptCount += matches.length;
       }
@@ -156,7 +156,7 @@ describe('Interactive Mode - Wrapper Integration', function() {
       }, 10000);
       
       const checkPrompt = setInterval(() => {
-        if (output1.includes('$ ')) {
+        if (output1.includes('ably>')) {
           clearInterval(checkPrompt);
           clearTimeout(timeout);
           resolve();
@@ -189,7 +189,7 @@ describe('Interactive Mode - Wrapper Integration', function() {
     // Wait for prompt
     await new Promise<void>((resolve) => {
       const checkPrompt = setInterval(() => {
-        if (output2.includes('$ ')) {
+        if (output2.includes('ably>')) {
           clearInterval(checkPrompt);
           resolve();
         }
@@ -239,7 +239,7 @@ describe('Interactive Mode - Wrapper Integration', function() {
         output += text;
         
         // Count prompts
-        const prompts = text.match(/\$ /g);
+        const prompts = text.match(/ably> /g);
         if (prompts) {
           promptCount += prompts.length;
         }
@@ -370,7 +370,7 @@ describe('Interactive Mode - Wrapper Integration', function() {
         }, 10000);
         
         const interval = setInterval(() => {
-          if (output.includes('$ ')) {
+          if (output.includes('ably>')) {
             clearInterval(interval);
             clearTimeout(timeout);
             resolve();
@@ -405,7 +405,7 @@ describe('Interactive Mode - Wrapper Integration', function() {
       expect(errorOccurred, 'Terminal corruption error should not occur').to.be.false;
       
       // Should have multiple prompts (initial + after restart)
-      const promptCount = (output.match(/\$ /g) || []).length;
+      const promptCount = (output.match(/ably> /g) || []).length;
       expect(promptCount).to.be.greaterThan(1);
       
       // Clean exit

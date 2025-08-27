@@ -61,7 +61,7 @@ describe('Interactive Command Integration', function() {
     
     // Verify output
     expect(output).to.include('interactive CLI'); // Part of the tagline
-    expect(output).to.include('$ '); // Prompt
+    expect(output).to.include('ably>'); // Prompt
     expect(output).to.include('Goodbye!');
   });
   
@@ -104,7 +104,7 @@ describe('Interactive Command Integration', function() {
       const text = data.toString();
       _output += text;
       // Count prompts to know when commands have completed
-      const prompts = text.match(/\$ /g);
+      const prompts = text.match(/ably>/g);
       if (prompts) {
         promptCount += prompts.length;
       }

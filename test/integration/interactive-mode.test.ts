@@ -287,8 +287,8 @@ describe('Interactive Mode Command Tests', function() {
         // Should show channels help
         expect(output).to.include('Interact with Ably Pub/Sub channels');
         // Usage should not have "ably" prefix
-        expect(output).to.match(/\$\s+channels/);
-        expect(output).to.not.match(/\$\s+ably\s+channels/);
+        expect(output).to.match(/ably>\s+channels/);
+        expect(output).to.not.match(/ably>\s+ably\s+channels/);
         done();
       });
     });
