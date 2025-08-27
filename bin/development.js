@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // For interactive mode, ensure SIGINT exits with code 130
 if (process.argv.includes('interactive')) {
   process.env.ABLY_INTERACTIVE_MODE = 'true';

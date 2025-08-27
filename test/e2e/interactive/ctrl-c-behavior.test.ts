@@ -66,7 +66,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
       });
       
       // Wait for prompt
-      await waitForOutput(proc, /\$/);
+      await waitForOutput(proc, /ably>/);
       
       // Send Ctrl+C
       proc.stdin!.write('\u0003');
@@ -79,7 +79,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
       expect(output).to.match(/Signal received|Type 'exit' to quit|To exit.*type 'exit'/i);
       
       // Should still have prompt
-      expect(output).to.include('$');
+      expect(output).to.include('ably>');
       
       // Clean exit
       proc.stdin!.write('exit\n');
@@ -92,7 +92,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
       });
       
       // Wait for prompt
-      await waitForOutput(proc, /\$/);
+      await waitForOutput(proc, /ably>/);
       
       // Send Ctrl+C
       proc.stdin!.write('\u0003');
@@ -136,7 +136,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
       // Wait for prompt using simple polling
       await new Promise<void>((resolve) => {
         const checkInterval = setInterval(() => {
-          if (output.includes('$ ')) {
+          if (output.includes('ably> ')) {
             clearInterval(checkInterval);
             resolve();
           }
@@ -177,7 +177,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
         const checkInterval = setInterval(() => {
           // Look for a new prompt after the command was interrupted
           const lines = output.split('\n');
-          const promptCount = lines.filter(line => line.includes('$ ')).length;
+          const promptCount = lines.filter(line => line.includes('ably> ')).length;
           if (promptCount >= 2) { // Initial prompt + prompt after interrupt
             clearInterval(checkInterval);
             resolve();
@@ -191,7 +191,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
       });
       
       // Verify we're back at the prompt
-      expect(output).to.include('$ ');
+      expect(output).to.include('ably> ');
       
       // Send a simple command to verify it's still working
       output = '';
@@ -224,7 +224,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
         const text = data.toString();
         
         // Count prompts
-        const prompts = text.match(/\$ /g);
+        const prompts = text.match(/ably>/g);
         if (prompts) {
           promptCount += prompts.length;
         }
@@ -304,7 +304,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
       // Wait for prompt and send test:wait command
       await new Promise<void>((resolve) => {
         const checkForPrompt = setInterval(() => {
-          if (output.includes('$')) {
+          if (output.includes('ably>')) {
             clearInterval(checkForPrompt);
             proc.stdin!.write('test:wait --duration 10\n');
             resolve();
@@ -334,7 +334,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
       
       // Verify we're back at prompt
       const lines = output.split('\n');
-      const promptCount = lines.filter(line => line.includes('$ ')).length;
+      const promptCount = lines.filter(line => line.includes('ably> ')).length;
       expect(promptCount).to.be.at.least(2); // Initial prompt + prompt after interrupt
       
       // Clean exit
@@ -377,7 +377,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
       // Wait for prompt
       await new Promise<void>((resolve) => {
         const checkForPrompt = setInterval(() => {
-          if (output.includes('$')) {
+          if (output.includes('ably>')) {
             clearInterval(checkForPrompt);
             proc.stdin!.write('test:wait --duration 30\n');
             resolve();
@@ -430,7 +430,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
       });
       
       // Wait for prompt
-      await waitForOutput(proc, /\$/);
+      await waitForOutput(proc, /ably>/);
       
       // Type partial command
       proc.stdin!.write('test:wa');
@@ -441,7 +441,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
       // Should clear line and show new prompt
       const output = await captureOutput(proc, 1000);
       expect(output).to.include('^C');
-      expect(output).to.include('$');
+      expect(output).to.include('ably>');
       
       // Should be able to type new command
       proc.stdin!.write('help\n');
@@ -470,7 +470,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
       // Wait for initial prompt
       await new Promise<void>((resolve) => {
         const checkInterval = setInterval(() => {
-          if (output.includes('$ ')) {
+          if (output.includes('ably> ')) {
             clearInterval(checkInterval);
             resolve();
           }
@@ -533,7 +533,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
       // Wait for initial prompt
       await new Promise<void>((resolve) => {
         const checkPrompt = setInterval(() => {
-          if (output.includes('$ ')) {
+          if (output.includes('ably> ')) {
             clearInterval(checkPrompt);
             resolve();
           }
@@ -566,7 +566,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Should return to prompt
-      expect(output).to.include('$ ');
+      expect(output).to.include('ably> ');
       
       // Terminal should be functional - send a simple command
       output = '';
@@ -631,7 +631,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Timeout waiting for initial prompt')), 10000);
         const check = setInterval(() => {
-          if (output.includes('$ ')) {
+          if (output.includes('ably> ')) {
             clearInterval(check);
             clearTimeout(timeout);
             resolve();
@@ -669,7 +669,7 @@ describe('E2E: Interactive Mode - Ctrl+C Behavior', function() {
       expect(output).to.not.include('Failed to start interactive mode');
       
       // We should see a new prompt
-      expect(output).to.include('$ ');
+      expect(output).to.include('ably> ');
       
       // Try running a command to verify terminal is functional
       output = '';

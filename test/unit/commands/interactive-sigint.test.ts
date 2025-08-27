@@ -35,13 +35,13 @@ describe('Interactive Mode - SIGINT Handling', () => {
       
       
       // Count prompts
-      const promptMatches = output.match(/\$ /g);
+      const promptMatches = output.match(/ably> /g);
       if (promptMatches) {
         promptCount += promptMatches.length;
       }
       
       // Check for initial prompt (with or without ANSI codes)
-      if (!promptSeen && (output.includes('$ ') || output.includes('$\u001B'))) {
+      if (!promptSeen && (output.includes('ably> ') || output.includes('$\u001B'))) {
         promptSeen = true;
         // Send test:wait command after seeing prompt
         setTimeout(() => {
@@ -117,7 +117,7 @@ describe('Interactive Mode - SIGINT Handling', () => {
       
       
       // Wait for initial prompt
-      if (!sigintSent && (data.toString().includes('$ ') || data.toString().includes('$\u001B'))) {
+      if (!sigintSent && (data.toString().includes('ably> ') || data.toString().includes('$\u001B'))) {
         sigintSent = true;
         // Send SIGINT on empty prompt
         setTimeout(() => {
@@ -172,7 +172,7 @@ describe('Interactive Mode - SIGINT Handling', () => {
     child.stdout.on('data', (data) => {
       _output += data.toString();
       
-      if (!commandTyped && (data.toString().includes('$ ') || data.toString().includes('$\u001B'))) {
+      if (!commandTyped && (data.toString().includes('ably> ') || data.toString().includes('$\u001B'))) {
         commandTyped = true;
         // Type partial command
         child.stdin.write('channels sub');
@@ -219,7 +219,7 @@ describe('Interactive Mode - SIGINT Handling', () => {
     child.stdout.on('data', (data) => {
       const output = data.toString();
       
-      if (!promptSeen && (output.includes('$ ') || output.includes('$\u001B'))) {
+      if (!promptSeen && (output.includes('ably> ') || output.includes('$\u001B'))) {
         promptSeen = true;
         // Send test:wait command
         setTimeout(() => {
