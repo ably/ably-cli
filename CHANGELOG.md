@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2025-08-31
+
+### Fixed
+
+- Enhanced auth info display functionality to only hide when API key or token is explicitly provided (#81)
+- Updated auth info tests to support async methods for improved consistency
+- Resolved security vulnerability by updating @types/node-fetch to fix form-data dependency issue
+- Added missing `await` keywords for async `showAuthInfoIfNeeded` calls throughout codebase
+- Fixed "Unknown App" display issue by fetching and caching missing app names dynamically
+- Improved interactive mode test assertions to expect `>` prompt instead of `$`
+- Ensured correct default behavior in configuration handling
+
+### Changed
+
+- Refactored auth info display based on code review feedback for cleaner implementation
+- Updated interactive mode prompt from `$` to `ably>` for better brand consistency (#54)
+
+### Improved
+
+- Web CLI tests now use TERMINAL_SERVER_URL environment variable for better test configuration
+- Enhanced repository URLs to match new repository name across documentation
+
 ## [0.11.0] - 2025-08-08
 
 ### Added
