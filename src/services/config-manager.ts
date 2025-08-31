@@ -101,6 +101,14 @@ export class ConfigManager {
     return currentAccount.apps[appId]?.appName;
   }
 
+  // Get full app configuration for specific app ID
+  public getAppConfig(appId: string): AppConfig | undefined {
+    const currentAccount = this.getCurrentAccount();
+    if (!currentAccount || !currentAccount.apps) return undefined;
+
+    return currentAccount.apps[appId];
+  }
+
   // Get path to config file
   public getConfigPath(): string {
     return this.configPath;

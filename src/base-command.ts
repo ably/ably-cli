@@ -405,7 +405,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     // Show auth info at the start of the command (but not in Web CLI mode and not if skipped)
     // Only show if auth was not explicitly provided by the user (issue #81)
     if (!this.isWebCliMode && !options?.skipAuthInfo && !hasExplicitAuth) {
-      this.showAuthInfoIfNeeded(flags);
+      await this.showAuthInfoIfNeeded(flags);
     }
 
     const clientOptions = this.getClientOptions(flags);
@@ -519,10 +519,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * @param flags Command flags that may contain auth overrides
    * @param showAppInfo Whether to show app info (for data plane commands)
    */
-  protected displayAuthInfo(
+  protected async displayAuthInfo(
     flags: BaseFlags,
     showAppInfo: boolean = true,
-  ): void {
+  ): Promise<void> {
     // Get account info
     const currentAccount = this.configManager.getCurrentAccount();
     const accountName =
@@ -546,7 +546,44 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       // Get app info
       const appId = flags.app || this.configManager.getCurrentAppId();
       if (appId) {
-        const appName = this.configManager.getAppName(appId) || "Unknown App";
+        let appName = this.configManager.getAppName(appId);
+        
+        // If app name is missing, try to fetch it from the API and update config
+        if (!appName) {
+          try {
+            // Get access token for control API
+            const currentAccount = this.configManager.getCurrentAccount();
+            const accessToken = flags["access-token"] || 
+                              process.env.ABLY_ACCESS_TOKEN || 
+                              currentAccount?.accessToken;
+            
+            if (accessToken) {
+              const { ControlApi } = await import("./services/control-api.js");
+              const controlApi = new ControlApi({
+                accessToken,
+                controlHost: flags["control-host"],
+              });
+              const app = await controlApi.getApp(appId);
+              appName = app.name;
+              
+              // Update the config with the fetched app name
+              const existingConfig = this.configManager.getAppConfig(appId);
+              if (existingConfig && existingConfig.apiKey) {
+                this.configManager.storeAppKey(appId, existingConfig.apiKey, {
+                  appName: app.name,
+                  keyId: existingConfig.keyId,
+                  keyName: existingConfig.keyName,
+                });
+              }
+            } else {
+              appName = "Unknown App";
+            }
+          } catch {
+            // If fetching fails, use fallback
+            appName = "Unknown App";
+          }
+        }
+        
         displayParts.push(
           `${chalk.green("App=")}${chalk.green.bold(appName)} ${chalk.gray(`(${appId})`)}`,
         );
@@ -595,13 +632,13 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * Display information for control plane commands
    * Shows only account information
    */
-  protected displayControlPlaneInfo(flags: BaseFlags): void {
+  protected async displayControlPlaneInfo(flags: BaseFlags): Promise<void> {
     if (
       !flags.quiet &&
       !this.shouldOutputJson(flags) &&
       !this.shouldSuppressOutput(flags)
     ) {
-      this.displayAuthInfo(flags, false);
+      await this.displayAuthInfo(flags, false);
     }
   }
 
@@ -609,13 +646,13 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * Display information for data plane (product API) commands
    * Shows account, app, and authentication information
    */
-  protected displayDataPlaneInfo(flags: BaseFlags): void {
+  protected async displayDataPlaneInfo(flags: BaseFlags): Promise<void> {
     if (
       !flags.quiet &&
       !this.shouldOutputJson(flags) &&
       !this.shouldSuppressOutput(flags)
     ) {
-      this.displayAuthInfo(flags, true);
+      await this.displayAuthInfo(flags, true);
     }
   }
 
@@ -1099,7 +1136,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * Display auth info at the beginning of command execution
    * This should be called at the start of run() in command implementations
    */
-  protected showAuthInfoIfNeeded(flags: BaseFlags = {}): void {
+  protected async showAuthInfoIfNeeded(flags: BaseFlags = {}): Promise<void> {
     // Skip if already shown
     if (this._authInfoShown) {
       this.debug(`Auth info already shown for command: ${this.id}`);
@@ -1141,14 +1178,14 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       this.id?.startsWith("bench")
     ) {
       // Data plane commands (product API)
-      this.displayDataPlaneInfo(flags);
+      await this.displayDataPlaneInfo(flags);
       this._authInfoShown = true;
     } else if (
       this.id?.startsWith("accounts") ||
       this.id?.startsWith("integrations")
     ) {
       // Control plane commands
-      this.displayControlPlaneInfo(flags);
+      await this.displayControlPlaneInfo(flags);
       this._authInfoShown = true;
     }
   }
