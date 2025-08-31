@@ -164,7 +164,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
   ): Promise<T | null> {
     try {
       // Display account info at start of command
-      this.showAuthInfoIfNeeded(flags);
+      await this.showAuthInfoIfNeeded(flags);
 
       // Create API and execute the command
       const api = this.createControlApi(flags);

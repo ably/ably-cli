@@ -26,7 +26,7 @@ export default class KeysListCommand extends ControlBaseCommand {
     const { flags } = await this.parse(KeysListCommand);
 
     // Display authentication information
-    this.showAuthInfoIfNeeded(flags);
+    await this.showAuthInfoIfNeeded(flags);
 
     const controlApi = this.createControlApi(flags);
 
