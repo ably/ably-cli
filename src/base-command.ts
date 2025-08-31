@@ -386,6 +386,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       return null;
     }
 
+    // Track whether the user explicitly provided authentication
+    const hasExplicitAuth = !!(flags.token || flags["api-key"] || process.env.ABLY_API_KEY);
+
     // If token is provided or API key is in environment, we can skip the ensureAppAndKey step
     if (!flags.token && !flags["api-key"] && !process.env.ABLY_API_KEY) {
       const appAndKey = await this.ensureAppAndKey(flags);
@@ -400,7 +403,8 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     }
 
     // Show auth info at the start of the command (but not in Web CLI mode and not if skipped)
-    if (!this.isWebCliMode && !options?.skipAuthInfo) {
+    // Only show if auth was not explicitly provided by the user (issue #81)
+    if (!this.isWebCliMode && !options?.skipAuthInfo && !hasExplicitAuth) {
       this.showAuthInfoIfNeeded(flags);
     }
 
