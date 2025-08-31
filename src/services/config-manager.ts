@@ -106,7 +106,8 @@ export class ConfigManager {
     const currentAccount = this.getCurrentAccount();
     if (!currentAccount || !currentAccount.apps) return undefined;
 
-    return currentAccount.apps[appId];
+    const cfg = currentAccount.apps[appId];
+    return cfg ? { ...cfg } : undefined;
   }
 
   // Get path to config file
