@@ -276,6 +276,11 @@ describe("Auth Info Display", function() {
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
+    // Note: The logic for skipping display when API key or token is explicitly provided
+    // has been moved to createAblyClientInternal to properly differentiate between
+    // user-provided and configured credentials. These tests now verify that
+    // showAuthInfoIfNeeded itself doesn't filter based on these flags.
+
     it("should skip display in Web CLI mode", function() {
       (command as any).isWebCliMode = true;
 
