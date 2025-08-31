@@ -17,12 +17,12 @@ class TestCommand extends AblyBaseCommand {
   }
 
   // For direct testing of showAuthInfoIfNeeded
-  public testShowAuthInfoIfNeeded(flags: any = {}): void {
+  public async testShowAuthInfoIfNeeded(flags: any = {}): Promise<void> {
     return this.showAuthInfoIfNeeded(flags);
   }
 
   // For direct testing of displayAuthInfo
-  public testDisplayAuthInfo(flags: any = {}, showAppInfo: boolean = true): void {
+  public async testDisplayAuthInfo(flags: any = {}, showAppInfo: boolean = true): Promise<void> {
     return this.displayAuthInfo(flags, showAppInfo);
   }
 
@@ -39,12 +39,12 @@ class TestCommand extends AblyBaseCommand {
     return this.shouldSuppressOutput(flags);
   }
 
-  public testDisplayDataPlaneInfo(flags: any = {}): void {
-    this.displayDataPlaneInfo(flags);
+  public async testDisplayDataPlaneInfo(flags: any = {}): Promise<void> {
+    return this.displayDataPlaneInfo(flags);
   }
 
-  public testDisplayControlPlaneInfo(flags: any = {}): void {
-    this.displayControlPlaneInfo(flags);
+  public async testDisplayControlPlaneInfo(flags: any = {}): Promise<void> {
+    return this.displayControlPlaneInfo(flags);
   }
 }
 
@@ -135,12 +135,12 @@ describe("Auth Info Display", function() {
       configManagerStub.getKeyName.returns('Test Key');
     });
 
-    it("should not include account info when shouldHideAccountInfo returns true", function() {
+    it("should not include account info when shouldHideAccountInfo returns true", async function() {
       // Setup
       shouldHideAccountInfoStub.returns(true);
 
       // Execute
-      command.testDisplayAuthInfo({});
+      await command.testDisplayAuthInfo({});
 
       // Verify that the log output doesn't contain account info
       expect(logStub.called).to.be.true;
@@ -150,12 +150,12 @@ describe("Auth Info Display", function() {
       expect(outputWithUsingPrefix).to.include('App=');
     });
 
-    it("should include account info when shouldHideAccountInfo returns false", function() {
+    it("should include account info when shouldHideAccountInfo returns false", async function() {
       // Setup
       shouldHideAccountInfoStub.returns(false);
 
       // Execute
-      command.testDisplayAuthInfo({});
+      await command.testDisplayAuthInfo({});
 
       // Verify that the log output contains account info
       expect(logStub.called).to.be.true;
@@ -164,24 +164,24 @@ describe("Auth Info Display", function() {
       expect(outputWithUsingPrefix).to.include('Account=');
     });
 
-    it("should not display anything when there are no parts to show", function() {
+    it("should not display anything when there are no parts to show", async function() {
       // Setup - hide account and don't show app info
       shouldHideAccountInfoStub.returns(true);
 
       // Execute - setting showAppInfo to false means no app info is included
-      command.testDisplayAuthInfo({}, false);
+      await command.testDisplayAuthInfo({}, false);
 
       // Verify that nothing was logged
       expect(logStub.called).to.be.false;
     });
 
-    it("should display app and auth info when token is provided", function() {
+    it("should display app and auth info when token is provided", async function() {
       // Setup
       shouldHideAccountInfoStub.returns(true);
 
       // Execute with token - also need to ensure the command has a token that's reflected in output
       const flags = { token: "test-token" };
-      command.testDisplayAuthInfo(flags);
+      await command.testDisplayAuthInfo(flags);
 
       // Verify output includes token info but not account info
       expect(logStub.called).to.be.true;
@@ -193,12 +193,12 @@ describe("Auth Info Display", function() {
       expect(outputWithUsingPrefix).to.include('Token');
     });
 
-    it("should display app and key info when API key is provided", function() {
+    it("should display app and key info when API key is provided", async function() {
       // Setup
       shouldHideAccountInfoStub.returns(true);
 
       // Execute with API key
-      command.testDisplayAuthInfo({ "api-key": "test-app-id.key:secret" });
+      await command.testDisplayAuthInfo({ "api-key": "test-app-id.key:secret" });
 
       // Verify output includes key info but not account info
       expect(logStub.called).to.be.true;
@@ -234,43 +234,43 @@ describe("Auth Info Display", function() {
       (command as any).isWebCliMode = false;
     });
 
-    it("should skip display when shouldShowAuthInfo returns false", function() {
+    it("should skip display when shouldShowAuthInfo returns false", async function() {
       shouldShowAuthInfoStub.returns(false);
 
-      command.testShowAuthInfoIfNeeded({});
+      await command.testShowAuthInfoIfNeeded({});
 
       expect(debugStub.calledOnce).to.be.true;
       expect(displayDataPlaneInfoStub.called).to.be.false;
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should skip display when quiet flag is true", function() {
-      command.testShowAuthInfoIfNeeded({ quiet: true });
+    it("should skip display when quiet flag is true", async function() {
+      await command.testShowAuthInfoIfNeeded({ quiet: true });
 
       expect(displayDataPlaneInfoStub.called).to.be.false;
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should skip display when in JSON output mode", function() {
+    it("should skip display when in JSON output mode", async function() {
       shouldOutputJsonStub.returns(true);
 
-      command.testShowAuthInfoIfNeeded({});
+      await command.testShowAuthInfoIfNeeded({});
 
       expect(displayDataPlaneInfoStub.called).to.be.false;
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should skip display when token-only flag is true", function() {
-      command.testShowAuthInfoIfNeeded({ "token-only": true });
+    it("should skip display when token-only flag is true", async function() {
+      await command.testShowAuthInfoIfNeeded({ "token-only": true });
 
       expect(displayDataPlaneInfoStub.called).to.be.false;
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should skip display when shouldSuppressOutput returns true", function() {
+    it("should skip display when shouldSuppressOutput returns true", async function() {
       shouldSuppressOutputStub.returns(true);
 
-      command.testShowAuthInfoIfNeeded({});
+      await command.testShowAuthInfoIfNeeded({});
 
       expect(displayDataPlaneInfoStub.called).to.be.false;
       expect(displayControlPlaneInfoStub.called).to.be.false;
@@ -281,84 +281,84 @@ describe("Auth Info Display", function() {
     // user-provided and configured credentials. These tests now verify that
     // showAuthInfoIfNeeded itself doesn't filter based on these flags.
 
-    it("should skip display in Web CLI mode", function() {
+    it("should skip display in Web CLI mode", async function() {
       (command as any).isWebCliMode = true;
 
-      command.testShowAuthInfoIfNeeded({});
+      await command.testShowAuthInfoIfNeeded({});
 
       expect(debugStub.calledOnce).to.be.true;
       expect(displayDataPlaneInfoStub.called).to.be.false;
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should call displayDataPlaneInfo for apps: commands", function() {
+    it("should call displayDataPlaneInfo for apps: commands", async function() {
       Object.defineProperty(command, 'id', { value: 'apps:list' });
 
-      command.testShowAuthInfoIfNeeded({});
+      await command.testShowAuthInfoIfNeeded({});
 
       expect(displayDataPlaneInfoStub.calledOnce).to.be.true;
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should call displayDataPlaneInfo for channels: commands", function() {
+    it("should call displayDataPlaneInfo for channels: commands", async function() {
       Object.defineProperty(command, 'id', { value: 'channels:publish' });
 
-      command.testShowAuthInfoIfNeeded({});
+      await command.testShowAuthInfoIfNeeded({});
 
       expect(displayDataPlaneInfoStub.calledOnce).to.be.true;
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should call displayDataPlaneInfo for auth: commands", function() {
+    it("should call displayDataPlaneInfo for auth: commands", async function() {
       Object.defineProperty(command, 'id', { value: 'auth:issue-ably-token' });
 
-      command.testShowAuthInfoIfNeeded({});
+      await command.testShowAuthInfoIfNeeded({});
 
       expect(displayDataPlaneInfoStub.calledOnce).to.be.true;
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should call displayDataPlaneInfo for rooms: commands", function() {
+    it("should call displayDataPlaneInfo for rooms: commands", async function() {
       Object.defineProperty(command, 'id', { value: 'rooms:list' });
 
-      command.testShowAuthInfoIfNeeded({});
+      await command.testShowAuthInfoIfNeeded({});
 
       expect(displayDataPlaneInfoStub.calledOnce).to.be.true;
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should call displayControlPlaneInfo for accounts: commands", function() {
+    it("should call displayControlPlaneInfo for accounts: commands", async function() {
       Object.defineProperty(command, 'id', { value: 'accounts:list' });
 
-      command.testShowAuthInfoIfNeeded({});
+      await command.testShowAuthInfoIfNeeded({});
 
       expect(displayDataPlaneInfoStub.called).to.be.false;
       expect(displayControlPlaneInfoStub.calledOnce).to.be.true;
     });
 
-    it("should call displayControlPlaneInfo for integrations: commands", function() {
+    it("should call displayControlPlaneInfo for integrations: commands", async function() {
       Object.defineProperty(command, 'id', { value: 'integrations:list' });
 
-      command.testShowAuthInfoIfNeeded({});
+      await command.testShowAuthInfoIfNeeded({});
 
       expect(displayDataPlaneInfoStub.called).to.be.false;
       expect(displayControlPlaneInfoStub.calledOnce).to.be.true;
     });
 
-    it("should not call any display method for other commands", function() {
+    it("should not call any display method for other commands", async function() {
       Object.defineProperty(command, 'id', { value: 'help' });
 
-      command.testShowAuthInfoIfNeeded({});
+      await command.testShowAuthInfoIfNeeded({});
 
       expect(displayDataPlaneInfoStub.called).to.be.false;
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should pass flags to display methods", function() {
+    it("should pass flags to display methods", async function() {
       Object.defineProperty(command, 'id', { value: 'apps:list' });
       const flags = { app: 'test-app', verbose: true };
 
-      command.testShowAuthInfoIfNeeded(flags);
+      await command.testShowAuthInfoIfNeeded(flags);
 
       expect(displayDataPlaneInfoStub.calledOnceWith(flags)).to.be.true;
     });
