@@ -33,7 +33,7 @@ export default class KeysGetCommand extends ControlBaseCommand {
     const { args, flags } = await this.parse(KeysGetCommand);
 
     // Display authentication information
-    this.showAuthInfoIfNeeded(flags);
+    await this.showAuthInfoIfNeeded(flags);
 
     const controlApi = this.createControlApi(flags);
 

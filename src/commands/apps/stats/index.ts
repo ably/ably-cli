@@ -87,7 +87,7 @@ export default class AppsStatsCommand extends ControlBaseCommand {
     }
 
     // Display authentication information
-    this.showAuthInfoIfNeeded(flags);
+    await this.showAuthInfoIfNeeded(flags);
 
     const controlApi = this.createControlApi(flags);
 

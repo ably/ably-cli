@@ -141,7 +141,7 @@ class TestableChannelsHistory extends ChannelsHistory {
   }
 
   // Override showing auth info for testing
-  public override showAuthInfoIfNeeded() {
+  public override async showAuthInfoIfNeeded(): Promise<void> {
     // Stub implementation that does nothing
   }
 
