@@ -558,7 +558,6 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
                               currentAccount?.accessToken;
             
             if (accessToken) {
-              const { ControlApi } = await import("./services/control-api.js");
               const controlApi = new ControlApi({
                 accessToken,
                 controlHost: flags["control-host"],
@@ -566,14 +565,18 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
               const app = await controlApi.getApp(appId);
               appName = app.name;
               
-              // Update the config with the fetched app name
+              // Always persist the app name to avoid repeated lookups
               const existingConfig = this.configManager.getAppConfig(appId);
               if (existingConfig && existingConfig.apiKey) {
+                // If there's an API key, update the full config
                 this.configManager.storeAppKey(appId, existingConfig.apiKey, {
                   appName: app.name,
                   keyId: existingConfig.keyId,
                   keyName: existingConfig.keyName,
                 });
+              } else {
+                // Even without an API key, persist the app name to avoid future lookups
+                this.configManager.storeAppInfo(appId, { appName: app.name });
               }
             } else {
               appName = "Unknown App";
