@@ -16,15 +16,12 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
   static override description = "Enter presence in a chat room and remain present until terminated";
   static override examples = [
     "$ ably rooms presence enter my-room",
-    `$ ably rooms presence enter my-room --profile-data '{"name":"User","status":"active"}'`,
+    `$ ably rooms presence enter my-room --data '{"name":"User","status":"active"}'`,
     "$ ably rooms presence enter my-room --duration 30",
   ];
   static override flags = {
     ...ChatBaseCommand.globalFlags,
-    "profile-data": Flags.string({
-      description: "Profile data to include with the member (JSON format)",
-      required: false,
-    }),
+
     "show-others": Flags.boolean({
       default: true,
       description: "Show other presence events while present",
@@ -34,18 +31,17 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       char: "D",
       required: false,
     }),
-    data: Flags.string({ 
-      required: false, 
-      hidden: true, 
-      deprecated: {message: "--data is deprecated, use --profile-data instead.", version: "0.6.0"}
-    }), 
+    data: Flags.string({
+      description: "Data to include with the member (JSON format)",
+      required: false,
+    }),
   };
 
   private ablyClient: Ably.Realtime | null = null;
   private chatClient: ChatClient | null = null;
   private room: Room | null = null;
   private roomId: string | null = null;
-  private profileData: Record<string, unknown> | null = null;
+  private data: Record<string, unknown> | null = null;
   
   private unsubscribeStatusFn: StatusSubscription | null = null;
   private unsubscribePresenceFn: ChatSubscription | null = null;
@@ -83,17 +79,17 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
     this.commandFlags = flags;
     this.roomId = args.roomId;
 
-    const rawProfileData = flags["profile-data"] || flags.data;
-    if (rawProfileData && rawProfileData !== "{}") {
+    const rawData = flags.data;
+    if (rawData && rawData !== "{}") {
       try {
-        let trimmed = rawProfileData.trim();
+        let trimmed = rawData.trim();
         // If the string is wrapped in single or double quotes (common when passed through a shell), remove them first.
         if ((trimmed.startsWith("'") && trimmed.endsWith("'")) || (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
           trimmed = trimmed.slice(1, -1);
         }
-        this.profileData = JSON.parse(trimmed);
+        this.data = JSON.parse(trimmed);
       } catch (error) {
-        this.error(`Invalid profile-data or data JSON: ${error instanceof Error ? error.message : String(error)}`);
+        this.error(`Invalid data JSON: ${error instanceof Error ? error.message : String(error)}`);
         return; // Exit early if JSON is invalid
       }
     }
@@ -159,7 +155,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
                 if (member.data && typeof member.data === 'object' && Object.keys(member.data).length > 0) {
                   const profile = member.data as { name?: string };
                   if (profile.name) { this.log(`  ${chalk.dim("Name:")} ${profile.name}`); }
-                  this.log(`  ${chalk.dim("Full Profile Data:")} ${this.formatJsonOutput({ data: member.data }, flags)}`);
+                  this.log(`  ${chalk.dim("Full Data:")} ${this.formatJsonOutput({ data: member.data }, flags)}`);
                 }
               }
             }
@@ -168,8 +164,8 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       }
 
       await currentRoom.attach();
-      this.logCliEvent(flags, "presence", "entering", "Entering presence", { profileData: this.profileData });
-      await currentRoom.presence.enter(this.profileData || {}); 
+      this.logCliEvent(flags, "presence", "entering", "Entering presence", { data: this.data });
+      await currentRoom.presence.enter(this.data || {}); 
       this.logCliEvent(flags, "presence", "entered", "Entered presence successfully");
       
       if (!this.shouldOutputJson(flags) && this.roomId) {

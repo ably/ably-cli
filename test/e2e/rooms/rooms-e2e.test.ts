@@ -96,7 +96,7 @@ describe('Rooms E2E Tests', function() {
         try {
           // Start client1 entering presence (this is a long-running command)
           presenceRunner = await startPresenceCommand(
-            ['rooms', 'presence', 'enter', testRoomId, '--profile-data', '{"name":"TestUser1"}', '--client-id', client1Id, '--duration', '15'],
+            ['rooms', 'presence', 'enter', testRoomId, '--data', '{"name":"TestUser1"}', '--client-id', client1Id, '--duration', '15'],
             /Entered room/,
             { timeoutMs: process.env.CI ? 20000 : 15000 }
           );
@@ -166,7 +166,7 @@ describe('Rooms E2E Tests', function() {
 
             // Have client2 enter the room
             enterRunner = await startPresenceCommand(
-              ['rooms', 'presence', 'enter', testRoomId, '--profile-data', '{"name":"TestUser2","status":"active"}', '--client-id', client2Id, '--duration', '25'],
+              ['rooms', 'presence', 'enter', testRoomId, '--data', '{"name":"TestUser2","status":"active"}', '--client-id', client2Id, '--duration', '25'],
               /Entered room/,
               { timeoutMs: process.env.CI ? 30000 : 20000 }
             );

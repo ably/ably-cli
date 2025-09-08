@@ -61,7 +61,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
     return new Promise<void>((resolve) => {
       const timeout = setTimeout(() => {
         this.logCliEvent(flagsForLog, "connection", "cleanupTimeout", "Ably client close timed out after 2s. Forcing cleanup.");
-        resolve(); 
+        resolve();
       }, 2000);
       const onClosedOrFailed = () => {
         clearTimeout(timeout);
@@ -96,7 +96,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         if (!this.shouldOutputJson(flags)) {
           this.log(chalk.yellow("Warning: Failed to connect to Ably (authentication failed)"));
         }
-        
+
         // Wait for the duration even with auth failures
         const effectiveDuration =
           typeof flags.duration === "number" && flags.duration > 0
@@ -117,7 +117,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         if (!this.shouldOutputJson(flags)) {
           this.log(chalk.yellow("Warning: Failed to connect to Ably (likely authentication issue)"));
         }
-        
+
         // Wait for the duration even with auth failures
         const effectiveDuration =
           typeof flags.duration === "number" && flags.duration > 0
@@ -137,7 +137,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       this.setupConnectionStateLogging(this.ablyClient!, flags, {
         includeUserFriendlyMessages: true
       });
-      
+
       this.room = await this.chatClient.rooms.get(this.roomId!);
       const currentRoom = this.room!;
 
@@ -156,7 +156,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       });
 
       await currentRoom.attach();
-      
+
       if (!this.shouldOutputJson(flags) && this.roomId) {
         this.log(`Fetching current presence members for room ${chalk.cyan(this.roomId)}...`);
         const members: PresenceMember[] = await currentRoom.presence.get();
@@ -192,7 +192,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
           if (member.data && typeof member.data === 'object' && Object.keys(member.data).length > 0) {
             const profile = member.data as { name?: string };
             if (profile.name) { this.log(`  ${chalk.dim("Name:")} ${profile.name}`); }
-            this.log(`  ${chalk.dim("Full Profile Data:")} ${this.formatJsonOutput({ data: member.data }, flags)}`);
+            this.log(`  ${chalk.dim("Full Data:")} ${this.formatJsonOutput({ data: member.data }, flags)}`);
           }
         }
       });
@@ -253,30 +253,30 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
   private async performCleanup(flags: BaseFlags): Promise<void> {
     // Unsubscribe from presence events with timeout
     if (this.presenceSubscription) {
-      try { 
+      try {
         await Promise.race([
           Promise.resolve(this.presenceSubscription.unsubscribe()),
           new Promise<void>((resolve) => setTimeout(resolve, 1000))
         ]);
-        this.logCliEvent(flags, "presence", "unsubscribedEventsFinally", "Unsubscribed presence listener."); 
-      } catch (error) { 
-        this.logCliEvent(flags, "presence", "unsubscribeErrorFinally", `Error unsubscribing presence subscription: ${error instanceof Error ? error.message : String(error)}`); 
+        this.logCliEvent(flags, "presence", "unsubscribedEventsFinally", "Unsubscribed presence listener.");
+      } catch (error) {
+        this.logCliEvent(flags, "presence", "unsubscribeErrorFinally", `Error unsubscribing presence subscription: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
     // Unsubscribe from status events with timeout
     if (this.unsubscribeStatusFn) {
-      try { 
+      try {
         await Promise.race([
           Promise.resolve(this.unsubscribeStatusFn.off()),
           new Promise<void>((resolve) => setTimeout(resolve, 1000))
         ]);
-        this.logCliEvent(flags, "room", "unsubscribedStatusFinally", "Unsubscribed room status listener."); 
-      } catch (error) { 
-        this.logCliEvent(flags, "room", "unsubscribeStatusErrorFinally", `Error unsubscribing status listener: ${error instanceof Error ? error.message : String(error)}`); 
+        this.logCliEvent(flags, "room", "unsubscribedStatusFinally", "Unsubscribed room status listener.");
+      } catch (error) {
+        this.logCliEvent(flags, "room", "unsubscribeStatusErrorFinally", `Error unsubscribing status listener: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
-    
+
     // Release room with timeout
     if (this.chatClient && this.roomId) {
       try {
@@ -286,8 +286,8 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
           new Promise<void>((resolve) => setTimeout(resolve, 2000))
         ]);
         this.logCliEvent(flags, "room", "releasedInFinally", `Room ${this.roomId} released.`);
-      } catch (error) { 
-        this.logCliEvent(flags, "room", "releaseErrorInFinally", `Error releasing room: ${error instanceof Error ? error.message : String(error)}`); 
+      } catch (error) {
+        this.logCliEvent(flags, "room", "releaseErrorInFinally", `Error releasing room: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 

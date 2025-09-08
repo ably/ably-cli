@@ -3974,8 +3974,8 @@ Enter presence in a chat room and remain present until terminated
 ```
 USAGE
   $ ably rooms presence enter ROOMID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--profile-data <value>]
-    [--show-others] [-D <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--show-others] [-D <value>]
+    [--data <value>]
 
 ARGUMENTS
   ROOMID  Room ID to enter presence on
@@ -3987,12 +3987,12 @@ FLAGS
       --api-key=<value>       Overrides any configured API key used for the product APIs
       --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
                               set no client ID. Not applicable when using token authentication.
+      --data=<value>          Data to include with the member (JSON format)
       --endpoint=<value>      Override the endpoint for all product API calls
       --env=<value>           Override the environment for all product API calls
       --host=<value>          Override the host endpoint for all product API calls
       --json                  Output in JSON format
       --pretty-json           Output in colorized JSON format
-      --profile-data=<value>  Profile data to include with the member (JSON format)
       --show-others           Show other presence events while present
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
 
@@ -4002,7 +4002,7 @@ DESCRIPTION
 EXAMPLES
   $ ably rooms presence enter my-room
 
-  $ ably rooms presence enter my-room --profile-data '{"name":"User","status":"active"}'
+  $ ably rooms presence enter my-room --data '{"name":"User","status":"active"}'
 
   $ ably rooms presence enter my-room --duration 30
 ```
