@@ -107,6 +107,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       description:
         "Override the host endpoint for the control API, which defaults to control.ably.net",
       hidden: process.env.ABLY_SHOW_DEV_FLAGS !== 'true',
+      env: "ABLY_CONTROL_HOST",
     }),
     env: Flags.string({
       description: "Override the environment for all product API calls",
