@@ -92,6 +92,10 @@ export interface AblyCliTerminalProps {
    */
   ciAuthToken?: string;
   /**
+   * Additional environment variables to pass to the CLI container
+   */
+  environmentVariables?: Record<string, string>;
+  /**
    * When true, enables split-screen mode with a second independent terminal.
    * A split icon will be displayed in the top-right corner when in single-pane mode.
    */
@@ -142,6 +146,8 @@ const AblyCliTerminalInner = ({
   onSessionId,
   resumeOnReload,
   maxReconnectAttempts,
+  ciAuthToken,
+  environmentVariables,
   enableSplitScreen = false,
   showSplitControl = true,
 }: AblyCliTerminalProps, ref: React.Ref<AblyCliTerminalHandle>) => {
@@ -1047,8 +1053,8 @@ const AblyCliTerminalInner = ({
       // Don't send the initial command yet - wait for prompt detection
     }
     
-    // Send auth payload - but no additional data
-    const payload = createAuthPayload(ablyApiKey, ablyAccessToken, sessionId);
+    // Send auth payload with environment variables
+    const payload = createAuthPayload(ablyApiKey, ablyAccessToken, sessionId, environmentVariables);
     
     debugLog(`⚠️ DIAGNOSTIC: Preparing to send auth payload with env vars: ${JSON.stringify(payload.environmentVariables)}`);
     debugLog(`⚠️ DIAGNOSTIC: Auth payload includes sessionId: ${payload.sessionId || 'none (new session)'}`);
@@ -2121,8 +2127,8 @@ const AblyCliTerminalInner = ({
         secondaryTerm.current.focus();
       }
       
-      // Send auth payload - only include necessary data
-      const payload = createAuthPayload(ablyApiKey, ablyAccessToken, secondarySessionId);
+      // Send auth payload with environment variables
+      const payload = createAuthPayload(ablyApiKey, ablyAccessToken, secondarySessionId, environmentVariables);
       
       if (newSocket.readyState === WebSocket.OPEN) {
         newSocket.send(JSON.stringify(payload));

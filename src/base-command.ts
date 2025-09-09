@@ -892,6 +892,13 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       options.environment = flags.env;
     }
 
+    // Auto-apply environment from ABLY_CLI_ENV environment variable if set
+    // This allows the web CLI to automatically configure the environment
+    if (!flags.env && process.env.ABLY_CLI_ENV) {
+      console.log('[CLI] Using ABLY_CLI_ENV:', process.env.ABLY_CLI_ENV);
+      options.environment = process.env.ABLY_CLI_ENV;
+    }
+
     if (flags.port) {
       options.port = flags.port;
     }
