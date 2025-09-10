@@ -89,6 +89,8 @@ export default function MyTerminal() {
 | `maxReconnectAttempts` | number | No | 15 | Maximum reconnection attempts before giving up |
 | `resumeOnReload` | boolean | No | false | Whether to attempt to resume an existing session after page reload |
 | `enableSplitScreen` | boolean | No | false | Enable split-screen mode with a second independent terminal |
+| `ablyEndpoint` | string | No | - | Optional SDK endpoint client option |
+| `ablyControlHost` | string | No | - | Optional Control API hostname |
 
 *\* `ablyApiKey` is mandatory.  `ablyAccessToken` is optional and only needed for Control-API commands (e.g. accounts, apps, keys).
 
