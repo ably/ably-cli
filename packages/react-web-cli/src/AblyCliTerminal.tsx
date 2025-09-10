@@ -101,6 +101,29 @@ export interface AblyCliTerminalProps {
    * Set to false when controlling split externally to hide the internal UI affordance.
    */
   showSplitControl?: boolean;
+  /**
+   * An optional value to set as the ABLY_ENDPOINT environment variable when
+   * starting the CLI, which controls which endpoint the SDK client uses.
+   *
+   * For example, to start the CLI configured to use the sandbox cluster, set
+   * ablyEndpoint to 'nonprod:sandbox'.
+   *
+   * When unset, the CLI will use the main production endpoint.
+   *
+   * See https://sdk.ably.com/builds/ably/specification/main/features/#endpoint-configuration
+   */
+  ablyEndpoint?: string;
+  /**
+   * An optional value to set as the ABLY_CONTROL_HOST environment variable
+   * when starting the CLI, which controls which hostname the CLI uses to
+   * connect to the Control API.
+   *
+   * For example, to start the CLI configured to use the staging Control API,
+   * set ablyControlHost to 'staging-control.ably-dev.net'.
+   *
+   * When unset, the CLI uses the production Control API at control.ably.net.
+   */
+  ablyControlHost?: string;
 }
 
 export interface AblyCliTerminalHandle {
@@ -144,6 +167,8 @@ const AblyCliTerminalInner = ({
   maxReconnectAttempts,
   enableSplitScreen = false,
   showSplitControl = true,
+  ablyEndpoint,
+  ablyControlHost,
 }: AblyCliTerminalProps, ref: React.Ref<AblyCliTerminalHandle>) => {
   
   const [componentConnectionStatus, setComponentConnectionStatusState] = useState<ConnectionStatus>('initial');
@@ -1018,6 +1043,16 @@ const AblyCliTerminalInner = ({
 
   const socketRef = useRef<WebSocket | null>(null); // Ref to hold the current socket for cleanup
 
+  const additionalEnvVars: Record<string, string> = {};
+  if (ablyEndpoint) {
+    debugLog(`⚠️ DIAGNOSTIC: Setting ABLY_ENDPOINT to "${ablyEndpoint}"`);
+    additionalEnvVars['ABLY_ENDPOINT'] = ablyEndpoint;
+  }
+  if (ablyControlHost) {
+    debugLog(`⚠️ DIAGNOSTIC: Setting ABLY_CONTROL_HOST to "${ablyControlHost}"`);
+    additionalEnvVars['ABLY_CONTROL_HOST'] = ablyControlHost;
+  }
+
   const handleWebSocketOpen = useCallback(() => {
     // console.log('[AblyCLITerminal] WebSocket opened');
     // Clear connection timeout since we successfully connected
@@ -1048,7 +1083,7 @@ const AblyCliTerminalInner = ({
     }
     
     // Send auth payload - but no additional data
-    const payload = createAuthPayload(ablyApiKey, ablyAccessToken, sessionId);
+    const payload = createAuthPayload(ablyApiKey, ablyAccessToken, sessionId, additionalEnvVars);
     
     debugLog(`⚠️ DIAGNOSTIC: Preparing to send auth payload with env vars: ${JSON.stringify(payload.environmentVariables)}`);
     debugLog(`⚠️ DIAGNOSTIC: Auth payload includes sessionId: ${payload.sessionId || 'none (new session)'}`);
@@ -2122,7 +2157,7 @@ const AblyCliTerminalInner = ({
       }
       
       // Send auth payload - only include necessary data
-      const payload = createAuthPayload(ablyApiKey, ablyAccessToken, secondarySessionId);
+      const payload = createAuthPayload(ablyApiKey, ablyAccessToken, secondarySessionId, additionalEnvVars);
       
       if (newSocket.readyState === WebSocket.OPEN) {
         newSocket.send(JSON.stringify(payload));

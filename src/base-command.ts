@@ -107,6 +107,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       description:
         "Override the host endpoint for the control API, which defaults to control.ably.net",
       hidden: process.env.ABLY_SHOW_DEV_FLAGS !== 'true',
+      env: "ABLY_CONTROL_HOST",
     }),
     env: Flags.string({
       description: "Override the environment for all product API calls",
@@ -874,22 +875,17 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     }
 
     // Handle host and environment options
-    if (flags.endpoint) {
-      // The endpoint flag is used to override both realtime and rest hosts
-      // Since Ably SDK ClientOptions doesn't have an endpoint property,
-      // we set it as both realtimeHost and restHost
-      options.realtimeHost = flags.endpoint;
-      options.restHost = flags.endpoint;
-    }
-
     if (flags.host) {
-      // Host flag takes precedence over endpoint
       options.realtimeHost = flags.host;
       options.restHost = flags.host;
     }
 
     if (flags.env) {
       options.environment = flags.env;
+    }
+
+    if (flags.endpoint) {
+      options.endpoint = flags.endpoint
     }
 
     if (flags.port) {
