@@ -160,7 +160,7 @@ describe("rooms messages commands", function () {
 
       command.setParseResult({
         flags: {},
-        args: { roomId: "test-room", text: "Hello World" },
+        args: { room: "test-room", text: "Hello World" },
         argv: [],
         raw: [],
       });
@@ -180,7 +180,7 @@ describe("rooms messages commands", function () {
     it("should send multiple messages with interpolation", async function () {
       command.setParseResult({
         flags: { count: 3, delay: 10 },
-        args: { roomId: "test-room", text: "Message {{.Count}}" },
+        args: { room: "test-room", text: "Message {{.Count}}" },
         argv: [],
         raw: [],
       });
@@ -201,7 +201,7 @@ describe("rooms messages commands", function () {
     it("should handle metadata in messages", async function () {
       command.setParseResult({
         flags: { metadata: '{"isImportant": true}' },
-        args: { roomId: "test-room", text: "Important message" },
+        args: { room: "test-room", text: "Important message" },
         argv: [],
         raw: [],
       });
@@ -218,7 +218,7 @@ describe("rooms messages commands", function () {
     it("should handle invalid metadata JSON", async function () {
       command.setParseResult({
         flags: { metadata: "invalid-json" },
-        args: { roomId: "test-room", text: "Test message" },
+        args: { room: "test-room", text: "Test message" },
         argv: [],
         raw: [],
       });
@@ -272,7 +272,7 @@ describe("rooms messages commands", function () {
 
       command.setParseResult({
         flags: {},
-        args: { roomId: "test-room" },
+        args: { room: "test-room" },
         argv: [],
         raw: [],
       });
@@ -362,7 +362,7 @@ describe("rooms messages commands", function () {
 
       command.setParseResult({
         flags: {},
-        args: { roomId: "test-room" },
+        args: { room: "test-room" },
         argv: [],
         raw: [],
       });
@@ -379,7 +379,7 @@ describe("rooms messages commands", function () {
     it("should handle query options for history", async function () {
       command.setParseResult({
         flags: { limit: 50, direction: "forwards" },
-        args: { roomId: "test-room" },
+        args: { room: "test-room" },
         argv: [],
         raw: [],
       });

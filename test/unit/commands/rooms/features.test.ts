@@ -201,7 +201,7 @@ describe("rooms feature commands", function () {
 
       command.setParseResult({
         flags: {},
-        args: { roomId: "test-room" },
+        args: { room: "test-room" },
         argv: [],
         raw: [],
       });
@@ -256,7 +256,7 @@ describe("rooms feature commands", function () {
 
       command.setParseResult({
         flags: {},
-        args: { roomId: "test-room" },
+        args: { room: "test-room" },
         argv: [],
         raw: [],
       });
@@ -328,7 +328,7 @@ describe("rooms feature commands", function () {
 
       command.setParseResult({
         flags: {},
-        args: { roomId: "test-room" },
+        args: { room: "test-room" },
         argv: [],
         raw: [],
       });
@@ -350,7 +350,7 @@ describe("rooms feature commands", function () {
     it("should handle presence data", async function () {
       command.setParseResult({
         flags: { data: '{"status": "online", "name": "Test User"}' },
-        args: { roomId: "test-room" },
+        args: { room: "test-room" },
         argv: [],
         raw: [],
       });
@@ -404,7 +404,7 @@ describe("rooms feature commands", function () {
 
       command.setParseResult({
         flags: {},
-        args: { roomId: "test-room", emoji: "👍" },
+        args: { room: "test-room", emoji: "👍" },
         argv: [],
         raw: [],
       });
@@ -422,7 +422,7 @@ describe("rooms feature commands", function () {
     it("should handle metadata in reactions", async function () {
       command.setParseResult({
         flags: { metadata: '{"intensity": "high"}' },
-        args: { roomId: "test-room", emoji: "🎉" },
+        args: { room: "test-room", emoji: "🎉" },
         argv: [],
         raw: [],
       });
@@ -476,7 +476,7 @@ describe("rooms feature commands", function () {
 
       command.setParseResult({
         flags: {},
-        args: { roomId: "test-room" },
+        args: { room: "test-room" },
         argv: [],
         raw: [],
       });

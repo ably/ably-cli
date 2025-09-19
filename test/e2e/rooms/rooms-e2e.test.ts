@@ -67,7 +67,7 @@ describe('Rooms E2E Tests', function() {
     process.removeListener('SIGINT', forceExit);
   });
 
-  let testRoomId: string;
+  let testRoom: string;
   let client1Id: string;
   let client2Id: string;
 
@@ -77,7 +77,7 @@ describe('Rooms E2E Tests', function() {
     testOutputFiles.clear();
     testCommands.length = 0;
     
-    testRoomId = getUniqueChannelName("room");
+    testRoom = getUniqueChannelName("room");
     client1Id = getUniqueClientId("client1");
     client2Id = getUniqueClientId("client2");
   });
@@ -96,7 +96,7 @@ describe('Rooms E2E Tests', function() {
         try {
           // Start client1 entering presence (this is a long-running command)
           presenceRunner = await startPresenceCommand(
-            ['rooms', 'presence', 'enter', testRoomId, '--data', '{"name":"TestUser1"}', '--client-id', client1Id, '--duration', '15'],
+            ['rooms', 'presence', 'enter', testRoom, '--data', '{"name":"TestUser1"}', '--client-id', client1Id, '--duration', '15'],
             /Entered room/,
             { timeoutMs: process.env.CI ? 20000 : 15000 }
           );
@@ -114,7 +114,7 @@ describe('Rooms E2E Tests', function() {
           while (attempts < maxAttempts) {
             attempts++;
             
-            occupancyResult = await runCommand(['rooms', 'occupancy', 'get', testRoomId], {
+            occupancyResult = await runCommand(['rooms', 'occupancy', 'get', testRoom], {
               timeoutMs: process.env.CI ? 15000 : 10000
             });
 
@@ -155,7 +155,7 @@ describe('Rooms E2E Tests', function() {
           try {
             // Start client1 subscribing to presence events
             subscribeRunner = await startSubscribeCommand(
-              ['rooms', 'presence', 'subscribe', testRoomId, '--client-id', client1Id, '--duration', '35'],
+              ['rooms', 'presence', 'subscribe', testRoom, '--client-id', client1Id, '--duration', '35'],
               /Subscribing to presence events/,
               { timeoutMs: process.env.CI ? 30000 : 20000 }
             );
@@ -166,7 +166,7 @@ describe('Rooms E2E Tests', function() {
 
             // Have client2 enter the room
             enterRunner = await startPresenceCommand(
-              ['rooms', 'presence', 'enter', testRoomId, '--data', '{"name":"TestUser2","status":"active"}', '--client-id', client2Id, '--duration', '25'],
+              ['rooms', 'presence', 'enter', testRoom, '--data', '{"name":"TestUser2","status":"active"}', '--client-id', client2Id, '--duration', '25'],
               /Entered room/,
               { timeoutMs: process.env.CI ? 30000 : 20000 }
             );
@@ -208,7 +208,7 @@ describe('Rooms E2E Tests', function() {
           try {
             // Start subscribing to messages with client1
             subscribeRunner = await startSubscribeCommand(
-              ['rooms', 'messages', 'subscribe', testRoomId, '--client-id', client1Id, '--duration', '60'],
+              ['rooms', 'messages', 'subscribe', testRoom, '--client-id', client1Id, '--duration', '60'],
               'Connected to room:',
               { timeoutMs: process.env.CI ? 45000 : 25000 }
             );
@@ -219,7 +219,7 @@ describe('Rooms E2E Tests', function() {
 
             // Have client2 send a message
             const testMessage = "Hello from E2E test!";
-            const sendResult = await runCommand(['rooms', 'messages', 'send', testRoomId, testMessage, '--client-id', client2Id], {
+            const sendResult = await runCommand(['rooms', 'messages', 'send', testRoom, testMessage, '--client-id', client2Id], {
               timeoutMs: process.env.CI ? 30000 : 20000
             });
 
@@ -237,7 +237,7 @@ describe('Rooms E2E Tests', function() {
             const secondMessage = "Second test message with metadata";
             const metadata = { timestamp: Date.now(), type: "test" };
             const sendResult2 = await runCommand([
-              'rooms', 'messages', 'send', testRoomId, secondMessage, 
+              'rooms', 'messages', 'send', testRoom, secondMessage, 
               '--metadata', JSON.stringify(metadata), '--client-id', client2Id
             ], {
               timeoutMs: process.env.CI ? 15000 : 10000
