@@ -14,7 +14,7 @@ interface MessageToSend {
 interface MessageResult {
   index?: number;
   message?: MessageToSend;
-  roomId: string;
+  room: string;
   success: boolean;
   error?: string;
   [key: string]: unknown;
@@ -31,8 +31,8 @@ interface FinalResult {
 
 export default class MessagesSend extends ChatBaseCommand {
   static override args = {
-    roomId: Args.string({
-      description: "The room ID to send the message to",
+    room: Args.string({
+      description: "The room to send the message to",
       required: true,
     }),
     text: Args.string({
@@ -74,7 +74,7 @@ export default class MessagesSend extends ChatBaseCommand {
   private ablyClient: Ably.Realtime | null = null;
   private progressIntervalId: NodeJS.Timeout | null = null;
   private chatClient: ChatClient | null = null;
-  private roomId: string | null = null;
+  private room: string | null = null;
 
   private async properlyCloseAblyClient(): Promise<void> {
     if (!this.ablyClient || this.ablyClient.connection.state === 'closed') {
@@ -95,7 +95,7 @@ export default class MessagesSend extends ChatBaseCommand {
       // Listen for both closed and failed states
       this.ablyClient!.connection.once('closed', onClosed);
       this.ablyClient!.connection.once('failed', onClosed);
-      
+
       // Close the client
       this.ablyClient!.close();
     });
@@ -111,8 +111,8 @@ export default class MessagesSend extends ChatBaseCommand {
     // Proper cleanup sequence
     try {
       // Release room if we haven't already
-      if (this.chatClient && this.roomId) {
-        await this.chatClient.rooms.release(this.roomId);
+      if (this.chatClient && this.room) {
+        await this.chatClient.rooms.release(this.room);
       }
     } catch {
       // Ignore release errors in cleanup
@@ -126,7 +126,7 @@ export default class MessagesSend extends ChatBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesSend);
-    this.roomId = args.roomId; // Store for cleanup
+    this.room = args.room; // Store for cleanup
 
     try {
       // Create Chat client
@@ -190,14 +190,14 @@ export default class MessagesSend extends ChatBaseCommand {
         flags,
         "room",
         "gettingRoom",
-        `Getting room handle for ${args.roomId}`,
+        `Getting room handle for ${args.room}`,
       );
-      const room = await this.chatClient.rooms.get(args.roomId, {});
+      const room = await this.chatClient.rooms.get(args.room, {});
       this.logCliEvent(
         flags,
         "room",
         "gotRoom",
-        `Got room handle for ${args.roomId}`,
+        `Got room handle for ${args.room}`,
       );
 
       // Attach to the room
@@ -205,14 +205,14 @@ export default class MessagesSend extends ChatBaseCommand {
         flags,
         "room",
         "attaching",
-        `Attaching to room ${args.roomId}`,
+        `Attaching to room ${args.room}`,
       );
       await room.attach();
       this.logCliEvent(
         flags,
         "room",
         "attached",
-        `Successfully attached to room ${args.roomId}`,
+        `Successfully attached to room ${args.room}`,
       );
 
       // Validate count and delay
@@ -294,7 +294,7 @@ export default class MessagesSend extends ChatBaseCommand {
               const result: MessageResult = {
                 index: i + 1,
                 message: messageToSend,
-                roomId: args.roomId,
+                room: args.room,
                 success: true,
               };
               results.push(result);
@@ -320,7 +320,7 @@ export default class MessagesSend extends ChatBaseCommand {
               const result: MessageResult = {
                 error: errorMsg,
                 index: i + 1,
-                roomId: args.roomId,
+                room: args.room,
                 success: false,
               };
               results.push(result);
@@ -417,7 +417,7 @@ export default class MessagesSend extends ChatBaseCommand {
           await room.messages.send(messageToSend);
           const result: MessageResult = {
             message: messageToSend,
-            roomId: args.roomId,
+            room: args.room,
             success: true,
           };
           this.logCliEvent(
@@ -440,7 +440,7 @@ export default class MessagesSend extends ChatBaseCommand {
             error instanceof Error ? error.message : String(error);
           const result: MessageResult = {
             error: errorMsg,
-            roomId: args.roomId,
+            room: args.room,
             success: false,
           };
           this.logCliEvent(
@@ -463,14 +463,14 @@ export default class MessagesSend extends ChatBaseCommand {
         flags,
         "room",
         "releasing",
-        `Releasing room ${args.roomId}`,
+        `Releasing room ${args.room}`,
       );
-      await this.chatClient.rooms.release(args.roomId);
+      await this.chatClient.rooms.release(args.room);
       this.logCliEvent(
         flags,
         "room",
         "released",
-        `Room ${args.roomId} released`,
+        `Room ${args.room} released`,
       );
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);

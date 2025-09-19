@@ -41,16 +41,16 @@ interface ChatRoom {
 // Define chat client interface
 interface ChatClientType {
   rooms: {
-    get: (roomId: string, options: Record<string, unknown>) => Promise<ChatRoom>;
-    release: (roomId: string) => Promise<void>;
+    get: (room: string, options: Record<string, unknown>) => Promise<ChatRoom>;
+    release: (room: string) => Promise<void>;
   };
   clientId?: string;
 }
 
 export default class MessagesSubscribe extends ChatBaseCommand {
   static override args = {
-    roomId: Args.string({
-      description: "The room ID to subscribe to messages from",
+    room: Args.string({
+      description: "The room to subscribe to messages from",
       required: true,
     }),
   };
@@ -83,7 +83,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
   private messageSubscription: Subscription | null = null;
   private unsubscribeStatusFn: StatusSubscription | null = null;
   private chatClient: ChatClientType | null = null;
-  private roomId: string | null = null;
+  private roomName: string | null = null;
   private cleanupInProgress: boolean = false;
 
   private async properlyCloseAblyClient(): Promise<void> {
@@ -115,8 +115,8 @@ export default class MessagesSubscribe extends ChatBaseCommand {
     // Proper cleanup sequence
     try {
       // Release room if we haven't already
-      if (this.chatClient && this.roomId) {
-        await this.chatClient.rooms.release(this.roomId);
+      if (this.chatClient && this.roomName) {
+        await this.chatClient.rooms.release(this.roomName);
       }
     } catch {
       // Ignore release errors in cleanup
@@ -153,8 +153,8 @@ export default class MessagesSubscribe extends ChatBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesSubscribe);
-    this.roomId = args.roomId; // Store for cleanup
-    this.logCliEvent(flags, "subscribe.run", "start", `Starting rooms messages subscribe for room: ${this.roomId}`);
+    this.roomName = args.room; // Store for cleanup
+    this.logCliEvent(flags, "subscribe.run", "start", `Starting rooms messages subscribe for room: ${this.roomName}`);
 
     try {
       // Create clients
@@ -166,7 +166,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       this.logCliEvent(flags, "subscribe.auth", "clientCreationSuccess", "Chat and Ably clients created.");
       
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Attaching to room: ${chalk.cyan(this.roomId)}...`);
+        this.log(`Attaching to room: ${chalk.cyan(this.roomName)}...`);
       }
 
       if (!this.chatClient || !this.ablyClient) {
@@ -179,16 +179,16 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       });
 
       // Get the room
-      this.logCliEvent(flags, "room", "gettingRoom", `Getting room handle for ${this.roomId}`);
-      const room = await this.chatClient.rooms.get(this.roomId, {});
-      this.logCliEvent(flags, "room", "gotRoom", `Got room handle for ${this.roomId}`);
+      this.logCliEvent(flags, "room", "gettingRoom", `Getting room handle for ${this.roomName}`);
+      const room = await this.chatClient.rooms.get(this.roomName, {});
+      this.logCliEvent(flags, "room", "gotRoom", `Got room handle for ${this.roomName}`);
 
       // Setup message handler
       this.logCliEvent(
         flags,
         "room",
         "subscribingToMessages",
-        `Subscribing to messages in room ${this.roomId}`,
+        `Subscribing to messages in room ${this.roomName}`,
       );
       this.messageSubscription = room.messages.subscribe(
         (messageEvent: ChatMessageEvent) => {
@@ -201,7 +201,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
           };
           this.logCliEvent(flags, "message", "received", "Message received", {
             message: messageLog,
-            roomId: this.roomId,
+            room: this.roomName,
           });
 
           if (this.shouldOutputJson(flags)) {
@@ -209,7 +209,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
               this.formatJsonOutput(
                 {
                   message: messageLog,
-                  roomId: this.roomId,
+                  room: this.roomName,
                   success: true,
                 },
                 flags,
@@ -240,21 +240,21 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         flags,
         "room",
         "subscribedToMessages",
-        `Successfully subscribed to messages in room ${this.roomId}`,
+        `Successfully subscribed to messages in room ${this.roomName}`,
       );
 
       // Subscribe to room status changes
-      this.logCliEvent(flags, "room", "subscribingToStatus", `Subscribing to status changes for room ${this.roomId}`);
+      this.logCliEvent(flags, "room", "subscribingToStatus", `Subscribing to status changes for room ${this.roomName}`);
       this.unsubscribeStatusFn = room.onStatusChange(
         (statusChange: unknown) => {
           const change = statusChange as StatusChange;
-          this.logCliEvent(flags, "room", `status-${change.current}`, `Room status changed to ${change.current}`, { reason: change.reason, roomId: this.roomId });
+          this.logCliEvent(flags, "room", `status-${change.current}`, `Room status changed to ${change.current}`, { reason: change.reason, room: this.roomName });
           if (change.current === "attached") {
             this.logCliEvent(flags, "room", "statusAttached", "Room status is ATTACHED.");
             // Log the ready signal for E2E tests
-            this.log(`Connected to room: ${this.roomId}`);
+            this.log(`Connected to room: ${this.roomName}`);
             if (!this.shouldOutputJson(flags)) {
-              this.log(chalk.green(`✓ Subscribed to room: ${chalk.cyan(this.roomId)}. Listening for messages...`));
+              this.log(chalk.green(`✓ Subscribed to room: ${chalk.cyan(this.roomName)}. Listening for messages...`));
             }
             // If we want to suppress output, we just don't log anything
           } else if (change.current === "failed") {
@@ -271,13 +271,13 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         flags,
         "room",
         "subscribedToStatus",
-        `Successfully subscribed to status changes for room ${this.roomId}`,
+        `Successfully subscribed to status changes for room ${this.roomName}`,
       );
 
       // Attach to the room
-      this.logCliEvent(flags, "room", "attaching", `Attaching to room ${this.roomId}`);
+      this.logCliEvent(flags, "room", "attaching", `Attaching to room ${this.roomName}`);
       await room.attach();
-      this.logCliEvent(flags, "room", "attachCallComplete", `room.attach() call complete for ${this.roomId}. Waiting for status change to 'attached'.`);
+      this.logCliEvent(flags, "room", "attachCallComplete", `room.attach() call complete for ${this.roomName}. Waiting for status change to 'attached'.`);
       // Note: successful attach logged by onStatusChange handler
 
       this.logCliEvent(
@@ -306,7 +306,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         "subscribe",
         "fatalError",
         `Failed to subscribe to messages: ${errorMsg}`,
-        { error: errorMsg, roomId: this.roomId },
+        { error: errorMsg, room: this.roomName },
       );
       // Close the connection in case of error
       if (this.ablyClient) {
@@ -316,7 +316,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
-            { error: errorMsg, roomId: this.roomId, success: false },
+            { error: errorMsg, room: this.roomName, success: false },
             flags,
           ),
         );
@@ -412,22 +412,22 @@ export default class MessagesSubscribe extends ChatBaseCommand {
 
     // Release the room with timeout
     try {
-      if (this.chatClient && this.roomId) {
+      if (this.chatClient && this.roomName) {
         this.logCliEvent(
           flags,
           "room",
           "releasing",
-          `Releasing room ${this.roomId}`,
+          `Releasing room ${this.roomName}`,
         );
         await Promise.race([
-          this.chatClient.rooms.release(this.roomId),
+          this.chatClient.rooms.release(this.roomName!),
           new Promise<void>((resolve) => setTimeout(resolve, 2000))
         ]);
         this.logCliEvent(
           flags,
           "room",
           "released",
-          `Room ${this.roomId} released`,
+          `Room ${this.roomName} released`,
         );
       }
     } catch (error) {

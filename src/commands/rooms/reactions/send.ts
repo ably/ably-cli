@@ -7,8 +7,8 @@ import { ChatBaseCommand } from "../../../chat-base-command.js";
 
 export default class RoomsReactionsSend extends ChatBaseCommand {
   static override args = {
-    roomId: Args.string({
-      description: "The room ID to send the reaction to",
+    room: Args.string({
+      description: "The room to send the reaction to",
       required: true,
     }),
     emoji: Args.string({
@@ -61,7 +61,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsReactionsSend);
-    const { roomId, emoji } = args;
+    const { room: roomName, emoji } = args;
 
     try {
       // Parse metadata if provided
@@ -79,12 +79,12 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
           const errorMsg = `Invalid metadata JSON: ${error instanceof Error ? error.message : String(error)}`;
           this.logCliEvent(flags, "reaction", "metadataParseError", errorMsg, {
             error: errorMsg,
-            roomId,
+            room: roomName,
           });
           if (this.shouldOutputJson(flags)) {
             this.log(
               this.formatJsonOutput(
-                { error: errorMsg, roomId, success: false },
+                { error: errorMsg, room: roomName, success: false },
                 flags,
               ),
             );
@@ -128,14 +128,14 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
         flags,
         "room",
         "gettingRoom",
-        `Getting room handle for ${roomId}`,
+        `Getting room handle for ${roomName}`,
       );
-      const room = await this.chatClient.rooms.get(roomId, {});
+      const room = await this.chatClient.rooms.get(roomName, {});
       this.logCliEvent(
         flags,
         "room",
         "gotRoom",
-        `Got room handle for ${roomId}`,
+        `Got room handle for ${roomName}`,
       );
 
       // Subscribe to room status changes
@@ -184,14 +184,14 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
         flags,
         "room",
         "attaching",
-        `Attaching to room ${roomId}`,
+        `Attaching to room ${roomName}`,
       );
       await room.attach();
       this.logCliEvent(
         flags,
         "room",
         "attached",
-        `Successfully attached to room ${roomId}`,
+        `Successfully attached to room ${roomName}`,
       );
 
       // Send the reaction
@@ -217,7 +217,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
       const resultData = {
         emoji,
         metadata: this.metadataObj,
-        roomId,
+        room: roomName,
         success: true,
       };
 
@@ -225,14 +225,14 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
         this.log(this.formatJsonOutput(resultData, flags));
       } else {
         this.log(
-          `${chalk.green("✓")} Sent reaction ${emoji} in room ${chalk.cyan(roomId)}`,
+          `${chalk.green("✓")} Sent reaction ${emoji} in room ${chalk.cyan(roomName)}`,
         );
       }
 
       // Clean up resources
-      this.logCliEvent(flags, "room", "releasing", `Releasing room ${roomId}`);
-      await this.chatClient.rooms.release(roomId);
-      this.logCliEvent(flags, "room", "released", `Released room ${roomId}`);
+      this.logCliEvent(flags, "room", "releasing", `Releasing room ${roomName}`);
+      await this.chatClient.rooms.release(roomName);
+      this.logCliEvent(flags, "room", "released", `Released room ${roomName}`);
 
       this.logCliEvent(
         flags,
@@ -254,7 +254,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
         "reaction",
         "error",
         `Failed to send reaction: ${errorMsg}`,
-        { error: errorMsg, roomId, emoji },
+        { error: errorMsg, room: roomName, emoji },
       );
 
       // Close the connection in case of error
@@ -265,7 +265,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
-            { error: errorMsg, roomId, emoji, success: false },
+            { error: errorMsg, room: roomName, emoji, success: false },
             flags,
           ),
         );
