@@ -15,7 +15,7 @@ const REACTION_TYPE_MAP: Record<string, MessageReactionType> = {
 interface MessageReactionResult {
   [key: string]: unknown;
   success: boolean;
-  roomId: string;
+  room: string;
   messageSerial?: string;
   reaction?: string;
   type?: string;
@@ -24,8 +24,8 @@ interface MessageReactionResult {
 
 export default class MessagesReactionsRemove extends ChatBaseCommand {
   static override args = {
-    roomId: Args.string({
-      description: "The room ID where the message is located",
+    room: Args.string({
+      description: "The room where the message is located",
       required: true,
     }),
     messageSerial: Args.string({
@@ -80,7 +80,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesReactionsRemove);
-    const { roomId, messageSerial, reaction } = args;
+    const { room, messageSerial, reaction } = args;
 
     try {
       // Create Chat client
@@ -115,14 +115,14 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
         flags,
         "room",
         "gettingRoom",
-        `Getting room handle for ${roomId}`,
+        `Getting room handle for ${room}`,
       );
-      const room = await this.chatClient.rooms.get(roomId);
+      const chatRoom = await this.chatClient.rooms.get(room);
       this.logCliEvent(
         flags,
         "room",
         "gotRoom",
-        `Got room handle for ${roomId}`,
+        `Got room handle for ${room}`,
       );
 
       // Subscribe to room status changes
@@ -132,11 +132,11 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
         "subscribingToStatus",
         "Subscribing to room status changes",
       );
-      const { off: unsubscribeStatus } = room.onStatusChange(
+      const { off: unsubscribeStatus } = chatRoom.onStatusChange(
         (statusChange: RoomStatusChange) => {
           let reason: Error | null | string | undefined;
           if (statusChange.current === RoomStatus.Failed) {
-            reason = room.error; // Get reason from room.error on failure
+            reason = chatRoom.error; // Get reason from chatRoom.error on failure
           }
 
           const reasonMsg = reason instanceof Error ? reason.message : reason;
@@ -171,14 +171,14 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
         flags,
         "room",
         "attaching",
-        `Attaching to room ${roomId}`,
+        `Attaching to room ${room}`,
       );
-      await room.attach();
+      await chatRoom.attach();
       this.logCliEvent(
         flags,
         "room",
         "attached",
-        `Successfully attached to room ${roomId}`,
+        `Successfully attached to room ${room}`,
       );
 
       // Remove the reaction
@@ -195,7 +195,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
       );
 
       // Use delete method instead of remove
-      await room.messages.reactions.delete(
+      await chatRoom.messages.reactions.delete(
         { serial: messageSerial }, 
         { 
           name: reaction,
@@ -214,7 +214,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
       const resultData: MessageReactionResult = {
         messageSerial,
         reaction,
-        roomId,
+        room,
         success: true,
         ...(flags.type && { type: flags.type }),
       };
@@ -223,14 +223,14 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
         this.log(this.formatJsonOutput(resultData, flags));
       } else {
         this.log(
-          `${chalk.green("✓")} Removed reaction ${chalk.yellow(reaction)} from message ${chalk.cyan(messageSerial)} in room ${chalk.cyan(roomId)}`,
+          `${chalk.green("✓")} Removed reaction ${chalk.yellow(reaction)} from message ${chalk.cyan(messageSerial)} in room ${chalk.cyan(room)}`,
         );
       }
 
       // Clean up resources
-      this.logCliEvent(flags, "room", "releasing", `Releasing room ${roomId}`);
-      await this.chatClient.rooms.release(roomId);
-      this.logCliEvent(flags, "room", "released", `Released room ${roomId}`);
+      this.logCliEvent(flags, "room", "releasing", `Releasing room ${room}`);
+      await this.chatClient.rooms.release(room);
+      this.logCliEvent(flags, "room", "released", `Released room ${room}`);
 
       this.logCliEvent(
         flags,
@@ -252,7 +252,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
         "reaction",
         "error",
         `Failed to remove reaction: ${errorMsg}`,
-        { error: errorMsg, roomId, messageSerial, reaction },
+        { error: errorMsg, room, messageSerial, reaction },
       );
 
       // Close the connection in case of error
@@ -263,13 +263,13 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
-            { 
-              error: errorMsg, 
-              roomId, 
-              messageSerial, 
+            {
+              error: errorMsg,
+              room,
+              messageSerial,
               reaction,
-              ...(flags.type && { type: flags.type }), 
-              success: false 
+              ...(flags.type && { type: flags.type }),
+              success: false
             },
             flags,
           ),

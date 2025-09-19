@@ -19,7 +19,7 @@ interface RoomStatus {
 
 interface RoomItem {
   channelId: string;
-  roomName: string;
+  room: string;
   status?: RoomStatus;
   [key: string]: unknown;
 }
@@ -104,7 +104,7 @@ export default class RoomsList extends ChatBaseCommand {
             // Only add if we haven't seen this room before
             if (!chatRooms.has(roomName)) {
               // Store the original channel data but with the simple room name
-              const roomData = { ...channel, channelId: roomName, roomName };
+              const roomData = { ...channel, channelId: roomName, room: roomName };
               chatRooms.set(roomName, roomData);
             }
           }
@@ -132,7 +132,7 @@ export default class RoomsList extends ChatBaseCommand {
         );
 
         for (const room of limitedRooms) {
-          this.log(`${chalk.green(room.roomName)}`);
+          this.log(`${chalk.green(room.room)}`);
 
           // Show occupancy if available
           if (room.status?.occupancy?.metrics) {

@@ -7,8 +7,8 @@ import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class RoomsPresenceEnter extends ChatBaseCommand {
   static override args = {
-    roomId: Args.string({
-      description: "Room ID to enter presence on",
+    room: Args.string({
+      description: "Room to enter presence on",
       required: true,
     }),
   };
@@ -40,16 +40,16 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
   private ablyClient: Ably.Realtime | null = null;
   private chatClient: ChatClient | null = null;
   private room: Room | null = null;
-  private roomId: string | null = null;
+  private roomName: string | null = null;
   private data: Record<string, unknown> | null = null;
-  
+
   private unsubscribeStatusFn: StatusSubscription | null = null;
   private unsubscribePresenceFn: ChatSubscription | null = null;
   private cleanupInProgress: boolean = false;
   private commandFlags: Interfaces.InferredFlags<typeof RoomsPresenceEnter.flags> | null = null;
 
   private async properlyCloseAblyClient(): Promise<void> {
-    const flagsForLog = this.commandFlags || {}; 
+    const flagsForLog = this.commandFlags || {};
     if (!this.ablyClient || this.ablyClient.connection.state === 'closed' || this.ablyClient.connection.state === 'failed') {
       this.logCliEvent(flagsForLog, "connection", "alreadyClosedOrFailed", "Ably client already closed or failed, skipping close.");
       return;
@@ -59,7 +59,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
     return new Promise<void>((resolve) => {
       const timeout = setTimeout(() => {
         this.logCliEvent(flagsForLog, "connection", "cleanupTimeout", "Ably client close TIMED OUT after 2s. Forcing resolve.");
-        resolve(); 
+        resolve();
       }, 2000);
 
       const onClosedOrFailed = () => {
@@ -77,7 +77,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsPresenceEnter);
     this.commandFlags = flags;
-    this.roomId = args.roomId;
+    this.roomName = args.room;
 
     const rawData = flags.data;
     if (rawData && rawData !== "{}") {
@@ -105,18 +105,18 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
       this.ablyClient = this._chatRealtimeClient;
 
-      if (!this.chatClient || !this.ablyClient || !this.roomId) {
-        this.error("Failed to initialize chat client or room ID");
+      if (!this.chatClient || !this.ablyClient || !this.roomName) {
+        this.error("Failed to initialize chat client or room");
         return;
       }
-      
+
       // Set up connection state logging
       this.setupConnectionStateLogging(this.ablyClient, flags, {
         includeUserFriendlyMessages: true
       });
-      
-      this.room = await this.chatClient.rooms.get(this.roomId); 
-      const currentRoom = this.room!; 
+
+      this.room = await this.chatClient.rooms.get(this.roomName);
+      const currentRoom = this.room!;
 
       if (flags["show-others"]) {
         this.unsubscribeStatusFn = currentRoom.onStatusChange(
@@ -129,8 +129,8 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
               if (!this.shouldOutputJson(flags)) {
                 this.error(`Room connection failed: ${reasonToLog || "Unknown error"}`);
               }
-            } else if (statusChange.current === RoomStatus.Attached && !this.shouldOutputJson(flags) && this.roomId) {
-              this.log(`${chalk.green("Successfully connected to room:")} ${chalk.cyan(this.roomId)}`);
+            } else if (statusChange.current === RoomStatus.Attached && !this.shouldOutputJson(flags) && this.roomName) {
+              this.log(`${chalk.green("Successfully connected to room:")} ${chalk.cyan(this.roomName)}`);
             } else {
               this.logCliEvent(flags, "room", `status-${statusChange.current}`, `Room status: ${statusChange.current}`);
             }
@@ -138,11 +138,11 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
         );
 
         this.unsubscribePresenceFn = currentRoom.presence.subscribe(
-          (event: PresenceEvent) => { 
+          (event: PresenceEvent) => {
             const member = event.member;
             if (member.clientId !== this.chatClient?.clientId) {
               const timestamp = new Date().toISOString();
-              const eventData = { type: event.type, member: { clientId: member.clientId, data: member.data }, roomId: this.roomId, timestamp };
+              const eventData = { type: event.type, member: { clientId: member.clientId, data: member.data }, room: this.roomName, timestamp };
               this.logCliEvent(flags, "presence", event.type, `Presence event '${event.type}' received`, eventData);
               if (this.shouldOutputJson(flags)) {
                 this.log(this.formatJsonOutput({ success: true, ...eventData }, flags));
@@ -165,12 +165,12 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
 
       await currentRoom.attach();
       this.logCliEvent(flags, "presence", "entering", "Entering presence", { data: this.data });
-      await currentRoom.presence.enter(this.data || {}); 
+      await currentRoom.presence.enter(this.data || {});
       this.logCliEvent(flags, "presence", "entered", "Entered presence successfully");
-      
-      if (!this.shouldOutputJson(flags) && this.roomId) {
+
+      if (!this.shouldOutputJson(flags) && this.roomName) {
         // Output the exact signal that E2E tests expect (without ANSI codes)
-        this.log(`✓ Entered room ${this.roomId} as ${this.chatClient?.clientId || "Unknown"}`);
+        this.log(`✓ Entered room ${this.roomName} as ${this.chatClient?.clientId || "Unknown"}`);
         if (flags["show-others"]) {
           this.log(`\n${chalk.dim("Listening for presence events. Press Ctrl+C to exit.")}`);
         } else {
@@ -194,7 +194,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(flags, "presence", "runError", `Error during command execution: ${errorMsg}`, { errorDetails: error });
       if (!this.shouldOutputJson(flags)) { this.error(`Execution Error: ${errorMsg}`); }
-      
+
       // Don't force exit on errors - let the command handle cleanup naturally
       return;
     } finally {
@@ -238,9 +238,9 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
           Promise.resolve(this.unsubscribePresenceFn.unsubscribe()),
           new Promise<void>((resolve) => setTimeout(resolve, 1000))
         ]);
-        this.logCliEvent(flags, "presence", "unsubscribedEventsFinally", "Unsubscribed presence listener in finally."); 
-      } catch (error) { 
-        this.logCliEvent(flags, "presence", "unsubscribeErrorFinally", `Error unsubscribing presenceFn: ${error instanceof Error ? error.message : String(error)}`); 
+        this.logCliEvent(flags, "presence", "unsubscribedEventsFinally", "Unsubscribed presence listener in finally.");
+      } catch (error) {
+        this.logCliEvent(flags, "presence", "unsubscribeErrorFinally", `Error unsubscribing presenceFn: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
@@ -251,9 +251,9 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
           Promise.resolve(this.unsubscribeStatusFn.off()),
           new Promise<void>((resolve) => setTimeout(resolve, 1000))
         ]);
-        this.logCliEvent(flags, "room", "unsubscribedStatusFinally", "Unsubscribed room status listener in finally."); 
-      } catch (error) { 
-        this.logCliEvent(flags, "room", "unsubscribeStatusErrorFinally", `Error unsubscribing statusFn: ${error instanceof Error ? error.message : String(error)}`); 
+        this.logCliEvent(flags, "room", "unsubscribedStatusFinally", "Unsubscribed room status listener in finally.");
+      } catch (error) {
+        this.logCliEvent(flags, "room", "unsubscribeStatusErrorFinally", `Error unsubscribing statusFn: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
@@ -266,25 +266,25 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
           new Promise<void>((resolve) => setTimeout(resolve, 2000))
         ]);
         this.logCliEvent(flags, "presence", "leftFinally", "Left room presence in finally.");
-      } catch (error) { 
-        this.logCliEvent(flags, "presence", "leaveErrorFinally", `Error leaving: ${error instanceof Error ? error.message : String(error)}`); 
+      } catch (error) {
+        this.logCliEvent(flags, "presence", "leaveErrorFinally", `Error leaving: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
     // Release room with timeout
-    if (this.chatClient && this.roomId) {
+    if (this.chatClient && this.roomName) {
       try {
-        this.logCliEvent(flags, "room", "releasingFinally", `Releasing room ${this.roomId} in finally.`);
+        this.logCliEvent(flags, "room", "releasingFinally", `Releasing room ${this.roomName} in finally.`);
         await Promise.race([
-          this.chatClient.rooms.release(this.roomId),
+          this.chatClient.rooms.release(this.roomName),
           new Promise<void>((resolve) => setTimeout(resolve, 2000))
         ]);
-        this.logCliEvent(flags, "room", "releasedInFinally", `Room ${this.roomId} released in finally.`);
-      } catch (error) { 
-        this.logCliEvent(flags, "room", "releaseErrorInFinally", `Error releasing room: ${error instanceof Error ? error.message : String(error)}`); 
+        this.logCliEvent(flags, "room", "releasedInFinally", `Room ${this.roomName} released in finally.`);
+      } catch (error) {
+        this.logCliEvent(flags, "room", "releaseErrorInFinally", `Error releasing room: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
-    
+
     // Close Ably client (already has internal timeout)
     this.logCliEvent(flags, "connection", "BEFORE_properlyCloseAblyClient", "About to call properlyCloseAblyClient.");
     await this.properlyCloseAblyClient();

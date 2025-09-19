@@ -19,8 +19,8 @@ import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class RoomsPresenceSubscribe extends ChatBaseCommand {
   static override args = {
-    roomId: Args.string({
-      description: "Room ID to subscribe to presence for",
+    room: Args.string({
+      description: "Room to subscribe to presence for",
       required: true,
     }),
   };
@@ -44,7 +44,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
 
   private ablyClient: Ably.Realtime | null = null;
   private chatClient: ChatClient | null = null;
-  private roomId: string | null = null;
+  private roomName: string | null = null;
   private room: Room | null = null;
   private presenceSubscription: ChatSubscription | null = null;
   private unsubscribeStatusFn: StatusSubscription | null = null;
@@ -77,7 +77,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsPresenceSubscribe);
     this.commandFlags = flags;
-    this.roomId = args.roomId;
+    this.roomName = args.room;
 
     try {
       // Always show the readiness signal first, before attempting auth
@@ -138,7 +138,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         includeUserFriendlyMessages: true
       });
 
-      this.room = await this.chatClient.rooms.get(this.roomId!);
+      this.room = await this.chatClient.rooms.get(this.roomName!);
       const currentRoom = this.room!;
 
       this.unsubscribeStatusFn = currentRoom.onStatusChange((statusChange: RoomStatusChange) => {
@@ -148,8 +148,8 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         }
         const reasonMsg = reasonDetails instanceof Error ? reasonDetails.message : String(reasonDetails);
         this.logCliEvent(flags, "room", `status-${statusChange.current}`, `Room status: ${statusChange.current}`, { reason: reasonMsg });
-        if (statusChange.current === RoomStatus.Attached && !this.shouldOutputJson(flags) && this.roomId) {
-          this.log(`${chalk.green("Successfully connected to room:")} ${chalk.cyan(this.roomId)}`);
+        if (statusChange.current === RoomStatus.Attached && !this.shouldOutputJson(flags) && this.roomName) {
+          this.log(`${chalk.green("Successfully connected to room:")} ${chalk.cyan(this.roomName)}`);
         } else if (statusChange.current === RoomStatus.Failed && !this.shouldOutputJson(flags)){
           this.error(`Room connection failed: ${reasonMsg || 'Unknown error'}`);
         }
@@ -157,8 +157,8 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
 
       await currentRoom.attach();
 
-      if (!this.shouldOutputJson(flags) && this.roomId) {
-        this.log(`Fetching current presence members for room ${chalk.cyan(this.roomId)}...`);
+      if (!this.shouldOutputJson(flags) && this.roomName) {
+        this.log(`Fetching current presence members for room ${chalk.cyan(this.roomName)}...`);
         const members: PresenceMember[] = await currentRoom.presence.get();
         if (members.length === 0) {
           this.log(chalk.yellow("No members are currently present in this room."));
@@ -179,7 +179,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       this.presenceSubscription = currentRoom.presence.subscribe((event: PresenceEvent) => {
         const timestamp = new Date().toISOString();
         const member = event.member;
-        const eventData = { type: event.type, member: { clientId: member.clientId, data: member.data }, roomId: this.roomId, timestamp };
+        const eventData = { type: event.type, member: { clientId: member.clientId, data: member.data }, room: this.roomName, timestamp };
         this.logCliEvent(flags, "presence", event.type, `Presence event '${event.type}' received`, eventData);
         if (this.shouldOutputJson(flags)) {
           this.log(this.formatJsonOutput({ success: true, ...eventData }, flags));
@@ -219,7 +219,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
 
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(flags, "presence", "runError", `Error: ${errorMsg}`, { roomId: this.roomId });
+      this.logCliEvent(flags, "presence", "runError", `Error: ${errorMsg}`, { room: this.roomName });
       if (!this.shouldOutputJson(flags)) { this.error(`Error: ${errorMsg}`); }
     } finally {
       const currentFlags = this.commandFlags || {};
@@ -278,14 +278,14 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
     }
 
     // Release room with timeout
-    if (this.chatClient && this.roomId) {
+    if (this.chatClient && this.roomName) {
       try {
-        this.logCliEvent(flags, "room", "releasingFinally", `Releasing room ${this.roomId}.`);
+        this.logCliEvent(flags, "room", "releasingFinally", `Releasing room ${this.roomName}.`);
         await Promise.race([
-          this.chatClient.rooms.release(this.roomId),
+          this.chatClient.rooms.release(this.roomName),
           new Promise<void>((resolve) => setTimeout(resolve, 2000))
         ]);
-        this.logCliEvent(flags, "room", "releasedInFinally", `Room ${this.roomId} released.`);
+        this.logCliEvent(flags, "room", "releasedInFinally", `Room ${this.roomName} released.`);
       } catch (error) {
         this.logCliEvent(flags, "room", "releaseErrorInFinally", `Error releasing room: ${error instanceof Error ? error.message : String(error)}`);
       }

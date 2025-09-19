@@ -12,8 +12,8 @@ import { ChatBaseCommand } from "../../../chat-base-command.js";
 
 export default class TypingSubscribe extends ChatBaseCommand {
   static override args = {
-    roomId: Args.string({
-      description: "The room ID to subscribe to typing indicators from",
+    room: Args.string({
+      description: "The room to subscribe to typing indicators from",
       required: true,
     }),
   };
@@ -76,7 +76,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
         return;
       }
 
-      const { roomId } = args;
+      const { room: roomName } = args;
 
       // Set up connection state logging
       this.setupConnectionStateLogging(this.ablyClient, flags, {
@@ -88,14 +88,14 @@ export default class TypingSubscribe extends ChatBaseCommand {
         flags,
         "room",
         "gettingRoom",
-        `Getting room handle for ${roomId}`,
+        `Getting room handle for ${roomName}`,
       );
-      const room = await this.chatClient.rooms.get(roomId, {});
+      const room = await this.chatClient.rooms.get(roomName, {});
       this.logCliEvent(
         flags,
         "room",
         "gotRoom",
-        `Got room handle for ${roomId}`,
+        `Got room handle for ${roomName}`,
       );
 
       // Subscribe to room status changes
@@ -124,7 +124,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
           if (statusChange.current === RoomStatus.Attached) {
             if (!this.shouldOutputJson(flags)) {
               this.log(
-                `${chalk.green("Connected to room:")} ${chalk.bold(roomId)}`,
+                `${chalk.green("Connected to room:")} ${chalk.bold(roomName)}`,
               );
               this.log(
                 `${chalk.dim("Listening for typing indicators. Press Ctrl+C to exit.")}`,
@@ -161,7 +161,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
           const currentlyTyping = [...(typingSetEvent.currentlyTyping || [])];
           const eventData = {
             currentlyTyping,
-            roomId,
+            room: roomName,
             timestamp,
           };
           this.logCliEvent(
@@ -218,7 +218,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
         flags,
         "room",
         "attaching",
-        `Attaching to room ${roomId}`,
+        `Attaching to room ${roomName}`,
       );
       await room.attach();
       // Successful attach logged by onStatusChange handler
@@ -308,14 +308,14 @@ export default class TypingSubscribe extends ChatBaseCommand {
               flags,
               "room",
               "releasing",
-              `Releasing room ${roomId}`,
+              `Releasing room ${roomName}`,
             );
-            await this.chatClient?.rooms.release(roomId);
+            await this.chatClient?.rooms.release(roomName);
             this.logCliEvent(
               flags,
               "room",
               "released",
-              `Room ${roomId} released`,
+              `Room ${roomName} released`,
             );
           } catch (error) {
             this.logCliEvent(
@@ -357,7 +357,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
         "typing",
         "fatalError",
         `Failed to subscribe to typing indicators: ${errorMsg}`,
-        { error: errorMsg, roomId: args.roomId },
+        { error: errorMsg, room: args.room },
       );
       // Close the connection in case of error
       if (this.ablyClient) {
@@ -367,7 +367,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
-            { error: errorMsg, roomId: args.roomId, success: false },
+            { error: errorMsg, room: args.room, success: false },
             flags,
           ),
         );

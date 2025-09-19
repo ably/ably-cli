@@ -17,8 +17,8 @@ const KEYSTROKE_INTERVAL = 450; // ms
 
 export default class TypingKeystroke extends ChatBaseCommand {
   static override args = {
-    roomId: Args.string({
-      description: "The room ID to start typing in",
+    room: Args.string({
+      description: "The room to start typing in",
       required: true,
     }),
   };
@@ -46,7 +46,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
   private ablyClient: Ably.Realtime | null = null;
   private typingIntervalId: NodeJS.Timeout | null = null;
   private unsubscribeStatusFn: (() => void) | null = null;
-  private roomId: string | null = null;
+  private roomName: string | null = null;
 
   private async properlyCloseAblyClient(): Promise<void> {
     if (!this.ablyClient || this.ablyClient.connection.state === 'closed') {
@@ -91,8 +91,8 @@ export default class TypingKeystroke extends ChatBaseCommand {
     // Proper cleanup sequence
     try {
       // Release room if we have one
-      if (this.chatClient && this.roomId) {
-        await this.chatClient.rooms.release(this.roomId);
+      if (this.chatClient && this.roomName) {
+        await this.chatClient.rooms.release(this.roomName);
       }
     } catch {
       // Ignore release errors in cleanup
@@ -116,8 +116,8 @@ export default class TypingKeystroke extends ChatBaseCommand {
         return;
       }
 
-      const { roomId } = args;
-      this.roomId = roomId;
+      const { room: roomName } = args;
+      this.roomName = roomName;
 
       // Set up connection state logging
       this.setupConnectionStateLogging(this.ablyClient, flags, {
@@ -129,14 +129,14 @@ export default class TypingKeystroke extends ChatBaseCommand {
         flags,
         "room",
         "gettingRoom",
-        `Getting room handle for ${roomId}`,
+        `Getting room handle for ${roomName}`,
       );
-      const room = await this.chatClient.rooms.get(roomId, {});
+      const room = await this.chatClient.rooms.get(roomName, {});
       this.logCliEvent(
         flags,
         "room",
         "gotRoom",
-        `Got room handle for ${roomId}`,
+        `Got room handle for ${roomName}`,
       );
 
       // Subscribe to room status changes
@@ -165,7 +165,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
           if (statusChange.current === RoomStatus.Attached) {
             if (!this.shouldOutputJson(flags)) {
               this.log(
-                `${chalk.green("Connected to room:")} ${chalk.bold(roomId)}`,
+                `${chalk.green("Connected to room:")} ${chalk.bold(roomName)}`,
               );
             }
 
@@ -250,7 +250,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
         flags,
         "room",
         "attaching",
-        `Attaching to room ${roomId}`,
+        `Attaching to room ${roomName}`,
       );
       await room.attach();
       // Successful attach and initial typing start logged by onStatusChange handler
@@ -351,14 +351,14 @@ export default class TypingKeystroke extends ChatBaseCommand {
               flags,
               "room",
               "releasing",
-              `Releasing room ${roomId}`,
+              `Releasing room ${roomName}`,
             );
-            await this.chatClient?.rooms.release(roomId);
+            await this.chatClient?.rooms.release(roomName);
             this.logCliEvent(
               flags,
               "room",
               "released",
-              `Room ${roomId} released`,
+              `Room ${roomName} released`,
             );
           } catch (error) {
             this.logCliEvent(
@@ -401,7 +401,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
         "typing",
         "fatalError",
         `Failed to start typing: ${errorMsg}`,
-        { error: errorMsg, roomId: args.roomId },
+        { error: errorMsg, room: args.room },
       );
       // Close the connection in case of error
       if (this.ablyClient) {
@@ -411,7 +411,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
-            { error: errorMsg, roomId: args.roomId, success: false },
+            { error: errorMsg, room: args.room, success: false },
             flags,
           ),
         );
