@@ -60,6 +60,7 @@ export default class ChannelsLogs extends AblyBaseCommand {
       ...(flags["api-key"] ? ["--api-key", flags["api-key"]] : []),
       ...(flags["client-id"] ? ["--client-id", flags["client-id"]] : []),
       ...(flags.app ? ["--app", flags.app] : []),
+      ...(flags.endpoint ? ["--endpoint", flags.endpoint] : []),
     ]);
   }
 }
