@@ -27,10 +27,8 @@ export default class AppsLogsSubscribe extends AblyBaseCommand {
 
     // Delegate to the original command
     await this.config.runCommand("logs:app:subscribe", [
-      "--rewind",
-      flags.rewind.toString(),
+      ...(flags.rewind ? ["--rewind", flags.rewind.toString()] : []),
       ...(flags.json ? ["--json"] : []),
-      ...(flags.json ? ["--pretty-json"] : []),
       // Forward all global flags
       ...(flags.host ? ["--host", flags.host] : []),
       ...(flags.env ? ["--env", flags.env] : []),
