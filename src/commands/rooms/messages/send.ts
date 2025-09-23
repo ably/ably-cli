@@ -432,7 +432,7 @@ export default class MessagesSend extends ChatBaseCommand {
             if (this.shouldOutputJson(flags)) {
               this.log(this.formatJsonOutput(result, flags));
             } else {
-              this.log("Message sent successfully.");
+              this.log(`Message sent successfully. Serial: ${sent.serial}`);
             }
           }
         } catch (error) {
