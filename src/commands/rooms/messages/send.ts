@@ -1,6 +1,6 @@
 import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably"; // Import Ably
-import { ChatClient } from "@ably/chat";
+import { ChatClient, Message } from "@ably/chat";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 
@@ -13,7 +13,7 @@ interface MessageToSend {
 
 interface MessageResult {
   index?: number;
-  message?: MessageToSend;
+  message?: Message;
   roomId: string;
   success: boolean;
   error?: string;
@@ -289,11 +289,11 @@ export default class MessagesSend extends ChatBaseCommand {
           // Send the message without awaiting
           room.messages
             .send(messageToSend)
-            .then(() => {
+            .then((sent: Message) => {
               sentCount++;
               const result: MessageResult = {
                 index: i + 1,
-                message: messageToSend,
+                message: sent,
                 roomId: args.roomId,
                 success: true,
               };
@@ -414,9 +414,9 @@ export default class MessagesSend extends ChatBaseCommand {
           );
 
           // Send the message
-          await room.messages.send(messageToSend);
+          const sent = await room.messages.send(messageToSend);
           const result: MessageResult = {
-            message: messageToSend,
+            message: sent,
             roomId: args.roomId,
             success: true,
           };

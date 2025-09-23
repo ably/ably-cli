@@ -80,21 +80,16 @@ export default class MessagesHistory extends ChatBaseCommand {
       }
 
       // Get historical messages
-      const messagesResult = await room.messages.history({ limit: flags.limit });
+      const messagesResult = await room.messages.history({
+        limit: flags.limit,
+      });
       const { items } = messagesResult;
 
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
             {
-              messages: items.map((message) => ({
-                clientId: message.clientId,
-                text: message.text,
-                timestamp: message.timestamp,
-                ...(flags["show-metadata"] && message.metadata
-                  ? { metadata: message.metadata }
-                  : {}),
-              })),
+              messages: items,
               roomId: args.roomId,
               success: true,
             },

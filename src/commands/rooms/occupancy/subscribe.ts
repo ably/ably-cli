@@ -1,5 +1,6 @@
 import {
   OccupancyEvent,
+  OccupancyData,
   RoomStatus,
   Subscription,
   RoomStatusChange,
@@ -10,11 +11,6 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-
-export interface OccupancyMetrics {
-  connections?: number;
-  presenceMembers?: number;
-}
 
 export default class RoomsOccupancySubscribe extends ChatBaseCommand {
   static args = {
@@ -44,13 +40,13 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
   private roomId: string | null = null;
 
   private async properlyCloseAblyClient(): Promise<void> {
-    if (!this.ablyClient || this.ablyClient.connection.state === 'closed') {
+    if (!this.ablyClient || this.ablyClient.connection.state === "closed") {
       return;
     }
 
     return new Promise<void>((resolve) => {
       const timeout = setTimeout(() => {
-        console.warn('Ably client cleanup timed out after 3 seconds');
+        console.warn("Ably client cleanup timed out after 3 seconds");
         resolve();
       }, 3000);
 
@@ -60,9 +56,9 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       };
 
       // Listen for both closed and failed states
-      this.ablyClient!.connection.once('closed', onClosed);
-      this.ablyClient!.connection.once('failed', onClosed);
-      
+      this.ablyClient!.connection.once("closed", onClosed);
+      this.ablyClient!.connection.once("failed", onClosed);
+
       this.ablyClient!.close();
     });
   }
@@ -87,13 +83,13 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
 
     // Then, attempt to release the room
     try {
-      if (this.chatClient && typeof this.roomId === 'string') {
+      if (this.chatClient && typeof this.roomId === "string") {
         await this.chatClient!.rooms.release(this.roomId!);
       }
     } catch {
-        // Ignore release errors specifically
+      // Ignore release errors specifically
     }
-    
+
     // Finally, close the Ably client
     await this.properlyCloseAblyClient();
 
@@ -131,7 +127,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
 
       // Set up connection state logging
       this.setupConnectionStateLogging(this.ablyClient, flags, {
-        includeUserFriendlyMessages: true
+        includeUserFriendlyMessages: true,
       });
 
       // Get the room with occupancy option enabled
@@ -158,51 +154,55 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         "subscribingToStatus",
         "Subscribing to room status changes",
       );
-      const { off: unsubscribeStatus } = room.onStatusChange((statusChange: RoomStatusChange) => {
-        let reason: Error | null | string | undefined;
-        if (statusChange.current === RoomStatus.Failed) {
-          reason = room.error; // Get reason from room.error on failure
-        }
-
-        const reasonMsg = reason instanceof Error ? reason.message : reason;
-        this.logCliEvent(
-          flags,
-          "room",
-          `status-${statusChange.current}`,
-          `Room status changed to ${statusChange.current}`,
-          { reason: reasonMsg },
-        );
-
-        switch (statusChange.current) {
-          case RoomStatus.Attached: {
-            if (!this.shouldOutputJson(flags)) {
-              this.log("Successfully connected to Ably");
-              this.log(
-                `Subscribing to occupancy events for room '${this.roomId}'...`,
-              );
-            }
-
-            break;
+      const { off: unsubscribeStatus } = room.onStatusChange(
+        (statusChange: RoomStatusChange) => {
+          let reason: Error | null | string | undefined;
+          if (statusChange.current === RoomStatus.Failed) {
+            reason = room.error; // Get reason from room.error on failure
           }
 
-          case RoomStatus.Detached: {
-            if (!this.shouldOutputJson(flags)) {
-              this.log("Disconnected from Ably");
+          const reasonMsg = reason instanceof Error ? reason.message : reason;
+          this.logCliEvent(
+            flags,
+            "room",
+            `status-${statusChange.current}`,
+            `Room status changed to ${statusChange.current}`,
+            { reason: reasonMsg },
+          );
+
+          switch (statusChange.current) {
+            case RoomStatus.Attached: {
+              if (!this.shouldOutputJson(flags)) {
+                this.log("Successfully connected to Ably");
+                this.log(
+                  `Subscribing to occupancy events for room '${this.roomId}'...`,
+                );
+              }
+
+              break;
             }
 
-            break;
-          }
+            case RoomStatus.Detached: {
+              if (!this.shouldOutputJson(flags)) {
+                this.log("Disconnected from Ably");
+              }
 
-          case RoomStatus.Failed: {
-            if (!this.shouldOutputJson(flags)) {
-              this.error(`Connection failed: ${reasonMsg || "Unknown error"}`);
+              break;
             }
 
-            break;
+            case RoomStatus.Failed: {
+              if (!this.shouldOutputJson(flags)) {
+                this.error(
+                  `Connection failed: ${reasonMsg || "Unknown error"}`,
+                );
+              }
+
+              break;
+            }
+            // No default
           }
-          // No default
-        }
-      });
+        },
+      );
       this.unsubscribeStatusFn = unsubscribeStatus;
       this.logCliEvent(
         flags,
@@ -247,7 +247,12 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
           "Initial occupancy metrics fetched",
           { metrics: initialOccupancy },
         );
-        this.displayOccupancyMetrics(initialOccupancy, this.roomId, flags, true);
+        this.displayOccupancyMetrics(
+          initialOccupancy,
+          this.roomId,
+          flags,
+          true,
+        );
       } catch (error) {
         const errorMsg = `Failed to fetch initial occupancy: ${error instanceof Error ? error.message : String(error)}`;
         this.logCliEvent(flags, "occupancy", "getInitialError", errorMsg, {
@@ -454,21 +459,21 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
           "finalCloseAttempt",
           "Ensuring connection is closed in finally block.",
         );
-        this.ablyClient.connection.off()
+        this.ablyClient.connection.off();
         this.ablyClient.close();
       }
     }
   }
 
   private displayOccupancyMetrics(
-    occupancyMetrics: OccupancyMetrics | OccupancyEvent,
+    occupancyMetrics: OccupancyData | OccupancyEvent,
     roomId: string | null,
     flags: Record<string, unknown>,
     isInitial = false,
   ): void {
     if (!roomId) return; // Guard against null roomId
     if (!occupancyMetrics) return; // Guard against undefined occupancyMetrics
-    
+
     const timestamp = new Date().toISOString();
     const logData = {
       metrics: occupancyMetrics,
@@ -489,10 +494,14 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
     } else {
       const prefix = isInitial ? "Initial occupancy" : "Occupancy update";
       this.log(`[${timestamp}] ${prefix} for room '${roomId}'`);
-      // Type guard to handle both OccupancyMetrics and OccupancyEvent
-      const connections = 'connections' in occupancyMetrics ? occupancyMetrics.connections : 0;
-      const presenceMembers = 'presenceMembers' in occupancyMetrics ? occupancyMetrics.presenceMembers : undefined;
-      
+      // Type guard to handle both OccupancyData and OccupancyEvent
+      const connections =
+        "connections" in occupancyMetrics ? occupancyMetrics.connections : 0;
+      const presenceMembers =
+        "presenceMembers" in occupancyMetrics
+          ? occupancyMetrics.presenceMembers
+          : undefined;
+
       this.log(`  Connections: ${connections ?? 0}`);
 
       if (presenceMembers !== undefined) {
