@@ -175,28 +175,71 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         }
       }
 
-      this.logCliEvent(flags, "presence", "subscribingToEvents", "Subscribing to presence events");
-      this.presenceSubscription = currentRoom.presence.subscribe((event: PresenceEvent) => {
-        const timestamp = new Date().toISOString();
-        const member = event.member;
-        const eventData = { type: event.type, member: { clientId: member.clientId, data: member.data }, roomId: this.roomId, timestamp };
-        this.logCliEvent(flags, "presence", event.type, `Presence event '${event.type}' received`, eventData);
-        if (this.shouldOutputJson(flags)) {
-          this.log(this.formatJsonOutput({ success: true, ...eventData }, flags));
-        } else {
-          let actionSymbol = "•"; let actionColor = chalk.white;
-          if (event.type === PresenceEventType.Enter) { actionSymbol = "✓"; actionColor = chalk.green; }
-          if (event.type === PresenceEventType.Leave) { actionSymbol = "✗"; actionColor = chalk.red; }
-          if (event.type === PresenceEventType.Update) { actionSymbol = "⟲"; actionColor = chalk.yellow; }
-          this.log(`[${timestamp}] ${actionColor(actionSymbol)} ${chalk.blue(member.clientId || "Unknown")} ${actionColor(event.type)}`);
-          if (member.data && typeof member.data === 'object' && Object.keys(member.data).length > 0) {
-            const profile = member.data as { name?: string };
-            if (profile.name) { this.log(`  ${chalk.dim("Name:")} ${profile.name}`); }
-            this.log(`  ${chalk.dim("Full Data:")} ${this.formatJsonOutput({ data: member.data }, flags)}`);
+      this.logCliEvent(
+        flags,
+        "presence",
+        "subscribingToEvents",
+        "Subscribing to presence events",
+      );
+      this.presenceSubscription = currentRoom.presence.subscribe(
+        (event: PresenceEvent) => {
+          const timestamp = new Date().toISOString();
+          const member = event.member;
+          const eventData = {
+            event,
+            roomId: this.roomId,
+            timestamp,
+            success: true,
+          };
+          this.logCliEvent(
+            flags,
+            "presence",
+            event.type,
+            `Presence event '${event.type}' received`,
+            eventData,
+          );
+          if (this.shouldOutputJson(flags)) {
+            this.log(this.formatJsonOutput(eventData, flags));
+          } else {
+            let actionSymbol = "•";
+            let actionColor = chalk.white;
+            if (event.type === PresenceEventType.Enter) {
+              actionSymbol = "✓";
+              actionColor = chalk.green;
+            }
+            if (event.type === PresenceEventType.Leave) {
+              actionSymbol = "✗";
+              actionColor = chalk.red;
+            }
+            if (event.type === PresenceEventType.Update) {
+              actionSymbol = "⟲";
+              actionColor = chalk.yellow;
+            }
+            this.log(
+              `[${timestamp}] ${actionColor(actionSymbol)} ${chalk.blue(member.clientId || "Unknown")} ${actionColor(event.type)}`,
+            );
+            if (
+              member.data &&
+              typeof member.data === "object" &&
+              Object.keys(member.data).length > 0
+            ) {
+              const profile = member.data as { name?: string };
+              if (profile.name) {
+                this.log(`  ${chalk.dim("Name:")} ${profile.name}`);
+              }
+              this.log(
+                `  ${chalk.dim("Full Data:")} ${this.formatJsonOutput({ data: member.data }, flags)}`,
+              );
+            }
           }
-        }
-      });
-      this.logCliEvent(flags, "presence", "subscribedToEvents", "Successfully subscribed to presence events");
+        },
+      );
+      this.logCliEvent(
+        flags,
+        "presence",
+        "subscribedToEvents",
+        "Successfully subscribed to presence events",
+      );
 
       if (!this.shouldOutputJson(flags)) {
         this.log(

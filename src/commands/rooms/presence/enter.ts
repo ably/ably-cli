@@ -142,10 +142,21 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
             const member = event.member;
             if (member.clientId !== this.chatClient?.clientId) {
               const timestamp = new Date().toISOString();
-              const eventData = { type: event.type, member: { clientId: member.clientId, data: member.data }, roomId: this.roomId, timestamp };
-              this.logCliEvent(flags, "presence", event.type, `Presence event '${event.type}' received`, eventData);
+              const eventData = {
+                event,
+                roomId: this.roomId,
+                timestamp,
+                success: true,
+              };
+              this.logCliEvent(
+                flags,
+                "presence",
+                event.type,
+                `Presence event '${event.type}' received`,
+                eventData,
+              );
               if (this.shouldOutputJson(flags)) {
-                this.log(this.formatJsonOutput({ success: true, ...eventData }, flags));
+                this.log(this.formatJsonOutput(eventData, flags));
               } else {
                 let actionSymbol = "•"; let actionColor = chalk.white;
                 if (event.type === PresenceEventType.Enter) { actionSymbol = "✓"; actionColor = chalk.green; }
