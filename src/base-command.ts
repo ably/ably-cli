@@ -111,6 +111,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     }),
     env: Flags.string({
       description: "Override the environment for all product API calls",
+      env: "ABLY_CLI_ENV",
     }),
     endpoint: Flags.string({
       description: "Override the endpoint for all product API calls",

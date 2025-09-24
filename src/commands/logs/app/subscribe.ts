@@ -11,6 +11,7 @@ export default class LogsAppSubscribe extends AblyBaseCommand {
 
   static override examples = [
     "$ ably logs app subscribe",
+    "$ ably logs app subscribe --rewind 10",
     "$ ably logs app subscribe --type channel.lifecycle",
     "$ ably logs app subscribe --json",
     "$ ably logs app subscribe --pretty-json",
@@ -23,6 +24,10 @@ export default class LogsAppSubscribe extends AblyBaseCommand {
       description: "Automatically exit after the given number of seconds (0 = run indefinitely)",
       char: "D",
       required: false,
+    }),
+    rewind: Flags.integer({
+      default: 0,
+      description: "Number of messages to rewind when subscribing",
     }),
     type: Flags.string({
       description: "Filter by log type",
@@ -89,7 +94,24 @@ export default class LogsAppSubscribe extends AblyBaseCommand {
         return;
       }
       const logsChannelName = `[meta]log`;
-      channel = client.channels.get(logsChannelName);
+      
+      // Configure channel options for rewind if specified
+      const channelOptions: Ably.ChannelOptions = {};
+      if (flags.rewind && flags.rewind > 0) {
+        this.logCliEvent(
+          flags,
+          "logs",
+          "rewindEnabled",
+          `Rewind enabled for ${logsChannelName}`,
+          { channel: logsChannelName, count: flags.rewind },
+        );
+        channelOptions.params = {
+          ...channelOptions.params,
+          rewind: flags.rewind.toString(),
+        };
+      }
+      
+      channel = client.channels.get(logsChannelName, channelOptions);
 
       // Set up channel state logging
       this.setupChannelStateLogging(channel, flags, {
