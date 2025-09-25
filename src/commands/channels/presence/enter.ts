@@ -9,8 +9,8 @@ import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class ChannelsPresenceEnter extends AblyBaseCommand {
   static override args = {
-    channelName: Args.string({
-      description: "Channel name to enter presence on",
+    channel: Args.string({
+      description: "Channel to enter presence on",
       required: true,
     }),
   };
@@ -79,7 +79,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
       if (!this.client) return;
 
       const client = this.client;
-      const { channelName } = args;
+      const { channel: channelName } = args;
 
       // Parse data if provided
       let data: unknown = undefined;
@@ -250,12 +250,12 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
         "presence",
         "fatalError",
         `Error during presence operation: ${errorMsg}`,
-        { channel: args.channelName, error: errorMsg },
+        { channel: args.channel, error: errorMsg },
       );
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
-            { channel: args.channelName, error: errorMsg, success: false },
+            { channel: args.channel, error: errorMsg, success: false },
             flags,
           ),
         );
