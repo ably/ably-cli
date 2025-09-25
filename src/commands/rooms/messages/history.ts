@@ -6,8 +6,8 @@ import { ChatBaseCommand } from "../../../chat-base-command.js";
 
 export default class MessagesHistory extends ChatBaseCommand {
   static override args = {
-    roomId: Args.string({
-      description: "The room ID to get message history from",
+    room: Args.string({
+      description: "The room to get message history from",
       required: true,
     }),
   };
@@ -54,7 +54,7 @@ export default class MessagesHistory extends ChatBaseCommand {
       }
 
       // Get the room
-      const room = await chatClient.rooms.get(args.roomId, {});
+      const room = await chatClient.rooms.get(args.room, {});
 
       // Attach to the room
       await room.attach();
@@ -65,7 +65,7 @@ export default class MessagesHistory extends ChatBaseCommand {
             this.formatJsonOutput(
               {
                 limit: flags.limit,
-                roomId: args.roomId,
+                room: args.room,
                 status: "fetching",
                 success: true,
               },
@@ -74,7 +74,7 @@ export default class MessagesHistory extends ChatBaseCommand {
           );
         } else {
           this.log(
-            `${chalk.green("Fetching")} ${chalk.yellow(flags.limit.toString())} ${chalk.green("most recent messages from room:")} ${chalk.bold(args.roomId)}`,
+            `${chalk.green("Fetching")} ${chalk.yellow(flags.limit.toString())} ${chalk.green("most recent messages from room:")} ${chalk.bold(args.room)}`,
           );
         }
       }
@@ -95,7 +95,7 @@ export default class MessagesHistory extends ChatBaseCommand {
                   ? { metadata: message.metadata }
                   : {}),
               })),
-              roomId: args.roomId,
+              room: args.room,
               success: true,
             },
             flags,
@@ -134,14 +134,14 @@ export default class MessagesHistory extends ChatBaseCommand {
       }
 
       // Release the room
-      await chatClient.rooms.release(args.roomId);
+      await chatClient.rooms.release(args.room);
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
             {
               error: error instanceof Error ? error.message : String(error),
-              roomId: args.roomId,
+              room: args.room,
               success: false,
             },
             flags,

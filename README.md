@@ -176,25 +176,25 @@ See [MCP Server section](#mcp-server) for more details on how to use the MCP Ser
 * [`ably rooms`](#ably-rooms)
 * [`ably rooms list`](#ably-rooms-list)
 * [`ably rooms messages`](#ably-rooms-messages)
-* [`ably rooms messages history ROOMID`](#ably-rooms-messages-history-roomid)
+* [`ably rooms messages history ROOM`](#ably-rooms-messages-history-room)
 * [`ably rooms messages reactions`](#ably-rooms-messages-reactions)
-* [`ably rooms messages reactions remove ROOMID MESSAGESERIAL REACTION`](#ably-rooms-messages-reactions-remove-roomid-messageserial-reaction)
-* [`ably rooms messages reactions send ROOMID MESSAGESERIAL REACTION`](#ably-rooms-messages-reactions-send-roomid-messageserial-reaction)
-* [`ably rooms messages reactions subscribe ROOMID`](#ably-rooms-messages-reactions-subscribe-roomid)
-* [`ably rooms messages send ROOMID TEXT`](#ably-rooms-messages-send-roomid-text)
-* [`ably rooms messages subscribe ROOMID`](#ably-rooms-messages-subscribe-roomid)
+* [`ably rooms messages reactions remove ROOM MESSAGESERIAL REACTION`](#ably-rooms-messages-reactions-remove-room-messageserial-reaction)
+* [`ably rooms messages reactions send ROOM MESSAGESERIAL REACTION`](#ably-rooms-messages-reactions-send-room-messageserial-reaction)
+* [`ably rooms messages reactions subscribe ROOM`](#ably-rooms-messages-reactions-subscribe-room)
+* [`ably rooms messages send ROOM TEXT`](#ably-rooms-messages-send-room-text)
+* [`ably rooms messages subscribe ROOM`](#ably-rooms-messages-subscribe-room)
 * [`ably rooms occupancy`](#ably-rooms-occupancy)
-* [`ably rooms occupancy get ROOMID`](#ably-rooms-occupancy-get-roomid)
-* [`ably rooms occupancy subscribe ROOMID`](#ably-rooms-occupancy-subscribe-roomid)
+* [`ably rooms occupancy get ROOM`](#ably-rooms-occupancy-get-room)
+* [`ably rooms occupancy subscribe ROOM`](#ably-rooms-occupancy-subscribe-room)
 * [`ably rooms presence`](#ably-rooms-presence)
-* [`ably rooms presence enter ROOMID`](#ably-rooms-presence-enter-roomid)
-* [`ably rooms presence subscribe ROOMID`](#ably-rooms-presence-subscribe-roomid)
+* [`ably rooms presence enter ROOM`](#ably-rooms-presence-enter-room)
+* [`ably rooms presence subscribe ROOM`](#ably-rooms-presence-subscribe-room)
 * [`ably rooms reactions`](#ably-rooms-reactions)
-* [`ably rooms reactions send ROOMID EMOJI`](#ably-rooms-reactions-send-roomid-emoji)
-* [`ably rooms reactions subscribe ROOMID`](#ably-rooms-reactions-subscribe-roomid)
+* [`ably rooms reactions send ROOM EMOJI`](#ably-rooms-reactions-send-room-emoji)
+* [`ably rooms reactions subscribe ROOM`](#ably-rooms-reactions-subscribe-room)
 * [`ably rooms typing`](#ably-rooms-typing)
-* [`ably rooms typing keystroke ROOMID`](#ably-rooms-typing-keystroke-roomid)
-* [`ably rooms typing subscribe ROOMID`](#ably-rooms-typing-subscribe-roomid)
+* [`ably rooms typing keystroke ROOM`](#ably-rooms-typing-keystroke-room)
+* [`ably rooms typing subscribe ROOM`](#ably-rooms-typing-subscribe-room)
 * [`ably spaces`](#ably-spaces)
 * [`ably spaces cursors`](#ably-spaces-cursors)
 * [`ably spaces cursors get-all SPACEID`](#ably-spaces-cursors-get-all-spaceid)
@@ -3556,17 +3556,17 @@ EXAMPLES
 
 _See code: [src/commands/rooms/messages/index.ts](https://github.com/ably/ably-cli/blob/v0.13.1/src/commands/rooms/messages/index.ts)_
 
-## `ably rooms messages history ROOMID`
+## `ably rooms messages history ROOM`
 
 Get historical messages from an Ably Chat room
 
 ```
 USAGE
-  $ ably rooms messages history ROOMID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+  $ ably rooms messages history ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
     [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-l <value>] [--show-metadata]
 
 ARGUMENTS
-  ROOMID  The room ID to get message history from
+  ROOM  The room to get message history from
 
 FLAGS
   -l, --limit=<value>         [default: 20] Maximum number of messages to retrieve
@@ -3623,18 +3623,18 @@ EXAMPLES
 
 _See code: [src/commands/rooms/messages/reactions/index.ts](https://github.com/ably/ably-cli/blob/v0.13.1/src/commands/rooms/messages/reactions/index.ts)_
 
-## `ably rooms messages reactions remove ROOMID MESSAGESERIAL REACTION`
+## `ably rooms messages reactions remove ROOM MESSAGESERIAL REACTION`
 
 Remove a reaction from a message in a chat room
 
 ```
 USAGE
-  $ ably rooms messages reactions remove ROOMID MESSAGESERIAL REACTION [--access-token <value>] [--api-key <value>] [--client-id
+  $ ably rooms messages reactions remove ROOM MESSAGESERIAL REACTION [--access-token <value>] [--api-key <value>] [--client-id
     <value>] [--env <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
     [--type unique|distinct|multiple]
 
 ARGUMENTS
-  ROOMID         The room ID where the message is located
+  ROOM         The room where the message is located
   MESSAGESERIAL  The serial ID of the message to remove reaction from
   REACTION       The reaction to remove (e.g. 👍, ❤️, 😂)
 
@@ -3668,18 +3668,18 @@ EXAMPLES
 
 _See code: [src/commands/rooms/messages/reactions/remove.ts](https://github.com/ably/ably-cli/blob/v0.13.1/src/commands/rooms/messages/reactions/remove.ts)_
 
-## `ably rooms messages reactions send ROOMID MESSAGESERIAL REACTION`
+## `ably rooms messages reactions send ROOM MESSAGESERIAL REACTION`
 
 Send a reaction to a message in a chat room
 
 ```
 USAGE
-  $ ably rooms messages reactions send ROOMID MESSAGESERIAL REACTION [--access-token <value>] [--api-key <value>] [--client-id
+  $ ably rooms messages reactions send ROOM MESSAGESERIAL REACTION [--access-token <value>] [--api-key <value>] [--client-id
     <value>] [--env <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
     [--count <value> --type unique|distinct|multiple]
 
 ARGUMENTS
-  ROOMID         The room ID where the message is located
+  ROOM         The room where the message is located
   MESSAGESERIAL  The serial ID of the message to react to
   REACTION       The reaction to send (e.g. 👍, ❤️, 😂)
 
@@ -3716,17 +3716,17 @@ EXAMPLES
 
 _See code: [src/commands/rooms/messages/reactions/send.ts](https://github.com/ably/ably-cli/blob/v0.13.1/src/commands/rooms/messages/reactions/send.ts)_
 
-## `ably rooms messages reactions subscribe ROOMID`
+## `ably rooms messages reactions subscribe ROOM`
 
 Subscribe to message reactions in a chat room
 
 ```
 USAGE
-  $ ably rooms messages reactions subscribe ROOMID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+  $ ably rooms messages reactions subscribe ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
     [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--raw]
 
 ARGUMENTS
-  ROOMID  Room ID to subscribe to message reactions in
+  ROOM  Room to subscribe to message reactions in
 
 FLAGS
   -v, --verbose               Output verbose logs
@@ -3757,18 +3757,18 @@ EXAMPLES
 
 _See code: [src/commands/rooms/messages/reactions/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.13.1/src/commands/rooms/messages/reactions/subscribe.ts)_
 
-## `ably rooms messages send ROOMID TEXT`
+## `ably rooms messages send ROOM TEXT`
 
 Send a message to an Ably Chat room
 
 ```
 USAGE
-  $ ably rooms messages send ROOMID TEXT [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
+  $ ably rooms messages send ROOM TEXT [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
     <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-c <value>] [-d
     <value>] [--metadata <value>]
 
 ARGUMENTS
-  ROOMID  The room ID to send the message to
+  ROOM  The room to send the message to
   TEXT    The message text to send
 
 FLAGS
@@ -3808,17 +3808,17 @@ EXAMPLES
 
 _See code: [src/commands/rooms/messages/send.ts](https://github.com/ably/ably-cli/blob/v0.13.1/src/commands/rooms/messages/send.ts)_
 
-## `ably rooms messages subscribe ROOMID`
+## `ably rooms messages subscribe ROOM`
 
 Subscribe to messages in an Ably Chat room
 
 ```
 USAGE
-  $ ably rooms messages subscribe ROOMID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+  $ ably rooms messages subscribe ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
     [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--show-metadata] [-D <value>]
 
 ARGUMENTS
-  ROOMID  The room ID to subscribe to messages from
+  ROOM  The room to subscribe to messages from
 
 FLAGS
   -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
@@ -3873,17 +3873,17 @@ EXAMPLES
 
 _See code: [src/commands/rooms/occupancy/index.ts](https://github.com/ably/ably-cli/blob/v0.13.1/src/commands/rooms/occupancy/index.ts)_
 
-## `ably rooms occupancy get ROOMID`
+## `ably rooms occupancy get ROOM`
 
 Get current occupancy metrics for a room
 
 ```
 USAGE
-  $ ably rooms occupancy get ROOMID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+  $ ably rooms occupancy get ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
     [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
 
 ARGUMENTS
-  ROOMID  Room ID to get occupancy for
+  ROOM  Room to get occupancy for
 
 FLAGS
   -v, --verbose               Output verbose logs
@@ -3913,17 +3913,17 @@ EXAMPLES
 
 _See code: [src/commands/rooms/occupancy/get.ts](https://github.com/ably/ably-cli/blob/v0.13.1/src/commands/rooms/occupancy/get.ts)_
 
-## `ably rooms occupancy subscribe ROOMID`
+## `ably rooms occupancy subscribe ROOM`
 
 Subscribe to real-time occupancy metrics for a room
 
 ```
 USAGE
-  $ ably rooms occupancy subscribe ROOMID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+  $ ably rooms occupancy subscribe ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
     [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
 
 ARGUMENTS
-  ROOMID  Room ID to subscribe to occupancy for
+  ROOM  Room to subscribe to occupancy for
 
 FLAGS
   -v, --verbose               Output verbose logs
@@ -3970,18 +3970,18 @@ EXAMPLES
 
 _See code: [src/commands/rooms/presence/index.ts](https://github.com/ably/ably-cli/blob/v0.13.1/src/commands/rooms/presence/index.ts)_
 
-## `ably rooms presence enter ROOMID`
+## `ably rooms presence enter ROOM`
 
 Enter presence in a chat room and remain present until terminated
 
 ```
 USAGE
-  $ ably rooms presence enter ROOMID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+  $ ably rooms presence enter ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
     [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--show-others] [-D <value>]
     [--data <value>]
 
 ARGUMENTS
-  ROOMID  Room ID to enter presence on
+  ROOM  Room to enter presence on
 
 FLAGS
   -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
@@ -4012,17 +4012,17 @@ EXAMPLES
 
 _See code: [src/commands/rooms/presence/enter.ts](https://github.com/ably/ably-cli/blob/v0.13.1/src/commands/rooms/presence/enter.ts)_
 
-## `ably rooms presence subscribe ROOMID`
+## `ably rooms presence subscribe ROOM`
 
 Subscribe to presence events in a chat room
 
 ```
 USAGE
-  $ ably rooms presence subscribe ROOMID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+  $ ably rooms presence subscribe ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
     [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>]
 
 ARGUMENTS
-  ROOMID  Room ID to subscribe to presence for
+  ROOM  Room to subscribe to presence for
 
 FLAGS
   -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
@@ -4070,17 +4070,17 @@ EXAMPLES
 
 _See code: [src/commands/rooms/reactions/index.ts](https://github.com/ably/ably-cli/blob/v0.13.1/src/commands/rooms/reactions/index.ts)_
 
-## `ably rooms reactions send ROOMID EMOJI`
+## `ably rooms reactions send ROOM EMOJI`
 
 Send a reaction in a chat room
 
 ```
 USAGE
-  $ ably rooms reactions send ROOMID EMOJI [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
+  $ ably rooms reactions send ROOM EMOJI [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
     <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--metadata <value>]
 
 ARGUMENTS
-  ROOMID  The room ID to send the reaction to
+  ROOM  The room to send the reaction to
   EMOJI   The emoji reaction to send (e.g. 👍, ❤️, 😂)
 
 FLAGS
@@ -4112,17 +4112,17 @@ EXAMPLES
 
 _See code: [src/commands/rooms/reactions/send.ts](https://github.com/ably/ably-cli/blob/v0.13.1/src/commands/rooms/reactions/send.ts)_
 
-## `ably rooms reactions subscribe ROOMID`
+## `ably rooms reactions subscribe ROOM`
 
 Subscribe to reactions in a chat room
 
 ```
 USAGE
-  $ ably rooms reactions subscribe ROOMID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+  $ ably rooms reactions subscribe ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
     [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
 
 ARGUMENTS
-  ROOMID  Room ID to subscribe to reactions in
+  ROOM  Room to subscribe to reactions in
 
 FLAGS
   -v, --verbose               Output verbose logs
@@ -4169,17 +4169,17 @@ EXAMPLES
 
 _See code: [src/commands/rooms/typing/index.ts](https://github.com/ably/ably-cli/blob/v0.13.1/src/commands/rooms/typing/index.ts)_
 
-## `ably rooms typing keystroke ROOMID`
+## `ably rooms typing keystroke ROOM`
 
 Send a typing indicator in an Ably Chat room (use --autoType to keep typing automatically until terminated)
 
 ```
 USAGE
-  $ ably rooms typing keystroke ROOMID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+  $ ably rooms typing keystroke ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
     [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--autoType]
 
 ARGUMENTS
-  ROOMID  The room ID to start typing in
+  ROOM  The room to start typing in
 
 FLAGS
   -v, --verbose               Output verbose logs
@@ -4212,17 +4212,17 @@ EXAMPLES
 
 _See code: [src/commands/rooms/typing/keystroke.ts](https://github.com/ably/ably-cli/blob/v0.13.1/src/commands/rooms/typing/keystroke.ts)_
 
-## `ably rooms typing subscribe ROOMID`
+## `ably rooms typing subscribe ROOM`
 
 Subscribe to typing indicators in an Ably Chat room
 
 ```
 USAGE
-  $ ably rooms typing subscribe ROOMID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+  $ ably rooms typing subscribe ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
     [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
 
 ARGUMENTS
-  ROOMID  The room ID to subscribe to typing indicators from
+  ROOM  The room to subscribe to typing indicators from
 
 FLAGS
   -v, --verbose               Output verbose logs

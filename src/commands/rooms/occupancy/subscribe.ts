@@ -18,8 +18,8 @@ export interface OccupancyMetrics {
 
 export default class RoomsOccupancySubscribe extends ChatBaseCommand {
   static args = {
-    roomId: Args.string({
-      description: "Room ID to subscribe to occupancy for",
+    room: Args.string({
+      description: "Room to subscribe to occupancy for",
       required: true,
     }),
   };
@@ -41,7 +41,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
   private unsubscribeOccupancyFn: Subscription | null = null;
   private unsubscribeStatusFn: (() => void) | null = null;
   private chatClient: ChatClient | null = null;
-  private roomId: string | null = null;
+  private roomName: string | null = null;
 
   private async properlyCloseAblyClient(): Promise<void> {
     if (!this.ablyClient || this.ablyClient.connection.state === 'closed') {
@@ -87,8 +87,8 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
 
     // Then, attempt to release the room
     try {
-      if (this.chatClient && typeof this.roomId === 'string') {
-        await this.chatClient!.rooms.release(this.roomId!);
+      if (this.chatClient && typeof this.roomName === 'string') {
+        await this.chatClient!.rooms.release(this.roomName!);
       }
     } catch {
         // Ignore release errors specifically
@@ -102,7 +102,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsOccupancySubscribe);
-    this.roomId = args.roomId; // Store for cleanup
+    this.roomName = args.room; // Store for cleanup
 
     try {
       this.logCliEvent(
@@ -139,16 +139,16 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         flags,
         "room",
         "gettingRoom",
-        `Getting room handle for ${this.roomId}`,
+        `Getting room handle for ${this.roomName}`,
       );
-      const room = await this.chatClient.rooms.get(this.roomId, {
+      const room = await this.chatClient.rooms.get(this.roomName, {
         occupancy: { enableEvents: true },
       });
       this.logCliEvent(
         flags,
         "room",
         "gotRoom",
-        `Got room handle for ${this.roomId}`,
+        `Got room handle for ${this.roomName}`,
       );
 
       // Subscribe to room status changes
@@ -178,7 +178,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
             if (!this.shouldOutputJson(flags)) {
               this.log("Successfully connected to Ably");
               this.log(
-                `Subscribing to occupancy events for room '${this.roomId}'...`,
+                `Subscribing to occupancy events for room '${this.roomName}'...`,
               );
             }
 
@@ -216,7 +216,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         flags,
         "room",
         "attaching",
-        `Attaching to room ${this.roomId}`,
+        `Attaching to room ${this.roomName}`,
       );
       await room.attach();
       // Successful attach logged by onStatusChange handler
@@ -247,7 +247,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
           "Initial occupancy metrics fetched",
           { metrics: initialOccupancy },
         );
-        this.displayOccupancyMetrics(initialOccupancy, this.roomId, flags, true);
+        this.displayOccupancyMetrics(initialOccupancy, this.roomName, flags, true);
       } catch (error) {
         const errorMsg = `Failed to fetch initial occupancy: ${error instanceof Error ? error.message : String(error)}`;
         this.logCliEvent(flags, "occupancy", "getInitialError", errorMsg, {
@@ -275,7 +275,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
             "Occupancy update received",
             { metrics: occupancyMetrics },
           );
-          this.displayOccupancyMetrics(occupancyMetrics, this.roomId, flags);
+          this.displayOccupancyMetrics(occupancyMetrics, this.roomName, flags);
         },
       );
       this.logCliEvent(
@@ -366,14 +366,14 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
                 flags,
                 "room",
                 "releasing",
-                `Releasing room ${this.roomId}`,
+                `Releasing room ${this.roomName}`,
               );
-              await this.chatClient!.rooms.release(this.roomId!);
+              await this.chatClient!.rooms.release(this.roomName!);
               this.logCliEvent(
                 flags,
                 "room",
                 "released",
-                `Room ${this.roomId} released`,
+                `Room ${this.roomName} released`,
               );
             } catch (error) {
               const errorMsg = `Error releasing room: ${error instanceof Error ? error.message : String(error)}`;
@@ -383,7 +383,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
               if (this.shouldOutputJson(flags)) {
                 this.log(
                   this.formatJsonOutput(
-                    { error: errorMsg, roomId: this.roomId, success: false },
+                    { error: errorMsg, room: this.roomName, success: false },
                     flags,
                   ),
                 );
@@ -433,12 +433,12 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       const errorMsg = `Error: ${error instanceof Error ? error.message : String(error)}`;
       this.logCliEvent(flags, "occupancy", "fatalError", errorMsg, {
         error: errorMsg,
-        roomId: this.roomId,
+        room: this.roomName,
       });
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
-            { error: errorMsg, roomId: this.roomId, success: false },
+            { error: errorMsg, room: this.roomName, success: false },
             flags,
           ),
         );
@@ -462,17 +462,17 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
 
   private displayOccupancyMetrics(
     occupancyMetrics: OccupancyMetrics | OccupancyEvent,
-    roomId: string | null,
+    roomName: string | null,
     flags: Record<string, unknown>,
     isInitial = false,
   ): void {
-    if (!roomId) return; // Guard against null roomId
+    if (!roomName) return; // Guard against null roomName
     if (!occupancyMetrics) return; // Guard against undefined occupancyMetrics
     
     const timestamp = new Date().toISOString();
     const logData = {
       metrics: occupancyMetrics,
-      roomId,
+      room: roomName,
       timestamp,
       type: isInitial ? "initialSnapshot" : "update",
     };
@@ -488,7 +488,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       this.log(this.formatJsonOutput({ success: true, ...logData }, flags));
     } else {
       const prefix = isInitial ? "Initial occupancy" : "Occupancy update";
-      this.log(`[${timestamp}] ${prefix} for room '${roomId}'`);
+      this.log(`[${timestamp}] ${prefix} for room '${roomName}'`);
       // Type guard to handle both OccupancyMetrics and OccupancyEvent
       const connections = 'connections' in occupancyMetrics ? occupancyMetrics.connections : 0;
       const presenceMembers = 'presenceMembers' in occupancyMetrics ? occupancyMetrics.presenceMembers : undefined;

@@ -14,8 +14,8 @@ interface ReactionSummary {
 
 export default class MessagesReactionsSubscribe extends ChatBaseCommand {
   static override args = {
-    roomId: Args.string({
-      description: "Room ID to subscribe to message reactions in",
+    room: Args.string({
+      description: "Room to subscribe to message reactions in",
       required: true,
     }),
   };
@@ -90,7 +90,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
         return;
       }
 
-      const { roomId } = args;
+      const { room } = args;
 
       // Set up connection state logging
       this.setupConnectionStateLogging(this.ablyClient, flags, {
@@ -101,11 +101,11 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
         flags,
         "subscribe",
         "connecting",
-        `Connecting to Ably and subscribing to message reactions in room ${roomId}...`,
+        `Connecting to Ably and subscribing to message reactions in room ${room}...`,
       );
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          `Connecting to Ably and subscribing to message reactions in room ${chalk.cyan(roomId)}...`,
+          `Connecting to Ably and subscribing to message reactions in room ${chalk.cyan(room)}...`,
         );
       }
 
@@ -114,7 +114,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
         flags,
         "room",
         "gettingRoom",
-        `Getting room handle for ${roomId}`,
+        `Getting room handle for ${room}`,
       );
       
       // Set room options to receive raw reactions if requested
@@ -124,12 +124,12 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
         },
       } : {};
       
-      const room = await this.chatClient.rooms.get(roomId, roomOptions);
+      const chatRoom = await this.chatClient.rooms.get(room, roomOptions);
       this.logCliEvent(
         flags,
         "room",
         "gotRoom",
-        `Got room handle for ${roomId}`,
+        `Got room handle for ${room}`,
       );
 
       // Subscribe to room status changes
@@ -139,10 +139,10 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
         "subscribingToStatus",
         "Subscribing to room status changes",
       );
-      const { off: unsubscribeStatus } = room.onStatusChange((statusChange) => {
+      const { off: unsubscribeStatus } = chatRoom.onStatusChange((statusChange) => {
         let reason: Error | null | string | undefined;
         if (statusChange.current === RoomStatus.Failed) {
-          reason = room.error; // Get reason from room.error on failure
+          reason = chatRoom.error; // Get reason from chatRoom.error on failure
         }
 
         const reasonMsg = reason instanceof Error ? reason.message : reason;
@@ -159,7 +159,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
             if (!this.shouldOutputJson(flags)) {
               this.log(chalk.green("Successfully connected to Ably"));
               this.log(
-                `Listening for message reactions in room ${chalk.cyan(roomId)}. Press Ctrl+C to exit.`,
+                `Listening for message reactions in room ${chalk.cyan(room)}. Press Ctrl+C to exit.`,
               );
             }
 
@@ -199,9 +199,9 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
         flags,
         "room",
         "attaching",
-        `Attaching to room ${roomId}`,
+        `Attaching to room ${room}`,
       );
-      await room.attach();
+      await chatRoom.attach();
       // Successful attach logged by onStatusChange handler
 
       // Subscribe to message reactions based on the flag
@@ -213,13 +213,13 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
           "subscribingRaw",
           "Subscribing to raw reaction events",
         );
-        this.unsubscribeRawReactionsFn = room.messages.reactions.subscribeRaw((event: MessageReactionRawEvent) => {
+        this.unsubscribeRawReactionsFn = chatRoom.messages.reactions.subscribeRaw((event: MessageReactionRawEvent) => {
           const timestamp = new Date().toISOString();
           const eventData = {
             type: event.type,
             serial: event.reaction.messageSerial,
             reaction: event.reaction,
-            roomId,
+            room,
             timestamp,
           };
           this.logCliEvent(
@@ -254,7 +254,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
           "subscribing",
           "Subscribing to reaction summaries",
         );
-        this.unsubscribeReactionsFn = room.messages.reactions.subscribe((event: MessageReactionSummaryEvent) => {
+        this.unsubscribeReactionsFn = chatRoom.messages.reactions.subscribe((event: MessageReactionSummaryEvent) => {
           const timestamp = new Date().toISOString();
           
           // Format the summary for display
@@ -266,7 +266,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
             "summaryReceived",
             "Reaction summary received",
             {
-              roomId,
+              room,
               timestamp,
               summary: summaryData,
             }
@@ -274,11 +274,11 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
 
           if (this.shouldOutputJson(flags)) {
             this.log(
-              this.formatJsonOutput({ 
-                success: true, 
-                roomId,
+              this.formatJsonOutput({
+                success: true,
+                room,
                 timestamp,
-                summary: summaryData 
+                summary: summaryData
               }, flags),
             );
           } else {
@@ -340,7 +340,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
           const forceExitTimeout = setTimeout(() => {
             const errorMsg = "Force exiting after timeout during cleanup";
             this.logCliEvent(flags, "reactions", "forceExit", errorMsg, {
-              roomId,
+              room,
             });
             if (!this.shouldOutputJson(flags)) {
               this.log(chalk.red("Force exiting after timeout..."));
@@ -439,15 +439,15 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
               flags,
               "room",
               "releasing",
-              `Releasing room ${roomId}`,
+              `Releasing room ${room}`,
             );
             if (this.chatClient) {
-              await this.chatClient.rooms.release(roomId);
+              await this.chatClient.rooms.release(room);
               this.logCliEvent(
                 flags,
                 "room",
                 "released",
-                `Room ${roomId} released`,
+                `Room ${room} released`,
               );
             } else {
               this.logCliEvent(
@@ -471,7 +471,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
             if (this.shouldOutputJson(flags)) {
               this.log(
                 this.formatJsonOutput(
-                  { error: errorMsg, roomId, success: false },
+                  { error: errorMsg, room, success: false },
                   flags,
                 ),
               );
@@ -511,12 +511,12 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(flags, "reactions", "fatalError", `Error: ${errorMsg}`, {
         error: errorMsg,
-        roomId: args.roomId,
+        room: args.room,
       });
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
-            { error: errorMsg, roomId: args.roomId, success: false },
+            { error: errorMsg, room: args.room, success: false },
             flags,
           ),
         );

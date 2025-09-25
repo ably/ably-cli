@@ -5,8 +5,8 @@ import { ChatBaseCommand } from "../../../chat-base-command.js";
 
 export default class RoomsOccupancyGet extends ChatBaseCommand {
   static args = {
-    roomId: Args.string({
-      description: "Room ID to get occupancy for",
+    room: Args.string({
+      description: "Room to get occupancy for",
       required: true,
     }),
   };
@@ -101,10 +101,10 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
         return;
       }
 
-      const { roomId } = args;
+      const { room: roomName } = args;
 
       // Get the room with occupancy enabled
-      this.room = await this.chatClient.rooms.get(roomId, {});
+      this.room = await this.chatClient.rooms.get(roomName, {});
 
       // Attach to the room to access occupancy with timeout
       await Promise.race([
@@ -128,14 +128,14 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
           this.formatJsonOutput(
             {
               metrics: occupancyMetrics,
-              roomId,
+              room: roomName,
               success: true,
             },
             flags,
           ),
         );
       } else {
-        this.log(`Occupancy metrics for room '${roomId}':\n`);
+        this.log(`Occupancy metrics for room '${roomName}':\n`);
         this.log(`Connections: ${occupancyMetrics.connections ?? 0}`);
 
         this.log(`Presence Members: ${occupancyMetrics.presenceMembers ?? 0}`);
@@ -147,7 +147,7 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
           this.formatJsonOutput(
             {
               error: error instanceof Error ? error.message : String(error),
-              roomId: args.roomId,
+              room: args.room,
               success: false,
             },
             flags,
