@@ -1,4 +1,14 @@
-import { ChatClient, Room, RoomStatus, RoomStatusChange, Subscription as ChatSubscription, StatusSubscription, PresenceEvent, PresenceEventType } from "@ably/chat";
+import {
+  ChatClient,
+  Room,
+  RoomStatus,
+  RoomStatusChange,
+  Subscription as ChatSubscription,
+  StatusSubscription,
+  PresenceEvent,
+  PresenceEventType,
+  PresenceData,
+} from "@ably/chat";
 import { Args, Flags, Interfaces } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
@@ -41,7 +51,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
   private chatClient: ChatClient | null = null;
   private room: Room | null = null;
   private roomName: string | null = null;
-  private data: Record<string, unknown> | null = null;
+  private data: PresenceData | null = null;
 
   private unsubscribeStatusFn: StatusSubscription | null = null;
   private unsubscribePresenceFn: ChatSubscription | null = null;
