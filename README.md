@@ -137,7 +137,7 @@ See [MCP Server section](#mcp-server) for more details on how to use the MCP Ser
 * [`ably channels occupancy get CHANNEL`](#ably-channels-occupancy-get-channel)
 * [`ably channels occupancy subscribe CHANNEL`](#ably-channels-occupancy-subscribe-channel)
 * [`ably channels presence`](#ably-channels-presence)
-* [`ably channels presence enter CHANNELNAME`](#ably-channels-presence-enter-channelname)
+* [`ably channels presence enter CHANNEL`](#ably-channels-presence-enter-channel)
 * [`ably channels presence subscribe CHANNEL`](#ably-channels-presence-subscribe-channel)
 * [`ably channels publish CHANNEL MESSAGE`](#ably-channels-publish-channel-message)
 * [`ably channels subscribe CHANNELS`](#ably-channels-subscribe-channels)
@@ -2136,18 +2136,18 @@ EXAMPLES
 
 _See code: [src/commands/channels/presence.ts](https://github.com/ably/ably-cli/blob/v0.13.1/src/commands/channels/presence.ts)_
 
-## `ably channels presence enter CHANNELNAME`
+## `ably channels presence enter CHANNEL`
 
 Enter presence on a channel and listen for presence events
 
 ```
 USAGE
-  $ ably channels presence enter CHANNELNAME [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
+  $ ably channels presence enter CHANNEL [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
     <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>] [--data
     <value>]
 
 ARGUMENTS
-  CHANNELNAME  Channel name to enter presence on
+  CHANNEL  Channel name to enter presence on
 
 FLAGS
   -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
