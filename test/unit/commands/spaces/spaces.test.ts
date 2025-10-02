@@ -206,7 +206,7 @@ describe("spaces commands", function () {
 
       command.setParseResult({
         flags: {},
-        args: { spaceId: "test-space" },
+        args: { space: "test-space" },
         argv: [],
         raw: [],
       });
@@ -241,7 +241,7 @@ describe("spaces commands", function () {
     it("should handle profile data when entering", async function () {
       command.setParseResult({
         flags: { profile: '{"name": "Test User", "role": "admin"}' },
-        args: { spaceId: "test-space" },
+        args: { space: "test-space" },
         argv: [],
         raw: [],
       });
@@ -290,7 +290,7 @@ describe("spaces commands", function () {
 
       command.setParseResult({
         flags: {},
-        args: { spaceId: "test-space" },
+        args: { space: "test-space" },
         argv: [],
         raw: [],
       });
@@ -349,7 +349,7 @@ describe("spaces commands", function () {
 
       command.setParseResult({
         flags: {},
-        args: { spaceId: "test-space" },
+        args: { space: "test-space" },
         argv: [],
         raw: [],
       });
@@ -358,7 +358,7 @@ describe("spaces commands", function () {
     it("should set location data", async function () {
       command.setParseResult({
         flags: { location: '{"x": 100, "y": 200, "page": "dashboard"}' },
-        args: { spaceId: "test-space" },
+        args: { space: "test-space" },
         argv: [],
         raw: [],
       });
@@ -404,7 +404,7 @@ describe("spaces commands", function () {
 
       command.setParseResult({
         flags: {},
-        args: { spaceId: "test-space", lockId: "test-lock" },
+        args: { space: "test-space", lockId: "test-lock" },
         argv: [],
         raw: [],
       });
@@ -420,7 +420,7 @@ describe("spaces commands", function () {
     it("should handle lock attributes", async function () {
       command.setParseResult({
         flags: { attributes: '{"priority": "high", "timeout": 5000}' },
-        args: { spaceId: "test-space", lockId: "test-lock" },
+        args: { space: "test-space", lockId: "test-lock" },
         argv: [],
         raw: [],
       });
@@ -466,7 +466,7 @@ describe("spaces commands", function () {
 
       command.setParseResult({
         flags: {},
-        args: { spaceId: "test-space" },
+        args: { space: "test-space" },
         argv: [],
         raw: [],
       });
@@ -475,7 +475,7 @@ describe("spaces commands", function () {
     it("should set cursor position", async function () {
       command.setParseResult({
         flags: { position: '{"x": 150, "y": 250}' },
-        args: { spaceId: "test-space" },
+        args: { space: "test-space" },
         argv: [],
         raw: [],
       });
@@ -493,7 +493,7 @@ describe("spaces commands", function () {
           position: '{"x": 150, "y": 250}',
           data: '{"color": "red", "size": "large"}'
         },
-        args: { spaceId: "test-space" },
+        args: { space: "test-space" },
         argv: [],
         raw: [],
       });
