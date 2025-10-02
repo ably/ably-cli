@@ -12,8 +12,8 @@ import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 
 export default class SpacesLocksGet extends SpacesBaseCommand {
   static override args = {
-    spaceId: Args.string({
-      description: "Space ID to get lock from",
+    space: Args.string({
+      description: "Space to get lock from",
       required: true,
     }),
     lockId: Args.string({
@@ -43,13 +43,13 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
     const { args, flags } = await this.parse(SpacesLocksGet);
 
     // let clients: SpacesClients | null = null // Remove local variable
-    const { spaceId } = args; // Get spaceId earlier
+    const { space: spaceName } = args; // Get spaceName earlier
     const { lockId } = args;
 
     try {
       // Create Spaces client using setupSpacesClient
       // clients = await this.createSpacesClient(flags) // Replace with setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceId);
+      const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
       this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
@@ -60,17 +60,17 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
       }
 
       // const { spacesClient } = clients // Remove deconstruction
-      // const {spaceId} = args // Moved earlier
+      // const {spaceName} = args // Moved earlier
       // const {lockId} = args // Moved earlier
 
       // Get the space
-      // const space = await spacesClient.get(spaceId) // Already got this.space
+      // const space = await spacesClient.get(spaceName) // Already got this.space
 
       // Enter the space first
       // await space.enter() // Use this.space
       await this.space.enter();
       this.log(
-        `${chalk.green("Successfully entered space:")} ${chalk.cyan(spaceId)}`,
+        `${chalk.green("Successfully entered space:")} ${chalk.cyan(spaceName)}`,
       );
 
       // Try to get the lock
@@ -85,7 +85,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
             );
           } else {
             this.log(
-              chalk.yellow(`Lock '${lockId}' not found in space '${spaceId}'`),
+              chalk.yellow(`Lock '${lockId}' not found in space '${spaceName}'`),
             );
           }
 

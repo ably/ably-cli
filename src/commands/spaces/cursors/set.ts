@@ -20,8 +20,8 @@ interface CursorData {
 
 export default class SpacesCursorsSet extends SpacesBaseCommand {
   static override args = {
-    spaceId: Args.string({
-      description: "The space ID to set cursor in",
+    space: Args.string({
+      description: "The space to set cursor in",
       required: true,
     }),
   };
@@ -95,7 +95,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsSet);
-    const { spaceId } = args;
+    const { space: spaceName } = args;
 
 
     try {
@@ -158,7 +158,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       }
 
       // Create Spaces client using setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceId);
+      const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
       this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
@@ -167,12 +167,12 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         const errorMsg = "Failed to create Spaces client";
         this.logCliEvent(flags, "spaces", "clientCreationFailed", errorMsg, {
           error: errorMsg,
-          spaceId,
+          spaceName,
         });
         if (this.shouldOutputJson(flags)) {
           this.log(
             this.formatJsonOutput(
-              { error: errorMsg, spaceId, success: false },
+              { error: errorMsg, spaceName, success: false },
               flags,
             ),
           );
@@ -217,7 +217,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           !this.shouldOutputJson(flags)
         ) {
           this.log(
-            `${chalk.green("Entered space:")} ${chalk.cyan(spaceId)}`,
+            `${chalk.green("Entered space:")} ${chalk.cyan(spaceName)}`,
           );
         }
       };
@@ -227,7 +227,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       }
 
       // Enter the space
-      this.logCliEvent(flags, "space", "entering", `Entering space ${spaceId}`);
+      this.logCliEvent(flags, "space", "entering", `Entering space ${spaceName}`);
       await this.space.enter();
       this.logCliEvent(
         flags,
@@ -319,7 +319,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           this.formatJsonOutput(
             {
               cursor: cursorForOutput,
-              spaceId,
+              spaceName,
               success: true,
             },
             flags,
@@ -327,7 +327,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         );
       } else {
         this.log(
-          `${chalk.green("✓")} Set cursor in space ${chalk.cyan(spaceId)} with data: ${chalk.blue(JSON.stringify(cursorForOutput))}`,
+          `${chalk.green("✓")} Set cursor in space ${chalk.cyan(spaceName)} with data: ${chalk.blue(JSON.stringify(cursorForOutput))}`,
         );
       }
 
@@ -432,12 +432,12 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         error instanceof Error ? error.message : String(error);
       this.logCliEvent(flags, "cursor", "setError", errorMsg, {
         error: errorMsg,
-        spaceId,
+        spaceName,
       });
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
-            { error: errorMsg, spaceId, success: false },
+            { error: errorMsg, spaceName, success: false },
             flags,
           ),
         );
@@ -451,7 +451,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           try {
             await this.space.leave();
             if (flags && !this.shouldOutputJson(flags)) {
-              this.log(`${chalk.green("Left space:")} ${chalk.cyan(spaceId)}`);
+              this.log(`${chalk.green("Left space:")} ${chalk.cyan(spaceName)}`);
             }
           } catch {
             // ignore

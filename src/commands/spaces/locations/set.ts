@@ -15,8 +15,8 @@ interface LocationSubscription {
 
 export default class SpacesLocationsSet extends SpacesBaseCommand {
   static override args = {
-    spaceId: Args.string({
-      description: "Space ID to set location in",
+    space: Args.string({
+      description: "Space to set location in",
       required: true,
     }),
   };
@@ -98,7 +98,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsSet);
-    const { spaceId } = args;
+    const { space: spaceName } = args;
 
     // Parse location data first
     let location: Record<string, unknown> | null = null;
@@ -152,7 +152,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       
       // Optimized path for E2E tests - minimal setup and cleanup
       try {
-        const setupResult = await this.setupSpacesClient(flags, spaceId);
+        const setupResult = await this.setupSpacesClient(flags, spaceName);
         this.realtimeClient = setupResult.realtimeClient;
         this.spacesClient = setupResult.spacesClient;
         this.space = setupResult.space;
@@ -178,7 +178,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
         
         if (this.shouldOutputJson(flags)) {
           this.log(
-            this.formatJsonOutput({ success: true, location, spaceId }, flags),
+            this.formatJsonOutput({ success: true, location, spaceName }, flags),
           );
         } else {
           this.log(
@@ -190,7 +190,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
         // If an error occurs in E2E mode, just exit cleanly after showing what we can
         if (this.shouldOutputJson(flags)) {
           this.log(
-            this.formatJsonOutput({ success: true, location, spaceId }, flags),
+            this.formatJsonOutput({ success: true, location, spaceName }, flags),
           );
         }
         // Don't call this.error() in E2E mode as it sets exit code to 1
@@ -203,7 +203,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
     // Original path for interactive use
     try {
       // Create Spaces client using setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceId);
+      const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
       this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
@@ -222,13 +222,13 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
         flags,
         "spaces",
         "gettingSpace",
-        `Getting space: ${spaceId}...`,
+        `Getting space: ${spaceName}...`,
       );
       this.logCliEvent(
         flags,
         "spaces",
         "gotSpace",
-        `Successfully got space handle: ${spaceId}`,
+        `Successfully got space handle: ${spaceName}`,
       );
 
       // Enter the space first

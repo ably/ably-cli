@@ -33,8 +33,8 @@ interface LocationSubscription {
 
 export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
   static override args = {
-    spaceId: Args.string({
-      description: "Space ID to subscribe to locations for",
+    space: Args.string({
+      description: "Space to subscribe to locations for",
       required: true,
     }),
   };
@@ -124,8 +124,8 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsSubscribe);
-    const { spaceId } = args;
-    this.logCliEvent(flags, "subscribe.run", "start", `Starting spaces locations subscribe for space: ${spaceId}`);
+    const { space: spaceName } = args;
+    this.logCliEvent(flags, "subscribe.run", "start", `Starting spaces locations subscribe for space: ${spaceName}`);
 
     try {
       // Always show the readiness signal first, before attempting auth
@@ -136,7 +136,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
 
       // Create Spaces client using setupSpacesClient
       this.logCliEvent(flags, "subscribe.clientSetup", "attemptingClientCreation", "Attempting to create Spaces and Ably clients.");
-      const setupResult = await this.setupSpacesClient(flags, spaceId);
+      const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
       this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
@@ -194,17 +194,17 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
         flags,
         "spaces",
         "gettingSpace",
-        `Getting space: ${spaceId}...`,
+        `Getting space: ${spaceName}...`,
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Connecting to space: ${chalk.cyan(spaceId)}...`);
+        this.log(`Connecting to space: ${chalk.cyan(spaceName)}...`);
       }
 
       this.logCliEvent(
         flags,
         "spaces",
         "gotSpace",
-        `Successfully got space handle: ${spaceId}`,
+        `Successfully got space handle: ${spaceName}`,
       );
 
       // Enter the space
@@ -223,11 +223,11 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
         flags,
         "location",
         "gettingInitial",
-        `Fetching initial locations for space ${spaceId}`,
+        `Fetching initial locations for space ${spaceName}`,
       );
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          `Fetching current locations for space ${chalk.cyan(spaceId)}...`,
+          `Fetching current locations for space ${chalk.cyan(spaceName)}...`,
         );
       }
 
@@ -285,7 +285,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
                   connectionId: item.member.connectionId,
                   location: item.location,
                 })),
-                spaceId,
+                spaceName,
                 success: true,
                 type: "locations_snapshot",
               },
@@ -313,12 +313,12 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
         const errorMsg = `Error fetching locations: ${error instanceof Error ? error.message : String(error)}`;
         this.logCliEvent(flags, "location", "getInitialError", errorMsg, {
           error: errorMsg,
-          spaceId,
+          spaceName,
         });
         if (this.shouldOutputJson(flags)) {
           this.log(
             this.formatJsonOutput(
-              { error: errorMsg, spaceId, status: "error", success: false },
+              { error: errorMsg, spaceName, status: "error", success: false },
               flags,
             ),
           );
@@ -360,14 +360,14 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
               "location",
               "updateReceived",
               "Location update received",
-              { spaceId, ...eventData },
+              { spaceName, ...eventData },
             );
 
             if (this.shouldOutputJson(flags)) {
               this.log(
                 this.formatJsonOutput(
                   {
-                    spaceId,
+                    spaceName,
                     success: true,
                     type: "location_update",
                     ...eventData,
@@ -393,12 +393,12 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
               "location",
               "updateProcessError",
               errorMsg,
-              { error: errorMsg, spaceId },
+              { error: errorMsg, spaceName },
             );
             if (this.shouldOutputJson(flags)) {
               this.log(
                 this.formatJsonOutput(
-                  { error: errorMsg, spaceId, status: "error", success: false },
+                  { error: errorMsg, spaceName, status: "error", success: false },
                   flags,
                 ),
               );
@@ -431,12 +431,12 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
         const errorMsg = `Error subscribing to location updates: ${error instanceof Error ? error.message : String(error)}`;
         this.logCliEvent(flags, "location", "subscribeError", errorMsg, {
           error: errorMsg,
-          spaceId,
+          spaceName,
         });
         if (this.shouldOutputJson(flags)) {
           this.log(
             this.formatJsonOutput(
-              { error: errorMsg, spaceId, status: "error", success: false },
+              { error: errorMsg, spaceName, status: "error", success: false },
               flags,
             ),
           );
@@ -466,11 +466,11 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
 
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(flags, "location", "fatalError", `Failed to subscribe to location updates: ${errorMsg}`, { error: errorMsg, spaceId });
+      this.logCliEvent(flags, "location", "fatalError", `Failed to subscribe to location updates: ${errorMsg}`, { error: errorMsg, spaceName });
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
-            { error: errorMsg, spaceId, status: "error", success: false },
+            { error: errorMsg, spaceName, status: "error", success: false },
             flags,
           ),
         );

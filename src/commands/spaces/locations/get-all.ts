@@ -38,8 +38,8 @@ interface LocationItem {
 
 export default class SpacesLocationsGetAll extends SpacesBaseCommand {
   static override args = {
-    spaceId: Args.string({
-      description: "Space ID to get locations from",
+    space: Args.string({
+      description: "Space to get locations from",
       required: true,
     }),
   };
@@ -69,10 +69,10 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsGetAll);
 
-    const { spaceId } = args;
+    const { space: spaceName } = args;
 
     try {
-      const setupResult = await this.setupSpacesClient(flags, spaceId);
+      const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
       this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
@@ -100,7 +100,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
         checkConnection();
       });
 
-      this.log(`Connecting to space: ${chalk.cyan(spaceId)}...`);
+      this.log(`Connecting to space: ${chalk.cyan(spaceName)}...`);
       await this.space.enter();
 
       await new Promise<void>((resolve, reject) => {
@@ -113,7 +113,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
             if (this.realtimeClient!.connection.state === "connected") {
               clearTimeout(timeout);
               this.log(
-                `${chalk.green("Connected to space:")} ${chalk.cyan(spaceId)}`,
+                `${chalk.green("Connected to space:")} ${chalk.cyan(spaceName)}`,
               );
               resolve();
             } else if (
@@ -140,7 +140,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
       });
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Fetching locations for space ${chalk.cyan(spaceId)}...`);
+        this.log(`Fetching locations for space ${chalk.cyan(spaceName)}...`);
       }
 
       let locations: LocationItem[] = [];
@@ -226,7 +226,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
                     memberId,
                   };
                 }),
-                spaceId,
+                spaceName,
                 success: true,
                 timestamp: new Date().toISOString(),
               },
@@ -303,7 +303,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
             this.formatJsonOutput(
               {
                 error: error instanceof Error ? error.message : String(error),
-                spaceId,
+                spaceName,
                 status: "error",
                 success: false,
               },
