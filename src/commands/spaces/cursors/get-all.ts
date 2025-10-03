@@ -19,8 +19,8 @@ interface CursorUpdate {
 
 export default class SpacesCursorsGetAll extends SpacesBaseCommand {
   static override args = {
-    spaceId: Args.string({
-      description: "Space ID to get cursors from",
+    space: Args.string({
+      description: "Space to get cursors from",
       required: true,
     }),
   };
@@ -46,7 +46,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
     const { args, flags } = await this.parse(SpacesCursorsGetAll);
 
     let cleanupInProgress = false;
-    const { spaceId } = args;
+    const { space: spaceName } = args;
     
     // Handle process termination gracefully
     const cleanup = async () => {
@@ -70,7 +70,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
 
     try {
       // Create Spaces client using setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceId);
+      const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
       this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
@@ -102,7 +102,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
 
       // Get the space
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Connecting to space: ${chalk.cyan(spaceId)}...`);
+        this.log(`Connecting to space: ${chalk.cyan(spaceName)}...`);
       }
 
       // Enter the space
@@ -125,7 +125,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
                   this.formatJsonOutput(
                     {
                       connectionId: this.realtimeClient!.connection.id,
-                      spaceId,
+                      spaceName,
                       status: "connected",
                       success: true,
                     },
@@ -134,7 +134,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
                 );
               } else {
                 this.log(
-                  `${chalk.green("Successfully entered space:")} ${chalk.cyan(spaceId)}`,
+                  `${chalk.green("Successfully entered space:")} ${chalk.cyan(spaceName)}`,
                 );
               }
 
@@ -274,7 +274,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
                 data: cursor.data,
                 position: cursor.position,
               })),
-              spaceId,
+              spaceName,
               success: true,
               cursorUpdateReceived,
             },
@@ -362,7 +362,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
               error: isConnectionError 
                 ? "Connection was closed before operation completed. Please try again."
                 : `Error getting cursors: ${errorMessage}`,
-              spaceId: args.spaceId,
+              spaceName,
               status: "error",
               success: false,
               connectionError: isConnectionError,

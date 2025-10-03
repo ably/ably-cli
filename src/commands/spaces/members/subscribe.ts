@@ -11,8 +11,8 @@ import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class SpacesMembersSubscribe extends SpacesBaseCommand {
   static override args = {
-    spaceId: Args.string({
-      description: "Space ID to subscribe to members for",
+    space: Args.string({
+      description: "Space to subscribe to members for",
       required: true,
     }),
   };
@@ -86,7 +86,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesMembersSubscribe);
-    const { spaceId } = args;
+    const { space: spaceName } = args;
 
     // Keep track of the last event we've seen for each client to avoid duplicates
     const lastSeenEvents = new Map<
@@ -101,7 +101,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
       }
 
       // Create Spaces client using setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceId);
+      const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
       this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
@@ -120,13 +120,13 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
         flags,
         "spaces",
         "gettingSpace",
-        `Getting space: ${spaceId}...`,
+        `Getting space: ${spaceName}...`,
       );
       this.logCliEvent(
         flags,
         "spaces",
         "gotSpace",
-        `Successfully got space handle: ${spaceId}`,
+        `Successfully got space handle: ${spaceName}`,
       );
 
       // Enter the space to subscribe
@@ -182,7 +182,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
           this.formatJsonOutput(
             {
               members: initialMembers,
-              spaceId,
+              spaceName,
               status: "connected",
               success: true,
             },
@@ -285,7 +285,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
             isConnected: member.isConnected,
             profileData: member.profileData,
           },
-          spaceId,
+          spaceName,
           timestamp,
           type: "member_update",
         };

@@ -16,8 +16,8 @@ interface LockItem {
 
 export default class SpacesLocksGetAll extends SpacesBaseCommand {
   static override args = {
-    spaceId: Args.string({
-      description: "Space ID to get locks from",
+    space: Args.string({
+      description: "Space to get locks from",
       required: true,
     }),
   };
@@ -42,11 +42,11 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksGetAll);
 
-    const { spaceId } = args;
+    const { space: spaceName } = args;
 
     try {
       // Create Spaces client using setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceId);
+      const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
       this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
@@ -76,7 +76,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
       });
 
       // Get the space
-      this.log(`Connecting to space: ${chalk.cyan(spaceId)}...`);
+      this.log(`Connecting to space: ${chalk.cyan(spaceName)}...`);
       await this.space.enter();
 
       // Wait for space to be properly entered before fetching locks
@@ -90,7 +90,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
             if (this.realtimeClient!.connection.state === "connected") {
               clearTimeout(timeout);
               this.log(
-                `${chalk.green("Connected to space:")} ${chalk.cyan(spaceId)}`,
+                `${chalk.green("Connected to space:")} ${chalk.cyan(spaceName)}`,
               );
               resolve();
             } else if (
@@ -118,7 +118,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
 
       // Get all locks
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Fetching locks for space ${chalk.cyan(spaceId)}...`);
+        this.log(`Fetching locks for space ${chalk.cyan(spaceName)}...`);
       }
 
       let locks: LockItem[] = [];
@@ -141,7 +141,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
                   id: lock.id,
                   status: lock.status || "unknown",
                 })),
-                spaceId,
+                spaceName,
                 success: true,
                 timestamp: new Date().toISOString(),
               },
@@ -184,7 +184,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
             this.formatJsonOutput(
               {
                 error: error instanceof Error ? error.message : String(error),
-                spaceId: args.spaceId,
+                spaceName: spaceName,
                 status: "error",
                 success: false,
               },
@@ -204,7 +204,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
           this.log(
             this.formatJsonOutput(
               {
-                spaceId,
+                spaceName,
                 status: "left",
                 success: true,
               },
@@ -220,7 +220,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
             this.formatJsonOutput(
               {
                 error: error instanceof Error ? error.message : String(error),
-                spaceId: args.spaceId,
+                spaceName: spaceName,
                 status: "error",
                 success: false,
               },
@@ -241,7 +241,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
           this.formatJsonOutput(
             {
               error: error instanceof Error ? error.message : String(error),
-              spaceId: args.spaceId,
+              spaceName: spaceName,
               status: "error",
               success: false,
             },

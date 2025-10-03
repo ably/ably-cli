@@ -9,8 +9,8 @@ import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class SpacesLocksSubscribe extends SpacesBaseCommand {
   static override args = {
-    spaceId: Args.string({
-      description: "Space ID to subscribe to locks for",
+    space: Args.string({
+      description: "Space to subscribe to locks for",
       required: true,
     }),
   };
@@ -83,8 +83,8 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksSubscribe);
-    const { spaceId } = args;
-    this.logCliEvent(flags, "subscribe.run", "start", `Starting spaces locks subscribe for space: ${spaceId}`);
+    const { space: spaceName } = args;
+    this.logCliEvent(flags, "subscribe.run", "start", `Starting spaces locks subscribe for space: ${spaceName}`);
 
     try {
       // Always show the readiness signal first, before attempting auth
@@ -95,7 +95,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
 
       // Create Spaces client using setupSpacesClient
       this.logCliEvent(flags, "subscribe.clientSetup", "attemptingClientCreation", "Attempting to create Spaces and Ably clients.");
-      const setupResult = await this.setupSpacesClient(flags, spaceId);
+      const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
       this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
@@ -154,13 +154,13 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
         flags,
         "spaces",
         "gettingSpace",
-        `Getting space: ${spaceId}...`,
+        `Getting space: ${spaceName}...`,
       );
       this.logCliEvent(
         flags,
         "spaces",
         "gotSpace",
-        `Successfully got space handle: ${spaceId}`,
+        `Successfully got space handle: ${spaceName}`,
       );
 
       // Enter the space
@@ -175,7 +175,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
       );
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Connecting to space: ${chalk.cyan(spaceId)}...`);
+        this.log(`Connecting to space: ${chalk.cyan(spaceName)}...`);
       }
 
       // Get current locks
@@ -186,7 +186,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
         "Fetching initial locks",
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Fetching current locks for space ${chalk.cyan(spaceId)}...`);
+        this.log(`Fetching current locks for space ${chalk.cyan(spaceName)}...`);
       }
 
       const locks = await this.space.locks.getAll();
@@ -212,7 +212,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
                 member: lock.member,
                 status: lock.status,
               })),
-              spaceId,
+              spaceName,
               status: "connected",
               success: true,
             },
@@ -263,7 +263,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
             member: lock.member,
             status: lock.status,
           },
-          spaceId,
+          spaceName,
           timestamp,
           type: "lock_event",
         };

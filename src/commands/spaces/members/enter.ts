@@ -10,8 +10,8 @@ import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class SpacesMembersEnter extends SpacesBaseCommand {
   static override args = {
-    spaceId: Args.string({
-      description: "Space ID to enter",
+    space: Args.string({
+      description: "Space to enter",
       required: true,
     }),
   };
@@ -89,7 +89,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesMembersEnter);
-    const { spaceId } = args;
+    const { space: spaceName } = args;
 
     // Keep track of the last event we've seen for each client to avoid duplicates
     const lastSeenEvents = new Map<
@@ -104,7 +104,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
       }
 
       // Create Spaces client using setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceId);
+      const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
       this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
@@ -134,12 +134,12 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
           const errorMsg = `Invalid profile JSON: ${error instanceof Error ? error.message : String(error)}`;
           this.logCliEvent(flags, "member", "profileParseError", errorMsg, {
             error: errorMsg,
-            spaceId,
+            spaceName,
           });
           if (this.shouldOutputJson(flags)) {
             this.log(
               this.formatJsonOutput(
-                { error: errorMsg, spaceId, success: false },
+                { error: errorMsg, spaceName, success: false },
                 flags,
               ),
             );
@@ -156,13 +156,13 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         flags,
         "spaces",
         "gettingSpace",
-        `Getting space: ${spaceId}...`,
+        `Getting space: ${spaceName}...`,
       );
       this.logCliEvent(
         flags,
         "spaces",
         "gotSpace",
-        `Successfully got space handle: ${spaceId}`,
+        `Successfully got space handle: ${spaceName}`,
       );
 
       // Enter the space with optional profile
@@ -177,7 +177,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
       const enteredEventData = {
         connectionId: this.realtimeClient.connection.id,
         profile: profileData,
-        spaceId,
+        spaceName,
         status: "connected",
       };
       this.logCliEvent(
@@ -194,7 +194,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         );
       } else {
         this.log(
-          `${chalk.green("Successfully entered space:")} ${chalk.cyan(spaceId)}`,
+          `${chalk.green("Successfully entered space:")} ${chalk.cyan(spaceName)}`,
         );
         if (profileData) {
           this.log(
@@ -271,7 +271,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
             isConnected: member.isConnected,
             profileData: member.profileData,
           },
-          spaceId,
+          spaceName,
           timestamp,
           type: "member_update",
         };

@@ -351,7 +351,7 @@ describe('Spaces integration tests', function() {
         .it('outputs JSON result', ctx => {
           const output = JSON.parse(ctx.stdout);
           expect(output).to.have.property('success', true);
-          expect(output).to.have.property('spaceId', testSpaceId);
+          expect(output).to.have.property('space', testSpaceId);
         });
     });
 

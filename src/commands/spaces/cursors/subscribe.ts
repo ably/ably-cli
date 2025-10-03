@@ -8,8 +8,8 @@ import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
   static override args = {
-    spaceId: Args.string({
-      description: "Space ID to subscribe to cursors for",
+    space: Args.string({
+      description: "Space to subscribe to cursors for",
       required: true,
     }),
   };
@@ -71,11 +71,11 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsSubscribe);
-    const { spaceId } = args;
+    const { space: spaceName } = args;
 
     try {
       // Create Spaces client using setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceId);
+      const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
       this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
@@ -131,14 +131,14 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
         flags,
         "spaces",
         "gettingSpace",
-        `Getting space: ${spaceId}...`,
+        `Getting space: ${spaceName}...`,
       );
 
       this.logCliEvent(
         flags,
         "spaces",
         "gotSpace",
-        `Successfully got space handle: ${spaceId}`,
+        `Successfully got space handle: ${spaceName}`,
       );
 
       // Enter the space
@@ -149,7 +149,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
         flags,
         "spaces",
         "entered",
-        `Entered space ${spaceId} with clientId ${clientId}`,
+        `Entered space ${spaceName} with clientId ${clientId}`,
       );
 
       // Subscribe to cursor updates
@@ -172,7 +172,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
               },
               position: cursorUpdate.position,
               data: cursorUpdate.data,
-              spaceId,
+              spaceName,
               timestamp,
               type: "cursor_update",
             };
@@ -199,12 +199,12 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
             const errorMsg = `Error processing cursor update: ${error instanceof Error ? error.message : String(error)}`;
             this.logCliEvent(flags, "cursor", "updateProcessError", errorMsg, {
               error: errorMsg,
-              spaceId,
+              spaceName,
             });
             if (this.shouldOutputJson(flags)) {
               this.log(
                 this.formatJsonOutput(
-                  { error: errorMsg, spaceId, status: "error", success: false },
+                  { error: errorMsg, spaceName, status: "error", success: false },
                   flags,
                 ),
               );
@@ -290,12 +290,12 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
         const errorMsg = `Error subscribing to cursor updates: ${error instanceof Error ? error.message : String(error)}`;
         this.logCliEvent(flags, "cursor", "subscribeError", errorMsg, {
           error: errorMsg,
-          spaceId,
+          spaceName,
         });
         if (this.shouldOutputJson(flags)) {
           this.log(
             this.formatJsonOutput(
-              { error: errorMsg, spaceId, status: "error", success: false },
+              { error: errorMsg, spaceName, status: "error", success: false },
               flags,
             ),
           );
@@ -318,7 +318,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
       
       // Print success message
       if (!this.shouldOutputJson(flags)) {
-        this.log(chalk.green(`✓ Subscribed to space: ${chalk.cyan(spaceId)}. Listening for cursor movements...`));
+        this.log(chalk.green(`✓ Subscribed to space: ${chalk.cyan(spaceName)}. Listening for cursor movements...`));
       }
       
       // Wait until the user interrupts or the optional duration elapses
@@ -340,12 +340,12 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
         "cursor",
         "fatalError",
         `Failed to subscribe to cursors: ${errorMsg}`,
-        { error: errorMsg, spaceId },
+        { error: errorMsg, spaceName },
       );
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
-            { error: errorMsg, spaceId, status: "error", success: false },
+            { error: errorMsg, spaceName, status: "error", success: false },
             flags,
           ),
         );

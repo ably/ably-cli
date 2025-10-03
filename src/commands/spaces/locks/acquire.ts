@@ -7,8 +7,8 @@ import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 
 export default class SpacesLocksAcquire extends SpacesBaseCommand {
   static override args = {
-    spaceId: Args.string({
-      description: "Space ID to acquire lock in",
+    space: Args.string({
+      description: "Space to acquire lock in",
       required: true,
     }),
     lockId: Args.string({
@@ -97,13 +97,13 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksAcquire);
-    const { spaceId } = args;
+    const { space: spaceName } = args;
     this.lockId = args.lockId;
     const { lockId } = this;
 
     try {
       // Create Spaces client using setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceId);
+      const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
       this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
@@ -144,13 +144,13 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
         flags,
         "spaces",
         "gettingSpace",
-        `Getting space: ${spaceId}...`,
+        `Getting space: ${spaceName}...`,
       );
       this.logCliEvent(
         flags,
         "spaces",
         "gotSpace",
-        `Successfully got space handle: ${spaceId}`,
+        `Successfully got space handle: ${spaceName}`,
       );
 
       // Enter the space first
@@ -261,7 +261,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
             const errorMsg = "Force exiting after timeout during cleanup";
             this.logCliEvent(flags, "lock", "forceExit", errorMsg, {
               lockId,
-              spaceId,
+              spaceName,
             });
             if (!this.shouldOutputJson(flags)) {
               this.log(chalk.red("Force exiting after timeout..."));
