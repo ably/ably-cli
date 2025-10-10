@@ -123,7 +123,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
         authenticated: flags.authenticated,
         batchingEnabled: flags["batching-enabled"],
         batchingInterval: flags["batching-interval"],
-        channelNamespace: flags.name,
+        id: flags.name,
         conflationEnabled: flags["conflation-enabled"],
         conflationInterval: flags["conflation-interval"],
         conflationKey: flags["conflation-key"],

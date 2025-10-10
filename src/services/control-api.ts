@@ -224,7 +224,7 @@ export class ControlApi {
       authenticated?: boolean;
       batchingEnabled?: boolean;
       batchingInterval?: number;
-      channelNamespace: string;
+      id: string;
       conflationEnabled?: boolean;
       conflationInterval?: number;
       conflationKey?: string;
