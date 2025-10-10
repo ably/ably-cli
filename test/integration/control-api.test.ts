@@ -21,7 +21,7 @@ describe('Control API Integration Tests', () => {
       this.skip();
       return;
     }
-    
+
     controlApi = new ControlApi({
       accessToken,
       logErrors: false
@@ -120,12 +120,12 @@ describe('Control API Integration Tests', () => {
       };
 
       const app = await controlApi.createApp(appData);
-      
+
       expect(app).to.have.property('id');
       expect(app).to.have.property('name', appData.name);
       expect(app).to.have.property('tlsOnly', false);
       expect(app).to.have.property('accountId', testAccountId);
-      
+
       // Track for cleanup
       createdResources.apps.push(app.id);
       testAppId = app.id;
@@ -133,10 +133,10 @@ describe('Control API Integration Tests', () => {
 
     it('should list apps', async () => {
       const apps = await controlApi.listApps();
-      
+
       expect(apps).to.be.an('array');
       expect(apps.length).to.be.greaterThan(0);
-      
+
       // Should include our test app
       const testApp = apps.find(app => app.id === testAppId);
       expect(testApp).to.exist;
@@ -144,7 +144,7 @@ describe('Control API Integration Tests', () => {
 
     it('should get a specific app', async () => {
       const app = await controlApi.getApp(testAppId);
-      
+
       expect(app).to.have.property('id', testAppId);
       expect(app).to.have.property('accountId', testAccountId);
     });
@@ -156,7 +156,7 @@ describe('Control API Integration Tests', () => {
       };
 
       const updatedApp = await controlApi.updateApp(testAppId, updateData);
-      
+
       expect(updatedApp).to.have.property('id', testAppId);
       expect(updatedApp).to.have.property('name', updateData.name);
       expect(updatedApp).to.have.property('tlsOnly', true);
@@ -175,22 +175,22 @@ describe('Control API Integration Tests', () => {
       };
 
       const key = await controlApi.createKey(testAppId, keyData);
-      
+
       expect(key).to.have.property('id');
       expect(key).to.have.property('name', keyData.name);
       expect(key).to.have.property('appId', testAppId);
       expect(key).to.have.property('key');
-      
+
       testKeyId = key.id;
       createdResources.keys.push(key.id);
     });
 
     it('should list API keys', async () => {
       const keys = await controlApi.listKeys(testAppId);
-      
+
       expect(keys).to.be.an('array');
       expect(keys.length).to.be.greaterThan(0);
-      
+
       // Should include our test key
       const testKey = keys.find(key => key.id === testKeyId);
       expect(testKey).to.exist;
@@ -198,7 +198,7 @@ describe('Control API Integration Tests', () => {
 
     it('should get a specific API key', async () => {
       const key = await controlApi.getKey(testAppId, testKeyId);
-      
+
       expect(key).to.have.property('id', testKeyId);
       expect(key).to.have.property('appId', testAppId);
     });
@@ -213,7 +213,7 @@ describe('Control API Integration Tests', () => {
       };
 
       const updatedKey = await controlApi.updateKey(testAppId, testKeyId, updateData);
-      
+
       expect(updatedKey).to.have.property('id', testKeyId);
       expect(updatedKey).to.have.property('name', updateData.name);
     });
@@ -232,23 +232,23 @@ describe('Control API Integration Tests', () => {
       };
 
       const queue = await controlApi.createQueue(testAppId, queueData);
-      
+
       expect(queue).to.have.property('id');
       expect(queue).to.have.property('name', testQueueName);
       expect(queue).to.have.property('appId', testAppId);
       expect(queue).to.have.property('maxLength', 1000);
       expect(queue).to.have.property('ttl', 3600);
       expect(queue).to.have.property('region', 'us-east-1-a');
-      
+
       createdResources.queues.push(testQueueName);
     });
 
     it('should list queues', async () => {
       const queues = await controlApi.listQueues(testAppId);
-      
+
       expect(queues).to.be.an('array');
       expect(queues.length).to.be.greaterThan(0);
-      
+
       // Should include our test queue
       const testQueue = queues.find(queue => queue.name === testQueueName);
       expect(testQueue).to.exist;
@@ -279,24 +279,24 @@ describe('Control API Integration Tests', () => {
       };
 
       const rule = await controlApi.createRule(testAppId, ruleData);
-      
+
       expect(rule).to.have.property('id');
       expect(rule).to.have.property('appId', testAppId);
       expect(rule).to.have.property('ruleType', 'http');
       expect(rule).to.have.property('requestMode', 'single');
       expect(rule).to.have.property('source');
       expect(rule.source).to.have.property('channelFilter', 'test-channel');
-      
+
       testRuleId = rule.id;
       createdResources.rules.push(rule.id);
     });
 
     it('should list integration rules', async () => {
       const rules = await controlApi.listRules(testAppId);
-      
+
       expect(rules).to.be.an('array');
       expect(rules.length).to.be.greaterThan(0);
-      
+
       // Should include our test rule
       const testRule = rules.find(rule => rule.id === testRuleId);
       expect(testRule).to.exist;
@@ -304,7 +304,7 @@ describe('Control API Integration Tests', () => {
 
     it('should get a specific integration rule', async () => {
       const rule = await controlApi.getRule(testAppId, testRuleId);
-      
+
       expect(rule).to.have.property('id', testRuleId);
       expect(rule).to.have.property('appId', testAppId);
     });
@@ -321,7 +321,7 @@ describe('Control API Integration Tests', () => {
       };
 
       const updatedRule = await controlApi.updateRule(testAppId, testRuleId, updateData);
-      
+
       expect(updatedRule).to.have.property('id', testRuleId);
       expect(updatedRule.source).to.have.property('channelFilter', 'updated-channel');
     });
@@ -332,30 +332,30 @@ describe('Control API Integration Tests', () => {
 
     it('should create a new namespace', async () => {
       const namespaceData = {
-        channelNamespace: `test-namespace-${Date.now()}`,
+        id: `test-namespace-${Date.now()}`,
         persisted: true,
         pushEnabled: false,
         tlsOnly: true
       };
 
       const namespace = await controlApi.createNamespace(testAppId, namespaceData);
-      
+
       expect(namespace).to.have.property('id');
       expect(namespace).to.have.property('appId', testAppId);
       expect(namespace).to.have.property('persisted', true);
       expect(namespace).to.have.property('pushEnabled', false);
       expect(namespace).to.have.property('tlsOnly', true);
-      
+
       testNamespaceId = namespace.id;
       createdResources.namespaces.push(namespace.id);
     });
 
     it('should list namespaces', async () => {
       const namespaces = await controlApi.listNamespaces(testAppId);
-      
+
       expect(namespaces).to.be.an('array');
       expect(namespaces.length).to.be.greaterThan(0);
-      
+
       // Should include our test namespace
       const testNamespace = namespaces.find(ns => ns.id === testNamespaceId);
       expect(testNamespace).to.exist;
@@ -363,7 +363,7 @@ describe('Control API Integration Tests', () => {
 
     it('should get a specific namespace', async () => {
       const namespace = await controlApi.getNamespace(testAppId, testNamespaceId);
-      
+
       expect(namespace).to.have.property('id', testNamespaceId);
       expect(namespace).to.have.property('appId', testAppId);
     });
@@ -377,7 +377,7 @@ describe('Control API Integration Tests', () => {
       };
 
       const updatedNamespace = await controlApi.updateNamespace(testAppId, testNamespaceId, updateData);
-      
+
       expect(updatedNamespace).to.have.property('id', testNamespaceId);
       expect(updatedNamespace).to.have.property('persisted', false);
       expect(updatedNamespace).to.have.property('pushEnabled', true);
@@ -434,7 +434,7 @@ describe('Control API Integration Tests', () => {
       }
 
       const results = await Promise.all(promises);
-      
+
       expect(results).to.have.length(5);
       results.forEach(apps => {
         expect(apps).to.be.an('array');
