@@ -135,7 +135,7 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
           );
         }
 
-        if (namespace.batchingInterval !== undefined) {
+        if (namespace.batchingInterval != null) {
           this.log(
             `Batching Interval: ${chalk.green(namespace.batchingInterval.toString())}`,
           );
@@ -147,7 +147,7 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
           );
         }
 
-        if (namespace.conflationInterval !== undefined) {
+        if (namespace.conflationInterval != null) {
           this.log(
             `Conflation Interval: ${chalk.green(namespace.conflationInterval.toString())}`,
           );
