@@ -247,7 +247,7 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
       );
 
       await chatRoom.messages.reactions.send(
-        { serial: messageSerial },
+        messageSerial,
         reactionParams,
       );
 

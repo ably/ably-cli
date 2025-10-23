@@ -1,4 +1,4 @@
-import { RoomStatus, ChatClient, RoomStatusChange } from "@ably/chat";
+import { RoomStatus, ChatClient, RoomStatusChange, JsonObject } from "@ably/chat";
 import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
@@ -38,7 +38,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
   private ablyClient: Ably.Realtime | null = null;
   private chatClient: ChatClient | null = null;
   private unsubscribeStatusFn: (() => void) | null = null;
-  private metadataObj: Record<string, unknown> | null = null;
+  private metadataObj: JsonObject | null = null;
 
   async finally(err: Error | undefined): Promise<void> {
     if (this.unsubscribeStatusFn) {

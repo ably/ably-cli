@@ -1,13 +1,13 @@
 import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably"; // Import Ably
-import { ChatClient } from "@ably/chat";
+import { ChatClient, JsonObject } from "@ably/chat";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 
 // Define interfaces for the message send command
 interface MessageToSend {
   text: string;
-  metadata?: Record<string, unknown>;
+  metadata?: JsonObject;
   [key: string]: unknown;
 }
 
