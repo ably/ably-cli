@@ -1,16 +1,9 @@
-import { ChatClient, RoomStatus, Subscription, MessageReactionRawEvent, MessageReactionSummaryEvent } from "@ably/chat";
+import { ChatClient, RoomStatus, Subscription, MessageReactionRawEvent, MessageReactionSummaryEvent, MessageReactionSummary } from "@ably/chat";
 import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../../chat-base-command.js";
-
-interface ReactionSummary {
-  messageSerial: string;
-  unique?: Record<string, { total: number; clientIds: string[] }>;
-  distinct?: Record<string, { total: number; clientIds: string[] }>;
-  multiple?: Record<string, { total: number; clientIds: Record<string, number> }>;
-}
 
 export default class MessagesReactionsSubscribe extends ChatBaseCommand {
   static override args = {
@@ -258,7 +251,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
           const timestamp = new Date().toISOString();
           
           // Format the summary for display
-          const summaryData: ReactionSummary = event.summary;
+          const summaryData: MessageReactionSummary = event.reactions;
           
           this.logCliEvent(
             flags,
@@ -283,23 +276,23 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
             );
           } else {
             this.log(
-              `[${chalk.dim(timestamp)}] ${chalk.green("📊")} Reaction summary for message ${chalk.cyan(event.summary.messageSerial)}:`,
+              `[${chalk.dim(timestamp)}] ${chalk.green("📊")} Reaction summary for message ${chalk.cyan(event.messageSerial)}:`,
             );
 
             // Display the summaries by type if they exist
-            if (event.summary.unique && Object.keys(event.summary.unique).length > 0) {
+            if (event.reactions.unique && Object.keys(event.reactions.unique).length > 0) {
               this.log(`  ${chalk.blue("Unique reactions:")}`);
-              this.displayReactionSummary(event.summary.unique, flags);
+              this.displayReactionSummary(event.reactions.unique, flags);
             }
             
-            if (event.summary.distinct && Object.keys(event.summary.distinct).length > 0) {
+            if (event.reactions.distinct && Object.keys(event.reactions.distinct).length > 0) {
               this.log(`  ${chalk.blue("Distinct reactions:")}`);
-              this.displayReactionSummary(event.summary.distinct, flags);
+              this.displayReactionSummary(event.reactions.distinct, flags);
             }
             
-            if (event.summary.multiple && Object.keys(event.summary.multiple).length > 0) {
+            if (event.reactions.multiple && Object.keys(event.reactions.multiple).length > 0) {
               this.log(`  ${chalk.blue("Multiple reactions:")}`);
-              this.displayMultipleReactionSummary(event.summary.multiple, flags);
+              this.displayMultipleReactionSummary(event.reactions.multiple, flags);
             }
           }
         });

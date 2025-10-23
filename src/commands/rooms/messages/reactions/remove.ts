@@ -196,7 +196,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
 
       // Use delete method instead of remove
       await chatRoom.messages.reactions.delete(
-        { serial: messageSerial }, 
+        messageSerial, 
         { 
           name: reaction,
           ...(flags.type && { type: REACTION_TYPE_MAP[flags.type] }),
