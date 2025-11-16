@@ -47,6 +47,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           "At least one update parameter (--name or --tls-only) must be provided",
@@ -125,6 +126,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error updating app: ${error instanceof Error ? error.message : String(error)}`,

@@ -120,6 +120,7 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } else {
           this.error(
             'No app specified. Use --app flag or select an app with "ably apps switch"',
@@ -146,6 +147,7 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } else {
           this.error(`Channel rule "${args.nameOrId}" not found`);
         }
@@ -221,6 +223,7 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } else {
           this.error(
             "No update parameters provided. Use one of the flag options to update the channel rule.",
@@ -351,6 +354,7 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error updating channel rule: ${error instanceof Error ? error.message : String(error)}`,

@@ -526,6 +526,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         const message = isConnectionError
           ? "Connection was closed before operation completed. Please try again."

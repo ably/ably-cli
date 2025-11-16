@@ -242,6 +242,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(`Error: ${errorMsg}`);
       }

@@ -210,6 +210,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(`Failed to remove reaction: ${errorMsg}`);
       }

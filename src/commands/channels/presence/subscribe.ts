@@ -184,6 +184,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(`Error: ${errorMsg}`);
       }

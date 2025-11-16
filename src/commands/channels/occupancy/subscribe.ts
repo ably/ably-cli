@@ -181,6 +181,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(`Error: ${errorMsg}`);
       }

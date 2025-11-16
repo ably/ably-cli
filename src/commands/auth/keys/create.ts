@@ -53,6 +53,7 @@ export default class KeysCreateCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
@@ -77,6 +78,7 @@ export default class KeysCreateCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           "Invalid capabilities JSON format. Please provide a valid JSON string.",
@@ -159,6 +161,7 @@ export default class KeysCreateCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error creating key: ${error instanceof Error ? error.message : String(error)}`,

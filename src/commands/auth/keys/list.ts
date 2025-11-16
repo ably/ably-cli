@@ -45,6 +45,7 @@ export default class KeysListCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
@@ -144,6 +145,7 @@ export default class KeysListCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error listing keys: ${error instanceof Error ? error.message : String(error)}`,

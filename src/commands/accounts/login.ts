@@ -374,6 +374,7 @@ export default class AccountsLogin extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(`Failed to authenticate: ${error}`);
       }

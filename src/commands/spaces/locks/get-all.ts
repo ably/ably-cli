@@ -191,6 +191,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } else {
           this.error(
             `Error: ${error instanceof Error ? error.message : String(error)}`,
@@ -227,6 +228,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } else {
           this.log(
             chalk.yellow(
@@ -248,6 +250,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error: ${error instanceof Error ? error.message : String(error)}`,

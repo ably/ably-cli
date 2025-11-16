@@ -35,6 +35,7 @@ export default class AccountsList extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.log(
           'No accounts configured. Use "ably accounts login" to add an account.',

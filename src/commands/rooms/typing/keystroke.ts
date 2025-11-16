@@ -226,6 +226,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(`Failed to start typing: ${errorMsg}`);
       }

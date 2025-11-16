@@ -63,6 +63,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
@@ -129,6 +130,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } else {
           this.log("Revocation cancelled.");
         }
@@ -181,6 +183,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error revoking key: ${error instanceof Error ? error.message : String(error)}`,

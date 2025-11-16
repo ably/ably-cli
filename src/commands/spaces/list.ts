@@ -198,6 +198,7 @@ export default class SpacesList extends SpacesBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error listing spaces: ${error instanceof Error ? error.message : String(error)}`,

@@ -165,6 +165,7 @@ export default class ChannelsList extends AblyBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error listing channels: ${error instanceof Error ? error.message : String(error)}`,

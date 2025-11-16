@@ -129,6 +129,7 @@ export default class LogsAppHistory extends AblyBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error retrieving application logs: ${error instanceof Error ? error.message : String(error)}`,

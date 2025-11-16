@@ -259,6 +259,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(errorMsg);
       }

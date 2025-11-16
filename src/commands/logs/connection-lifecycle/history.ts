@@ -150,6 +150,7 @@ export default class LogsConnectionLifecycleHistory extends AblyBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error retrieving connection lifecycle logs: ${error instanceof Error ? error.message : String(error)}`,

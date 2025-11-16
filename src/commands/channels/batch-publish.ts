@@ -118,6 +118,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
                 flags,
               ),
             );
+            process.exitCode = 1;
             return;
           }
 
@@ -146,6 +147,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
                     flags,
                   ),
                 );
+                process.exitCode = 1;
                 return;
               }
 
@@ -166,6 +168,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
                   flags,
                 ),
               );
+              process.exitCode = 1;
               return;
             }
 
@@ -185,6 +188,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
                 flags,
               ),
             );
+            process.exitCode = 1;
             return;
           }
 
@@ -204,6 +208,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
                 flags,
               ),
             );
+            process.exitCode = 1;
             return;
           }
 
@@ -327,6 +332,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
                     flags,
                   ),
                 );
+                process.exitCode = 1;
               } else {
                 this.log(
                   "Batch publish partially successful (some messages failed).",
@@ -367,6 +373,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
                   flags,
                 ),
               );
+              process.exitCode = 1;
             } else {
               this.error(
                 `Batch publish failed: ${errorMessage} (${errorCode})`,
@@ -386,6 +393,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } else {
           this.error(
             `Batch publish failed with status code ${response.statusCode}`,
@@ -422,6 +430,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } else {
           this.error(`Batch publish failed: ${errorMessage} (${errorCode})`);
         }
@@ -437,6 +446,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Failed to execute batch publish: ${error instanceof Error ? error.message : String(error)}`,

@@ -47,6 +47,7 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } else {
           this.error(
             'No app specified. Use --app flag or select an app with "ably apps switch"',
@@ -123,6 +124,7 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error listing integration rules: ${error instanceof Error ? error.message : String(error)}`,

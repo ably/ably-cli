@@ -142,6 +142,7 @@ export default class MessagesHistory extends ChatBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Failed to get messages: ${error instanceof Error ? error.message : String(error)}`,

@@ -44,6 +44,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
         return;
       }
 
@@ -77,6 +78,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
           flags,
         ),
       );
+      process.exitCode = 1;
       return;
     }
 
@@ -118,6 +120,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(error);
       }
@@ -144,6 +147,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } else {
           this.error(error);
         }
@@ -191,6 +195,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.warn(
           "Switched to account, but the access token may have expired or is invalid.",
