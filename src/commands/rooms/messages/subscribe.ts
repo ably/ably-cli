@@ -59,11 +59,16 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       char: "D",
       required: false,
     }),
+    "sequence-numbers": Flags.boolean({
+      default: false,
+      description: "Include sequence numbers in output",
+    }),
   };
 
   private chatClient: ChatClient | null = null;
   private roomNames: string[] = [];
   private cleanupInProgress: boolean = false;
+  private sequenceCounter = 0;
 
   private async subscribeToRoom(
     roomName: string,
@@ -92,12 +97,16 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       `Subscribing to messages in room ${roomName}`,
     );
     room.messages.subscribe((messageEvent: ChatMessageEvent) => {
+      this.sequenceCounter++;
       const { message } = messageEvent;
       const messageLog: ChatMessage = {
         clientId: message.clientId,
         text: message.text,
         timestamp: message.timestamp,
         ...(message.metadata ? { metadata: message.metadata } : {}),
+        ...(flags["sequence-numbers"]
+          ? { sequence: this.sequenceCounter }
+          : {}),
       };
       this.logCliEvent(flags, "message", "received", "Message received", {
         message: messageLog,
@@ -111,22 +120,29 @@ export default class MessagesSubscribe extends ChatBaseCommand {
               message: messageLog,
               room: roomName,
               success: true,
+              ...(flags["sequence-numbers"]
+                ? { sequence: this.sequenceCounter }
+                : {}),
             },
             flags,
           ),
         );
       } else {
         // Format message with timestamp, author and content
-        const timestamp = new Date(message.timestamp).toLocaleTimeString();
+        const timestamp = new Date(message.timestamp).toISOString();
         const author = message.clientId || "Unknown";
 
         // Prefix with room name when multiple rooms
         const roomPrefix =
           this.roomNames.length > 1 ? `${chalk.magenta(`[${roomName}]`)} ` : "";
 
+        const sequencePrefix = flags["sequence-numbers"]
+          ? `${chalk.dim(`[${this.sequenceCounter}]`)}`
+          : "";
+
         // Message content with consistent formatting
         this.log(
-          `${roomPrefix}${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`${author}:`)} ${message.text}`,
+          `${roomPrefix}${chalk.gray(`[${timestamp}]`)}${sequencePrefix} ${chalk.cyan(`${author}:`)} ${message.text}`,
         );
 
         // Show metadata if enabled and available

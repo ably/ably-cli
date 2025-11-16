@@ -44,10 +44,15 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
       default: true,
       description: "Show other presence events while present (default: true)",
     }),
+    "sequence-numbers": Flags.boolean({
+      default: false,
+      description: "Include sequence numbers in output",
+    }),
   };
 
   private cleanupInProgress = false;
   private client: Ably.Realtime | null = null;
+  private sequenceCounter = 0;
 
   private async properlyCloseAblyClient(): Promise<void> {
     if (
@@ -142,6 +147,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
             return;
           }
 
+          this.sequenceCounter++;
           const timestamp = presenceMessage.timestamp
             ? new Date(presenceMessage.timestamp).toISOString()
             : new Date().toISOString();
@@ -153,6 +159,9 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
             data: presenceMessage.data,
             id: presenceMessage.id,
             timestamp,
+            ...(flags["sequence-numbers"]
+              ? { sequence: this.sequenceCounter }
+              : {}),
           };
           this.logCliEvent(
             flags,
@@ -165,8 +174,11 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
           if (this.shouldOutputJson(flags)) {
             this.log(this.formatJsonOutput(event, flags));
           } else {
+            const sequencePrefix = flags["sequence-numbers"]
+              ? `${chalk.dim(`[${this.sequenceCounter}]`)}`
+              : "";
             this.log(
-              `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`Channel: ${channelName}`)} | ${chalk.yellow(`Action: ${presenceMessage.action}`)} | ${chalk.blue(`Client: ${presenceMessage.clientId || "N/A"}`)}`,
+              `${chalk.gray(`[${timestamp}]`)}${sequencePrefix} ${chalk.cyan(`Channel: ${channelName}`)} | ${chalk.yellow(`Action: ${presenceMessage.action}`)} | ${chalk.blue(`Client: ${presenceMessage.clientId || "N/A"}`)}`,
             );
 
             if (
