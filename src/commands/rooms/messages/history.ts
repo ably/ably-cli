@@ -1,5 +1,5 @@
 import { Args, Flags } from "@oclif/core";
-
+import { OrderBy } from "@ably/chat";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
@@ -20,20 +20,35 @@ export default class MessagesHistory extends ChatBaseCommand {
     '$ ably rooms messages history --api-key "YOUR_API_KEY" my-room',
     "$ ably rooms messages history --limit 50 my-room",
     "$ ably rooms messages history --show-metadata my-room",
+    "$ ably rooms messages history my-room --start 1737283200000",
+    "$ ably rooms messages history my-room --start 1737283200000 --end 1737286800000",
+    "$ ably rooms messages history my-room --order newestFirst",
     "$ ably rooms messages history my-room --json",
     "$ ably rooms messages history my-room --pretty-json",
   ];
 
   static override flags = {
     ...ChatBaseCommand.globalFlags,
+    end: Flags.string({
+      description: "End time for the history query (Unix timestamp in ms)",
+    }),
     limit: Flags.integer({
       char: "l",
       default: 50,
       description: "Maximum number of messages to retrieve (default: 50)",
     }),
+    order: Flags.string({
+      default: "newestFirst",
+      description:
+        "Query direction: oldestFirst or newestFirst (default: newestFirst)",
+      options: ["oldestFirst", "newestFirst"],
+    }),
     "show-metadata": Flags.boolean({
       default: false,
       description: "Display message metadata if available",
+    }),
+    start: Flags.string({
+      description: "Start time for the history query (Unix timestamp in ms)",
     }),
   };
 
@@ -75,10 +90,37 @@ export default class MessagesHistory extends ChatBaseCommand {
         }
       }
 
-      // Get historical messages
-      const messagesResult = await room.messages.history({
+      // Build history query parameters
+      const historyParams: {
+        limit: number;
+        orderBy?: OrderBy;
+        start?: number;
+        end?: number;
+      } = {
         limit: flags.limit,
-      });
+        orderBy:
+          flags.order === "newestFirst"
+            ? OrderBy.NewestFirst
+            : OrderBy.OldestFirst,
+      };
+
+      // Add time range if specified
+      if (flags.start) {
+        const startTime = /^\d+$/.test(flags.start)
+          ? Number.parseInt(flags.start, 10)
+          : new Date(flags.start).getTime();
+        historyParams.start = startTime;
+      }
+
+      if (flags.end) {
+        const endTime = /^\d+$/.test(flags.end)
+          ? Number.parseInt(flags.end, 10)
+          : new Date(flags.end).getTime();
+        historyParams.end = endTime;
+      }
+
+      // Get historical messages
+      const messagesResult = await room.messages.history(historyParams);
       const { items } = messagesResult;
 
       if (this.shouldOutputJson(flags)) {
