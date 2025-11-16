@@ -66,26 +66,26 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
   static override flags = {
     ...AblyBaseCommand.globalFlags,
     channels: Flags.string({
-      description: "Comma-separated list of channel names to publish to",
+      description: "Comma-separated list of channel names to publish to (mutually exclusive with --channels-json and --spec)",
       exclusive: ["channels-json", "spec"],
     }),
     "channels-json": Flags.string({
-      description: "JSON array of channel names to publish to",
+      description: "JSON array of channel names to publish to (mutually exclusive with --channels and --spec)",
       exclusive: ["channels", "spec"],
     }),
     encoding: Flags.string({
       char: "e",
-      description: "The encoding for the message",
+      description: "The encoding for the message (not used with --spec)",
       exclusive: ["spec"],
     }),
     name: Flags.string({
       char: "n",
-      description: "The event name (if not specified in the message JSON)",
+      description: "The event name (if not specified in the message JSON, not used with --spec)",
       exclusive: ["spec"],
     }),
     spec: Flags.string({
       description:
-        "Complete batch spec JSON (either a single BatchSpec object or an array of BatchSpec objects)",
+        "Complete batch spec JSON (either a single BatchSpec object or an array of BatchSpec objects). When used, --channels, --channels-json, --name, and --encoding are ignored",
       exclusive: ["channels", "channels-json", "name", "encoding"],
     }),
   };
