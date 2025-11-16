@@ -32,7 +32,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
 
     "show-others": Flags.boolean({
       default: true,
-      description: "Show other presence events while present",
+      description: "Show other presence events while present (default: true)",
     }),
     duration: Flags.integer({
       description:

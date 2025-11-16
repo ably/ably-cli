@@ -38,7 +38,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
     count: Flags.integer({
       char: "c",
       default: 1,
-      description: "Number of messages to publish",
+      description: "Number of messages to publish (default: 1)",
     }),
     delay: Flags.integer({
       char: "d",

@@ -44,7 +44,7 @@ export default class RoomsList extends ChatBaseCommand {
     ...ChatBaseCommand.globalFlags,
     limit: Flags.integer({
       default: 100,
-      description: "Maximum number of rooms to return",
+      description: "Maximum number of rooms to return (default: 100)",
     }),
     prefix: Flags.string({
       char: "p",
