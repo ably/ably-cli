@@ -58,11 +58,11 @@ jobs:
         run: pnpm test:unit
         env:
           E2E_ABLY_API_KEY: ${{ secrets.E2E_ABLY_API_KEY }}
-          CLI_GENERAL_TESTS: true
+          ABLY_CLI_TEST_MODE: true
 
       - name: Run CLI Integration Tests
         run: pnpm test:integration
         env:
           E2E_ABLY_API_KEY: ${{ secrets.E2E_ABLY_API_KEY }}
-          CLI_GENERAL_TESTS: true
+          ABLY_CLI_TEST_MODE: true
 

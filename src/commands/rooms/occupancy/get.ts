@@ -164,7 +164,7 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
       
       // Force exit after cleanup
       setTimeout(() => {
-        if (process.env.NODE_ENV !== 'test') {
+        if (process.env.ABLY_CLI_TEST_MODE !== 'true') {
           process.exit(0);
         }
       }, 100);

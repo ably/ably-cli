@@ -370,7 +370,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
 
       // Don't show cleanup messages for minimal output
       // Ensure process exits cleanly so user doesn't need to press Ctrl+C twice
-      if (process.env.NODE_ENV !== 'test') {
+      if (process.env.ABLY_CLI_TEST_MODE !== 'true') {
         process.exit(0);
       }
     }

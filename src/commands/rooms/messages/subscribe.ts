@@ -144,7 +144,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
     await super.finally(err);
 
     // Force a graceful exit shortly after cleanup to avoid hanging (skip in tests)
-    if (process.env.NODE_ENV !== 'test') {
+    if (process.env.ABLY_CLI_TEST_MODE !== 'true') {
       setTimeout(() => {
         process.exit(0);
       }, 100);
