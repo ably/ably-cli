@@ -225,6 +225,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } else {
           this.error(errorMsg);
         }

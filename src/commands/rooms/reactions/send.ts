@@ -72,6 +72,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
                 flags,
               ),
             );
+            process.exitCode = 1;
           } else {
             this.error(errorMsg);
           }
@@ -220,6 +221,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(`Failed to send reaction: ${errorMsg}`);
       }

@@ -110,6 +110,7 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error fetching channel occupancy: ${error instanceof Error ? error.message : String(error)}`,

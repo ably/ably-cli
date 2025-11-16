@@ -175,6 +175,7 @@ export default class QueuesListCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error listing queues: ${error instanceof Error ? error.message : String(error)}`,

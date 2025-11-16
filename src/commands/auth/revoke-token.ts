@@ -149,6 +149,7 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
                 flags,
               ),
             );
+            process.exitCode = 1;
           } else {
             this.log("Error: Token not found or already revoked");
           }
