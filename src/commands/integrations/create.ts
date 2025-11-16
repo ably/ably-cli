@@ -150,7 +150,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.log(this.formatJsonOutput({ rule: createdRule }, flags));
       } else {
-        this.log(chalk.green("Integration Rule Created Successfully:"));
+        this.log(chalk.green("✓ Integration rule created successfully!"));
         this.log(`ID: ${createdRule.id}`);
         this.log(`App ID: ${createdRule.appId}`);
         this.log(`Rule Type: ${createdRule.ruleType}`);

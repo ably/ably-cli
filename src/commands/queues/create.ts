@@ -1,4 +1,5 @@
 import { Flags } from "@oclif/core";
+import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 
@@ -71,7 +72,7 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
           ),
         );
       } else {
-        this.log("Queue created successfully:");
+        this.log(chalk.green("✓ Queue created successfully!"));
         this.log(`Queue ID: ${createdQueue.id}`);
         this.log(`Name: ${createdQueue.name}`);
         this.log(`Region: ${createdQueue.region}`);

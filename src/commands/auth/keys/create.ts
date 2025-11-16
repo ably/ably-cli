@@ -1,4 +1,5 @@
 import { Flags } from "@oclif/core";
+import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 
@@ -112,7 +113,7 @@ export default class KeysCreateCommand extends ControlBaseCommand {
           ),
         );
       } else {
-        this.log(`\nKey created successfully!`);
+        this.log(chalk.green("✓ Key created successfully!"));
 
         const keyName = `${key.appId}.${key.id}`;
         this.log(`Key Name: ${keyName}`);
