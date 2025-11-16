@@ -100,6 +100,7 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error fetching room occupancy: ${error instanceof Error ? error.message : String(error)}`,
