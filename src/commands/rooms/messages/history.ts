@@ -28,8 +28,8 @@ export default class MessagesHistory extends ChatBaseCommand {
     ...ChatBaseCommand.globalFlags,
     limit: Flags.integer({
       char: "l",
-      default: 20,
-      description: "Maximum number of messages to retrieve",
+      default: 50,
+      description: "Maximum number of messages to retrieve (default: 50)",
     }),
     "show-metadata": Flags.boolean({
       default: false,
