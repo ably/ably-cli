@@ -162,6 +162,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error retrieving push notification logs: ${error instanceof Error ? error.message : String(error)}`,

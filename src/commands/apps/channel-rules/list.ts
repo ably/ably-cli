@@ -53,6 +53,7 @@ export default class ChannelRulesListCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           'No app specified. Use --app-id flag or select an app with "ably apps switch"',
@@ -204,6 +205,7 @@ export default class ChannelRulesListCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error listing channel rules: ${error instanceof Error ? error.message : String(error)}`,

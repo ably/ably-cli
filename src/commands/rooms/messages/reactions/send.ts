@@ -92,6 +92,7 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } else {
           this.error(errorMsg);
         }
@@ -257,6 +258,7 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(`Failed to send reaction: ${errorMsg}`);
       }

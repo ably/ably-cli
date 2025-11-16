@@ -227,6 +227,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(`Failed to subscribe to typing indicators: ${errorMsg}`);
       }

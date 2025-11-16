@@ -371,6 +371,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
         this.log(
           this.formatJsonOutput({ error: errorMsg, success: false }, flags),
         );
+        process.exitCode = 1;
       } else {
         this.error(errorMsg);
       }

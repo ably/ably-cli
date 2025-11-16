@@ -187,6 +187,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } // Error already logged by createSpacesClient
 
         return;
@@ -492,6 +493,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(`Failed to set cursor: ${errorMsg}`);
       }

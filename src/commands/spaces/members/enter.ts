@@ -148,6 +148,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
                 flags,
               ),
             );
+            process.exitCode = 1;
           } else {
             this.error(errorMsg);
           }
@@ -400,6 +401,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         this.log(
           this.formatJsonOutput({ error: errorMsg, success: false }, flags),
         );
+        process.exitCode = 1;
       } else {
         this.error(errorMsg);
       }

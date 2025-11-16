@@ -60,6 +60,7 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } else {
           this.error(error);
         }
@@ -100,6 +101,7 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
                 flags,
               ),
             );
+            process.exitCode = 1;
           } else {
             this.log("Deletion cancelled - app name did not match");
           }
@@ -124,6 +126,7 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
                 flags,
               ),
             );
+            process.exitCode = 1;
           } else {
             this.log("Deletion cancelled");
           }
@@ -177,6 +180,7 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error deleting app: ${error instanceof Error ? error.message : String(error)}`,

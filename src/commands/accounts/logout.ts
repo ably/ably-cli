@@ -50,6 +50,7 @@ export default class AccountsLogout extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(error);
       }
@@ -74,6 +75,7 @@ export default class AccountsLogout extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(error);
       }
@@ -138,6 +140,7 @@ export default class AccountsLogout extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(error);
       }

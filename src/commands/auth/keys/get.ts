@@ -62,6 +62,7 @@ export default class KeysGetCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
@@ -134,6 +135,7 @@ export default class KeysGetCommand extends ControlBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(
           `Error getting key details: ${error instanceof Error ? error.message : String(error)}`,

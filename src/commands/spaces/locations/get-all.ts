@@ -310,6 +310,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } else {
           this.error(
             `Error: ${error instanceof Error ? error.message : String(error)}`,

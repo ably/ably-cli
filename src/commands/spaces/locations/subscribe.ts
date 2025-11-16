@@ -353,6 +353,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } else {
           this.log(chalk.yellow(errorMsg));
         }
@@ -443,6 +444,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
                   flags,
                 ),
               );
+              process.exitCode = 1;
             } else {
               this.log(chalk.red(errorMsg));
             }
@@ -481,6 +483,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
               flags,
             ),
           );
+          process.exitCode = 1;
         } else {
           this.log(chalk.red(errorMsg));
         }
@@ -515,6 +518,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
             flags,
           ),
         );
+        process.exitCode = 1;
       } else {
         this.error(`Failed to subscribe to location updates: ${errorMsg}`);
       }
