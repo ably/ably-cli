@@ -65,6 +65,8 @@ export default class MessagesSubscribe extends ChatBaseCommand {
     }),
   };
 
+  static override strict = false;
+
   private chatClient: ChatClient | null = null;
   private roomNames: string[] = [];
   private cleanupInProgress: boolean = false;

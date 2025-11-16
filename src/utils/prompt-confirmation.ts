@@ -15,9 +15,12 @@ export function promptForConfirmation(message: string): Promise<boolean> {
   });
 
   // Add " [yes/no]" suffix if not already present
-  const promptMessage = message.includes("[yes/no]") || message.includes("[y/n]") || message.includes("[Y/N]")
-    ? message
-    : `${message} [yes/no]`;
+  const promptMessage =
+    message.includes("[yes/no]") ||
+    message.includes("[y/n]") ||
+    message.includes("[Y/N]")
+      ? message
+      : `${message} [yes/no]`;
 
   return new Promise<boolean>((resolve) => {
     rl.question(promptMessage, (answer) => {
