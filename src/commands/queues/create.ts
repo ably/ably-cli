@@ -20,7 +20,7 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
     }),
     "max-length": Flags.integer({
       default: 10_000,
-      description: "Maximum number of messages in the queue",
+      description: "Maximum number of messages in the queue (default: 10000)",
       required: false,
     }),
     name: Flags.string({
@@ -29,12 +29,12 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
     }),
     region: Flags.string({
       default: "us-east-1-a",
-      description: "Region for the queue",
+      description: "Region for the queue (default: us-east-1-a)",
       required: false,
     }),
     ttl: Flags.integer({
       default: 60,
-      description: "Time to live for messages in seconds",
+      description: "Time to live for messages in seconds (default: 60)",
       required: false,
     }),
   };

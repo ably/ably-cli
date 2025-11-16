@@ -38,7 +38,7 @@ export default class SpacesList extends SpacesBaseCommand {
     ...SpacesBaseCommand.globalFlags,
     limit: Flags.integer({
       default: 100,
-      description: "Maximum number of spaces to return",
+      description: "Maximum number of spaces to return (default: 100)",
     }),
     prefix: Flags.string({
       char: "p",

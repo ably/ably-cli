@@ -57,7 +57,7 @@ export default class MessagesSend extends ChatBaseCommand {
     count: Flags.integer({
       char: "c",
       default: 1,
-      description: "Number of messages to send",
+      description: "Number of messages to send (default: 1)",
     }),
     delay: Flags.integer({
       char: "d",
