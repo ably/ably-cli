@@ -6,7 +6,7 @@ import AppsSwitch from "./switch.js";
 
 export default class AppsDeleteCommand extends ControlBaseCommand {
   static args = {
-    id: Args.string({
+    appId: Args.string({
       description: "App ID to delete (uses current app if not specified)",
       required: false,
     }),
@@ -43,7 +43,7 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
     const controlApi = this.createControlApi(flags);
 
     // Use app ID from flag, argument, or current app (in that order)
-    let appIdToDelete = flags.app || args.id;
+    let appIdToDelete = flags.app || args.appId;
     if (!appIdToDelete) {
       appIdToDelete = this.configManager.getCurrentAppId();
       if (!appIdToDelete) {
