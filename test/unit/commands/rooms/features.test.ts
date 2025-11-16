@@ -11,6 +11,7 @@ import RoomsReactionsSend from "../../../../src/commands/rooms/reactions/send.js
 import RoomsReactionsSubscribe from "../../../../src/commands/rooms/reactions/subscribe.js";
 import RoomsTypingKeystroke from "../../../../src/commands/rooms/typing/keystroke.js";
 import RoomsTypingSubscribe from "../../../../src/commands/rooms/typing/subscribe.js";
+import { RoomStatus } from "@ably/chat";
 
 // Base testable class for room feature commands
 class TestableRoomCommand {
@@ -112,7 +113,12 @@ class TestableRoomsReactionsSend extends RoomsReactionsSend {
 
   public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
   public override async parse() { return this.testableCommand.parse(); }
-  protected override async createChatClient(flags: any) { return this.testableCommand.createChatClient(flags); }
+  protected override async createChatClient(flags: any) {
+    // Set _chatRealtimeClient as the parent class expects
+    (this as any)._chatRealtimeClient = this.testableCommand.mockRealtimeClient;
+    
+    return this.testableCommand.createChatClient(flags); 
+  }
   protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
   protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
   protected override interactiveHelper = this.testableCommand.interactiveHelper;
@@ -129,10 +135,10 @@ class TestableRoomsTypingKeystroke extends RoomsTypingKeystroke {
   public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
   public override async parse() { return this.testableCommand.parse(); }
   protected override async createChatClient(flags: any) { 
-    const client = this.testableCommand.createChatClient(flags);
     // Set _chatRealtimeClient as the parent class expects
     (this as any)._chatRealtimeClient = this.testableCommand.mockRealtimeClient;
-    return client;
+    
+    return this.testableCommand.createChatClient(flags);;
   }
   protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
   protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
@@ -384,6 +390,7 @@ describe("rooms feature commands", function () {
       mockRoom = {
         attach: sandbox.stub().resolves(),
         reactions: mockReactions,
+        onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
       };
 
       command.mockChatClient = {
@@ -416,7 +423,7 @@ describe("rooms feature commands", function () {
       expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be.true;
       expect(mockRoom.attach.calledOnce).to.be.true;
       expect(sendStub.calledOnce).to.be.true;
-      expect(sendStub.calledWith("👍")).to.be.true;
+      expect(sendStub.calledWith({ name: "👍", metadata: {} })).to.be.true;
     });
 
     it("should handle metadata in reactions", async function () {
@@ -431,11 +438,7 @@ describe("rooms feature commands", function () {
 
       expect(sendStub.calledOnce).to.be.true;
       const reactionCall = sendStub.getCall(0);
-      expect(reactionCall.args[0]).to.equal("🎉");
-      // Metadata would typically be passed as second argument
-      if (reactionCall.args[1]) {
-        expect(reactionCall.args[1]).to.deep.include({ intensity: "high" });
-      }
+      expect(reactionCall.args[0]).to.deep.equal({ name: "🎉", metadata: { intensity: "high" } });
     });
   });
 
@@ -443,19 +446,23 @@ describe("rooms feature commands", function () {
     let command: TestableRoomsTypingKeystroke;
     let mockRoom: any;
     let mockTyping: any;
-    let startStub: sinon.SinonStub;
+    let keystrokeStub: sinon.SinonStub;
 
     beforeEach(function () {
       command = new TestableRoomsTypingKeystroke([], mockConfig);
       
-      startStub = sandbox.stub().resolves();
+      keystrokeStub = sandbox.stub().resolves();
       mockTyping = {
-        start: startStub,
+        keystroke: keystrokeStub,
       };
 
       mockRoom = {
         attach: sandbox.stub().resolves(),
         typing: mockTyping,
+        onStatusChange: sandbox.stub().callsFake((listener) => {
+          listener({ current: RoomStatus.Attached })
+          return { off: sandbox.stub() }
+        }),
       };
 
       command.mockChatClient = {
@@ -483,11 +490,17 @@ describe("rooms feature commands", function () {
     });
 
     it("should start typing indicator", async function () {
-      await command.run();
+      command.run();
+      
+      // Wait for setup to complete
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be.true;
       expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(startStub.calledOnce).to.be.true;
+      expect(keystrokeStub.calledOnce).to.be.true;
+      
+      // Clean up
+      command.mockRealtimeClient.close();
     });
   });
 });
