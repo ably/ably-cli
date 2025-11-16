@@ -27,16 +27,19 @@ interface StatusChange {
 
 export default class MessagesSubscribe extends ChatBaseCommand {
   static override args = {
-    room: Args.string({
-      description: "The room to subscribe to messages from",
+    rooms: Args.string({
+      description: "Room name(s) to subscribe to messages from",
+      multiple: false,
       required: true,
     }),
   };
 
-  static override description = "Subscribe to messages in an Ably Chat room";
+  static override description =
+    "Subscribe to messages in one or more Ably Chat rooms";
 
   static override examples = [
     "$ ably rooms messages subscribe my-room",
+    "$ ably rooms messages subscribe room1 room2 room3",
     '$ ably rooms messages subscribe --api-key "YOUR_API_KEY" my-room',
     "$ ably rooms messages subscribe --show-metadata my-room",
     "$ ably rooms messages subscribe my-room --duration 30",
@@ -59,17 +62,182 @@ export default class MessagesSubscribe extends ChatBaseCommand {
   };
 
   private chatClient: ChatClient | null = null;
-  private roomName: string | null = null;
+  private roomNames: string[] = [];
   private cleanupInProgress: boolean = false;
 
+  private async subscribeToRoom(
+    roomName: string,
+    flags: Record<string, unknown>,
+  ): Promise<void> {
+    // Get the room
+    this.logCliEvent(
+      flags,
+      "room",
+      "gettingRoom",
+      `Getting room handle for ${roomName}`,
+    );
+    const room = await this.chatClient!.rooms.get(roomName, {});
+    this.logCliEvent(
+      flags,
+      "room",
+      "gotRoom",
+      `Got room handle for ${roomName}`,
+    );
+
+    // Setup message handler
+    this.logCliEvent(
+      flags,
+      "room",
+      "subscribingToMessages",
+      `Subscribing to messages in room ${roomName}`,
+    );
+    room.messages.subscribe((messageEvent: ChatMessageEvent) => {
+      const { message } = messageEvent;
+      const messageLog: ChatMessage = {
+        clientId: message.clientId,
+        text: message.text,
+        timestamp: message.timestamp,
+        ...(message.metadata ? { metadata: message.metadata } : {}),
+      };
+      this.logCliEvent(flags, "message", "received", "Message received", {
+        message: messageLog,
+        room: roomName,
+      });
+
+      if (this.shouldOutputJson(flags)) {
+        this.log(
+          this.formatJsonOutput(
+            {
+              message: messageLog,
+              room: roomName,
+              success: true,
+            },
+            flags,
+          ),
+        );
+      } else {
+        // Format message with timestamp, author and content
+        const timestamp = new Date(message.timestamp).toLocaleTimeString();
+        const author = message.clientId || "Unknown";
+
+        // Prefix with room name when multiple rooms
+        const roomPrefix =
+          this.roomNames.length > 1 ? `${chalk.magenta(`[${roomName}]`)} ` : "";
+
+        // Message content with consistent formatting
+        this.log(
+          `${roomPrefix}${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`${author}:`)} ${message.text}`,
+        );
+
+        // Show metadata if enabled and available
+        if (flags["show-metadata"] && message.metadata) {
+          this.log(
+            `${roomPrefix}${chalk.blue("  Metadata:")} ${chalk.yellow(this.formatJsonOutput(message.metadata, flags))}`,
+          );
+        }
+
+        this.log(""); // Empty line for better readability
+      }
+    });
+    this.logCliEvent(
+      flags,
+      "room",
+      "subscribedToMessages",
+      `Successfully subscribed to messages in room ${roomName}`,
+    );
+
+    // Subscribe to room status changes
+    this.logCliEvent(
+      flags,
+      "room",
+      "subscribingToStatus",
+      `Subscribing to status changes for room ${roomName}`,
+    );
+    room.onStatusChange((statusChange: unknown) => {
+      const change = statusChange as StatusChange;
+      this.logCliEvent(
+        flags,
+        "room",
+        `status-${change.current}`,
+        `Room status changed to ${change.current}`,
+        { reason: change.reason, room: roomName },
+      );
+      if (change.current === "attached") {
+        this.logCliEvent(
+          flags,
+          "room",
+          "statusAttached",
+          `Room ${roomName} status is ATTACHED.`,
+        );
+        // Log the ready signal for E2E tests
+        this.log(`Connected to room: ${roomName}`);
+        if (!this.shouldOutputJson(flags)) {
+          this.log(
+            chalk.green(
+              `✓ Subscribed to room: ${chalk.cyan(roomName)}. Listening for messages...`,
+            ),
+          );
+        }
+      } else if (change.current === "failed") {
+        const errorMsg = room.error?.message || "Unknown error";
+        if (this.shouldOutputJson(flags)) {
+          // Logged via logCliEvent
+        } else {
+          this.error(`Failed to attach to room ${roomName}: ${errorMsg}`);
+        }
+      }
+    });
+    this.logCliEvent(
+      flags,
+      "room",
+      "subscribedToStatus",
+      `Successfully subscribed to status changes for room ${roomName}`,
+    );
+
+    // Attach to the room
+    this.logCliEvent(
+      flags,
+      "room",
+      "attaching",
+      `Attaching to room ${roomName}`,
+    );
+    await room.attach();
+    this.logCliEvent(
+      flags,
+      "room",
+      "attachCallComplete",
+      `room.attach() call complete for ${roomName}. Waiting for status change to 'attached'.`,
+    );
+  }
+
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(MessagesSubscribe);
-    this.roomName = args.room; // Store for cleanup
+    const { flags } = await this.parse(MessagesSubscribe);
+    const _args = await this.parse(MessagesSubscribe);
+
+    // Get all room names from argv
+    this.roomNames = _args.argv as string[];
+
+    if (this.roomNames.length === 0) {
+      const errorMsg = "At least one room name is required";
+      this.logCliEvent(flags, "subscribe", "validationError", errorMsg, {
+        error: errorMsg,
+      });
+      if (this.shouldOutputJson(flags)) {
+        this.log(
+          this.formatJsonOutput({ error: errorMsg, success: false }, flags),
+        );
+        process.exitCode = 1;
+      } else {
+        this.error(errorMsg);
+      }
+      return;
+    }
+
     this.logCliEvent(
       flags,
       "subscribe.run",
       "start",
-      `Starting rooms messages subscribe for room: ${this.roomName}`,
+      `Starting rooms messages subscribe for rooms: ${this.roomNames.join(", ")}`,
     );
 
     try {
@@ -90,8 +258,15 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         "Chat and Ably clients created.",
       );
 
+      const roomList =
+        this.roomNames.length > 1
+          ? this.roomNames.map((r) => chalk.cyan(r)).join(", ")
+          : chalk.cyan(this.roomNames[0]);
+
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Attaching to room: ${chalk.cyan(this.roomName)}...`);
+        this.log(
+          `Attaching to room${this.roomNames.length > 1 ? "s" : ""}: ${roomList}...`,
+        );
       }
 
       if (!this.chatClient) {
@@ -103,143 +278,10 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         includeUserFriendlyMessages: true,
       });
 
-      // Get the room
-      this.logCliEvent(
-        flags,
-        "room",
-        "gettingRoom",
-        `Getting room handle for ${this.roomName}`,
-      );
-      const room = await this.chatClient.rooms.get(this.roomName);
-      this.logCliEvent(
-        flags,
-        "room",
-        "gotRoom",
-        `Got room handle for ${this.roomName}`,
-      );
-
-      // Setup message handler
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribingToMessages",
-        `Subscribing to messages in room ${this.roomName}`,
-      );
-      room.messages.subscribe((messageEvent: ChatMessageEvent) => {
-        const { message } = messageEvent;
-        const messageLog: ChatMessage = {
-          clientId: message.clientId,
-          text: message.text,
-          timestamp: message.timestamp,
-          ...(message.metadata ? { metadata: message.metadata } : {}),
-        };
-        this.logCliEvent(flags, "message", "received", "Message received", {
-          message: messageLog,
-          room: this.roomName,
-        });
-
-        if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                message: messageLog,
-                room: this.roomName,
-                success: true,
-              },
-              flags,
-            ),
-          );
-        } else {
-          // Format message with timestamp, author and content
-          const timestamp = new Date(message.timestamp).toLocaleTimeString();
-          const author = message.clientId || "Unknown";
-
-          // Message content with consistent formatting
-          this.log(
-            `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`${author}:`)} ${message.text}`,
-          );
-
-          // Show metadata if enabled and available
-          if (flags["show-metadata"] && message.metadata) {
-            this.log(
-              `${chalk.blue("  Metadata:")} ${chalk.yellow(this.formatJsonOutput(message.metadata, flags))}`,
-            );
-          }
-
-          this.log(""); // Empty line for better readability
-        }
-      });
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribedToMessages",
-        `Successfully subscribed to messages in room ${this.roomName}`,
-      );
-
-      // Subscribe to room status changes
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribingToStatus",
-        `Subscribing to status changes for room ${this.roomName}`,
-      );
-      room.onStatusChange((statusChange: unknown) => {
-        const change = statusChange as StatusChange;
-        this.logCliEvent(
-          flags,
-          "room",
-          `status-${change.current}`,
-          `Room status changed to ${change.current}`,
-          { reason: change.reason, room: this.roomName },
-        );
-        if (change.current === "attached") {
-          this.logCliEvent(
-            flags,
-            "room",
-            "statusAttached",
-            "Room status is ATTACHED.",
-          );
-          // Log the ready signal for E2E tests
-          this.log(`Connected to room: ${this.roomName}`);
-          if (!this.shouldOutputJson(flags)) {
-            this.log(
-              chalk.green(
-                `✓ Subscribed to room: ${chalk.cyan(this.roomName)}. Listening for messages...`,
-              ),
-            );
-          }
-          // If we want to suppress output, we just don't log anything
-        } else if (change.current === "failed") {
-          const errorMsg = room.error?.message || "Unknown error";
-          if (this.shouldOutputJson(flags)) {
-            // Logged via logCliEvent
-          } else {
-            this.error(`Failed to attach to room: ${errorMsg}`);
-          }
-        }
-      });
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribedToStatus",
-        `Successfully subscribed to status changes for room ${this.roomName}`,
-      );
-
-      // Attach to the room
-      this.logCliEvent(
-        flags,
-        "room",
-        "attaching",
-        `Attaching to room ${this.roomName}`,
-      );
-      await room.attach();
-      this.logCliEvent(
-        flags,
-        "room",
-        "attachCallComplete",
-        `room.attach() call complete for ${this.roomName}. Waiting for status change to 'attached'.`,
-      );
-      // Note: successful attach logged by onStatusChange handler
+      // Subscribe to all rooms
+      for (const roomName of this.roomNames) {
+        await this.subscribeToRoom(roomName, flags);
+      }
 
       this.logCliEvent(
         flags,
@@ -261,13 +303,13 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         "subscribe",
         "fatalError",
         `Failed to subscribe to messages: ${errorMsg}`,
-        { error: errorMsg, room: this.roomName },
+        { error: errorMsg, rooms: this.roomNames },
       );
 
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
-            { error: errorMsg, room: this.roomName, success: false },
+            { error: errorMsg, rooms: this.roomNames, success: false },
             flags,
           ),
         );
