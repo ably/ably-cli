@@ -244,7 +244,8 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
     return new Promise((resolve) => {
       rl.question(prompt, (answer) => {
         rl.close();
-        resolve(answer.toLowerCase() === "y");
+        const response = answer.toLowerCase().trim();
+        resolve(response === "y" || response === "yes");
       });
     });
   }
