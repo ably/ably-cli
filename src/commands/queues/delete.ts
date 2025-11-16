@@ -1,7 +1,7 @@
 import { Args, Flags } from "@oclif/core";
-import * as readline from "node:readline";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class QueuesDeleteCommand extends ControlBaseCommand {
   static args = {
@@ -69,8 +69,8 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
           `Messages: ${queue.messages.total} total (${queue.messages.ready} ready, ${queue.messages.unacknowledged} unacknowledged)`,
         );
 
-        const confirmed = await this.promptForConfirmation(
-          `\nAre you sure you want to delete queue "${queue.name}"? [y/N]`,
+        const confirmed = await promptForConfirmation(
+          `\nAre you sure you want to delete queue "${queue.name}"?`,
         );
 
         if (!confirmed) {
@@ -87,19 +87,5 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
         `Error deleting queue: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
-  }
-
-  private async promptForConfirmation(message: string): Promise<boolean> {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    return new Promise<boolean>((resolve) => {
-      rl.question(message + " ", (answer) => {
-        rl.close();
-        resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes");
-      });
-    });
   }
 }

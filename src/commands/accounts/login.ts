@@ -6,6 +6,7 @@ import open from "open";
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { ControlApi } from "../../services/control-api.js";
 import { displayLogo } from "../../utils/logo.js";
+import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 // Moved function definition outside the class
 function validateAndGetAlias(
@@ -123,7 +124,7 @@ export default class AccountsLogin extends ControlBaseCommand {
         );
 
         // Ask if they want to provide an alias
-        const shouldProvideAlias = await this.promptYesNo(
+        const shouldProvideAlias = await promptForConfirmation(
           "Would you like to provide an alias for this account?",
         );
 
@@ -143,7 +144,7 @@ export default class AccountsLogin extends ControlBaseCommand {
         );
 
         // Ask if they want to provide an alias
-        const shouldProvideAlias = await this.promptYesNo(
+        const shouldProvideAlias = await promptForConfirmation(
           "Would you like to provide an alias for this account?",
         );
 
@@ -210,7 +211,7 @@ export default class AccountsLogin extends ControlBaseCommand {
           // No apps exist - offer to create one
           this.log("\nNo apps found in your account.");
 
-          const shouldCreateApp = await this.promptYesNo(
+          const shouldCreateApp = await promptForConfirmation(
             "Would you like to create your first app now?",
           );
 
@@ -463,34 +464,6 @@ export default class AccountsLogin extends ControlBaseCommand {
         rl.close();
         resolve(token.trim());
       });
-    });
-  }
-
-  private promptYesNo(question: string): Promise<boolean> {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    return new Promise((resolve) => {
-      const askQuestion = () => {
-        rl.question(`${question} (y/n) `, (answer) => {
-          const lowercaseAnswer = answer.toLowerCase().trim();
-
-          if (lowercaseAnswer === "y" || lowercaseAnswer === "yes") {
-            rl.close();
-            resolve(true);
-          } else if (lowercaseAnswer === "n" || lowercaseAnswer === "no") {
-            rl.close();
-            resolve(false);
-          } else {
-            this.log("Please answer with yes/y or no/n");
-            askQuestion();
-          }
-        });
-      };
-
-      askQuestion();
     });
   }
 }

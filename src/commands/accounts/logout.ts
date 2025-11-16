@@ -1,7 +1,7 @@
 import { Args, Flags } from "@oclif/core";
-import * as readline from "node:readline";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class AccountsLogout extends ControlBaseCommand {
   static override args = {
@@ -155,16 +155,6 @@ export default class AccountsLogout extends ControlBaseCommand {
       "This includes access tokens and any app configurations associated with this account.",
     );
 
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    return new Promise((resolve) => {
-      rl.question("Are you sure you want to proceed? (y/N): ", (answer) => {
-        rl.close();
-        resolve(answer.toLowerCase() === "y");
-      });
-    });
+    return promptForConfirmation("Are you sure you want to proceed?");
   }
 }
