@@ -95,7 +95,8 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
     return new Promise((resolve) => {
       rl.question(message, (answer) => {
         rl.close();
-        resolve(answer.toLowerCase() === "y");
+        const response = answer.toLowerCase().trim();
+        resolve(response === "y" || response === "yes");
       });
     });
   }
