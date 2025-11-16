@@ -60,7 +60,9 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
         this.log(`Type: ${integration.ruleType}`);
         this.log(`Request Mode: ${integration.requestMode}`);
         this.log(`Source Type: ${integration.source.type}`);
-        this.log(`Channel Filter: ${integration.source.channelFilter || "(none)"}`);
+        this.log(
+          `Channel Filter: ${integration.source.channelFilter || "(none)"}`,
+        );
 
         const confirmed = await promptForConfirmation(
           `\nAre you sure you want to delete integration "${integration.id}"?`,

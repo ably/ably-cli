@@ -66,11 +66,13 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
   static override flags = {
     ...AblyBaseCommand.globalFlags,
     channels: Flags.string({
-      description: "Comma-separated list of channel names to publish to (mutually exclusive with --channels-json and --spec)",
+      description:
+        "Comma-separated list of channel names to publish to (mutually exclusive with --channels-json and --spec)",
       exclusive: ["channels-json", "spec"],
     }),
     "channels-json": Flags.string({
-      description: "JSON array of channel names to publish to (mutually exclusive with --channels and --spec)",
+      description:
+        "JSON array of channel names to publish to (mutually exclusive with --channels and --spec)",
       exclusive: ["channels", "spec"],
     }),
     encoding: Flags.string({
@@ -80,7 +82,8 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
     }),
     name: Flags.string({
       char: "n",
-      description: "The event name (if not specified in the message JSON, not used with --spec)",
+      description:
+        "The event name (if not specified in the message JSON, not used with --spec)",
       exclusive: ["spec"],
     }),
     spec: Flags.string({

@@ -6,7 +6,7 @@ import { ControlBaseCommand } from "../../control-base-command.js";
 // Interface for basic integration data structure
 interface IntegrationData {
   requestMode: string;
-  ruleType: string;  // API property name
+  ruleType: string; // API property name
   source: {
     channelFilter: string;
     type: string;
@@ -96,7 +96,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
       // Prepare integration data
       const integrationData: IntegrationData = {
         requestMode: flags["request-mode"] as string,
-        ruleType: flags["rule-type"] as string,  // API property name
+        ruleType: flags["rule-type"] as string, // API property name
         source: {
           channelFilter: flags["channel-filter"] || "",
           type: flags["source-type"],
@@ -145,17 +145,24 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
         }
       }
 
-      const createdIntegration = await controlApi.createRule(appId, integrationData);
+      const createdIntegration = await controlApi.createRule(
+        appId,
+        integrationData,
+      );
 
       if (this.shouldOutputJson(flags)) {
-        this.log(this.formatJsonOutput({ integration: createdIntegration }, flags));
+        this.log(
+          this.formatJsonOutput({ integration: createdIntegration }, flags),
+        );
       } else {
         this.log(chalk.green("✓ Integration created successfully!"));
         this.log(`ID: ${createdIntegration.id}`);
         this.log(`App ID: ${createdIntegration.appId}`);
         this.log(`Type: ${createdIntegration.ruleType}`);
         this.log(`Request Mode: ${createdIntegration.requestMode}`);
-        this.log(`Source Channel Filter: ${createdIntegration.source.channelFilter}`);
+        this.log(
+          `Source Channel Filter: ${createdIntegration.source.channelFilter}`,
+        );
         this.log(`Source Type: ${createdIntegration.source.type}`);
         this.log(
           `Target: ${this.formatJsonOutput(createdIntegration.target as Record<string, unknown>, flags)}`,
