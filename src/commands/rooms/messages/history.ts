@@ -156,7 +156,7 @@ export default class MessagesHistory extends ChatBaseCommand {
           const messagesInOrder = [...items].reverse();
           for (const message of messagesInOrder) {
             // Format message with timestamp, author and content
-            const timestamp = new Date(message.timestamp).toLocaleTimeString();
+            const timestamp = new Date(message.timestamp).toISOString();
             const author = message.clientId || "Unknown";
 
             this.log(

@@ -44,6 +44,10 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       description: "Data to include with the member (JSON format)",
       required: false,
     }),
+    "sequence-numbers": Flags.boolean({
+      default: false,
+      description: "Include sequence numbers in output",
+    }),
   };
 
   private chatClient: ChatClient | null = null;
@@ -55,6 +59,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
   private commandFlags: Interfaces.InferredFlags<
     typeof RoomsPresenceEnter.flags
   > | null = null;
+  private sequenceCounter = 0;
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsPresenceEnter);
@@ -145,12 +150,16 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
         currentRoom.presence.subscribe((event: PresenceEvent) => {
           const member = event.member;
           if (member.clientId !== this.chatClient?.clientId) {
+            this.sequenceCounter++;
             const timestamp = new Date().toISOString();
             const eventData = {
               type: event.type,
               member: { clientId: member.clientId, data: member.data },
               room: this.roomName,
               timestamp,
+              ...(flags["sequence-numbers"]
+                ? { sequence: this.sequenceCounter }
+                : {}),
             };
             this.logCliEvent(
               flags,
@@ -178,8 +187,11 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
                 actionSymbol = "⟲";
                 actionColor = chalk.yellow;
               }
+              const sequencePrefix = flags["sequence-numbers"]
+                ? `${chalk.dim(`[${this.sequenceCounter}]`)}`
+                : "";
               this.log(
-                `[${timestamp}] ${actionColor(actionSymbol)} ${chalk.blue(member.clientId || "Unknown")} ${actionColor(event.type)}`,
+                `[${timestamp}]${sequencePrefix} ${actionColor(actionSymbol)} ${chalk.blue(member.clientId || "Unknown")} ${actionColor(event.type)}`,
               );
               if (
                 member.data &&

@@ -63,12 +63,17 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       default: 0,
       description: "Number of messages to rewind when subscribing",
     }),
+    "sequence-numbers": Flags.boolean({
+      default: false,
+      description: "Include sequence numbers in output",
+    }),
   };
 
   static override strict = false;
 
   private cleanupInProgress = false;
   private client: Ably.Realtime | null = null;
+  private sequenceCounter = 0;
 
   private async properlyCloseAblyClient(): Promise<void> {
     if (
@@ -225,6 +230,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
         attachPromises.push(attachPromise);
 
         channel.subscribe((message: Ably.Message) => {
+          this.sequenceCounter++;
           const timestamp = message.timestamp
             ? new Date(message.timestamp).toISOString()
             : new Date().toISOString();
@@ -237,6 +243,9 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
             event: message.name || "(none)",
             id: message.id,
             timestamp,
+            ...(flags["sequence-numbers"]
+              ? { sequence: this.sequenceCounter }
+              : {}),
           };
           this.logCliEvent(
             flags,
@@ -250,10 +259,13 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
             this.log(this.formatJsonOutput(messageEvent, flags));
           } else {
             const name = message.name || "(none)";
+            const sequencePrefix = flags["sequence-numbers"]
+              ? `${chalk.dim(`[${this.sequenceCounter}]`)}`
+              : "";
 
             // Message header with timestamp and channel info
             this.log(
-              `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`Channel: ${channel.name}`)} | ${chalk.yellow(`Event: ${name}`)}`,
+              `${chalk.gray(`[${timestamp}]`)}${sequencePrefix} ${chalk.cyan(`Channel: ${channel.name}`)} | ${chalk.yellow(`Event: ${name}`)}`,
             );
 
             // Message data with consistent formatting
