@@ -4,7 +4,7 @@ import chalk from "chalk";
 import { ControlBaseCommand } from "../../control-base-command.js";
 
 export default class IntegrationsListCommand extends ControlBaseCommand {
-  static description = "List all integration rules";
+  static description = "List all integrations";
 
   static examples = [
     "$ ably integrations list",
@@ -16,7 +16,7 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
     ...ControlBaseCommand.globalFlags,
 
     app: Flags.string({
-      description: "App ID or name to list integration rules for",
+      description: "App ID or name to list integrations for",
       required: false,
     }),
   };
@@ -57,58 +57,58 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
         return;
       }
 
-      const rules = await controlApi.listRules(appId);
+      const integrations = await controlApi.listRules(appId);
 
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
             {
               appId,
-              rules: rules.map((rule) => ({
-                appId: rule.appId,
-                created: new Date(rule.created).toISOString(),
-                id: rule.id,
-                modified: new Date(rule.modified).toISOString(),
-                requestMode: rule.requestMode,
+              integrations: integrations.map((integration) => ({
+                appId: integration.appId,
+                created: new Date(integration.created).toISOString(),
+                id: integration.id,
+                modified: new Date(integration.modified).toISOString(),
+                requestMode: integration.requestMode,
                 source: {
-                  channelFilter: rule.source.channelFilter || null,
-                  type: rule.source.type,
+                  channelFilter: integration.source.channelFilter || null,
+                  type: integration.source.type,
                 },
-                target: rule.target,
-                type: rule.ruleType,
-                version: rule.version,
+                target: integration.target,
+                type: integration.ruleType,
+                version: integration.version,
               })),
               success: true,
               timestamp: new Date().toISOString(),
-              total: rules.length,
+              total: integrations.length,
             },
             flags,
           ),
         );
       } else {
-        if (rules.length === 0) {
-          this.log("No integration rules found");
+        if (integrations.length === 0) {
+          this.log("No integrations found");
           return;
         }
 
-        this.log(`Found ${rules.length} integration rules:\n`);
+        this.log(`Found ${integrations.length} integrations:\n`);
 
-        for (const rule of rules) {
-          this.log(chalk.bold(`Rule ID: ${rule.id}`));
-          this.log(`  App ID: ${rule.appId}`);
-          this.log(`  Type: ${rule.ruleType}`);
-          this.log(`  Request Mode: ${rule.requestMode}`);
-          this.log(`  Source Type: ${rule.source.type}`);
+        for (const integration of integrations) {
+          this.log(chalk.bold(`Integration ID: ${integration.id}`));
+          this.log(`  App ID: ${integration.appId}`);
+          this.log(`  Type: ${integration.ruleType}`);
+          this.log(`  Request Mode: ${integration.requestMode}`);
+          this.log(`  Source Type: ${integration.source.type}`);
           this.log(
-            `  Channel Filter: ${rule.source.channelFilter || "(none)"}`,
+            `  Channel Filter: ${integration.source.channelFilter || "(none)"}`,
           );
           this.log(
-            `  Target: ${this.formatJsonOutput(rule.target as Record<string, unknown>, flags).replaceAll("\n", "\n    ")}`,
+            `  Target: ${this.formatJsonOutput(integration.target as Record<string, unknown>, flags).replaceAll("\n", "\n    ")}`,
           );
-          this.log(`  Version: ${rule.version}`);
-          this.log(`  Created: ${this.formatDate(rule.created)}`);
-          this.log(`  Updated: ${this.formatDate(rule.modified)}`);
-          this.log(""); // Add a blank line between rules
+          this.log(`  Version: ${integration.version}`);
+          this.log(`  Created: ${this.formatDate(integration.created)}`);
+          this.log(`  Updated: ${this.formatDate(integration.modified)}`);
+          this.log(""); // Add a blank line between integrations
         }
       }
     } catch (error) {
@@ -127,7 +127,7 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
         process.exitCode = 1;
       } else {
         this.error(
-          `Error listing integration rules: ${error instanceof Error ? error.message : String(error)}`,
+          `Error listing integrations: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     }

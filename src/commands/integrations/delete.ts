@@ -6,24 +6,24 @@ import { ControlBaseCommand } from "../../control-base-command.js";
 
 export default class IntegrationsDeleteCommand extends ControlBaseCommand {
   static args = {
-    ruleId: Args.string({
-      description: "The rule ID to delete",
+    integrationId: Args.string({
+      description: "The integration ID to delete",
       required: true,
     }),
   };
 
-  static description = "Delete an integration rule";
+  static description = "Delete an integration";
 
   static examples = [
-    "$ ably integrations delete rule123",
-    '$ ably integrations delete rule123 --app "My App"',
-    "$ ably integrations delete rule123 --force",
+    "$ ably integrations delete integration123",
+    '$ ably integrations delete integration123 --app "My App"',
+    "$ ably integrations delete integration123 --force",
   ];
 
   static flags = {
     ...ControlBaseCommand.globalFlags,
     app: Flags.string({
-      description: "App ID or name to delete the integration rule from",
+      description: "App ID or name to delete the integration from",
       required: false,
     }),
     force: Flags.boolean({
@@ -50,20 +50,20 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
         return;
       }
 
-      // Get rule details for confirmation
-      const rule = await controlApi.getRule(appId, args.ruleId);
+      // Get integration details for confirmation
+      const integration = await controlApi.getRule(appId, args.integrationId);
 
       // If not using force flag, prompt for confirmation
       if (!flags.force) {
-        this.log(`\nYou are about to delete the following integration rule:`);
-        this.log(`Rule ID: ${rule.id}`);
-        this.log(`Type: ${rule.ruleType}`);
-        this.log(`Request Mode: ${rule.requestMode}`);
-        this.log(`Source Type: ${rule.source.type}`);
-        this.log(`Channel Filter: ${rule.source.channelFilter || "(none)"}`);
+        this.log(`\nYou are about to delete the following integration:`);
+        this.log(`Integration ID: ${integration.id}`);
+        this.log(`Type: ${integration.ruleType}`);
+        this.log(`Request Mode: ${integration.requestMode}`);
+        this.log(`Source Type: ${integration.source.type}`);
+        this.log(`Channel Filter: ${integration.source.channelFilter || "(none)"}`);
 
         const confirmed = await this.promptForConfirmation(
-          `\nAre you sure you want to delete integration rule "${rule.id}"? [y/N]`,
+          `\nAre you sure you want to delete integration "${integration.id}"? [y/N]`,
         );
 
         if (!confirmed) {
@@ -72,16 +72,16 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
         }
       }
 
-      await controlApi.deleteRule(appId, args.ruleId);
+      await controlApi.deleteRule(appId, args.integrationId);
 
-      this.log(chalk.green("Integration Rule Deleted Successfully:"));
-      this.log(`ID: ${rule.id}`);
-      this.log(`App ID: ${rule.appId}`);
-      this.log(`Rule Type: ${rule.ruleType}`);
-      this.log(`Source Type: ${rule.source.type}`);
+      this.log(chalk.green("✓ Integration deleted successfully!"));
+      this.log(`ID: ${integration.id}`);
+      this.log(`App ID: ${integration.appId}`);
+      this.log(`Type: ${integration.ruleType}`);
+      this.log(`Source Type: ${integration.source.type}`);
     } catch (error) {
       this.error(
-        `Error deleting integration rule: ${error instanceof Error ? error.message : String(error)}`,
+        `Error deleting integration: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
