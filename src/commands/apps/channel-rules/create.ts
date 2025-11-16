@@ -171,7 +171,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
           ),
         );
       } else {
-        this.log("Channel rule created successfully:");
+        this.log(chalk.green("✓ Channel rule created successfully!"));
         this.log(`ID: ${createdNamespace.id}`);
         this.log(
           `Persisted: ${createdNamespace.persisted ? chalk.green("Yes") : "No"}`,
