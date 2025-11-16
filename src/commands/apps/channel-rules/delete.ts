@@ -1,8 +1,8 @@
 import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
-import * as readline from "node:readline";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
   static args = {
@@ -167,8 +167,8 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
 
         this.log(`Created: ${this.formatDate(namespace.created)}`);
 
-        const confirmed = await this.promptForConfirmation(
-          `\nAre you sure you want to delete channel rule with ID "${namespace.id}"? [y/N]`,
+        const confirmed = await promptForConfirmation(
+          `\nAre you sure you want to delete channel rule with ID "${namespace.id}"?`,
         );
 
         if (!confirmed) {
@@ -233,20 +233,5 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
         );
       }
     }
-  }
-
-  private promptForConfirmation(prompt: string): Promise<boolean> {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    return new Promise((resolve) => {
-      rl.question(prompt, (answer) => {
-        rl.close();
-        const response = answer.toLowerCase().trim();
-        resolve(response === "y" || response === "yes");
-      });
-    });
   }
 }

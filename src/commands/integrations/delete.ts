@@ -1,8 +1,8 @@
 import { Args, Flags } from "@oclif/core";
-import * as readline from "node:readline";
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class IntegrationsDeleteCommand extends ControlBaseCommand {
   static args = {
@@ -62,8 +62,8 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
         this.log(`Source Type: ${integration.source.type}`);
         this.log(`Channel Filter: ${integration.source.channelFilter || "(none)"}`);
 
-        const confirmed = await this.promptForConfirmation(
-          `\nAre you sure you want to delete integration "${integration.id}"? [y/N]`,
+        const confirmed = await promptForConfirmation(
+          `\nAre you sure you want to delete integration "${integration.id}"?`,
         );
 
         if (!confirmed) {
@@ -84,20 +84,5 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
         `Error deleting integration: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
-  }
-
-  private async promptForConfirmation(message: string): Promise<boolean> {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    return new Promise((resolve) => {
-      rl.question(message, (answer) => {
-        rl.close();
-        const response = answer.toLowerCase().trim();
-        resolve(response === "y" || response === "yes");
-      });
-    });
   }
 }

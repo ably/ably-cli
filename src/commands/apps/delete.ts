@@ -2,6 +2,7 @@ import { Args, Flags } from "@oclif/core";
 import * as readline from "node:readline";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 import AppsSwitch from "./switch.js";
 
 export default class AppsDeleteCommand extends ControlBaseCommand {
@@ -109,8 +110,8 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
           return;
         }
 
-        const confirmed = await this.promptForConfirmation(
-          `\nAre you sure you want to delete app "${app.name}" (${app.id})? This action cannot be undone. [y/N]`,
+        const confirmed = await promptForConfirmation(
+          `\nAre you sure you want to delete app "${app.name}" (${app.id})? This action cannot be undone.`,
         );
 
         if (!confirmed) {
@@ -203,20 +204,6 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
           resolve(answer === appName);
         },
       );
-    });
-  }
-
-  private promptForConfirmation(message: string): Promise<boolean> {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    return new Promise<boolean>((resolve) => {
-      rl.question(message + " ", (answer) => {
-        rl.close();
-        resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes");
-      });
     });
   }
 }
