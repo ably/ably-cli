@@ -138,7 +138,7 @@ class TestableRoomsTypingKeystroke extends RoomsTypingKeystroke {
     // Set _chatRealtimeClient as the parent class expects
     (this as any)._chatRealtimeClient = this.testableCommand.mockRealtimeClient;
     
-    return this.testableCommand.createChatClient(flags);;
+    return this.testableCommand.createChatClient(flags);
   }
   protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
   protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }

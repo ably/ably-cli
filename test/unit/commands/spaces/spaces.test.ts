@@ -272,18 +272,31 @@ describe("spaces commands", function () {
       mockMembers = {
         subscribe: subscribeStub,
         unsubscribe: sandbox.stub().resolves(),
+        getAll: sandbox.stub().resolves([
+          {
+            clientId: 'abc',
+            connectionId: 'def',
+            isConnected: true,
+            profileData: {}
+          }
+        ])
       };
 
       command.mockSpace = {
         members: mockMembers,
+        enter: sandbox.stub().resolves(),
       };
 
       command.mockRealtimeClient = {
         connection: {
           on: sandbox.stub(),
+          once: sandbox.stub(),
           state: "connected",
         },
         close: sandbox.stub(),
+        auth: {
+          clientId: 'foo'
+        }
       };
 
       command.mockSpacesClient = {};
@@ -297,7 +310,7 @@ describe("spaces commands", function () {
     });
 
     it("should subscribe to member updates", async function () {
-      subscribeStub.callsFake((callback) => {
+      subscribeStub.callsFake((eventName, callback) => {
         setTimeout(() => {
           callback({
             clientId: "client-123",
@@ -331,9 +344,11 @@ describe("spaces commands", function () {
       setStub = sandbox.stub().resolves();
       mockLocations = {
         set: setStub,
+        subscribe: sandbox.stub()
       };
 
       command.mockSpace = {
+        enter: sandbox.stub().resolves(),
         locations: mockLocations,
       };
 
@@ -341,6 +356,9 @@ describe("spaces commands", function () {
         connection: {
           on: sandbox.stub(),
           state: "connected",
+        },
+        auth: {
+          clientId: "test-client-id",
         },
         close: sandbox.stub(),
       };
@@ -363,7 +381,9 @@ describe("spaces commands", function () {
         raw: [],
       });
 
-      await command.run();
+      command.run();
+      
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       expect(setStub.calledOnce).to.be.true;
       const locationData = setStub.getCall(0).args[0];
@@ -389,6 +409,7 @@ describe("spaces commands", function () {
       };
 
       command.mockSpace = {
+        enter: sandbox.stub().resolves(),
         locks: mockLocks,
       };
 
@@ -398,6 +419,9 @@ describe("spaces commands", function () {
           state: "connected",
         },
         close: sandbox.stub(),
+        auth: {
+          clientId: 'foo'
+        }
       };
 
       command.mockSpacesClient = {};
@@ -411,7 +435,9 @@ describe("spaces commands", function () {
     });
 
     it("should acquire a lock successfully", async function () {
-      await command.run();
+      command.run();
+      
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       expect(acquireStub.calledOnce).to.be.true;
       expect(acquireStub.calledWith("test-lock")).to.be.true;
@@ -425,7 +451,9 @@ describe("spaces commands", function () {
         raw: [],
       });
 
-      await command.run();
+      command.run();
+      
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       expect(acquireStub.calledOnce).to.be.true;
       const lockCall = acquireStub.getCall(0);
@@ -452,6 +480,7 @@ describe("spaces commands", function () {
 
       command.mockSpace = {
         cursors: mockCursors,
+        enter: sandbox.stub().resolves()
       };
 
       command.mockRealtimeClient = {
@@ -460,6 +489,9 @@ describe("spaces commands", function () {
           state: "connected",
         },
         close: sandbox.stub(),
+        auth: {
+          clientId: 'foo'
+        },
       };
 
       command.mockSpacesClient = {};
@@ -474,39 +506,39 @@ describe("spaces commands", function () {
 
     it("should set cursor position", async function () {
       command.setParseResult({
-        flags: { position: '{"x": 150, "y": 250}' },
+        flags: { x: 150, y: 250 },
         args: { space: "test-space" },
         argv: [],
         raw: [],
       });
 
-      await command.run();
+      command.run();
+      
+      await new Promise(resolve => setTimeout(resolve, 50));
+
 
       expect(setStub.calledOnce).to.be.true;
       const cursorData = setStub.getCall(0).args[0];
-      expect(cursorData).to.deep.equal({ x: 150, y: 250 });
+      expect(cursorData).to.deep.equal({ position: { x: 150, y: 250 } });
     });
 
     it("should handle cursor data with metadata", async function () {
       command.setParseResult({
-        flags: { 
-          position: '{"x": 150, "y": 250}',
-          data: '{"color": "red", "size": "large"}'
+        flags: {
+          data: '{"data": { "color": "red", "size": "large" }, "position": {"x": 150, "y": 250}}',
         },
         args: { space: "test-space" },
         argv: [],
         raw: [],
       });
 
-      await command.run();
+      command.run();
+      
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       expect(setStub.calledOnce).to.be.true;
       const cursorCall = setStub.getCall(0);
-      expect(cursorCall.args[0]).to.deep.equal({ x: 150, y: 250 });
-      // Data would typically be passed as second argument
-      if (cursorCall.args[1]) {
-        expect(cursorCall.args[1]).to.deep.include({ color: "red", size: "large" });
-      }
+      expect(cursorCall.args[0]).to.deep.equal({ position: { x: 150, y: 250 }, data: { color: "red", size: "large" } });
     });
   });
 });

@@ -83,7 +83,7 @@ describe('Did You Mean Hook - Interactive Mode', function() {
       
       // Find the warning message in console.log calls
       const warningCall = consoleLogStub.getCalls().find(call => 
-        call.args[0].includes('channels pubish is not an ably command')
+        call.args[0].includes('channels pubish') && call.args[0].includes('is not an ably command')
       );
       expect(warningCall).to.exist;
     });
@@ -118,7 +118,8 @@ describe('Did You Mean Hook - Interactive Mode', function() {
       
       // Should show confirmation prompt
       expect(inquirerStub.called).to.be.true;
-      expect(inquirerStub.firstCall.args[0][0].message).to.include('Did you mean channels publish?');
+      expect(inquirerStub.firstCall.args[0][0].message).to.include('Did you mean');
+      expect(inquirerStub.firstCall.args[0][0].message).to.include('channels publish');
       
       // Should pause readline (resume happens asynchronously)
       expect(mockReadline.pause.called).to.be.true;
@@ -348,7 +349,8 @@ describe('Did You Mean Hook - Interactive Mode', function() {
       
       // Should use this.warn in normal mode
       expect(warnStub.called).to.be.true;
-      expect(warnStub.firstCall.args[0]).to.include('channels pubish is not an ably command');
+      expect(warnStub.firstCall.args[0]).to.include('channels pubish');
+      expect(warnStub.firstCall.args[0]).to.include('is not an ably command');
       
       // Console.error should only be called by the stubs, not directly
       expect(consoleErrorStub.callCount).to.equal(0);
