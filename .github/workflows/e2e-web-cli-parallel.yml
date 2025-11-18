@@ -87,6 +87,7 @@ jobs:
     env:
       E2E_ABLY_API_KEY: ${{ secrets.E2E_ABLY_API_KEY }}
       CI_BYPASS_SECRET: ${{ secrets.CI_BYPASS_SECRET }}
+      E2E_ABLY_ACCESS_TOKEN: ${{ secrets.E2E_ABLY_ACCESS_TOKEN }}
       E2E_TESTS: true
       HEADLESS: true
       TEST_GROUP: auth
@@ -144,6 +145,7 @@ jobs:
     env:
       E2E_ABLY_API_KEY: ${{ secrets.E2E_ABLY_API_KEY }}
       CI_BYPASS_SECRET: ${{ secrets.CI_BYPASS_SECRET }}
+      E2E_ABLY_ACCESS_TOKEN: ${{ secrets.E2E_ABLY_ACCESS_TOKEN }}
       E2E_TESTS: true
       HEADLESS: true
       TEST_GROUP: session
@@ -202,6 +204,7 @@ jobs:
     env:
       E2E_ABLY_API_KEY: ${{ secrets.E2E_ABLY_API_KEY }}
       CI_BYPASS_SECRET: ${{ secrets.CI_BYPASS_SECRET }}
+      E2E_ABLY_ACCESS_TOKEN: ${{ secrets.E2E_ABLY_ACCESS_TOKEN }}
       E2E_TESTS: true
       HEADLESS: true
       TEST_GROUP: ui
@@ -259,6 +262,7 @@ jobs:
     timeout-minutes: 10
     env:
       E2E_ABLY_API_KEY: ${{ secrets.E2E_ABLY_API_KEY }}
+      E2E_ABLY_ACCESS_TOKEN: ${{ secrets.E2E_ABLY_ACCESS_TOKEN }}
       # Rate limit test should NOT use CI bypass
       # CI_BYPASS_SECRET is intentionally not set
       E2E_TESTS: true
