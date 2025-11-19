@@ -186,7 +186,7 @@ export function createAuthPayload(
     // Debug logging in CI
     if (win.__ABLY_CLI_CI_MODE__ === 'true') {
       console.log('[CI Auth] Including CI auth token in payload', {
-        tokenLength: payload.ciAuthToken.length,
+        tokenLength: payload.ciAuthToken?.length ?? 0,
         testGroup: win.__ABLY_CLI_TEST_GROUP__ || 'unknown',
         runId: win.__ABLY_CLI_RUN_ID__ || 'unknown'
       });
@@ -297,5 +297,130 @@ export function showConnectingMessage(term: Terminal, message: string = 'Connect
 export function debugLog(...args: unknown[]): void {
   if (typeof globalThis !== 'undefined' && (globalThis as any).ABLY_CLI_DEBUG) {
     console.log('[AblyCLITerminal DEBUG]', ...args);
+  }
+}
+
+/**
+ * Terminal type identifier
+ */
+export type TerminalType = 'primary' | 'secondary';
+
+/**
+ * Session storage configuration for each terminal type
+ */
+const TERMINAL_STORAGE_CONFIG = {
+  primary: {
+    sessionIdKey: 'ably.cli.sessionId',
+    credentialHashKey: 'ably.cli.credentialHash',
+    name: 'Primary'
+  },
+  secondary: {
+    sessionIdKey: 'ably.cli.secondarySessionId',
+    credentialHashKey: 'ably.cli.secondaryCredentialHash',
+    name: 'Secondary'
+  }
+} as const;
+
+/**
+ * Session validation result
+ */
+export interface SessionValidationResult {
+  shouldRestore: boolean;
+  sessionId: string | null;
+  shouldClear: boolean;
+}
+
+/**
+ * Validates stored session credentials against current credentials
+ * Returns whether the session should be restored, and if invalid sessions should be cleared
+ *
+ * @param terminalType - The type of terminal ('primary' or 'secondary')
+ * @param websocketUrl - The WebSocket URL to extract domain from
+ * @param currentCredentialHash - The hash of current credentials
+ * @returns SessionValidationResult indicating what actions to take
+ */
+export function validateStoredSession(
+  terminalType: TerminalType,
+  websocketUrl: string,
+  currentCredentialHash: string
+): SessionValidationResult {
+  if (globalThis.window === undefined) {
+    return { shouldRestore: false, sessionId: null, shouldClear: false };
+  }
+
+  const config = TERMINAL_STORAGE_CONFIG[terminalType];
+  const urlDomain = new URL(websocketUrl).host;
+  const storedSessionId = globalThis.sessionStorage.getItem(`${config.sessionIdKey}.${urlDomain}`);
+  const storedHash = globalThis.sessionStorage.getItem(`${config.credentialHashKey}.${urlDomain}`);
+
+  console.log(`[AblyCLITerminal] [${config.name}] Credential validation:`, {
+    urlDomain,
+    storedSessionId,
+    storedHash,
+    currentHash: currentCredentialHash,
+    match: storedHash === currentCredentialHash
+  });
+
+  // Only restore session if credentials match AND it's for the same domain
+  if (storedSessionId && storedHash === currentCredentialHash) {
+    debugLog(`[${config.name}] Restoring sessionId ${storedSessionId} from sessionStorage`);
+    console.log(`[AblyCLITerminal] [${config.name}] Restored session with matching credentials for domain:`, urlDomain);
+    return { shouldRestore: true, sessionId: storedSessionId, shouldClear: false };
+  } else if ((storedSessionId || storedHash) && storedHash !== currentCredentialHash) {
+    // Clear invalid session - either if we have a sessionId with mismatched hash
+    // or if we have a stored hash that doesn't match current credentials
+    console.log(`[AblyCLITerminal] [${config.name}] Cleared session due to credential mismatch for domain:`, urlDomain);
+    return { shouldRestore: false, sessionId: null, shouldClear: true };
+  }
+
+  return { shouldRestore: false, sessionId: null, shouldClear: false };
+}
+
+/**
+ * Clears stored session data for a given terminal
+ *
+ * @param terminalType - The type of terminal ('primary' or 'secondary')
+ * @param websocketUrl - The WebSocket URL to extract domain from
+ */
+export function clearStoredSession(
+  terminalType: TerminalType,
+  websocketUrl: string
+): void {
+  if (globalThis.window === undefined) return;
+
+  const config = TERMINAL_STORAGE_CONFIG[terminalType];
+  const urlDomain = new URL(websocketUrl).host;
+  globalThis.sessionStorage.removeItem(`${config.sessionIdKey}.${urlDomain}`);
+  globalThis.sessionStorage.removeItem(`${config.credentialHashKey}.${urlDomain}`);
+  debugLog(`[${config.name}] Cleared session storage for domain:`, urlDomain);
+}
+
+/**
+ * Stores session data for a given terminal
+ *
+ * @param terminalType - The type of terminal ('primary' or 'secondary')
+ * @param websocketUrl - The WebSocket URL to extract domain from
+ * @param sessionId - The session ID to store (null to remove)
+ * @param credentialHash - The credential hash to store (optional)
+ */
+export function storeSessionData(
+  terminalType: TerminalType,
+  websocketUrl: string,
+  sessionId: string | null,
+  credentialHash: string | null | undefined
+): void {
+  if (globalThis.window === undefined) return;
+
+  const config = TERMINAL_STORAGE_CONFIG[terminalType];
+  const urlDomain = new URL(websocketUrl).host;
+
+  if (sessionId) {
+    globalThis.sessionStorage.setItem(`${config.sessionIdKey}.${urlDomain}`, sessionId);
+    if (credentialHash) {
+      globalThis.sessionStorage.setItem(`${config.credentialHashKey}.${urlDomain}`, credentialHash);
+    }
+  } else {
+    globalThis.sessionStorage.removeItem(`${config.sessionIdKey}.${urlDomain}`);
+    globalThis.sessionStorage.removeItem(`${config.credentialHashKey}.${urlDomain}`);
   }
 }

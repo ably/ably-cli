@@ -34,6 +34,9 @@ import {
   clearConnectingMessage,
   showConnectingMessage,
   debugLog as sharedDebugLog,
+  validateStoredSession,
+  clearStoredSession,
+  storeSessionData,
   CONTROL_MESSAGE_PREFIX,
   MAX_PTY_BUFFER_LENGTH,
   TERMINAL_PROMPT_PATTERN
@@ -256,7 +259,7 @@ const AblyCliTerminalInner = ({
     // Clear split state in session storage
     if (resumeOnReload && typeof window !== 'undefined') {
       window.sessionStorage.removeItem('ably.cli.isSplit');
-      window.sessionStorage.removeItem('ably.cli.secondarySessionId');
+      clearStoredSession('secondary', websocketUrl);
     }
     
     // Resize the primary terminal after a delay
@@ -422,7 +425,7 @@ const AblyCliTerminalInner = ({
     // Clear split state in session storage
     if (resumeOnReload && typeof window !== 'undefined') {
       window.sessionStorage.removeItem('ably.cli.isSplit');
-      window.sessionStorage.removeItem('ably.cli.secondarySessionId');
+      clearStoredSession('secondary', websocketUrl);
     }
     
     // Resize the primary terminal after a delay
@@ -441,7 +444,6 @@ const AblyCliTerminalInner = ({
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [credentialHash, setCredentialHash] = useState<string | null>(null);
   const [credentialsInitialized, setCredentialsInitialized] = useState(false);
-  const [sessionIdInitialized, setSessionIdInitialized] = useState(false);
 
   // Track the second terminal's sessionId
   const [secondarySessionId, setSecondarySessionId] = useState<string | null>(
@@ -452,6 +454,7 @@ const AblyCliTerminalInner = ({
       return null;
     }
   );
+  const [secondaryCredentialHash, setSecondaryCredentialHash] = useState<string | null>(null);
 
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [showManualReconnectPrompt, setShowManualReconnectPrompt] = useState(false);
@@ -1966,9 +1969,8 @@ const AblyCliTerminalInner = ({
         window.sessionStorage.removeItem(`ably.cli.credentialHash.${urlDomain}`);
         console.log('[AblyCLITerminal] Cleared session due to credential mismatch for domain:', urlDomain);
       }
-      
+
       setCredentialsInitialized(true);
-      setSessionIdInitialized(true);
       debugLog(`⚠️ DIAGNOSTIC: Credentials initialized, restored sessionId: ${storedSessionId || 'none'}`);
     };
     
@@ -1980,7 +1982,7 @@ const AblyCliTerminalInner = ({
     if (resumeOnReload && typeof window !== 'undefined' && sessionId && credentialHash) {
       const urlDomain = new URL(websocketUrl).host;
       const storedHash = window.sessionStorage.getItem(`ably.cli.credentialHash.${urlDomain}`);
-      
+
       // Only store if we don't already have it stored
       if (!storedHash) {
         window.sessionStorage.setItem(`ably.cli.credentialHash.${urlDomain}`, credentialHash);
@@ -1988,6 +1990,48 @@ const AblyCliTerminalInner = ({
       }
     }
   }, [resumeOnReload, sessionId, credentialHash, websocketUrl]);
+
+  // Initialize secondary terminal session and validate credentials
+  useEffect(() => {
+    const initializeSecondarySession = async () => {
+      // Calculate current credential hash
+      const currentHash = await hashCredentials(ablyApiKey, ablyAccessToken);
+      setSecondaryCredentialHash(currentHash);
+
+      if (!resumeOnReload || typeof window === 'undefined') {
+        return;
+      }
+
+      // Only validate if split mode is active
+      if (!isSplit) {
+        return;
+      }
+
+      // Validate stored secondary session credentials
+      const validationResult = validateStoredSession('secondary', websocketUrl, currentHash);
+
+      if (validationResult.shouldRestore && validationResult.sessionId) {
+        debugLog(`[Secondary] Restoring sessionId ${validationResult.sessionId} from sessionStorage`);
+        setSecondarySessionId(validationResult.sessionId);
+      } else if (validationResult.shouldClear) {
+        // Clear invalid session
+        clearStoredSession('secondary', websocketUrl);
+        setSecondarySessionId(null);
+      }
+
+      debugLog(`[Secondary] Credentials initialized, restored sessionId: ${validationResult.sessionId || 'none'}`);
+    };
+
+    initializeSecondarySession();
+  }, [ablyApiKey, ablyAccessToken, resumeOnReload, websocketUrl, isSplit]);
+
+  // Store secondary credential hash when it becomes available if we already have a secondarySessionId
+  useEffect(() => {
+    if (resumeOnReload && typeof window !== 'undefined' && secondarySessionId && secondaryCredentialHash && isSplit) {
+      storeSessionData('secondary', websocketUrl, secondarySessionId, secondaryCredentialHash);
+      debugLog('[Secondary] Stored credential hash for existing session');
+    }
+  }, [resumeOnReload, secondarySessionId, secondaryCredentialHash, websocketUrl, isSplit]);
 
   // Keep latest instance of connectWebSocket for async callbacks
   const connectWebSocketRef = useRef(connectWebSocket);
@@ -2094,7 +2138,7 @@ const AblyCliTerminalInner = ({
         
         // When exiting split mode, also clean up secondary session ID
         if (!secondarySessionId) {
-          window.sessionStorage.removeItem('ably.cli.secondarySessionId');
+          clearStoredSession('secondary', websocketUrl);
           debugLog('[AblyCLITerminal] Removed secondarySessionId from sessionStorage');
         }
       }
@@ -2177,12 +2221,12 @@ const AblyCliTerminalInner = ({
           if (msg.type === 'hello' && typeof msg.sessionId === 'string') {
               debugLog(`[Secondary] Received hello. sessionId=${msg.sessionId}`);
               setSecondarySessionId(msg.sessionId);
-              
-              // Persist to session storage if enabled
+
+              // Persist to session storage if enabled (with credential hash)
               if (resumeOnReload && typeof window !== 'undefined') {
-                window.sessionStorage.setItem('ably.cli.secondarySessionId', msg.sessionId);
+                storeSessionData('secondary', websocketUrl, msg.sessionId, secondaryCredentialHash);
               }
-              
+
               // Always activate session after hello message
               debugLog(`[Secondary] Activating session after hello message`);
               
@@ -2342,7 +2386,7 @@ const AblyCliTerminalInner = ({
         // Clear the secondary session ID as it's no longer valid
         setSecondarySessionId(null);
         if (resumeOnReload && typeof window !== 'undefined') {
-          window.sessionStorage.removeItem('ably.cli.secondarySessionId');
+          clearStoredSession('secondary', websocketUrl);
           debugLog('[AblyCLITerminal] [Secondary] Cleared invalid session ID due to non-recoverable error');
         }
       }
@@ -2626,16 +2670,16 @@ const AblyCliTerminalInner = ({
     };
   }, [isSplit]); // Only re-run when split mode changes, not when connectSecondaryWebSocket changes
 
-  // Persist secondary sessionId to localStorage whenever it changes (if enabled)
+  // Persist secondary sessionId to sessionStorage whenever it changes (if enabled)
   useEffect(() => {
     if (!resumeOnReload || typeof window === 'undefined') return;
     if (secondarySessionId) {
-      window.sessionStorage.setItem('ably.cli.secondarySessionId', secondarySessionId);
+      storeSessionData('secondary', websocketUrl, secondarySessionId, secondaryCredentialHash);
     } else if (isSplit === false) {
       // Only remove if split mode is disabled
-      window.sessionStorage.removeItem('ably.cli.secondarySessionId');
+      clearStoredSession('secondary', websocketUrl);
     }
-  }, [secondarySessionId, resumeOnReload, isSplit]);
+  }, [secondarySessionId, resumeOnReload, isSplit, websocketUrl, secondaryCredentialHash]);
 
   // New function to handle secondary terminal status changes without external reporting
   const updateSecondaryConnectionStatus = useCallback((status: ConnectionStatus) => {
