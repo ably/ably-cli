@@ -1267,12 +1267,13 @@ describe('AblyCliTerminal - Connection Status and Animation', () => {
     // Mock sessionStorage
     const getItemMock = vi.spyOn(Storage.prototype, 'getItem');
     const setItemMock = vi.spyOn(Storage.prototype, 'setItem');
-    
-    // Mock sessionStorage to pretend we have saved state with isSplit=true
+
+    // Mock sessionStorage to pretend we have saved state with isSplit=true (domain-scoped)
     getItemMock.mockImplementation((key: string) => {
-      if (key === 'ably.cli.isSplit') return 'true';
-      if (key === 'ably.cli.sessionId') return 'mock-session-id';
-      if (key === 'ably.cli.secondarySessionId') return 'mock-secondary-session-id';
+      if (key === 'ably.cli.isSplit.web-cli.ably.com') return 'true';
+      if (key === 'ably.cli.sessionId.web-cli.ably.com') return 'mock-session-id';
+      if (key === 'ably.cli.secondarySessionId.web-cli.ably.com') return 'mock-secondary-session-id';
+      if (key === 'ably.cli.credentialHash.web-cli.ably.com') return 'hash-test-key:test-token';
       return null;
     });
 
@@ -1281,10 +1282,10 @@ describe('AblyCliTerminal - Connection Status and Animation', () => {
     // Check that we start in split mode based on the sessionStorage value
     expect(await screen.findByTestId('tab-1')).toBeInTheDocument();
     expect(await screen.findByTestId('tab-2')).toBeInTheDocument();
-    
+
     // Check that the saved sessionIds are loaded
     expect(setItemMock).toHaveBeenCalledWith(expect.any(String), expect.any(String));
-    
+
     // Cleanup
     getItemMock.mockRestore();
     setItemMock.mockRestore();

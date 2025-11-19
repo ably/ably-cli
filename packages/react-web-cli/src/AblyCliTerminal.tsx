@@ -190,7 +190,8 @@ const AblyCliTerminalInner = ({
    */
   const [isSplit, setIsSplit] = useState<boolean>(() => {
     if (resumeOnReload && typeof window !== 'undefined' && enableSplitScreen) {
-      return window.sessionStorage.getItem('ably.cli.isSplit') === 'true';
+      const urlDomain = new URL(websocketUrl).host;
+      return window.sessionStorage.getItem(`ably.cli.isSplit.${urlDomain}`) === 'true';
     }
     return false;
   });
@@ -215,14 +216,15 @@ const AblyCliTerminalInner = ({
   const handleSplitScreenWithSecondTerminal = useCallback(() => {
     // First update the UI state
     setIsSplit(true);
-    
+
     // Save split state to session storage if resume enabled
     if (resumeOnReload && typeof window !== 'undefined') {
-      window.sessionStorage.setItem('ably.cli.isSplit', 'true');
+      const urlDomain = new URL(websocketUrl).host;
+      window.sessionStorage.setItem(`ably.cli.isSplit.${urlDomain}`, 'true');
     }
-    
+
     // Secondary terminal will be initialized in useEffect that watches isSplit
-  }, [resumeOnReload]);
+  }, [resumeOnReload, websocketUrl]);
 
   /** Toggle into split-screen mode with terminal session */
   const handleSplitScreen = useCallback(() => {
@@ -255,8 +257,9 @@ const AblyCliTerminalInner = ({
     
     // Clear split state in session storage
     if (resumeOnReload && typeof window !== 'undefined') {
-      window.sessionStorage.removeItem('ably.cli.isSplit');
-      window.sessionStorage.removeItem('ably.cli.secondarySessionId');
+      const urlDomain = new URL(websocketUrl).host;
+      window.sessionStorage.removeItem(`ably.cli.isSplit.${urlDomain}`);
+      window.sessionStorage.removeItem(`ably.cli.secondarySessionId.${urlDomain}`);
     }
     
     // Resize the primary terminal after a delay
@@ -375,8 +378,9 @@ const AblyCliTerminalInner = ({
       
       // Clear split state in session storage
       if (resumeOnReload && typeof window !== 'undefined') {
-        window.sessionStorage.removeItem('ably.cli.isSplit');
-        window.sessionStorage.removeItem('ably.cli.secondarySessionId');
+        const urlDomain = new URL(websocketUrl).host;
+        window.sessionStorage.removeItem(`ably.cli.isSplit.${urlDomain}`);
+        window.sessionStorage.removeItem(`ably.cli.secondarySessionId.${urlDomain}`);
       }
       
       // Resize the terminal after a delay
@@ -421,8 +425,9 @@ const AblyCliTerminalInner = ({
     
     // Clear split state in session storage
     if (resumeOnReload && typeof window !== 'undefined') {
-      window.sessionStorage.removeItem('ably.cli.isSplit');
-      window.sessionStorage.removeItem('ably.cli.secondarySessionId');
+      const urlDomain = new URL(websocketUrl).host;
+      window.sessionStorage.removeItem(`ably.cli.isSplit.${urlDomain}`);
+      window.sessionStorage.removeItem(`ably.cli.secondarySessionId.${urlDomain}`);
     }
     
     // Resize the primary terminal after a delay
@@ -446,8 +451,12 @@ const AblyCliTerminalInner = ({
   // Track the second terminal's sessionId
   const [secondarySessionId, setSecondarySessionId] = useState<string | null>(
     () => {
-      if (resumeOnReload && typeof window !== 'undefined' && window.sessionStorage.getItem('ably.cli.isSplit') === 'true') {
-        return window.sessionStorage.getItem('ably.cli.secondarySessionId');
+      if (resumeOnReload && typeof window !== 'undefined') {
+        const urlDomain = new URL(websocketUrl).host;
+        const isSplitStored = window.sessionStorage.getItem(`ably.cli.isSplit.${urlDomain}`) === 'true';
+        if (isSplitStored) {
+          return window.sessionStorage.getItem(`ably.cli.secondarySessionId.${urlDomain}`);
+        }
       }
       return null;
     }
@@ -2085,21 +2094,22 @@ const AblyCliTerminalInner = ({
   useEffect(() => {
     // Ensure the split state in sessionStorage always matches the component state
     if (resumeOnReload && typeof window !== 'undefined') {
+      const urlDomain = new URL(websocketUrl).host;
       if (isSplit) {
-        window.sessionStorage.setItem('ably.cli.isSplit', 'true');
+        window.sessionStorage.setItem(`ably.cli.isSplit.${urlDomain}`, 'true');
         debugLog('[AblyCLITerminal] Setting isSplit=true in sessionStorage');
       } else {
-        window.sessionStorage.removeItem('ably.cli.isSplit');
+        window.sessionStorage.removeItem(`ably.cli.isSplit.${urlDomain}`);
         debugLog('[AblyCLITerminal] Removed isSplit from sessionStorage');
-        
+
         // When exiting split mode, also clean up secondary session ID
         if (!secondarySessionId) {
-          window.sessionStorage.removeItem('ably.cli.secondarySessionId');
+          window.sessionStorage.removeItem(`ably.cli.secondarySessionId.${urlDomain}`);
           debugLog('[AblyCLITerminal] Removed secondarySessionId from sessionStorage');
         }
       }
     }
-  }, [isSplit, resumeOnReload, secondarySessionId]);
+  }, [isSplit, resumeOnReload, secondarySessionId, websocketUrl]);
 
   // -------------------------------------------------------------
   // Split-screen Terminal Logic (Step 6.2 - Secondary session)
@@ -2180,7 +2190,11 @@ const AblyCliTerminalInner = ({
               
               // Persist to session storage if enabled
               if (resumeOnReload && typeof window !== 'undefined') {
-                window.sessionStorage.setItem('ably.cli.secondarySessionId', msg.sessionId);
+                const urlDomain = new URL(websocketUrl).host;
+                window.sessionStorage.setItem(
+                  `ably.cli.secondarySessionId.${urlDomain}`,
+                  msg.sessionId
+                );
               }
               
               // Always activate session after hello message
@@ -2342,7 +2356,8 @@ const AblyCliTerminalInner = ({
         // Clear the secondary session ID as it's no longer valid
         setSecondarySessionId(null);
         if (resumeOnReload && typeof window !== 'undefined') {
-          window.sessionStorage.removeItem('ably.cli.secondarySessionId');
+          const urlDomain = new URL(websocketUrl).host;
+          window.sessionStorage.removeItem(`ably.cli.secondarySessionId.${urlDomain}`);
           debugLog('[AblyCLITerminal] [Secondary] Cleared invalid session ID due to non-recoverable error');
         }
       }
@@ -2626,16 +2641,20 @@ const AblyCliTerminalInner = ({
     };
   }, [isSplit]); // Only re-run when split mode changes, not when connectSecondaryWebSocket changes
 
-  // Persist secondary sessionId to localStorage whenever it changes (if enabled)
+  // Persist secondary sessionId to sessionStorage whenever it changes (if enabled)
   useEffect(() => {
     if (!resumeOnReload || typeof window === 'undefined') return;
+    const urlDomain = new URL(websocketUrl).host;
     if (secondarySessionId) {
-      window.sessionStorage.setItem('ably.cli.secondarySessionId', secondarySessionId);
+      window.sessionStorage.setItem(
+        `ably.cli.secondarySessionId.${urlDomain}`,
+        secondarySessionId
+      );
     } else if (isSplit === false) {
       // Only remove if split mode is disabled
-      window.sessionStorage.removeItem('ably.cli.secondarySessionId');
+      window.sessionStorage.removeItem(`ably.cli.secondarySessionId.${urlDomain}`);
     }
-  }, [secondarySessionId, resumeOnReload, isSplit]);
+  }, [secondarySessionId, resumeOnReload, isSplit, websocketUrl]);
 
   // New function to handle secondary terminal status changes without external reporting
   const updateSecondaryConnectionStatus = useCallback((status: ConnectionStatus) => {
