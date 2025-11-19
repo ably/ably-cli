@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Key, Lock, Terminal, AlertCircle, ArrowRight, Save, RefreshCw } from 'lucide-react';
 
 interface AuthScreenProps {
-  onAuthenticate: (apiKey: string, accessToken: string, remember?: boolean) => void;
+  onAuthenticate: (apiKey: string, accessToken: string, remember?: boolean, secondaryApiKey?: string) => void;
   rememberCredentials: boolean;
   onRememberChange: (remember: boolean) => void;
 }
@@ -14,6 +14,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 }) => {
   const [apiKey, setApiKey] = useState('');
   const [accessToken, setAccessToken] = useState('');
+  const [secondaryApiKey, setSecondaryApiKey] = useState('');
   const [error, setError] = useState('');
   
   // Check if there are saved credentials to clear
@@ -34,7 +35,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       return;
     }
 
-    onAuthenticate(apiKey.trim(), accessToken.trim(), rememberCredentials);
+    // Validate secondary API key if provided
+    if (secondaryApiKey.trim() && !secondaryApiKey.includes(':')) {
+      setError('Secondary API Key should be in the format: app_name.key_name:key_secret');
+      return;
+    }
+
+    onAuthenticate(apiKey.trim(), accessToken.trim(), rememberCredentials, secondaryApiKey.trim() || undefined);
   };
   
   const handleClearSavedCredentials = () => {
@@ -62,7 +69,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             <div>
               <label htmlFor="apiKey" className="flex items-center space-x-2 text-sm font-medium text-gray-300 mb-2">
                 <Key size={16} />
-                <span>API Key *</span>
+                <span>Primary API Key *</span>
               </label>
               <input
                 id="apiKey"
@@ -99,6 +106,27 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               />
               <p className="mt-2 text-xs text-gray-500">
                 Only required if you're using token authentication instead of an API key
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="secondaryApiKey" className="flex items-center space-x-2 text-sm font-medium text-gray-300 mb-2">
+                <Key size={16} className="text-purple-400" />
+                <span>Secondary API Key (Optional)</span>
+              </label>
+              <input
+                id="secondaryApiKey"
+                type="text"
+                value={secondaryApiKey}
+                onChange={(e) => {
+                  setSecondaryApiKey(e.target.value);
+                  setError(''); // Clear error when user types
+                }}
+                placeholder="your_app.key_name:key_secret"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+              />
+              <p className="mt-2 text-xs text-gray-500">
+                For testing credential switching - you can toggle between primary and secondary API keys
               </p>
             </div>
 

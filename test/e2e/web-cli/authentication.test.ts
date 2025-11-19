@@ -23,8 +23,9 @@ test.describe('Web CLI Authentication E2E Tests', () => {
     // Verify auth screen elements are visible
     await expect(page.getByText('Ably Web CLI Terminal')).toBeVisible();
     await expect(page.getByText('Enter your credentials to start a terminal session')).toBeVisible();
-    await expect(page.getByLabel(/API Key/)).toBeVisible();
+    await expect(page.getByLabel(/Primary API Key/)).toBeVisible();
     await expect(page.getByLabel(/Access Token/)).toBeVisible();
+    await expect(page.getByLabel(/Secondary API Key/)).toBeVisible();
     await expect(page.getByText('Connect to Terminal')).toBeVisible();
     
     // Verify terminal is not visible

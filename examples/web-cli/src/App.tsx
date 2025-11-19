@@ -35,45 +35,51 @@ const getCIAuthToken = (): string | undefined => {
 // Get credentials from various sources
 const getInitialCredentials = () => {
   const urlParams = new URLSearchParams(window.location.search);
-  
+
   // Get the domain from the WebSocket URL for scoping
   const wsUrl = getWebSocketUrl();
   const wsDomain = new URL(wsUrl).host;
-  
+
   // Check if we should clear credentials (for testing)
   if (urlParams.get('clearCredentials') === 'true') {
     localStorage.removeItem(`ably.web-cli.apiKey.${wsDomain}`);
+    localStorage.removeItem(`ably.web-cli.secondaryApiKey.${wsDomain}`);
     localStorage.removeItem(`ably.web-cli.accessToken.${wsDomain}`);
     localStorage.removeItem(`ably.web-cli.rememberCredentials.${wsDomain}`);
     // Also clear from sessionStorage
     sessionStorage.removeItem(`ably.web-cli.apiKey.${wsDomain}`);
+    sessionStorage.removeItem(`ably.web-cli.secondaryApiKey.${wsDomain}`);
     sessionStorage.removeItem(`ably.web-cli.accessToken.${wsDomain}`);
     // Remove the clearCredentials param from URL
     const cleanUrl = new URL(window.location.href);
     cleanUrl.searchParams.delete('clearCredentials');
     window.history.replaceState(null, '', cleanUrl.toString());
   }
-  
+
   // Check localStorage for persisted credentials (if user chose to remember)
   const rememberCredentials = localStorage.getItem(`ably.web-cli.rememberCredentials.${wsDomain}`) === 'true';
   if (rememberCredentials) {
     const storedApiKey = localStorage.getItem(`ably.web-cli.apiKey.${wsDomain}`);
+    const storedSecondaryApiKey = localStorage.getItem(`ably.web-cli.secondaryApiKey.${wsDomain}`);
     const storedAccessToken = localStorage.getItem(`ably.web-cli.accessToken.${wsDomain}`);
     if (storedApiKey) {
-      return { 
-        apiKey: storedApiKey, 
+      return {
+        apiKey: storedApiKey,
+        secondaryApiKey: storedSecondaryApiKey || undefined,
         accessToken: storedAccessToken || undefined,
         source: 'localStorage' as const
       };
     }
   }
-  
+
   // Check sessionStorage for session-only credentials
   const sessionApiKey = sessionStorage.getItem(`ably.web-cli.apiKey.${wsDomain}`);
+  const sessionSecondaryApiKey = sessionStorage.getItem(`ably.web-cli.secondaryApiKey.${wsDomain}`);
   const sessionAccessToken = sessionStorage.getItem(`ably.web-cli.accessToken.${wsDomain}`);
   if (sessionApiKey) {
-    return { 
-      apiKey: sessionApiKey, 
+    return {
+      apiKey: sessionApiKey,
+      secondaryApiKey: sessionSecondaryApiKey || undefined,
       accessToken: sessionAccessToken || undefined,
       source: 'session' as const
     };
@@ -82,10 +88,10 @@ const getInitialCredentials = () => {
   // Then check query parameters (only in non-production environments)
   const qsApiKey = urlParams.get('apikey') || urlParams.get('apiKey');
   const qsAccessToken = urlParams.get('accessToken') || urlParams.get('accesstoken');
-  
+
   // Security check: only allow query param auth in development/test environments
   const isProduction = import.meta.env.PROD && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');
-  
+
   if (qsApiKey) {
     if (isProduction) {
       console.error('Security Warning: API keys in query parameters are not allowed in production environments.');
@@ -97,15 +103,16 @@ const getInitialCredentials = () => {
       cleanUrl.searchParams.delete('accesstoken');
       window.history.replaceState(null, '', cleanUrl.toString());
     } else {
-      return { 
-        apiKey: qsApiKey, 
+      return {
+        apiKey: qsApiKey,
+        secondaryApiKey: undefined,
         accessToken: qsAccessToken || undefined,
         source: 'query' as const
       };
     }
   }
 
-  return { apiKey: undefined, accessToken: undefined, source: 'none' as const };
+  return { apiKey: undefined, secondaryApiKey: undefined, accessToken: undefined, source: 'none' as const };
 };
 
 function App() {
@@ -120,6 +127,8 @@ function App() {
   // Initialize credentials
   const initialCreds = getInitialCredentials();
   const [apiKey, setApiKey] = useState<string | undefined>(initialCreds.apiKey);
+  const [secondaryApiKey, setSecondaryApiKey] = useState<string | undefined>(initialCreds.secondaryApiKey);
+  const [activeApiKey, setActiveApiKey] = useState<'primary' | 'secondary'>('primary');
   const [accessToken, setAccessToken] = useState<string | undefined>(initialCreds.accessToken);
   const [isAuthenticated, setIsAuthenticated] = useState(Boolean(initialCreds.apiKey && initialCreds.apiKey.trim()));
   const [authSource, setAuthSource] = useState(initialCreds.source);
@@ -144,24 +153,30 @@ function App() {
   }, []);
 
   // Handle authentication
-  const handleAuthenticate = useCallback((newApiKey: string, newAccessToken: string, remember?: boolean) => {
+  const handleAuthenticate = useCallback((newApiKey: string, newAccessToken: string, remember?: boolean, newSecondaryApiKey?: string) => {
     // Clear any existing session data when credentials change (domain-scoped)
     sessionStorage.removeItem(`ably.cli.sessionId.${wsDomain}`);
     sessionStorage.removeItem(`ably.cli.secondarySessionId.${wsDomain}`);
     sessionStorage.removeItem(`ably.cli.isSplit.${wsDomain}`);
-    
+
     setApiKey(newApiKey);
+    setSecondaryApiKey(newSecondaryApiKey);
     setAccessToken(newAccessToken);
     setIsAuthenticated(true);
     setShowAuthSettings(false);
-    
+
     // Determine if we should remember based on parameter or current state
     const shouldRemember = remember !== undefined ? remember : rememberCredentials;
-    
+
     if (shouldRemember) {
       // Store in localStorage for persistence (domain-scoped)
       localStorage.setItem(`ably.web-cli.apiKey.${wsDomain}`, newApiKey);
       localStorage.setItem(`ably.web-cli.rememberCredentials.${wsDomain}`, 'true');
+      if (newSecondaryApiKey) {
+        localStorage.setItem(`ably.web-cli.secondaryApiKey.${wsDomain}`, newSecondaryApiKey);
+      } else {
+        localStorage.removeItem(`ably.web-cli.secondaryApiKey.${wsDomain}`);
+      }
       if (newAccessToken) {
         localStorage.setItem(`ably.web-cli.accessToken.${wsDomain}`, newAccessToken);
       } else {
@@ -171,6 +186,11 @@ function App() {
     } else {
       // Store only in sessionStorage (domain-scoped)
       sessionStorage.setItem(`ably.web-cli.apiKey.${wsDomain}`, newApiKey);
+      if (newSecondaryApiKey) {
+        sessionStorage.setItem(`ably.web-cli.secondaryApiKey.${wsDomain}`, newSecondaryApiKey);
+      } else {
+        sessionStorage.removeItem(`ably.web-cli.secondaryApiKey.${wsDomain}`);
+      }
       if (newAccessToken) {
         sessionStorage.setItem(`ably.web-cli.accessToken.${wsDomain}`, newAccessToken);
       } else {
@@ -178,13 +198,33 @@ function App() {
       }
       // Clear from localStorage if it was there (domain-scoped)
       localStorage.removeItem(`ably.web-cli.apiKey.${wsDomain}`);
+      localStorage.removeItem(`ably.web-cli.secondaryApiKey.${wsDomain}`);
       localStorage.removeItem(`ably.web-cli.accessToken.${wsDomain}`);
       localStorage.removeItem(`ably.web-cli.rememberCredentials.${wsDomain}`);
       setAuthSource('session');
     }
-    
+
     setRememberCredentials(shouldRemember);
   }, [rememberCredentials, wsDomain]);
+
+  // Toggle between primary and secondary API keys
+  const toggleApiKey = useCallback(() => {
+    if (secondaryApiKey && activeApiKey === 'primary') {
+      // Clear session data when switching API keys
+      sessionStorage.removeItem(`ably.cli.sessionId.${wsDomain}`);
+      sessionStorage.removeItem(`ably.cli.secondarySessionId.${wsDomain}`);
+      sessionStorage.removeItem(`ably.cli.credentialHash.${wsDomain}`);
+      sessionStorage.removeItem(`ably.cli.secondaryCredentialHash.${wsDomain}`);
+      setActiveApiKey('secondary');
+    } else if (secondaryApiKey && activeApiKey === 'secondary') {
+      // Clear session data when switching API keys
+      sessionStorage.removeItem(`ably.cli.sessionId.${wsDomain}`);
+      sessionStorage.removeItem(`ably.cli.secondarySessionId.${wsDomain}`);
+      sessionStorage.removeItem(`ably.cli.credentialHash.${wsDomain}`);
+      sessionStorage.removeItem(`ably.cli.secondaryCredentialHash.${wsDomain}`);
+      setActiveApiKey('primary');
+    }
+  }, [secondaryApiKey, activeApiKey, wsDomain]);
 
   // Handle auth settings save
   const handleAuthSettingsSave = useCallback((newApiKey: string, newAccessToken: string, remember: boolean) => {
@@ -194,13 +234,18 @@ function App() {
       // Clear all credentials - go back to auth screen (domain-scoped)
       sessionStorage.removeItem(`ably.cli.sessionId.${wsDomain}`);
       sessionStorage.removeItem(`ably.cli.secondarySessionId.${wsDomain}`);
+      sessionStorage.removeItem(`ably.cli.credentialHash.${wsDomain}`);
+      sessionStorage.removeItem(`ably.cli.secondaryCredentialHash.${wsDomain}`);
       sessionStorage.removeItem(`ably.cli.isSplit.${wsDomain}`);
       sessionStorage.removeItem(`ably.web-cli.apiKey.${wsDomain}`);
+      sessionStorage.removeItem(`ably.web-cli.secondaryApiKey.${wsDomain}`);
       sessionStorage.removeItem(`ably.web-cli.accessToken.${wsDomain}`);
       localStorage.removeItem(`ably.web-cli.apiKey.${wsDomain}`);
+      localStorage.removeItem(`ably.web-cli.secondaryApiKey.${wsDomain}`);
       localStorage.removeItem(`ably.web-cli.accessToken.${wsDomain}`);
       localStorage.removeItem(`ably.web-cli.rememberCredentials.${wsDomain}`);
       setApiKey(undefined);
+      setSecondaryApiKey(undefined);
       setAccessToken(undefined);
       setIsAuthenticated(false);
       setShowAuthSettings(false);
@@ -219,12 +264,14 @@ function App() {
 
   // Prepare the terminal component instance to pass it down
   const termRef = useRef<AblyCliTerminalHandle>(null);
+  const currentApiKey = activeApiKey === 'secondary' && secondaryApiKey ? secondaryApiKey : apiKey;
   const TerminalInstance = useCallback(() => (
-    isAuthenticated && apiKey && apiKey.trim() ? (
+    isAuthenticated && currentApiKey && currentApiKey.trim() ? (
       <AblyCliTerminal
+        key={`terminal-${activeApiKey}-${currentApiKey}`} // Force remount when API key changes
         ref={termRef}
         ablyAccessToken={accessToken}
-        ablyApiKey={apiKey}
+        ablyApiKey={currentApiKey}
         onConnectionStatusChange={handleConnectionChange}
         onSessionEnd={handleSessionEnd}
         onSessionId={handleSessionId}
@@ -236,7 +283,7 @@ function App() {
         ciAuthToken={getCIAuthToken()}
       />
     ) : null
-  ), [isAuthenticated, apiKey, accessToken, handleConnectionChange, handleSessionEnd, handleSessionId, currentWebsocketUrl]);
+  ), [isAuthenticated, currentApiKey, activeApiKey, accessToken, handleConnectionChange, handleSessionEnd, handleSessionId, currentWebsocketUrl]);
 
   // Show auth screen if not authenticated
   if (!isAuthenticated) {
@@ -262,6 +309,22 @@ function App() {
           >
             Toggle Split
           </button>
+          {secondaryApiKey && (
+            <button
+              onClick={toggleApiKey}
+              className={`auth-button flex items-center space-x-2 px-3 py-1.5 rounded-md transition-colors ${
+                activeApiKey === 'primary'
+                  ? 'bg-blue-600 hover:bg-blue-700'
+                  : 'bg-purple-600 hover:bg-purple-700'
+              }`}
+              title={`Switch to ${activeApiKey === 'primary' ? 'Secondary' : 'Primary'} API Key`}
+            >
+              <Key size={16} />
+              <span className="text-sm font-medium">
+                {activeApiKey === 'primary' ? 'Primary Key' : 'Secondary Key'}
+              </span>
+            </button>
+          )}
           <button
             onClick={() => setShowAuthSettings(true)}
             className="auth-button flex items-center space-x-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-md transition-colors"
