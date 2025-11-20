@@ -24,18 +24,16 @@ export default class AccountsList extends ControlBaseCommand {
 
     if (accounts.length === 0) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              accounts: [],
-              error:
-                'No accounts configured. Use "ably accounts login" to add an account.',
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            accounts: [],
+            error:
+              'No accounts configured. Use "ably accounts login" to add an account.',
+            success: false,
+          },
+          flags,
         );
-        process.exitCode = 1;
+        return;
       } else {
         this.log(
           'No accounts configured. Use "ably accounts login" to add an account.',

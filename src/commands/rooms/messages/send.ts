@@ -126,10 +126,7 @@ export default class MessagesSend extends ChatBaseCommand {
             error: errorMsg,
           });
           if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput({ error: errorMsg, success: false }, flags),
-            );
-            process.exitCode = 1;
+            this.jsonError({ error: errorMsg, success: false }, flags);
           } else {
             this.error(errorMsg);
           }
@@ -404,9 +401,9 @@ export default class MessagesSend extends ChatBaseCommand {
             `Failed to send message: ${errorMsg}`,
             { error: errorMsg },
           );
-          process.exitCode = 1;
           if (this.shouldOutputJson(flags)) {
-            this.log(this.formatJsonOutput(result, flags));
+            this.jsonError(result, flags);
+            return;
           } else {
             this.error(`Failed to send message: ${errorMsg}`);
           }
@@ -422,10 +419,7 @@ export default class MessagesSend extends ChatBaseCommand {
         { error: errorMsg },
       );
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput({ error: errorMsg, success: false }, flags),
-        );
-        process.exitCode = 1;
+        this.jsonError({ error: errorMsg, success: false }, flags);
       } else {
         this.error(`Failed to send message: ${errorMsg}`);
       }

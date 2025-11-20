@@ -117,6 +117,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
       { error: errorMsg },
     );
     this.logErrorAndExit(`Failed to publish message: ${errorMsg}`, flags);
+    return;
   }
 
   // --- Original Methods (modified) ---
@@ -136,10 +137,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
     flags: Record<string, unknown>,
   ): void {
     if (this.shouldOutputJson(flags)) {
-      this.log(
-        this.formatJsonOutput({ error: message, success: false }, flags),
-      );
-      process.exitCode = 1; // Set exit code for JSON output errors
+      this.jsonError({ error: message, success: false }, flags); // Set exit code for JSON output errors
     } else {
       this.error(message); // Use oclif error which sets exit code
     }

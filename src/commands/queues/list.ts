@@ -164,18 +164,16 @@ export default class QueuesListCommand extends ControlBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              error: error instanceof Error ? error.message : String(error),
-              status: "error",
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            appId,
+            error: error instanceof Error ? error.message : String(error),
+            status: "error",
+            success: false,
+          },
+          flags,
         );
-        process.exitCode = 1;
+        return;
       } else {
         this.error(
           `Error listing queues: ${error instanceof Error ? error.message : String(error)}`,

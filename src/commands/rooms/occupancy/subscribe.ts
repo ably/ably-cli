@@ -253,13 +253,10 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         room: this.roomName,
       });
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { error: errorMsg, room: this.roomName, success: false },
-            flags,
-          ),
+        this.jsonError(
+          { error: errorMsg, room: this.roomName, success: false },
+          flags,
         );
-        process.exitCode = 1;
       } else {
         this.error(errorMsg);
       }

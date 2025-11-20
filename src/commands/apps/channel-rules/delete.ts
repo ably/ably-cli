@@ -50,18 +50,15 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
 
       if (!appId) {
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                error:
-                  'No app specified. Use --app flag or select an app with "ably apps switch"',
-                status: "error",
-                success: false,
-              },
-              flags,
-            ),
+          this.jsonError(
+            {
+              error:
+                'No app specified. Use --app flag or select an app with "ably apps switch"',
+              status: "error",
+              success: false,
+            },
+            flags,
           );
-          process.exitCode = 1;
         } else {
           this.error(
             'No app specified. Use --app flag or select an app with "ably apps switch"',
@@ -77,18 +74,15 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
 
       if (!namespace) {
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                appId,
-                error: `Channel rule "${args.nameOrId}" not found`,
-                status: "error",
-                success: false,
-              },
-              flags,
-            ),
+          this.jsonError(
+            {
+              appId,
+              error: `Channel rule "${args.nameOrId}" not found`,
+              status: "error",
+              success: false,
+            },
+            flags,
           );
-          process.exitCode = 1;
         } else {
           this.error(`Channel rule "${args.nameOrId}" not found`);
         }
@@ -173,19 +167,16 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
 
         if (!confirmed) {
           if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput(
-                {
-                  appId,
-                  error: "Deletion cancelled by user",
-                  ruleId: namespace.id,
-                  status: "cancelled",
-                  success: false,
-                },
-                flags,
-              ),
+            this.jsonError(
+              {
+                appId,
+                error: "Deletion cancelled by user",
+                ruleId: namespace.id,
+                status: "cancelled",
+                success: false,
+              },
+              flags,
             );
-            process.exitCode = 1;
           } else {
             this.log("Deletion cancelled");
           }
@@ -215,18 +206,15 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              error: error instanceof Error ? error.message : String(error),
-              status: "error",
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            appId,
+            error: error instanceof Error ? error.message : String(error),
+            status: "error",
+            success: false,
+          },
+          flags,
         );
-        process.exitCode = 1;
       } else {
         this.error(
           `Error deleting channel rule: ${error instanceof Error ? error.message : String(error)}`,

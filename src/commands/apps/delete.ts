@@ -51,17 +51,15 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
         const error =
           'No app ID provided and no current app selected. Please provide an app ID or select a default app with "ably apps switch".';
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                error,
-                status: "error",
-                success: false,
-              },
-              flags,
-            ),
+          this.jsonError(
+            {
+              error,
+              status: "error",
+              success: false,
+            },
+            flags,
           );
-          process.exitCode = 1;
+          return;
         } else {
           this.error(error);
         }
@@ -91,18 +89,16 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
         const nameConfirmed = await this.promptForAppName(app.name);
         if (!nameConfirmed) {
           if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput(
-                {
-                  appId: app.id,
-                  error: "Deletion cancelled - app name did not match",
-                  status: "cancelled",
-                  success: false,
-                },
-                flags,
-              ),
+            this.jsonError(
+              {
+                appId: app.id,
+                error: "Deletion cancelled - app name did not match",
+                status: "cancelled",
+                success: false,
+              },
+              flags,
             );
-            process.exitCode = 1;
+            return;
           } else {
             this.log("Deletion cancelled - app name did not match");
           }
@@ -116,18 +112,16 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
 
         if (!confirmed) {
           if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput(
-                {
-                  appId: app.id,
-                  error: "Deletion cancelled by user",
-                  status: "cancelled",
-                  success: false,
-                },
-                flags,
-              ),
+            this.jsonError(
+              {
+                appId: app.id,
+                error: "Deletion cancelled by user",
+                status: "cancelled",
+                success: false,
+              },
+              flags,
             );
-            process.exitCode = 1;
+            return;
           } else {
             this.log("Deletion cancelled");
           }
@@ -170,18 +164,16 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId: appIdToDelete,
-              error: error instanceof Error ? error.message : String(error),
-              status: "error",
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            appId: appIdToDelete,
+            error: error instanceof Error ? error.message : String(error),
+            status: "error",
+            success: false,
+          },
+          flags,
         );
-        process.exitCode = 1;
+        return;
       } else {
         this.error(
           `Error deleting app: ${error instanceof Error ? error.message : String(error)}`,

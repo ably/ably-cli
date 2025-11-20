@@ -52,17 +52,14 @@ export default class KeysGetCommand extends ControlBaseCommand {
 
     if (!appId) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error:
-                'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error:
+              'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
+            success: false,
+          },
+          flags,
         );
-        process.exitCode = 1;
       } else {
         this.error(
           'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
@@ -124,18 +121,15 @@ export default class KeysGetCommand extends ControlBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              error: error instanceof Error ? error.message : String(error),
-              keyId,
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            appId,
+            error: error instanceof Error ? error.message : String(error),
+            keyId,
+            success: false,
+          },
+          flags,
         );
-        process.exitCode = 1;
       } else {
         this.error(
           `Error getting key details: ${error instanceof Error ? error.message : String(error)}`,

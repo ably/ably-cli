@@ -36,18 +36,16 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
 
       if (!appId) {
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                error:
-                  'No app specified. Use --app flag or select an app with "ably apps switch"',
-                status: "error",
-                success: false,
-              },
-              flags,
-            ),
+          this.jsonError(
+            {
+              error:
+                'No app specified. Use --app flag or select an app with "ably apps switch"',
+              status: "error",
+              success: false,
+            },
+            flags,
           );
-          process.exitCode = 1;
+          return;
         } else {
           this.error(
             'No app specified. Use --app flag or select an app with "ably apps switch"',
@@ -113,18 +111,16 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              error: error instanceof Error ? error.message : String(error),
-              status: "error",
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            appId,
+            error: error instanceof Error ? error.message : String(error),
+            status: "error",
+            success: false,
+          },
+          flags,
         );
-        process.exitCode = 1;
+        return;
       } else {
         this.error(
           `Error listing integrations: ${error instanceof Error ? error.message : String(error)}`,
