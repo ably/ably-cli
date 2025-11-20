@@ -13,7 +13,7 @@ const closest = (target: string, possibilities: string[]): string => {
   if (possibilities.length === 0) return "";
 
   // Normalize the target input to use colons for consistent comparison
-  const normalizedTarget = target.replaceAll(' ', ':');
+  const normalizedTarget = target.replaceAll(" ", ":");
 
   const distances = possibilities.map((id) => ({
     distance: levenshteinDistance(normalizedTarget, id, { useCollator: true }),

@@ -114,7 +114,7 @@ export class StatsDisplay {
 
       // Always clear the console and redisplay for live updates, even if just updating the timer
       // Skip in CI/test mode to avoid terminal control issues
-      if (!process.env.CI && process.env.ABLY_CLI_TEST_MODE !== 'true') {
+      if (!process.env.CI && process.env.ABLY_CLI_TEST_MODE !== "true") {
         process.stdout.write("\u001Bc");
       }
 

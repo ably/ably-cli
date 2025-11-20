@@ -7,11 +7,11 @@ import { BaseFlags } from "./types/cli.js";
 export abstract class ChatBaseCommand extends AblyBaseCommand {
   protected _chatRealtimeClient: Ably.Realtime | null = null;
   private _chatClient: ChatClient | null = null;
-  private _cleanupTimeout: NodeJS.Timeout | undefined
+  private _cleanupTimeout: NodeJS.Timeout | undefined;
 
   /**
    * finally disposes of the chat client, if there is one, which includes cleaning up any subscriptions.
-   * 
+   *
    * It also disposes of the realtime client.
    */
   async finally(error: Error | undefined): Promise<void> {
@@ -19,28 +19,37 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
       this._cleanup(),
       new Promise<void>((resolve) => {
         this._cleanupTimeout = setTimeout(() => {
-          this.logCliEvent({}, "rooms", "cleanupTimeout", "Cleanup timed out after 5s, forcing completion");
+          this.logCliEvent(
+            {},
+            "rooms",
+            "cleanupTimeout",
+            "Cleanup timed out after 5s, forcing completion",
+          );
           resolve();
         }, 5000);
-      })
+      }),
     ]);
 
-    clearTimeout(this._cleanupTimeout)
+    clearTimeout(this._cleanupTimeout);
     super.finally(error);
   }
-  
+
   private async _cleanup() {
     // Dispose of the chat client
     if (this._chatClient) {
-      try {        
+      try {
         await this._chatClient.dispose();
       } catch {
         // no-op
       }
     }
-    
+
     const realtime = this._chatRealtimeClient;
-    if (!realtime || realtime.connection.state === 'closed' || realtime.connection.state === 'failed') {
+    if (
+      !realtime ||
+      realtime.connection.state === "closed" ||
+      realtime.connection.state === "failed"
+    ) {
       return;
     }
 
@@ -54,8 +63,8 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
         resolve();
       };
 
-      realtime.connection.once('closed', onClosedOrFailed);
-      realtime.connection.once('failed', onClosedOrFailed);
+      realtime.connection.once("closed", onClosedOrFailed);
+      realtime.connection.once("failed", onClosedOrFailed);
       realtime.close();
     });
   }
@@ -70,7 +79,7 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
     if (this._chatClient) {
       return this._chatClient;
     }
-    
+
     // Create Ably Realtime client first
     const realtimeClient = await this.createAblyRealtimeClient(flags);
 
@@ -86,6 +95,6 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
     this._chatRealtimeClient = realtimeClient;
 
     // Use the Ably client to create the Chat client
-    return this._chatClient = new ChatClient(realtimeClient);
+    return (this._chatClient = new ChatClient(realtimeClient));
   }
 }

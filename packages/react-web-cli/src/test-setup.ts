@@ -2,7 +2,7 @@
 // allows you to do things like:
 // expect(element).toHaveTextContent(/react/i)
 // learn more: https://github.com/testing-library/jest-dom
-import '@testing-library/jest-dom';
+import "@testing-library/jest-dom";
 
 // Mock ResizeObserver for JSDOM environment
 globalThis.ResizeObserver = class ResizeObserver {
@@ -15,4 +15,4 @@ globalThis.ResizeObserver = class ResizeObserver {
   disconnect() {
     // Implementation does nothing
   }
-}; 
+};

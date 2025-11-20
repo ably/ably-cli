@@ -89,9 +89,9 @@ export default class ChannelsPublish extends AblyBaseCommand {
     // Use Realtime transport by default when publishing multiple messages to ensure ordering
     // If transport is not explicitly set and count > 1, use realtime
     // If transport is explicitly set, respect that choice
-    const shouldUseRealtime = flags.transport === "realtime" || 
-      (!flags.transport && flags.count > 1);
-    
+    const shouldUseRealtime =
+      flags.transport === "realtime" || (!flags.transport && flags.count > 1);
+
     await (shouldUseRealtime
       ? this.publishWithRealtime(args, flags)
       : this.publishWithRest(args, flags));
@@ -177,7 +177,9 @@ export default class ChannelsPublish extends AblyBaseCommand {
           `${chalk.green("✓")} ${published}/${total} messages published successfully${errors > 0 ? ` (${chalk.red(errors)} errors)` : ""}.`,
         );
       } else if (errors === 0) {
-        this.log(`${chalk.green("✓")} Message published successfully to channel "${args.channel}".`);
+        this.log(
+          `${chalk.green("✓")} Message published successfully to channel "${args.channel}".`,
+        );
       } else {
         // Error message already logged by publishMessages loop or prepareMessage
       }
@@ -277,7 +279,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
         flags,
         messageIndex,
       );
-      
+
       try {
         await publisher(message);
         publishedCount++;
@@ -323,7 +325,14 @@ export default class ChannelsPublish extends AblyBaseCommand {
     }
 
     this.clearProgressIndicator();
-    this.logFinalSummary(flags, count, publishedCount, errorCount, results, args);
+    this.logFinalSummary(
+      flags,
+      count,
+      publishedCount,
+      errorCount,
+      results,
+      args,
+    );
   }
 
   private async publishWithRealtime(

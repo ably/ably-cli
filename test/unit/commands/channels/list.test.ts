@@ -17,7 +17,7 @@ class TestableChannelsList extends ChannelsList {
     flags: { limit: 100 },
     args: {},
     argv: [],
-    raw: []
+    raw: [],
   };
 
   // Method to set parse result for testing
@@ -26,12 +26,15 @@ class TestableChannelsList extends ChannelsList {
   }
 
   // Override createAblyRestClient to return our mock
-  public override async createAblyRestClient(_flags: any, _options?: any): Promise<Ably.Rest | null> {
+  public override async createAblyRestClient(
+    _flags: any,
+    _options?: any,
+  ): Promise<Ably.Rest | null> {
     return this._mockAblyClient as any;
   }
 
   private _mockAblyClient: any = {
-    close: () => {}
+    close: () => {},
   };
 
   // Method to set the mock Ably client
@@ -101,9 +104,7 @@ class TestableChannelsList extends ChannelsList {
         return;
       }
 
-      this.log(
-        `Found ${channels.length.toString()} active channels:`,
-      );
+      this.log(`Found ${channels.length.toString()} active channels:`);
 
       for (const channel of channels) {
         this.log(`${channel.channelId}`);
@@ -111,26 +112,16 @@ class TestableChannelsList extends ChannelsList {
         // Show occupancy if available
         if (channel.status?.occupancy?.metrics) {
           const { metrics } = channel.status.occupancy;
-          this.log(
-            `  Connections: ${metrics.connections || 0}`,
-          );
-          this.log(
-            `  Publishers: ${metrics.publishers || 0}`,
-          );
-          this.log(
-            `  Subscribers: ${metrics.subscribers || 0}`,
-          );
+          this.log(`  Connections: ${metrics.connections || 0}`);
+          this.log(`  Publishers: ${metrics.publishers || 0}`);
+          this.log(`  Subscribers: ${metrics.subscribers || 0}`);
 
           if (metrics.presenceConnections !== undefined) {
-            this.log(
-              `  Presence Connections: ${metrics.presenceConnections}`,
-            );
+            this.log(`  Presence Connections: ${metrics.presenceConnections}`);
           }
 
           if (metrics.presenceMembers !== undefined) {
-            this.log(
-              `  Presence Members: ${metrics.presenceMembers}`,
-            );
+            this.log(`  Presence Members: ${metrics.presenceMembers}`);
           }
         }
 
@@ -184,10 +175,14 @@ class TestableChannelsList extends ChannelsList {
 
   // Override formatJsonOutput
   public override formatJsonOutput(data: Record<string, unknown>, _flags: any) {
-    return this._formatJsonOutputFn ? this._formatJsonOutputFn(data) : JSON.stringify(data);
+    return this._formatJsonOutputFn
+      ? this._formatJsonOutputFn(data)
+      : JSON.stringify(data);
   }
 
-  private _formatJsonOutputFn: ((data: Record<string, unknown>) => string) | null = null;
+  private _formatJsonOutputFn:
+    | ((data: Record<string, unknown>) => string)
+    | null = null;
 
   // Method to set formatJsonOutput function
   public setFormatJsonOutput(fn: (data: Record<string, unknown>) => string) {
@@ -208,10 +203,10 @@ const mockChannelsResponse = {
             publishers: 2,
             subscribers: 3,
             presenceConnections: 1,
-            presenceMembers: 2
-          }
-        }
-      }
+            presenceMembers: 2,
+          },
+        },
+      },
     },
     {
       channelId: "test-channel-2",
@@ -220,12 +215,12 @@ const mockChannelsResponse = {
           metrics: {
             connections: 3,
             publishers: 1,
-            subscribers: 2
-          }
-        }
-      }
-    }
-  ]
+            subscribers: 2,
+          },
+        },
+      },
+    },
+  ],
 };
 
 describe("ChannelsList", function () {
@@ -255,7 +250,7 @@ describe("ChannelsList", function () {
 
     // Create mock REST client
     mockRest = {
-      request: requestStub
+      request: requestStub,
     };
 
     // Set the mock rest client
@@ -266,7 +261,7 @@ describe("ChannelsList", function () {
 
     // Set the mock Ably client
     command.setMockAblyClient({
-      close: closeStub
+      close: closeStub,
     });
 
     // Set default parse result
@@ -274,7 +269,7 @@ describe("ChannelsList", function () {
       flags: { limit: 100 },
       args: {},
       argv: [],
-      raw: []
+      raw: [],
     });
   });
 
@@ -302,17 +297,19 @@ describe("ChannelsList", function () {
       expect(logStub.called).to.be.true;
 
       // Verify first call contains the channel count
-      const foundChannels = logStub.args.find(args =>
-        typeof args[0] === 'string' && args[0].includes("Found 2 active channels"));
+      const foundChannels = logStub.args.find(
+        (args) =>
+          typeof args[0] === "string" &&
+          args[0].includes("Found 2 active channels"),
+      );
       expect(foundChannels).to.exist;
-
     });
 
     it("should handle empty channels response", async function () {
       // Configure the stub to return empty array
       requestStub.resolves({
         statusCode: 200,
-        items: []
+        items: [],
       });
 
       // Run the command
@@ -322,17 +319,19 @@ describe("ChannelsList", function () {
       expect(requestStub.calledOnce).to.be.true;
 
       // Verify that we log "No active channels found"
-      const noChannelsLog = logStub.args.find(args =>
-        typeof args[0] === 'string' && args[0] === "No active channels found.");
+      const noChannelsLog = logStub.args.find(
+        (args) =>
+          typeof args[0] === "string" &&
+          args[0] === "No active channels found.",
+      );
       expect(noChannelsLog).to.exist;
-
     });
 
     it("should handle API errors", async function () {
       // Configure the stub to return an error
       requestStub.resolves({
         statusCode: 400,
-        error: "Bad Request"
+        error: "Bad Request",
       });
 
       // Run the command and expect it to error
@@ -341,7 +340,6 @@ describe("ChannelsList", function () {
       // Verify the error was handled
       expect(errorStub.calledOnce).to.be.true;
       expect(errorStub.firstCall.args[0]).to.include("Failed to list channels");
-
     });
 
     it("should respect limit flag", async function () {
@@ -350,7 +348,7 @@ describe("ChannelsList", function () {
         flags: { limit: 50 },
         args: {},
         argv: [],
-        raw: []
+        raw: [],
       });
 
       // Configure the response
@@ -362,7 +360,6 @@ describe("ChannelsList", function () {
       // Verify the request was called with the correct limit
       expect(requestStub.calledOnce).to.be.true;
       expect(requestStub.firstCall.args[3]).to.deep.equal({ limit: 50 });
-
     });
 
     it("should respect prefix flag", async function () {
@@ -371,7 +368,7 @@ describe("ChannelsList", function () {
         flags: { limit: 100, prefix: "test-" },
         args: {},
         argv: [],
-        raw: []
+        raw: [],
       });
 
       // Configure the response
@@ -384,9 +381,8 @@ describe("ChannelsList", function () {
       expect(requestStub.calledOnce).to.be.true;
       expect(requestStub.firstCall.args[3]).to.deep.equal({
         limit: 100,
-        prefix: "test-"
+        prefix: "test-",
       });
-
     });
   });
 
@@ -413,10 +409,12 @@ describe("ChannelsList", function () {
       // Verify the structure of the JSON output
       expect(jsonOutput).to.have.property("channels").that.is.an("array");
       expect(jsonOutput.channels).to.have.lengthOf(2);
-      expect(jsonOutput.channels[0]).to.have.property("channelId", "test-channel-1");
+      expect(jsonOutput.channels[0]).to.have.property(
+        "channelId",
+        "test-channel-1",
+      );
       expect(jsonOutput.channels[0]).to.have.property("metrics");
       expect(jsonOutput).to.have.property("success", true);
-
     });
   });
 });

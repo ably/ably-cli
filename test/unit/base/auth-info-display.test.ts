@@ -22,7 +22,10 @@ class TestCommand extends AblyBaseCommand {
   }
 
   // For direct testing of displayAuthInfo
-  public async testDisplayAuthInfo(flags: any = {}, showAppInfo: boolean = true): Promise<void> {
+  public async testDisplayAuthInfo(
+    flags: any = {},
+    showAppInfo: boolean = true,
+  ): Promise<void> {
     return this.displayAuthInfo(flags, showAppInfo);
   }
 
@@ -48,14 +51,14 @@ class TestCommand extends AblyBaseCommand {
   }
 }
 
-describe("Auth Info Display", function() {
+describe("Auth Info Display", function () {
   let command: TestCommand;
   let configManagerStub: sinon.SinonStubbedInstance<ConfigManager>;
   let logStub: sinon.SinonStub;
   let debugStub: sinon.SinonStub;
   let sandbox: sinon.SinonSandbox;
 
-  beforeEach(function() {
+  beforeEach(function () {
     sandbox = sinon.createSandbox();
     // Create stubs using sandbox where applicable
     configManagerStub = sandbox.createStubInstance(ConfigManager);
@@ -74,68 +77,78 @@ describe("Auth Info Display", function() {
     });
 
     // Stub log and debug methods using sandbox
-    logStub = sandbox.stub(command as any, 'log');
-    debugStub = sandbox.stub(command as any, 'debug');
+    logStub = sandbox.stub(command as any, "log");
+    debugStub = sandbox.stub(command as any, "debug");
 
     // Make sure environment variables are clean
     delete process.env.ABLY_API_KEY;
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
-  afterEach(function() {
+  afterEach(function () {
     sandbox.restore();
     delete process.env.ABLY_API_KEY;
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
-  describe("shouldHideAccountInfo", function() {
-    it("should return true when no account is configured", function() {
+  describe("shouldHideAccountInfo", function () {
+    it("should return true when no account is configured", function () {
       configManagerStub.getCurrentAccount.returns(undefined as any);
       expect(command.testShouldHideAccountInfo({})).to.be.true;
     });
 
-    it("should return true when API key is provided explicitly", function() {
-      expect(command.testShouldHideAccountInfo({ "api-key": "app-id.key:secret" })).to.be.true;
+    it("should return true when API key is provided explicitly", function () {
+      expect(
+        command.testShouldHideAccountInfo({ "api-key": "app-id.key:secret" }),
+      ).to.be.true;
     });
 
-    it("should return true when token is provided explicitly", function() {
-      expect(command.testShouldHideAccountInfo({ token: "some-token" })).to.be.true;
+    it("should return true when token is provided explicitly", function () {
+      expect(command.testShouldHideAccountInfo({ token: "some-token" })).to.be
+        .true;
     });
 
-    it("should return true when access token is provided explicitly", function() {
-      expect(command.testShouldHideAccountInfo({ "access-token": "some-access-token" })).to.be.true;
+    it("should return true when access token is provided explicitly", function () {
+      expect(
+        command.testShouldHideAccountInfo({
+          "access-token": "some-access-token",
+        }),
+      ).to.be.true;
     });
 
-    it("should return true when ABLY_API_KEY environment variable is set", function() {
+    it("should return true when ABLY_API_KEY environment variable is set", function () {
       process.env.ABLY_API_KEY = "app-id.key:secret";
       expect(command.testShouldHideAccountInfo({})).to.be.true;
     });
 
-    it("should return true when ABLY_ACCESS_TOKEN environment variable is set", function() {
+    it("should return true when ABLY_ACCESS_TOKEN environment variable is set", function () {
       process.env.ABLY_ACCESS_TOKEN = "some-access-token";
       expect(command.testShouldHideAccountInfo({})).to.be.true;
     });
 
-    it("should return false when account is configured and no auth overrides", function() {
+    it("should return false when account is configured and no auth overrides", function () {
       expect(command.testShouldHideAccountInfo({})).to.be.false;
     });
   });
 
-  describe("displayAuthInfo", function() {
+  describe("displayAuthInfo", function () {
     let shouldHideAccountInfoStub: sinon.SinonStub;
 
-    beforeEach(function() {
+    beforeEach(function () {
       // Stub using the sandbox created in the parent describe
-      shouldHideAccountInfoStub = sandbox.stub(command as any, 'shouldHideAccountInfo');
+      shouldHideAccountInfoStub = sandbox.stub(
+        command as any,
+        "shouldHideAccountInfo",
+      );
 
       // Set up stubs for app info (already stubbed via configManagerStub in parent beforeEach)
-      configManagerStub.getCurrentAppId.returns('test-app-id');
-      configManagerStub.getAppName.returns('Test App');
-      configManagerStub.getApiKey.returns('test-app-id.key:secret');
-      configManagerStub.getKeyName.returns('Test Key');
+      configManagerStub.getCurrentAppId.returns("test-app-id");
+      configManagerStub.getAppName.returns("Test App");
+      configManagerStub.getApiKey.returns("test-app-id.key:secret");
+      configManagerStub.getKeyName.returns("Test Key");
     });
 
-    it("should not include account info when shouldHideAccountInfo returns true", async function() {
+    it("should not include account info when shouldHideAccountInfo returns true", async function () {
       // Setup
       shouldHideAccountInfoStub.returns(true);
 
@@ -144,13 +157,15 @@ describe("Auth Info Display", function() {
 
       // Verify that the log output doesn't contain account info
       expect(logStub.called).to.be.true;
-      const outputCalls = logStub.getCalls().map(call => call.args[0]);
-      const outputWithUsingPrefix = outputCalls.find(output => typeof output === 'string' && output.includes('Using:'));
-      expect(outputWithUsingPrefix).to.not.include('Account=');
-      expect(outputWithUsingPrefix).to.include('App=');
+      const outputCalls = logStub.getCalls().map((call) => call.args[0]);
+      const outputWithUsingPrefix = outputCalls.find(
+        (output) => typeof output === "string" && output.includes("Using:"),
+      );
+      expect(outputWithUsingPrefix).to.not.include("Account=");
+      expect(outputWithUsingPrefix).to.include("App=");
     });
 
-    it("should include account info when shouldHideAccountInfo returns false", async function() {
+    it("should include account info when shouldHideAccountInfo returns false", async function () {
       // Setup
       shouldHideAccountInfoStub.returns(false);
 
@@ -159,12 +174,14 @@ describe("Auth Info Display", function() {
 
       // Verify that the log output contains account info
       expect(logStub.called).to.be.true;
-      const outputCalls = logStub.getCalls().map(call => call.args[0]);
-      const outputWithUsingPrefix = outputCalls.find(output => typeof output === 'string' && output.includes('Using:'));
-      expect(outputWithUsingPrefix).to.include('Account=');
+      const outputCalls = logStub.getCalls().map((call) => call.args[0]);
+      const outputWithUsingPrefix = outputCalls.find(
+        (output) => typeof output === "string" && output.includes("Using:"),
+      );
+      expect(outputWithUsingPrefix).to.include("Account=");
     });
 
-    it("should not display anything when there are no parts to show", async function() {
+    it("should not display anything when there are no parts to show", async function () {
       // Setup - hide account and don't show app info
       shouldHideAccountInfoStub.returns(true);
 
@@ -175,7 +192,7 @@ describe("Auth Info Display", function() {
       expect(logStub.called).to.be.false;
     });
 
-    it("should display app and auth info when token is provided", async function() {
+    it("should display app and auth info when token is provided", async function () {
       // Setup
       shouldHideAccountInfoStub.returns(true);
 
@@ -185,45 +202,63 @@ describe("Auth Info Display", function() {
 
       // Verify output includes token info but not account info
       expect(logStub.called).to.be.true;
-      const outputCalls = logStub.getCalls().map(call => call.args[0]);
-      const outputWithUsingPrefix = outputCalls.find(output => typeof output === 'string' && output.includes('Using:'));
-      expect(outputWithUsingPrefix).to.not.include('Account=');
-      expect(outputWithUsingPrefix).to.include('App=');
+      const outputCalls = logStub.getCalls().map((call) => call.args[0]);
+      const outputWithUsingPrefix = outputCalls.find(
+        (output) => typeof output === "string" && output.includes("Using:"),
+      );
+      expect(outputWithUsingPrefix).to.not.include("Account=");
+      expect(outputWithUsingPrefix).to.include("App=");
       // The token is shown in a special format that may include ANSI color codes
-      expect(outputWithUsingPrefix).to.include('Token');
+      expect(outputWithUsingPrefix).to.include("Token");
     });
 
-    it("should display app and key info when API key is provided", async function() {
+    it("should display app and key info when API key is provided", async function () {
       // Setup
       shouldHideAccountInfoStub.returns(true);
 
       // Execute with API key
-      await command.testDisplayAuthInfo({ "api-key": "test-app-id.key:secret" });
+      await command.testDisplayAuthInfo({
+        "api-key": "test-app-id.key:secret",
+      });
 
       // Verify output includes key info but not account info
       expect(logStub.called).to.be.true;
-      const outputCalls = logStub.getCalls().map(call => call.args[0]);
-      const outputWithUsingPrefix = outputCalls.find(output => typeof output === 'string' && output.includes('Using:'));
-      expect(outputWithUsingPrefix).to.not.include('Account=');
-      expect(outputWithUsingPrefix).to.include('App=');
-      expect(outputWithUsingPrefix).to.include('Key=');
+      const outputCalls = logStub.getCalls().map((call) => call.args[0]);
+      const outputWithUsingPrefix = outputCalls.find(
+        (output) => typeof output === "string" && output.includes("Using:"),
+      );
+      expect(outputWithUsingPrefix).to.not.include("Account=");
+      expect(outputWithUsingPrefix).to.include("App=");
+      expect(outputWithUsingPrefix).to.include("Key=");
     });
   });
 
-  describe("showAuthInfoIfNeeded", function() {
+  describe("showAuthInfoIfNeeded", function () {
     let displayDataPlaneInfoStub: sinon.SinonStub;
     let displayControlPlaneInfoStub: sinon.SinonStub;
     let shouldShowAuthInfoStub: sinon.SinonStub;
     let shouldOutputJsonStub: sinon.SinonStub;
     let shouldSuppressOutputStub: sinon.SinonStub;
 
-    beforeEach(function() {
+    beforeEach(function () {
       // Create stubs using the sandbox from the parent describe
-      displayDataPlaneInfoStub = sandbox.stub(command as any, 'displayDataPlaneInfo');
-      displayControlPlaneInfoStub = sandbox.stub(command as any, 'displayControlPlaneInfo');
-      shouldShowAuthInfoStub = sandbox.stub(command as any, 'shouldShowAuthInfo');
-      shouldOutputJsonStub = sandbox.stub(command as any, 'shouldOutputJson');
-      shouldSuppressOutputStub = sandbox.stub(command as any, 'shouldSuppressOutput');
+      displayDataPlaneInfoStub = sandbox.stub(
+        command as any,
+        "displayDataPlaneInfo",
+      );
+      displayControlPlaneInfoStub = sandbox.stub(
+        command as any,
+        "displayControlPlaneInfo",
+      );
+      shouldShowAuthInfoStub = sandbox.stub(
+        command as any,
+        "shouldShowAuthInfo",
+      );
+      shouldOutputJsonStub = sandbox.stub(command as any, "shouldOutputJson");
+      shouldSuppressOutputStub = sandbox.stub(
+        command as any,
+        "shouldSuppressOutput",
+      );
 
       // Default behavior - will be overridden in specific tests
       shouldShowAuthInfoStub.returns(true);
@@ -234,7 +269,7 @@ describe("Auth Info Display", function() {
       (command as any).isWebCliMode = false;
     });
 
-    it("should skip display when shouldShowAuthInfo returns false", async function() {
+    it("should skip display when shouldShowAuthInfo returns false", async function () {
       shouldShowAuthInfoStub.returns(false);
 
       await command.testShowAuthInfoIfNeeded({});
@@ -244,14 +279,14 @@ describe("Auth Info Display", function() {
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should skip display when quiet flag is true", async function() {
+    it("should skip display when quiet flag is true", async function () {
       await command.testShowAuthInfoIfNeeded({ quiet: true });
 
       expect(displayDataPlaneInfoStub.called).to.be.false;
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should skip display when in JSON output mode", async function() {
+    it("should skip display when in JSON output mode", async function () {
       shouldOutputJsonStub.returns(true);
 
       await command.testShowAuthInfoIfNeeded({});
@@ -260,14 +295,14 @@ describe("Auth Info Display", function() {
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should skip display when token-only flag is true", async function() {
+    it("should skip display when token-only flag is true", async function () {
       await command.testShowAuthInfoIfNeeded({ "token-only": true });
 
       expect(displayDataPlaneInfoStub.called).to.be.false;
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should skip display when shouldSuppressOutput returns true", async function() {
+    it("should skip display when shouldSuppressOutput returns true", async function () {
       shouldSuppressOutputStub.returns(true);
 
       await command.testShowAuthInfoIfNeeded({});
@@ -281,7 +316,7 @@ describe("Auth Info Display", function() {
     // user-provided and configured credentials. These tests now verify that
     // showAuthInfoIfNeeded itself doesn't filter based on these flags.
 
-    it("should skip display in Web CLI mode", async function() {
+    it("should skip display in Web CLI mode", async function () {
       (command as any).isWebCliMode = true;
 
       await command.testShowAuthInfoIfNeeded({});
@@ -291,8 +326,8 @@ describe("Auth Info Display", function() {
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should call displayDataPlaneInfo for apps: commands", async function() {
-      Object.defineProperty(command, 'id', { value: 'apps:list' });
+    it("should call displayDataPlaneInfo for apps: commands", async function () {
+      Object.defineProperty(command, "id", { value: "apps:list" });
 
       await command.testShowAuthInfoIfNeeded({});
 
@@ -300,8 +335,8 @@ describe("Auth Info Display", function() {
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should call displayDataPlaneInfo for channels: commands", async function() {
-      Object.defineProperty(command, 'id', { value: 'channels:publish' });
+    it("should call displayDataPlaneInfo for channels: commands", async function () {
+      Object.defineProperty(command, "id", { value: "channels:publish" });
 
       await command.testShowAuthInfoIfNeeded({});
 
@@ -309,8 +344,8 @@ describe("Auth Info Display", function() {
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should call displayDataPlaneInfo for auth: commands", async function() {
-      Object.defineProperty(command, 'id', { value: 'auth:issue-ably-token' });
+    it("should call displayDataPlaneInfo for auth: commands", async function () {
+      Object.defineProperty(command, "id", { value: "auth:issue-ably-token" });
 
       await command.testShowAuthInfoIfNeeded({});
 
@@ -318,8 +353,8 @@ describe("Auth Info Display", function() {
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should call displayDataPlaneInfo for rooms: commands", async function() {
-      Object.defineProperty(command, 'id', { value: 'rooms:list' });
+    it("should call displayDataPlaneInfo for rooms: commands", async function () {
+      Object.defineProperty(command, "id", { value: "rooms:list" });
 
       await command.testShowAuthInfoIfNeeded({});
 
@@ -327,8 +362,8 @@ describe("Auth Info Display", function() {
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should call displayControlPlaneInfo for accounts: commands", async function() {
-      Object.defineProperty(command, 'id', { value: 'accounts:list' });
+    it("should call displayControlPlaneInfo for accounts: commands", async function () {
+      Object.defineProperty(command, "id", { value: "accounts:list" });
 
       await command.testShowAuthInfoIfNeeded({});
 
@@ -336,8 +371,8 @@ describe("Auth Info Display", function() {
       expect(displayControlPlaneInfoStub.calledOnce).to.be.true;
     });
 
-    it("should call displayControlPlaneInfo for integrations: commands", async function() {
-      Object.defineProperty(command, 'id', { value: 'integrations:list' });
+    it("should call displayControlPlaneInfo for integrations: commands", async function () {
+      Object.defineProperty(command, "id", { value: "integrations:list" });
 
       await command.testShowAuthInfoIfNeeded({});
 
@@ -345,8 +380,8 @@ describe("Auth Info Display", function() {
       expect(displayControlPlaneInfoStub.calledOnce).to.be.true;
     });
 
-    it("should not call any display method for other commands", async function() {
-      Object.defineProperty(command, 'id', { value: 'help' });
+    it("should not call any display method for other commands", async function () {
+      Object.defineProperty(command, "id", { value: "help" });
 
       await command.testShowAuthInfoIfNeeded({});
 
@@ -354,9 +389,9 @@ describe("Auth Info Display", function() {
       expect(displayControlPlaneInfoStub.called).to.be.false;
     });
 
-    it("should pass flags to display methods", async function() {
-      Object.defineProperty(command, 'id', { value: 'apps:list' });
-      const flags = { app: 'test-app', verbose: true };
+    it("should pass flags to display methods", async function () {
+      Object.defineProperty(command, "id", { value: "apps:list" });
+      const flags = { app: "test-app", verbose: true };
 
       await command.testShowAuthInfoIfNeeded(flags);
 

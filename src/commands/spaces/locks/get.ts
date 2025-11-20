@@ -85,7 +85,9 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
             );
           } else {
             this.log(
-              chalk.yellow(`Lock '${lockId}' not found in space '${spaceName}'`),
+              chalk.yellow(
+                `Lock '${lockId}' not found in space '${spaceName}'`,
+              ),
             );
           }
 

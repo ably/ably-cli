@@ -12,7 +12,7 @@ class TestableHelpCommand extends HelpCommand {
     argv: [],
     raw: [],
   };
-  
+
   private _customHelp: any;
 
   // Override parse to return our controlled parse result
@@ -24,16 +24,16 @@ class TestableHelpCommand extends HelpCommand {
   public setParseResult(result: any) {
     this._parseResult = result;
   }
-  
+
   getCustomHelp(): CustomHelp {
     return this._customHelp;
   }
-  
+
   setCustomHelp(showCommandHelpStub: any, formatWebCliRootStub: any) {
     this._customHelp = {
       showCommandHelp: showCommandHelpStub,
-      formatWebCliRoot: formatWebCliRootStub
-    }
+      formatWebCliRoot: formatWebCliRootStub,
+    };
   }
 }
 
@@ -85,32 +85,29 @@ describe("Help Command Tests", function () {
     let sandbox: sinon.SinonSandbox;
     let _showCommandStub: sinon.SinonStub;
     let _formatWebCliRootStub: sinon.SinonStub;
-  
+
     beforeEach(function () {
       sandbox = sinon.createSandbox();
       _showCommandStub = sandbox.stub();
       _formatWebCliRootStub = sandbox.stub();
     });
-    
+
     afterEach(function () {
-      sandbox.restore()
-    })
+      sandbox.restore();
+    });
 
     it("should accept command names as arguments", async function () {
       const help = new TestableHelpCommand([], {} as Config);
-      help.setCustomHelp(_showCommandStub, _formatWebCliRootStub)
+      help.setCustomHelp(_showCommandStub, _formatWebCliRootStub);
 
       // Mock config.runCommand
-      const findCommandStub = sandbox.stub().returns('abc')
+      const findCommandStub = sandbox.stub().returns("abc");
       help.config = {
         findCommand: findCommandStub,
-        commands: [
-          "publish",
-          "subscribe",
-        ],
+        commands: ["publish", "subscribe"],
         topics: [],
       } as any;
-      
+
       help.setParseResult({
         flags: {},
         args: {},
@@ -119,14 +116,10 @@ describe("Help Command Tests", function () {
       });
 
       await help.run();
-      
-      expect(
-        findCommandStub.calledWith("channels"),
-      ).to.be.true;
 
-      expect(
-        _showCommandStub.calledWith("abc"),
-      ).to.be.true;
+      expect(findCommandStub.calledWith("channels")).to.be.true;
+
+      expect(_showCommandStub.calledWith("abc")).to.be.true;
     });
 
     it("should handle --web-cli-help flag", async function () {
@@ -138,7 +131,7 @@ describe("Help Command Tests", function () {
         commands: [],
         topics: [],
       } as any;
-      
+
       help.setParseResult({
         flags: { "web-cli-help": true },
         args: {},
@@ -147,27 +140,22 @@ describe("Help Command Tests", function () {
       });
 
       await help.run();
-      
-      expect(
-        _formatWebCliRootStub.calledOnce
-      ).to.be.true;
+
+      expect(_formatWebCliRootStub.calledOnce).to.be.true;
     });
 
     it("should pass through multiple arguments", async function () {
       const help = new TestableHelpCommand([], {} as Config);
-      help.setCustomHelp(_showCommandStub, _formatWebCliRootStub)
+      help.setCustomHelp(_showCommandStub, _formatWebCliRootStub);
 
       // Mock config.runCommand
-      const findCommandStub = sandbox.stub().returns('abc')
+      const findCommandStub = sandbox.stub().returns("abc");
       help.config = {
         findCommand: findCommandStub,
-        commands: [
-          "publish",
-          "subscribe",
-        ],
+        commands: ["publish", "subscribe"],
         topics: [],
       } as any;
-      
+
       help.setParseResult({
         flags: {},
         args: {},
@@ -177,13 +165,9 @@ describe("Help Command Tests", function () {
 
       await help.run();
 
-      expect(
-        findCommandStub.calledWith("channels:publish"),
-      ).to.be.true;
+      expect(findCommandStub.calledWith("channels:publish")).to.be.true;
 
-      expect(
-        _showCommandStub.calledWith("abc"),
-      ).to.be.true;
+      expect(_showCommandStub.calledWith("abc")).to.be.true;
     });
   });
 

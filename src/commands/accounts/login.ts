@@ -211,7 +211,7 @@ export default class AccountsLogin extends ControlBaseCommand {
           this.log("\nNo apps found in your account.");
 
           const shouldCreateApp = await this.promptYesNo(
-            "Would you like to create your first app now?"
+            "Would you like to create your first app now?",
           );
 
           if (shouldCreateApp) {
@@ -234,7 +234,9 @@ export default class AccountsLogin extends ControlBaseCommand {
 
               this.log(`${chalk.green("✓")} App created successfully!`);
             } catch (createError) {
-              this.warn(`Failed to create app: ${createError instanceof Error ? createError.message : String(createError)}`);
+              this.warn(
+                `Failed to create app: ${createError instanceof Error ? createError.message : String(createError)}`,
+              );
               // Continue with login even if app creation fails
             }
           }
@@ -243,7 +245,9 @@ export default class AccountsLogin extends ControlBaseCommand {
       } catch (error) {
         // Don't fail login if app fetching fails, just log for debugging
         if (!this.shouldOutputJson(flags)) {
-          this.warn(`Could not fetch apps: ${error instanceof Error ? error.message : String(error)}`);
+          this.warn(
+            `Could not fetch apps: ${error instanceof Error ? error.message : String(error)}`,
+          );
         }
       }
 
@@ -266,7 +270,10 @@ export default class AccountsLogin extends ControlBaseCommand {
             // Prompt user to select a key when multiple exist
             this.log("\nSelect an API key to use:");
 
-            selectedKey = await this.interactiveHelper.selectKey(controlApi, selectedApp.id);
+            selectedKey = await this.interactiveHelper.selectKey(
+              controlApi,
+              selectedApp.id,
+            );
 
             if (selectedKey) {
               this.configManager.storeAppKey(selectedApp.id, selectedKey.key, {
@@ -278,7 +285,9 @@ export default class AccountsLogin extends ControlBaseCommand {
           // If keys.length === 0, continue without key (should be rare for newly created apps)
         } catch (keyError) {
           // Don't fail login if key fetching fails
-          this.warn(`Could not fetch API keys: ${keyError instanceof Error ? keyError.message : String(keyError)}`);
+          this.warn(
+            `Could not fetch API keys: ${keyError instanceof Error ? keyError.message : String(keyError)}`,
+          );
         }
       }
 
@@ -430,7 +439,7 @@ export default class AccountsLogin extends ControlBaseCommand {
 
     return new Promise((resolve) => {
       const askForAppName = () => {
-        rl.question('Enter a name for your app: ', (appName) => {
+        rl.question("Enter a name for your app: ", (appName) => {
           const trimmedName = appName.trim();
 
           if (trimmedName.length === 0) {

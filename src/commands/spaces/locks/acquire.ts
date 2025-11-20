@@ -114,7 +114,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
 
       // Set up connection state logging
       this.setupConnectionStateLogging(this.realtimeClient, flags, {
-        includeUserFriendlyMessages: true
+        includeUserFriendlyMessages: true,
       });
 
       // Parse lock data if provided

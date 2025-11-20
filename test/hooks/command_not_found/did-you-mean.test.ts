@@ -147,9 +147,15 @@ const setupTestContext = test
         ctx.stubs.error(input instanceof Error ? input.message : input);
 
         // For test purposes, throw the error so it can be caught
-        const errorToThrow = input instanceof Error ? input : new TypeError(String(input));
+        const errorToThrow =
+          input instanceof Error ? input : new TypeError(String(input));
         // Attach oclif exit code if provided OR if it exists on the input error
-        const exitCode = options?.exit ?? (input instanceof Errors.CLIError ? (input as any).oclif?.exit : undefined) ?? 1;
+        const exitCode =
+          options?.exit ??
+          (input instanceof Errors.CLIError
+            ? (input as any).oclif?.exit
+            : undefined) ??
+          1;
         if (exitCode !== false) {
           (errorToThrow as any).oclif = { exit: exitCode };
         }
@@ -176,10 +182,9 @@ const setupRejectingTestContext = test
       exit: ctx.sandbox.stub(process, "exit").returns(undefined as never),
       // This stub specifically rejects by default (for channels:subscribe)
       // REMOVE default rejection - configure rejection within specific tests
-      runCommand: ctx.sandbox
-        .stub(Config.prototype, "runCommand")
-        // .withArgs("channels:subscribe", []) // Expect empty array now
-        // .rejects(new Errors.CLIError("Missing 1 required arg: channel")),
+      runCommand: ctx.sandbox.stub(Config.prototype, "runCommand"),
+      // .withArgs("channels:subscribe", []) // Expect empty array now
+      // .rejects(new Errors.CLIError("Missing 1 required arg: channel")),
     };
   })
   .do((ctx: TestContext & { sandbox: sinon.SinonSandbox }) => {
@@ -194,9 +199,15 @@ const setupRejectingTestContext = test
         ctx.stubs.error(input instanceof Error ? input.message : input);
 
         // For test purposes, throw the error so it can be caught
-        const errorToThrow = input instanceof Error ? input : new TypeError(String(input));
+        const errorToThrow =
+          input instanceof Error ? input : new TypeError(String(input));
         // Attach oclif exit code if provided OR if it exists on the input error
-        const exitCode = options?.exit ?? (input instanceof Errors.CLIError ? (input as any).oclif?.exit : undefined) ?? 1;
+        const exitCode =
+          options?.exit ??
+          (input instanceof Errors.CLIError
+            ? (input as any).oclif?.exit
+            : undefined) ??
+          1;
         if (exitCode !== false) {
           (errorToThrow as any).oclif = { exit: exitCode };
         }
@@ -208,15 +219,14 @@ const setupRejectingTestContext = test
     };
   });
 
-describe('Command Not Found Hook', function() {
-
-  beforeEach(function() {
-      sandbox = sinon.createSandbox();
-      // Set environment variable to skip confirmation in tests
-      process.env.SKIP_CONFIRMATION = "true";
+describe("Command Not Found Hook", function () {
+  beforeEach(function () {
+    sandbox = sinon.createSandbox();
+    // Set environment variable to skip confirmation in tests
+    process.env.SKIP_CONFIRMATION = "true";
   });
 
-  afterEach(function() {
+  afterEach(function () {
     sandbox.restore();
     delete process.env.SKIP_CONFIRMATION;
   });
@@ -332,7 +342,9 @@ describe('Command Not Found Hook', function() {
         await hook.apply(ctx.mockContext, [hookOpts]);
       } catch (error: unknown) {
         errorCaught = true;
-        expect((error as Error).message).to.contain("Command xyzxyzxyz completely nonexistent command not found");
+        expect((error as Error).message).to.contain(
+          "Command xyzxyzxyz completely nonexistent command not found",
+        );
       }
 
       // Verify error was thrown and behavior was correct
@@ -343,8 +355,12 @@ describe('Command Not Found Hook', function() {
 
       // Check the error message format
       const errorArg = ctx.stubs.error.firstCall.args[0];
-      expect(stripAnsi(String(errorArg))).to.include("xyzxyzxyz completely nonexistent command not found");
-      expect(stripAnsi(String(errorArg))).to.include("Run ably --help for a list of available commands");
+      expect(stripAnsi(String(errorArg))).to.include(
+        "xyzxyzxyz completely nonexistent command not found",
+      );
+      expect(stripAnsi(String(errorArg))).to.include(
+        "Run ably --help for a list of available commands",
+      );
     },
   );
 
@@ -375,7 +391,9 @@ describe('Command Not Found Hook', function() {
       expect(ctx.stubs.error.calledOnce).to.be.true;
       const errorArg = ctx.stubs.error.firstCall.args[0];
       expect(stripAnsi(String(errorArg))).to.include("xyzxyzxyzabc not found");
-      expect(stripAnsi(String(errorArg))).to.include("Run ably --help for a list of available commands");
+      expect(stripAnsi(String(errorArg))).to.include(
+        "Run ably --help for a list of available commands",
+      );
     },
   );
 
@@ -384,7 +402,9 @@ describe('Command Not Found Hook', function() {
     "should show command help with full help command for missing required arguments",
     async (ctx: TestContext) => {
       // Create a typical error from missing required args
-      const missingArgsError = new Errors.CLIError("Missing 1 required arg: channel\nSee more help with --help");
+      const missingArgsError = new Errors.CLIError(
+        "Missing 1 required arg: channel\nSee more help with --help",
+      );
       missingArgsError.oclif = { exit: 1 };
 
       // Configure the runCommand stub to reject with our error for this specific command
@@ -419,7 +439,8 @@ describe('Command Not Found Hook', function() {
       // Verify our expectations
       expect(errorCaught).to.be.true;
       expect(ctx.stubs.warn.calledOnce).to.be.true;
-      expect(ctx.stubs.runCommand.calledOnceWith("channels:subscribe", [])).to.be.true;
+      expect(ctx.stubs.runCommand.calledOnceWith("channels:subscribe", [])).to
+        .be.true;
 
       // Verify usage information was displayed
       expect(ctx.stubs.log.called).to.be.true;
@@ -430,11 +451,11 @@ describe('Command Not Found Hook', function() {
 
       for (let i = 0; i < ctx.stubs.log.callCount; i++) {
         const callArg = ctx.stubs.log.getCall(i).args[0];
-        if (typeof callArg === 'string') {
-          if (callArg === '\nUSAGE') {
+        if (typeof callArg === "string") {
+          if (callArg === "\nUSAGE") {
             usageCall = true;
           }
-          if (callArg.includes('See more help with:')) {
+          if (callArg.includes("See more help with:")) {
             helpCall = true;
           }
         }
@@ -472,7 +493,9 @@ describe('Command Not Found Hook', function() {
     "should attempt suggested command and propagate its error (space input)",
     async (ctx: TestContext) => {
       // Create a typical error from missing required args
-      const missingArgsError = new Errors.CLIError("Missing 1 required arg: channel");
+      const missingArgsError = new Errors.CLIError(
+        "Missing 1 required arg: channel",
+      );
       missingArgsError.oclif = { exit: 1 };
 
       // Configure the runCommand stub to reject with our error for this specific command
@@ -495,13 +518,16 @@ describe('Command Not Found Hook', function() {
       } catch (error: unknown) {
         errorCaught = true;
         // Check the error is correctly propagated
-        expect((error as Error).message).to.equal("Missing 1 required arg: channel");
+        expect((error as Error).message).to.equal(
+          "Missing 1 required arg: channel",
+        );
       }
 
       // Verify our expectations
       expect(errorCaught).to.be.true;
       expect(ctx.stubs.warn.calledOnce).to.be.true;
-      expect(ctx.stubs.runCommand.calledOnceWith("channels:subscribe", [])).to.be.true;
+      expect(ctx.stubs.runCommand.calledOnceWith("channels:subscribe", [])).to
+        .be.true;
     },
   );
 
@@ -534,5 +560,4 @@ describe('Command Not Found Hook', function() {
       ).to.be.true;
     },
   );
-
 });

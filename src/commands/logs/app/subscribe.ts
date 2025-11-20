@@ -21,7 +21,8 @@ export default class LogsAppSubscribe extends AblyBaseCommand {
   static override flags = {
     ...AblyBaseCommand.globalFlags,
     duration: Flags.integer({
-      description: "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description:
+        "Automatically exit after the given number of seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -45,7 +46,11 @@ export default class LogsAppSubscribe extends AblyBaseCommand {
   private client: Ably.Realtime | null = null;
 
   private async properlyCloseAblyClient(): Promise<void> {
-    if (!this.client || this.client.connection.state === 'closed' || this.client.connection.state === 'failed') {
+    if (
+      !this.client ||
+      this.client.connection.state === "closed" ||
+      this.client.connection.state === "failed"
+    ) {
       return;
     }
 
@@ -59,8 +64,8 @@ export default class LogsAppSubscribe extends AblyBaseCommand {
         resolve();
       };
 
-      this.client!.connection.once('closed', onClosedOrFailed);
-      this.client!.connection.once('failed', onClosedOrFailed);
+      this.client!.connection.once("closed", onClosedOrFailed);
+      this.client!.connection.once("failed", onClosedOrFailed);
       this.client!.close();
     });
   }
@@ -84,7 +89,7 @@ export default class LogsAppSubscribe extends AblyBaseCommand {
 
       // Set up connection state logging
       this.setupConnectionStateLogging(client, flags, {
-        includeUserFriendlyMessages: true
+        includeUserFriendlyMessages: true,
       });
 
       // Get the logs channel
@@ -94,7 +99,7 @@ export default class LogsAppSubscribe extends AblyBaseCommand {
         return;
       }
       const logsChannelName = `[meta]log`;
-      
+
       // Configure channel options for rewind if specified
       const channelOptions: Ably.ChannelOptions = {};
       if (flags.rewind && flags.rewind > 0) {
@@ -110,22 +115,24 @@ export default class LogsAppSubscribe extends AblyBaseCommand {
           rewind: flags.rewind.toString(),
         };
       }
-      
+
       channel = client.channels.get(logsChannelName, channelOptions);
 
       // Set up channel state logging
       this.setupChannelStateLogging(channel, flags, {
-        includeUserFriendlyMessages: true
+        includeUserFriendlyMessages: true,
       });
 
       // Determine which log types to subscribe to
-      const logTypes = flags.type ? [flags.type] : [
-        "channel.lifecycle",
-        "channel.occupancy",
-        "channel.presence",
-        "connection.lifecycle",
-        "push.publish",
-      ];
+      const logTypes = flags.type
+        ? [flags.type]
+        : [
+            "channel.lifecycle",
+            "channel.occupancy",
+            "channel.presence",
+            "connection.lifecycle",
+            "push.publish",
+          ];
 
       this.logCliEvent(
         flags,
@@ -169,7 +176,9 @@ export default class LogsAppSubscribe extends AblyBaseCommand {
             );
 
             if (message.data !== null && message.data !== undefined) {
-              this.log(`${chalk.green("Data:")} ${JSON.stringify(message.data, null, 2)}`);
+              this.log(
+                `${chalk.green("Data:")} ${JSON.stringify(message.data, null, 2)}`,
+              );
             }
 
             this.log(""); // Empty line for better readability
@@ -193,13 +202,14 @@ export default class LogsAppSubscribe extends AblyBaseCommand {
         typeof flags.duration === "number" && flags.duration > 0
           ? flags.duration
           : process.env.ABLY_CLI_DEFAULT_DURATION
-          ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-          : undefined;
+            ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
+            : undefined;
 
       const exitReason = await waitUntilInterruptedOrTimeout(effectiveDuration);
-      this.logCliEvent(flags, "logs", "runComplete", "Exiting wait loop", { exitReason });
+      this.logCliEvent(flags, "logs", "runComplete", "Exiting wait loop", {
+        exitReason,
+      });
       this.cleanupInProgress = exitReason === "signal";
-
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(
@@ -211,10 +221,7 @@ export default class LogsAppSubscribe extends AblyBaseCommand {
       );
       if (this.shouldOutputJson(flags)) {
         this.log(
-          this.formatJsonOutput(
-            { error: errorMsg, success: false },
-            flags,
-          ),
+          this.formatJsonOutput({ error: errorMsg, success: false }, flags),
         );
       } else {
         this.error(`Error: ${errorMsg}`);
@@ -225,10 +232,15 @@ export default class LogsAppSubscribe extends AblyBaseCommand {
         this.performCleanup(flags || {}, channel, subscribedEvents),
         new Promise<void>((resolve) => {
           setTimeout(() => {
-            this.logCliEvent(flags || {}, "logs", "cleanupTimeout", "Cleanup timed out after 5s, forcing completion");
+            this.logCliEvent(
+              flags || {},
+              "logs",
+              "cleanupTimeout",
+              "Cleanup timed out after 5s, forcing completion",
+            );
             resolve();
           }, 5000);
-        })
+        }),
       ]);
 
       if (!this.shouldOutputJson(flags || {})) {
@@ -241,25 +253,49 @@ export default class LogsAppSubscribe extends AblyBaseCommand {
     }
   }
 
-  private async performCleanup(flags: BaseFlags, channel: Ably.RealtimeChannel | null, subscribedEvents: string[]): Promise<void> {
+  private async performCleanup(
+    flags: BaseFlags,
+    channel: Ably.RealtimeChannel | null,
+    subscribedEvents: string[],
+  ): Promise<void> {
     // Unsubscribe from log events with timeout
     if (channel && subscribedEvents.length > 0) {
       for (const eventType of subscribedEvents) {
         try {
           await Promise.race([
             Promise.resolve(channel.unsubscribe(eventType)),
-            new Promise<void>((resolve) => setTimeout(resolve, 1000))
+            new Promise<void>((resolve) => setTimeout(resolve, 1000)),
           ]);
-          this.logCliEvent(flags, "logs", "unsubscribedEvent", `Unsubscribed from ${eventType}`);
+          this.logCliEvent(
+            flags,
+            "logs",
+            "unsubscribedEvent",
+            `Unsubscribed from ${eventType}`,
+          );
         } catch (error) {
-          this.logCliEvent(flags, "logs", "unsubscribeError", `Error unsubscribing from ${eventType}: ${error instanceof Error ? error.message : String(error)}`);
+          this.logCliEvent(
+            flags,
+            "logs",
+            "unsubscribeError",
+            `Error unsubscribing from ${eventType}: ${error instanceof Error ? error.message : String(error)}`,
+          );
         }
       }
     }
 
     // Close Ably client (already has internal timeout)
-    this.logCliEvent(flags, "connection", "closingClientFinally", "Closing Ably client.");
+    this.logCliEvent(
+      flags,
+      "connection",
+      "closingClientFinally",
+      "Closing Ably client.",
+    );
     await this.properlyCloseAblyClient();
-    this.logCliEvent(flags, "connection", "clientClosedFinally", "Ably client close attempt finished.");
+    this.logCliEvent(
+      flags,
+      "connection",
+      "clientClosedFinally",
+      "Ably client close attempt finished.",
+    );
   }
 }

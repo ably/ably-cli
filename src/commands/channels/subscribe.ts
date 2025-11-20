@@ -54,7 +54,8 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       description: "Enable delta compression for messages",
     }),
     duration: Flags.integer({
-      description: "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description:
+        "Automatically exit after the given number of seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -70,7 +71,11 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
   private client: Ably.Realtime | null = null;
 
   private async properlyCloseAblyClient(): Promise<void> {
-    if (!this.client || this.client.connection.state === 'closed' || this.client.connection.state === 'failed') {
+    if (
+      !this.client ||
+      this.client.connection.state === "closed" ||
+      this.client.connection.state === "failed"
+    ) {
       return;
     }
 
@@ -84,8 +89,8 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
         resolve();
       };
 
-      this.client!.connection.once('closed', onClosedOrFailed);
-      this.client!.connection.once('failed', onClosedOrFailed);
+      this.client!.connection.once("closed", onClosedOrFailed);
+      this.client!.connection.once("failed", onClosedOrFailed);
       this.client!.close();
     });
   }
@@ -183,12 +188,12 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
       // Set up connection state logging
       this.setupConnectionStateLogging(client, flags, {
-        includeUserFriendlyMessages: true
+        includeUserFriendlyMessages: true,
       });
 
       // Subscribe to messages on all channels
       const attachPromises: Promise<void>[] = [];
-      
+
       for (const channel of channels) {
         this.logCliEvent(
           flags,
@@ -198,24 +203,22 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           { channel: channel.name },
         );
         if (!this.shouldOutputJson(flags)) {
-          this.log(
-            `Attaching to channel: ${chalk.cyan(channel.name)}...`,
-          );
+          this.log(`Attaching to channel: ${chalk.cyan(channel.name)}...`);
         }
 
         // Set up channel state logging
         this.setupChannelStateLogging(channel, flags, {
-          includeUserFriendlyMessages: true
+          includeUserFriendlyMessages: true,
         });
-        
+
         // Track attachment promise
         const attachPromise = new Promise<void>((resolve) => {
           const checkAttached = () => {
-            if (channel.state === 'attached') {
+            if (channel.state === "attached") {
               resolve();
             }
           };
-          channel.once('attached', checkAttached);
+          channel.once("attached", checkAttached);
           checkAttached(); // Check if already attached
         });
         attachPromises.push(attachPromise);
@@ -264,21 +267,29 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           }
         });
       }
-      
+
       // Wait for all channels to attach
       await Promise.all(attachPromises);
-      
+
       // Log the ready signal for E2E tests
       if (channelNames.length === 1) {
         this.log(`Successfully attached to channel ${channelNames[0]}`);
       }
-      
+
       // Show success message once all channels are attached
       if (!this.shouldOutputJson(flags)) {
         if (channelNames.length === 1) {
-          this.log(chalk.green(`✓ Subscribed to channel: ${chalk.cyan(channelNames[0])}. Listening for messages...`));
+          this.log(
+            chalk.green(
+              `✓ Subscribed to channel: ${chalk.cyan(channelNames[0])}. Listening for messages...`,
+            ),
+          );
         } else {
-          this.log(chalk.green(`✓ Subscribed to ${channelNames.length} channels. Listening for messages...`));
+          this.log(
+            chalk.green(
+              `✓ Subscribed to ${channelNames.length} channels. Listening for messages...`,
+            ),
+          );
         }
       }
 
@@ -294,13 +305,14 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
         typeof flags.duration === "number" && flags.duration > 0
           ? flags.duration
           : process.env.ABLY_CLI_DEFAULT_DURATION
-          ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-          : undefined;
+            ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
+            : undefined;
 
       const exitReason = await waitUntilInterruptedOrTimeout(effectiveDuration);
-      this.logCliEvent(flags, "subscribe", "runComplete", "Exiting wait loop", { exitReason });
+      this.logCliEvent(flags, "subscribe", "runComplete", "Exiting wait loop", {
+        exitReason,
+      });
       this.cleanupInProgress = exitReason === "signal";
-
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(
@@ -326,33 +338,61 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
         this.performCleanup(flags || {}, channels),
         new Promise<void>((resolve) => {
           setTimeout(() => {
-            this.logCliEvent(flags || {}, "subscribe", "cleanupTimeout", "Cleanup timed out after 5s, forcing completion");
+            this.logCliEvent(
+              flags || {},
+              "subscribe",
+              "cleanupTimeout",
+              "Cleanup timed out after 5s, forcing completion",
+            );
             resolve();
           }, 5000);
-        })
+        }),
       ]);
 
       // Don't show cleanup messages for minimal output
     }
   }
 
-  private async performCleanup(flags: BaseFlags, channels: Ably.RealtimeChannel[]): Promise<void> {
+  private async performCleanup(
+    flags: BaseFlags,
+    channels: Ably.RealtimeChannel[],
+  ): Promise<void> {
     // Unsubscribe from all channels with timeout
     for (const channel of channels) {
       try {
         await Promise.race([
           Promise.resolve(channel.unsubscribe()),
-          new Promise<void>((resolve) => setTimeout(resolve, 1000))
+          new Promise<void>((resolve) => setTimeout(resolve, 1000)),
         ]);
-        this.logCliEvent(flags, "subscribe", "unsubscribedChannel", `Unsubscribed from ${channel.name}`);
+        this.logCliEvent(
+          flags,
+          "subscribe",
+          "unsubscribedChannel",
+          `Unsubscribed from ${channel.name}`,
+        );
       } catch (error) {
-        this.logCliEvent(flags, "subscribe", "unsubscribeError", `Error unsubscribing from ${channel.name}: ${error instanceof Error ? error.message : String(error)}`);
+        this.logCliEvent(
+          flags,
+          "subscribe",
+          "unsubscribeError",
+          `Error unsubscribing from ${channel.name}: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
 
     // Close Ably client (already has internal timeout)
-    this.logCliEvent(flags, "connection", "closingClientFinally", "Closing Ably client.");
+    this.logCliEvent(
+      flags,
+      "connection",
+      "closingClientFinally",
+      "Closing Ably client.",
+    );
     await this.properlyCloseAblyClient();
-    this.logCliEvent(flags, "connection", "clientClosedFinally", "Ably client close attempt finished.");
+    this.logCliEvent(
+      flags,
+      "connection",
+      "clientClosedFinally",
+      "Ably client close attempt finished.",
+    );
   }
 }

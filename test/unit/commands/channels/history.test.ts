@@ -8,7 +8,7 @@ import { AblyBaseCommand } from "../../../../src/base-command.js";
 // Create a testable version of ChannelsHistory to expose protected methods
 class TestableChannelsHistory extends ChannelsHistory {
   logOutput: string[] = [];
-  errorOutput: string = '';
+  errorOutput: string = "";
 
   // Override parse to simulate parse output
   public override async parse() {
@@ -21,7 +21,7 @@ class TestableChannelsHistory extends ChannelsHistory {
     flags: { limit: 100, direction: "backwards" },
     args: { channel: "test-channel" },
     argv: [],
-    raw: []
+    raw: [],
   };
 
   // Method to set parse result for testing
@@ -30,12 +30,15 @@ class TestableChannelsHistory extends ChannelsHistory {
   }
 
   // Override createAblyRestClient to return our mock
-  public override async createAblyRestClient(_flags: any, _options?: any): Promise<Ably.Rest | null> {
+  public override async createAblyRestClient(
+    _flags: any,
+    _options?: any,
+  ): Promise<Ably.Rest | null> {
     return this._mockAblyClient as any;
   }
 
   private _mockAblyClient: any = {
-    close: () => {}
+    close: () => {},
   };
 
   // Method to set the mock Ably client
@@ -51,7 +54,8 @@ class TestableChannelsHistory extends ChannelsHistory {
     this.showAuthInfoIfNeeded(); // Keep this stubbed
 
     try {
-      const apiKey = flags["api-key"] || (await (this as any).configManager.getApiKey());
+      const apiKey =
+        flags["api-key"] || (await (this as any).configManager.getApiKey());
 
       if (!apiKey) {
         await (this as any).ensureAppAndKey(flags);
@@ -159,10 +163,14 @@ class TestableChannelsHistory extends ChannelsHistory {
 
   // Override formatJsonOutput
   public override formatJsonOutput(data: Record<string, unknown>) {
-    return this._formatJsonOutputFn ? this._formatJsonOutputFn(data) : JSON.stringify(data);
+    return this._formatJsonOutputFn
+      ? this._formatJsonOutputFn(data)
+      : JSON.stringify(data);
   }
 
-  private _formatJsonOutputFn: ((data: Record<string, unknown>) => string) | null = null;
+  private _formatJsonOutputFn:
+    | ((data: Record<string, unknown>) => string)
+    | null = null;
 
   // Method to set formatJsonOutput function
   public setFormatJsonOutput(fn: (data: Record<string, unknown>) => string) {
@@ -171,8 +179,8 @@ class TestableChannelsHistory extends ChannelsHistory {
 
   // Mock error method for testing errors
   public override error(message: string | Error, _options?: any): never {
-    this.errorOutput = typeof message === 'string' ? message : message.message;
-    throw new Error(typeof message === 'string' ? message : message.message);
+    this.errorOutput = typeof message === "string" ? message : message.message;
+    throw new Error(typeof message === "string" ? message : message.message);
   }
 }
 
@@ -185,7 +193,7 @@ const mockHistoryResponse = {
       data: { text: "Hello world 1" },
       timestamp: 1600000000000,
       clientId: "client1",
-      connectionId: "connection1"
+      connectionId: "connection1",
     },
     {
       id: "message2",
@@ -193,9 +201,9 @@ const mockHistoryResponse = {
       data: { text: "Hello world 2" },
       timestamp: 1600000001000,
       clientId: "client2",
-      connectionId: "connection2"
-    }
-  ]
+      connectionId: "connection2",
+    },
+  ],
 };
 
 describe("ChannelsHistory", function () {
@@ -212,12 +220,16 @@ describe("ChannelsHistory", function () {
     sandbox = sinon.createSandbox();
     mockConfig = {} as Config;
 
-    ensureAppAndKeyStub = sandbox.stub(AblyBaseCommand.prototype, <any>"ensureAppAndKey").resolves();
+    ensureAppAndKeyStub = sandbox
+      .stub(AblyBaseCommand.prototype, <any>"ensureAppAndKey")
+      .resolves();
 
     command = new TestableChannelsHistory([], mockConfig);
 
     // Stub getApiKey on the command instance's configManager *after* creation
-    getApiKeyMock = sandbox.stub((command as any).configManager, "getApiKey").resolves("default.testapikey");
+    getApiKeyMock = sandbox
+      .stub((command as any).configManager, "getApiKey")
+      .resolves("default.testapikey");
 
     logStub = sandbox.stub(command, "log");
     errorStub = sandbox.stub(command, "error");
@@ -227,7 +239,7 @@ describe("ChannelsHistory", function () {
       flags: { limit: 100, direction: "backwards" }, // Default includes no api-key flag
       args: { channel: "test-channel" },
       argv: [],
-      raw: []
+      raw: [],
     });
   });
 
@@ -248,7 +260,7 @@ describe("ChannelsHistory", function () {
         flags: { limit: 100, direction: "backwards" }, // No api-key flag
         args: { channel: "test-channel" },
         argv: [],
-        raw: []
+        raw: [],
       });
       getApiKeyMock.resolves("env.apikeyfromconfig");
 
@@ -256,7 +268,12 @@ describe("ChannelsHistory", function () {
 
       expect(getApiKeyMock.calledOnce).to.be.true;
       expect(historyStub.calledOnce).to.be.true;
-      expect(logStub.args.some(args => typeof args[0] === 'string' && args[0].includes("Found 2 messages"))).to.be.true;
+      expect(
+        logStub.args.some(
+          (args) =>
+            typeof args[0] === "string" && args[0].includes("Found 2 messages"),
+        ),
+      ).to.be.true;
     });
 
     it("should fail gracefully if no API key is found (env or flag)", async function () {
@@ -264,7 +281,7 @@ describe("ChannelsHistory", function () {
         flags: { limit: 100, direction: "backwards" }, // No api-key flag
         args: { channel: "test-channel" },
         argv: [],
-        raw: []
+        raw: [],
       });
       // Override the getApiKey mock for this specific test to return no key
       getApiKeyMock.resolves();
@@ -287,8 +304,11 @@ describe("ChannelsHistory", function () {
       expect(historyStub.calledOnce).to.be.true;
 
       // Verify that we log "No messages found"
-      const noMessagesLog = logStub.args.find(args =>
-        typeof args[0] === 'string' && args[0] === "No messages found in the channel history.");
+      const noMessagesLog = logStub.args.find(
+        (args) =>
+          typeof args[0] === "string" &&
+          args[0] === "No messages found in the channel history.",
+      );
       expect(noMessagesLog).to.exist;
     });
 
@@ -301,7 +321,9 @@ describe("ChannelsHistory", function () {
 
       // Verify the error was handled
       expect(errorStub.calledOnce).to.be.true;
-      expect(errorStub.firstCall.args[0]).to.include("Error retrieving channel history");
+      expect(errorStub.firstCall.args[0]).to.include(
+        "Error retrieving channel history",
+      );
     });
 
     it("should respect direction flag", async function () {
@@ -310,7 +332,7 @@ describe("ChannelsHistory", function () {
         flags: { limit: 100, direction: "forwards" },
         args: { channel: "test-channel" },
         argv: [],
-        raw: []
+        raw: [],
       });
 
       // Run the command
@@ -320,7 +342,7 @@ describe("ChannelsHistory", function () {
       expect(historyStub.calledOnce).to.be.true;
       expect(historyStub.firstCall.args[0]).to.deep.equal({
         direction: "forwards",
-        limit: 100
+        limit: 100,
       });
     });
 
@@ -335,11 +357,11 @@ describe("ChannelsHistory", function () {
           limit: 100,
           direction: "backwards",
           start,
-          end
+          end,
         },
         args: { channel: "test-channel" },
         argv: [],
-        raw: []
+        raw: [],
       });
 
       // Run the command
@@ -351,7 +373,7 @@ describe("ChannelsHistory", function () {
         direction: "backwards",
         limit: 100,
         start: new Date(start).getTime(),
-        end: new Date(end).getTime()
+        end: new Date(end).getTime(),
       });
     });
   });
@@ -378,7 +400,9 @@ describe("ChannelsHistory", function () {
       expect(jsonOutput.messages).to.have.lengthOf(2);
       expect(jsonOutput.messages[0]).to.have.property("id", "message1");
       expect(jsonOutput.messages[0]).to.have.property("name", "event1");
-      expect(jsonOutput.messages[0]).to.have.property("data").that.deep.equals({ text: "Hello world 1" });
+      expect(jsonOutput.messages[0])
+        .to.have.property("data")
+        .that.deep.equals({ text: "Hello world 1" });
     });
 
     it("should output JSON when requested with error", async function () {
@@ -402,7 +426,9 @@ describe("ChannelsHistory", function () {
       expect(jsonOutput.messages).to.have.lengthOf(2);
       expect(jsonOutput.messages[0]).to.have.property("id", "message1");
       expect(jsonOutput.messages[0]).to.have.property("name", "event1");
-      expect(jsonOutput.messages[0]).to.have.property("data").that.deep.equals({ text: "Hello world 1" });
+      expect(jsonOutput.messages[0])
+        .to.have.property("data")
+        .that.deep.equals({ text: "Hello world 1" });
     });
 
     it("should output JSON when requested with error and shouldOutputJson set to false", async function () {
@@ -444,7 +470,9 @@ describe("ChannelsHistory", function () {
       expect(jsonOutput.messages).to.have.lengthOf(2);
       expect(jsonOutput.messages[0]).to.have.property("id", "message1");
       expect(jsonOutput.messages[0]).to.have.property("name", "event1");
-      expect(jsonOutput.messages[0]).to.have.property("data").that.deep.equals({ text: "Hello world 1" });
+      expect(jsonOutput.messages[0])
+        .to.have.property("data")
+        .that.deep.equals({ text: "Hello world 1" });
     });
   });
 });

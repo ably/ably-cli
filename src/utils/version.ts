@@ -1,9 +1,9 @@
 /**
  * Common utilities for version-related functionality
  */
-import colorJson from 'color-json';
+import colorJson from "color-json";
 // Import package.json directly - TypeScript will resolve this at compile time
-import packageJson from '../../package.json' with { type: 'json' };
+import packageJson from "../../package.json" with { type: "json" };
 
 /**
  * Get the CLI version from package.json
@@ -16,7 +16,11 @@ export function getCliVersion(): string {
 /**
  * Get standardized version information object
  */
-export function getVersionInfo(config: { version: string; name: string; arch: string }): {
+export function getVersionInfo(config: {
+  version: string;
+  name: string;
+  arch: string;
+}): {
   version: string;
   name: string;
   arch: string;
@@ -35,7 +39,11 @@ export function getVersionInfo(config: { version: string; name: string; arch: st
 /**
  * Format version info as a standard string
  */
-export function formatVersionString(config: { version: string; name: string; arch: string }): string {
+export function formatVersionString(config: {
+  version: string;
+  name: string;
+  arch: string;
+}): string {
   return `${config.name}/${config.version} ${process.platform}-${config.arch} ${process.version}`;
 }
 
@@ -44,7 +52,7 @@ export function formatVersionString(config: { version: string; name: string; arc
  */
 export function formatVersionJson(
   versionInfo: ReturnType<typeof getVersionInfo>,
-  isPretty: boolean
+  isPretty: boolean,
 ): string {
   try {
     if (isPretty) {
@@ -53,7 +61,7 @@ export function formatVersionJson(
     return JSON.stringify(versionInfo);
   } catch (error) {
     // Fallback to regular JSON.stringify if colorJson fails
-    console.error('Error formatting version as JSON:', error);
+    console.error("Error formatting version as JSON:", error);
     return JSON.stringify(versionInfo, undefined, isPretty ? 2 : undefined);
   }
 }

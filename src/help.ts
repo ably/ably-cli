@@ -5,7 +5,10 @@ import stripAnsi from "strip-ansi";
 import { ConfigManager } from "./services/config-manager.js";
 import { displayLogo } from "./utils/logo.js";
 
-import { WEB_CLI_RESTRICTED_COMMANDS, WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS } from "./base-command.js"; // Import the single source of truth
+import {
+  WEB_CLI_RESTRICTED_COMMANDS,
+  WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS,
+} from "./base-command.js"; // Import the single source of truth
 
 export default class CustomHelp extends Help {
   static skipCache = true; // For development - prevents help commands from being cached
@@ -31,28 +34,28 @@ export default class CustomHelp extends Help {
     if (this.opts?.stripAnsi || process.env.GENERATING_README === "true") {
       output = stripAnsi(output);
     }
-    
+
     // Strip "ably" prefix when in interactive mode
     if (this.interactiveMode) {
       output = this.stripAblyPrefix(output);
     }
-    
+
     return output;
   }
-  
+
   // Helper to strip "ably" prefix from command examples in interactive mode
   private stripAblyPrefix(text: string): string {
     if (!this.interactiveMode) return text;
-    
+
     // Replace "$ ably " with "ably> " in examples
-    text = text.replaceAll('$ ably ', 'ably> ');
-    
+    text = text.replaceAll("$ ably ", "ably> ");
+
     // Replace "ably " at the beginning of lines (for usage examples)
-    text = text.replaceAll(/^ably /gm, '');
-    
+    text = text.replaceAll(/^ably /gm, "");
+
     // Replace "  ably " with "  " (for indented examples)
-    text = text.replaceAll(/^(\s+)ably /gm, '$1');
-    
+    text = text.replaceAll(/^(\s+)ably /gm, "$1");
+
     return text;
   }
 
@@ -61,40 +64,45 @@ export default class CustomHelp extends Help {
     // Remove all trailing newlines completely
     return text.replace(/\n+$/, "");
   }
-  
+
   // Helper to format COMMANDS section with spaces instead of colons
   private formatCommandsSection(text: string): string {
     // Find the COMMANDS section
     const commandsSectionRegex = /^COMMANDS\s*$/m;
     const commandsMatch = text.match(commandsSectionRegex);
-    
+
     if (!commandsMatch || commandsMatch.index === undefined) {
       return text;
     }
-    
+
     // Find where the COMMANDS section starts and ends
     const commandsStart = commandsMatch.index + commandsMatch[0].length;
     const nextSectionMatch = text.slice(commandsStart).match(/^[A-Z]+\s*$/m);
-    const commandsEnd = nextSectionMatch ? commandsStart + nextSectionMatch.index! : text.length;
-    
+    const commandsEnd = nextSectionMatch
+      ? commandsStart + nextSectionMatch.index!
+      : text.length;
+
     // Extract the commands section
     const beforeCommands = text.slice(0, commandsStart);
     const commandsSection = text.slice(commandsStart, commandsEnd);
     const afterCommands = text.slice(commandsEnd);
-    
+
     // Process each command line in the section
-    const processedCommands = commandsSection.split('\n').map(line => {
-      // Match lines that look like "  command:subcommand  Description"
-      const match = line.match(/^(\s+)([a-z-]+(?::[a-z-]+)+)(\s+.*)$/);
-      if (match) {
-        const [, indent, commandId, rest] = match;
-        // Replace colons with spaces in the command ID
-        const formattedId = commandId.replaceAll(':', ' ');
-        return indent + formattedId + rest;
-      }
-      return line;
-    }).join('\n');
-    
+    const processedCommands = commandsSection
+      .split("\n")
+      .map((line) => {
+        // Match lines that look like "  command:subcommand  Description"
+        const match = line.match(/^(\s+)([a-z-]+(?::[a-z-]+)+)(\s+.*)$/);
+        if (match) {
+          const [, indent, commandId, rest] = match;
+          // Replace colons with spaces in the command ID
+          const formattedId = commandId.replaceAll(":", " ");
+          return indent + formattedId + rest;
+        }
+        return line;
+      })
+      .join("\n");
+
     return beforeCommands + processedCommands + afterCommands;
   }
 
@@ -104,53 +112,58 @@ export default class CustomHelp extends Help {
     const output = this.formatCommand(command);
     const cleanedOutput = this.removeTrailingWhitespace(output);
     console.log(this.formatHelpOutput(cleanedOutput));
-    
+
     // Check if this is a topic command by looking for subcommands
     const topicPrefix = `${command.id}:`;
-    const subcommands = this.config.commands.filter(cmd => 
-      cmd.id.startsWith(topicPrefix) && 
-      !cmd.hidden &&
-      !cmd.id.slice(topicPrefix.length).includes(':')
+    const subcommands = this.config.commands.filter(
+      (cmd) =>
+        cmd.id.startsWith(topicPrefix) &&
+        !cmd.hidden &&
+        !cmd.id.slice(topicPrefix.length).includes(":"),
     );
-    
-    if (subcommands.length > 0 && !output.includes('COMMANDS')) {
+
+    if (subcommands.length > 0 && !output.includes("COMMANDS")) {
       // This is a topic command without a COMMANDS section, add it
-      console.log('\nCOMMANDS');
-      
+      console.log("\nCOMMANDS");
+
       const commandsList = await Promise.all(
-        subcommands.map(async cmd => {
+        subcommands.map(async (cmd) => {
           try {
             const loaded = await cmd.load();
-            const formattedId = cmd.id.replaceAll(':', ' ');
-            const binPrefix = this.interactiveMode ? '' : `${this.config.bin} `;
+            const formattedId = cmd.id.replaceAll(":", " ");
+            const binPrefix = this.interactiveMode ? "" : `${this.config.bin} `;
             return {
               name: `${binPrefix}${formattedId}`,
-              description: loaded.description || ''
+              description: loaded.description || "",
             };
           } catch {
             return null;
           }
-        })
+        }),
       );
-      
-      const validCommands = commandsList.filter(cmd => cmd !== null) as Array<{name: string; description: string}>;
-      
+
+      const validCommands = commandsList.filter(
+        (cmd) => cmd !== null,
+      ) as Array<{ name: string; description: string }>;
+
       if (validCommands.length > 0) {
-        const maxLength = Math.max(...validCommands.map(cmd => cmd.name.length));
-        
-        validCommands.forEach(cmd => {
+        const maxLength = Math.max(
+          ...validCommands.map((cmd) => cmd.name.length),
+        );
+
+        validCommands.forEach((cmd) => {
           const paddedName = cmd.name.padEnd(maxLength + 2);
           console.log(`  ${paddedName}${cmd.description}`);
         });
       }
     }
-    
+
     // Only exit if not in interactive mode
-    if (process.env.ABLY_INTERACTIVE_MODE !== 'true') {
+    if (process.env.ABLY_INTERACTIVE_MODE !== "true") {
       process.exit(0);
     }
   }
-  
+
   async showHelp(argv: string[]): Promise<void> {
     // Get the help subject which is the last argument that is not a flag
     if (argv.length === 0) {
@@ -174,9 +187,9 @@ export default class CustomHelp extends Help {
     const cleanedOutput = this.removeTrailingWhitespace(output);
     // Apply stripAnsi when needed
     console.log(this.formatHelpOutput(cleanedOutput));
-    
+
     // Only exit if not in interactive mode
-    if (process.env.ABLY_INTERACTIVE_MODE !== 'true') {
+    if (process.env.ABLY_INTERACTIVE_MODE !== "true") {
       process.exit(0);
     }
   }
@@ -188,9 +201,9 @@ export default class CustomHelp extends Help {
     const cleanedOutput = this.removeTrailingWhitespace(output);
     // Apply stripAnsi when needed
     console.log(this.formatHelpOutput(cleanedOutput));
-    
+
     // Only exit if not in interactive mode
-    if (process.env.ABLY_INTERACTIVE_MODE !== 'true') {
+    if (process.env.ABLY_INTERACTIVE_MODE !== "true") {
       process.exit(0);
     }
   }
@@ -206,7 +219,14 @@ export default class CustomHelp extends Help {
     // Show web CLI help if:
     // 1. We're in web CLI mode and not showing full help AND not in interactive mode
     // 2. OR explicitly requesting web-cli help
-    if ((this.webCliMode && !args.includes("--help") && !args.includes("-h") && !isWebCliHelp && !this.interactiveMode) || isWebCliHelp) {
+    if (
+      (this.webCliMode &&
+        !args.includes("--help") &&
+        !args.includes("-h") &&
+        !isWebCliHelp &&
+        !this.interactiveMode) ||
+      isWebCliHelp
+    ) {
       output = this.formatWebCliRoot();
     } else {
       output = this.formatStandardRoot();
@@ -235,12 +255,12 @@ export default class CustomHelp extends Help {
       titleText += "interactive ";
     }
     titleText += "CLI for Pub/Sub, Chat and Spaces";
-    
+
     const headerLines = [
       chalk.bold(titleText),
       "",
       `${chalk.bold("USAGE")}`,
-      `  ${this.interactiveMode ? 'ably> ' : '$ ' + config.bin + ' '}[COMMAND]`,
+      `  ${this.interactiveMode ? "ably> " : "$ " + config.bin + " "}[COMMAND]`,
       "",
       chalk.bold("COMMANDS"), // Use the desired single heading
     ];
@@ -266,7 +286,7 @@ export default class CustomHelp extends Help {
     const filteredTopics = config.topics
       .filter((t) => !t.hidden && !t.name.includes(":")) // Filter hidden and top-level only
       .filter((t) => this.shouldDisplay({ id: t.name } as Command.Loadable)); // Apply web mode filtering
-    
+
     filteredTopics.forEach((t) => {
       if (!uniqueEntries.has(t.name)) {
         uniqueEntries.set(t.name, {
@@ -303,13 +323,15 @@ export default class CustomHelp extends Help {
         process.env.ABLY_ACCESS_TOKEN || this.configManager.getAccessToken();
       const apiKey = process.env.ABLY_API_KEY;
       if (!accessToken && !apiKey) {
-        const cmdPrefix = this.interactiveMode ? '' : 'ably ';
+        const cmdPrefix = this.interactiveMode ? "" : "ably ";
         lines.push(
           "",
           chalk.yellow(
             "You are not logged in. Run the following command to log in:",
           ),
-          chalk.cyan(`  ${this.interactiveMode ? 'ably> ' : '$ '}${cmdPrefix}accounts login`),
+          chalk.cyan(
+            `  ${this.interactiveMode ? "ably> " : "$ "}${cmdPrefix}accounts login`,
+          ),
         );
       }
     }
@@ -324,49 +346,50 @@ export default class CustomHelp extends Help {
       displayLogo((m: string) => lines.push(m)); // Add logo lines directly
     }
     lines.push(
-      chalk.bold(
-        "ably.com browser-based CLI for Pub/Sub, Chat and Spaces",
-      ),
+      chalk.bold("ably.com browser-based CLI for Pub/Sub, Chat and Spaces"),
       "",
     );
 
     // 3. Show the web CLI specific instructions
-    const cmdPrefix = this.interactiveMode ? '' : 'ably ';
+    const cmdPrefix = this.interactiveMode ? "" : "ably ";
     lines.push(`${chalk.bold("COMMON COMMANDS")}`);
-    
+
     const isAnonymousMode = process.env.ABLY_ANONYMOUS_USER_MODE === "true";
     const commands = [];
-    
+
     // Basic commands always available
     commands.push(
-      [`${cmdPrefix}channels publish [channel] [message]`, 'Publish a message'],
-      [`${cmdPrefix}channels subscribe [channel]`, 'Subscribe to a channel']
+      [`${cmdPrefix}channels publish [channel] [message]`, "Publish a message"],
+      [`${cmdPrefix}channels subscribe [channel]`, "Subscribe to a channel"],
     );
-    
+
     // Commands available only for authenticated users
     if (!isAnonymousMode) {
-      commands.push([`${cmdPrefix}channels logs`, 'View live channel events']);
+      commands.push([`${cmdPrefix}channels logs`, "View live channel events"]);
     }
-    
+
     commands.push(
-      [`${cmdPrefix}spaces enter [space]`, 'Enter a collaborative space'],
-      [`${cmdPrefix}rooms messages send [room] [message]`, 'Send a message to a chat room']
+      [`${cmdPrefix}spaces enter [space]`, "Enter a collaborative space"],
+      [
+        `${cmdPrefix}rooms messages send [room] [message]`,
+        "Send a message to a chat room",
+      ],
     );
-    
+
     // Calculate padding for alignment
     const maxCmdLength = Math.max(...commands.map(([cmd]) => cmd.length));
-    
+
     // Display commands with proper alignment
     commands.forEach(([cmd, desc]) => {
       const paddedCmd = cmd.padEnd(maxCmdLength + 2);
       lines.push(`  ${chalk.cyan(paddedCmd)}${desc}`);
     });
-    
+
     // Always show help instruction
     lines.push(
-      '',
-      `Type ${this.interactiveMode ? chalk.cyan('help') : chalk.cyan(`${cmdPrefix}help`)} to see the complete list of commands.`,
-      `Use ${this.interactiveMode ? chalk.cyan('--help') : chalk.cyan(`${cmdPrefix}--help`)} with any command for more details.`
+      "",
+      `Type ${this.interactiveMode ? chalk.cyan("help") : chalk.cyan(`${cmdPrefix}help`)} to see the complete list of commands.`,
+      `Use ${this.interactiveMode ? chalk.cyan("--help") : chalk.cyan(`${cmdPrefix}--help`)} with any command for more details.`,
     );
 
     // Join lines and return
@@ -379,77 +402,92 @@ export default class CustomHelp extends Help {
     this.isShowingRootHelp = false;
     // Use super's formatCommand
     output = super.formatCommand(command);
-      
-      // In interactive mode, remove the 'ably' prefix from usage examples
-      if (process.env.ABLY_INTERACTIVE_MODE === 'true') {
-        // Replace '$ ably ' with 'ably> ' in usage and examples
-        output = output.replaceAll('$ ably ', 'ably> ');
-      }
-      
-      // Fix COMMANDS section formatting - replace colons with spaces
-      output = this.formatCommandsSection(output);
-      
-      // For topic commands, add COMMANDS section if it's missing
-      const topicPrefix = `${command.id}:`;
-      const subcommands = this.config.commands.filter(cmd => 
-        cmd.id.startsWith(topicPrefix) && 
-        !cmd.hidden &&
-        !cmd.id.slice(topicPrefix.length).includes(':')
-      );
-      
-      if (subcommands.length > 0 && !output.includes('COMMANDS')) {
-        // Add COMMANDS section for topic commands
-        const commandsLines: string[] = ['\n\nCOMMANDS'];
-        
-        subcommands.forEach(cmd => {
-          const formattedId = cmd.id.replaceAll(':', ' ');
-          const binPrefix = this.interactiveMode ? '' : `${this.config.bin} `;
-          const paddedId = `${binPrefix}${formattedId}`.padEnd(30);
-          commandsLines.push(`  ${paddedId}${cmd.description || ''}`);
-        });
-        
-        output += commandsLines.join('\n');
-      }
 
-      // Modify based on web CLI mode using the imported list
-      if (this.webCliMode) {
-        const isWebRestricted = WEB_CLI_RESTRICTED_COMMANDS.some((restricted) => {
-          // Handle wildcard patterns (e.g., "config*", "mcp*")
-          if (restricted.endsWith("*")) {
-            const prefix = restricted.slice(0, -1); // Remove the asterisk
-            return command.id === prefix || command.id.startsWith(prefix + ":") || command.id.startsWith(prefix);
-          }
-          // Exact match or command starts with restricted:
-          return command.id === restricted || command.id.startsWith(restricted + ":");
-        });
-        
-        if (isWebRestricted) {
-          output = [
-            `${chalk.bold("This command is not available in the web CLI mode.")}`,
-            "",
-            "Please use the standalone CLI installation instead.",
-          ].join("\n");
-        } else if (this.anonymousMode) {
-          // Check anonymous restrictions
-          const isAnonymousRestricted = WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS.some((restricted) => {
+    // In interactive mode, remove the 'ably' prefix from usage examples
+    if (process.env.ABLY_INTERACTIVE_MODE === "true") {
+      // Replace '$ ably ' with 'ably> ' in usage and examples
+      output = output.replaceAll("$ ably ", "ably> ");
+    }
+
+    // Fix COMMANDS section formatting - replace colons with spaces
+    output = this.formatCommandsSection(output);
+
+    // For topic commands, add COMMANDS section if it's missing
+    const topicPrefix = `${command.id}:`;
+    const subcommands = this.config.commands.filter(
+      (cmd) =>
+        cmd.id.startsWith(topicPrefix) &&
+        !cmd.hidden &&
+        !cmd.id.slice(topicPrefix.length).includes(":"),
+    );
+
+    if (subcommands.length > 0 && !output.includes("COMMANDS")) {
+      // Add COMMANDS section for topic commands
+      const commandsLines: string[] = ["\n\nCOMMANDS"];
+
+      subcommands.forEach((cmd) => {
+        const formattedId = cmd.id.replaceAll(":", " ");
+        const binPrefix = this.interactiveMode ? "" : `${this.config.bin} `;
+        const paddedId = `${binPrefix}${formattedId}`.padEnd(30);
+        commandsLines.push(`  ${paddedId}${cmd.description || ""}`);
+      });
+
+      output += commandsLines.join("\n");
+    }
+
+    // Modify based on web CLI mode using the imported list
+    if (this.webCliMode) {
+      const isWebRestricted = WEB_CLI_RESTRICTED_COMMANDS.some((restricted) => {
+        // Handle wildcard patterns (e.g., "config*", "mcp*")
+        if (restricted.endsWith("*")) {
+          const prefix = restricted.slice(0, -1); // Remove the asterisk
+          return (
+            command.id === prefix ||
+            command.id.startsWith(prefix + ":") ||
+            command.id.startsWith(prefix)
+          );
+        }
+        // Exact match or command starts with restricted:
+        return (
+          command.id === restricted || command.id.startsWith(restricted + ":")
+        );
+      });
+
+      if (isWebRestricted) {
+        output = [
+          `${chalk.bold("This command is not available in the web CLI mode.")}`,
+          "",
+          "Please use the standalone CLI installation instead.",
+        ].join("\n");
+      } else if (this.anonymousMode) {
+        // Check anonymous restrictions
+        const isAnonymousRestricted =
+          WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS.some((restricted) => {
             // Handle wildcard patterns (e.g., "accounts*", "logs*")
             if (restricted.endsWith("*")) {
               const prefix = restricted.slice(0, -1); // Remove the asterisk
-              return command.id === prefix || command.id.startsWith(prefix + ":") || command.id.startsWith(prefix);
+              return (
+                command.id === prefix ||
+                command.id.startsWith(prefix + ":") ||
+                command.id.startsWith(prefix)
+              );
             }
             // Exact match or command starts with restricted:
-            return command.id === restricted || command.id.startsWith(restricted + ":");
+            return (
+              command.id === restricted ||
+              command.id.startsWith(restricted + ":")
+            );
           });
-          
-          if (isAnonymousRestricted) {
-            output = [
-              `${chalk.bold("This command is not available in anonymous mode.")}`,
-              "",
-              "Please provide an access token to use this command.",
-            ].join("\n");
-          }
+
+        if (isAnonymousRestricted) {
+          output = [
+            `${chalk.bold("This command is not available in anonymous mode.")}`,
+            "",
+            "Please provide an access token to use this command.",
+          ].join("\n");
         }
       }
+    }
     return output; // Let the overridden render handle stripping
   }
 
@@ -465,10 +503,16 @@ export default class CustomHelp extends Help {
       // Handle wildcard patterns (e.g., "config*", "mcp*")
       if (restricted.endsWith("*")) {
         const prefix = restricted.slice(0, -1); // Remove the asterisk
-        return command.id === prefix || command.id.startsWith(prefix + ":") || command.id.startsWith(prefix);
+        return (
+          command.id === prefix ||
+          command.id.startsWith(prefix + ":") ||
+          command.id.startsWith(prefix)
+        );
       }
       // Exact match or command starts with restricted:
-      return command.id === restricted || command.id.startsWith(restricted + ":");
+      return (
+        command.id === restricted || command.id.startsWith(restricted + ":")
+      );
     });
 
     if (isWebRestricted) {
@@ -477,16 +521,24 @@ export default class CustomHelp extends Help {
 
     // In anonymous mode, also check anonymous restricted commands
     if (this.anonymousMode) {
-      const isAnonymousRestricted = WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS.some((restricted) => {
-        // Handle wildcard patterns (e.g., "accounts*", "logs*")
-        if (restricted.endsWith("*")) {
-          const prefix = restricted.slice(0, -1); // Remove the asterisk
-          return command.id === prefix || command.id.startsWith(prefix + ":") || command.id.startsWith(prefix);
-        }
-        // Exact match or command starts with restricted:
-        return command.id === restricted || command.id.startsWith(restricted + ":");
-      });
-      
+      const isAnonymousRestricted = WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS.some(
+        (restricted) => {
+          // Handle wildcard patterns (e.g., "accounts*", "logs*")
+          if (restricted.endsWith("*")) {
+            const prefix = restricted.slice(0, -1); // Remove the asterisk
+            return (
+              command.id === prefix ||
+              command.id.startsWith(prefix + ":") ||
+              command.id.startsWith(prefix)
+            );
+          }
+          // Exact match or command starts with restricted:
+          return (
+            command.id === restricted || command.id.startsWith(restricted + ":")
+          );
+        },
+      );
+
       return !isAnonymousRestricted;
     }
 

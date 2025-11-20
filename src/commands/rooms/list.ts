@@ -104,7 +104,11 @@ export default class RoomsList extends ChatBaseCommand {
             // Only add if we haven't seen this room before
             if (!chatRooms.has(roomName)) {
               // Store the original channel data but with the simple room name
-              const roomData = { ...channel, channelId: roomName, room: roomName };
+              const roomData = {
+                ...channel,
+                channelId: roomName,
+                room: roomName,
+              };
               chatRooms.set(roomName, roomData);
             }
           }

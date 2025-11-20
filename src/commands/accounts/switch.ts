@@ -46,10 +46,10 @@ export default class AccountsSwitch extends ControlBaseCommand {
         );
         return;
       }
-      
+
       // In interactive mode, proxy to login
-      this.log('No accounts configured. Redirecting to login...');
-      await this.config.runCommand('accounts:login');
+      this.log("No accounts configured. Redirecting to login...");
+      await this.config.runCommand("accounts:login");
       return;
     }
 

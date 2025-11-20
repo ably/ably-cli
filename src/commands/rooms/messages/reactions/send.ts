@@ -136,32 +136,30 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
         "subscribingToStatus",
         "Subscribing to room status changes",
       );
-      chatRoom.onStatusChange(
-        (statusChange: RoomStatusChange) => {
-          let reason: Error | null | string | undefined;
-          if (statusChange.current === RoomStatus.Failed) {
-            reason = chatRoom.error; // Get reason from chatRoom.error on failure
-          }
+      chatRoom.onStatusChange((statusChange: RoomStatusChange) => {
+        let reason: Error | null | string | undefined;
+        if (statusChange.current === RoomStatus.Failed) {
+          reason = chatRoom.error; // Get reason from chatRoom.error on failure
+        }
 
-          const reasonMsg = reason instanceof Error ? reason.message : reason;
-          this.logCliEvent(
-            flags,
-            "room",
-            `status-${statusChange.current}`,
-            `Room status changed to ${statusChange.current}`,
-            { reason: reasonMsg },
+        const reasonMsg = reason instanceof Error ? reason.message : reason;
+        this.logCliEvent(
+          flags,
+          "room",
+          `status-${statusChange.current}`,
+          `Room status changed to ${statusChange.current}`,
+          { reason: reasonMsg },
+        );
+
+        if (
+          statusChange.current === RoomStatus.Failed &&
+          !this.shouldOutputJson(flags)
+        ) {
+          this.error(
+            `Failed to attach to room: ${reasonMsg || "Unknown error"}`,
           );
-
-          if (
-            statusChange.current === RoomStatus.Failed &&
-            !this.shouldOutputJson(flags)
-          ) {
-            this.error(
-              `Failed to attach to room: ${reasonMsg || "Unknown error"}`,
-            );
-          }
-        },
-      );
+        }
+      });
       this.logCliEvent(
         flags,
         "room",

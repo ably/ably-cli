@@ -7,11 +7,13 @@ import * as Ably from "ably";
 // Create a testable version of ChannelsSubscribe
 class TestableChannelsSubscribe extends ChannelsSubscribe {
   public logOutput: string[] = [];
-  public errorOutput: string = '';
+  public errorOutput: string = "";
   private _parseResult: any;
   public mockClient: any = {}; // Initialize mockClient
   private _shouldOutputJson = false;
-  private _formatJsonOutputFn: ((data: Record<string, unknown>) => string) | null = null;
+  private _formatJsonOutputFn:
+    | ((data: Record<string, unknown>) => string)
+    | null = null;
 
   // Spy on client creation attempt
   public createAblyClientSpy = sinon.spy(super.createAblyRealtimeClient);
@@ -19,13 +21,13 @@ class TestableChannelsSubscribe extends ChannelsSubscribe {
   // Override parse to simulate parse output
   public override async parse() {
     if (!this._parseResult) {
-        // Default parse result if not set
-        this._parseResult = {
-            flags: { delta: false, rewind: undefined, 'cipher-key': undefined },
-            args: { channels: ['default-test-channel'] }, // Use args.channels directly
-            argv: ['default-test-channel'], // argv should contain the channel names
-            raw: [],
-        };
+      // Default parse result if not set
+      this._parseResult = {
+        flags: { delta: false, rewind: undefined, "cipher-key": undefined },
+        args: { channels: ["default-test-channel"] }, // Use args.channels directly
+        argv: ["default-test-channel"], // argv should contain the channel names
+        raw: [],
+      };
     }
     return this._parseResult;
   }
@@ -34,36 +36,38 @@ class TestableChannelsSubscribe extends ChannelsSubscribe {
     this._parseResult = result;
     // Ensure argv reflects args.channels for run() method logic
     if (result.args?.channels && Array.isArray(result.args.channels)) {
-        this._parseResult.argv = [...result.args.channels];
+      this._parseResult.argv = [...result.args.channels];
     }
   }
 
   // Override client creation to return a controlled mock
-  public override async createAblyRealtimeClient(flags: any): Promise<Ably.Realtime | null> {
-    this.debug('Overridden createAblyRealtimeClient called');
+  public override async createAblyRealtimeClient(
+    flags: any,
+  ): Promise<Ably.Realtime | null> {
+    this.debug("Overridden createAblyRealtimeClient called");
     this.createAblyClientSpy(flags);
 
     // Initialize the mock client with basic structure
     const mockChannelInstance = {
-      name: 'mock-channel-from-create', // Add name for safety
+      name: "mock-channel-from-create", // Add name for safety
       subscribe: sinon.stub(),
       attach: sinon.stub().resolves(),
       on: sinon.stub(),
       unsubscribe: sinon.stub(),
-      detach: sinon.stub().resolves()
+      detach: sinon.stub().resolves(),
     };
     this.mockClient = {
-        channels: {
-            get: sinon.stub().returns(mockChannelInstance),
-            release: sinon.stub(),
-        },
-        connection: {
-            once: sinon.stub(),
-            on: sinon.stub(),
-            close: sinon.stub(),
-            state: 'initialized',
-        },
+      channels: {
+        get: sinon.stub().returns(mockChannelInstance),
+        release: sinon.stub(),
+      },
+      connection: {
+        once: sinon.stub(),
+        on: sinon.stub(),
         close: sinon.stub(),
+        state: "initialized",
+      },
+      close: sinon.stub(),
     };
 
     return this.mockClient as unknown as Ably.Realtime;
@@ -72,13 +76,13 @@ class TestableChannelsSubscribe extends ChannelsSubscribe {
   // Helper to connect the mock client
   public simulateConnection() {
     // Simulate a connected state
-    this.mockClient.connection.state = 'connected';
+    this.mockClient.connection.state = "connected";
 
     // Find the connection.on handler and call it with connected state
     if (this.mockClient.connection.on.called) {
       const onConnectionArgs = this.mockClient.connection.on.args[0];
-      if (onConnectionArgs && typeof onConnectionArgs[0] === 'function') {
-        onConnectionArgs[0]({ current: 'connected' });
+      if (onConnectionArgs && typeof onConnectionArgs[0] === "function") {
+        onConnectionArgs[0]({ current: "connected" });
       }
     }
   }
@@ -87,13 +91,17 @@ class TestableChannelsSubscribe extends ChannelsSubscribe {
   /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   public override log(message?: string | undefined, ...args: any[]): void {
     // Attempt to capture chalk output or force to string
-    const plainMessage = typeof message === 'string' ? message : String(message);
+    const plainMessage =
+      typeof message === "string" ? message : String(message);
     this.logOutput.push(plainMessage);
   }
 
   // Correct override signature for the error method
-  public override error(message: string | Error, _options?: { code?: string; exit?: number | false }): never {
-    this.errorOutput = typeof message === 'string' ? message : message.message;
+  public override error(
+    message: string | Error,
+    _options?: { code?: string; exit?: number | false },
+  ): never {
+    this.errorOutput = typeof message === "string" ? message : message.message;
     // Prevent actual exit during tests by throwing instead
     throw new Error(this.errorOutput);
   }
@@ -107,8 +115,13 @@ class TestableChannelsSubscribe extends ChannelsSubscribe {
     this._shouldOutputJson = value;
   }
 
-  public override formatJsonOutput(data: Record<string, unknown>, _flags?: Record<string, unknown>): string {
-    return this._formatJsonOutputFn ? this._formatJsonOutputFn(data) : JSON.stringify(data);
+  public override formatJsonOutput(
+    data: Record<string, unknown>,
+    _flags?: Record<string, unknown>,
+  ): string {
+    return this._formatJsonOutputFn
+      ? this._formatJsonOutputFn(data)
+      : JSON.stringify(data);
   }
 
   public setFormatJsonOutput(fn: (data: Record<string, unknown>) => string) {
@@ -116,30 +129,32 @@ class TestableChannelsSubscribe extends ChannelsSubscribe {
   }
 
   // Override ensureAppAndKey to prevent real auth checks in unit tests
-  protected override async ensureAppAndKey(_flags: any): Promise<{ apiKey: string; appId: string } | null> {
-    this.debug('Skipping ensureAppAndKey in test mode');
-    return { apiKey: 'dummy-key-value:secret', appId: 'dummy-app' };
+  protected override async ensureAppAndKey(
+    _flags: any,
+  ): Promise<{ apiKey: string; appId: string } | null> {
+    this.debug("Skipping ensureAppAndKey in test mode");
+    return { apiKey: "dummy-key-value:secret", appId: "dummy-app" };
   }
 }
 
-describe("ChannelsSubscribe (Simplified)", function() {
+describe("ChannelsSubscribe (Simplified)", function () {
   let sandbox: sinon.SinonSandbox;
   let command: TestableChannelsSubscribe;
   let mockConfig: Config;
 
-  beforeEach(function() {
+  beforeEach(function () {
     sandbox = sinon.createSandbox();
     mockConfig = { runHook: sinon.stub() } as unknown as Config;
     command = new TestableChannelsSubscribe([], mockConfig);
 
     // Setup mock client within beforeEach to ensure fresh state
     const mockChannelInstance = {
-      name: 'test-channel',
+      name: "test-channel",
       subscribe: sandbox.stub(),
       attach: sandbox.stub().resolves(),
       on: sandbox.stub(), // Handles channel state changes ('attached', 'failed', etc.)
       unsubscribe: sandbox.stub(),
-      detach: sandbox.stub().resolves()
+      detach: sandbox.stub().resolves(),
     };
     command.mockClient = {
       channels: {
@@ -148,78 +163,91 @@ describe("ChannelsSubscribe (Simplified)", function() {
       },
       connection: {
         once: sandbox.stub(), // Used for initial connection check
-        on: sandbox.stub(),   // Used for continuous state monitoring
+        on: sandbox.stub(), // Used for continuous state monitoring
         close: sandbox.stub(),
-        state: 'initialized',
+        state: "initialized",
       },
       close: sandbox.stub(),
     };
 
     // Set default parse result
     command.setParseResult({
-      flags: { delta: false, rewind: undefined, 'cipher-key': undefined },
-      args: { channels: ['test-channel'] },
+      flags: { delta: false, rewind: undefined, "cipher-key": undefined },
+      args: { channels: ["test-channel"] },
       raw: [],
     });
 
     // IMPORTANT: Stub createAblyRealtimeClient directly on the instance IN beforeEach
     // This ensures the command uses OUR mockClient setup here.
-    sandbox.stub(command, 'createAblyRealtimeClient' as keyof TestableChannelsSubscribe)
-        .resolves(command.mockClient as unknown as Ably.Realtime);
+    sandbox
+      .stub(
+        command,
+        "createAblyRealtimeClient" as keyof TestableChannelsSubscribe,
+      )
+      .resolves(command.mockClient as unknown as Ably.Realtime);
   });
 
-  afterEach(function() {
+  afterEach(function () {
     sandbox.restore();
   });
 
   // Helper function to manage test run with timeout/abort
   async function runCommandAndSimulateLifecycle(timeoutMs = 100) {
     // Store original listeners to restore them later
-    const originalListeners = process.listeners('SIGINT');
-    
+    const originalListeners = process.listeners("SIGINT");
+
     // Set up connection simulation
-    command.mockClient.connection.once.callsFake((event: string, callback: () => void) => {
-      if (event === 'connected') {
-        setTimeout(() => {
-          command.mockClient.connection.state = 'connected';
-          if (command.mockClient.connection.on.called) {
-            const onConnectionArgs = command.mockClient.connection.on.args[0];
-            if (onConnectionArgs && typeof onConnectionArgs[0] === 'function') {
-               onConnectionArgs[0]({ current: 'connected' });
+    command.mockClient.connection.once.callsFake(
+      (event: string, callback: () => void) => {
+        if (event === "connected") {
+          setTimeout(() => {
+            command.mockClient.connection.state = "connected";
+            if (command.mockClient.connection.on.called) {
+              const onConnectionArgs = command.mockClient.connection.on.args[0];
+              if (
+                onConnectionArgs &&
+                typeof onConnectionArgs[0] === "function"
+              ) {
+                onConnectionArgs[0]({ current: "connected" });
+              }
             }
-          }
-          callback();
-        }, 10);
-      } else if (event === 'closed') {
-        // Simulate connection close after a short delay
-        setTimeout(() => {
-          command.mockClient.connection.state = 'closed';
-          callback();
-        }, 30);
-      }
-    });
+            callback();
+          }, 10);
+        } else if (event === "closed") {
+          // Simulate connection close after a short delay
+          setTimeout(() => {
+            command.mockClient.connection.state = "closed";
+            callback();
+          }, 30);
+        }
+      },
+    );
 
     // Simulate channel attach after connection
     const originalGet = command.mockClient.channels.get;
-    command.mockClient.channels.get = sandbox.stub().callsFake((name, options) => {
+    command.mockClient.channels.get = sandbox
+      .stub()
+      .callsFake((name, options) => {
         const channelMock = originalGet(name, options);
         if (channelMock && channelMock.on) {
-            setTimeout(() => {
-                 const onAttachArgs = channelMock.on.args.find((args: any[]) => args[0] === 'attached');
-                 if (onAttachArgs && typeof onAttachArgs[1] === 'function') {
-                      onAttachArgs[1]({ current: 'attached' });
-                 }
-            }, 20);
+          setTimeout(() => {
+            const onAttachArgs = channelMock.on.args.find(
+              (args: any[]) => args[0] === "attached",
+            );
+            if (onAttachArgs && typeof onAttachArgs[1] === "function") {
+              onAttachArgs[1]({ current: "attached" });
+            }
+          }, 20);
         }
         return channelMock;
-    });
+      });
 
     // Start the command
     const runPromise = command.run();
-    
+
     // Send SIGINT after a short delay to trigger proper cleanup
     const cleanup = setTimeout(() => {
-      process.emit('SIGINT', 'SIGINT');
+      process.emit("SIGINT", "SIGINT");
     }, timeoutMs);
 
     try {
@@ -229,31 +257,33 @@ describe("ChannelsSubscribe (Simplified)", function() {
     } finally {
       clearTimeout(cleanup);
       // Clean up any SIGINT listeners that weren't properly removed
-      const newListeners = process.listeners('SIGINT');
+      const newListeners = process.listeners("SIGINT");
       for (const listener of newListeners) {
         if (!originalListeners.includes(listener)) {
-          process.removeListener('SIGINT', listener);
+          process.removeListener("SIGINT", listener);
         }
       }
     }
   }
 
-  it("should attempt to create an Ably client", async function() {
-    const createClientStub = command.createAblyRealtimeClient as sinon.SinonStub;
+  it("should attempt to create an Ably client", async function () {
+    const createClientStub =
+      command.createAblyRealtimeClient as sinon.SinonStub;
     await runCommandAndSimulateLifecycle();
     expect(createClientStub.calledOnce).to.be.true;
   });
 
-  it("should attempt to get and subscribe to a single channel", async function() {
+  it("should attempt to get and subscribe to a single channel", async function () {
     const channelMock = command.mockClient.channels.get();
     await runCommandAndSimulateLifecycle();
-    expect(command.mockClient.channels.get.calledOnceWith('test-channel')).to.be.true;
+    expect(command.mockClient.channels.get.calledOnceWith("test-channel")).to.be
+      .true;
     // Check subscribe was called *at least* once after attach simulation
     expect(channelMock.subscribe.called).to.be.true; // Changed from calledOnce
   });
 
-  it("should attempt to get and subscribe to multiple channels", async function() {
-    const channelsToTest = ['channel1', 'channel2', 'channel3'];
+  it("should attempt to get and subscribe to multiple channels", async function () {
+    const channelsToTest = ["channel1", "channel2", "channel3"];
     command.setParseResult({
       flags: {},
       args: { channels: channelsToTest },
@@ -261,32 +291,36 @@ describe("ChannelsSubscribe (Simplified)", function() {
     });
 
     const channelMocks: Record<string, any> = {};
-    channelsToTest.forEach(name => {
+    channelsToTest.forEach((name) => {
       channelMocks[name] = {
         name: name,
         subscribe: sandbox.stub(),
         attach: sandbox.stub().resolves(),
         on: sandbox.stub(),
         unsubscribe: sandbox.stub(),
-        detach: sandbox.stub().resolves()
-    };
+        detach: sandbox.stub().resolves(),
+      };
     });
 
     // Use the original mock client's get stub setup in beforeEach, but make it return our specific mocks
-    (command.mockClient.channels.get as sinon.SinonStub).callsFake((name: string) => channelMocks[name]);
+    (command.mockClient.channels.get as sinon.SinonStub).callsFake(
+      (name: string) => channelMocks[name],
+    );
 
     await runCommandAndSimulateLifecycle(200);
 
     // Verify get was called for each channel
-    expect(command.mockClient.channels.get.callCount).to.equal(channelsToTest.length);
-    channelsToTest.forEach(name => {
+    expect(command.mockClient.channels.get.callCount).to.equal(
+      channelsToTest.length,
+    );
+    channelsToTest.forEach((name) => {
       expect(command.mockClient.channels.get.calledWith(name)).to.be.true;
       expect(channelMocks[name].subscribe.called).to.be.true; // Changed from calledOnce
     });
   });
 
-  it("should pass channel options when flags are provided (rewind example)", async function() {
-    const channelName = 'rewind-channel';
+  it("should pass channel options when flags are provided (rewind example)", async function () {
+    const channelName = "rewind-channel";
     command.setParseResult({
       flags: { rewind: 5 },
       args: { channels: [channelName] },
@@ -299,7 +333,7 @@ describe("ChannelsSubscribe (Simplified)", function() {
       attach: sandbox.stub().resolves(),
       on: sandbox.stub(),
       unsubscribe: sandbox.stub(),
-      detach: sandbox.stub().resolves()
+      detach: sandbox.stub().resolves(),
     };
     (command.mockClient.channels.get as sinon.SinonStub).returns(channelMock);
 
@@ -308,24 +342,26 @@ describe("ChannelsSubscribe (Simplified)", function() {
     expect(command.mockClient.channels.get.calledOnce).to.be.true;
     const getCall = command.mockClient.channels.get.getCall(0);
     expect(getCall.args[0]).to.equal(channelName);
-    expect(getCall.args[1]).to.deep.include({ params: { rewind: '5' } });
+    expect(getCall.args[1]).to.deep.include({ params: { rewind: "5" } });
     expect(channelMock.subscribe.called).to.be.true; // Changed from calledOnce
   });
 
-  it("should throw error if no channel names provided", async function() {
+  it("should throw error if no channel names provided", async function () {
     command.setParseResult({
-       flags: {},
-       args: { channels: [] },
-       argv: [], // Ensure argv is empty too
-       raw: []
+      flags: {},
+      args: { channels: [] },
+      argv: [], // Ensure argv is empty too
+      raw: [],
     });
     try {
-       // No need to abort here, it should exit quickly
-       await command.run();
-       expect.fail("Command should have thrown an error for missing channels");
+      // No need to abort here, it should exit quickly
+      await command.run();
+      expect.fail("Command should have thrown an error for missing channels");
     } catch {
-       // Check the error message stored by the overridden error method
-       expect(command.errorOutput).to.contain("At least one channel name is required");
+      // Check the error message stored by the overridden error method
+      expect(command.errorOutput).to.contain(
+        "At least one channel name is required",
+      );
     }
   });
 });
