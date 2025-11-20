@@ -2,12 +2,12 @@ import { expect } from "chai";
 import nock from "nock";
 import { ControlApi } from "../../../src/services/control-api.js";
 
-describe("ControlApi", function() {
+describe("ControlApi", function () {
   const accessToken = "test-access-token";
   const controlHost = "control.ably.test";
   let api: ControlApi;
 
-  beforeEach(function() {
+  beforeEach(function () {
     // Create fresh instance for each test
     api = new ControlApi({ accessToken, controlHost, logErrors: false });
 
@@ -15,13 +15,13 @@ describe("ControlApi", function() {
     nock.cleanAll();
   });
 
-  afterEach(function() {
+  afterEach(function () {
     // Ensure no pending nock mocks
     nock.cleanAll();
   });
 
-  describe("#constructor", function() {
-    it("should use provided control host", function() {
+  describe("#constructor", function () {
+    it("should use provided control host", function () {
       const customApi = new ControlApi({
         accessToken,
         controlHost: "custom.control.host",
@@ -39,7 +39,7 @@ describe("ControlApi", function() {
       });
     });
 
-    it("should use default control host if not provided", function() {
+    it("should use default control host if not provided", function () {
       const defaultApi = new ControlApi({ accessToken, logErrors: false });
 
       // Set up nock to intercept request to default host
@@ -54,8 +54,8 @@ describe("ControlApi", function() {
     });
   });
 
-  describe("#listApps", function() {
-    it("should fetch list of apps", async function() {
+  describe("#listApps", function () {
+    it("should fetch list of apps", async function () {
       const accountId = "test-account-id";
       const expectedApps = [
         { id: "app1", name: "Test App 1" },
@@ -65,7 +65,10 @@ describe("ControlApi", function() {
       // First set up the getMe interceptor
       nock(`https://${controlHost}`)
         .get("/v1/me")
-        .reply(200, { account: { id: accountId, name: "Test Account" }, user: { email: "test@example.com" } });
+        .reply(200, {
+          account: { id: accountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
 
       // Then set up the listApps interceptor with the correct path
       nock(`https://${controlHost}`)
@@ -77,13 +80,16 @@ describe("ControlApi", function() {
       expect(apps).to.deep.equal(expectedApps);
     });
 
-    it("should handle empty app list", async function() {
+    it("should handle empty app list", async function () {
       const accountId = "test-account-id";
 
       // First set up the getMe interceptor
       nock(`https://${controlHost}`)
         .get("/v1/me")
-        .reply(200, { account: { id: accountId, name: "Test Account" }, user: { email: "test@example.com" } });
+        .reply(200, {
+          account: { id: accountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
 
       // Then set up the listApps interceptor with the correct path
       nock(`https://${controlHost}`)
@@ -95,13 +101,16 @@ describe("ControlApi", function() {
       expect(apps).to.be.an("array").that.is.empty;
     });
 
-    it("should handle error response", async function() {
+    it("should handle error response", async function () {
       const accountId = "test-account-id";
 
       // First set up the getMe interceptor
       nock(`https://${controlHost}`)
         .get("/v1/me")
-        .reply(200, { account: { id: accountId, name: "Test Account" }, user: { email: "test@example.com" } });
+        .reply(200, {
+          account: { id: accountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
 
       // Then set up the listApps interceptor with the correct path and error response
       nock(`https://${controlHost}`)
@@ -118,8 +127,8 @@ describe("ControlApi", function() {
     });
   });
 
-  describe("#createApp", function() {
-    it("should create an app", async function() {
+  describe("#createApp", function () {
+    it("should create an app", async function () {
       const appData = { name: "New Test App" };
       const expectedApp = { id: "new-app-id", name: "New Test App" };
       const accountId = "test-account-id";
@@ -139,7 +148,7 @@ describe("ControlApi", function() {
       expect(app).to.deep.equal(expectedApp);
     });
 
-    it("should handle error when creating app", async function() {
+    it("should handle error when creating app", async function () {
       const appData = { name: "Invalid App" };
       const accountId = "test-account-id";
 
@@ -163,8 +172,8 @@ describe("ControlApi", function() {
     });
   });
 
-  describe("#updateApp", function() {
-    it("should update an app", async function() {
+  describe("#updateApp", function () {
+    it("should update an app", async function () {
       const appId = "test-app-id";
       const updateData = { name: "Updated App Name" };
       const expectedApp = { id: appId, name: "Updated App Name" };
@@ -185,14 +194,12 @@ describe("ControlApi", function() {
     });
   });
 
-  describe("#deleteApp", function() {
-    it("should delete an app", async function() {
+  describe("#deleteApp", function () {
+    it("should delete an app", async function () {
       const appId = "test-app-id";
 
       // Set up nock to intercept request
-      nock(`https://${controlHost}`)
-        .delete(`/v1/apps/${appId}`)
-        .reply(204);
+      nock(`https://${controlHost}`).delete(`/v1/apps/${appId}`).reply(204);
 
       // Intercept any calls to /me
       nock(`https://${controlHost}`)
@@ -204,20 +211,20 @@ describe("ControlApi", function() {
     });
   });
 
-  describe("#getApp", function() {
-    it("should get an app by ID", async function() {
+  describe("#getApp", function () {
+    it("should get an app by ID", async function () {
       const accountId = "test-account-id";
       const appId = "test-app-id";
       const expectedApp = { id: appId, name: "Test App" };
-      const allApps = [
-        expectedApp,
-        { id: "other-app", name: "Other App" }
-      ];
+      const allApps = [expectedApp, { id: "other-app", name: "Other App" }];
 
       // First set up the getMe interceptor
       nock(`https://${controlHost}`)
         .get("/v1/me")
-        .reply(200, { account: { id: accountId, name: "Test Account" }, user: { email: "test@example.com" } });
+        .reply(200, {
+          account: { id: accountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
 
       // Set up nock for listApps since getApp uses that internally
       nock(`https://${controlHost}`)
@@ -229,17 +236,18 @@ describe("ControlApi", function() {
       expect(app).to.deep.equal(expectedApp);
     });
 
-    it("should throw error if app not found", async function() {
+    it("should throw error if app not found", async function () {
       const accountId = "test-account-id";
       const appId = "non-existent-app";
-      const allApps = [
-        { id: "other-app", name: "Other App" }
-      ];
+      const allApps = [{ id: "other-app", name: "Other App" }];
 
       // First set up the getMe interceptor
       nock(`https://${controlHost}`)
         .get("/v1/me")
-        .reply(200, { account: { id: accountId, name: "Test Account" }, user: { email: "test@example.com" } });
+        .reply(200, {
+          account: { id: accountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
 
       // Set up nock for listApps with apps that don't include our target
       nock(`https://${controlHost}`)
@@ -256,17 +264,15 @@ describe("ControlApi", function() {
     });
   });
 
-  describe("#getMe", function() {
-    it("should get user and account info", async function() {
+  describe("#getMe", function () {
+    it("should get user and account info", async function () {
       const expectedResponse = {
         user: { id: "user-id", email: "test@example.com" },
         account: { id: "account-id", name: "Test Account" },
       };
 
       // Set up nock to intercept request
-      nock(`https://${controlHost}`)
-        .get("/v1/me")
-        .reply(200, expectedResponse);
+      nock(`https://${controlHost}`).get("/v1/me").reply(200, expectedResponse);
 
       const info = await api.getMe();
 
@@ -274,8 +280,8 @@ describe("ControlApi", function() {
     });
   });
 
-  describe("API key operations", function() {
-    it("should list API keys for an app", async function() {
+  describe("API key operations", function () {
+    it("should list API keys for an app", async function () {
       const appId = "test-app-id";
       const expectedKeys = [
         { id: "key1", name: "Test Key 1" },
@@ -297,7 +303,7 @@ describe("ControlApi", function() {
       expect(keys).to.deep.equal(expectedKeys);
     });
 
-    it("should create an API key", async function() {
+    it("should create an API key", async function () {
       const appId = "test-app-id";
       const keyData = {
         name: "New Key",
@@ -324,7 +330,7 @@ describe("ControlApi", function() {
       expect(key).to.deep.equal(expectedKey);
     });
 
-    it("should handle error when creating API key", async function() {
+    it("should handle error when creating API key", async function () {
       const appId = "test-app-id";
       const keyData = {
         name: "New Key",
@@ -350,7 +356,7 @@ describe("ControlApi", function() {
       }
     });
 
-    it("should handle error when listing API keys", async function() {
+    it("should handle error when listing API keys", async function () {
       const appId = "test-app-id";
 
       // Set up nock to intercept request
@@ -372,7 +378,7 @@ describe("ControlApi", function() {
       }
     });
 
-    it("should handle error when revoking API key", async function() {
+    it("should handle error when revoking API key", async function () {
       const appId = "test-app-id";
       const keyId = "test-key-id";
 
@@ -395,7 +401,7 @@ describe("ControlApi", function() {
       }
     });
 
-    it("should handle error when updating API key", async function() {
+    it("should handle error when updating API key", async function () {
       const appId = "test-app-id";
       const keyId = "test-key-id";
       const updateData = {

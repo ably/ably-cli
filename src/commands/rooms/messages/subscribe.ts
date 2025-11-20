@@ -1,8 +1,5 @@
 import { Args, Flags } from "@oclif/core";
-import {
-  ChatMessageEvent,
-  ChatClient,
-} from "@ably/chat"; // Import ChatClient and StatusSubscription
+import { ChatMessageEvent, ChatClient } from "@ably/chat"; // Import ChatClient and StatusSubscription
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
@@ -128,52 +125,50 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         "subscribingToMessages",
         `Subscribing to messages in room ${this.roomName}`,
       );
-      room.messages.subscribe(
-        (messageEvent: ChatMessageEvent) => {
-          const { message } = messageEvent;
-          const messageLog: ChatMessage = {
-            clientId: message.clientId,
-            text: message.text,
-            timestamp: message.timestamp,
-            ...(message.metadata ? { metadata: message.metadata } : {}),
-          };
-          this.logCliEvent(flags, "message", "received", "Message received", {
-            message: messageLog,
-            room: this.roomName,
-          });
+      room.messages.subscribe((messageEvent: ChatMessageEvent) => {
+        const { message } = messageEvent;
+        const messageLog: ChatMessage = {
+          clientId: message.clientId,
+          text: message.text,
+          timestamp: message.timestamp,
+          ...(message.metadata ? { metadata: message.metadata } : {}),
+        };
+        this.logCliEvent(flags, "message", "received", "Message received", {
+          message: messageLog,
+          room: this.roomName,
+        });
 
-          if (this.shouldOutputJson(flags)) {
+        if (this.shouldOutputJson(flags)) {
+          this.log(
+            this.formatJsonOutput(
+              {
+                message: messageLog,
+                room: this.roomName,
+                success: true,
+              },
+              flags,
+            ),
+          );
+        } else {
+          // Format message with timestamp, author and content
+          const timestamp = new Date(message.timestamp).toLocaleTimeString();
+          const author = message.clientId || "Unknown";
+
+          // Message content with consistent formatting
+          this.log(
+            `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`${author}:`)} ${message.text}`,
+          );
+
+          // Show metadata if enabled and available
+          if (flags["show-metadata"] && message.metadata) {
             this.log(
-              this.formatJsonOutput(
-                {
-                  message: messageLog,
-                  room: this.roomName,
-                  success: true,
-                },
-                flags,
-              ),
+              `${chalk.blue("  Metadata:")} ${chalk.yellow(this.formatJsonOutput(message.metadata, flags))}`,
             );
-          } else {
-            // Format message with timestamp, author and content
-            const timestamp = new Date(message.timestamp).toLocaleTimeString();
-            const author = message.clientId || "Unknown";
-
-            // Message content with consistent formatting
-            this.log(
-              `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`${author}:`)} ${message.text}`,
-            );
-
-            // Show metadata if enabled and available
-            if (flags["show-metadata"] && message.metadata) {
-              this.log(
-                `${chalk.blue("  Metadata:")} ${chalk.yellow(this.formatJsonOutput(message.metadata, flags))}`,
-              );
-            }
-
-            this.log(""); // Empty line for better readability
           }
-        },
-      );
+
+          this.log(""); // Empty line for better readability
+        }
+      });
       this.logCliEvent(
         flags,
         "room",
@@ -188,43 +183,41 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         "subscribingToStatus",
         `Subscribing to status changes for room ${this.roomName}`,
       );
-      room.onStatusChange(
-        (statusChange: unknown) => {
-          const change = statusChange as StatusChange;
+      room.onStatusChange((statusChange: unknown) => {
+        const change = statusChange as StatusChange;
+        this.logCliEvent(
+          flags,
+          "room",
+          `status-${change.current}`,
+          `Room status changed to ${change.current}`,
+          { reason: change.reason, room: this.roomName },
+        );
+        if (change.current === "attached") {
           this.logCliEvent(
             flags,
             "room",
-            `status-${change.current}`,
-            `Room status changed to ${change.current}`,
-            { reason: change.reason, room: this.roomName },
+            "statusAttached",
+            "Room status is ATTACHED.",
           );
-          if (change.current === "attached") {
-            this.logCliEvent(
-              flags,
-              "room",
-              "statusAttached",
-              "Room status is ATTACHED.",
+          // Log the ready signal for E2E tests
+          this.log(`Connected to room: ${this.roomName}`);
+          if (!this.shouldOutputJson(flags)) {
+            this.log(
+              chalk.green(
+                `✓ Subscribed to room: ${chalk.cyan(this.roomName)}. Listening for messages...`,
+              ),
             );
-            // Log the ready signal for E2E tests
-            this.log(`Connected to room: ${this.roomName}`);
-            if (!this.shouldOutputJson(flags)) {
-              this.log(
-                chalk.green(
-                  `✓ Subscribed to room: ${chalk.cyan(this.roomName)}. Listening for messages...`,
-                ),
-              );
-            }
-            // If we want to suppress output, we just don't log anything
-          } else if (change.current === "failed") {
-            const errorMsg = room.error?.message || "Unknown error";
-            if (this.shouldOutputJson(flags)) {
-              // Logged via logCliEvent
-            } else {
-              this.error(`Failed to attach to room: ${errorMsg}`);
-            }
           }
-        },
-      );
+          // If we want to suppress output, we just don't log anything
+        } else if (change.current === "failed") {
+          const errorMsg = room.error?.message || "Unknown error";
+          if (this.shouldOutputJson(flags)) {
+            // Logged via logCliEvent
+          } else {
+            this.error(`Failed to attach to room: ${errorMsg}`);
+          }
+        }
+      });
       this.logCliEvent(
         flags,
         "room",
@@ -277,7 +270,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         `Failed to subscribe to messages: ${errorMsg}`,
         { error: errorMsg, room: this.roomName },
       );
-      
+
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(

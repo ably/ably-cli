@@ -1,5 +1,10 @@
 import { Args, Flags } from "@oclif/core";
-import { RoomStatus, RoomStatusChange, MessageReactionType, ConnectionStatusChange } from "@ably/chat";
+import {
+  RoomStatus,
+  RoomStatusChange,
+  MessageReactionType,
+  ConnectionStatusChange,
+} from "@ably/chat";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../../chat-base-command.js";
@@ -37,7 +42,8 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
     }),
   };
 
-  static override description = "Remove a reaction from a message in a chat room";
+  static override description =
+    "Remove a reaction from a message in a chat room";
 
   static override examples = [
     "$ ably rooms messages reactions remove my-room message-serial 👍",
@@ -88,12 +94,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
         `Getting room handle for ${room}`,
       );
       const chatRoom = await chatClient.rooms.get(room);
-      this.logCliEvent(
-        flags,
-        "room",
-        "gotRoom",
-        `Got room handle for ${room}`,
-      );
+      this.logCliEvent(flags, "room", "gotRoom", `Got room handle for ${room}`);
 
       // Subscribe to room status changes
       this.logCliEvent(
@@ -102,32 +103,30 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
         "subscribingToStatus",
         "Subscribing to room status changes",
       );
-      chatRoom.onStatusChange(
-        (statusChange: RoomStatusChange) => {
-          let reason: Error | null | string | undefined;
-          if (statusChange.current === RoomStatus.Failed) {
-            reason = chatRoom.error; // Get reason from chatRoom.error on failure
-          }
+      chatRoom.onStatusChange((statusChange: RoomStatusChange) => {
+        let reason: Error | null | string | undefined;
+        if (statusChange.current === RoomStatus.Failed) {
+          reason = chatRoom.error; // Get reason from chatRoom.error on failure
+        }
 
-          const reasonMsg = reason instanceof Error ? reason.message : reason;
-          this.logCliEvent(
-            flags,
-            "room",
-            `status-${statusChange.current}`,
-            `Room status changed to ${statusChange.current}`,
-            { reason: reasonMsg },
+        const reasonMsg = reason instanceof Error ? reason.message : reason;
+        this.logCliEvent(
+          flags,
+          "room",
+          `status-${statusChange.current}`,
+          `Room status changed to ${statusChange.current}`,
+          { reason: reasonMsg },
+        );
+
+        if (
+          statusChange.current === RoomStatus.Failed &&
+          !this.shouldOutputJson(flags)
+        ) {
+          this.error(
+            `Failed to attach to room: ${reasonMsg || "Unknown error"}`,
           );
-
-          if (
-            statusChange.current === RoomStatus.Failed &&
-            !this.shouldOutputJson(flags)
-          ) {
-            this.error(
-              `Failed to attach to room: ${reasonMsg || "Unknown error"}`,
-            );
-          }
-        },
-      );
+        }
+      });
       this.logCliEvent(
         flags,
         "room",
@@ -136,12 +135,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
       );
 
       // Attach to the room
-      this.logCliEvent(
-        flags,
-        "room",
-        "attaching",
-        `Attaching to room ${room}`,
-      );
+      this.logCliEvent(flags, "room", "attaching", `Attaching to room ${room}`);
       await chatRoom.attach();
       this.logCliEvent(
         flags,
@@ -160,18 +154,15 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
           messageSerial,
           reaction,
           ...(flags.type && { type: flags.type }),
-        }
+        },
       );
 
       // Use delete method instead of remove
-      await chatRoom.messages.reactions.delete(
-        messageSerial, 
-        { 
-          name: reaction,
-          ...(flags.type && { type: REACTION_TYPE_MAP[flags.type] }),
-        }
-      );
-      
+      await chatRoom.messages.reactions.delete(messageSerial, {
+        name: reaction,
+        ...(flags.type && { type: REACTION_TYPE_MAP[flags.type] }),
+      });
+
       this.logCliEvent(
         flags,
         "reaction",
@@ -214,7 +205,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
               messageSerial,
               reaction,
               ...(flags.type && { type: flags.type }),
-              success: false
+              success: false,
             },
             flags,
           ),

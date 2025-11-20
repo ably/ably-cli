@@ -26,8 +26,10 @@ export default class StatusCommand extends Command {
   async run(): Promise<void> {
     const { flags } = await this.parse(StatusCommand);
 
-    const isInteractive = process.env.ABLY_INTERACTIVE_MODE === 'true';
-    const spinner = isInteractive ? null : ora("Checking Ably service status...").start();
+    const isInteractive = process.env.ABLY_INTERACTIVE_MODE === "true";
+    const spinner = isInteractive
+      ? null
+      : ora("Checking Ably service status...").start();
     if (isInteractive) {
       this.log("Checking Ably service status...");
     }
@@ -35,8 +37,8 @@ export default class StatusCommand extends Command {
     try {
       const response = await fetch("https://ably.com/status/up.json", {
         headers: {
-          "Ably-Agent": `ably-cli/${getCliVersion()}`
-        }
+          "Ably-Agent": `ably-cli/${getCliVersion()}`,
+        },
       });
       const data = (await response.json()) as StatusResponse;
       if (spinner) spinner.stop();

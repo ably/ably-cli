@@ -138,7 +138,7 @@ export default class BenchPublisher extends AblyBaseCommand {
 
     // Set up connection state logging
     this.setupConnectionStateLogging(client, flags, {
-      includeUserFriendlyMessages: true
+      includeUserFriendlyMessages: true,
     });
 
     let channel: Ably.RealtimeChannel | null = null;
@@ -161,7 +161,7 @@ export default class BenchPublisher extends AblyBaseCommand {
 
       // Set up channel state logging
       this.setupChannelStateLogging(channel, flags, {
-        includeUserFriendlyMessages: true
+        includeUserFriendlyMessages: true,
       });
 
       await this.subscribeToEcho(
@@ -698,11 +698,9 @@ export default class BenchPublisher extends AblyBaseCommand {
           // After all messages have been published/acknowledged send a final
           // control envelope so subscribers finish instantly rather than
           // waiting for presence-leave or inactivity watchdogs.
-          channel
-            .publish("benchmark", { type: "end", testId })
-            .catch(() => {
-              /* non-critical */
-            });
+          channel.publish("benchmark", { type: "end", testId }).catch(() => {
+            /* non-critical */
+          });
           return;
         }
 
@@ -810,11 +808,9 @@ export default class BenchPublisher extends AblyBaseCommand {
             });
 
           // Send end control message
-          channel
-            .publish("benchmark", { type: "end", testId })
-            .catch(() => {
-              /* ignore */
-            });
+          channel.publish("benchmark", { type: "end", testId }).catch(() => {
+            /* ignore */
+          });
           return;
         }
 

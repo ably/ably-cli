@@ -15,7 +15,7 @@ class TestableBatchPublish extends BatchPublish {
     flags: { channels: "test-channel-1,test-channel-2" },
     args: { message: '{"data":"test message"}' },
     argv: [],
-    raw: []
+    raw: [],
   };
 
   // Method to set parse result for testing
@@ -24,13 +24,16 @@ class TestableBatchPublish extends BatchPublish {
   }
 
   // Override createAblyRestClient to return our mock
-  public override async createAblyRestClient(_flags: any, _options?: any): Promise<any> {
+  public override async createAblyRestClient(
+    _flags: any,
+    _options?: any,
+  ): Promise<any> {
     return this._mockAblyClient as any;
   }
 
   // Add override for getClientOptions to bypass authentication checks
   protected override getClientOptions(_flags: any): any {
-    return { key: 'fake.key:secret' };
+    return { key: "fake.key:secret" };
   }
 
   private _mockAblyClient: any = {
@@ -39,10 +42,10 @@ class TestableBatchPublish extends BatchPublish {
       get: (_channelName: string) => {
         // Return the mock channel for this channel name
         return {
-          publish: this._mockPublish
+          publish: this._mockPublish,
         };
-      }
-    }
+      },
+    },
   };
 
   private _mockPublish = sinon.stub().resolves();
@@ -71,10 +74,14 @@ class TestableBatchPublish extends BatchPublish {
 
   // Override formatJsonOutput
   public override formatJsonOutput(data: Record<string, unknown>, _flags: any) {
-    return this._formatJsonOutputFn ? this._formatJsonOutputFn(data) : JSON.stringify(data);
+    return this._formatJsonOutputFn
+      ? this._formatJsonOutputFn(data)
+      : JSON.stringify(data);
   }
 
-  private _formatJsonOutputFn: ((data: Record<string, unknown>) => string) | null = null;
+  private _formatJsonOutputFn:
+    | ((data: Record<string, unknown>) => string)
+    | null = null;
 
   // Method to set formatJsonOutput function
   public setFormatJsonOutput(fn: (data: Record<string, unknown>) => string) {
@@ -90,7 +97,7 @@ class TestableBatchPublish extends BatchPublish {
   // Mock error method for testing errors
   public errorOutput: string | null = null;
   public error(message: string | Error, _options?: any): never {
-    this.errorOutput = typeof message === 'string' ? message : message.message;
+    this.errorOutput = typeof message === "string" ? message : message.message;
     throw new Error(this.errorOutput);
   }
 
@@ -108,25 +115,24 @@ class TestableBatchPublish extends BatchPublish {
     this.mockFileContent = content;
   }
 
-
   // Add request property for testing REST API calls
   public request: sinon.SinonStub = sinon.stub();
 }
 
-describe("Channels Batch Publish Command", function() {
+describe("Channels Batch Publish Command", function () {
   let command: TestableBatchPublish;
   let sandbox: sinon.SinonSandbox;
 
-  beforeEach(function() {
+  beforeEach(function () {
     sandbox = sinon.createSandbox();
     command = new TestableBatchPublish([], {} as any);
   });
 
-  afterEach(function() {
+  afterEach(function () {
     sandbox.restore();
   });
 
-  it("handles errors during batch publishing", async function() {
+  it("handles errors during batch publishing", async function () {
     const publishError = new Error("Publish failed");
     command.setMockPublish(sinon.stub().rejects(publishError));
 
@@ -139,12 +145,12 @@ describe("Channels Batch Publish Command", function() {
     }
   });
 
-  it("handles invalid channels input", async function() {
+  it("handles invalid channels input", async function () {
     command.setParseResult({
-      flags: { },
+      flags: {},
       args: { message: '{"data":"test message"}' },
       argv: [],
-      raw: []
+      raw: [],
     });
 
     try {
@@ -152,22 +158,27 @@ describe("Channels Batch Publish Command", function() {
       // Should not reach here
       expect.fail("Should have thrown an error");
     } catch {
-      expect(command.errorOutput).to.include("You must specify either --channels, --channels-json, or --spec");
+      expect(command.errorOutput).to.include(
+        "You must specify either --channels, --channels-json, or --spec",
+      );
     }
   });
 
-  it("handles message publishing with custom event name", async function() {
+  it("handles message publishing with custom event name", async function () {
     // Prepare a successful mock response
-    const messageIds = ['message1', 'message2'];
-    const mockItems = messageIds.map(id => ({ messageId: id, channel: 'test-channel' }));
+    const messageIds = ["message1", "message2"];
+    const mockItems = messageIds.map((id) => ({
+      messageId: id,
+      channel: "test-channel",
+    }));
 
     // Create a mock REST client with a request method that returns success
     const mockRest = {
       request: sandbox.stub().resolves({
         statusCode: 201,
         items: mockItems,
-        success: true
-      })
+        success: true,
+      }),
     };
 
     // Set the mock client
@@ -176,14 +187,14 @@ describe("Channels Batch Publish Command", function() {
     // Set up command parse result for custom event name
     command.setParseResult({
       flags: {
-        channels: 'test-channel',  // Use the channels flag
-        name: 'custom-event'       // Use name flag for event name
+        channels: "test-channel", // Use the channels flag
+        name: "custom-event", // Use name flag for event name
       },
       args: {
-        message: '{"data":"test message"}'  // Message as args
+        message: '{"data":"test message"}', // Message as args
       },
       argv: [],
-      raw: []
+      raw: [],
     });
 
     await command.run();
@@ -193,8 +204,8 @@ describe("Channels Batch Publish Command", function() {
 
     // Verify the request was called with correct parameters
     const requestCall = mockRest.request.getCall(0);
-    expect(requestCall.args[0]).to.equal('post');
-    expect(requestCall.args[1]).to.equal('/messages');
+    expect(requestCall.args[0]).to.equal("post");
+    expect(requestCall.args[1]).to.equal("/messages");
 
     // Verify the log shows success
     expect(command.logOutput.length).to.be.greaterThan(0);

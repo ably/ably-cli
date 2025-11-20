@@ -33,7 +33,8 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
       required: false,
     }),
     duration: Flags.integer({
-      description: "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description:
+        "Automatically exit after the given number of seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -46,7 +47,11 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
   private listener: ((member: SpaceMember) => void) | null = null;
 
   private async properlyCloseAblyClient(): Promise<void> {
-    if (!this.realtimeClient || this.realtimeClient.connection.state === 'closed' || this.realtimeClient.connection.state === 'failed') {
+    if (
+      !this.realtimeClient ||
+      this.realtimeClient.connection.state === "closed" ||
+      this.realtimeClient.connection.state === "failed"
+    ) {
       return;
     }
 
@@ -60,8 +65,8 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         resolve();
       };
 
-      this.realtimeClient!.connection.once('closed', onClosedOrFailed);
-      this.realtimeClient!.connection.once('failed', onClosedOrFailed);
+      this.realtimeClient!.connection.once("closed", onClosedOrFailed);
+      this.realtimeClient!.connection.once("failed", onClosedOrFailed);
       this.realtimeClient!.close();
     });
   }
@@ -115,7 +120,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
 
       // Set up connection state logging
       this.setupConnectionStateLogging(this.realtimeClient, flags, {
-        includeUserFriendlyMessages: true
+        includeUserFriendlyMessages: true,
       });
 
       // Parse profile data if provided
@@ -202,7 +207,12 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
           );
         } else {
           // No profile data provided
-          this.logCliEvent(flags, "member", "noProfileData", "No profile data provided");
+          this.logCliEvent(
+            flags,
+            "member",
+            "noProfileData",
+            "No profile data provided",
+          );
         }
       }
 
@@ -315,20 +325,31 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
             `[${timestamp}] ${actionColor(actionSymbol)} ${chalk.blue(clientId)} ${actionColor(action)}`,
           );
 
-          const hasProfileData = member.profileData && Object.keys(member.profileData).length > 0;
-          
+          const hasProfileData =
+            member.profileData && Object.keys(member.profileData).length > 0;
+
           if (hasProfileData) {
             this.log(
               `  ${chalk.dim("Profile:")} ${JSON.stringify(member.profileData, null, 2)}`,
             );
           } else {
             // No profile data available
-            this.logCliEvent(flags, "member", "noProfileDataForMember", "No profile data available for member");
+            this.logCliEvent(
+              flags,
+              "member",
+              "noProfileDataForMember",
+              "No profile data available for member",
+            );
           }
 
           if (connectionId === "Unknown") {
             // Connection ID is unknown
-            this.logCliEvent(flags, "member", "unknownConnectionId", "Connection ID is unknown for member");
+            this.logCliEvent(
+              flags,
+              "member",
+              "unknownConnectionId",
+              "Connection ID is unknown for member",
+            );
           } else {
             this.log(`  ${chalk.dim("Connection ID:")} ${connectionId}`);
           }
@@ -337,7 +358,12 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
             this.log(`  ${chalk.dim("Status:")} Not connected`);
           } else {
             // Member is connected
-            this.logCliEvent(flags, "member", "memberConnected", "Member is connected");
+            this.logCliEvent(
+              flags,
+              "member",
+              "memberConnected",
+              "Member is connected",
+            );
           }
         }
       };
@@ -358,19 +384,20 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         "listening",
         "Listening for member updates...",
       );
-      
+
       // Wait until the user interrupts or the optional duration elapses
       const effectiveDuration =
         typeof flags.duration === "number" && flags.duration > 0
           ? flags.duration
           : process.env.ABLY_CLI_DEFAULT_DURATION
-          ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-          : undefined;
+            ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
+            : undefined;
 
       const exitReason = await waitUntilInterruptedOrTimeout(effectiveDuration);
-      this.logCliEvent(flags, "member", "runComplete", "Exiting wait loop", { exitReason });
+      this.logCliEvent(flags, "member", "runComplete", "Exiting wait loop", {
+        exitReason,
+      });
       this.cleanupInProgress = exitReason === "signal";
-
     } catch (error) {
       const errorMsg = `Error: ${error instanceof Error ? error.message : String(error)}`;
       this.logCliEvent(flags, "error", "unhandledError", errorMsg, {
@@ -389,10 +416,15 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         this.performCleanup(flags || {}),
         new Promise<void>((resolve) => {
           setTimeout(() => {
-            this.logCliEvent(flags || {}, "member", "cleanupTimeout", "Cleanup timed out after 5s, forcing completion");
+            this.logCliEvent(
+              flags || {},
+              "member",
+              "cleanupTimeout",
+              "Cleanup timed out after 5s, forcing completion",
+            );
             resolve();
           }, 5000);
-        })
+        }),
       ]);
 
       if (!this.shouldOutputJson(flags || {})) {
@@ -400,7 +432,12 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
           this.log(chalk.green("Graceful shutdown complete (user interrupt)."));
         } else {
           // Normal completion without user interrupt
-          this.logCliEvent(flags || {}, "member", "completedNormally", "Command completed normally");
+          this.logCliEvent(
+            flags || {},
+            "member",
+            "completedNormally",
+            "Command completed normally",
+          );
         }
       }
     }
@@ -412,11 +449,21 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
       try {
         await Promise.race([
           this.space.members.unsubscribe(this.listener),
-          new Promise<void>((resolve) => setTimeout(resolve, 1000))
+          new Promise<void>((resolve) => setTimeout(resolve, 1000)),
         ]);
-        this.logCliEvent(flags, "member", "unsubscribedEventsFinally", "Unsubscribed member listener.");
+        this.logCliEvent(
+          flags,
+          "member",
+          "unsubscribedEventsFinally",
+          "Unsubscribed member listener.",
+        );
       } catch (error) {
-        this.logCliEvent(flags, "member", "unsubscribeErrorFinally", `Error unsubscribing: ${error instanceof Error ? error.message : String(error)}`);
+        this.logCliEvent(
+          flags,
+          "member",
+          "unsubscribeErrorFinally",
+          `Error unsubscribing: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
 
@@ -426,17 +473,37 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         this.logCliEvent(flags, "spaces", "leavingFinally", "Leaving space.");
         await Promise.race([
           this.space.leave(),
-          new Promise<void>((resolve) => setTimeout(resolve, 2000))
+          new Promise<void>((resolve) => setTimeout(resolve, 2000)),
         ]);
-        this.logCliEvent(flags, "spaces", "leftFinally", "Successfully left space.");
+        this.logCliEvent(
+          flags,
+          "spaces",
+          "leftFinally",
+          "Successfully left space.",
+        );
       } catch (error) {
-        this.logCliEvent(flags, "spaces", "leaveErrorFinally", `Error leaving space: ${error instanceof Error ? error.message : String(error)}`);
+        this.logCliEvent(
+          flags,
+          "spaces",
+          "leaveErrorFinally",
+          `Error leaving space: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
 
     // Close Ably client (already has internal timeout)
-    this.logCliEvent(flags, "connection", "closingClientFinally", "Closing Ably client.");
+    this.logCliEvent(
+      flags,
+      "connection",
+      "closingClientFinally",
+      "Closing Ably client.",
+    );
     await this.properlyCloseAblyClient();
-    this.logCliEvent(flags, "connection", "clientClosedFinally", "Ably client close attempt finished.");
+    this.logCliEvent(
+      flags,
+      "connection",
+      "clientClosedFinally",
+      "Ably client close attempt finished.",
+    );
   }
 }

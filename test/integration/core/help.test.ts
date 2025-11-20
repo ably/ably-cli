@@ -5,7 +5,8 @@ import os from "node:os";
 import path from "node:path";
 
 // Helper function to get a temporary config directory
-const getTestConfigDir = () => path.join(os.tmpdir(), `ably-cli-test-${Date.now()}`)
+const getTestConfigDir = () =>
+  path.join(os.tmpdir(), `ably-cli-test-${Date.now()}`);
 
 // Options for execa to prevent Node debugger attachment/output and manage config dir
 const createExecaOptions = (configDir: string) => ({
@@ -16,29 +17,33 @@ const createExecaOptions = (configDir: string) => ({
   reject: false, // Don't reject promise on non-zero exit code
 });
 
-
-describe("Help commands integration", function() {
+describe("Help commands integration", function () {
   let configDir: string;
   let execaOptions: ReturnType<typeof createExecaOptions>;
 
-  beforeEach(function() {
+  beforeEach(function () {
     // Create a temporary directory for config for each test
     configDir = getTestConfigDir();
     fs.ensureDirSync(configDir);
     execaOptions = createExecaOptions(configDir);
   });
 
-  afterEach(function() {
+  afterEach(function () {
     // Clean up the temporary config directory
     fs.removeSync(configDir);
   });
 
-  describe("root help command", function() {
-    it("should show all high-level topics", async function() {
-      const result = await execa("node", ["bin/run.js", "--help"], execaOptions);
-      expect(result.failed, `Help command stderr: ${result.stderr}`).to.be.false;
+  describe("root help command", function () {
+    it("should show all high-level topics", async function () {
+      const result = await execa(
+        "node",
+        ["bin/run.js", "--help"],
+        execaOptions,
+      );
+      expect(result.failed, `Help command stderr: ${result.stderr}`).to.be
+        .false;
       // Allow warnings in stderr (e.g., version mismatch warnings)
-      if (result.stderr && !result.stderr.includes('Warning:')) {
+      if (result.stderr && !result.stderr.includes("Warning:")) {
         expect(result.stderr).to.be.empty;
       }
       expect(result.stdout).to.include("USAGE");

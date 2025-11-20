@@ -13,7 +13,6 @@ import { ChatBaseCommand } from "../../../chat-base-command.js";
 // The best thing to do to keep the indicator on is to keystroke() often.
 const KEYSTROKE_INTERVAL = 450; // ms
 
-
 export default class TypingKeystroke extends ChatBaseCommand {
   static override args = {
     room: Args.string({
@@ -69,7 +68,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
 
       // Set up connection state logging
       this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
-        includeUserFriendlyMessages: true
+        includeUserFriendlyMessages: true,
       });
 
       // Get the room with typing enabled
@@ -94,97 +93,95 @@ export default class TypingKeystroke extends ChatBaseCommand {
         "subscribingToStatus",
         "Subscribing to room status changes",
       );
-      room.onStatusChange(
-        (statusChange: RoomStatusChange) => {
-          let reason: Error | null | string | undefined;
-          if (statusChange.current === RoomStatus.Failed) {
-            reason = room.error; // Get reason from room.error on failure
+      room.onStatusChange((statusChange: RoomStatusChange) => {
+        let reason: Error | null | string | undefined;
+        if (statusChange.current === RoomStatus.Failed) {
+          reason = room.error; // Get reason from room.error on failure
+        }
+
+        const reasonMsg = reason instanceof Error ? reason.message : reason;
+        this.logCliEvent(
+          flags,
+          "room",
+          `status-${statusChange.current}`,
+          `Room status changed to ${statusChange.current}`,
+          { reason: reasonMsg },
+        );
+
+        if (statusChange.current === RoomStatus.Attached) {
+          if (!this.shouldOutputJson(flags)) {
+            this.log(
+              `${chalk.green("Connected to room:")} ${chalk.bold(roomName)}`,
+            );
           }
 
-          const reasonMsg = reason instanceof Error ? reason.message : reason;
+          // Start typing immediately
           this.logCliEvent(
             flags,
-            "room",
-            `status-${statusChange.current}`,
-            `Room status changed to ${statusChange.current}`,
-            { reason: reasonMsg },
+            "typing",
+            "startAttempt",
+            "Attempting to start typing...",
           );
-
-          if (statusChange.current === RoomStatus.Attached) {
-            if (!this.shouldOutputJson(flags)) {
-              this.log(
-                `${chalk.green("Connected to room:")} ${chalk.bold(roomName)}`,
+          room.typing
+            .keystroke()
+            .then(() => {
+              this.logCliEvent(
+                flags,
+                "typing",
+                "started",
+                "Successfully started typing",
               );
-            }
-
-            // Start typing immediately
-            this.logCliEvent(
-              flags,
-              "typing",
-              "startAttempt",
-              "Attempting to start typing...",
-            );
-            room.typing
-              .keystroke()
-              .then(() => {
-                this.logCliEvent(
-                  flags,
-                  "typing",
-                  "started",
-                  "Successfully started typing",
-                );
-                if (!this.shouldOutputJson(flags)) {
-                  this.log(`${chalk.green("Started typing in room.")}`);
-                  if (flags.autoType) {
-                    this.log(
-                      `${chalk.dim("Will automatically remain typing until this command is terminated. Press Ctrl+C to exit.")}`,
-                    );
-                  } else {
-                    this.log(
-                      `${chalk.dim("Sent a single typing indicator. Use --autoType flag to keep typing automatically. Press Ctrl+C to exit.")}`,
-                    );
-                  }
-                }
-
-                // Keep typing active by calling keystroke() periodically if autoType is enabled
-                if (this.typingIntervalId) clearInterval(this.typingIntervalId);
-
+              if (!this.shouldOutputJson(flags)) {
+                this.log(`${chalk.green("Started typing in room.")}`);
                 if (flags.autoType) {
-                  this.typingIntervalId = setInterval(() => {
-                    room.typing.keystroke().catch((error: Error) => {
-                      this.logCliEvent(
-                        flags,
-                        "typing",
-                        "startErrorPeriodic",
-                        `Error refreshing typing state: ${error.message}`,
-                        { error: error.message },
-                      );
-                    });
-                  }, KEYSTROKE_INTERVAL);
+                  this.log(
+                    `${chalk.dim("Will automatically remain typing until this command is terminated. Press Ctrl+C to exit.")}`,
+                  );
+                } else {
+                  this.log(
+                    `${chalk.dim("Sent a single typing indicator. Use --autoType flag to keep typing automatically. Press Ctrl+C to exit.")}`,
+                  );
                 }
-              })
-              .catch((error: Error) => {
-                this.logCliEvent(
-                  flags,
-                  "typing",
-                  "startErrorInitial",
-                  `Failed to start typing initially: ${error.message}`,
-                  { error: error.message },
-                );
-                if (!this.shouldOutputJson(flags)) {
-                  this.error(`Failed to start typing: ${error.message}`);
-                }
-              });
-          } else if (
-            statusChange.current === RoomStatus.Failed &&
-            !this.shouldOutputJson(flags)
-          ) {
-            this.error(
-              `Failed to attach to room: ${reasonMsg || "Unknown error"}`,
-            );
-          }
-        },
-      );
+              }
+
+              // Keep typing active by calling keystroke() periodically if autoType is enabled
+              if (this.typingIntervalId) clearInterval(this.typingIntervalId);
+
+              if (flags.autoType) {
+                this.typingIntervalId = setInterval(() => {
+                  room.typing.keystroke().catch((error: Error) => {
+                    this.logCliEvent(
+                      flags,
+                      "typing",
+                      "startErrorPeriodic",
+                      `Error refreshing typing state: ${error.message}`,
+                      { error: error.message },
+                    );
+                  });
+                }, KEYSTROKE_INTERVAL);
+              }
+            })
+            .catch((error: Error) => {
+              this.logCliEvent(
+                flags,
+                "typing",
+                "startErrorInitial",
+                `Failed to start typing initially: ${error.message}`,
+                { error: error.message },
+              );
+              if (!this.shouldOutputJson(flags)) {
+                this.error(`Failed to start typing: ${error.message}`);
+              }
+            });
+        } else if (
+          statusChange.current === RoomStatus.Failed &&
+          !this.shouldOutputJson(flags)
+        ) {
+          this.error(
+            `Failed to attach to room: ${reasonMsg || "Unknown error"}`,
+          );
+        }
+      });
       this.logCliEvent(
         flags,
         "room",

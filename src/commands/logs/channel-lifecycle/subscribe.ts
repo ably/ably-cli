@@ -56,7 +56,7 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
 
       // Set up connection state logging
       this.setupConnectionStateLogging(client, flags, {
-        includeUserFriendlyMessages: true
+        includeUserFriendlyMessages: true,
       });
 
       // Configure rewind if specified
@@ -78,7 +78,7 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
 
       // Set up channel state logging
       this.setupChannelStateLogging(channel, flags, {
-        includeUserFriendlyMessages: true
+        includeUserFriendlyMessages: true,
       });
 
       this.logCliEvent(

@@ -110,7 +110,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
     if (this.shouldOutputJson(flags)) {
       // Output JSON summary
       let jsonOutput: Record<string, unknown>;
-      
+
       switch (flags.transport) {
         case "all": {
           jsonOutput = {
@@ -126,7 +126,9 @@ export default class ConnectionsTest extends AblyBaseCommand {
             success: wsSuccess,
             transport: "ws",
             connectionId: wsSuccess ? this.wsClient?.connection.id : undefined,
-            connectionKey: wsSuccess ? this.wsClient?.connection.key : undefined,
+            connectionKey: wsSuccess
+              ? this.wsClient?.connection.key
+              : undefined,
             error: wsError?.message || undefined,
           };
           break;
@@ -135,8 +137,12 @@ export default class ConnectionsTest extends AblyBaseCommand {
           jsonOutput = {
             success: xhrSuccess,
             transport: "xhr",
-            connectionId: xhrSuccess ? this.xhrClient?.connection.id : undefined,
-            connectionKey: xhrSuccess ? this.xhrClient?.connection.key : undefined,
+            connectionId: xhrSuccess
+              ? this.xhrClient?.connection.id
+              : undefined,
+            connectionKey: xhrSuccess
+              ? this.xhrClient?.connection.key
+              : undefined,
             error: xhrError?.message || undefined,
           };
           break;
@@ -148,7 +154,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
           };
         }
       }
-      
+
       this.log(this.formatJsonOutput(jsonOutput, flags));
     } else {
       this.log("");

@@ -1,9 +1,16 @@
 import { AblyBaseCommand } from "../base-command.js";
-import { getVersionInfo, formatVersionString, formatVersionJson } from "../utils/version.js";
+import {
+  getVersionInfo,
+  formatVersionString,
+  formatVersionJson,
+} from "../utils/version.js";
 
 export default class Version extends AblyBaseCommand {
   static description = "Display CLI version information";
-  static examples = ["<%= config.bin %> version", "<%= config.bin %> version --json"];
+  static examples = [
+    "<%= config.bin %> version",
+    "<%= config.bin %> version --json",
+  ];
 
   // Hide this command from help output (users should use --version flag instead)
   static hidden = true;

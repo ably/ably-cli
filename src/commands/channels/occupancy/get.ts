@@ -46,21 +46,22 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
 
       // Use the REST API to get channel details with occupancy
       const channelDetails = await client.request(
-        'get',
+        "get",
         `/channels/${encodeURIComponent(channelName)}`,
         2, // version
-        { occupancy: 'metrics' }, // params
-        null // body
+        { occupancy: "metrics" }, // params
+        null, // body
       );
 
       const occupancyData = channelDetails.items?.[0] || channelDetails;
-      const occupancyMetrics: OccupancyMetrics = occupancyData.occupancy?.metrics || {
+      const occupancyMetrics: OccupancyMetrics = occupancyData.occupancy
+        ?.metrics || {
         connections: 0,
         presenceConnections: 0,
         presenceMembers: 0,
         presenceSubscribers: 0,
         publishers: 0,
-        subscribers: 0
+        subscribers: 0,
       };
 
       // Output the occupancy metrics based on format
@@ -97,7 +98,6 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
           );
         }
       }
-
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
         this.log(

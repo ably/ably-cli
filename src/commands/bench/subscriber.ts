@@ -93,25 +93,29 @@ export default class BenchSubscriber extends AblyBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(`Attaching to channel: ${chalk.cyan(args.channel)}...`);
       }
-      
+
       await this.handlePresence(channel, metrics, flags);
 
       this.subscribeToMessages(channel, metrics, flags);
 
       await this.checkInitialPresence(channel, metrics, flags);
-      
+
       // Emit subscriberReady event for test automation
       this.logCliEvent(
         flags,
         "benchmark",
         "subscriberReady",
         `Subscriber ready on channel: ${args.channel}`,
-        { channel: args.channel }
+        { channel: args.channel },
       );
-      
+
       // Show success message
       if (!this.shouldOutputJson(flags)) {
-        this.log(chalk.green(`✓ Subscribed to channel: ${chalk.cyan(args.channel)}. Waiting for benchmark messages...`));
+        this.log(
+          chalk.green(
+            `✓ Subscribed to channel: ${chalk.cyan(args.channel)}. Waiting for benchmark messages...`,
+          ),
+        );
       }
 
       await this.waitForTermination(flags);
@@ -525,7 +529,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
     // Set up connection state logging
     this.setupConnectionStateLogging(realtime, flags, {
-      includeUserFriendlyMessages: true
+      includeUserFriendlyMessages: true,
     });
     return realtime;
   }

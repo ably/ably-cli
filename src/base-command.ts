@@ -24,7 +24,7 @@ export const WEB_CLI_RESTRICTED_COMMANDS = [
   "accounts:logout",
   "accounts:switch",
 
-  // You cannot switch/delete/create apps, you can only work with the current app you have selected in the web UI   
+  // You cannot switch/delete/create apps, you can only work with the current app you have selected in the web UI
   "apps:create",
   "apps:switch",
   "apps:delete",
@@ -36,7 +36,7 @@ export const WEB_CLI_RESTRICTED_COMMANDS = [
 
   // config only applicable to local env
   "config*",
-  
+
   // MCP functionality is not available in the web CLI
   "mcp*",
 ];
@@ -48,19 +48,19 @@ export const WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS = [
 
   "auth:keys*", // disallow all key commands
   "auth:revoke-token", // token revocation not support when anonymous
-  
+
   "bench*", // all bench commands cannot be run in anonymous mode
-  
+
   // All enumeration and logging commands are disallowed as this could expose other anonymous user behaviour
-  "channels:list", 
-  "channels:logs", 
-  "connections:logs", 
-  "rooms:list", 
-  "spaces:list", 
+  "channels:list",
+  "channels:logs",
+  "connections:logs",
+  "rooms:list",
+  "spaces:list",
   "logs*",
 
   // Integrations and queues are not available to anonymous users
-  "integrations*",     
+  "integrations*",
   "queues*",
 ];
 
@@ -89,7 +89,7 @@ const SKIP_AUTH_INFO_COMMANDS = [
 
 export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   protected _authInfoShown = false;
-  
+
   // Add static flags that will be available to all commands
   static globalFlags = {
     "access-token": Flags.string({
@@ -106,7 +106,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     "control-host": Flags.string({
       description:
         "Override the host endpoint for the control API, which defaults to control.ably.net",
-      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== 'true',
+      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
       env: "ABLY_CONTROL_HOST",
     }),
     env: Flags.string({
@@ -122,15 +122,15 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     }),
     port: Flags.integer({
       description: "Override the port for product API calls",
-      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== 'true',
+      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
     }),
     tlsPort: Flags.integer({
       description: "Override the TLS port for product API calls",
-      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== 'true',
+      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
     }),
     tls: Flags.string({
       description: "Use TLS for product API calls (default is true)",
-      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== 'true',
+      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
     }),
     json: Flags.boolean({
       description: "Output in JSON format",
@@ -180,7 +180,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
 
   protected isAnonymousWebMode(): boolean {
     // In web CLI mode, the server sets ABLY_ANONYMOUS_USER_MODE when no access token is available
-    return this.isWebCliMode && process.env.ABLY_ANONYMOUS_USER_MODE === 'true';
+    return this.isWebCliMode && process.env.ABLY_ANONYMOUS_USER_MODE === "true";
   }
 
   /**
@@ -188,11 +188,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    */
   protected matchesCommandPattern(commandId: string, pattern: string): boolean {
     // Handle wildcard patterns
-    if (pattern.endsWith('*')) {
+    if (pattern.endsWith("*")) {
       const prefix = pattern.slice(0, -1);
       return commandId === prefix || commandId.startsWith(prefix);
     }
-    
+
     // Handle exact matches
     return commandId === pattern;
   }
@@ -201,8 +201,8 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * Check if command is restricted in anonymous web CLI mode
    */
   protected isRestrictedInAnonymousMode(commandId: string): boolean {
-    return WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS.some(pattern => 
-      this.matchesCommandPattern(commandId, pattern)
+    return WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS.some((pattern) =>
+      this.matchesCommandPattern(commandId, pattern),
     );
   }
 
@@ -225,9 +225,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     if (!this.isTestMode()) return undefined;
 
     // Access global mock if running in test mode
-    return (globalThis as { __TEST_MOCKS__?: { ablyRestMock: Ably.Rest } }).__TEST_MOCKS__?.ablyRestMock;
+    return (globalThis as { __TEST_MOCKS__?: { ablyRestMock: Ably.Rest } })
+      .__TEST_MOCKS__?.ablyRestMock;
   }
-
 
   /**
    * Check if this is a web CLI version and return a consistent error message
@@ -259,8 +259,12 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           errorMessage = `Token revocation requires you to be logged in. Please log in at https://ably.com/login.`;
         } else if (commandId.startsWith("bench")) {
           errorMessage = `Benchmarking commands are only available when logged in. Please log in at https://ably.com/login.`;
-        } else if (commandId === "channels:list" || commandId === "rooms:list" || commandId === "spaces:list" || 
-                   commandId.includes("logs")) {
+        } else if (
+          commandId === "channels:list" ||
+          commandId === "rooms:list" ||
+          commandId === "spaces:list" ||
+          commandId.includes("logs")
+        ) {
           errorMessage = `This command is not available in anonymous mode for privacy reasons. Please log in at https://ably.com/login.`;
         } else if (commandId.startsWith("integrations")) {
           errorMessage = `Integration management requires you to be logged in. Please log in at https://ably.com/login.`;
@@ -323,10 +327,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     flags: BaseFlags,
     options?: {
       skipAuthInfo?: boolean;
-    }
+    },
   ): Promise<Ably.Rest | null> {
     const client = await this.createAblyClientInternal(flags, {
-      type: 'rest',
+      type: "rest",
       skipAuthInfo: options?.skipAuthInfo,
     });
     return client as Ably.Rest | null;
@@ -339,10 +343,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     flags: BaseFlags,
     options?: {
       skipAuthInfo?: boolean;
-    }
+    },
   ): Promise<Ably.Realtime | null> {
     const client = await this.createAblyClientInternal(flags, {
-      type: 'realtime',
+      type: "realtime",
       skipAuthInfo: options?.skipAuthInfo,
     });
     return client as Ably.Realtime | null;
@@ -354,9 +358,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   protected async createAblyClient(
     flags: BaseFlags,
     options?: {
-      type?: 'rest' | 'realtime';
+      type?: "rest" | "realtime";
       skipAuthInfo?: boolean;
-    }
+    },
   ): Promise<Ably.Rest | Ably.Realtime | null> {
     return this.createAblyClientInternal(flags, options);
   }
@@ -368,12 +372,12 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   private async createAblyClientInternal(
     flags: BaseFlags,
     options?: {
-      type?: 'rest' | 'realtime';
+      type?: "rest" | "realtime";
       skipAuthInfo?: boolean;
-    }
+    },
   ): Promise<Ably.Rest | Ably.Realtime | null> {
-    const clientType = options?.type || 'realtime';
-    
+    const clientType = options?.type || "realtime";
+
     // If in test mode, skip connection and use mock
     if (this.isTestMode()) {
       this.debug(`Running in test mode, using mock Ably ${clientType} client`);
@@ -389,7 +393,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     }
 
     // Track whether the user explicitly provided authentication
-    const hasExplicitAuth = !!(flags.token || flags["api-key"] || process.env.ABLY_API_KEY);
+    const hasExplicitAuth = !!(
+      flags.token ||
+      flags["api-key"] ||
+      process.env.ABLY_API_KEY
+    );
 
     // If token is provided or API key is in environment, we can skip the ensureAppAndKey step
     if (!flags.token && !flags["api-key"] && !process.env.ABLY_API_KEY) {
@@ -424,10 +432,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
 
     try {
       // Create REST client
-      if (clientType === 'rest') {
+      if (clientType === "rest") {
         return new Ably.Rest(clientOptions);
       }
-      
+
       // Create Realtime client
       const client = new Ably.Realtime(clientOptions);
 
@@ -549,16 +557,17 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       const appId = flags.app || this.configManager.getCurrentAppId();
       if (appId) {
         let appName = this.configManager.getAppName(appId);
-        
+
         // If app name is missing, try to fetch it from the API and update config
         if (!appName) {
           try {
             // Get access token for control API
             const currentAccount = this.configManager.getCurrentAccount();
-            const accessToken = flags["access-token"] || 
-                              process.env.ABLY_ACCESS_TOKEN || 
-                              currentAccount?.accessToken;
-            
+            const accessToken =
+              flags["access-token"] ||
+              process.env.ABLY_ACCESS_TOKEN ||
+              currentAccount?.accessToken;
+
             if (accessToken) {
               const controlApi = new ControlApi({
                 accessToken,
@@ -566,7 +575,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
               });
               const app = await controlApi.getApp(appId);
               appName = app.name;
-              
+
               // Always persist the app name to avoid repeated lookups
               const existingConfig = this.configManager.getAppConfig(appId);
               if (existingConfig && existingConfig.apiKey) {
@@ -588,7 +597,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             appName = "Unknown App";
           }
         }
-        
+
         displayParts.push(
           `${chalk.green("App=")}${chalk.green.bold(appName)} ${chalk.gray(`(${appId})`)}`,
         );
@@ -886,7 +895,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     }
 
     if (flags.endpoint) {
-      options.endpoint = flags.endpoint
+      options.endpoint = flags.endpoint;
     }
 
     if (flags.port) {
@@ -953,7 +962,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     options.logLevel = 4;
 
     // Add agent header to identify requests from the CLI
-    (options as Ably.ClientOptions & { agents: Record<string, string> }).agents = { 'ably-cli': getCliVersion() };
+    (
+      options as Ably.ClientOptions & { agents: Record<string, string> }
+    ).agents = { "ably-cli": getCliVersion() };
 
     return options;
   }
@@ -987,8 +998,8 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     const commandId = command || this.id || "";
 
     // Check if the command matches any restricted pattern
-    return !WEB_CLI_RESTRICTED_COMMANDS.some(pattern => 
-      this.matchesCommandPattern(commandId, pattern)
+    return !WEB_CLI_RESTRICTED_COMMANDS.some((pattern) =>
+      this.matchesCommandPattern(commandId, pattern),
     );
   }
 
@@ -1142,7 +1153,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       this.debug(`Auth info already shown for command: ${this.id}`);
       return;
     }
-    
+
     // Skip auth info if specified in the exceptions list
     if (!this.shouldShowAuthInfo()) {
       this.debug(`Skipping auth info display for command: ${this.id}`);
@@ -1233,9 +1244,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   ): Promise<void> {
     // In interactive mode, respect the 5-second SIGINT timeout
     // Leave 500ms buffer for the process to exit cleanly
-    const isInteractive = process.env.ABLY_INTERACTIVE_MODE === 'true';
-    const effectiveTimeout = isInteractive ? Math.min(timeoutMs, 4500) : timeoutMs;
-    
+    const isInteractive = process.env.ABLY_INTERACTIVE_MODE === "true";
+    const effectiveTimeout = isInteractive
+      ? Math.min(timeoutMs, 4500)
+      : timeoutMs;
+
     return new Promise((resolve, reject) => {
       let cleanupTimedOut = false;
       const timeout = setTimeout(() => {
@@ -1308,12 +1321,14 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     options?: {
       component?: string;
       includeUserFriendlyMessages?: boolean;
-    }
-  ): (() => void) {
+    },
+  ): () => void {
     const component = options?.component || "connection";
     const showUserMessages = options?.includeUserFriendlyMessages || false;
 
-    const connectionStateHandler = (stateChange: Ably.ConnectionStateChange) => {
+    const connectionStateHandler = (
+      stateChange: Ably.ConnectionStateChange,
+    ) => {
       this.logCliEvent(
         flags,
         component,
@@ -1334,7 +1349,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             break;
           }
           case "failed": {
-            this.log(chalk.red(`✗ Connection failed: ${stateChange.reason?.message || "Unknown error"}`));
+            this.log(
+              chalk.red(
+                `✗ Connection failed: ${stateChange.reason?.message || "Unknown error"}`,
+              ),
+            );
             break;
           }
           case "suspended": {
@@ -1367,8 +1386,8 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     options?: {
       component?: string;
       includeUserFriendlyMessages?: boolean;
-    }
-  ): (() => void) {
+    },
+  ): () => void {
     const component = options?.component || "channel";
     const showUserMessages = options?.includeUserFriendlyMessages || false;
 
@@ -1388,11 +1407,19 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             break;
           }
           case "failed": {
-            this.log(chalk.red(`✗ Failed to attach to channel ${chalk.cyan(channel.name)}: ${stateChange.reason?.message || "Unknown error"}`));
+            this.log(
+              chalk.red(
+                `✗ Failed to attach to channel ${chalk.cyan(channel.name)}: ${stateChange.reason?.message || "Unknown error"}`,
+              ),
+            );
             break;
           }
           case "detached": {
-            this.log(chalk.yellow(`! Detached from channel: ${chalk.cyan(channel.name)} ${stateChange.reason ? `(Reason: ${stateChange.reason.message})` : ""}`));
+            this.log(
+              chalk.yellow(
+                `! Detached from channel: ${chalk.cyan(channel.name)} ${stateChange.reason ? `(Reason: ${stateChange.reason.message})` : ""}`,
+              ),
+            );
             break;
           }
           case "attaching": {

@@ -88,9 +88,12 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
       }
 
       // Create Ably REST client and request token
-      const rest = await this.createAblyRestClient({ ...flags, 'api-key': apiKey }, { 
-        skipAuthInfo: flags["token-only"] 
-      });
+      const rest = await this.createAblyRestClient(
+        { ...flags, "api-key": apiKey },
+        {
+          skipAuthInfo: flags["token-only"],
+        },
+      );
       if (!rest) {
         return;
       }

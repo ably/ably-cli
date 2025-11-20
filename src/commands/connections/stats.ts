@@ -104,14 +104,10 @@ export default class ConnectionsStats extends AblyBaseCommand {
       unit: flags.unit as "day" | "hour" | "minute" | "month",
     });
 
-    await (flags.live
-      ? this.runLiveStats(flags)
-      : this.runOneTimeStats(flags));
+    await (flags.live ? this.runLiveStats(flags) : this.runOneTimeStats(flags));
   }
 
-  async runLiveStats(
-    flags: Record<string, unknown>,
-  ): Promise<void> {
+  async runLiveStats(flags: Record<string, unknown>): Promise<void> {
     try {
       const client = await this.createAblyRestClient(flags as BaseFlags);
       if (!client) {
@@ -202,9 +198,7 @@ export default class ConnectionsStats extends AblyBaseCommand {
     }
   }
 
-  async runOneTimeStats(
-    flags: Record<string, unknown>,
-  ): Promise<void> {
+  async runOneTimeStats(flags: Record<string, unknown>): Promise<void> {
     // Calculate time range based on the unit
     const now = new Date();
     let startTime = new Date();

@@ -1,8 +1,4 @@
-import {
-  ChatClient,
-  RoomReactionEvent,
-  RoomStatus,
-} from "@ably/chat";
+import { ChatClient, RoomReactionEvent, RoomStatus } from "@ably/chat";
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
@@ -38,7 +34,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
       // Create Chat client
       // this.clients = await this.createChatClient(flags) // Assign to chatClient
       this.chatClient = await this.createChatClient(flags);
-      
+
       if (!this.chatClient) {
         this.error("Failed to initialize clients");
         return;
@@ -157,46 +153,41 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         "subscribing",
         "Subscribing to reactions",
       );
-      room.reactions.subscribe(
-        (event: RoomReactionEvent) => {
-          const reaction = event.reaction;
-          const timestamp = new Date().toISOString(); // Chat SDK doesn't provide timestamp in event
-          const eventData = {
-            clientId: reaction.clientId,
-            metadata: reaction.metadata,
-            room: roomName,
-            timestamp,
-            name: reaction.name,
-          };
-          this.logCliEvent(
-            flags,
-            "reactions",
-            "received",
-            "Reaction received",
-            eventData,
+      room.reactions.subscribe((event: RoomReactionEvent) => {
+        const reaction = event.reaction;
+        const timestamp = new Date().toISOString(); // Chat SDK doesn't provide timestamp in event
+        const eventData = {
+          clientId: reaction.clientId,
+          metadata: reaction.metadata,
+          room: roomName,
+          timestamp,
+          name: reaction.name,
+        };
+        this.logCliEvent(
+          flags,
+          "reactions",
+          "received",
+          "Reaction received",
+          eventData,
+        );
+
+        if (this.shouldOutputJson(flags)) {
+          this.log(
+            this.formatJsonOutput({ success: true, ...eventData }, flags),
+          );
+        } else {
+          this.log(
+            `[${chalk.dim(timestamp)}] ${chalk.green("⚡")} ${chalk.blue(reaction.clientId || "Unknown")} reacted with ${chalk.yellow(reaction.name || "unknown")}`,
           );
 
-          if (this.shouldOutputJson(flags)) {
+          // Show any additional metadata in the reaction
+          if (reaction.metadata && Object.keys(reaction.metadata).length > 0) {
             this.log(
-              this.formatJsonOutput({ success: true, ...eventData }, flags),
+              `  ${chalk.dim("Metadata:")} ${this.formatJsonOutput(reaction.metadata, flags)}`,
             );
-          } else {
-            this.log(
-              `[${chalk.dim(timestamp)}] ${chalk.green("⚡")} ${chalk.blue(reaction.clientId || "Unknown")} reacted with ${chalk.yellow(reaction.name || "unknown")}`,
-            );
-
-            // Show any additional metadata in the reaction
-            if (
-              reaction.metadata &&
-              Object.keys(reaction.metadata).length > 0
-            ) {
-              this.log(
-                `  ${chalk.dim("Metadata:")} ${this.formatJsonOutput(reaction.metadata, flags)}`,
-              );
-            }
           }
-        },
-      );
+        }
+      });
       this.logCliEvent(
         flags,
         "reactions",
@@ -227,7 +218,6 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
               `\n${chalk.yellow("Unsubscribing and closing connection...")}`,
             );
           }
-
 
           if (!this.shouldOutputJson(flags)) {
             this.log(chalk.green("Successfully disconnected."));

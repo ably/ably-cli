@@ -549,10 +549,12 @@ export class AblyMcpServer {
         );
       }
 
-      const clientOptions: Ably.ClientOptions & { agents: Record<string, string> } = {
+      const clientOptions: Ably.ClientOptions & {
+        agents: Record<string, string>;
+      } = {
         clientId: process.env.ABLY_CLIENT_ID,
         key: apiKey,
-        agents: { 'ably-cli': getCliVersion() },
+        agents: { "ably-cli": getCliVersion() },
       };
 
       // Create Ably REST client (not Realtime, to avoid connections)

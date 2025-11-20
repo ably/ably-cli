@@ -19,24 +19,24 @@ export async function waitUntilInterruptedOrTimeout(
       process.setMaxListeners(50);
     }
   }
-  
+
   return new Promise<ExitReason>((resolve) => {
     let sigintHandler: (() => void) | undefined;
     let sigtermHandler: (() => void) | undefined;
     let resolved = false;
-    
+
     const handleExit = (reason: ExitReason): void => {
       if (resolved) {
         return;
       }
       resolved = true;
-      
+
       if (timeoutId) clearTimeout(timeoutId);
-      
+
       // Remove signal handlers if they were installed
       if (sigintHandler) process.removeListener("SIGINT", sigintHandler);
       if (sigtermHandler) process.removeListener("SIGTERM", sigtermHandler);
-      
+
       // For timeout cases in CLI commands, exit immediately to prevent hanging
       // This is especially important for E2E tests and automated scenarios
       if (reason === "timeout" && process.env.ABLY_CLI_TEST_MODE !== "true") {
@@ -45,7 +45,7 @@ export async function waitUntilInterruptedOrTimeout(
         setTimeout(() => process.exit(0), 200);
         return;
       }
-      
+
       resolve(reason);
     };
 
@@ -56,10 +56,10 @@ export async function waitUntilInterruptedOrTimeout(
       typeof durationSeconds === "number" && durationSeconds > 0
         ? durationSeconds
         : process.env.ABLY_CLI_DEFAULT_DURATION
-        ? Number(process.env.ABLY_CLI_DEFAULT_DURATION) > 0
-          ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-          : undefined
-        : undefined;
+          ? Number(process.env.ABLY_CLI_DEFAULT_DURATION) > 0
+            ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
+            : undefined
+          : undefined;
 
     if (effectiveDuration) {
       timeoutId = setTimeout(() => {
@@ -77,9 +77,12 @@ export async function waitUntilInterruptedOrTimeout(
 }
 
 // Helper function to ensure process exits cleanly after cleanup (now unused for timeout cases)
-export function ensureProcessExit(exitReason: ExitReason, delayMs: number = 100): void {
+export function ensureProcessExit(
+  exitReason: ExitReason,
+  delayMs: number = 100,
+): void {
   // Give a small delay for any final cleanup/logging, then force exit
   setTimeout(() => {
     process.exit(0);
   }, delayMs);
-} 
+}

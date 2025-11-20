@@ -5,6 +5,7 @@ import tsPlugin from "@typescript-eslint/eslint-plugin";
 import eslintPluginN from "eslint-plugin-n";
 import eslintPluginUnicorn from "eslint-plugin-unicorn";
 import eslintConfigPrettier from "eslint-config-prettier";
+import eslintPluginPrettier from "eslint-plugin-prettier";
 import eslint from "@eslint/js"; // Import base eslint config
 // import mochaGlobals from 'eslint-plugin-mocha/lib/configs/globals.js'; // Import mocha globals
 import eslintPluginMocha from "eslint-plugin-mocha"; // Import the plugin
@@ -34,14 +35,14 @@ export default [
       // New comprehensive test files - ignore to prevent CI blocking
       "test/unit/commands/apps/create.test.ts",
       "test/unit/commands/apps/delete.test.ts",
-      "test/unit/commands/apps/list.test.ts", 
+      "test/unit/commands/apps/list.test.ts",
       "test/unit/commands/auth/keys/create.test.ts",
       "test/unit/commands/rooms/**/*.test.ts",
       "test/unit/commands/spaces/**/*.test.ts",
       "test/unit/commands/mcp/**/*.test.ts",
       "test/unit/commands/bench/**/*.test.ts",
       "test/integration/commands/rooms.test.ts",
-      "test/integration/commands/spaces.test.ts", 
+      "test/integration/commands/spaces.test.ts",
       "test/e2e/commands/rooms-e2e.test.ts",
       "test/e2e/commands/spaces-e2e.test.ts",
       "test/integration/test-utils.ts",
@@ -63,6 +64,7 @@ export default [
     plugins: {
       n: eslintPluginN,
       unicorn: eslintPluginUnicorn,
+      prettier: eslintPluginPrettier,
     },
     rules: {
       // Base ESLint recommended rules
@@ -83,6 +85,8 @@ export default [
       "unicorn/no-process-exit": "off",
       "n/no-process-exit": "off",
       "n/no-unsupported-features/node-builtins": "off",
+      // Prettier
+      "prettier/prettier": "error",
     },
   },
   {

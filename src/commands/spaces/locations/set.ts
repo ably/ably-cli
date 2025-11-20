@@ -35,7 +35,8 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       required: true,
     }),
     duration: Flags.integer({
-      description: "Automatically exit after the given number of seconds (0 = exit immediately after setting location)",
+      description:
+        "Automatically exit after the given number of seconds (0 = exit immediately after setting location)",
       char: "D",
       required: false,
     }),
@@ -126,30 +127,34 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
     }
 
     // Check if we should exit immediately (optimized path for E2E tests)
-    const shouldExitImmediately = typeof flags.duration === "number" && flags.duration === 0;
-    
+    const shouldExitImmediately =
+      typeof flags.duration === "number" && flags.duration === 0;
+
     if (shouldExitImmediately) {
       // Set E2E mode flag to skip cleanup in finally block
       this.isE2EMode = true;
-      
+
       // For E2E mode, suppress unhandled promise rejections from Ably SDK cleanup
-      const originalHandler = process.listeners('unhandledRejection');
-      process.removeAllListeners('unhandledRejection');
-      process.on('unhandledRejection', (reason, promise) => {
+      const originalHandler = process.listeners("unhandledRejection");
+      process.removeAllListeners("unhandledRejection");
+      process.on("unhandledRejection", (reason, promise) => {
         // Ignore connection-related errors during E2E test cleanup
         const reasonStr = String(reason);
-        if (reasonStr.includes('Connection closed') || reasonStr.includes('80017')) {
+        if (
+          reasonStr.includes("Connection closed") ||
+          reasonStr.includes("80017")
+        ) {
           // Silently ignore these errors in E2E mode
           return;
         }
         // Re-emit other errors to original handlers
-        originalHandler.forEach(handler => {
-          if (typeof handler === 'function') {
+        originalHandler.forEach((handler) => {
+          if (typeof handler === "function") {
             handler(reason, promise);
           }
         });
       });
-      
+
       // Optimized path for E2E tests - minimal setup and cleanup
       try {
         const setupResult = await this.setupSpacesClient(flags, spaceName);
@@ -175,22 +180,27 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
           "Successfully set location",
           { location },
         );
-        
+
         if (this.shouldOutputJson(flags)) {
           this.log(
-            this.formatJsonOutput({ success: true, location, spaceName }, flags),
+            this.formatJsonOutput(
+              { success: true, location, spaceName },
+              flags,
+            ),
           );
         } else {
           this.log(
             `${chalk.green("Successfully set location:")} ${JSON.stringify(location, null, 2)}`,
           );
         }
-
       } catch {
         // If an error occurs in E2E mode, just exit cleanly after showing what we can
         if (this.shouldOutputJson(flags)) {
           this.log(
-            this.formatJsonOutput({ success: true, location, spaceName }, flags),
+            this.formatJsonOutput(
+              { success: true, location, spaceName },
+              flags,
+            ),
           );
         }
         // Don't call this.error() in E2E mode as it sets exit code to 1
@@ -214,7 +224,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
 
       // Set up connection state logging
       this.setupConnectionStateLogging(this.realtimeClient, flags, {
-        includeUserFriendlyMessages: true
+        includeUserFriendlyMessages: true,
       });
 
       // Get the space
@@ -345,17 +355,19 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
         "listening",
         "Listening for location updates...",
       );
-      
+
       // Wait until the user interrupts or the optional duration elapses
       const effectiveDuration =
         typeof flags.duration === "number" && flags.duration > 0
           ? flags.duration
           : process.env.ABLY_CLI_DEFAULT_DURATION
-          ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-          : undefined;
+            ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
+            : undefined;
 
       const exitReason = await waitUntilInterruptedOrTimeout(effectiveDuration);
-      this.logCliEvent(flags, "location", "runComplete", "Exiting wait loop", { exitReason });
+      this.logCliEvent(flags, "location", "runComplete", "Exiting wait loop", {
+        exitReason,
+      });
       this.cleanupInProgress = exitReason === "signal";
     } catch (error) {
       const errorMsg = `Error: ${error instanceof Error ? error.message : String(error)}`;
@@ -367,29 +379,42 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
           this.formatJsonOutput({ error: errorMsg, success: false }, flags),
         );
       } else {
-      this.error(errorMsg);
+        this.error(errorMsg);
       }
     } finally {
       // Only do complex cleanup for interactive mode (not E2E tests with duration=0)
-      const isE2EMode = typeof flags.duration === "number" && flags.duration === 0;
+      const isE2EMode =
+        typeof flags.duration === "number" && flags.duration === 0;
       if (!isE2EMode) {
         // Wrap all cleanup in a timeout to prevent hanging
         await Promise.race([
           this.performCleanup(flags || {}),
           new Promise<void>((resolve) => {
             setTimeout(() => {
-              this.logCliEvent(flags || {}, "location", "cleanupTimeout", "Cleanup timed out after 5s, forcing completion");
+              this.logCliEvent(
+                flags || {},
+                "location",
+                "cleanupTimeout",
+                "Cleanup timed out after 5s, forcing completion",
+              );
               resolve();
             }, 5000);
-          })
+          }),
         ]);
 
         if (!this.shouldOutputJson(flags || {})) {
           if (this.cleanupInProgress) {
-            this.log(chalk.green("Graceful shutdown complete (user interrupt)."));
+            this.log(
+              chalk.green("Graceful shutdown complete (user interrupt)."),
+            );
           } else {
             // Normal completion without user interrupt
-            this.logCliEvent(flags || {}, "location", "completedNormally", "Command completed normally");
+            this.logCliEvent(
+              flags || {},
+              "location",
+              "completedNormally",
+              "Command completed normally",
+            );
           }
         }
       }
@@ -402,38 +427,76 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       try {
         await Promise.race([
           Promise.resolve(this.subscription.unsubscribe()),
-          new Promise<void>((resolve) => setTimeout(resolve, 1000))
+          new Promise<void>((resolve) => setTimeout(resolve, 1000)),
         ]);
-        this.logCliEvent(flags, "location", "unsubscribedFinally", "Unsubscribed location listener.");
+        this.logCliEvent(
+          flags,
+          "location",
+          "unsubscribedFinally",
+          "Unsubscribed location listener.",
+        );
       } catch (error) {
-        this.logCliEvent(flags, "location", "unsubscribeErrorFinally", `Error unsubscribing: ${error instanceof Error ? error.message : String(error)}`);
+        this.logCliEvent(
+          flags,
+          "location",
+          "unsubscribeErrorFinally",
+          `Error unsubscribing: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
 
     // Clear location and leave space with timeout
     if (this.space) {
       try {
-        this.logCliEvent(flags, "location", "clearingFinally", "Clearing location.");
+        this.logCliEvent(
+          flags,
+          "location",
+          "clearingFinally",
+          "Clearing location.",
+        );
         await Promise.race([
           this.space.locations.set(null),
-          new Promise<void>((resolve) => setTimeout(resolve, 1000))
+          new Promise<void>((resolve) => setTimeout(resolve, 1000)),
         ]);
-        this.logCliEvent(flags, "location", "clearedFinally", "Successfully cleared location.");
+        this.logCliEvent(
+          flags,
+          "location",
+          "clearedFinally",
+          "Successfully cleared location.",
+        );
 
         this.logCliEvent(flags, "spaces", "leavingFinally", "Leaving space.");
         await Promise.race([
           this.space.leave(),
-          new Promise<void>((resolve) => setTimeout(resolve, 2000))
+          new Promise<void>((resolve) => setTimeout(resolve, 2000)),
         ]);
-        this.logCliEvent(flags, "spaces", "leftFinally", "Successfully left space.");
+        this.logCliEvent(
+          flags,
+          "spaces",
+          "leftFinally",
+          "Successfully left space.",
+        );
       } catch (error) {
-        this.logCliEvent(flags, "location", "cleanupLeaveErrorFinally", `Error during cleanup: ${error instanceof Error ? error.message : String(error)}`);
+        this.logCliEvent(
+          flags,
+          "location",
+          "cleanupLeaveErrorFinally",
+          `Error during cleanup: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
 
     // Close Ably client with timeout
-    if (this.realtimeClient && this.realtimeClient.connection.state !== "closed") {
-      this.logCliEvent(flags, "connection", "closingClientFinally", "Closing Ably client.");
+    if (
+      this.realtimeClient &&
+      this.realtimeClient.connection.state !== "closed"
+    ) {
+      this.logCliEvent(
+        flags,
+        "connection",
+        "closingClientFinally",
+        "Closing Ably client.",
+      );
       try {
         await Promise.race([
           new Promise<void>((resolve) => {
@@ -442,15 +505,25 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
               clearTimeout(timeout);
               resolve();
             };
-            this.realtimeClient!.connection.once('closed', onClosedOrFailed);
-            this.realtimeClient!.connection.once('failed', onClosedOrFailed);
+            this.realtimeClient!.connection.once("closed", onClosedOrFailed);
+            this.realtimeClient!.connection.once("failed", onClosedOrFailed);
             this.realtimeClient!.close();
           }),
-          new Promise<void>((resolve) => setTimeout(resolve, 3000))
+          new Promise<void>((resolve) => setTimeout(resolve, 3000)),
         ]);
-        this.logCliEvent(flags, "connection", "clientClosedFinally", "Ably client close attempt finished.");
+        this.logCliEvent(
+          flags,
+          "connection",
+          "clientClosedFinally",
+          "Ably client close attempt finished.",
+        );
       } catch (error) {
-        this.logCliEvent(flags, "connection", "clientCloseErrorFinally", `Error closing client: ${error instanceof Error ? error.message : String(error)}`);
+        this.logCliEvent(
+          flags,
+          "connection",
+          "clientCloseErrorFinally",
+          `Error closing client: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
   }

@@ -63,7 +63,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
 
       // Set up connection state logging
       this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
-        includeUserFriendlyMessages: true
+        includeUserFriendlyMessages: true,
       });
 
       // Get the room with occupancy option enabled
@@ -178,7 +178,12 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
           "Initial occupancy metrics fetched",
           { metrics: initialOccupancy },
         );
-        this.displayOccupancyMetrics(initialOccupancy, this.roomName, flags, true);
+        this.displayOccupancyMetrics(
+          initialOccupancy,
+          this.roomName,
+          flags,
+          true,
+        );
       } catch (error) {
         const errorMsg = `Failed to fetch initial occupancy: ${error instanceof Error ? error.message : String(error)}`;
         this.logCliEvent(flags, "occupancy", "getInitialError", errorMsg, {
@@ -196,19 +201,17 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         "subscribing",
         "Subscribing to occupancy updates",
       );
-      room.occupancy.subscribe(
-        (occupancyEvent: OccupancyEvent) => {
-          const occupancyMetrics = occupancyEvent.occupancy;
-          this.logCliEvent(
-            flags,
-            "occupancy",
-            "updateReceived",
-            "Occupancy update received",
-            { metrics: occupancyMetrics },
-          );
-          this.displayOccupancyMetrics(occupancyMetrics, this.roomName, flags);
-        },
-      );
+      room.occupancy.subscribe((occupancyEvent: OccupancyEvent) => {
+        const occupancyMetrics = occupancyEvent.occupancy;
+        this.logCliEvent(
+          flags,
+          "occupancy",
+          "updateReceived",
+          "Occupancy update received",
+          { metrics: occupancyMetrics },
+        );
+        this.displayOccupancyMetrics(occupancyMetrics, this.roomName, flags);
+      });
       this.logCliEvent(
         flags,
         "occupancy",
@@ -270,7 +273,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
   ): void {
     if (!roomName) return; // Guard against null roomName
     if (!occupancyMetrics) return; // Guard against undefined occupancyMetrics
-    
+
     const timestamp = new Date().toISOString();
     const logData = {
       metrics: occupancyMetrics,
@@ -292,9 +295,13 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       const prefix = isInitial ? "Initial occupancy" : "Occupancy update";
       this.log(`[${timestamp}] ${prefix} for room '${roomName}'`);
       // Type guard to handle both OccupancyMetrics and OccupancyEvent
-      const connections = 'connections' in occupancyMetrics ? occupancyMetrics.connections : 0;
-      const presenceMembers = 'presenceMembers' in occupancyMetrics ? occupancyMetrics.presenceMembers : undefined;
-      
+      const connections =
+        "connections" in occupancyMetrics ? occupancyMetrics.connections : 0;
+      const presenceMembers =
+        "presenceMembers" in occupancyMetrics
+          ? occupancyMetrics.presenceMembers
+          : undefined;
+
       this.log(`  Connections: ${connections ?? 0}`);
 
       if (presenceMembers !== undefined) {

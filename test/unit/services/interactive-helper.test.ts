@@ -5,14 +5,14 @@ import { InteractiveHelper } from "../../../src/services/interactive-helper.js";
 import { ConfigManager } from "../../../src/services/config-manager.js";
 import { ControlApi, App, Key } from "../../../src/services/control-api.js";
 
-describe("InteractiveHelper", function() {
+describe("InteractiveHelper", function () {
   let interactiveHelper: InteractiveHelper;
   let configManagerStub: sinon.SinonStubbedInstance<ConfigManager>;
   let promptStub: sinon.SinonStub;
   let consoleLogSpy: sinon.SinonSpy;
   let sandbox: sinon.SinonSandbox;
 
-  beforeEach(function() {
+  beforeEach(function () {
     sandbox = sinon.createSandbox();
     // Create stubs and spies using sandbox
     configManagerStub = sandbox.createStubInstance(ConfigManager);
@@ -20,25 +20,29 @@ describe("InteractiveHelper", function() {
     consoleLogSpy = sandbox.spy(console, "log");
 
     // Create fresh instance for each test
-    interactiveHelper = new InteractiveHelper(configManagerStub, { logErrors: false });
+    interactiveHelper = new InteractiveHelper(configManagerStub, {
+      logErrors: false,
+    });
   });
 
-  afterEach(function() {
+  afterEach(function () {
     sandbox.restore();
   });
 
-  describe("#confirm", function() {
-    it("should return true when user confirms", async function() {
+  describe("#confirm", function () {
+    it("should return true when user confirms", async function () {
       promptStub.resolves({ confirmed: true });
 
       const result = await interactiveHelper.confirm("Confirm this action?");
 
       expect(result).to.be.true;
       expect(promptStub.calledOnce).to.be.true;
-      expect(promptStub.firstCall.args[0][0].message).to.equal("Confirm this action?");
+      expect(promptStub.firstCall.args[0][0].message).to.equal(
+        "Confirm this action?",
+      );
     });
 
-    it("should return false when user denies", async function() {
+    it("should return false when user denies", async function () {
       promptStub.resolves({ confirmed: false });
 
       const result = await interactiveHelper.confirm("Confirm this action?");
@@ -48,25 +52,25 @@ describe("InteractiveHelper", function() {
     });
   });
 
-  describe("#selectAccount", function() {
-    it("should return selected account", async function() {
+  describe("#selectAccount", function () {
+    it("should return selected account", async function () {
       const accounts = [
         {
           alias: "default",
           account: {
             accessToken: "token1",
             accountName: "Account 1",
-            userEmail: "user1@example.com"
-          }
+            userEmail: "user1@example.com",
+          },
         },
         {
           alias: "secondary",
           account: {
             accessToken: "token2",
             accountName: "Account 2",
-            userEmail: "user2@example.com"
-          }
-        }
+            userEmail: "user2@example.com",
+          },
+        },
       ];
 
       configManagerStub.listAccounts.returns(accounts);
@@ -83,17 +87,18 @@ describe("InteractiveHelper", function() {
       expect(configManagerStub.getCurrentAccountAlias.calledOnce).to.be.true;
     });
 
-    it("should handle no configured accounts", async function() {
+    it("should handle no configured accounts", async function () {
       configManagerStub.listAccounts.returns([]);
 
       const result = await interactiveHelper.selectAccount();
 
       expect(result).to.be.null;
       expect(promptStub.called).to.be.false;
-      expect(consoleLogSpy.calledWith(sinon.match(/No accounts configured/))).to.be.true;
+      expect(consoleLogSpy.calledWith(sinon.match(/No accounts configured/))).to
+        .be.true;
     });
 
-    it("should handle errors", async function() {
+    it("should handle errors", async function () {
       configManagerStub.listAccounts.throws(new Error("Test error"));
 
       const result = await interactiveHelper.selectAccount();
@@ -102,14 +107,14 @@ describe("InteractiveHelper", function() {
     });
   });
 
-  describe("#selectApp", function() {
+  describe("#selectApp", function () {
     let controlApiStub: sinon.SinonStubbedInstance<ControlApi>;
 
-    beforeEach(function() {
+    beforeEach(function () {
       controlApiStub = sandbox.createStubInstance(ControlApi);
     });
 
-    it("should return selected app", async function() {
+    it("should return selected app", async function () {
       const apps: App[] = [
         {
           id: "app1",
@@ -118,7 +123,7 @@ describe("InteractiveHelper", function() {
           created: 1234567890,
           modified: 1234567890,
           status: "active",
-          tlsOnly: false
+          tlsOnly: false,
         },
         {
           id: "app2",
@@ -127,8 +132,8 @@ describe("InteractiveHelper", function() {
           created: 1234567890,
           modified: 1234567890,
           status: "active",
-          tlsOnly: false
-        }
+          tlsOnly: false,
+        },
       ];
 
       controlApiStub.listApps.resolves(apps);
@@ -143,7 +148,7 @@ describe("InteractiveHelper", function() {
       expect(controlApiStub.listApps.calledOnce).to.be.true;
     });
 
-    it("should handle no apps found", async function() {
+    it("should handle no apps found", async function () {
       controlApiStub.listApps.resolves([]);
 
       const result = await interactiveHelper.selectApp(controlApiStub);
@@ -153,7 +158,7 @@ describe("InteractiveHelper", function() {
       expect(consoleLogSpy.calledWith(sinon.match(/No apps found/))).to.be.true;
     });
 
-    it("should handle errors", async function() {
+    it("should handle errors", async function () {
       controlApiStub.listApps.rejects(new Error("Test error"));
 
       const result = await interactiveHelper.selectApp(controlApiStub);
@@ -162,14 +167,14 @@ describe("InteractiveHelper", function() {
     });
   });
 
-  describe("#selectKey", function() {
+  describe("#selectKey", function () {
     let controlApiStub: sinon.SinonStubbedInstance<ControlApi>;
 
-    beforeEach(function() {
+    beforeEach(function () {
       controlApiStub = sandbox.createStubInstance(ControlApi);
     });
 
-    it("should return selected key", async function() {
+    it("should return selected key", async function () {
       const keys: Key[] = [
         {
           id: "key1",
@@ -180,7 +185,7 @@ describe("InteractiveHelper", function() {
           created: 1234567890,
           modified: 1234567890,
           revocable: true,
-          status: "active"
+          status: "active",
         },
         {
           id: "key2",
@@ -191,8 +196,8 @@ describe("InteractiveHelper", function() {
           created: 1234567890,
           modified: 1234567890,
           revocable: true,
-          status: "active"
-        }
+          status: "active",
+        },
       ];
 
       controlApiStub.listKeys.resolves(keys);
@@ -208,7 +213,7 @@ describe("InteractiveHelper", function() {
       expect(controlApiStub.listKeys.calledWith("app1")).to.be.true;
     });
 
-    it("should handle unnamed keys", async function() {
+    it("should handle unnamed keys", async function () {
       const keys: Key[] = [
         {
           id: "key1",
@@ -219,7 +224,7 @@ describe("InteractiveHelper", function() {
           modified: 1234567890,
           name: "",
           revocable: true,
-          status: "active"
+          status: "active",
         },
         {
           id: "key2",
@@ -230,8 +235,8 @@ describe("InteractiveHelper", function() {
           created: 1234567890,
           modified: 1234567890,
           revocable: true,
-          status: "active"
-        }
+          status: "active",
+        },
       ];
 
       controlApiStub.listKeys.resolves(keys);
@@ -244,7 +249,7 @@ describe("InteractiveHelper", function() {
       expect(choices[0].name).to.include("Unnamed key");
     });
 
-    it("should handle no keys found", async function() {
+    it("should handle no keys found", async function () {
       controlApiStub.listKeys.resolves([]);
 
       const result = await interactiveHelper.selectKey(controlApiStub, "app1");
@@ -254,7 +259,7 @@ describe("InteractiveHelper", function() {
       expect(consoleLogSpy.calledWith(sinon.match(/No keys found/))).to.be.true;
     });
 
-    it("should handle errors", async function() {
+    it("should handle errors", async function () {
       controlApiStub.listKeys.rejects(new Error("Test error"));
 
       const result = await interactiveHelper.selectKey(controlApiStub, "app1");

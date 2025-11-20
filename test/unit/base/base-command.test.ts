@@ -26,7 +26,9 @@ class TestCommand extends AblyBaseCommand {
     return this.parseApiKey(apiKey);
   }
 
-  public testEnsureAppAndKey(flags: BaseFlags): Promise<{ apiKey: string; appId: string } | null> {
+  public testEnsureAppAndKey(
+    flags: BaseFlags,
+  ): Promise<{ apiKey: string; appId: string } | null> {
     return this.ensureAppAndKey(flags);
   }
 
@@ -59,7 +61,10 @@ class TestCommand extends AblyBaseCommand {
     return this.isAnonymousWebMode();
   }
 
-  public testMatchesCommandPattern(commandId: string, pattern: string): boolean {
+  public testMatchesCommandPattern(
+    commandId: string,
+    pattern: string,
+  ): boolean {
     return this.matchesCommandPattern(commandId, pattern);
   }
 
@@ -76,7 +81,7 @@ class TestCommand extends AblyBaseCommand {
   }
 }
 
-describe("AblyBaseCommand", function() {
+describe("AblyBaseCommand", function () {
   let command: TestCommand;
   let configManagerStub: sinon.SinonStubbedInstance<ConfigManager>;
   let interactiveHelperStub: sinon.SinonStubbedInstance<InteractiveHelper>;
@@ -84,7 +89,7 @@ describe("AblyBaseCommand", function() {
   let sandbox: sinon.SinonSandbox;
   let originalEnv: NodeJS.ProcessEnv;
 
-  beforeEach(function() {
+  beforeEach(function () {
     sandbox = sinon.createSandbox();
     // Store original env vars to restore after tests
     originalEnv = { ...process.env };
@@ -103,8 +108,12 @@ describe("AblyBaseCommand", function() {
     configManagerStub = sandbox.createStubInstance(ConfigManager);
 
     // Instead of stubbing loadConfig which is private, we'll stub methods that might access the file system using sandbox
-    sandbox.stub(ConfigManager.prototype as any, "ensureConfigDirExists").callsFake(() => {});
-    sandbox.stub(ConfigManager.prototype as any, "saveConfig").callsFake(() => {});
+    sandbox
+      .stub(ConfigManager.prototype as any, "ensureConfigDirExists")
+      .callsFake(() => {});
+    sandbox
+      .stub(ConfigManager.prototype as any, "saveConfig")
+      .callsFake(() => {});
 
     // Note: createStubInstance doesn't need sandbox explicitly.
     interactiveHelperStub = sandbox.createStubInstance(InteractiveHelper);
@@ -122,7 +131,7 @@ describe("AblyBaseCommand", function() {
     command.testInteractiveHelper = interactiveHelperStub;
   });
 
-  afterEach(function() {
+  afterEach(function () {
     // Clean up sinon stubs using the sandbox
     sandbox.restore();
 
@@ -130,112 +139,202 @@ describe("AblyBaseCommand", function() {
     process.env = originalEnv;
   });
 
-  describe("checkWebCliRestrictions", function() {
-    it("should not throw error when not in web CLI mode", function() {
+  describe("checkWebCliRestrictions", function () {
+    it("should not throw error when not in web CLI mode", function () {
       command.testIsWebCliMode = false;
       expect(() => command.testCheckWebCliRestrictions()).to.not.throw();
     });
 
-    it("should throw error when in authenticated web CLI mode and command is restricted", function() {
+    it("should throw error when in authenticated web CLI mode and command is restricted", function () {
       command.testIsWebCliMode = true;
       process.env.ABLY_ANONYMOUS_USER_MODE = "false";
       // Mock command ID to be a restricted command
-      Object.defineProperty(command, "id", { value: "accounts:login", configurable: true });
+      Object.defineProperty(command, "id", {
+        value: "accounts:login",
+        configurable: true,
+      });
 
-      expect(() => command.testCheckWebCliRestrictions()).to.throw(/already logged in/);
+      expect(() => command.testCheckWebCliRestrictions()).to.throw(
+        /already logged in/,
+      );
     });
 
-    it("should not throw error when in authenticated web CLI mode but command is allowed", function() {
+    it("should not throw error when in authenticated web CLI mode but command is allowed", function () {
       command.testIsWebCliMode = true;
       process.env.ABLY_ANONYMOUS_USER_MODE = "false";
       // Mock command ID to be an allowed command
-      Object.defineProperty(command, "id", { value: "channels:publish", configurable: true });
+      Object.defineProperty(command, "id", {
+        value: "channels:publish",
+        configurable: true,
+      });
 
       expect(() => command.testCheckWebCliRestrictions()).to.not.throw();
     });
 
-    it("should throw error for anonymous-restricted commands in anonymous mode", function() {
+    it("should throw error for anonymous-restricted commands in anonymous mode", function () {
       command.testIsWebCliMode = true;
       process.env.ABLY_ANONYMOUS_USER_MODE = "true";
-      
+
       // Test various anonymous-restricted commands
       const testCases = [
-        { id: "accounts:stats", expectedError: /Account management commands are only available when logged in/ },
-        { id: "apps:list", expectedError: /App management commands are only available when logged in/ },
-        { id: "auth:keys:list", expectedError: /API key management requires you to be logged in/ },
-        { id: "auth:revoke-token", expectedError: /Token revocation requires you to be logged in/ },
-        { id: "channels:list", expectedError: /not available in anonymous mode for privacy reasons/ },
-        { id: "bench:channel", expectedError: /Benchmarking commands are only available when logged in/ },
-        { id: "integrations:list", expectedError: /Integration management requires you to be logged in/ },
-        { id: "queues:list", expectedError: /Queue management requires you to be logged in/ },
-        { id: "logs:tail", expectedError: /not available in anonymous mode for privacy reasons/ },
+        {
+          id: "accounts:stats",
+          expectedError:
+            /Account management commands are only available when logged in/,
+        },
+        {
+          id: "apps:list",
+          expectedError:
+            /App management commands are only available when logged in/,
+        },
+        {
+          id: "auth:keys:list",
+          expectedError: /API key management requires you to be logged in/,
+        },
+        {
+          id: "auth:revoke-token",
+          expectedError: /Token revocation requires you to be logged in/,
+        },
+        {
+          id: "channels:list",
+          expectedError: /not available in anonymous mode for privacy reasons/,
+        },
+        {
+          id: "bench:channel",
+          expectedError:
+            /Benchmarking commands are only available when logged in/,
+        },
+        {
+          id: "integrations:list",
+          expectedError: /Integration management requires you to be logged in/,
+        },
+        {
+          id: "queues:list",
+          expectedError: /Queue management requires you to be logged in/,
+        },
+        {
+          id: "logs:tail",
+          expectedError: /not available in anonymous mode for privacy reasons/,
+        },
       ];
 
       testCases.forEach(({ id, expectedError }) => {
         Object.defineProperty(command, "id", { value: id, configurable: true });
-        expect(() => command.testCheckWebCliRestrictions()).to.throw(expectedError);
+        expect(() => command.testCheckWebCliRestrictions()).to.throw(
+          expectedError,
+        );
       });
     });
 
-    it("should allow non-restricted commands in anonymous mode", function() {
+    it("should allow non-restricted commands in anonymous mode", function () {
       command.testIsWebCliMode = true;
       process.env.ABLY_ANONYMOUS_USER_MODE = "true";
-      
+
       // Test commands that should be allowed
-      const allowedCommands = ["channels:publish", "rooms:get", "spaces:get", "help"];
-      
-      allowedCommands.forEach(id => {
+      const allowedCommands = [
+        "channels:publish",
+        "rooms:get",
+        "spaces:get",
+        "help",
+      ];
+
+      allowedCommands.forEach((id) => {
         Object.defineProperty(command, "id", { value: id, configurable: true });
         expect(() => command.testCheckWebCliRestrictions()).to.not.throw();
       });
     });
 
-    it("should throw error for base restricted commands in anonymous mode", function() {
+    it("should throw error for base restricted commands in anonymous mode", function () {
       command.testIsWebCliMode = true;
       process.env.ABLY_ANONYMOUS_USER_MODE = "true";
-      
+
       // Test base restricted commands with their specific error messages
       // Note: accounts:login is caught by the anonymous restrictions first since it starts with "accounts"
       const testCases = [
-        { id: "accounts:login", expectedError: /Account management commands are only available when logged in/ },
-        { id: "config", expectedError: /Local configuration is not supported in the web CLI\. Please install the CLI locally/ },
-        { id: "config:set", expectedError: /Local configuration is not supported in the web CLI\. Please install the CLI locally/ },
-        { id: "mcp", expectedError: /MCP server functionality is not available in the web CLI\. Please install the CLI locally/ },
-        { id: "mcp:start-server", expectedError: /MCP server functionality is not available in the web CLI\. Please install the CLI locally/ },
-        { id: "accounts:current", expectedError: /Account management commands are only available when logged in/ },
-        { id: "accounts:switch", expectedError: /Account management commands are only available when logged in/ },
-        { id: "apps:switch", expectedError: /App management commands are only available when logged in/ },
-        { id: "apps:delete", expectedError: /App management commands are only available when logged in/ },
-        { id: "auth:keys:switch", expectedError: /API key management requires you to be logged in/ },
+        {
+          id: "accounts:login",
+          expectedError:
+            /Account management commands are only available when logged in/,
+        },
+        {
+          id: "config",
+          expectedError:
+            /Local configuration is not supported in the web CLI\. Please install the CLI locally/,
+        },
+        {
+          id: "config:set",
+          expectedError:
+            /Local configuration is not supported in the web CLI\. Please install the CLI locally/,
+        },
+        {
+          id: "mcp",
+          expectedError:
+            /MCP server functionality is not available in the web CLI\. Please install the CLI locally/,
+        },
+        {
+          id: "mcp:start-server",
+          expectedError:
+            /MCP server functionality is not available in the web CLI\. Please install the CLI locally/,
+        },
+        {
+          id: "accounts:current",
+          expectedError:
+            /Account management commands are only available when logged in/,
+        },
+        {
+          id: "accounts:switch",
+          expectedError:
+            /Account management commands are only available when logged in/,
+        },
+        {
+          id: "apps:switch",
+          expectedError:
+            /App management commands are only available when logged in/,
+        },
+        {
+          id: "apps:delete",
+          expectedError:
+            /App management commands are only available when logged in/,
+        },
+        {
+          id: "auth:keys:switch",
+          expectedError: /API key management requires you to be logged in/,
+        },
       ];
 
       testCases.forEach(({ id, expectedError }) => {
         Object.defineProperty(command, "id", { value: id, configurable: true });
-        expect(() => command.testCheckWebCliRestrictions()).to.throw(expectedError);
+        expect(() => command.testCheckWebCliRestrictions()).to.throw(
+          expectedError,
+        );
       });
     });
 
-    it("should allow auth:keys commands when authenticated in web CLI mode", function() {
+    it("should allow auth:keys commands when authenticated in web CLI mode", function () {
       command.testIsWebCliMode = true;
       process.env.ABLY_ANONYMOUS_USER_MODE = "false"; // Authenticated
-      
+
       // These should be allowed when authenticated
-      const allowedCommands = ["auth:keys:list", "auth:keys:create", "auth:keys:revoke"];
-      
-      allowedCommands.forEach(id => {
+      const allowedCommands = [
+        "auth:keys:list",
+        "auth:keys:create",
+        "auth:keys:revoke",
+      ];
+
+      allowedCommands.forEach((id) => {
         Object.defineProperty(command, "id", { value: id, configurable: true });
         expect(() => command.testCheckWebCliRestrictions()).to.not.throw();
       });
     });
   });
 
-  describe("isAllowedInWebCliMode", function() {
-    it("should return true when not in web CLI mode", function() {
+  describe("isAllowedInWebCliMode", function () {
+    it("should return true when not in web CLI mode", function () {
       command.testIsWebCliMode = false;
       expect(command.testIsAllowedInWebCliMode()).to.be.true;
     });
 
-    it("should return false for restricted commands", function() {
+    it("should return false for restricted commands", function () {
       command.testIsWebCliMode = true;
       expect(command.testIsAllowedInWebCliMode("accounts:login")).to.be.false;
       expect(command.testIsAllowedInWebCliMode("accounts:logout")).to.be.false;
@@ -245,37 +344,37 @@ describe("AblyBaseCommand", function() {
       expect(command.testIsAllowedInWebCliMode("mcp:start-server")).to.be.false;
     });
 
-    it("should return true for allowed commands", function() {
+    it("should return true for allowed commands", function () {
       command.testIsWebCliMode = true;
       expect(command.testIsAllowedInWebCliMode("help")).to.be.true;
       expect(command.testIsAllowedInWebCliMode("channels:publish")).to.be.true;
     });
   });
 
-  describe("shouldOutputJson", function() {
-    it("should return true when json flag is true", function() {
+  describe("shouldOutputJson", function () {
+    it("should return true when json flag is true", function () {
       const flags: BaseFlags = { json: true };
       expect(command.testShouldOutputJson(flags)).to.be.true;
     });
 
-    it("should return true when pretty-json flag is true", function() {
+    it("should return true when pretty-json flag is true", function () {
       const flags: BaseFlags = { "pretty-json": true };
       expect(command.testShouldOutputJson(flags)).to.be.true;
     });
 
-    it("should return true when format is json", function() {
+    it("should return true when format is json", function () {
       const flags: BaseFlags = { format: "json" };
       expect(command.testShouldOutputJson(flags)).to.be.true;
     });
 
-    it("should return false when no json flags are present", function() {
+    it("should return false when no json flags are present", function () {
       const flags: BaseFlags = {};
       expect(command.testShouldOutputJson(flags)).to.be.false;
     });
   });
 
-  describe("parseApiKey", function() {
-    it("should correctly parse a valid API key", function() {
+  describe("parseApiKey", function () {
+    it("should correctly parse a valid API key", function () {
       const validKey = "appId.keyId:keySecret";
       const result = command.testParseApiKey(validKey);
 
@@ -285,41 +384,41 @@ describe("AblyBaseCommand", function() {
       expect(result?.keySecret).to.equal("keySecret");
     });
 
-    it("should return null for an API key without colon", function() {
+    it("should return null for an API key without colon", function () {
       const invalidKey = "appId.keyId";
       const result = command.testParseApiKey(invalidKey);
 
       expect(result).to.be.null;
     });
 
-    it("should return null for an API key without period", function() {
+    it("should return null for an API key without period", function () {
       const invalidKey = "appIdkeyId:keySecret";
       const result = command.testParseApiKey(invalidKey);
 
       expect(result).to.be.null;
     });
 
-    it("should return null for an empty API key", function() {
+    it("should return null for an empty API key", function () {
       expect(command.testParseApiKey("")).to.be.null;
     });
   });
 
-  describe("Anonymous Web Mode", function() {
+  describe("Anonymous Web Mode", function () {
     let originalWebCliMode: string | undefined;
     let originalRestrictedMode: string | undefined;
 
-    beforeEach(function() {
+    beforeEach(function () {
       originalWebCliMode = process.env.ABLY_WEB_CLI_MODE;
       originalRestrictedMode = process.env.ABLY_ANONYMOUS_USER_MODE;
     });
 
-    afterEach(function() {
+    afterEach(function () {
       if (originalWebCliMode === undefined) {
         delete process.env.ABLY_WEB_CLI_MODE;
       } else {
         process.env.ABLY_WEB_CLI_MODE = originalWebCliMode;
       }
-      
+
       if (originalRestrictedMode === undefined) {
         delete process.env.ABLY_ANONYMOUS_USER_MODE;
       } else {
@@ -327,7 +426,7 @@ describe("AblyBaseCommand", function() {
       }
     });
 
-    it("should detect anonymous mode when web CLI mode and ABLY_ANONYMOUS_USER_MODE is true", function() {
+    it("should detect anonymous mode when web CLI mode and ABLY_ANONYMOUS_USER_MODE is true", function () {
       process.env.ABLY_WEB_CLI_MODE = "true";
       process.env.ABLY_ANONYMOUS_USER_MODE = "true";
 
@@ -336,7 +435,7 @@ describe("AblyBaseCommand", function() {
       expect(cmd.testIsAnonymousWebMode()).to.be.true;
     });
 
-    it("should not detect anonymous mode when ABLY_ANONYMOUS_USER_MODE is not set", function() {
+    it("should not detect anonymous mode when ABLY_ANONYMOUS_USER_MODE is not set", function () {
       process.env.ABLY_WEB_CLI_MODE = "true";
       delete process.env.ABLY_ANONYMOUS_USER_MODE;
 
@@ -345,7 +444,7 @@ describe("AblyBaseCommand", function() {
       expect(cmd.testIsAnonymousWebMode()).to.be.false;
     });
 
-    it("should not detect anonymous mode when ABLY_ANONYMOUS_USER_MODE is false", function() {
+    it("should not detect anonymous mode when ABLY_ANONYMOUS_USER_MODE is false", function () {
       process.env.ABLY_WEB_CLI_MODE = "true";
       process.env.ABLY_ANONYMOUS_USER_MODE = "false";
 
@@ -354,7 +453,7 @@ describe("AblyBaseCommand", function() {
       expect(cmd.testIsAnonymousWebMode()).to.be.false;
     });
 
-    it("should not detect anonymous mode when not in web CLI mode", function() {
+    it("should not detect anonymous mode when not in web CLI mode", function () {
       delete process.env.ABLY_WEB_CLI_MODE;
       process.env.ABLY_ANONYMOUS_USER_MODE = "true";
 
@@ -363,54 +462,62 @@ describe("AblyBaseCommand", function() {
       expect(cmd.testIsAnonymousWebMode()).to.be.false;
     });
 
-    it("should identify commands restricted in anonymous mode", function() {
+    it("should identify commands restricted in anonymous mode", function () {
       const cmd = new TestCommand([], {} as Config);
       cmd.testConfigManager = configManagerStub;
-      
+
       // Commands with wildcards
       expect(cmd.testIsRestrictedInAnonymousMode("accounts")).to.be.true;
       expect(cmd.testIsRestrictedInAnonymousMode("accounts:list")).to.be.true;
       expect(cmd.testIsRestrictedInAnonymousMode("apps:create")).to.be.true;
       expect(cmd.testIsRestrictedInAnonymousMode("auth:keys:list")).to.be.true;
       expect(cmd.testIsRestrictedInAnonymousMode("bench:channel")).to.be.true;
-      expect(cmd.testIsRestrictedInAnonymousMode("integrations:rules:create")).to.be.true;
+      expect(cmd.testIsRestrictedInAnonymousMode("integrations:rules:create"))
+        .to.be.true;
       expect(cmd.testIsRestrictedInAnonymousMode("queues:publish")).to.be.true;
       expect(cmd.testIsRestrictedInAnonymousMode("logs:tail")).to.be.true;
-      
+
       // Specific commands
       expect(cmd.testIsRestrictedInAnonymousMode("channels:list")).to.be.true;
       expect(cmd.testIsRestrictedInAnonymousMode("rooms:list")).to.be.true;
-      expect(cmd.testIsRestrictedInAnonymousMode("auth:revoke-token")).to.be.true;
-      
+      expect(cmd.testIsRestrictedInAnonymousMode("auth:revoke-token")).to.be
+        .true;
+
       // Commands that should be allowed
-      expect(cmd.testIsRestrictedInAnonymousMode("channels:publish")).to.be.false;
+      expect(cmd.testIsRestrictedInAnonymousMode("channels:publish")).to.be
+        .false;
       expect(cmd.testIsRestrictedInAnonymousMode("rooms:get")).to.be.false;
     });
 
-    it("should match command patterns correctly", function() {
+    it("should match command patterns correctly", function () {
       const cmd = new TestCommand([], {} as Config);
       cmd.testConfigManager = configManagerStub;
-      
+
       // Wildcard patterns
       expect(cmd.testMatchesCommandPattern("accounts", "accounts*")).to.be.true;
-      expect(cmd.testMatchesCommandPattern("accounts:list", "accounts*")).to.be.true;
-      expect(cmd.testMatchesCommandPattern("accountsettings", "accounts*")).to.be.true;
-      
+      expect(cmd.testMatchesCommandPattern("accounts:list", "accounts*")).to.be
+        .true;
+      expect(cmd.testMatchesCommandPattern("accountsettings", "accounts*")).to
+        .be.true;
+
       // Exact matches
-      expect(cmd.testMatchesCommandPattern("channels:list", "channels:list")).to.be.true;
-      expect(cmd.testMatchesCommandPattern("channels:list", "channels:lis")).to.be.false;
-      
+      expect(cmd.testMatchesCommandPattern("channels:list", "channels:list")).to
+        .be.true;
+      expect(cmd.testMatchesCommandPattern("channels:list", "channels:lis")).to
+        .be.false;
+
       // Non-matches
-      expect(cmd.testMatchesCommandPattern("channels:publish", "channels:list")).to.be.false;
+      expect(cmd.testMatchesCommandPattern("channels:publish", "channels:list"))
+        .to.be.false;
       expect(cmd.testMatchesCommandPattern("account", "accounts*")).to.be.false;
     });
   });
 
-  describe("ensureAppAndKey", function() {
-    it("should use app and key from flags if available", async function() {
+  describe("ensureAppAndKey", function () {
+    it("should use app and key from flags if available", async function () {
       const flags: BaseFlags = {
         app: "testAppId",
-        "api-key": "testApiKey"
+        "api-key": "testApiKey",
       };
 
       const result = await command.testEnsureAppAndKey(flags);
@@ -420,11 +527,13 @@ describe("AblyBaseCommand", function() {
       expect(result?.apiKey).to.equal("testApiKey");
     });
 
-    it("should use app and key from config if available", async function() {
+    it("should use app and key from config if available", async function () {
       const flags: BaseFlags = {};
 
       configManagerStub.getCurrentAppId.returns("configAppId");
-      configManagerStub.getApiKey.withArgs("configAppId").returns("configApiKey");
+      configManagerStub.getApiKey
+        .withArgs("configAppId")
+        .returns("configApiKey");
 
       const result = await command.testEnsureAppAndKey(flags);
 
@@ -433,7 +542,7 @@ describe("AblyBaseCommand", function() {
       expect(result?.apiKey).to.equal("configApiKey");
     });
 
-    it("should use ABLY_API_KEY environment variable if available", async function() {
+    it("should use ABLY_API_KEY environment variable if available", async function () {
       const flags: BaseFlags = {};
 
       // Reset relevant stubs
@@ -444,10 +553,16 @@ describe("AblyBaseCommand", function() {
 
       // Set up interactive helper to simulate user selecting an app and key
       const mockApp = { id: "envApp", name: "Test App" } as any;
-      const mockKey = { id: "keyId", name: "Test Key", key: "envApp.keyId:keySecret" } as any;
+      const mockKey = {
+        id: "keyId",
+        name: "Test Key",
+        key: "envApp.keyId:keySecret",
+      } as any;
 
       interactiveHelperStub.selectApp.resolves(mockApp);
-      interactiveHelperStub.selectKey.withArgs(sinon.match.any, "envApp").resolves(mockKey);
+      interactiveHelperStub.selectKey
+        .withArgs(sinon.match.any, "envApp")
+        .resolves(mockKey);
 
       // Set environment variable but it will be used in getClientOptions, not directly in this test path
       process.env.ABLY_API_KEY = "envApp.keyId:keySecret";
@@ -459,7 +574,7 @@ describe("AblyBaseCommand", function() {
       expect(result?.apiKey).to.equal("envApp.keyId:keySecret");
     });
 
-    it("should handle web CLI mode appropriately", async function() {
+    it("should handle web CLI mode appropriately", async function () {
       const flags: BaseFlags = {};
       command.testIsWebCliMode = true;
       process.env.ABLY_API_KEY = "webApp.keyId:keySecret";
@@ -471,7 +586,7 @@ describe("AblyBaseCommand", function() {
       expect(result?.apiKey).to.equal("webApp.keyId:keySecret");
     });
 
-    it("should return null if no authentication is available", async function() {
+    it("should return null if no authentication is available", async function () {
       const flags: BaseFlags = {};
 
       // Reset all required stubs to return empty values
@@ -488,11 +603,11 @@ describe("AblyBaseCommand", function() {
     });
   });
 
-  describe("endpoint flag handling", function() {
-    it("should set endpoint in client options when endpoint flag is provided", function() {
+  describe("endpoint flag handling", function () {
+    it("should set endpoint in client options when endpoint flag is provided", function () {
       const flags: BaseFlags = {
         endpoint: "custom-endpoint.example.com",
-        "api-key": "test-key:secret"
+        "api-key": "test-key:secret",
       };
 
       const clientOptions = command.testGetClientOptions(flags);
@@ -500,9 +615,9 @@ describe("AblyBaseCommand", function() {
       expect(clientOptions.endpoint).to.equal("custom-endpoint.example.com");
     });
 
-    it("should not set endpoint when flag is not provided", function() {
+    it("should not set endpoint when flag is not provided", function () {
       const flags: BaseFlags = {
-        "api-key": "test-key:secret"
+        "api-key": "test-key:secret",
       };
 
       const clientOptions = command.testGetClientOptions(flags);
@@ -510,12 +625,12 @@ describe("AblyBaseCommand", function() {
       expect(clientOptions.endpoint).to.be.undefined;
     });
 
-    it("should work alongside other flags like env and host", function() {
+    it("should work alongside other flags like env and host", function () {
       const flags: BaseFlags = {
         endpoint: "custom-endpoint.example.com",
         env: "sandbox",
         host: "custom-host.example.com",
-        "api-key": "test-key:secret"
+        "api-key": "test-key:secret",
       };
 
       const clientOptions = command.testGetClientOptions(flags);

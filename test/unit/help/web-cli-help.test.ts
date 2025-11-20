@@ -6,15 +6,15 @@ import stripAnsi from "strip-ansi";
 import CustomHelp from "../../../src/help.js";
 import { ConfigManager } from "../../../src/services/config-manager.js";
 
-describe("CLI Help", function() {
-  describe("Web CLI Help", function() {
+describe("CLI Help", function () {
+  describe("Web CLI Help", function () {
     let sandbox: sinon.SinonSandbox;
     let originalEnv: NodeJS.ProcessEnv;
     let consoleLogStub: sinon.SinonStub;
     let _processExitStub: sinon.SinonStub;
     let configManagerStub: sinon.SinonStubbedInstance<ConfigManager>;
 
-    beforeEach(function() {
+    beforeEach(function () {
       sandbox = sinon.createSandbox();
       originalEnv = { ...process.env };
 
@@ -32,12 +32,15 @@ describe("CLI Help", function() {
       process.env.ABLY_WEB_CLI_MODE = "true";
     });
 
-    afterEach(function() {
+    afterEach(function () {
       sandbox.restore();
       process.env = originalEnv;
     });
 
-    function createMockConfig(commands: any[] = [], topics: any[] = []): Config {
+    function createMockConfig(
+      commands: any[] = [],
+      topics: any[] = [],
+    ): Config {
       return {
         bin: "ably",
         root: "",
@@ -69,8 +72,8 @@ describe("CLI Help", function() {
       } as unknown as Config;
     }
 
-    describe("formatRoot in Web CLI mode", function() {
-      it("should show simplified help when no --help flag is provided", async function() {
+    describe("formatRoot in Web CLI mode", function () {
+      it("should show simplified help when no --help flag is provided", async function () {
         const mockConfig = createMockConfig();
         const help = new CustomHelp(mockConfig);
 
@@ -87,17 +90,17 @@ describe("CLI Help", function() {
 
         // Should show COMMON COMMANDS section
         expect(output).to.include("COMMON COMMANDS");
-        
+
         // Check for commands in tabular format (less brittle - just check key parts)
         expect(output).to.include("channels publish [channel] [message]");
         expect(output).to.include("Publish a message");
         expect(output).to.include("channels subscribe [channel]");
         expect(output).to.include("Subscribe to a channel");
-        
+
         // Should show channels:logs command for authenticated users
         expect(output).to.include("channels logs");
         expect(output).to.include("View live channel events");
-        
+
         // Check for help instructions (less brittle - just check key parts)
         expect(output).to.include("Type");
         expect(output).to.include("help");
@@ -108,12 +111,20 @@ describe("CLI Help", function() {
         expect(output).to.not.include("apps");
       });
 
-      it("should show full command list when --help flag is provided", async function() {
+      it("should show full command list when --help flag is provided", async function () {
         const mockCommands: any[] = [];
         const mockTopics = [
-          { name: "channels", description: "Interact with channels", hidden: false },
+          {
+            name: "channels",
+            description: "Interact with channels",
+            hidden: false,
+          },
           { name: "rooms", description: "Interact with rooms", hidden: false },
-          { name: "spaces", description: "Interact with spaces", hidden: false },
+          {
+            name: "spaces",
+            description: "Interact with spaces",
+            hidden: false,
+          },
           // Restricted topics that should be filtered out
           { name: "accounts", description: "Manage accounts", hidden: false },
           { name: "config", description: "Manage config", hidden: false },
@@ -134,7 +145,9 @@ describe("CLI Help", function() {
         const output = stripAnsi(consoleLogStub.firstCall.args[0]);
 
         // Should show browser-based CLI title
-        expect(output).to.include("ably.com browser-based CLI for Pub/Sub, Chat and Spaces");
+        expect(output).to.include(
+          "ably.com browser-based CLI for Pub/Sub, Chat and Spaces",
+        );
 
         // Should show COMMANDS section
         expect(output).to.include("COMMANDS");
@@ -154,9 +167,13 @@ describe("CLI Help", function() {
         expect(output).to.not.include("COMMON COMMANDS");
       });
 
-      it("should show full command list when -h flag is provided", async function() {
+      it("should show full command list when -h flag is provided", async function () {
         const mockCommands = [
-          { id: "channels", description: "Interact with channels", hidden: false },
+          {
+            id: "channels",
+            description: "Interact with channels",
+            hidden: false,
+          },
           { id: "help", description: "Get help", hidden: false },
         ];
 
@@ -180,10 +197,14 @@ describe("CLI Help", function() {
         expect(output).to.include("help");
       });
 
-      it("should filter out wildcard restricted commands", async function() {
+      it("should filter out wildcard restricted commands", async function () {
         const mockCommands: any[] = [];
         const mockTopics = [
-          { name: "channels", description: "Interact with channels", hidden: false },
+          {
+            name: "channels",
+            description: "Interact with channels",
+            hidden: false,
+          },
           { name: "config", description: "Config command", hidden: false },
           { name: "mcp", description: "MCP command", hidden: false },
         ];
@@ -210,7 +231,7 @@ describe("CLI Help", function() {
         expect(output).to.not.include("mcp");
       });
 
-      it("should hide channels:logs in anonymous mode", async function() {
+      it("should hide channels:logs in anonymous mode", async function () {
         const mockConfig = createMockConfig();
         const help = new CustomHelp(mockConfig);
 
@@ -247,8 +268,8 @@ describe("CLI Help", function() {
       // Note: Login prompt is not shown in web CLI mode, only in standard CLI mode
     });
 
-    describe("formatCommand in Web CLI mode", function() {
-      it("should show restriction message for restricted commands", function() {
+    describe("formatCommand in Web CLI mode", function () {
+      it("should show restriction message for restricted commands", function () {
         const mockConfig = createMockConfig();
         const help = new CustomHelp(mockConfig);
 
@@ -256,8 +277,14 @@ describe("CLI Help", function() {
         (help as any).configManager = configManagerStub;
 
         // Stub super.formatCommand to return a dummy help text
-        sandbox.stub(Object.getPrototypeOf(Object.getPrototypeOf(help)), "formatCommand")
-          .returns("USAGE\n  $ ably accounts login\n\nDESCRIPTION\n  Login to your account");
+        sandbox
+          .stub(
+            Object.getPrototypeOf(Object.getPrototypeOf(help)),
+            "formatCommand",
+          )
+          .returns(
+            "USAGE\n  $ ably accounts login\n\nDESCRIPTION\n  Login to your account",
+          );
 
         const restrictedCommand = {
           id: "accounts:login",
@@ -267,11 +294,15 @@ describe("CLI Help", function() {
 
         const output = stripAnsi(help.formatCommand(restrictedCommand as any));
 
-        expect(output).to.include("This command is not available in the web CLI mode");
-        expect(output).to.include("Please use the standalone CLI installation instead");
+        expect(output).to.include(
+          "This command is not available in the web CLI mode",
+        );
+        expect(output).to.include(
+          "Please use the standalone CLI installation instead",
+        );
       });
 
-      it("should show normal help for allowed commands", function() {
+      it("should show normal help for allowed commands", function () {
         const mockConfig = createMockConfig();
         const help = new CustomHelp(mockConfig);
 
@@ -285,7 +316,11 @@ describe("CLI Help", function() {
         };
 
         // Stub super.formatCommand for this specific test
-        const superStub = sandbox.stub(Object.getPrototypeOf(Object.getPrototypeOf(help)), "formatCommand")
+        const superStub = sandbox
+          .stub(
+            Object.getPrototypeOf(Object.getPrototypeOf(help)),
+            "formatCommand",
+          )
           .returns("Normal command help");
 
         const output = help.formatCommand(allowedCommand as any);
@@ -298,8 +333,8 @@ describe("CLI Help", function() {
       });
     });
 
-    describe("shouldDisplay in Web CLI mode", function() {
-      it("should filter out restricted commands", function() {
+    describe("shouldDisplay in Web CLI mode", function () {
+      it("should filter out restricted commands", function () {
         const mockConfig = createMockConfig();
         const help = new CustomHelp(mockConfig);
 
@@ -312,8 +347,10 @@ describe("CLI Help", function() {
         expect(help.shouldDisplay({ id: "mcp:start" } as any)).to.be.false;
 
         // Test allowed commands
-        expect(help.shouldDisplay({ id: "channels:publish" } as any)).to.be.true;
-        expect(help.shouldDisplay({ id: "channels:subscribe" } as any)).to.be.true;
+        expect(help.shouldDisplay({ id: "channels:publish" } as any)).to.be
+          .true;
+        expect(help.shouldDisplay({ id: "channels:subscribe" } as any)).to.be
+          .true;
         expect(help.shouldDisplay({ id: "channels:logs" } as any)).to.be.true; // Now allowed for authenticated users
         expect(help.shouldDisplay({ id: "rooms:get" } as any)).to.be.true;
         expect(help.shouldDisplay({ id: "help" } as any)).to.be.true;
@@ -321,13 +358,16 @@ describe("CLI Help", function() {
     });
   });
 
-  describe("Standard CLI Help (non-Web mode)", function() {
+  describe("Standard CLI Help (non-Web mode)", function () {
     let sandbox: sinon.SinonSandbox;
     let originalEnv: NodeJS.ProcessEnv;
     let consoleLogStub: sinon.SinonStub;
     let _processExitStub: sinon.SinonStub;
 
-    function createMockConfig(commands: any[] = [], topics: any[] = []): Config {
+    function createMockConfig(
+      commands: any[] = [],
+      topics: any[] = [],
+    ): Config {
       return {
         bin: "ably",
         root: "",
@@ -359,7 +399,7 @@ describe("CLI Help", function() {
       } as unknown as Config;
     }
 
-    beforeEach(function() {
+    beforeEach(function () {
       sandbox = sinon.createSandbox();
       originalEnv = { ...process.env };
 
@@ -370,14 +410,18 @@ describe("CLI Help", function() {
       process.env.ABLY_WEB_CLI_MODE = "false";
     });
 
-    afterEach(function() {
+    afterEach(function () {
       sandbox.restore();
       process.env = originalEnv;
     });
 
-    it("should show standard help with all commands", async function() {
+    it("should show standard help with all commands", async function () {
       const mockCommands = [
-        { id: "channels", description: "Interact with channels", hidden: false },
+        {
+          id: "channels",
+          description: "Interact with channels",
+          hidden: false,
+        },
         { id: "accounts", description: "Manage accounts", hidden: false },
         { id: "config", description: "Manage config", hidden: false },
       ];
@@ -387,7 +431,8 @@ describe("CLI Help", function() {
       const help = new CustomHelp(mockConfig);
 
       // Stub the configManager property
-      const standardConfigManagerStub = sandbox.createStubInstance(ConfigManager);
+      const standardConfigManagerStub =
+        sandbox.createStubInstance(ConfigManager);
       standardConfigManagerStub.getAccessToken.returns(undefined as any);
       (help as any).configManager = standardConfigManagerStub;
 

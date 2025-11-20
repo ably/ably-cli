@@ -105,7 +105,7 @@ export default class LogsChannelLifecycle extends AblyBaseCommand {
       };
 
       // Handle process termination
-      if (process.env.ABLY_INTERACTIVE_MODE === 'true') {
+      if (process.env.ABLY_INTERACTIVE_MODE === "true") {
         // In interactive mode, just ensure cleanup happens on exit
         // Don't interfere with signal handling
         process.on("exit", () => {

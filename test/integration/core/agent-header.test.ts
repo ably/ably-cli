@@ -1,8 +1,8 @@
-import { expect } from 'chai';
-import sinon from 'sinon';
-import { Config } from '@oclif/core';
-import { AblyBaseCommand } from '../../../src/base-command.js';
-import { getCliVersion } from '../../../src/utils/version.js';
+import { expect } from "chai";
+import sinon from "sinon";
+import { Config } from "@oclif/core";
+import { AblyBaseCommand } from "../../../src/base-command.js";
+import { getCliVersion } from "../../../src/utils/version.js";
 
 // Create a test command that extends AblyBaseCommand
 class TestCommand extends AblyBaseCommand {
@@ -16,42 +16,44 @@ class TestCommand extends AblyBaseCommand {
   }
 }
 
-describe('Agent Header Integration Tests', function() {
+describe("Agent Header Integration Tests", function () {
   let sandbox: sinon.SinonSandbox;
-  
-  beforeEach(function() {
+
+  beforeEach(function () {
     sandbox = sinon.createSandbox();
   });
 
-  afterEach(function() {
+  afterEach(function () {
     sandbox.restore();
   });
 
-  describe('Ably SDK Agent Header', function() {
-    it('should include agent header in client options', function() {
+  describe("Ably SDK Agent Header", function () {
+    it("should include agent header in client options", function () {
       const mockConfig = { runHook: sandbox.stub() } as unknown as Config;
       const command = new TestCommand([], mockConfig);
-      
+
       const flags = {
-        'api-key': 'test-key:secret',
+        "api-key": "test-key:secret",
       };
-      
+
       const clientOptions = command.testGetClientOptions(flags);
-      
+
       expect(clientOptions.agents).to.exist;
       expect(clientOptions.agents).to.deep.equal({
-        'ably-cli': getCliVersion()
+        "ably-cli": getCliVersion(),
       });
     });
   });
 
-  describe('Version Format', function() {
-    it('should format agent header correctly', function() {
+  describe("Version Format", function () {
+    it("should format agent header correctly", function () {
       const version = getCliVersion();
       const expectedAgentHeader = `ably-cli/${version}`;
-      
+
       // Should match the format: ably-cli/x.y.z or ably-cli/x.y.z-alpha.n
-      expect(expectedAgentHeader).to.match(/^ably-cli\/\d+\.\d+\.\d+(-alpha\.\d+)?$/);
+      expect(expectedAgentHeader).to.match(
+        /^ably-cli\/\d+\.\d+\.\d+(-alpha\.\d+)?$/,
+      );
     });
   });
 });

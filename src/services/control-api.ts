@@ -177,9 +177,10 @@ export class ControlApi {
       this.logErrors = options.logErrors;
     } else {
       // Determine logErrors based on environment variables
-      const suppressErrors = process.env.SUPPRESS_CONTROL_API_ERRORS === 'true' ||
-                            process.env.CI === 'true' ||
-                            process.env.ABLY_CLI_TEST_MODE === 'true';
+      const suppressErrors =
+        process.env.SUPPRESS_CONTROL_API_ERRORS === "true" ||
+        process.env.CI === "true" ||
+        process.env.ABLY_CLI_TEST_MODE === "true";
       this.logErrors = !suppressErrors;
     }
   }
