@@ -1,6 +1,7 @@
 /**
  * Common utilities for version-related functionality
  */
+import chalk from "chalk";
 import colorJson from "color-json";
 // Import package.json directly - TypeScript will resolve this at compile time
 import packageJson from "../../package.json" with { type: "json" };
@@ -34,6 +35,14 @@ export function getVersionInfo(config: {
     nodeVersion: process.version,
     platform: process.platform,
   };
+}
+
+/**
+ * Format release status with version number
+ */
+export function formatReleaseStatus(version: string, colored = false): string {
+  const status = `Public Preview - Version ${version}`;
+  return colored ? chalk.yellow(status) : status;
 }
 
 /**

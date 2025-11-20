@@ -1,5 +1,10 @@
 import { Hook } from "@oclif/core";
-import { getVersionInfo, formatVersionJson } from "../../utils/version.js";
+import {
+  getVersionInfo,
+  formatVersionJson,
+  formatVersionString,
+  formatReleaseStatus,
+} from "../../utils/version.js";
 
 /**
  * Hook to intercept the --version flag and support JSON output
@@ -39,8 +44,21 @@ const hook: Hook<"init"> = async function (opts) {
       } else {
         process.exit(0);
       }
+    } else {
+      // Non-JSON output: show standard version string and release status
+      console.log(formatVersionString(config));
+      console.log(formatReleaseStatus(config.version, true));
+
+      // In interactive mode, don't exit
+      if (process.env.ABLY_INTERACTIVE_MODE === "true") {
+        const error = new Error("Version displayed");
+        (error as Error & { code?: string; exitCode?: number }).code = "EEXIT";
+        (error as Error & { code?: string; exitCode?: number }).exitCode = 0;
+        throw error;
+      } else {
+        process.exit(0);
+      }
     }
-    // Otherwise, let oclif handle default format
   }
 };
 

@@ -4,6 +4,7 @@ import stripAnsi from "strip-ansi";
 
 import { ConfigManager } from "./services/config-manager.js";
 import { displayLogo } from "./utils/logo.js";
+import { formatReleaseStatus } from "./utils/version.js";
 
 import {
   WEB_CLI_RESTRICTED_COMMANDS,
@@ -259,6 +260,8 @@ export default class CustomHelp extends Help {
     const headerLines = [
       chalk.bold(titleText),
       "",
+      formatReleaseStatus(config.version, true),
+      "",
       `${chalk.bold("USAGE")}`,
       `  ${this.interactiveMode ? "ably> " : "$ " + config.bin + " "}[COMMAND]`,
       "",
@@ -347,6 +350,8 @@ export default class CustomHelp extends Help {
     }
     lines.push(
       chalk.bold("ably.com browser-based CLI for Pub/Sub, Chat and Spaces"),
+      "",
+      formatReleaseStatus(this.config.version, true),
       "",
     );
 
