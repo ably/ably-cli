@@ -62,7 +62,6 @@ describe("AblyBaseCommand - Enhanced Coverage", function() {
 
     // Reset env before each test
     process.env = { ...originalEnv };
-    process.env.ABLY_CLI_TEST_MODE = 'true';
 
     const mockConfig = {
       root: "",

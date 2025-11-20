@@ -34,7 +34,7 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
       if (this.room) {
         await Promise.race([
           this.room.detach(),
-          new Promise(resolve => setTimeout(resolve, 1000)) // 1s timeout
+          new Promise((resolve) => setTimeout(resolve, 1000)), // 1s timeout
         ]);
       }
     } catch {
@@ -46,7 +46,7 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
       if (this.chatClient && this.room) {
         await Promise.race([
           this.chatClient.rooms.release(this.room.name),
-          new Promise(resolve => setTimeout(resolve, 1000)) // 1s timeout
+          new Promise((resolve) => setTimeout(resolve, 1000)), // 1s timeout
         ]);
       }
     } catch {
@@ -58,28 +58,28 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
       if (this.ablyClient) {
         await Promise.race([
           new Promise<void>((resolve) => {
-            if (this.ablyClient!.connection.state === 'closed') {
+            if (this.ablyClient!.connection.state === "closed") {
               resolve();
               return;
             }
-            
+
             const onClosed = () => {
               resolve();
             };
-            
+
             // Listen for closed and failed states
-            this.ablyClient!.connection.once('closed', onClosed);
-            this.ablyClient!.connection.once('failed', onClosed);
+            this.ablyClient!.connection.once("closed", onClosed);
+            this.ablyClient!.connection.once("failed", onClosed);
             this.ablyClient!.close();
-            
+
             // Cleanup listeners after 2 seconds
             setTimeout(() => {
-              this.ablyClient!.connection.off('closed', onClosed);
-              this.ablyClient!.connection.off('failed', onClosed);
+              this.ablyClient!.connection.off("closed", onClosed);
+              this.ablyClient!.connection.off("failed", onClosed);
               resolve();
             }, 2000);
           }),
-          new Promise<void>(resolve => setTimeout(resolve, 2000)) // 2s timeout
+          new Promise<void>((resolve) => setTimeout(resolve, 2000)), // 2s timeout
         ]);
       }
     } catch {
@@ -109,9 +109,9 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
       // Attach to the room to access occupancy with timeout
       await Promise.race([
         this.room.attach(),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Room attach timeout')), 10000)
-        )
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Room attach timeout")), 10000),
+        ),
       ]);
 
       // Get occupancy metrics using the Chat SDK's occupancy API
@@ -140,7 +140,6 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
 
         this.log(`Presence Members: ${occupancyMetrics.presenceMembers ?? 0}`);
       }
-
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
         this.log(
@@ -161,13 +160,6 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
     } finally {
       // Force cleanup with timeouts to ensure the command exits
       await this.forceCloseConnections();
-      
-      // Force exit after cleanup
-      setTimeout(() => {
-        if (process.env.ABLY_CLI_TEST_MODE !== 'true') {
-          process.exit(0);
-        }
-      }, 100);
     }
   }
 }

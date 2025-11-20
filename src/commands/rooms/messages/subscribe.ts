@@ -31,7 +31,9 @@ interface ChatRoom {
   messages: {
     subscribe: (callback: (event: ChatMessageEvent) => void) => Subscription;
   };
-  onStatusChange: (callback: (statusChange: unknown) => void) => StatusSubscription;
+  onStatusChange: (
+    callback: (statusChange: unknown) => void,
+  ) => StatusSubscription;
   attach: () => Promise<void>;
   error?: {
     message?: string;
@@ -73,7 +75,8 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       description: "Display message metadata if available",
     }),
     duration: Flags.integer({
-      description: "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description:
+        "Automatically exit after the given number of seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -87,13 +90,13 @@ export default class MessagesSubscribe extends ChatBaseCommand {
   private cleanupInProgress: boolean = false;
 
   private async properlyCloseAblyClient(): Promise<void> {
-    if (!this.ablyClient || this.ablyClient.connection.state === 'closed') {
+    if (!this.ablyClient || this.ablyClient.connection.state === "closed") {
       return;
     }
 
     return new Promise<void>((resolve) => {
       const timeout = setTimeout(() => {
-        console.warn('Ably client cleanup timed out after 2 seconds');
+        console.warn("Ably client cleanup timed out after 2 seconds");
         resolve();
       }, 2000); // Reduced from 3000 to 2000
 
@@ -103,9 +106,9 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       };
 
       // Listen for both closed and failed states
-      this.ablyClient!.connection.once('closed', onClosed);
-      this.ablyClient!.connection.once('failed', onClosed);
-      
+      this.ablyClient!.connection.once("closed", onClosed);
+      this.ablyClient!.connection.once("failed", onClosed);
+
       this.ablyClient!.close();
     });
   }
@@ -136,35 +139,46 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         /* ignore */
       }
     }
-    
+
     // Close Ably client properly with timeout
+    console.error('CLOSE');
     await this.properlyCloseAblyClient();
+    
+    console.error('FINALLY');
 
     // Ensure the process does not linger due to any stray async handles
     await super.finally(err);
-
-    // Force a graceful exit shortly after cleanup to avoid hanging (skip in tests)
-    if (process.env.ABLY_CLI_TEST_MODE !== 'true') {
-      setTimeout(() => {
-        process.exit(0);
-      }, 100);
-    }
   }
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesSubscribe);
     this.roomName = args.room; // Store for cleanup
-    this.logCliEvent(flags, "subscribe.run", "start", `Starting rooms messages subscribe for room: ${this.roomName}`);
+    this.logCliEvent(
+      flags,
+      "subscribe.run",
+      "start",
+      `Starting rooms messages subscribe for room: ${this.roomName}`,
+    );
 
     try {
       // Create clients
-      this.logCliEvent(flags, "subscribe.auth", "attemptingClientCreation", "Attempting to create Chat and Ably clients.");
+      this.logCliEvent(
+        flags,
+        "subscribe.auth",
+        "attemptingClientCreation",
+        "Attempting to create Chat and Ably clients.",
+      );
       // Create Chat client (which also creates the Ably client internally)
-      this.chatClient = await this.createChatClient(flags) as ChatClientType;
+      this.chatClient = (await this.createChatClient(flags)) as ChatClientType;
       // Get the underlying Ably client for cleanup and state listeners
       this.ablyClient = this._chatRealtimeClient;
-      this.logCliEvent(flags, "subscribe.auth", "clientCreationSuccess", "Chat and Ably clients created.");
-      
+      this.logCliEvent(
+        flags,
+        "subscribe.auth",
+        "clientCreationSuccess",
+        "Chat and Ably clients created.",
+      );
+
       if (!this.shouldOutputJson(flags)) {
         this.log(`Attaching to room: ${chalk.cyan(this.roomName)}...`);
       }
@@ -175,13 +189,23 @@ export default class MessagesSubscribe extends ChatBaseCommand {
 
       // Set up connection state logging
       this.setupConnectionStateLogging(this.ablyClient, flags, {
-        includeUserFriendlyMessages: true
+        includeUserFriendlyMessages: true,
       });
 
       // Get the room
-      this.logCliEvent(flags, "room", "gettingRoom", `Getting room handle for ${this.roomName}`);
+      this.logCliEvent(
+        flags,
+        "room",
+        "gettingRoom",
+        `Getting room handle for ${this.roomName}`,
+      );
       const room = await this.chatClient.rooms.get(this.roomName, {});
-      this.logCliEvent(flags, "room", "gotRoom", `Got room handle for ${this.roomName}`);
+      this.logCliEvent(
+        flags,
+        "room",
+        "gotRoom",
+        `Got room handle for ${this.roomName}`,
+      );
 
       // Setup message handler
       this.logCliEvent(
@@ -244,17 +268,37 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       );
 
       // Subscribe to room status changes
-      this.logCliEvent(flags, "room", "subscribingToStatus", `Subscribing to status changes for room ${this.roomName}`);
+      this.logCliEvent(
+        flags,
+        "room",
+        "subscribingToStatus",
+        `Subscribing to status changes for room ${this.roomName}`,
+      );
       this.unsubscribeStatusFn = room.onStatusChange(
         (statusChange: unknown) => {
           const change = statusChange as StatusChange;
-          this.logCliEvent(flags, "room", `status-${change.current}`, `Room status changed to ${change.current}`, { reason: change.reason, room: this.roomName });
+          this.logCliEvent(
+            flags,
+            "room",
+            `status-${change.current}`,
+            `Room status changed to ${change.current}`,
+            { reason: change.reason, room: this.roomName },
+          );
           if (change.current === "attached") {
-            this.logCliEvent(flags, "room", "statusAttached", "Room status is ATTACHED.");
+            this.logCliEvent(
+              flags,
+              "room",
+              "statusAttached",
+              "Room status is ATTACHED.",
+            );
             // Log the ready signal for E2E tests
             this.log(`Connected to room: ${this.roomName}`);
             if (!this.shouldOutputJson(flags)) {
-              this.log(chalk.green(`✓ Subscribed to room: ${chalk.cyan(this.roomName)}. Listening for messages...`));
+              this.log(
+                chalk.green(
+                  `✓ Subscribed to room: ${chalk.cyan(this.roomName)}. Listening for messages...`,
+                ),
+              );
             }
             // If we want to suppress output, we just don't log anything
           } else if (change.current === "failed") {
@@ -275,9 +319,19 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       );
 
       // Attach to the room
-      this.logCliEvent(flags, "room", "attaching", `Attaching to room ${this.roomName}`);
+      this.logCliEvent(
+        flags,
+        "room",
+        "attaching",
+        `Attaching to room ${this.roomName}`,
+      );
       await room.attach();
-      this.logCliEvent(flags, "room", "attachCallComplete", `room.attach() call complete for ${this.roomName}. Waiting for status change to 'attached'.`);
+      this.logCliEvent(
+        flags,
+        "room",
+        "attachCallComplete",
+        `room.attach() call complete for ${this.roomName}. Waiting for status change to 'attached'.`,
+      );
       // Note: successful attach logged by onStatusChange handler
 
       this.logCliEvent(
@@ -286,19 +340,20 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         "listening",
         "Now listening for messages and status changes",
       );
-      
+
       // Wait until the user interrupts or the optional duration elapses
       const effectiveDuration =
         typeof flags.duration === "number" && flags.duration > 0
           ? flags.duration
           : process.env.ABLY_CLI_DEFAULT_DURATION
-          ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-          : undefined;
+            ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
+            : undefined;
 
       const exitReason = await waitUntilInterruptedOrTimeout(effectiveDuration);
-      this.logCliEvent(flags, "subscribe", "runComplete", "Exiting wait loop", { exitReason });
+      this.logCliEvent(flags, "subscribe", "runComplete", "Exiting wait loop", {
+        exitReason,
+      });
       this.cleanupInProgress = exitReason === "signal"; // mark if signal so finally knows
-      
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(
@@ -329,10 +384,15 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         this.performCleanup(flags || {}),
         new Promise<void>((resolve) => {
           setTimeout(() => {
-            this.logCliEvent(flags || {}, "subscribe", "cleanupTimeout", "Cleanup timed out after 5s, forcing completion");
+            this.logCliEvent(
+              flags || {},
+              "subscribe",
+              "cleanupTimeout",
+              "Cleanup timed out after 5s, forcing completion",
+            );
             resolve();
           }, 5000);
-        })
+        }),
       ]);
 
       this.logCliEvent(
@@ -357,7 +417,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         );
         await Promise.race([
           Promise.resolve(this.messageSubscription.unsubscribe()),
-          new Promise<void>((resolve) => setTimeout(resolve, 1000))
+          new Promise<void>((resolve) => setTimeout(resolve, 1000)),
         ]);
         this.logCliEvent(
           flags,
@@ -389,7 +449,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         );
         await Promise.race([
           Promise.resolve(this.unsubscribeStatusFn.off()),
-          new Promise<void>((resolve) => setTimeout(resolve, 1000))
+          new Promise<void>((resolve) => setTimeout(resolve, 1000)),
         ]);
         this.logCliEvent(
           flags,
@@ -421,7 +481,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         );
         await Promise.race([
           this.chatClient.rooms.release(this.roomName!),
-          new Promise<void>((resolve) => setTimeout(resolve, 2000))
+          new Promise<void>((resolve) => setTimeout(resolve, 2000)),
         ]);
         this.logCliEvent(
           flags,
