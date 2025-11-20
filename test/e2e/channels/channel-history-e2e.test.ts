@@ -58,9 +58,6 @@ describe("Channel History E2E Tests", function () {
       console.log(
         `Publishing message ${i + 1}: ${testMessages[i]} to channel: ${historyChannel}`,
       );
-      console.log(
-        `Using API key: ${E2E_API_KEY ? E2E_API_KEY.slice(0, 10) + "..." : "NOT_SET"}`,
-      );
 
       const publishResult = await runCommand(
         [

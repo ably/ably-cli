@@ -30,8 +30,10 @@ describe("Channel Subscribe E2E Tests", function () {
 
   let subscribeChannel: string;
   let outputPath: string;
-  let subscribeProcess: ChildProcess | null = null;
-  let subscribeProcessInfo: any;
+  let subscribeProcessInfo: {
+    process: ChildProcess;
+    processId: string;
+  } | null = null;
 
   beforeEach(async function () {
     this.timeout(120000); // 2 minutes per individual test
@@ -48,9 +50,9 @@ describe("Channel Subscribe E2E Tests", function () {
       await displayTestFailureDebugOutput(this.currentTest?.title);
     }
     // Kill specific process if necessary
-    if (subscribeProcess) {
-      await killProcess(subscribeProcess);
-      subscribeProcess = null;
+    if (subscribeProcessInfo) {
+      await killProcess(subscribeProcessInfo.process);
+      subscribeProcessInfo = null;
     }
     // Perform E2E cleanup
     await cleanupTrackedResources();

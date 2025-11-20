@@ -77,9 +77,6 @@ describe("E2E: ably bench publisher and subscriber", function () {
           // console.log("Spawning original subscriber command..."); // Debug
           const subEnv = { ...process.env };
           delete subEnv.ABLY_CLI_TEST_MODE;
-          console.log(
-            `[TEST] Spawning subscriber with API key: ${apiKey.slice(0, 20)}...`,
-          );
           console.log(`[TEST] CLI path: ${cliPath}`);
           console.log(`[TEST] Test channel: ${testChannel}`);
 
