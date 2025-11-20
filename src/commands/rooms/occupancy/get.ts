@@ -44,20 +44,25 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
       this.room = await this.chatClient.rooms.get(roomName, {});
 
       // Attach to the room to access occupancy with timeout
+      let attachTimeout;
       await Promise.race([
         this.room.attach(),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Room attach timeout")), 10000),
-        ),
+        new Promise((_, reject) => {
+          attachTimeout = setTimeout(() => reject(new Error("Room attach timeout")), 10000)
+        }),
       ]);
+      
+      clearTimeout(attachTimeout);
 
       // Get occupancy metrics using the Chat SDK's occupancy API
+      let occupancyTimeout;
       const occupancyMetrics = await Promise.race([
         this.room.occupancy.get(),
-        new Promise<OccupancyData>((_, reject) =>
-          setTimeout(() => reject(new Error("Occupancy get timeout")), 5000),
-        ),
+        new Promise<OccupancyData>((_, reject) => {
+          occupancyTimeout = setTimeout(() => reject(new Error("Occupancy get timeout")), 5000)
+        }),
       ]);
+      clearTimeout(occupancyTimeout);
 
       // Output the occupancy metrics based on format
       if (this.shouldOutputJson(flags)) {
