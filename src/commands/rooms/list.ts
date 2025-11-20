@@ -177,12 +177,14 @@ export default class RoomsList extends ChatBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.logJson({
-          error: error instanceof Error ? error.message : String(error),
-          status: "error",
-          success: false,
-        });
-        process.exitCode = 1;
+        this.jsonError(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            status: "error",
+            success: false,
+          },
+          flags,
+        );
         return;
       }
       this.error(

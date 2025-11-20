@@ -221,13 +221,10 @@ export default class TypingSubscribe extends ChatBaseCommand {
       );
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { error: errorMsg, room: args.room, success: false },
-            flags,
-          ),
+        this.jsonError(
+          { error: errorMsg, room: args.room, success: false },
+          flags,
         );
-        process.exitCode = 1;
       } else {
         this.error(`Failed to subscribe to typing indicators: ${errorMsg}`);
       }

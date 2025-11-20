@@ -140,16 +140,14 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
         const error = requestError as Error;
         if (error.message && error.message.includes("token_not_found")) {
           if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput(
-                {
-                  error: "Token not found or already revoked",
-                  success: false,
-                },
-                flags,
-              ),
+            this.jsonError(
+              {
+                error: "Token not found or already revoked",
+                success: false,
+              },
+              flags,
             );
-            process.exitCode = 1;
+            return;
           } else {
             this.log("Error: Token not found or already revoked");
           }

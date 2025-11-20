@@ -86,13 +86,7 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
           count: flags.count,
         });
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              { error: errorMsg, room, success: false },
-              flags,
-            ),
-          );
-          process.exitCode = 1;
+          this.jsonError({ error: errorMsg, room, success: false }, flags);
         } else {
           this.error(errorMsg);
         }
@@ -244,21 +238,18 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
       );
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: errorMsg,
-              room,
-              messageSerial,
-              reaction,
-              success: false,
-              ...(flags.type && { type: flags.type }),
-              ...(flags.count && { count: flags.count }),
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: errorMsg,
+            room,
+            messageSerial,
+            reaction,
+            success: false,
+            ...(flags.type && { type: flags.type }),
+            ...(flags.count && { count: flags.count }),
+          },
+          flags,
         );
-        process.exitCode = 1;
       } else {
         this.error(`Failed to send reaction: ${errorMsg}`);
       }

@@ -153,16 +153,13 @@ export default class LogsPushHistory extends AblyBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: error instanceof Error ? error.message : String(error),
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            success: false,
+          },
+          flags,
         );
-        process.exitCode = 1;
       } else {
         this.error(
           `Error retrieving push notification logs: ${error instanceof Error ? error.message : String(error)}`,

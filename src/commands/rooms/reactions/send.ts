@@ -66,13 +66,10 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
             room: roomName,
           });
           if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput(
-                { error: errorMsg, room: roomName, success: false },
-                flags,
-              ),
+            this.jsonError(
+              { error: errorMsg, room: roomName, success: false },
+              flags,
             );
-            process.exitCode = 1;
           } else {
             this.error(errorMsg);
           }
@@ -215,13 +212,10 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
       );
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { error: errorMsg, room: roomName, emoji, success: false },
-            flags,
-          ),
+        this.jsonError(
+          { error: errorMsg, room: roomName, emoji, success: false },
+          flags,
         );
-        process.exitCode = 1;
       } else {
         this.error(`Failed to send reaction: ${errorMsg}`);
       }

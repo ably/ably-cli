@@ -197,20 +197,17 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
       );
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: errorMsg,
-              room,
-              messageSerial,
-              reaction,
-              ...(flags.type && { type: flags.type }),
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: errorMsg,
+            room,
+            messageSerial,
+            reaction,
+            ...(flags.type && { type: flags.type }),
+            success: false,
+          },
+          flags,
         );
-        process.exitCode = 1;
       } else {
         this.error(`Failed to remove reaction: ${errorMsg}`);
       }

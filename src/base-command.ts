@@ -1473,5 +1473,22 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       channel.off(stateChangeHandler);
     };
   }
+
+  /**
+   * Output JSON error and exit with code 1 (unless in test mode).
+   * This provides a consistent way to handle JSON errors across commands.
+   *
+   * @param data - The error data to format as JSON
+   * @param flags - Command flags (used to determine JSON formatting)
+   */
+  protected jsonError(data: Record<string, unknown>, flags: BaseFlags) {
+    // Format and log the JSON output
+    this.log(this.formatJsonOutput(data, flags));
+
+    // Exit with code 1 unless in test mode
+    if (process.env.ABLY_CLI_TEST_MODE !== "true") {
+      this.exit(1);
+    }
+  }
 }
 export { BaseFlags } from "./types/cli.js";

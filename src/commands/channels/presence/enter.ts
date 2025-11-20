@@ -115,10 +115,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
             error: errorMsg,
           });
           if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput({ error: errorMsg, success: false }, flags),
-            );
-            process.exitCode = 1;
+            this.jsonError({ error: errorMsg, success: false }, flags);
           } else {
             this.error(errorMsg);
           }
@@ -290,13 +287,10 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
         { channel: args.channel, error: errorMsg },
       );
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { channel: args.channel, error: errorMsg, success: false },
-            flags,
-          ),
+        this.jsonError(
+          { channel: args.channel, error: errorMsg, success: false },
+          flags,
         );
-        process.exitCode = 1;
       } else {
         this.error(`Error: ${errorMsg}`);
       }

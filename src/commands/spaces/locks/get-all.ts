@@ -180,18 +180,15 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
         }
       } catch (error) {
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                error: error instanceof Error ? error.message : String(error),
-                spaceName: spaceName,
-                status: "error",
-                success: false,
-              },
-              flags,
-            ),
+          this.jsonError(
+            {
+              error: error instanceof Error ? error.message : String(error),
+              spaceName: spaceName,
+              status: "error",
+              success: false,
+            },
+            flags,
           );
-          process.exitCode = 1;
         } else {
           this.error(
             `Error: ${error instanceof Error ? error.message : String(error)}`,
@@ -217,18 +214,15 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
         }
       } catch (error) {
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                error: error instanceof Error ? error.message : String(error),
-                spaceName: spaceName,
-                status: "error",
-                success: false,
-              },
-              flags,
-            ),
+          this.jsonError(
+            {
+              error: error instanceof Error ? error.message : String(error),
+              spaceName: spaceName,
+              status: "error",
+              success: false,
+            },
+            flags,
           );
-          process.exitCode = 1;
         } else {
           this.log(
             chalk.yellow(
@@ -239,18 +233,15 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: error instanceof Error ? error.message : String(error),
-              spaceName: spaceName,
-              status: "error",
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            spaceName: spaceName,
+            status: "error",
+            success: false,
+          },
+          flags,
         );
-        process.exitCode = 1;
       } else {
         this.error(
           `Error: ${error instanceof Error ? error.message : String(error)}`,

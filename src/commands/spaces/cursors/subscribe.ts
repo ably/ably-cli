@@ -213,18 +213,15 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
               spaceName,
             });
             if (this.shouldOutputJson(flags)) {
-              this.log(
-                this.formatJsonOutput(
-                  {
-                    error: errorMsg,
-                    spaceName,
-                    status: "error",
-                    success: false,
-                  },
-                  flags,
-                ),
+              this.jsonError(
+                {
+                  error: errorMsg,
+                  spaceName,
+                  status: "error",
+                  success: false,
+                },
+                flags,
               );
-              process.exitCode = 1;
             } else {
               this.log(chalk.red(errorMsg));
             }
@@ -352,13 +349,10 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
           spaceName,
         });
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              { error: errorMsg, spaceName, status: "error", success: false },
-              flags,
-            ),
+          this.jsonError(
+            { error: errorMsg, spaceName, status: "error", success: false },
+            flags,
           );
-          process.exitCode = 1;
         } else {
           this.log(
             chalk.yellow(
@@ -403,13 +397,10 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
         { error: errorMsg, spaceName },
       );
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { error: errorMsg, spaceName, status: "error", success: false },
-            flags,
-          ),
+        this.jsonError(
+          { error: errorMsg, spaceName, status: "error", success: false },
+          flags,
         );
-        process.exitCode = 1;
       } else {
         this.error(`Failed to subscribe to cursors: ${errorMsg}`);
       }

@@ -241,10 +241,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         error: errorMsg,
       });
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput({ error: errorMsg, success: false }, flags),
-        );
-        process.exitCode = 1;
+        this.jsonError({ error: errorMsg, success: false }, flags);
       } else {
         this.error(errorMsg);
       }
@@ -325,13 +322,10 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       );
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { error: errorMsg, rooms: this.roomNames, success: false },
-            flags,
-          ),
+        this.jsonError(
+          { error: errorMsg, rooms: this.roomNames, success: false },
+          flags,
         );
-        process.exitCode = 1;
       } else {
         this.error(`Failed to subscribe to messages: ${errorMsg}`);
       }

@@ -155,17 +155,15 @@ export default class ChannelsList extends AblyBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: error instanceof Error ? error.message : String(error),
-              status: "error",
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            status: "error",
+            success: false,
+          },
+          flags,
         );
-        process.exitCode = 1;
+        return;
       } else {
         this.error(
           `Error listing channels: ${error instanceof Error ? error.message : String(error)}`,
