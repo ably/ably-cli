@@ -1,6 +1,9 @@
-import { ChatClient, RoomReactionEvent, RoomStatus, Subscription } from "@ably/chat";
+import {
+  ChatClient,
+  RoomReactionEvent,
+  RoomStatus,
+} from "@ably/chat";
 import { Args } from "@oclif/core";
-import * as Ably from "ably"; // Import Ably
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
@@ -27,36 +30,6 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
 
   // private clients: ChatClients | null = null; // Replace with chatClient and ablyClient
   private chatClient: ChatClient | null = null;
-  private ablyClient: Ably.Realtime | null = null;
-  private unsubscribeReactionsFn: Subscription | null = null;
-  private unsubscribeStatusFn: (() => void) | null = null;
-
-  // Override finally to ensure resources are cleaned up
-  async finally(err: Error | undefined): Promise<void> {
-    if (this.unsubscribeReactionsFn) {
-      try {
-        this.unsubscribeReactionsFn.unsubscribe();
-      } catch {
-        /* ignore */
-      }
-    }
-    if (this.unsubscribeStatusFn) {
-      try {
-        this.unsubscribeStatusFn();
-      } catch {
-        /* ignore */
-      }
-    }
-    if (
-      this.ablyClient &&
-      this.ablyClient.connection.state !== "closed" &&
-      this.ablyClient.connection.state !== "failed"
-    ) {
-      this.ablyClient.close();
-    }
-
-    return super.finally(err);
-  }
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsReactionsSubscribe);
@@ -65,9 +38,8 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
       // Create Chat client
       // this.clients = await this.createChatClient(flags) // Assign to chatClient
       this.chatClient = await this.createChatClient(flags);
-      this.ablyClient = this._chatRealtimeClient; // Also create Ably client
-      // if (!this.clients) return // Check both clients
-      if (!this.chatClient || !this.ablyClient) {
+      
+      if (!this.chatClient) {
         this.error("Failed to initialize clients");
         return;
       }
@@ -76,8 +48,8 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
       const { room: roomName } = args;
 
       // Set up connection state logging
-      this.setupConnectionStateLogging(this.ablyClient, flags, {
-        includeUserFriendlyMessages: true
+      this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
+        includeUserFriendlyMessages: true,
       });
 
       this.logCliEvent(
@@ -114,7 +86,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         "subscribingToStatus",
         "Subscribing to room status changes",
       );
-      const { off: unsubscribeStatus } = room.onStatusChange((statusChange) => {
+      room.onStatusChange((statusChange) => {
         let reason: Error | null | string | undefined;
         if (statusChange.current === RoomStatus.Failed) {
           reason = room.error; // Get reason from room.error on failure
@@ -161,7 +133,6 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
           // No default
         }
       });
-      this.unsubscribeStatusFn = unsubscribeStatus;
       this.logCliEvent(
         flags,
         "room",
@@ -186,41 +157,46 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         "subscribing",
         "Subscribing to reactions",
       );
-      this.unsubscribeReactionsFn = room.reactions.subscribe((event: RoomReactionEvent) => {
-        const reaction = event.reaction;
-        const timestamp = new Date().toISOString(); // Chat SDK doesn't provide timestamp in event
-        const eventData = {
-          clientId: reaction.clientId,
-          metadata: reaction.metadata,
-          room: roomName,
-          timestamp,
-          name: reaction.name,
-        };
-        this.logCliEvent(
-          flags,
-          "reactions",
-          "received",
-          "Reaction received",
-          eventData,
-        );
-
-        if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput({ success: true, ...eventData }, flags),
-          );
-        } else {
-          this.log(
-            `[${chalk.dim(timestamp)}] ${chalk.green("⚡")} ${chalk.blue(reaction.clientId || "Unknown")} reacted with ${chalk.yellow(reaction.name || "unknown")}`,
+      room.reactions.subscribe(
+        (event: RoomReactionEvent) => {
+          const reaction = event.reaction;
+          const timestamp = new Date().toISOString(); // Chat SDK doesn't provide timestamp in event
+          const eventData = {
+            clientId: reaction.clientId,
+            metadata: reaction.metadata,
+            room: roomName,
+            timestamp,
+            name: reaction.name,
+          };
+          this.logCliEvent(
+            flags,
+            "reactions",
+            "received",
+            "Reaction received",
+            eventData,
           );
 
-          // Show any additional metadata in the reaction
-          if (reaction.metadata && Object.keys(reaction.metadata).length > 0) {
+          if (this.shouldOutputJson(flags)) {
             this.log(
-              `  ${chalk.dim("Metadata:")} ${this.formatJsonOutput(reaction.metadata, flags)}`,
+              this.formatJsonOutput({ success: true, ...eventData }, flags),
             );
+          } else {
+            this.log(
+              `[${chalk.dim(timestamp)}] ${chalk.green("⚡")} ${chalk.blue(reaction.clientId || "Unknown")} reacted with ${chalk.yellow(reaction.name || "unknown")}`,
+            );
+
+            // Show any additional metadata in the reaction
+            if (
+              reaction.metadata &&
+              Object.keys(reaction.metadata).length > 0
+            ) {
+              this.log(
+                `  ${chalk.dim("Metadata:")} ${this.formatJsonOutput(reaction.metadata, flags)}`,
+              );
+            }
           }
-        }
-      });
+        },
+      );
       this.logCliEvent(
         flags,
         "reactions",
@@ -252,147 +228,12 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
             );
           }
 
-          // Set a force exit timeout
-          const forceExitTimeout = setTimeout(() => {
-            const errorMsg = "Force exiting after timeout during cleanup";
-            this.logCliEvent(flags, "reactions", "forceExit", errorMsg, {
-              room: roomName,
-            });
-            if (!this.shouldOutputJson(flags)) {
-              this.log(chalk.red("Force exiting after timeout..."));
-            }
-          }, 5000);
-
-          // Unsubscribe from reactions
-          if (this.unsubscribeReactionsFn) {
-            try {
-              this.logCliEvent(
-                flags,
-                "reactions",
-                "unsubscribing",
-                "Unsubscribing from reactions",
-              );
-              this.unsubscribeReactionsFn.unsubscribe();
-              this.logCliEvent(
-                flags,
-                "reactions",
-                "unsubscribed",
-                "Unsubscribed from reactions",
-              );
-            } catch (error) {
-              const errorMsg =
-                error instanceof Error ? error.message : String(error);
-              this.logCliEvent(
-                flags,
-                "reactions",
-                "unsubscribeError",
-                `Error unsubscribing from reactions: ${errorMsg}`,
-                { error: errorMsg },
-              );
-            }
-          }
-
-          // Unsubscribe from status changes
-          if (this.unsubscribeStatusFn) {
-            try {
-              this.logCliEvent(
-                flags,
-                "room",
-                "unsubscribingStatus",
-                "Unsubscribing from room status",
-              );
-              this.unsubscribeStatusFn();
-              this.logCliEvent(
-                flags,
-                "room",
-                "unsubscribedStatus",
-                "Unsubscribed from room status",
-              );
-            } catch (error) {
-              const errorMsg =
-                error instanceof Error ? error.message : String(error);
-              this.logCliEvent(
-                flags,
-                "room",
-                "unsubscribeStatusError",
-                `Error unsubscribing from status: ${errorMsg}`,
-                { error: errorMsg },
-              );
-            }
-          }
-
-          try {
-            this.logCliEvent(
-              flags,
-              "room",
-              "releasing",
-              `Releasing room ${roomName}`,
-            );
-            if (this.chatClient) {
-              await this.chatClient.rooms.release(roomName);
-              this.logCliEvent(
-                flags,
-                "room",
-                "released",
-                `Room ${roomName} released`,
-              );
-            } else {
-              this.logCliEvent(
-                flags,
-                "room",
-                "releaseError",
-                "Chat client was null during cleanup",
-                { error: "Chat client null" },
-              );
-            }
-          } catch (error) {
-            const errorMsg =
-              error instanceof Error ? error.message : String(error);
-            this.logCliEvent(
-              flags,
-              "room",
-              "releaseError",
-              `Error releasing room: ${errorMsg}`,
-              { error: errorMsg },
-            );
-            if (this.shouldOutputJson(flags)) {
-              this.log(
-                this.formatJsonOutput(
-                  { error: errorMsg, room: roomName, success: false },
-                  flags,
-                ),
-              );
-            } else {
-              this.log(`Error releasing room: ${errorMsg}`);
-            }
-          }
-
-          // if (this.clients?.realtimeClient) { // Use this.ablyClient
-          if (this.ablyClient) {
-            this.logCliEvent(
-              flags,
-              "connection",
-              "closing",
-              "Closing Realtime connection",
-            );
-            // this.clients.realtimeClient.close(); // Use this.ablyClient
-            this.ablyClient.close();
-            this.logCliEvent(
-              flags,
-              "connection",
-              "closed",
-              "Realtime connection closed",
-            );
-          }
 
           if (!this.shouldOutputJson(flags)) {
             this.log(chalk.green("Successfully disconnected."));
           }
 
-          clearTimeout(forceExitTimeout);
           resolve();
-
-          // Allow natural process exit after cleanup without forcing termination.
         };
 
         process.on("SIGINT", () => void cleanup());
@@ -413,21 +254,6 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         );
       } else {
         this.error(`Error: ${errorMsg}`);
-      }
-    } finally {
-      // Ensure client is closed even if cleanup promise didn't resolve
-      if (
-        this.ablyClient &&
-        this.ablyClient.connection.state !== "closed" &&
-        this.ablyClient.connection.state !== "failed"
-      ) {
-        this.logCliEvent(
-          flags || {},
-          "connection",
-          "finalCloseAttempt",
-          "Ensuring connection is closed in finally block.",
-        );
-        this.ablyClient.close();
       }
     }
   }

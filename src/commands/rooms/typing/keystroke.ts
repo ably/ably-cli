@@ -1,6 +1,5 @@
 import { RoomStatus, ChatClient, RoomStatusChange } from "@ably/chat";
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
@@ -43,35 +42,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
   };
 
   private chatClient: ChatClient | null = null;
-  private ablyClient: Ably.Realtime | null = null;
   private typingIntervalId: NodeJS.Timeout | null = null;
-  private unsubscribeStatusFn: (() => void) | null = null;
-  private roomName: string | null = null;
-
-  private async properlyCloseAblyClient(): Promise<void> {
-    if (!this.ablyClient || this.ablyClient.connection.state === 'closed') {
-      return;
-    }
-
-    return new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => {
-        console.warn('Ably client cleanup timed out after 3 seconds');
-        resolve();
-      }, 3000);
-
-      const onClosed = () => {
-        clearTimeout(timeout);
-        resolve();
-      };
-
-      // Listen for both closed and failed states
-      this.ablyClient!.connection.once('closed', onClosed);
-      this.ablyClient!.connection.once('failed', onClosed);
-      
-      // Close the client
-      this.ablyClient!.close();
-    });
-  }
 
   // Override finally to ensure resources are cleaned up
   async finally(err: Error | undefined): Promise<void> {
@@ -79,27 +50,6 @@ export default class TypingKeystroke extends ChatBaseCommand {
       clearInterval(this.typingIntervalId);
       this.typingIntervalId = null;
     }
-
-    if (this.unsubscribeStatusFn) {
-      try {
-        this.unsubscribeStatusFn();
-      } catch {
-        /* ignore */
-      }
-    }
-
-    // Proper cleanup sequence
-    try {
-      // Release room if we have one
-      if (this.chatClient && this.roomName) {
-        await this.chatClient.rooms.release(this.roomName);
-      }
-    } catch {
-      // Ignore release errors in cleanup
-    }
-
-    // Close Ably client properly
-    await this.properlyCloseAblyClient();
 
     return super.finally(err);
   }
@@ -110,17 +60,15 @@ export default class TypingKeystroke extends ChatBaseCommand {
     try {
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);
-      this.ablyClient = this._chatRealtimeClient;
-      if (!this.chatClient || !this.ablyClient) {
+      if (!this.chatClient) {
         this.error("Failed to initialize clients");
         return;
       }
 
       const { room: roomName } = args;
-      this.roomName = roomName;
 
       // Set up connection state logging
-      this.setupConnectionStateLogging(this.ablyClient, flags, {
+      this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
         includeUserFriendlyMessages: true
       });
 
@@ -146,7 +94,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
         "subscribingToStatus",
         "Subscribing to room status changes",
       );
-      const { off: unsubscribeStatus } = room.onStatusChange(
+      room.onStatusChange(
         (statusChange: RoomStatusChange) => {
           let reason: Error | null | string | undefined;
           if (statusChange.current === RoomStatus.Failed) {
@@ -237,7 +185,6 @@ export default class TypingKeystroke extends ChatBaseCommand {
           }
         },
       );
-      this.unsubscribeStatusFn = unsubscribeStatus;
       this.logCliEvent(
         flags,
         "room",
@@ -291,102 +238,6 @@ export default class TypingKeystroke extends ChatBaseCommand {
             this.typingIntervalId = null;
           }
 
-          // Clean up subscriptions
-          if (this.unsubscribeStatusFn) {
-            try {
-              this.logCliEvent(
-                flags,
-                "room",
-                "unsubscribingStatus",
-                "Unsubscribing from room status",
-              );
-              this.unsubscribeStatusFn();
-              this.logCliEvent(
-                flags,
-                "room",
-                "unsubscribedStatus",
-                "Unsubscribed from room status",
-              );
-            } catch (error) {
-              this.logCliEvent(
-                flags,
-                "room",
-                "unsubscribeStatusError",
-                "Error unsubscribing status",
-                {
-                  error: error instanceof Error ? error.message : String(error),
-                },
-              );
-            }
-          }
-
-          // Stop typing explicitly (optional, but good practice)
-          try {
-            this.logCliEvent(
-              flags,
-              "typing",
-              "stopAttempt",
-              "Attempting to stop typing indicator",
-            );
-            await room.typing.stop();
-            this.logCliEvent(
-              flags,
-              "typing",
-              "stopped",
-              "Stopped typing indicator",
-            );
-          } catch (error) {
-            this.logCliEvent(
-              flags,
-              "typing",
-              "stopError",
-              "Error stopping typing",
-              { error: error instanceof Error ? error.message : String(error) },
-            );
-          }
-
-          // Release the room and close connection
-          try {
-            this.logCliEvent(
-              flags,
-              "room",
-              "releasing",
-              `Releasing room ${roomName}`,
-            );
-            await this.chatClient?.rooms.release(roomName);
-            this.logCliEvent(
-              flags,
-              "room",
-              "released",
-              `Room ${roomName} released`,
-            );
-          } catch (error) {
-            this.logCliEvent(
-              flags,
-              "room",
-              "releaseError",
-              "Error releasing room",
-              { error: error instanceof Error ? error.message : String(error) },
-            );
-          }
-
-          if (this.ablyClient) {
-            this.logCliEvent(
-              flags,
-              "connection",
-              "closing",
-              "Closing Realtime connection",
-            );
-            this.ablyClient.connection.off(); // unsubscribe connection events
-            this.ablyClient.close(); // close client
-            this.logCliEvent(
-              flags,
-              "connection",
-              "closed",
-              "Realtime connection closed",
-            );
-          }
-
           if (!this.shouldOutputJson(flags)) {
             this.log(`${chalk.green("Successfully disconnected.")}`);
           }
@@ -403,10 +254,6 @@ export default class TypingKeystroke extends ChatBaseCommand {
         `Failed to start typing: ${errorMsg}`,
         { error: errorMsg, room: args.room },
       );
-      // Close the connection in case of error
-      if (this.ablyClient) {
-        this.ablyClient.close();
-      }
 
       if (this.shouldOutputJson(flags)) {
         this.log(

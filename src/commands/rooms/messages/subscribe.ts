@@ -1,6 +1,8 @@
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
-import { Subscription, StatusSubscription, ChatMessageEvent } from "@ably/chat"; // Import ChatClient and StatusSubscription
+import {
+  ChatMessageEvent,
+  ChatClient,
+} from "@ably/chat"; // Import ChatClient and StatusSubscription
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
@@ -24,29 +26,6 @@ interface StatusChange {
     [key: string]: unknown;
   };
   [key: string]: unknown;
-}
-
-// Define room interface
-interface ChatRoom {
-  messages: {
-    subscribe: (callback: (event: ChatMessageEvent) => void) => Subscription;
-  };
-  onStatusChange: (
-    callback: (statusChange: unknown) => void,
-  ) => StatusSubscription;
-  attach: () => Promise<void>;
-  error?: {
-    message?: string;
-  };
-}
-
-// Define chat client interface
-interface ChatClientType {
-  rooms: {
-    get: (room: string, options: Record<string, unknown>) => Promise<ChatRoom>;
-    release: (room: string) => Promise<void>;
-  };
-  clientId?: string;
 }
 
 export default class MessagesSubscribe extends ChatBaseCommand {
@@ -82,73 +61,9 @@ export default class MessagesSubscribe extends ChatBaseCommand {
     }),
   };
 
-  private ablyClient: Ably.Realtime | null = null; // Store Ably client for cleanup
-  private messageSubscription: Subscription | null = null;
-  private unsubscribeStatusFn: StatusSubscription | null = null;
-  private chatClient: ChatClientType | null = null;
+  private chatClient: ChatClient | null = null;
   private roomName: string | null = null;
   private cleanupInProgress: boolean = false;
-
-  private async properlyCloseAblyClient(): Promise<void> {
-    if (!this.ablyClient || this.ablyClient.connection.state === "closed") {
-      return;
-    }
-
-    return new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => {
-        console.warn("Ably client cleanup timed out after 2 seconds");
-        resolve();
-      }, 2000); // Reduced from 3000 to 2000
-
-      const onClosed = () => {
-        clearTimeout(timeout);
-        resolve();
-      };
-
-      // Listen for both closed and failed states
-      this.ablyClient!.connection.once("closed", onClosed);
-      this.ablyClient!.connection.once("failed", onClosed);
-
-      this.ablyClient!.close();
-    });
-  }
-
-  // Override finally to ensure resources are cleaned up
-  async finally(err: Error | undefined): Promise<void> {
-    // Proper cleanup sequence
-    try {
-      // Release room if we haven't already
-      if (this.chatClient && this.roomName) {
-        await this.chatClient.rooms.release(this.roomName);
-      }
-    } catch {
-      // Ignore release errors in cleanup
-    }
-
-    if (this.messageSubscription) {
-      try {
-        this.messageSubscription.unsubscribe();
-      } catch {
-        /* ignore */
-      }
-    }
-    if (this.unsubscribeStatusFn) {
-      try {
-        this.unsubscribeStatusFn.off();
-      } catch {
-        /* ignore */
-      }
-    }
-
-    // Close Ably client properly with timeout
-    console.error('CLOSE');
-    await this.properlyCloseAblyClient();
-    
-    console.error('FINALLY');
-
-    // Ensure the process does not linger due to any stray async handles
-    await super.finally(err);
-  }
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesSubscribe);
@@ -169,9 +84,8 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         "Attempting to create Chat and Ably clients.",
       );
       // Create Chat client (which also creates the Ably client internally)
-      this.chatClient = (await this.createChatClient(flags)) as ChatClientType;
-      // Get the underlying Ably client for cleanup and state listeners
-      this.ablyClient = this._chatRealtimeClient;
+      this.chatClient = await this.createChatClient(flags);
+
       this.logCliEvent(
         flags,
         "subscribe.auth",
@@ -183,12 +97,12 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         this.log(`Attaching to room: ${chalk.cyan(this.roomName)}...`);
       }
 
-      if (!this.chatClient || !this.ablyClient) {
+      if (!this.chatClient) {
         throw new Error("Failed to create Chat or Ably client");
       }
 
       // Set up connection state logging
-      this.setupConnectionStateLogging(this.ablyClient, flags, {
+      this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
         includeUserFriendlyMessages: true,
       });
 
@@ -214,7 +128,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         "subscribingToMessages",
         `Subscribing to messages in room ${this.roomName}`,
       );
-      this.messageSubscription = room.messages.subscribe(
+      room.messages.subscribe(
         (messageEvent: ChatMessageEvent) => {
           const { message } = messageEvent;
           const messageLog: ChatMessage = {
@@ -274,7 +188,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         "subscribingToStatus",
         `Subscribing to status changes for room ${this.roomName}`,
       );
-      this.unsubscribeStatusFn = room.onStatusChange(
+      room.onStatusChange(
         (statusChange: unknown) => {
           const change = statusChange as StatusChange;
           this.logCliEvent(
@@ -363,11 +277,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         `Failed to subscribe to messages: ${errorMsg}`,
         { error: errorMsg, room: this.roomName },
       );
-      // Close the connection in case of error
-      if (this.ablyClient) {
-        this.ablyClient.close();
-      }
-
+      
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
@@ -378,129 +288,6 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       } else {
         this.error(`Failed to subscribe to messages: ${errorMsg}`);
       }
-    } finally {
-      // Wrap all cleanup in a timeout to prevent hanging
-      await Promise.race([
-        this.performCleanup(flags || {}),
-        new Promise<void>((resolve) => {
-          setTimeout(() => {
-            this.logCliEvent(
-              flags || {},
-              "subscribe",
-              "cleanupTimeout",
-              "Cleanup timed out after 5s, forcing completion",
-            );
-            resolve();
-          }, 5000);
-        }),
-      ]);
-
-      this.logCliEvent(
-        flags || {},
-        "subscribe",
-        "cleanupComplete",
-        "Cleanup complete",
-      );
-      // Don't show cleanup messages for minimal output
     }
-  }
-
-  private async performCleanup(flags: Record<string, unknown>): Promise<void> {
-    // Unsubscribe from messages with timeout
-    if (this.messageSubscription) {
-      try {
-        this.logCliEvent(
-          flags,
-          "room",
-          "unsubscribingMessages",
-          "Unsubscribing from messages",
-        );
-        await Promise.race([
-          Promise.resolve(this.messageSubscription.unsubscribe()),
-          new Promise<void>((resolve) => setTimeout(resolve, 1000)),
-        ]);
-        this.logCliEvent(
-          flags,
-          "room",
-          "unsubscribedMessages",
-          "Unsubscribed from messages",
-        );
-      } catch (error) {
-        this.logCliEvent(
-          flags,
-          "room",
-          "unsubscribeMessagesError",
-          "Error unsubscribing messages",
-          {
-            error: error instanceof Error ? error.message : String(error),
-          },
-        );
-      }
-    }
-
-    // Unsubscribe from status with timeout
-    if (this.unsubscribeStatusFn) {
-      try {
-        this.logCliEvent(
-          flags,
-          "room",
-          "unsubscribingStatus",
-          "Unsubscribing from status changes",
-        );
-        await Promise.race([
-          Promise.resolve(this.unsubscribeStatusFn.off()),
-          new Promise<void>((resolve) => setTimeout(resolve, 1000)),
-        ]);
-        this.logCliEvent(
-          flags,
-          "room",
-          "unsubscribedStatus",
-          "Unsubscribed from status changes",
-        );
-      } catch (error) {
-        this.logCliEvent(
-          flags,
-          "room",
-          "unsubscribeStatusError",
-          "Error unsubscribing status",
-          {
-            error: error instanceof Error ? error.message : String(error),
-          },
-        );
-      }
-    }
-
-    // Release the room with timeout
-    try {
-      if (this.chatClient && this.roomName) {
-        this.logCliEvent(
-          flags,
-          "room",
-          "releasing",
-          `Releasing room ${this.roomName}`,
-        );
-        await Promise.race([
-          this.chatClient.rooms.release(this.roomName!),
-          new Promise<void>((resolve) => setTimeout(resolve, 2000)),
-        ]);
-        this.logCliEvent(
-          flags,
-          "room",
-          "released",
-          `Room ${this.roomName} released`,
-        );
-      }
-    } catch (error) {
-      this.logCliEvent(
-        flags,
-        "room",
-        "releaseError",
-        `Error releasing room: ${error instanceof Error ? error.message : String(error)}`,
-        { error: error instanceof Error ? error.message : String(error) },
-      );
-    }
-
-    // Close Ably client properly with timeout (already has internal timeout)
-    await this.properlyCloseAblyClient();
   }
 }
