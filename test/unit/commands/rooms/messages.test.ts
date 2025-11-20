@@ -22,6 +22,8 @@ class TestableRoomsMessagesSend extends RoomsMessagesSend {
   }
 
   protected override async createChatClient(_flags: any) {
+    // Set _chatRealtimeClient as the parent class expects
+    (this as any)._chatRealtimeClient = this.mockRealtimeClient;
     return this.mockChatClient;
   }
 
@@ -90,6 +92,8 @@ class TestableRoomsMessagesHistory extends RoomsMessagesHistory {
   }
 
   protected override async createChatClient(_flags: any) {
+    // Set _chatRealtimeClient as the parent class expects
+    (this as any)._chatRealtimeClient = this.mockRealtimeClient;
     return this.mockChatClient;
   }
 
@@ -141,13 +145,6 @@ describe("rooms messages commands", function () {
         onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
       };
 
-      command.mockChatClient = {
-        rooms: {
-          get: sandbox.stub().resolves(mockRoom),
-          release: sandbox.stub().resolves(),
-        },
-      };
-
       command.mockRealtimeClient = {
         connection: {
           on: sandbox.stub(),
@@ -156,6 +153,17 @@ describe("rooms messages commands", function () {
           state: "connected",
         },
         close: sandbox.stub(),
+      };
+
+      command.mockChatClient = {
+        rooms: {
+          get: sandbox.stub().resolves(mockRoom),
+          release: sandbox.stub().resolves(),
+        },
+        connection: {
+          onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+        },
+        realtime: command.mockRealtimeClient,
       };
 
       command.setParseResult({
@@ -173,7 +181,8 @@ describe("rooms messages commands", function () {
       expect(sendStub.getCall(0).args[0]).to.deep.include({
         text: "Hello World",
       });
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be.true;
+      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
+        .true;
       expect(mockRoom.attach.calledOnce).to.be.true;
     });
 
@@ -253,13 +262,6 @@ describe("rooms messages commands", function () {
         onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
       };
 
-      command.mockChatClient = {
-        rooms: {
-          get: sandbox.stub().resolves(mockRoom),
-          release: sandbox.stub().resolves(),
-        },
-      };
-
       command.mockRealtimeClient = {
         connection: {
           on: sandbox.stub(),
@@ -268,6 +270,17 @@ describe("rooms messages commands", function () {
           state: "connected",
         },
         close: sandbox.stub(),
+      };
+
+      command.mockChatClient = {
+        rooms: {
+          get: sandbox.stub().resolves(mockRoom),
+          release: sandbox.stub().resolves(),
+        },
+        connection: {
+          onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+        },
+        realtime: command.mockRealtimeClient,
       };
 
       command.setParseResult({
@@ -288,7 +301,7 @@ describe("rooms messages commands", function () {
               text: "Test message",
               clientId: "test-client",
               timestamp: new Date(),
-            }
+            },
           });
         }, 10);
         return Promise.resolve();
@@ -298,9 +311,10 @@ describe("rooms messages commands", function () {
       const runPromise = command.run();
 
       // Give it a moment to set up
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be.true;
+      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
+        .true;
       expect(mockRoom.attach.calledOnce).to.be.true;
       expect(subscribeStub.calledOnce).to.be.true;
 
@@ -313,12 +327,12 @@ describe("rooms messages commands", function () {
     let command: TestableRoomsMessagesHistory;
     let mockRoom: any;
     let mockMessages: any;
-    let getStub: sinon.SinonStub;
+    let historyStub: sinon.SinonStub;
 
     beforeEach(function () {
       command = new TestableRoomsMessagesHistory([], mockConfig);
 
-      getStub = sandbox.stub().resolves({
+      historyStub = sandbox.stub().resolves({
         items: [
           {
             text: "Historical message 1",
@@ -334,20 +348,13 @@ describe("rooms messages commands", function () {
       });
 
       mockMessages = {
-        get: getStub,
+        history: historyStub,
       };
 
       mockRoom = {
         attach: sandbox.stub().resolves(),
         messages: mockMessages,
         onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
-      };
-
-      command.mockChatClient = {
-        rooms: {
-          get: sandbox.stub().resolves(mockRoom),
-          release: sandbox.stub().resolves(),
-        },
       };
 
       command.mockRealtimeClient = {
@@ -360,8 +367,19 @@ describe("rooms messages commands", function () {
         close: sandbox.stub(),
       };
 
+      command.mockChatClient = {
+        rooms: {
+          get: sandbox.stub().resolves(mockRoom),
+          release: sandbox.stub().resolves(),
+        },
+        connection: {
+          onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+        },
+        realtime: command.mockRealtimeClient,
+      };
+
       command.setParseResult({
-        flags: {},
+        flags: { limit: 20 },
         args: { room: "test-room" },
         argv: [],
         raw: [],
@@ -371,14 +389,15 @@ describe("rooms messages commands", function () {
     it("should retrieve room message history", async function () {
       await command.run();
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be.true;
+      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
+        .true;
       expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(getStub.calledOnce).to.be.true;
+      expect(historyStub.calledOnce).to.be.true;
     });
 
     it("should handle query options for history", async function () {
       command.setParseResult({
-        flags: { limit: 50, direction: "forwards" },
+        flags: { limit: 50 },
         args: { room: "test-room" },
         argv: [],
         raw: [],
@@ -386,9 +405,9 @@ describe("rooms messages commands", function () {
 
       await command.run();
 
-      expect(getStub.calledOnce).to.be.true;
-      const queryOptions = getStub.getCall(0).args[0];
-      expect(queryOptions).to.include({ limit: 50, direction: "forwards" });
+      expect(historyStub.calledOnce).to.be.true;
+      const queryOptions = historyStub.getCall(0).args[0];
+      expect(queryOptions).to.deep.equal({ limit: 50 });
     });
   });
 });

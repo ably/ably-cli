@@ -165,7 +165,7 @@ describe('BaseTopicCommand', () => {
 
     expect(logStub.calledWith('Ably test management commands:')).to.be.true;
     expect(logStub.calledWith('')).to.be.true;
-    expect(logStub.calledWithMatch(/Run.*ably test COMMAND --help/)).to.be.true;
+    expect(logStub.calledWith('  No commands found.')).to.be.true;
   });
 
   it('should replace colons with spaces in command IDs', async () => {

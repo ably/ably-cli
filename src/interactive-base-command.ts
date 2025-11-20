@@ -36,9 +36,21 @@ export abstract class InteractiveBaseCommand extends Command {
   }
   
   /**
-   * Override exit to throw instead of exit in interactive mode
+   * Exit is an override of oclif's exit command.
+   * 
+   * If we're running unit tests, it does nothing, because we don't want to
+   * quit the test process.
+   * 
+   * If we're running in interactive mode, we want to throw instead of killing the process.
+   * 
+   * Otherwise, defer to oclif to kill off the process.
    */
   exit(code = 0): never {
+    if (process.env.ABLY_CLI_TEST_MODE === 'true') {
+      // @ts-expect-error TS2322: suppress type assignment error
+      return
+    }
+    
     if (process.env.ABLY_INTERACTIVE_MODE === 'true') {
       const error = new Error(`Command exited with code ${code}`);
       (error as Error & {exitCode?: number; code?: string}).exitCode = code;
@@ -47,8 +59,6 @@ export abstract class InteractiveBaseCommand extends Command {
     }
     
     super.exit(code);
-    // TypeScript needs this even though super.exit never returns
-    throw new Error('Unreachable');
   }
   
   /**

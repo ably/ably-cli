@@ -14,7 +14,6 @@ describe("AccountsLogin", function() {
 
     // Reset env before each test
     process.env = { ...originalEnv };
-    process.env.ABLY_CLI_TEST_MODE = 'true';
 
     // Stub fs operations to prevent actual file access
     sandbox.stub(fs, "existsSync").returns(true);

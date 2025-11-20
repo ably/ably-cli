@@ -1,6 +1,11 @@
-import { RoomStatus, ChatClient, RoomStatusChange, JsonObject } from "@ably/chat";
+import {
+  RoomStatus,
+  ChatClient,
+  RoomStatusChange,
+  JsonObject,
+  ConnectionStatusChange,
+} from "@ably/chat";
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
@@ -35,29 +40,8 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
     }),
   };
 
-  private ablyClient: Ably.Realtime | null = null;
   private chatClient: ChatClient | null = null;
-  private unsubscribeStatusFn: (() => void) | null = null;
   private metadataObj: JsonObject | null = null;
-
-  async finally(err: Error | undefined): Promise<void> {
-    if (this.unsubscribeStatusFn) {
-      try {
-        this.unsubscribeStatusFn();
-      } catch {
-        /* ignore */
-      }
-    }
-    if (
-      this.ablyClient &&
-      this.ablyClient.connection.state !== "closed" &&
-      this.ablyClient.connection.state !== "failed"
-    ) {
-      this.ablyClient.close();
-    }
-
-    return super.finally(err);
-  }
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsReactionsSend);
@@ -98,27 +82,21 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
 
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);
-      // Get the underlying Ably client for connection state changes
-      this.ablyClient = this._chatRealtimeClient;
 
       if (!this.chatClient) {
         this.error("Failed to create Chat client");
         return;
       }
-      if (!this.ablyClient) {
-        this.error("Failed to create Ably client");
-        return;
-      }
 
       // Add listeners for connection state changes
-      this.ablyClient.connection.on(
-        (stateChange: Ably.ConnectionStateChange) => {
+      this.chatClient.connection.onStatusChange(
+        (stateChange: ConnectionStatusChange) => {
           this.logCliEvent(
             flags,
             "connection",
             stateChange.current,
             `Realtime connection state changed to ${stateChange.current}`,
-            { reason: stateChange.reason },
+            { error: stateChange.error },
           );
         },
       );
@@ -145,7 +123,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
         "subscribingToStatus",
         "Subscribing to room status changes",
       );
-      const { off: unsubscribeStatus } = room.onStatusChange(
+      room.onStatusChange(
         (statusChange: RoomStatusChange) => {
           let reason: Error | null | string | undefined;
           if (statusChange.current === RoomStatus.Failed) {
@@ -171,7 +149,6 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
           }
         },
       );
-      this.unsubscribeStatusFn = unsubscribeStatus;
       this.logCliEvent(
         flags,
         "room",
@@ -228,25 +205,6 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
           `${chalk.green("✓")} Sent reaction ${emoji} in room ${chalk.cyan(roomName)}`,
         );
       }
-
-      // Clean up resources
-      this.logCliEvent(flags, "room", "releasing", `Releasing room ${roomName}`);
-      await this.chatClient.rooms.release(roomName);
-      this.logCliEvent(flags, "room", "released", `Released room ${roomName}`);
-
-      this.logCliEvent(
-        flags,
-        "connection",
-        "closing",
-        "Closing Realtime connection",
-      );
-      this.ablyClient.close();
-      this.logCliEvent(
-        flags,
-        "connection",
-        "closed",
-        "Realtime connection closed",
-      );
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(
@@ -256,11 +214,6 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
         `Failed to send reaction: ${errorMsg}`,
         { error: errorMsg, room: roomName, emoji },
       );
-
-      // Close the connection in case of error
-      if (this.ablyClient) {
-        this.ablyClient.close();
-      }
 
       if (this.shouldOutputJson(flags)) {
         this.log(

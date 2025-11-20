@@ -48,6 +48,8 @@ cat .cursor/rules/AI-Assistance.mdc
 3. **Leave debug code** - Remove ALL console.log, DEBUG_TEST, test-*.mjs
 4. **Use `// eslint-disable`** - Fix the root cause
 5. **Remove tests without asking** - Always get permission first
+6. **NODE_ENV** - To check if the CLI is in test mode, use the `ABLY_CLI_TEST_MODE` environment variable.
+7. **`process.exit`** - When creating a command, use `this.exit()` for consistent test mode handling.
 
 ## ✅ Correct Practices
 

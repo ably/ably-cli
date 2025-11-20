@@ -11,6 +11,7 @@ import RoomsReactionsSend from "../../../../src/commands/rooms/reactions/send.js
 import RoomsReactionsSubscribe from "../../../../src/commands/rooms/reactions/subscribe.js";
 import RoomsTypingKeystroke from "../../../../src/commands/rooms/typing/keystroke.js";
 import RoomsTypingSubscribe from "../../../../src/commands/rooms/typing/subscribe.js";
+import { RoomStatus } from "@ably/chat";
 
 // Base testable class for room feature commands
 class TestableRoomCommand {
@@ -52,96 +53,183 @@ class TestableRoomCommand {
 class TestableRoomsOccupancyGet extends RoomsOccupancyGet {
   private testableCommand = new TestableRoomCommand();
 
-  public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
-  public override async parse() { return this.testableCommand.parse(); }
-  protected override async createChatClient(flags: any) { return this.testableCommand.createChatClient(flags); }
-  protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
-  protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
+  public setParseResult(result: any) {
+    this.testableCommand.setParseResult(result);
+  }
+  public override async parse() {
+    return this.testableCommand.parse();
+  }
+  protected override async createChatClient(flags: any) {
+    return this.testableCommand.createChatClient(flags);
+  }
+  protected override async createAblyRealtimeClient(flags: any) {
+    return this.testableCommand.createAblyRealtimeClient(flags);
+  }
+  protected override async ensureAppAndKey(flags: any) {
+    return this.testableCommand.ensureAppAndKey(flags);
+  }
   protected override interactiveHelper = this.testableCommand.interactiveHelper;
 
-  get mockChatClient() { return this.testableCommand.mockChatClient; }
-  set mockChatClient(value) { this.testableCommand.mockChatClient = value; }
-  get mockRealtimeClient() { return this.testableCommand.mockRealtimeClient; }
-  set mockRealtimeClient(value) { this.testableCommand.mockRealtimeClient = value; }
+  get mockChatClient() {
+    return this.testableCommand.mockChatClient;
+  }
+  set mockChatClient(value) {
+    this.testableCommand.mockChatClient = value;
+  }
+  get mockRealtimeClient() {
+    return this.testableCommand.mockRealtimeClient;
+  }
+  set mockRealtimeClient(value) {
+    this.testableCommand.mockRealtimeClient = value;
+  }
 }
 
 class TestableRoomsOccupancySubscribe extends RoomsOccupancySubscribe {
   private testableCommand = new TestableRoomCommand();
 
-  public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
-  public override async parse() { return this.testableCommand.parse(); }
-  protected override async createChatClient(flags: any) { 
+  public setParseResult(result: any) {
+    this.testableCommand.setParseResult(result);
+  }
+  public override async parse() {
+    return this.testableCommand.parse();
+  }
+  protected override async createChatClient(flags: any) {
     const client = this.testableCommand.createChatClient(flags);
     // Set _chatRealtimeClient as the parent class expects
     (this as any)._chatRealtimeClient = this.testableCommand.mockRealtimeClient;
     return client;
   }
-  protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
-  protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
+  protected override async createAblyRealtimeClient(flags: any) {
+    return this.testableCommand.createAblyRealtimeClient(flags);
+  }
+  protected override async ensureAppAndKey(flags: any) {
+    return this.testableCommand.ensureAppAndKey(flags);
+  }
   protected override interactiveHelper = this.testableCommand.interactiveHelper;
 
-  get mockChatClient() { return this.testableCommand.mockChatClient; }
-  set mockChatClient(value) { this.testableCommand.mockChatClient = value; }
-  get mockRealtimeClient() { return this.testableCommand.mockRealtimeClient; }
-  set mockRealtimeClient(value) { this.testableCommand.mockRealtimeClient = value; }
+  get mockChatClient() {
+    return this.testableCommand.mockChatClient;
+  }
+  set mockChatClient(value) {
+    this.testableCommand.mockChatClient = value;
+  }
+  get mockRealtimeClient() {
+    return this.testableCommand.mockRealtimeClient;
+  }
+  set mockRealtimeClient(value) {
+    this.testableCommand.mockRealtimeClient = value;
+  }
 }
 
 class TestableRoomsPresenceEnter extends RoomsPresenceEnter {
   private testableCommand = new TestableRoomCommand();
 
-  public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
-  public override async parse() { return this.testableCommand.parse(); }
-  protected override async createChatClient(flags: any) { 
+  public setParseResult(result: any) {
+    this.testableCommand.setParseResult(result);
+  }
+  public override async parse() {
+    return this.testableCommand.parse();
+  }
+  protected override async createChatClient(flags: any) {
     const client = this.testableCommand.createChatClient(flags);
     // Set _chatRealtimeClient as the parent class expects
     (this as any)._chatRealtimeClient = this.testableCommand.mockRealtimeClient;
     return client;
   }
-  protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
-  protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
+  protected override async createAblyRealtimeClient(flags: any) {
+    return this.testableCommand.createAblyRealtimeClient(flags);
+  }
+  protected override async ensureAppAndKey(flags: any) {
+    return this.testableCommand.ensureAppAndKey(flags);
+  }
   protected override interactiveHelper = this.testableCommand.interactiveHelper;
 
-  get mockChatClient() { return this.testableCommand.mockChatClient; }
-  set mockChatClient(value) { this.testableCommand.mockChatClient = value; }
-  get mockRealtimeClient() { return this.testableCommand.mockRealtimeClient; }
-  set mockRealtimeClient(value) { this.testableCommand.mockRealtimeClient = value; }
+  get mockChatClient() {
+    return this.testableCommand.mockChatClient;
+  }
+  set mockChatClient(value) {
+    this.testableCommand.mockChatClient = value;
+  }
+  get mockRealtimeClient() {
+    return this.testableCommand.mockRealtimeClient;
+  }
+  set mockRealtimeClient(value) {
+    this.testableCommand.mockRealtimeClient = value;
+  }
 }
 
 class TestableRoomsReactionsSend extends RoomsReactionsSend {
   private testableCommand = new TestableRoomCommand();
 
-  public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
-  public override async parse() { return this.testableCommand.parse(); }
-  protected override async createChatClient(flags: any) { return this.testableCommand.createChatClient(flags); }
-  protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
-  protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
+  public setParseResult(result: any) {
+    this.testableCommand.setParseResult(result);
+  }
+  public override async parse() {
+    return this.testableCommand.parse();
+  }
+  protected override async createChatClient(flags: any) {
+    // Set _chatRealtimeClient as the parent class expects
+    (this as any)._chatRealtimeClient = this.testableCommand.mockRealtimeClient;
+
+    return this.testableCommand.createChatClient(flags);
+  }
+  protected override async createAblyRealtimeClient(flags: any) {
+    return this.testableCommand.createAblyRealtimeClient(flags);
+  }
+  protected override async ensureAppAndKey(flags: any) {
+    return this.testableCommand.ensureAppAndKey(flags);
+  }
   protected override interactiveHelper = this.testableCommand.interactiveHelper;
 
-  get mockChatClient() { return this.testableCommand.mockChatClient; }
-  set mockChatClient(value) { this.testableCommand.mockChatClient = value; }
-  get mockRealtimeClient() { return this.testableCommand.mockRealtimeClient; }
-  set mockRealtimeClient(value) { this.testableCommand.mockRealtimeClient = value; }
+  get mockChatClient() {
+    return this.testableCommand.mockChatClient;
+  }
+  set mockChatClient(value) {
+    this.testableCommand.mockChatClient = value;
+  }
+  get mockRealtimeClient() {
+    return this.testableCommand.mockRealtimeClient;
+  }
+  set mockRealtimeClient(value) {
+    this.testableCommand.mockRealtimeClient = value;
+  }
 }
 
 class TestableRoomsTypingKeystroke extends RoomsTypingKeystroke {
   private testableCommand = new TestableRoomCommand();
 
-  public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
-  public override async parse() { return this.testableCommand.parse(); }
-  protected override async createChatClient(flags: any) { 
-    const client = this.testableCommand.createChatClient(flags);
+  public setParseResult(result: any) {
+    this.testableCommand.setParseResult(result);
+  }
+  public override async parse() {
+    return this.testableCommand.parse();
+  }
+  protected override async createChatClient(flags: any) {
     // Set _chatRealtimeClient as the parent class expects
     (this as any)._chatRealtimeClient = this.testableCommand.mockRealtimeClient;
-    return client;
+
+    return this.testableCommand.createChatClient(flags);
   }
-  protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
-  protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
+  protected override async createAblyRealtimeClient(flags: any) {
+    return this.testableCommand.createAblyRealtimeClient(flags);
+  }
+  protected override async ensureAppAndKey(flags: any) {
+    return this.testableCommand.ensureAppAndKey(flags);
+  }
   protected override interactiveHelper = this.testableCommand.interactiveHelper;
 
-  get mockChatClient() { return this.testableCommand.mockChatClient; }
-  set mockChatClient(value) { this.testableCommand.mockChatClient = value; }
-  get mockRealtimeClient() { return this.testableCommand.mockRealtimeClient; }
-  set mockRealtimeClient(value) { this.testableCommand.mockRealtimeClient = value; }
+  get mockChatClient() {
+    return this.testableCommand.mockChatClient;
+  }
+  set mockChatClient(value) {
+    this.testableCommand.mockChatClient = value;
+  }
+  get mockRealtimeClient() {
+    return this.testableCommand.mockRealtimeClient;
+  }
+  set mockRealtimeClient(value) {
+    this.testableCommand.mockRealtimeClient = value;
+  }
 }
 
 describe("rooms feature commands", function () {
@@ -165,7 +253,7 @@ describe("rooms feature commands", function () {
 
     beforeEach(function () {
       command = new TestableRoomsOccupancyGet([], mockConfig);
-      
+
       getStub = sandbox.stub().resolves({
         connections: 5,
         publishers: 2,
@@ -183,13 +271,6 @@ describe("rooms feature commands", function () {
         occupancy: mockOccupancy,
       };
 
-      command.mockChatClient = {
-        rooms: {
-          get: sandbox.stub().resolves(mockRoom),
-          release: sandbox.stub().resolves(),
-        },
-      };
-
       command.mockRealtimeClient = {
         connection: {
           on: sandbox.stub(),
@@ -197,6 +278,17 @@ describe("rooms feature commands", function () {
           state: "connected",
         },
         close: sandbox.stub(),
+      };
+
+      command.mockChatClient = {
+        rooms: {
+          get: sandbox.stub().resolves(mockRoom),
+          release: sandbox.stub().resolves(),
+        },
+        connection: {
+          onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+        },
+        realtime: command.mockRealtimeClient,
       };
 
       command.setParseResult({
@@ -210,7 +302,8 @@ describe("rooms feature commands", function () {
     it("should get room occupancy metrics", async function () {
       await command.run();
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be.true;
+      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
+        .true;
       expect(mockRoom.attach.calledOnce).to.be.true;
       expect(getStub.calledOnce).to.be.true;
     });
@@ -224,7 +317,7 @@ describe("rooms feature commands", function () {
 
     beforeEach(function () {
       command = new TestableRoomsOccupancySubscribe([], mockConfig);
-      
+
       subscribeStub = sandbox.stub();
       mockOccupancy = {
         subscribe: subscribeStub,
@@ -238,13 +331,6 @@ describe("rooms feature commands", function () {
         onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
       };
 
-      command.mockChatClient = {
-        rooms: {
-          get: sandbox.stub().resolves(mockRoom),
-          release: sandbox.stub().resolves(),
-        },
-      };
-
       command.mockRealtimeClient = {
         connection: {
           on: sandbox.stub(),
@@ -252,6 +338,17 @@ describe("rooms feature commands", function () {
           state: "connected",
         },
         close: sandbox.stub(),
+      };
+
+      command.mockChatClient = {
+        rooms: {
+          get: sandbox.stub().resolves(mockRoom),
+          release: sandbox.stub().resolves(),
+        },
+        connection: {
+          onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+        },
+        realtime: command.mockRealtimeClient,
       };
 
       command.setParseResult({
@@ -278,13 +375,14 @@ describe("rooms feature commands", function () {
 
       // Since subscribe runs indefinitely, we'll test the setup
       const runPromise = command.run();
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be.true;
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
+        .true;
       expect(mockRoom.attach.calledOnce).to.be.true;
       expect(subscribeStub.calledOnce).to.be.true;
-      
+
       command.mockRealtimeClient.close();
     });
   });
@@ -297,7 +395,7 @@ describe("rooms feature commands", function () {
 
     beforeEach(function () {
       command = new TestableRoomsPresenceEnter([], mockConfig);
-      
+
       enterStub = sandbox.stub().resolves();
       mockPresence = {
         enter: enterStub,
@@ -310,13 +408,6 @@ describe("rooms feature commands", function () {
         presence: mockPresence,
       };
 
-      command.mockChatClient = {
-        rooms: {
-          get: sandbox.stub().resolves(mockRoom),
-          release: sandbox.stub().resolves(),
-        },
-      };
-
       command.mockRealtimeClient = {
         connection: {
           on: sandbox.stub(),
@@ -324,6 +415,17 @@ describe("rooms feature commands", function () {
           id: "test-connection-id",
         },
         close: sandbox.stub(),
+      };
+
+      command.mockChatClient = {
+        rooms: {
+          get: sandbox.stub().resolves(mockRoom),
+          release: sandbox.stub().resolves(),
+        },
+        connection: {
+          onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+        },
+        realtime: command.mockRealtimeClient,
       };
 
       command.setParseResult({
@@ -337,13 +439,14 @@ describe("rooms feature commands", function () {
     it("should enter room presence successfully", async function () {
       // Since presence enter runs indefinitely, we'll test the setup
       const runPromise = command.run();
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be.true;
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
+        .true;
       expect(mockRoom.attach.calledOnce).to.be.true;
       expect(enterStub.calledOnce).to.be.true;
-      
+
       command.mockRealtimeClient.close();
     });
 
@@ -356,13 +459,16 @@ describe("rooms feature commands", function () {
       });
 
       const runPromise = command.run();
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       expect(enterStub.calledOnce).to.be.true;
       const presenceData = enterStub.getCall(0).args[0];
-      expect(presenceData).to.deep.equal({ status: "online", name: "Test User" });
-      
+      expect(presenceData).to.deep.equal({
+        status: "online",
+        name: "Test User",
+      });
+
       command.mockRealtimeClient.close();
     });
   });
@@ -375,7 +481,7 @@ describe("rooms feature commands", function () {
 
     beforeEach(function () {
       command = new TestableRoomsReactionsSend([], mockConfig);
-      
+
       sendStub = sandbox.stub().resolves();
       mockReactions = {
         send: sendStub,
@@ -384,13 +490,7 @@ describe("rooms feature commands", function () {
       mockRoom = {
         attach: sandbox.stub().resolves(),
         reactions: mockReactions,
-      };
-
-      command.mockChatClient = {
-        rooms: {
-          get: sandbox.stub().resolves(mockRoom),
-          release: sandbox.stub().resolves(),
-        },
+        onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
       };
 
       command.mockRealtimeClient = {
@@ -400,6 +500,17 @@ describe("rooms feature commands", function () {
           state: "connected",
         },
         close: sandbox.stub(),
+      };
+
+      command.mockChatClient = {
+        rooms: {
+          get: sandbox.stub().resolves(mockRoom),
+          release: sandbox.stub().resolves(),
+        },
+        connection: {
+          onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+        },
+        realtime: command.mockRealtimeClient,
       };
 
       command.setParseResult({
@@ -413,10 +524,11 @@ describe("rooms feature commands", function () {
     it("should send a reaction successfully", async function () {
       await command.run();
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be.true;
+      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
+        .true;
       expect(mockRoom.attach.calledOnce).to.be.true;
       expect(sendStub.calledOnce).to.be.true;
-      expect(sendStub.calledWith("👍")).to.be.true;
+      expect(sendStub.calledWith({ name: "👍", metadata: {} })).to.be.true;
     });
 
     it("should handle metadata in reactions", async function () {
@@ -431,11 +543,10 @@ describe("rooms feature commands", function () {
 
       expect(sendStub.calledOnce).to.be.true;
       const reactionCall = sendStub.getCall(0);
-      expect(reactionCall.args[0]).to.equal("🎉");
-      // Metadata would typically be passed as second argument
-      if (reactionCall.args[1]) {
-        expect(reactionCall.args[1]).to.deep.include({ intensity: "high" });
-      }
+      expect(reactionCall.args[0]).to.deep.equal({
+        name: "🎉",
+        metadata: { intensity: "high" },
+      });
     });
   });
 
@@ -443,26 +554,23 @@ describe("rooms feature commands", function () {
     let command: TestableRoomsTypingKeystroke;
     let mockRoom: any;
     let mockTyping: any;
-    let startStub: sinon.SinonStub;
+    let keystrokeStub: sinon.SinonStub;
 
     beforeEach(function () {
       command = new TestableRoomsTypingKeystroke([], mockConfig);
-      
-      startStub = sandbox.stub().resolves();
+
+      keystrokeStub = sandbox.stub().resolves();
       mockTyping = {
-        start: startStub,
+        keystroke: keystrokeStub,
       };
 
       mockRoom = {
         attach: sandbox.stub().resolves(),
         typing: mockTyping,
-      };
-
-      command.mockChatClient = {
-        rooms: {
-          get: sandbox.stub().resolves(mockRoom),
-          release: sandbox.stub().resolves(),
-        },
+        onStatusChange: sandbox.stub().callsFake((listener) => {
+          listener({ current: RoomStatus.Attached });
+          return { off: sandbox.stub() };
+        }),
       };
 
       command.mockRealtimeClient = {
@@ -474,6 +582,17 @@ describe("rooms feature commands", function () {
         close: sandbox.stub(),
       };
 
+      command.mockChatClient = {
+        rooms: {
+          get: sandbox.stub().resolves(mockRoom),
+          release: sandbox.stub().resolves(),
+        },
+        connection: {
+          onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+        },
+        realtime: command.mockRealtimeClient,
+      };
+
       command.setParseResult({
         flags: {},
         args: { room: "test-room" },
@@ -483,11 +602,18 @@ describe("rooms feature commands", function () {
     });
 
     it("should start typing indicator", async function () {
-      await command.run();
+      command.run();
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be.true;
+      // Wait for setup to complete
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
+        .true;
       expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(startStub.calledOnce).to.be.true;
+      expect(keystrokeStub.calledOnce).to.be.true;
+
+      // Clean up
+      command.mockRealtimeClient.close();
     });
   });
 });

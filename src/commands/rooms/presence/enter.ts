@@ -3,14 +3,11 @@ import {
   Room,
   RoomStatus,
   RoomStatusChange,
-  Subscription as ChatSubscription,
-  StatusSubscription,
   PresenceEvent,
   PresenceEventType,
   PresenceData,
 } from "@ably/chat";
 import { Args, Flags, Interfaces } from "@oclif/core";
-import * as Ably from "ably";
 import chalk from "chalk";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
@@ -47,42 +44,13 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
     }),
   };
 
-  private ablyClient: Ably.Realtime | null = null;
   private chatClient: ChatClient | null = null;
   private room: Room | null = null;
   private roomName: string | null = null;
   private data: PresenceData | null = null;
 
-  private unsubscribeStatusFn: StatusSubscription | null = null;
-  private unsubscribePresenceFn: ChatSubscription | null = null;
   private cleanupInProgress: boolean = false;
   private commandFlags: Interfaces.InferredFlags<typeof RoomsPresenceEnter.flags> | null = null;
-
-  private async properlyCloseAblyClient(): Promise<void> {
-    const flagsForLog = this.commandFlags || {};
-    if (!this.ablyClient || this.ablyClient.connection.state === 'closed' || this.ablyClient.connection.state === 'failed') {
-      this.logCliEvent(flagsForLog, "connection", "alreadyClosedOrFailed", "Ably client already closed or failed, skipping close.");
-      return;
-    }
-    this.logCliEvent(flagsForLog, "connection", "attemptingClose", "Attempting to close Ably client.");
-
-    return new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => {
-        this.logCliEvent(flagsForLog, "connection", "cleanupTimeout", "Ably client close TIMED OUT after 2s. Forcing resolve.");
-        resolve();
-      }, 2000);
-
-      const onClosedOrFailed = () => {
-        clearTimeout(timeout);
-        this.logCliEvent(flagsForLog, "connection", "closedOrFailedEventFired", `Ably client connection emitted: ${this.ablyClient?.connection.state}`);
-        resolve();
-      };
-
-      this.ablyClient!.connection.once('closed', onClosedOrFailed);
-      this.ablyClient!.connection.once('failed', onClosedOrFailed);
-      this.ablyClient!.close();
-    });
-  }
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsPresenceEnter);
@@ -113,15 +81,14 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
 
       // Create clients
       this.chatClient = await this.createChatClient(flags);
-      this.ablyClient = this._chatRealtimeClient;
 
-      if (!this.chatClient || !this.ablyClient || !this.roomName) {
+      if (!this.chatClient || !this.roomName) {
         this.error("Failed to initialize chat client or room");
         return;
       }
 
       // Set up connection state logging
-      this.setupConnectionStateLogging(this.ablyClient, flags, {
+      this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
         includeUserFriendlyMessages: true
       });
 
@@ -129,7 +96,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       const currentRoom = this.room!;
 
       if (flags["show-others"]) {
-        this.unsubscribeStatusFn = currentRoom.onStatusChange(
+        currentRoom.onStatusChange(
           (statusChange: RoomStatusChange) => {
             let reasonToLog: string | undefined;
             if (statusChange.current === RoomStatus.Failed) {
@@ -147,7 +114,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
           }
         );
 
-        this.unsubscribePresenceFn = currentRoom.presence.subscribe(
+        currentRoom.presence.subscribe(
           (event: PresenceEvent) => {
             const member = event.member;
             if (member.clientId !== this.chatClient?.clientId) {
@@ -218,17 +185,6 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
         this.logCliEvent(currentFlags, "presence", "explicitCleanupOrJsonMode", "Cleanup already in progress or JSON output mode");
       }
 
-      // Wrap all cleanup in a timeout to prevent hanging
-      await Promise.race([
-        this.performCleanup(currentFlags),
-        new Promise<void>((resolve) => {
-          setTimeout(() => {
-            this.logCliEvent(currentFlags, "presence", "cleanupTimeout", "Cleanup timed out after 5s, forcing completion");
-            resolve();
-          }, 5000);
-        })
-      ]);
-
       if (!this.shouldOutputJson(currentFlags)){
         if (this.cleanupInProgress) {
           this.log(chalk.green("Graceful shutdown complete (user interrupt)."));
@@ -238,66 +194,5 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
         }
       }
     }
-  }
-
-  private async performCleanup(flags: Record<string, unknown>): Promise<void> {
-    // Unsubscribe from presence events with timeout
-    if (this.unsubscribePresenceFn) {
-      try {
-        await Promise.race([
-          Promise.resolve(this.unsubscribePresenceFn.unsubscribe()),
-          new Promise<void>((resolve) => setTimeout(resolve, 1000))
-        ]);
-        this.logCliEvent(flags, "presence", "unsubscribedEventsFinally", "Unsubscribed presence listener in finally.");
-      } catch (error) {
-        this.logCliEvent(flags, "presence", "unsubscribeErrorFinally", `Error unsubscribing presenceFn: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    }
-
-    // Unsubscribe from status events with timeout
-    if (this.unsubscribeStatusFn) {
-      try {
-        await Promise.race([
-          Promise.resolve(this.unsubscribeStatusFn.off()),
-          new Promise<void>((resolve) => setTimeout(resolve, 1000))
-        ]);
-        this.logCliEvent(flags, "room", "unsubscribedStatusFinally", "Unsubscribed room status listener in finally.");
-      } catch (error) {
-        this.logCliEvent(flags, "room", "unsubscribeStatusErrorFinally", `Error unsubscribing statusFn: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    }
-
-    // Leave presence with timeout
-    if (this.room) {
-      try {
-        this.logCliEvent(flags, "presence", "leavingFinally", "Attempting to leave presence in finally.");
-        await Promise.race([
-          this.room.presence.leave(),
-          new Promise<void>((resolve) => setTimeout(resolve, 2000))
-        ]);
-        this.logCliEvent(flags, "presence", "leftFinally", "Left room presence in finally.");
-      } catch (error) {
-        this.logCliEvent(flags, "presence", "leaveErrorFinally", `Error leaving: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    }
-
-    // Release room with timeout
-    if (this.chatClient && this.roomName) {
-      try {
-        this.logCliEvent(flags, "room", "releasingFinally", `Releasing room ${this.roomName} in finally.`);
-        await Promise.race([
-          this.chatClient.rooms.release(this.roomName),
-          new Promise<void>((resolve) => setTimeout(resolve, 2000))
-        ]);
-        this.logCliEvent(flags, "room", "releasedInFinally", `Room ${this.roomName} released in finally.`);
-      } catch (error) {
-        this.logCliEvent(flags, "room", "releaseErrorInFinally", `Error releasing room: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    }
-
-    // Close Ably client (already has internal timeout)
-    this.logCliEvent(flags, "connection", "BEFORE_properlyCloseAblyClient", "About to call properlyCloseAblyClient.");
-    await this.properlyCloseAblyClient();
-    this.logCliEvent(flags, "connection", "AFTER_properlyCloseAblyClient", "Finished awaiting properlyCloseAblyClient.");
   }
 }

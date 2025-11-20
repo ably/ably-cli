@@ -1,5 +1,5 @@
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
+
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
@@ -37,16 +37,12 @@ export default class MessagesHistory extends ChatBaseCommand {
     }),
   };
 
-  private ablyClient: Ably.Realtime | null = null;
-
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesHistory);
 
     try {
       // Create Chat client
       const chatClient = await this.createChatClient(flags);
-      // Get the underlying Ably client for cleanup
-      this.ablyClient = this._chatRealtimeClient;
 
       if (!chatClient) {
         this.error("Failed to create Chat client");
@@ -80,7 +76,9 @@ export default class MessagesHistory extends ChatBaseCommand {
       }
 
       // Get historical messages
-      const messagesResult = await room.messages.history({ limit: flags.limit });
+      const messagesResult = await room.messages.history({
+        limit: flags.limit,
+      });
       const { items } = messagesResult;
 
       if (this.shouldOutputJson(flags)) {
@@ -132,9 +130,6 @@ export default class MessagesHistory extends ChatBaseCommand {
           }
         }
       }
-
-      // Release the room
-      await chatClient.rooms.release(args.room);
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
         this.log(
@@ -151,11 +146,6 @@ export default class MessagesHistory extends ChatBaseCommand {
         this.error(
           `Failed to get messages: ${error instanceof Error ? error.message : String(error)}`,
         );
-      }
-    } finally {
-      // Close the underlying Ably connection
-      if (this.ablyClient && this.ablyClient.connection.state !== "closed") {
-        this.ablyClient.close();
       }
     }
   }

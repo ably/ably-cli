@@ -28,7 +28,7 @@ export default class HelpCommand extends Command {
 
   async run(): Promise<void> {
     const { argv, flags } = await this.parse(HelpCommand);
-    const help = new CustomHelp(this.config);
+    const help = this.getCustomHelp();
     
     // If web-cli-help flag is provided, show web CLI help
     if (flags['web-cli-help']) {
@@ -61,5 +61,9 @@ export default class HelpCommand extends Command {
         this.error(`Command "${commandIdWithSpaces}" not found.`);
       }
     }
+  }
+
+  getCustomHelp(): CustomHelp {
+    return new CustomHelp(this.config);
   }
 }

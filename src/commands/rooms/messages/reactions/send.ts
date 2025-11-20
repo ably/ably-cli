@@ -1,10 +1,10 @@
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
 import {
   ChatClient,
   RoomStatus,
   RoomStatusChange,
   MessageReactionType,
+  ConnectionStatusChange,
 } from "@ably/chat";
 import chalk from "chalk";
 
@@ -66,28 +66,7 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
     }),
   };
 
-  private ablyClient: Ably.Realtime | null = null;
   private chatClient: ChatClient | null = null;
-  private unsubscribeStatusFn: (() => void) | null = null;
-
-  async finally(err: Error | undefined): Promise<void> {
-    if (this.unsubscribeStatusFn) {
-      try {
-        this.unsubscribeStatusFn();
-      } catch {
-        /* ignore */
-      }
-    }
-    if (
-      this.ablyClient &&
-      this.ablyClient.connection.state !== "closed" &&
-      this.ablyClient.connection.state !== "failed"
-    ) {
-      this.ablyClient.close();
-    }
-
-    return super.finally(err);
-  }
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesReactionsSend);
@@ -121,27 +100,21 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
 
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);
-      // Get the underlying Ably client for connection state changes
-      this.ablyClient = this._chatRealtimeClient;
 
       if (!this.chatClient) {
         this.error("Failed to create Chat client");
         return;
       }
-      if (!this.ablyClient) {
-        this.error("Failed to create Ably client");
-        return;
-      }
 
       // Add listeners for connection state changes
-      this.ablyClient.connection.on(
-        (stateChange: Ably.ConnectionStateChange) => {
+      this.chatClient.connection.onStatusChange(
+        (stateChange: ConnectionStatusChange) => {
           this.logCliEvent(
             flags,
             "connection",
             stateChange.current,
             `Realtime connection state changed to ${stateChange.current}`,
-            { reason: stateChange.reason },
+            { error: stateChange.error },
           );
         },
       );
@@ -154,12 +127,7 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
         `Getting room handle for ${room}`,
       );
       const chatRoom = await this.chatClient.rooms.get(room);
-      this.logCliEvent(
-        flags,
-        "room",
-        "gotRoom",
-        `Got room handle for ${room}`,
-      );
+      this.logCliEvent(flags, "room", "gotRoom", `Got room handle for ${room}`);
 
       // Subscribe to room status changes
       this.logCliEvent(
@@ -168,7 +136,7 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
         "subscribingToStatus",
         "Subscribing to room status changes",
       );
-      const { off: unsubscribeStatus } = chatRoom.onStatusChange(
+      chatRoom.onStatusChange(
         (statusChange: RoomStatusChange) => {
           let reason: Error | null | string | undefined;
           if (statusChange.current === RoomStatus.Failed) {
@@ -194,7 +162,6 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
           }
         },
       );
-      this.unsubscribeStatusFn = unsubscribeStatus;
       this.logCliEvent(
         flags,
         "room",
@@ -203,12 +170,7 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
       );
 
       // Attach to the room
-      this.logCliEvent(
-        flags,
-        "room",
-        "attaching",
-        `Attaching to room ${room}`,
-      );
+      this.logCliEvent(flags, "room", "attaching", `Attaching to room ${room}`);
       await chatRoom.attach();
       this.logCliEvent(
         flags,
@@ -246,10 +208,7 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
         },
       );
 
-      await chatRoom.messages.reactions.send(
-        messageSerial,
-        reactionParams,
-      );
+      await chatRoom.messages.reactions.send(messageSerial, reactionParams);
 
       this.logCliEvent(
         flags,
@@ -275,25 +234,6 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
           `${chalk.green("✓")} Sent reaction ${chalk.yellow(reaction)} to message ${chalk.cyan(messageSerial)} in room ${chalk.cyan(room)}`,
         );
       }
-
-      // Clean up resources
-      this.logCliEvent(flags, "room", "releasing", `Releasing room ${room}`);
-      await this.chatClient.rooms.release(room);
-      this.logCliEvent(flags, "room", "released", `Released room ${room}`);
-
-      this.logCliEvent(
-        flags,
-        "connection",
-        "closing",
-        "Closing Realtime connection",
-      );
-      this.ablyClient.close();
-      this.logCliEvent(
-        flags,
-        "connection",
-        "closed",
-        "Realtime connection closed",
-      );
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(
@@ -303,11 +243,6 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
         `Failed to send reaction: ${errorMsg}`,
         { error: errorMsg, room, messageSerial, reaction },
       );
-
-      // Close the connection in case of error
-      if (this.ablyClient) {
-        this.ablyClient.close();
-      }
 
       if (this.shouldOutputJson(flags)) {
         this.log(
