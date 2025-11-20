@@ -20,8 +20,8 @@ export default class MessagesHistory extends ChatBaseCommand {
     '$ ably rooms messages history --api-key "YOUR_API_KEY" my-room',
     "$ ably rooms messages history --limit 50 my-room",
     "$ ably rooms messages history --show-metadata my-room",
-    "$ ably rooms messages history my-room --start 1737283200000",
-    "$ ably rooms messages history my-room --start 1737283200000 --end 1737286800000",
+    '$ ably rooms messages history my-room --start "2025-01-01T00:00:00Z"',
+    '$ ably rooms messages history my-room --start "2025-01-01T00:00:00Z" --end "2025-01-02T00:00:00Z"',
     "$ ably rooms messages history my-room --order newestFirst",
     "$ ably rooms messages history my-room --json",
     "$ ably rooms messages history my-room --pretty-json",
@@ -30,7 +30,7 @@ export default class MessagesHistory extends ChatBaseCommand {
   static override flags = {
     ...ChatBaseCommand.globalFlags,
     end: Flags.string({
-      description: "End time for the history query (Unix timestamp in ms)",
+      description: "End time for the history query (ISO 8601 format)",
     }),
     limit: Flags.integer({
       char: "l",
@@ -48,7 +48,7 @@ export default class MessagesHistory extends ChatBaseCommand {
       description: "Display message metadata if available",
     }),
     start: Flags.string({
-      description: "Start time for the history query (Unix timestamp in ms)",
+      description: "Start time for the history query (ISO 8601 format)",
     }),
   };
 
@@ -106,17 +106,11 @@ export default class MessagesHistory extends ChatBaseCommand {
 
       // Add time range if specified
       if (flags.start) {
-        const startTime = /^\d+$/.test(flags.start)
-          ? Number.parseInt(flags.start, 10)
-          : new Date(flags.start).getTime();
-        historyParams.start = startTime;
+        historyParams.start = new Date(flags.start).getTime();
       }
 
       if (flags.end) {
-        const endTime = /^\d+$/.test(flags.end)
-          ? Number.parseInt(flags.end, 10)
-          : new Date(flags.end).getTime();
-        historyParams.end = endTime;
+        historyParams.end = new Date(flags.end).getTime();
       }
 
       // Get historical messages
@@ -152,8 +146,8 @@ export default class MessagesHistory extends ChatBaseCommand {
         } else {
           this.log(chalk.dim("---"));
 
-          // Display messages in chronological order (oldest first)
-          const messagesInOrder = [...items].reverse();
+          // Display messages in order provided
+          const messagesInOrder = [...items];
           for (const message of messagesInOrder) {
             // Format message with timestamp, author and content
             const timestamp = new Date(message.timestamp).toISOString();
