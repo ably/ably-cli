@@ -35,19 +35,17 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
     // Ensure at least one update parameter is provided
     if (flags.name === undefined && flags["tls-only"] === undefined) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId: args.id,
-              error:
-                "At least one update parameter (--name or --tls-only) must be provided",
-              status: "error",
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            appId: args.id,
+            error:
+              "At least one update parameter (--name or --tls-only) must be provided",
+            status: "error",
+            success: false,
+          },
+          flags,
         );
-        process.exitCode = 1;
+        return;
       } else {
         this.error(
           "At least one update parameter (--name or --tls-only) must be provided",
@@ -115,18 +113,16 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId: args.id,
-              error: error instanceof Error ? error.message : String(error),
-              status: "error",
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            appId: args.id,
+            error: error instanceof Error ? error.message : String(error),
+            status: "error",
+            success: false,
+          },
+          flags,
         );
-        process.exitCode = 1;
+        return;
       } else {
         this.error(
           `Error updating app: ${error instanceof Error ? error.message : String(error)}`,

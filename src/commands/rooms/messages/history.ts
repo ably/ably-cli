@@ -174,17 +174,14 @@ export default class MessagesHistory extends ChatBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: error instanceof Error ? error.message : String(error),
-              room: args.room,
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            room: args.room,
+            success: false,
+          },
+          flags,
         );
-        process.exitCode = 1;
       } else {
         this.error(
           `Failed to get messages: ${error instanceof Error ? error.message : String(error)}`,

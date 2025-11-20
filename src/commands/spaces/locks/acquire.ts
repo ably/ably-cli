@@ -220,13 +220,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
           lockId,
         });
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              { error: errorMsg, lockId, success: false },
-              flags,
-            ),
-          );
-          process.exitCode = 1;
+          this.jsonError({ error: errorMsg, lockId, success: false }, flags);
         } else {
           this.error(errorMsg);
         }

@@ -127,10 +127,8 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           error: errorMsg,
         });
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput({ error: errorMsg, success: false }, flags),
-          );
-          process.exitCode = 1;
+          this.jsonError({ error: errorMsg, success: false }, flags);
+          return;
         } else {
           this.error(errorMsg);
         }
@@ -329,13 +327,11 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
         { channels: channelNames, error: errorMsg },
       );
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { channels: channelNames, error: errorMsg, success: false },
-            flags,
-          ),
+        this.jsonError(
+          { channels: channelNames, error: errorMsg, success: false },
+          flags,
         );
-        process.exitCode = 1;
+        return;
       } else {
         this.error(`Error: ${errorMsg}`);
       }
