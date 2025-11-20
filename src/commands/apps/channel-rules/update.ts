@@ -305,7 +305,7 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
           );
         }
 
-        if (updatedNamespace.batchingInterval !== undefined) {
+        if (updatedNamespace.batchingInterval != null) {
           this.log(
             `Batching Interval: ${chalk.green(updatedNamespace.batchingInterval.toString())}`,
           );
@@ -317,7 +317,7 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
           );
         }
 
-        if (updatedNamespace.conflationInterval !== undefined) {
+        if (updatedNamespace.conflationInterval != null) {
           this.log(
             `Conflation Interval: ${chalk.green(updatedNamespace.conflationInterval.toString())}`,
           );
