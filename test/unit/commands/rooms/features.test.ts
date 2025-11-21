@@ -6,11 +6,8 @@ import * as Ably from "ably";
 import RoomsOccupancyGet from "../../../../src/commands/rooms/occupancy/get.js";
 import RoomsOccupancySubscribe from "../../../../src/commands/rooms/occupancy/subscribe.js";
 import RoomsPresenceEnter from "../../../../src/commands/rooms/presence/enter.js";
-import RoomsPresenceSubscribe from "../../../../src/commands/rooms/presence/subscribe.js";
 import RoomsReactionsSend from "../../../../src/commands/rooms/reactions/send.js";
-import RoomsReactionsSubscribe from "../../../../src/commands/rooms/reactions/subscribe.js";
 import RoomsTypingKeystroke from "../../../../src/commands/rooms/typing/keystroke.js";
-import RoomsTypingSubscribe from "../../../../src/commands/rooms/typing/subscribe.js";
 import { RoomStatus } from "@ably/chat";
 
 // Base testable class for room feature commands
@@ -374,7 +371,7 @@ describe("rooms feature commands", function () {
       });
 
       // Since subscribe runs indefinitely, we'll test the setup
-      const runPromise = command.run();
+      command.run();
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -438,7 +435,7 @@ describe("rooms feature commands", function () {
 
     it("should enter room presence successfully", async function () {
       // Since presence enter runs indefinitely, we'll test the setup
-      const runPromise = command.run();
+      command.run();
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -458,7 +455,7 @@ describe("rooms feature commands", function () {
         raw: [],
       });
 
-      const runPromise = command.run();
+      command.run();
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 

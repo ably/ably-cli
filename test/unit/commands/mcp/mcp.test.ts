@@ -4,7 +4,6 @@ import { Config } from "@oclif/core";
 
 import McpStartServer from "../../../../src/commands/mcp/start-server.js";
 import { AblyMcpServer } from "../../../../src/mcp/mcp-server.js";
-import { ConfigManager } from "../../../../src/services/config-manager.js";
 
 // Testable subclass for MCP start server command
 class TestableMcpStartServer extends McpStartServer {
@@ -27,7 +26,10 @@ class TestableMcpStartServer extends McpStartServer {
     const { flags } = await this.parse();
 
     // Simulate the constructor call
-    this.constructorArgs = [this.mockConfigManager, { controlHost: flags["control-host"] }];
+    this.constructorArgs = [
+      this.mockConfigManager,
+      { controlHost: flags["control-host"] },
+    ];
 
     // Simulate calling start
     this.startCalled = true;
@@ -68,7 +70,7 @@ describe("mcp commands", function () {
 
     beforeEach(function () {
       command = new TestableMcpStartServer([], mockConfig);
-      
+
       startStub = sandbox.stub().resolves();
       mockMcpServer = {
         start: startStub,
@@ -150,20 +152,20 @@ describe("mcp commands", function () {
 
     it("should initialize with default options", function () {
       server = new AblyMcpServer(mockConfigManager);
-      
+
       expect(server).to.be.instanceOf(AblyMcpServer);
     });
 
     it("should initialize with custom control host", function () {
       const options = { controlHost: "custom.ably.io" };
       server = new AblyMcpServer(mockConfigManager, options);
-      
+
       expect(server).to.be.instanceOf(AblyMcpServer);
     });
 
     it("should handle missing configuration gracefully", function () {
       mockConfigManager.getConfig.returns({});
-      
+
       expect(() => {
         server = new AblyMcpServer(mockConfigManager);
       }).to.not.throw();
@@ -186,20 +188,20 @@ describe("mcp commands", function () {
         // Mock process.exit to prevent actual exit
         const _originalExit = process.exit;
         const exitSpy = sandbox.stub(process, "exit");
-        
+
         try {
           // Start the server in the background
           const _startPromise = server.start();
-          
+
           // Give it a moment to start
-          await new Promise(resolve => setTimeout(resolve, 10));
-          
+          await new Promise((resolve) => setTimeout(resolve, 10));
+
           // Simulate SIGINT signal for graceful shutdown
           process.emit("SIGINT", "SIGINT");
-          
+
           // Give it a moment to shutdown
-          await new Promise(resolve => setTimeout(resolve, 10));
-          
+          await new Promise((resolve) => setTimeout(resolve, 10));
+
           // Verify that process.exit was called
           expect(exitSpy.calledWith(0)).to.be.true;
         } finally {
@@ -213,18 +215,18 @@ describe("mcp commands", function () {
       it("should handle server startup with invalid configuration", function () {
         // Test with null configuration
         mockConfigManager.getConfig.returns(null);
-        
+
         server = new AblyMcpServer(mockConfigManager);
-        
+
         // Server should still be created, errors would occur on start()
         expect(server).to.be.instanceOf(AblyMcpServer);
       });
 
       it("should handle empty configuration", function () {
         mockConfigManager.getConfig.returns({});
-        
+
         server = new AblyMcpServer(mockConfigManager);
-        
+
         expect(server).to.be.instanceOf(AblyMcpServer);
       });
 
@@ -233,9 +235,9 @@ describe("mcp commands", function () {
           getConfig: sandbox.stub().returns({}),
           // Missing other methods
         };
-        
+
         server = new AblyMcpServer(incompleteConfigManager as any);
-        
+
         expect(server).to.be.instanceOf(AblyMcpServer);
       });
     });

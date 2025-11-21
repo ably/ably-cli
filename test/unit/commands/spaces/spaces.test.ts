@@ -6,15 +6,8 @@ import * as Ably from "ably";
 import SpacesMembersEnter from "../../../../src/commands/spaces/members/enter.js";
 import SpacesMembersSubscribe from "../../../../src/commands/spaces/members/subscribe.js";
 import SpacesLocationsSet from "../../../../src/commands/spaces/locations/set.js";
-import SpacesLocationsGetAll from "../../../../src/commands/spaces/locations/get-all.js";
-import SpacesLocationsSubscribe from "../../../../src/commands/spaces/locations/subscribe.js";
 import SpacesLocksAcquire from "../../../../src/commands/spaces/locks/acquire.js";
-import SpacesLocksGet from "../../../../src/commands/spaces/locks/get.js";
-import SpacesLocksGetAll from "../../../../src/commands/spaces/locks/get-all.js";
-import SpacesLocksSubscribe from "../../../../src/commands/spaces/locks/subscribe.js";
 import SpacesCursorsSet from "../../../../src/commands/spaces/cursors/set.js";
-import SpacesCursorsGetAll from "../../../../src/commands/spaces/cursors/get-all.js";
-import SpacesCursorsSubscribe from "../../../../src/commands/spaces/cursors/subscribe.js";
 
 // Base testable class for spaces commands
 class TestableSpacesCommand {
@@ -62,99 +55,219 @@ class TestableSpacesCommand {
 class TestableSpacesMembersEnter extends SpacesMembersEnter {
   private testableCommand = new TestableSpacesCommand();
 
-  public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
-  public override async parse() { return this.testableCommand.parse(); }
-  protected override async setupSpacesClient(flags: any, spaceName: string) { return this.testableCommand.setupSpacesClient(flags, spaceName); }
-  protected override createSpacesClient(realtimeClient: any) { return this.testableCommand.createSpacesClient(realtimeClient); }
-  protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
-  protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
+  public setParseResult(result: any) {
+    this.testableCommand.setParseResult(result);
+  }
+  public override async parse() {
+    return this.testableCommand.parse();
+  }
+  protected override async setupSpacesClient(flags: any, spaceName: string) {
+    return this.testableCommand.setupSpacesClient(flags, spaceName);
+  }
+  protected override createSpacesClient(realtimeClient: any) {
+    return this.testableCommand.createSpacesClient(realtimeClient);
+  }
+  protected override async createAblyRealtimeClient(flags: any) {
+    return this.testableCommand.createAblyRealtimeClient(flags);
+  }
+  protected override async ensureAppAndKey(flags: any) {
+    return this.testableCommand.ensureAppAndKey(flags);
+  }
   protected override interactiveHelper = this.testableCommand.interactiveHelper;
 
-  get mockRealtimeClient() { return this.testableCommand.mockRealtimeClient; }
-  set mockRealtimeClient(value) { this.testableCommand.mockRealtimeClient = value; }
-  get mockSpacesClient() { return this.testableCommand.mockSpacesClient; }
-  set mockSpacesClient(value) { this.testableCommand.mockSpacesClient = value; }
-  get mockSpace() { return this.testableCommand.mockSpace; }
-  set mockSpace(value) { this.testableCommand.mockSpace = value; }
+  get mockRealtimeClient() {
+    return this.testableCommand.mockRealtimeClient;
+  }
+  set mockRealtimeClient(value) {
+    this.testableCommand.mockRealtimeClient = value;
+  }
+  get mockSpacesClient() {
+    return this.testableCommand.mockSpacesClient;
+  }
+  set mockSpacesClient(value) {
+    this.testableCommand.mockSpacesClient = value;
+  }
+  get mockSpace() {
+    return this.testableCommand.mockSpace;
+  }
+  set mockSpace(value) {
+    this.testableCommand.mockSpace = value;
+  }
 }
 
 class TestableSpacesMembersSubscribe extends SpacesMembersSubscribe {
   private testableCommand = new TestableSpacesCommand();
 
-  public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
-  public override async parse() { return this.testableCommand.parse(); }
-  protected override async setupSpacesClient(flags: any, spaceName: string) { return this.testableCommand.setupSpacesClient(flags, spaceName); }
-  protected override createSpacesClient(realtimeClient: any) { return this.testableCommand.createSpacesClient(realtimeClient); }
-  protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
-  protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
+  public setParseResult(result: any) {
+    this.testableCommand.setParseResult(result);
+  }
+  public override async parse() {
+    return this.testableCommand.parse();
+  }
+  protected override async setupSpacesClient(flags: any, spaceName: string) {
+    return this.testableCommand.setupSpacesClient(flags, spaceName);
+  }
+  protected override createSpacesClient(realtimeClient: any) {
+    return this.testableCommand.createSpacesClient(realtimeClient);
+  }
+  protected override async createAblyRealtimeClient(flags: any) {
+    return this.testableCommand.createAblyRealtimeClient(flags);
+  }
+  protected override async ensureAppAndKey(flags: any) {
+    return this.testableCommand.ensureAppAndKey(flags);
+  }
   protected override interactiveHelper = this.testableCommand.interactiveHelper;
 
-  get mockRealtimeClient() { return this.testableCommand.mockRealtimeClient; }
-  set mockRealtimeClient(value) { this.testableCommand.mockRealtimeClient = value; }
-  get mockSpacesClient() { return this.testableCommand.mockSpacesClient; }
-  set mockSpacesClient(value) { this.testableCommand.mockSpacesClient = value; }
-  get mockSpace() { return this.testableCommand.mockSpace; }
-  set mockSpace(value) { this.testableCommand.mockSpace = value; }
+  get mockRealtimeClient() {
+    return this.testableCommand.mockRealtimeClient;
+  }
+  set mockRealtimeClient(value) {
+    this.testableCommand.mockRealtimeClient = value;
+  }
+  get mockSpacesClient() {
+    return this.testableCommand.mockSpacesClient;
+  }
+  set mockSpacesClient(value) {
+    this.testableCommand.mockSpacesClient = value;
+  }
+  get mockSpace() {
+    return this.testableCommand.mockSpace;
+  }
+  set mockSpace(value) {
+    this.testableCommand.mockSpace = value;
+  }
 }
 
 // Testable subclasses for locations commands
 class TestableSpacesLocationsSet extends SpacesLocationsSet {
   private testableCommand = new TestableSpacesCommand();
 
-  public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
-  public override async parse() { return this.testableCommand.parse(); }
-  protected override async setupSpacesClient(flags: any, spaceName: string) { return this.testableCommand.setupSpacesClient(flags, spaceName); }
-  protected override createSpacesClient(realtimeClient: any) { return this.testableCommand.createSpacesClient(realtimeClient); }
-  protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
-  protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
+  public setParseResult(result: any) {
+    this.testableCommand.setParseResult(result);
+  }
+  public override async parse() {
+    return this.testableCommand.parse();
+  }
+  protected override async setupSpacesClient(flags: any, spaceName: string) {
+    return this.testableCommand.setupSpacesClient(flags, spaceName);
+  }
+  protected override createSpacesClient(realtimeClient: any) {
+    return this.testableCommand.createSpacesClient(realtimeClient);
+  }
+  protected override async createAblyRealtimeClient(flags: any) {
+    return this.testableCommand.createAblyRealtimeClient(flags);
+  }
+  protected override async ensureAppAndKey(flags: any) {
+    return this.testableCommand.ensureAppAndKey(flags);
+  }
   protected override interactiveHelper = this.testableCommand.interactiveHelper;
 
-  get mockRealtimeClient() { return this.testableCommand.mockRealtimeClient; }
-  set mockRealtimeClient(value) { this.testableCommand.mockRealtimeClient = value; }
-  get mockSpacesClient() { return this.testableCommand.mockSpacesClient; }
-  set mockSpacesClient(value) { this.testableCommand.mockSpacesClient = value; }
-  get mockSpace() { return this.testableCommand.mockSpace; }
-  set mockSpace(value) { this.testableCommand.mockSpace = value; }
+  get mockRealtimeClient() {
+    return this.testableCommand.mockRealtimeClient;
+  }
+  set mockRealtimeClient(value) {
+    this.testableCommand.mockRealtimeClient = value;
+  }
+  get mockSpacesClient() {
+    return this.testableCommand.mockSpacesClient;
+  }
+  set mockSpacesClient(value) {
+    this.testableCommand.mockSpacesClient = value;
+  }
+  get mockSpace() {
+    return this.testableCommand.mockSpace;
+  }
+  set mockSpace(value) {
+    this.testableCommand.mockSpace = value;
+  }
 }
 
 // Testable subclasses for locks commands
 class TestableSpacesLocksAcquire extends SpacesLocksAcquire {
   private testableCommand = new TestableSpacesCommand();
 
-  public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
-  public override async parse() { return this.testableCommand.parse(); }
-  protected override async setupSpacesClient(flags: any, spaceName: string) { return this.testableCommand.setupSpacesClient(flags, spaceName); }
-  protected override createSpacesClient(realtimeClient: any) { return this.testableCommand.createSpacesClient(realtimeClient); }
-  protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
-  protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
+  public setParseResult(result: any) {
+    this.testableCommand.setParseResult(result);
+  }
+  public override async parse() {
+    return this.testableCommand.parse();
+  }
+  protected override async setupSpacesClient(flags: any, spaceName: string) {
+    return this.testableCommand.setupSpacesClient(flags, spaceName);
+  }
+  protected override createSpacesClient(realtimeClient: any) {
+    return this.testableCommand.createSpacesClient(realtimeClient);
+  }
+  protected override async createAblyRealtimeClient(flags: any) {
+    return this.testableCommand.createAblyRealtimeClient(flags);
+  }
+  protected override async ensureAppAndKey(flags: any) {
+    return this.testableCommand.ensureAppAndKey(flags);
+  }
   protected override interactiveHelper = this.testableCommand.interactiveHelper;
 
-  get mockRealtimeClient() { return this.testableCommand.mockRealtimeClient; }
-  set mockRealtimeClient(value) { this.testableCommand.mockRealtimeClient = value; }
-  get mockSpacesClient() { return this.testableCommand.mockSpacesClient; }
-  set mockSpacesClient(value) { this.testableCommand.mockSpacesClient = value; }
-  get mockSpace() { return this.testableCommand.mockSpace; }
-  set mockSpace(value) { this.testableCommand.mockSpace = value; }
+  get mockRealtimeClient() {
+    return this.testableCommand.mockRealtimeClient;
+  }
+  set mockRealtimeClient(value) {
+    this.testableCommand.mockRealtimeClient = value;
+  }
+  get mockSpacesClient() {
+    return this.testableCommand.mockSpacesClient;
+  }
+  set mockSpacesClient(value) {
+    this.testableCommand.mockSpacesClient = value;
+  }
+  get mockSpace() {
+    return this.testableCommand.mockSpace;
+  }
+  set mockSpace(value) {
+    this.testableCommand.mockSpace = value;
+  }
 }
 
-// Testable subclasses for cursors commands  
+// Testable subclasses for cursors commands
 class TestableSpacesCursorsSet extends SpacesCursorsSet {
   private testableCommand = new TestableSpacesCommand();
 
-  public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
-  public override async parse() { return this.testableCommand.parse(); }
-  protected override async setupSpacesClient(flags: any, spaceName: string) { return this.testableCommand.setupSpacesClient(flags, spaceName); }
-  protected override createSpacesClient(realtimeClient: any) { return this.testableCommand.createSpacesClient(realtimeClient); }
-  protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
-  protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
+  public setParseResult(result: any) {
+    this.testableCommand.setParseResult(result);
+  }
+  public override async parse() {
+    return this.testableCommand.parse();
+  }
+  protected override async setupSpacesClient(flags: any, spaceName: string) {
+    return this.testableCommand.setupSpacesClient(flags, spaceName);
+  }
+  protected override createSpacesClient(realtimeClient: any) {
+    return this.testableCommand.createSpacesClient(realtimeClient);
+  }
+  protected override async createAblyRealtimeClient(flags: any) {
+    return this.testableCommand.createAblyRealtimeClient(flags);
+  }
+  protected override async ensureAppAndKey(flags: any) {
+    return this.testableCommand.ensureAppAndKey(flags);
+  }
   protected override interactiveHelper = this.testableCommand.interactiveHelper;
 
-  get mockRealtimeClient() { return this.testableCommand.mockRealtimeClient; }
-  set mockRealtimeClient(value) { this.testableCommand.mockRealtimeClient = value; }
-  get mockSpacesClient() { return this.testableCommand.mockSpacesClient; }
-  set mockSpacesClient(value) { this.testableCommand.mockSpacesClient = value; }
-  get mockSpace() { return this.testableCommand.mockSpace; }
-  set mockSpace(value) { this.testableCommand.mockSpace = value; }
+  get mockRealtimeClient() {
+    return this.testableCommand.mockRealtimeClient;
+  }
+  set mockRealtimeClient(value) {
+    this.testableCommand.mockRealtimeClient = value;
+  }
+  get mockSpacesClient() {
+    return this.testableCommand.mockSpacesClient;
+  }
+  set mockSpacesClient(value) {
+    this.testableCommand.mockSpacesClient = value;
+  }
+  get mockSpace() {
+    return this.testableCommand.mockSpace;
+  }
+  set mockSpace(value) {
+    this.testableCommand.mockSpace = value;
+  }
 }
 
 describe("spaces commands", function () {
@@ -178,7 +291,7 @@ describe("spaces commands", function () {
 
     beforeEach(function () {
       command = new TestableSpacesMembersEnter([], mockConfig);
-      
+
       enterStub = sandbox.stub().resolves();
       subscribeStub = sandbox.stub();
       mockMembers = {
@@ -228,13 +341,13 @@ describe("spaces commands", function () {
       });
 
       // Since members enter runs indefinitely, we'll test the setup
-      const runPromise = command.run();
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
+      command.run();
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       expect(enterStub.calledOnce).to.be.true;
       expect(subscribeStub.calledWith("update")).to.be.true;
-      
+
       command.mockRealtimeClient.close();
     });
 
@@ -248,14 +361,14 @@ describe("spaces commands", function () {
 
       subscribeStub.resolves();
 
-      const runPromise = command.run();
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
+      command.run();
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       expect(enterStub.calledOnce).to.be.true;
       const profileData = enterStub.getCall(0).args[0];
       expect(profileData).to.deep.equal({ name: "Test User", role: "admin" });
-      
+
       command.mockRealtimeClient.close();
     });
   });
@@ -267,19 +380,19 @@ describe("spaces commands", function () {
 
     beforeEach(function () {
       command = new TestableSpacesMembersSubscribe([], mockConfig);
-      
+
       subscribeStub = sandbox.stub();
       mockMembers = {
         subscribe: subscribeStub,
         unsubscribe: sandbox.stub().resolves(),
         getAll: sandbox.stub().resolves([
           {
-            clientId: 'abc',
-            connectionId: 'def',
+            clientId: "abc",
+            connectionId: "def",
             isConnected: true,
-            profileData: {}
-          }
-        ])
+            profileData: {},
+          },
+        ]),
       };
 
       command.mockSpace = {
@@ -295,8 +408,8 @@ describe("spaces commands", function () {
         },
         close: sandbox.stub(),
         auth: {
-          clientId: 'foo'
-        }
+          clientId: "foo",
+        },
       };
 
       command.mockSpacesClient = {};
@@ -323,12 +436,12 @@ describe("spaces commands", function () {
         return Promise.resolve();
       });
 
-      const runPromise = command.run();
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
+      command.run();
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       expect(subscribeStub.calledOnce).to.be.true;
-      
+
       command.mockRealtimeClient.close();
     });
   });
@@ -340,11 +453,11 @@ describe("spaces commands", function () {
 
     beforeEach(function () {
       command = new TestableSpacesLocationsSet([], mockConfig);
-      
+
       setStub = sandbox.stub().resolves();
       mockLocations = {
         set: setStub,
-        subscribe: sandbox.stub()
+        subscribe: sandbox.stub(),
       };
 
       command.mockSpace = {
@@ -382,8 +495,8 @@ describe("spaces commands", function () {
       });
 
       command.run();
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       expect(setStub.calledOnce).to.be.true;
       const locationData = setStub.getCall(0).args[0];
@@ -398,7 +511,7 @@ describe("spaces commands", function () {
 
     beforeEach(function () {
       command = new TestableSpacesLocksAcquire([], mockConfig);
-      
+
       acquireStub = sandbox.stub().resolves({
         id: "test-lock",
         member: { clientId: "test-client" },
@@ -420,8 +533,8 @@ describe("spaces commands", function () {
         },
         close: sandbox.stub(),
         auth: {
-          clientId: 'foo'
-        }
+          clientId: "foo",
+        },
       };
 
       command.mockSpacesClient = {};
@@ -436,8 +549,8 @@ describe("spaces commands", function () {
 
     it("should acquire a lock successfully", async function () {
       command.run();
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       expect(acquireStub.calledOnce).to.be.true;
       expect(acquireStub.calledWith("test-lock")).to.be.true;
@@ -452,15 +565,18 @@ describe("spaces commands", function () {
       });
 
       command.run();
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       expect(acquireStub.calledOnce).to.be.true;
       const lockCall = acquireStub.getCall(0);
       expect(lockCall.args[0]).to.equal("test-lock");
       // Attributes would typically be passed as second argument
       if (lockCall.args[1]) {
-        expect(lockCall.args[1]).to.deep.include({ priority: "high", timeout: 5000 });
+        expect(lockCall.args[1]).to.deep.include({
+          priority: "high",
+          timeout: 5000,
+        });
       }
     });
   });
@@ -472,7 +588,7 @@ describe("spaces commands", function () {
 
     beforeEach(function () {
       command = new TestableSpacesCursorsSet([], mockConfig);
-      
+
       setStub = sandbox.stub().resolves();
       mockCursors = {
         set: setStub,
@@ -480,7 +596,7 @@ describe("spaces commands", function () {
 
       command.mockSpace = {
         cursors: mockCursors,
-        enter: sandbox.stub().resolves()
+        enter: sandbox.stub().resolves(),
       };
 
       command.mockRealtimeClient = {
@@ -490,7 +606,7 @@ describe("spaces commands", function () {
         },
         close: sandbox.stub(),
         auth: {
-          clientId: 'foo'
+          clientId: "foo",
         },
       };
 
@@ -513,9 +629,8 @@ describe("spaces commands", function () {
       });
 
       command.run();
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
 
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       expect(setStub.calledOnce).to.be.true;
       const cursorData = setStub.getCall(0).args[0];
@@ -533,12 +648,15 @@ describe("spaces commands", function () {
       });
 
       command.run();
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       expect(setStub.calledOnce).to.be.true;
       const cursorCall = setStub.getCall(0);
-      expect(cursorCall.args[0]).to.deep.equal({ position: { x: 150, y: 250 }, data: { color: "red", size: "large" } });
+      expect(cursorCall.args[0]).to.deep.equal({
+        position: { x: 150, y: 250 },
+        data: { color: "red", size: "large" },
+      });
     });
   });
 });

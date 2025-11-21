@@ -20,11 +20,15 @@ class TestableBenchPublisher extends BenchPublisher {
     return this._parseResult;
   }
 
-  protected override async createAblyRealtimeClient(_flags: any): Promise<Ably.Realtime | null> {
+  protected override async createAblyRealtimeClient(
+    _flags: any,
+  ): Promise<Ably.Realtime | null> {
     return this.mockRealtimeClient as unknown as Ably.Realtime;
   }
 
-  protected override async createAblyRestClient(_flags: any): Promise<Ably.Rest | null> {
+  protected override async createAblyRestClient(
+    _flags: any,
+  ): Promise<Ably.Rest | null> {
     return this.mockRestClient as unknown as Ably.Rest;
   }
 
@@ -51,17 +55,27 @@ class TestableBenchPublisher extends BenchPublisher {
 
   public testGenerateRandomData(size: number) {
     // Implement random data generation directly in test since method doesn't exist in source
-    const baseContent = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    return baseContent.repeat(Math.ceil(size / baseContent.length)).slice(0, size);
+    const baseContent =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    return baseContent
+      .repeat(Math.ceil(size / baseContent.length))
+      .slice(0, size);
   }
 
-  public testCalculateMetrics(startTime: number, endTime: number, messageCount: number, errorCount: number) {
+  public testCalculateMetrics(
+    startTime: number,
+    endTime: number,
+    messageCount: number,
+    errorCount: number,
+  ) {
     // Implement metrics calculation directly since calculateMetrics doesn't exist in source
     const durationMs = endTime - startTime;
     const successfulMessages = messageCount - errorCount;
     const failedMessages = errorCount;
-    const messagesPerSecond = durationMs > 0 ? messageCount / (durationMs / 1000) : Infinity;
-    const successRate = messageCount > 0 ? successfulMessages / messageCount : 1;
+    const messagesPerSecond =
+      durationMs > 0 ? messageCount / (durationMs / 1000) : Infinity;
+    const successRate =
+      messageCount > 0 ? successfulMessages / messageCount : 1;
 
     return {
       totalMessages: messageCount,
@@ -87,7 +101,9 @@ class TestableBenchSubscriber extends BenchSubscriber {
     return this._parseResult;
   }
 
-  protected override async createAblyRealtimeClient(_flags: any): Promise<Ably.Realtime | null> {
+  protected override async createAblyRealtimeClient(
+    _flags: any,
+  ): Promise<Ably.Realtime | null> {
     return this.mockRealtimeClient as unknown as Ably.Realtime;
   }
 
@@ -131,7 +147,7 @@ describe("benchmarking commands", function () {
 
     beforeEach(function () {
       command = new TestableBenchPublisher([], mockConfig);
-      
+
       publishStub = sandbox.stub().resolves();
       mockChannel = {
         publish: publishStub,
@@ -181,7 +197,7 @@ describe("benchmarking commands", function () {
 
     it("should generate random data of specified size", function () {
       const data = command.testGenerateRandomData(100);
-      
+
       expect(typeof data).to.equal("string");
       expect(data.length).to.equal(100);
     });
@@ -192,7 +208,12 @@ describe("benchmarking commands", function () {
       const messageCount = 100;
       const errorCount = 5;
 
-      const metrics = command.testCalculateMetrics(startTime, endTime, messageCount, errorCount);
+      const metrics = command.testCalculateMetrics(
+        startTime,
+        endTime,
+        messageCount,
+        errorCount,
+      );
 
       expect(metrics).to.deep.include({
         totalMessages: messageCount,
@@ -243,7 +264,9 @@ describe("benchmarking commands", function () {
         await command.run();
       } catch (error) {
         errorThrown = true;
-        expect(error instanceof Error ? error.message : String(error)).to.include("Benchmark failed: Publish failed");
+        expect(
+          error instanceof Error ? error.message : String(error),
+        ).to.include("Benchmark failed: Publish failed");
       }
       expect(errorThrown).to.be.true;
 
@@ -253,9 +276,9 @@ describe("benchmarking commands", function () {
     it("should wait for subscribers when flag is set", async function () {
       const presenceGetStub = mockChannel.presence.get;
       // Mock subscriber with correct data structure that the code expects
-      const mockSubscriber = { 
+      const mockSubscriber = {
         clientId: "subscriber1",
-        data: { role: "subscriber" }
+        data: { role: "subscriber" },
       };
       presenceGetStub.resolves([mockSubscriber]); // Subscriber already present
 
@@ -307,7 +330,7 @@ describe("benchmarking commands", function () {
 
     beforeEach(function () {
       command = new TestableBenchSubscriber([], mockConfig);
-      
+
       subscribeStub = sandbox.stub();
       mockChannel = {
         subscribe: subscribeStub,
@@ -351,12 +374,12 @@ describe("benchmarking commands", function () {
 
       // Since subscribe runs indefinitely, we'll test the setup
       const _runPromise = command.run(); // Prefix with underscore for intentionally unused
-      
-      await new Promise(resolve => setTimeout(resolve, 20)); // Reduced from 50ms
-      
+
+      await new Promise((resolve) => setTimeout(resolve, 20)); // Reduced from 50ms
+
       expect(subscribeStub.calledOnce).to.be.true;
       expect(mockChannel.presence.enter.calledOnce).to.be.true;
-      
+
       command.mockRealtimeClient.close();
     });
 
@@ -364,11 +387,11 @@ describe("benchmarking commands", function () {
       subscribeStub.resolves();
 
       const _runPromise = command.run(); // Prefix with underscore for intentionally unused
-      
-      await new Promise(resolve => setTimeout(resolve, 20)); // Reduced from 50ms
-      
+
+      await new Promise((resolve) => setTimeout(resolve, 20)); // Reduced from 50ms
+
       expect(mockChannel.presence.enter.calledOnce).to.be.true;
-      
+
       command.mockRealtimeClient.close();
     });
 
@@ -388,7 +411,7 @@ describe("benchmarking commands", function () {
 
     it("should process incoming messages and calculate stats", async function () {
       const _receivedMessages: any[] = []; // Prefix with underscore for intentionally unused
-      
+
       subscribeStub.callsFake((callback) => {
         // Simulate multiple messages over time
         for (let i = 0; i < 5; i++) {
@@ -406,11 +429,11 @@ describe("benchmarking commands", function () {
       });
 
       const _runPromise = command.run(); // Prefix with underscore for intentionally unused
-      
-      await new Promise(resolve => setTimeout(resolve, 50)); // Reduced from 100ms
-      
+
+      await new Promise((resolve) => setTimeout(resolve, 50)); // Reduced from 100ms
+
       expect(subscribeStub.calledOnce).to.be.true;
-      
+
       command.mockRealtimeClient.close();
     });
   });
@@ -428,7 +451,12 @@ describe("benchmarking commands", function () {
       const messageCount = 200;
       const errorCount = 10;
 
-      const metrics = command.testCalculateMetrics(startTime, endTime, messageCount, errorCount);
+      const metrics = command.testCalculateMetrics(
+        startTime,
+        endTime,
+        messageCount,
+        errorCount,
+      );
 
       expect(metrics.totalMessages).to.equal(200);
       expect(metrics.successfulMessages).to.equal(190);
@@ -444,7 +472,12 @@ describe("benchmarking commands", function () {
       const messageCount = 100;
       const errorCount = 0;
 
-      const metrics = command.testCalculateMetrics(startTime, endTime, messageCount, errorCount);
+      const metrics = command.testCalculateMetrics(
+        startTime,
+        endTime,
+        messageCount,
+        errorCount,
+      );
 
       expect(metrics.durationMs).to.equal(0);
       expect(metrics.messagesPerSecond).to.equal(Infinity); // Division by zero
@@ -457,7 +490,12 @@ describe("benchmarking commands", function () {
       const messageCount = 50;
       const errorCount = 50; // All messages failed
 
-      const metrics = command.testCalculateMetrics(startTime, endTime, messageCount, errorCount);
+      const metrics = command.testCalculateMetrics(
+        startTime,
+        endTime,
+        messageCount,
+        errorCount,
+      );
 
       expect(metrics.successfulMessages).to.equal(0);
       expect(metrics.failedMessages).to.equal(50);
@@ -470,7 +508,12 @@ describe("benchmarking commands", function () {
       const messageCount = 10;
       const errorCount = 1;
 
-      const metrics = command.testCalculateMetrics(startTime, endTime, messageCount, errorCount);
+      const metrics = command.testCalculateMetrics(
+        startTime,
+        endTime,
+        messageCount,
+        errorCount,
+      );
 
       expect(metrics.durationMs).to.equal(100);
       expect(metrics.messagesPerSecond).to.equal(100); // 10 messages in 0.1 seconds = 100/sec

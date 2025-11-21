@@ -308,7 +308,7 @@ describe("rooms messages commands", function () {
       });
 
       // Since subscribe runs indefinitely, we'll test the setup
-      const runPromise = command.run();
+      command.run();
 
       // Give it a moment to set up
       await new Promise((resolve) => setTimeout(resolve, 50));

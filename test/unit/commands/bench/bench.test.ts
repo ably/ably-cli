@@ -112,4 +112,4 @@ describe("bench publisher control envelopes", function () {
     const lastPayload = publishedPayloads.at(-1);
     expect(lastPayload).to.have.property("type", "end");
   });
-}); 
+});
