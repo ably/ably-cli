@@ -5,8 +5,8 @@ import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class QueuesDeleteCommand extends ControlBaseCommand {
   static args = {
-    queueName: Args.string({
-      description: "Name of the queue to delete",
+    queueId: Args.string({
+      description: "ID of the queue to delete",
       required: true,
     }),
   };
@@ -14,9 +14,9 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
   static description = "Delete a queue";
 
   static examples = [
-    "$ ably queues delete my-queue",
-    '$ ably queues delete my-queue --app "My App"',
-    "$ ably queues delete my-queue --force",
+    "$ ably queues delete appAbc:us-east-1-a:foo",
+    '$ ably queues delete appAbc:us-east-1-a:foo --app "My App"',
+    "$ ably queues delete appAbc:us-east-1-a:foo --force",
   ];
 
   static flags = {
@@ -49,12 +49,12 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
         return;
       }
 
-      // Get all queues and find the one we want to delete
+      // Get all queues and find the one we want to delete by ID
       const queues = await controlApi.listQueues(appId);
-      const queue = queues.find((q) => q.name === args.queueName);
+      const queue = queues.find((q) => q.id === args.queueId);
 
       if (!queue) {
-        this.error(`Queue "${args.queueName}" not found`);
+        this.error(`Queue with ID "${args.queueId}" not found`);
         return;
       }
 
@@ -81,7 +81,7 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
 
       await controlApi.deleteQueue(appId, queue.id);
 
-      this.log(`Queue "${args.queueName}" deleted successfully`);
+      this.log(`Queue "${queue.name}" (ID: ${queue.id}) deleted successfully`);
     } catch (error) {
       this.error(
         `Error deleting queue: ${error instanceof Error ? error.message : String(error)}`,
