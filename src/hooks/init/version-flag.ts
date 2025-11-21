@@ -7,6 +7,21 @@ import {
 } from "../../utils/version.js";
 
 /**
+ * Helper function to handle exit or throw based on interactive mode
+ */
+function handleVersionExit(): void {
+  if (process.env.ABLY_INTERACTIVE_MODE === "true") {
+    // Throw a special error that the interactive command knows to ignore
+    const error = new Error("Version displayed");
+    (error as Error & { code?: string; exitCode?: number }).code = "EEXIT";
+    (error as Error & { code?: string; exitCode?: number }).exitCode = 0;
+    throw error;
+  } else {
+    process.exit(0);
+  }
+}
+
+/**
  * Hook to intercept the --version flag and support JSON output
  */
 const hook: Hook<"init"> = async function (opts) {
@@ -33,31 +48,12 @@ const hook: Hook<"init"> = async function (opts) {
     if (hasJsonFlag || hasPrettyJsonFlag) {
       const jsonOutput = formatVersionJson(versionInfo, hasPrettyJsonFlag);
       console.log(jsonOutput);
-
-      // In interactive mode, don't exit
-      if (process.env.ABLY_INTERACTIVE_MODE === "true") {
-        // Throw a special error that the interactive command knows to ignore
-        const error = new Error("Version displayed");
-        (error as Error & { code?: string; exitCode?: number }).code = "EEXIT";
-        (error as Error & { code?: string; exitCode?: number }).exitCode = 0;
-        throw error;
-      } else {
-        process.exit(0);
-      }
+      handleVersionExit();
     } else {
       // Non-JSON output: show standard version string and release status
       console.log(formatVersionString(config));
       console.log(formatReleaseStatus(config.version, true));
-
-      // In interactive mode, don't exit
-      if (process.env.ABLY_INTERACTIVE_MODE === "true") {
-        const error = new Error("Version displayed");
-        (error as Error & { code?: string; exitCode?: number }).code = "EEXIT";
-        (error as Error & { code?: string; exitCode?: number }).exitCode = 0;
-        throw error;
-      } else {
-        process.exit(0);
-      }
+      handleVersionExit();
     }
   }
 };

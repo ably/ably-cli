@@ -3,6 +3,7 @@ import {
   getVersionInfo,
   formatVersionString,
   formatVersionJson,
+  formatReleaseStatus,
 } from "../utils/version.js";
 
 export default class Version extends AblyBaseCommand {
@@ -30,8 +31,9 @@ export default class Version extends AblyBaseCommand {
     if (this.shouldOutputJson(flags)) {
       this.log(formatVersionJson(versionInfo, Boolean(flags["pretty-json"])));
     } else {
-      // Use shared string formatting
+      // Use shared string formatting and display release status
       this.log(formatVersionString(this.config));
+      this.log(formatReleaseStatus(this.config.version, true));
     }
   }
 }
