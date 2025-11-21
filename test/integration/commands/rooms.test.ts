@@ -11,7 +11,7 @@ const mockMessages = [
     metadata: { isImportant: true },
   },
   {
-    text: "How is everyone?", 
+    text: "How is everyone?",
     clientId: "other-client",
     timestamp: new Date(Date.now() - 5000),
     metadata: { thread: "general" },
@@ -41,7 +41,7 @@ const createMockRoom = (room: string) => ({
   id: room,
   attach: async () => {},
   detach: async () => {},
-  
+
   // Messages functionality
   messages: {
     send: async (message: any) => {
@@ -68,12 +68,12 @@ const createMockRoom = (room: string) => ({
     get: async (options?: any) => {
       const limit = options?.limit || 50;
       const direction = options?.direction || "backwards";
-      
+
       let messages = [...mockMessages];
       if (direction === "backwards") {
         messages.reverse();
       }
-      
+
       return {
         items: messages.slice(0, limit),
         hasNext: () => false,
@@ -81,7 +81,7 @@ const createMockRoom = (room: string) => ({
       };
     },
   },
-  
+
   // Presence functionality
   presence: {
     enter: async (data?: any) => {
@@ -105,11 +105,11 @@ const createMockRoom = (room: string) => ({
     },
     unsubscribe: async () => {},
   },
-  
+
   // Reactions functionality
   reactions: {
-    send: async (emoji: string, metadata?: any) => {
-      const existingReaction = mockReactions.find(r => r.emoji === emoji);
+    send: async (emoji: string, _?: any) => {
+      const existingReaction = mockReactions.find((r) => r.emoji === emoji);
       if (existingReaction) {
         existingReaction.count++;
         existingReaction.clientIds.push("test-client");
@@ -134,7 +134,7 @@ const createMockRoom = (room: string) => ({
     },
     unsubscribe: async () => {},
   },
-  
+
   // Typing functionality
   typing: {
     start: async () => {},
@@ -151,7 +151,7 @@ const createMockRoom = (room: string) => ({
     },
     unsubscribe: async () => {},
   },
-  
+
   // Occupancy functionality
   occupancy: {
     get: async () => ({ ...mockOccupancy }),
@@ -171,14 +171,14 @@ const createMockRoom = (room: string) => ({
 const mockChatClient = {
   rooms: {
     get: (room: string) => createMockRoom(room),
-    release: async (room: string) => {},
+    release: async (_: string) => {},
   },
 };
 
 const mockRealtimeClient = {
   connection: {
     once: (event: string, callback: () => void) => {
-      if (event === 'connected') {
+      if (event === "connected") {
         setTimeout(callback, 0);
       }
     },
@@ -198,187 +198,238 @@ const mockRealtimeClient = {
 
 let originalEnv: NodeJS.ProcessEnv;
 
-describe('Rooms integration tests', function() {
+describe("Rooms integration tests", function () {
   this.timeout(10000); // Increase timeout for integration tests
-  
-  beforeEach(function() {
+
+  beforeEach(function () {
     // Store original env vars
     originalEnv = { ...process.env };
 
     // Set environment variables for this test file
-    process.env.ABLY_CLI_TEST_MODE = 'true';
-    process.env.ABLY_API_KEY = 'test.key:secret';
+    process.env.ABLY_CLI_TEST_MODE = "true";
+    process.env.ABLY_API_KEY = "test.key:secret";
 
     // Register the chat and realtime mocks using the test-utils system
-    registerMock('ablyChatMock', mockChatClient);
-    registerMock('ablyRealtimeMock', mockRealtimeClient);
+    registerMock("ablyChatMock", mockChatClient);
+    registerMock("ablyRealtimeMock", mockRealtimeClient);
   });
 
-  afterEach(function() {
+  afterEach(function () {
     // Restore original environment variables
     process.env = originalEnv;
   });
 
-  describe('Chat room lifecycle', function() {
-    const testRoom = 'integration-test-room';
-    
-    it('sends a message to a room', function() {
+  describe("Chat room lifecycle", function () {
+    const testRoom = "integration-test-room";
+
+    it("sends a message to a room", function () {
       return test
         .stdout()
-        .command(['rooms', 'messages', 'send', testRoom, 'Hello from integration test!'])
-        .it('successfully sends a message', ctx => {
-          expect(ctx.stdout).to.contain('Message sent successfully');
+        .command([
+          "rooms",
+          "messages",
+          "send",
+          testRoom,
+          "Hello from integration test!",
+        ])
+        .it("successfully sends a message", (ctx) => {
+          expect(ctx.stdout).to.contain("Message sent successfully");
         });
     });
 
-    it('sends multiple messages with metadata', function() {
+    it("sends multiple messages with metadata", function () {
       return test
         .stdout()
-        .command(['rooms', 'messages', 'send', testRoom, 'Message with metadata', '--metadata', '{"priority":"high"}', '--count', '3'])
-        .it('sends multiple messages with metadata', ctx => {
-          expect(ctx.stdout).to.contain('messages sent successfully');
+        .command([
+          "rooms",
+          "messages",
+          "send",
+          testRoom,
+          "Message with metadata",
+          "--metadata",
+          '{"priority":"high"}',
+          "--count",
+          "3",
+        ])
+        .it("sends multiple messages with metadata", (ctx) => {
+          expect(ctx.stdout).to.contain("messages sent successfully");
         });
     });
 
-    it('retrieves message history', function() {
+    it("retrieves message history", function () {
       return test
         .stdout()
-        .command(['rooms', 'messages', 'get', testRoom, '--limit', '10'])
-        .it('retrieves room message history', ctx => {
-          expect(ctx.stdout).to.contain('Hello room!');
-          expect(ctx.stdout).to.contain('How is everyone?');
+        .command(["rooms", "messages", "get", testRoom, "--limit", "10"])
+        .it("retrieves room message history", (ctx) => {
+          expect(ctx.stdout).to.contain("Hello room!");
+          expect(ctx.stdout).to.contain("How is everyone?");
         });
     });
 
-    it('enters room presence with data', function() {
+    it("enters room presence with data", function () {
       return test
         .stdout()
-        .command(['rooms', 'presence', 'enter', testRoom, '--data', '{"name":"Integration Tester","role":"tester"}'])
-        .it('enters presence successfully', ctx => {
+        .command([
+          "rooms",
+          "presence",
+          "enter",
+          testRoom,
+          "--data",
+          '{"name":"Integration Tester","role":"tester"}',
+        ])
+        .it("enters presence successfully", (ctx) => {
           // Since presence enter runs indefinitely, we check initial setup
-          expect(ctx.stdout).to.contain('Entered presence');
+          expect(ctx.stdout).to.contain("Entered presence");
         });
     });
 
-    it('gets room occupancy metrics', function() {
+    it("gets room occupancy metrics", function () {
       return test
         .stdout()
-        .command(['rooms', 'occupancy', 'get', testRoom])
-        .it('retrieves occupancy metrics', ctx => {
-          expect(ctx.stdout).to.contain('Connections:');
-          expect(ctx.stdout).to.contain('Publishers:');
-          expect(ctx.stdout).to.contain('Subscribers:');
+        .command(["rooms", "occupancy", "get", testRoom])
+        .it("retrieves occupancy metrics", (ctx) => {
+          expect(ctx.stdout).to.contain("Connections:");
+          expect(ctx.stdout).to.contain("Publishers:");
+          expect(ctx.stdout).to.contain("Subscribers:");
         });
     });
 
-    it('sends a reaction to a room', function() {
+    it("sends a reaction to a room", function () {
       return test
         .stdout()
-        .command(['rooms', 'reactions', 'send', testRoom, '🚀'])
-        .it('sends reaction successfully', ctx => {
-          expect(ctx.stdout).to.contain('Reaction sent successfully');
+        .command(["rooms", "reactions", "send", testRoom, "🚀"])
+        .it("sends reaction successfully", (ctx) => {
+          expect(ctx.stdout).to.contain("Reaction sent successfully");
         });
     });
 
-    it('starts typing indicator', function() {
+    it("starts typing indicator", function () {
       return test
         .stdout()
-        .command(['rooms', 'typing', 'keystroke', testRoom])
-        .it('starts typing indicator', ctx => {
-          expect(ctx.stdout).to.contain('Typing indicator started');
+        .command(["rooms", "typing", "keystroke", testRoom])
+        .it("starts typing indicator", (ctx) => {
+          expect(ctx.stdout).to.contain("Typing indicator started");
         });
     });
   });
 
-  describe('JSON output format', function() {
-    const testRoom = 'json-test-room';
+  describe("JSON output format", function () {
+    const testRoom = "json-test-room";
 
-    it('outputs message send result in JSON format', function() {
+    it("outputs message send result in JSON format", function () {
       return test
         .stdout()
-        .command(['rooms', 'messages', 'send', testRoom, 'JSON test message', '--json'])
-        .it('outputs JSON result', ctx => {
+        .command([
+          "rooms",
+          "messages",
+          "send",
+          testRoom,
+          "JSON test message",
+          "--json",
+        ])
+        .it("outputs JSON result", (ctx) => {
           const output = JSON.parse(ctx.stdout);
-          expect(output).to.have.property('success', true);
-          expect(output).to.have.property('room', testRoom);
+          expect(output).to.have.property("success", true);
+          expect(output).to.have.property("room", testRoom);
         });
     });
 
-    it('outputs message history in JSON format', function() {
+    it("outputs message history in JSON format", function () {
       return test
         .stdout()
-        .command(['rooms', 'messages', 'get', testRoom, '--json'])
-        .it('outputs JSON history', ctx => {
+        .command(["rooms", "messages", "get", testRoom, "--json"])
+        .it("outputs JSON history", (ctx) => {
           const output = JSON.parse(ctx.stdout);
-          expect(output).to.have.property('messages').that.is.an('array');
+          expect(output).to.have.property("messages").that.is.an("array");
         });
     });
 
-    it('outputs occupancy metrics in JSON format', function() {
+    it("outputs occupancy metrics in JSON format", function () {
       return test
         .stdout()
-        .command(['rooms', 'occupancy', 'get', testRoom, '--json'])
-        .it('outputs JSON occupancy', ctx => {
+        .command(["rooms", "occupancy", "get", testRoom, "--json"])
+        .it("outputs JSON occupancy", (ctx) => {
           const output = JSON.parse(ctx.stdout);
-          expect(output).to.have.property('connections');
-          expect(output).to.have.property('publishers');
-          expect(output).to.have.property('subscribers');
+          expect(output).to.have.property("connections");
+          expect(output).to.have.property("publishers");
+          expect(output).to.have.property("subscribers");
         });
     });
   });
 
-  describe('Error handling', function() {
-    it('handles invalid room ID gracefully', function() {
+  describe("Error handling", function () {
+    it("handles invalid room ID gracefully", function () {
       return test
         .stderr()
-        .command(['rooms', 'messages', 'send', '', 'test message'])
-        .catch(error => {
-          expect(error.message).to.include('Room ID is required');
+        .command(["rooms", "messages", "send", "", "test message"])
+        .catch((error) => {
+          expect(error.message).to.include("Room ID is required");
         })
-        .it('fails with empty room ID');
+        .it("fails with empty room ID");
     });
 
-    it('handles invalid metadata JSON', function() {
+    it("handles invalid metadata JSON", function () {
       return test
         .stderr()
-        .command(['rooms', 'messages', 'send', 'test-room', 'test message', '--metadata', 'invalid-json'])
-        .catch(error => {
-          expect(error.message).to.include('Invalid metadata JSON');
+        .command([
+          "rooms",
+          "messages",
+          "send",
+          "test-room",
+          "test message",
+          "--metadata",
+          "invalid-json",
+        ])
+        .catch((error) => {
+          expect(error.message).to.include("Invalid metadata JSON");
         })
-        .it('fails with invalid metadata');
+        .it("fails with invalid metadata");
     });
 
-    it('handles missing message text', function() {
+    it("handles missing message text", function () {
       return test
         .stderr()
-        .command(['rooms', 'messages', 'send', 'test-room'])
-        .catch(error => {
-          expect(error.message).to.include('Missing required argument');
+        .command(["rooms", "messages", "send", "test-room"])
+        .catch((error) => {
+          expect(error.message).to.include("Missing required argument");
         })
-        .it('fails with missing message text');
+        .it("fails with missing message text");
     });
   });
 
-  describe('Real-time message flow simulation', function() {
-    const testRoom = 'realtime-test-room';
+  describe("Real-time message flow simulation", function () {
+    const testRoom = "realtime-test-room";
 
-    it('simulates sending and then subscribing to messages', function() {
+    it("simulates sending and then subscribing to messages", function () {
       // This test simulates a real flow where we send a message and then subscribe
       return test
         .stdout()
-        .command(['rooms', 'messages', 'send', testRoom, 'Test message for subscription'])
-        .it('sends message for subscription test', ctx => {
-          expect(ctx.stdout).to.contain('Message sent successfully');
+        .command([
+          "rooms",
+          "messages",
+          "send",
+          testRoom,
+          "Test message for subscription",
+        ])
+        .it("sends message for subscription test", (ctx) => {
+          expect(ctx.stdout).to.contain("Message sent successfully");
         });
     });
 
-    it('simulates presence lifecycle', function() {
+    it("simulates presence lifecycle", function () {
       // Test presence enter followed by checking presence
       return test
         .stdout()
-        .command(['rooms', 'presence', 'enter', testRoom, '--data', '{"status":"testing"}'])
-        .it('enters presence for lifecycle test', ctx => {
-          expect(ctx.stdout).to.contain('Entered presence');
+        .command([
+          "rooms",
+          "presence",
+          "enter",
+          testRoom,
+          "--data",
+          '{"status":"testing"}',
+        ])
+        .it("enters presence for lifecycle test", (ctx) => {
+          expect(ctx.stdout).to.contain("Entered presence");
         });
     });
   });
