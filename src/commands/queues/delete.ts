@@ -79,7 +79,7 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
         }
       }
 
-      await controlApi.deleteQueue(appId, args.queueName);
+      await controlApi.deleteQueue(appId, queue.id);
 
       this.log(`Queue "${args.queueName}" deleted successfully`);
     } catch (error) {
