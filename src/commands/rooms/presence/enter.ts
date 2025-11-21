@@ -230,7 +230,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
         );
         if (flags["show-others"]) {
           this.log(
-            `\n${chalk.dim("Listening for presence events. Press Ctrl+C to exit.")}`,
+            `\n${chalk.dim("Listening for presence events until terminated. Press Ctrl+C to exit.")}`,
           );
         } else {
           this.log(`\n${chalk.dim("Staying present. Press Ctrl+C to exit.")}`);
