@@ -229,31 +229,6 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
         );
       }
 
-      // Get current presence members (only if show-others is enabled)
-      if (flags["show-others"]) {
-        const presenceMembers = await channel.presence.get();
-        this.logCliEvent(
-          flags,
-          "presence",
-          "membersRetrieved",
-          `Retrieved ${presenceMembers.length} presence members`,
-          { channel: channelName, count: presenceMembers.length },
-        );
-
-        if (!this.shouldOutputJson(flags)) {
-          if (presenceMembers.length > 0) {
-            this.log(`\nCurrent presence members (${presenceMembers.length}):`);
-            for (const member of presenceMembers) {
-              this.log(
-                `  ${chalk.blue(`Client: ${member.clientId || "N/A"}`)} ${member.data ? `| Data: ${JSON.stringify(member.data)}` : ""}`,
-              );
-            }
-          } else {
-            this.log("\nNo other users are present in this channel");
-          }
-        }
-      }
-
       if (!this.shouldOutputJson(flags)) {
         if (flags["show-others"]) {
           this.log(
