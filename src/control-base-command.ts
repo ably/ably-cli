@@ -74,11 +74,6 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
   protected async resolveAppIdFromNameOrId(
     appNameOrId: string,
   ): Promise<string> {
-    // If it looks like an app ID (UUID format), just return it
-    if (this.isValidAppId(appNameOrId)) {
-      return appNameOrId;
-    }
-
     // Otherwise, need to look it up by name
     const controlApi = this.createControlApi({});
 
