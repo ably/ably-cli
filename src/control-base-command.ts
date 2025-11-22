@@ -79,7 +79,9 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
 
     try {
       const apps = await controlApi.listApps();
-      const matchingApp = apps.find((app: App) => app.name === appNameOrId);
+      const matchingApp = apps.find(
+        (app: App) => app.name === appNameOrId || app.id === appNameOrId,
+      );
 
       if (matchingApp) {
         return matchingApp.id;
