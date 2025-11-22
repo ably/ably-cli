@@ -285,8 +285,8 @@ describe("rooms messages commands", function () {
 
       command.setParseResult({
         flags: {},
-        args: { room: "test-room" },
-        argv: [],
+        args: { rooms: "test-room" },
+        argv: ["test-room"],
         raw: [],
       });
     });
@@ -379,9 +379,9 @@ describe("rooms messages commands", function () {
       };
 
       command.setParseResult({
-        flags: { limit: 20 },
+        flags: { limit: 50, order: "newestFirst", "show-metadata": false },
         args: { room: "test-room" },
-        argv: [],
+        argv: ["test-room"],
         raw: [],
       });
     });
@@ -397,9 +397,9 @@ describe("rooms messages commands", function () {
 
     it("should handle query options for history", async function () {
       command.setParseResult({
-        flags: { limit: 50 },
+        flags: { limit: 50, order: "oldestFirst" },
         args: { room: "test-room" },
-        argv: [],
+        argv: ["test-room"],
         raw: [],
       });
 
@@ -407,7 +407,8 @@ describe("rooms messages commands", function () {
 
       expect(historyStub.calledOnce).to.be.true;
       const queryOptions = historyStub.getCall(0).args[0];
-      expect(queryOptions).to.deep.equal({ limit: 50 });
+      expect(queryOptions).to.include({ limit: 50 });
+      expect(queryOptions.orderBy).to.equal("oldestFirst");
     });
   });
 });

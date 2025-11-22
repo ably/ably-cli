@@ -53,15 +53,13 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
 
     if (!appId) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error:
-                'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error:
+              'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
+            success: false,
+          },
+          flags,
         );
       } else {
         this.error(
@@ -119,15 +117,13 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
 
       if (!confirmed) {
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                error: "Revocation cancelled by user",
-                keyName,
-                success: false,
-              },
-              flags,
-            ),
+          this.jsonError(
+            {
+              error: "Revocation cancelled by user",
+              keyName,
+              success: false,
+            },
+            flags,
           );
         } else {
           this.log("Revocation cancelled.");
@@ -170,16 +166,14 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              error: error instanceof Error ? error.message : String(error),
-              keyId,
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            appId,
+            error: error instanceof Error ? error.message : String(error),
+            keyId,
+            success: false,
+          },
+          flags,
         );
       } else {
         this.error(

@@ -236,11 +236,9 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         room: args.room,
       });
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { error: errorMsg, room: args.room, success: false },
-            flags,
-          ),
+        this.jsonError(
+          { error: errorMsg, room: args.room, success: false },
+          flags,
         );
       } else {
         this.error(`Error: ${errorMsg}`);
