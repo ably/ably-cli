@@ -48,14 +48,6 @@ pnpm test test/unit/commands/auth/**/*.test.ts
 
 The test runner includes built-in debugging support to help diagnose test failures, especially for E2E tests that interact with real services.
 
-### Debugging Flags
-
-| Flag | Description |
-|------|-------------|
-| `--debug` | Enable detailed test debugging output |
-| `--show-output` | Show CLI command output during tests |
-| `--verbose` | Enable both debug and show-output (full verbosity) |
-
 ### Environment Variables
 
 | Variable | Description |
@@ -68,53 +60,22 @@ The test runner includes built-in debugging support to help diagnose test failur
 
 ```bash
 # Debug E2E tests with verbose output
-pnpm test:e2e --debug
+E2E_DEBUG=true ABLY_CLI_TEST_SHOW_OUTPUT=true pnpm test:e2e
 
-# Debug specific failing tests with full verbosity
-pnpm test:e2e test/e2e/commands/rooms* --verbose
+# Debug specific failing tests
+E2E_DEBUG=true pnpm test:mocha 'test/e2e/rooms/*.test.ts'
 
-# Debug using environment variables
-E2E_DEBUG=true pnpm test:e2e
-
-# Debug specific test file with output capture
-pnpm test:e2e test/e2e/commands/spaces-e2e.test.ts --show-output
-
-# Debug all E2E command tests with full verbosity
-pnpm test:e2e:commands --verbose
+# Debug specific test file with grep filter
+pnpm test:mocha test/e2e/spaces/*.test.ts --grep "should handle presence"
 ```
 
 ### Debug Output Features
 
-When debugging is enabled, you'll see:
-- ✅ **Detailed timing information** for test execution phases
-- ✅ **Environment variable status** (API keys, debug flags)
-- ✅ **Command execution details** (patterns, arguments, runner type)
-- ✅ **Process cleanup information** (hanging processes detection)
-- ✅ **Enhanced error reporting** with exit codes and timing
-- ✅ **Pre/post test cleanup** to avoid process conflicts
-
-**Example debug output:**
-```bash
-=== TEST DEBUG MODE ENABLED ===
-Starting debug run at Wed Dec 18 10:30:45 PST 2024
-Environment variables:
-  E2E_DEBUG=true
-  TEST_DEBUG=true
-  NODE_OPTIONS=--trace-warnings --trace-deprecation
-  ABLY_CLI_TEST_SHOW_OUTPUT=true
-  E2E_ABLY_API_KEY is configured
-=================================
-
-=== Test Execution Details ===
-Test pattern: test/e2e/commands/rooms*
-Additional args: --timeout 30000
-Using Playwright: false
-Starting test execution at: Wed Dec 18 10:30:46 PST 2024
-==============================
-
-=== Running Mocha Tests ===
-Executing command: CURSOR_DISABLE_DEBUGGER=true NODE_OPTIONS="..." node --import '...' ./node_modules/mocha/bin/mocha --require ./test/setup.ts --forbid-only --allow-uncaught --exit --reporter spec 'test/e2e/commands/rooms*' --timeout 30000 --exclude 'test/e2e/web-cli/**/*.test.ts'
-```
+When debugging is enabled (`E2E_DEBUG=true` and/or `ABLY_CLI_TEST_SHOW_OUTPUT=true`), you'll see:
+- ✅ **Detailed console output** from the CLI commands being tested
+- ✅ **Ably SDK logs** showing connection and API interactions
+- ✅ **Process cleanup information** from the test setup
+- ✅ **Enhanced error reporting** with full stack traces
 
 ---
 

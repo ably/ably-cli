@@ -60,17 +60,69 @@ Our E2E tests follow these best practices:
 
 ## Running Tests
 
-Run all tests:
+### Quick Start
+
+Run all tests (unit, integration, and e2e):
 ```bash
 pnpm test
 ```
 
-Run a specific test file:
+Run only unit tests (fastest):
 ```bash
-pnpm test test/unit/commands/channels/list.test.ts
+pnpm test:unit
 ```
 
-Run tests in a specific directory:
+Run only integration tests:
 ```bash
-pnpm test test/integration/
+pnpm test:integration
+```
+
+Run only e2e tests:
+```bash
+pnpm test:e2e
+```
+
+### Specific Test Suites
+
+Run e2e tests by feature:
+```bash
+pnpm test:e2e:channels  # Channel-related tests
+pnpm test:e2e:rooms     # Rooms tests
+pnpm test:e2e:spaces    # Spaces tests
+pnpm test:e2e:auth      # Authentication tests
+pnpm test:e2e:control   # Control API tests
+```
+
+### Web CLI Tests (Playwright)
+
+Run all web CLI browser tests:
+```bash
+pnpm test:web-cli
+```
+
+Run web CLI tests in parallel groups (faster):
+```bash
+pnpm test:web-cli:parallel              # All groups
+pnpm test:web-cli:parallel:auth         # Auth tests only
+pnpm test:web-cli:parallel:session      # Session tests only
+pnpm test:web-cli:parallel:ui           # UI tests only
+```
+
+### Running Specific Test Files
+
+To run a specific test file, use the base `test:mocha` command:
+```bash
+pnpm test:mocha test/unit/commands/channels/list.test.ts
+```
+
+To run specific tests with additional mocha options:
+```bash
+pnpm test:mocha test/unit/**/*.test.ts --grep "should publish"
+```
+
+### Debug Mode
+
+For detailed test output and debugging:
+```bash
+E2E_DEBUG=true ABLY_CLI_TEST_SHOW_OUTPUT=true pnpm test:e2e
 ```

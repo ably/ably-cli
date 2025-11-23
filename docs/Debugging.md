@@ -14,11 +14,14 @@ Refer to [docs/Testing.md](mdc:docs/Testing.md) for how to run specific tests.
 
 ### Mocha Tests (Unit, Integration, E2E)
 
-*   **Verbose Output:** Run Mocha with increased verbosity if needed (though the default `spec` reporter is usually detailed). Check `scripts/run-tests.sh` for current settings.
+*   **Verbose Output:** Run Mocha with increased verbosity by enabling debug mode:
+    ```bash
+    E2E_DEBUG=true ABLY_CLI_TEST_SHOW_OUTPUT=true pnpm test:unit
+    ```
 *   **Debugger:** Use the Node.js inspector:
     ```bash
-    # Add --inspect-brk flag
-    node --inspect-brk --import 'data:text/javascript,...' ./node_modules/mocha/bin/mocha ... [your test path]
+    # Add --inspect-brk flag before mocha
+    node --inspect-brk --import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("ts-node/esm", pathToFileURL("./"), { project: "./tsconfig.test.json" });' ./node_modules/mocha/bin/mocha --require ./test/setup.ts test/unit/your-test.test.ts
     ```
     Then attach your debugger (e.g., Chrome DevTools, VS Code debugger).
 *   **`console.log`:** Add temporary `console.log` statements in the test or the code being tested.
