@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { waitUntilInterruptedOrTimeout } from "../../../src/utils/long-running.js";
 
@@ -24,9 +24,9 @@ describe("waitUntilInterruptedOrTimeout", function () {
       const result = await waitUntilInterruptedOrTimeout(duration);
       const endTime = Date.now();
 
-      expect(result).to.equal("timeout");
-      expect(endTime - startTime).to.be.greaterThanOrEqual(90); // Allow some tolerance
-      expect(endTime - startTime).to.be.lessThan(200); // But not too much
+      expect(result).toBe("timeout");
+      expect(endTime - startTime).toBeGreaterThanOrEqual(90); // Allow some tolerance
+      expect(endTime - startTime).toBeLessThan(200); // But not too much
     });
 
     it("should resolve with 'timeout' when duration is 0.5 seconds", async function () {
@@ -36,9 +36,9 @@ describe("waitUntilInterruptedOrTimeout", function () {
       const result = await waitUntilInterruptedOrTimeout(duration);
       const endTime = Date.now();
 
-      expect(result).to.equal("timeout");
-      expect(endTime - startTime).to.be.greaterThanOrEqual(450);
-      expect(endTime - startTime).to.be.lessThan(600);
+      expect(result).toBe("timeout");
+      expect(endTime - startTime).toBeGreaterThanOrEqual(450);
+      expect(endTime - startTime).toBeLessThan(600);
     });
 
     it("should run indefinitely when no duration specified", async function () {
@@ -63,7 +63,7 @@ describe("waitUntilInterruptedOrTimeout", function () {
       // Wait a bit to ensure it doesn't resolve on its own
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      expect(resolved).to.be.false;
+      expect(resolved).toBe(false);
 
       // Now simulate SIGINT by calling the handler
       sigintHandler!();
@@ -71,8 +71,8 @@ describe("waitUntilInterruptedOrTimeout", function () {
       // Wait for resolution
       await promise;
 
-      expect(resolved).to.be.true;
-      expect(result).to.equal("signal");
+      expect(resolved).toBe(true);
+      expect(result).toBe("signal");
     });
 
     it("should run indefinitely when duration is 0", async function () {
@@ -97,7 +97,7 @@ describe("waitUntilInterruptedOrTimeout", function () {
       // Wait a bit to ensure it doesn't resolve on its own
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      expect(resolved).to.be.false;
+      expect(resolved).toBe(false);
 
       // Now simulate SIGTERM by calling the handler
       sigtermHandler!();
@@ -105,8 +105,8 @@ describe("waitUntilInterruptedOrTimeout", function () {
       // Wait for resolution
       await promise;
 
-      expect(resolved).to.be.true;
-      expect(result).to.equal("signal");
+      expect(resolved).toBe(true);
+      expect(result).toBe("signal");
     });
 
     it("should run indefinitely when duration is undefined", async function () {
@@ -129,7 +129,7 @@ describe("waitUntilInterruptedOrTimeout", function () {
       // Wait a bit to ensure it doesn't resolve on its own
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      expect(resolved).to.be.false;
+      expect(resolved).toBe(false);
 
       // Now simulate SIGINT
       sigintHandler!();
@@ -137,8 +137,8 @@ describe("waitUntilInterruptedOrTimeout", function () {
       // Wait for resolution
       await promise;
 
-      expect(resolved).to.be.true;
-      expect(result).to.equal("signal");
+      expect(resolved).toBe(true);
+      expect(result).toBe("signal");
     });
   });
 
@@ -167,8 +167,8 @@ describe("waitUntilInterruptedOrTimeout", function () {
       // Wait for resolution
       await promise;
 
-      expect(resolved).to.be.true;
-      expect(result).to.equal("signal");
+      expect(resolved).toBe(true);
+      expect(result).toBe("signal");
     });
 
     it("should resolve with 'signal' on SIGTERM", async function () {
@@ -195,8 +195,8 @@ describe("waitUntilInterruptedOrTimeout", function () {
       // Wait for resolution
       await promise;
 
-      expect(resolved).to.be.true;
-      expect(result).to.equal("signal");
+      expect(resolved).toBe(true);
+      expect(result).toBe("signal");
     });
 
     it("should clean up event listeners when resolving via signal", async function () {
@@ -217,11 +217,11 @@ describe("waitUntilInterruptedOrTimeout", function () {
       // Wait for resolution
       const result = await promise;
 
-      expect(result).to.equal("signal");
+      expect(result).toBe("signal");
 
       // Verify removeListener was called for both events using sinon assertions
-      expect(processRemoveListenerStub.calledWith("SIGINT")).to.be.true;
-      expect(processRemoveListenerStub.calledWith("SIGTERM")).to.be.true;
+      expect(processRemoveListenerStub.calledWith("SIGINT")).toBe(true);
+      expect(processRemoveListenerStub.calledWith("SIGTERM")).toBe(true);
     });
 
     it("should clean up event listeners when resolving via timeout", async function () {
@@ -231,11 +231,11 @@ describe("waitUntilInterruptedOrTimeout", function () {
       // Wait for resolution
       const result = await promise;
 
-      expect(result).to.equal("timeout");
+      expect(result).toBe("timeout");
 
       // Verify removeListener was called for both events using sinon assertions
-      expect(processRemoveListenerStub.calledWith("SIGINT")).to.be.true;
-      expect(processRemoveListenerStub.calledWith("SIGTERM")).to.be.true;
+      expect(processRemoveListenerStub.calledWith("SIGINT")).toBe(true);
+      expect(processRemoveListenerStub.calledWith("SIGTERM")).toBe(true);
     });
   });
 
@@ -262,9 +262,9 @@ describe("waitUntilInterruptedOrTimeout", function () {
       const result = await waitUntilInterruptedOrTimeout();
       const endTime = Date.now();
 
-      expect(result).to.equal("timeout");
-      expect(endTime - startTime).to.be.greaterThanOrEqual(90);
-      expect(endTime - startTime).to.be.lessThan(200);
+      expect(result).toBe("timeout");
+      expect(endTime - startTime).toBeGreaterThanOrEqual(90);
+      expect(endTime - startTime).toBeLessThan(200);
     });
 
     it("should ignore environment variable when explicit duration provided", async function () {
@@ -275,9 +275,9 @@ describe("waitUntilInterruptedOrTimeout", function () {
       const result = await waitUntilInterruptedOrTimeout(0.1); // 100ms explicit
       const endTime = Date.now();
 
-      expect(result).to.equal("timeout");
-      expect(endTime - startTime).to.be.greaterThanOrEqual(90);
-      expect(endTime - startTime).to.be.lessThan(200); // Should use explicit 100ms, not env 10s
+      expect(result).toBe("timeout");
+      expect(endTime - startTime).toBeGreaterThanOrEqual(90);
+      expect(endTime - startTime).toBeLessThan(200); // Should use explicit 100ms, not env 10s
     });
 
     it("should run indefinitely when env var is 0", async function () {
@@ -299,7 +299,7 @@ describe("waitUntilInterruptedOrTimeout", function () {
       // Wait a bit to ensure it doesn't resolve on its own
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      expect(resolved).to.be.false;
+      expect(resolved).toBe(false);
 
       // Now simulate SIGINT to clean up
       sigintHandler!();
@@ -333,13 +333,13 @@ describe("waitUntilInterruptedOrTimeout", function () {
       const result = await promise;
 
       // Should only resolve once
-      expect(resolveCount).to.equal(1);
-      expect(result).to.equal("signal");
+      expect(resolveCount).toBe(1);
+      expect(result).toBe("signal");
     });
 
     it("should handle very short durations", async function () {
       const result = await waitUntilInterruptedOrTimeout(0.001); // 1ms
-      expect(result).to.equal("timeout");
+      expect(result).toBe("timeout");
     });
 
     it("should handle negative durations as indefinite", async function () {
@@ -359,7 +359,7 @@ describe("waitUntilInterruptedOrTimeout", function () {
       // Wait a bit to ensure it doesn't resolve on its own
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      expect(resolved).to.be.false;
+      expect(resolved).toBe(false);
 
       // Clean up with signal
       sigintHandler!();

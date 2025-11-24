@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import ChannelsPresenceSubscribe from "../../../../../src/commands/channels/presence/subscribe.js";
@@ -201,7 +201,7 @@ describe("ChannelsPresenceSubscribe", function () {
 
     await command.run();
 
-    expect(createClientSpy.calledOnce).to.be.true;
+    expect(createClientSpy.calledOnce).toBe(true);
 
     createClientSpy.restore();
     runStub.restore();
@@ -215,12 +215,12 @@ describe("ChannelsPresenceSubscribe", function () {
     });
 
     const parseResult = await command.parse();
-    expect(parseResult.args.channel).to.equal("my-presence-channel");
+    expect(parseResult.args.channel).toBe("my-presence-channel");
   });
 
   it("should return mock client from createAblyRealtimeClient", async function () {
     const client = await command.createAblyRealtimeClient({});
-    expect(client).to.equal(command.mockClient);
+    expect(client).toBe(command.mockClient);
   });
 
   it("should format JSON output when shouldOutputJson is true", function () {
@@ -230,11 +230,11 @@ describe("ChannelsPresenceSubscribe", function () {
     const testData = { channel: "test", action: "subscribe" };
     const result = command.formatJsonOutput(testData);
 
-    expect(result).to.be.a("string");
-    expect(() => JSON.parse(result)).to.not.throw();
+    expect(result).toBeTypeOf("string");
+    expect(() => JSON.parse(result)).not.toThrow();
 
     const parsed = JSON.parse(result);
-    expect(parsed).to.deep.equal(testData);
+    expect(parsed).toEqual(testData);
   });
 
   it("should log presence member information", function () {
@@ -249,9 +249,9 @@ describe("ChannelsPresenceSubscribe", function () {
       command.log(logMessage);
     });
 
-    expect(command.logOutput).to.have.length(2);
-    expect(command.logOutput[0]).to.include("user1");
-    expect(command.logOutput[0]).to.include("online");
-    expect(command.logOutput[1]).to.include("user2");
+    expect(command.logOutput).toHaveLength(2);
+    expect(command.logOutput[0]).toContain("user1");
+    expect(command.logOutput[0]).toContain("online");
+    expect(command.logOutput[1]).toContain("user2");
   });
 });

@@ -1,9 +1,8 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import ConnectionsStats from "../../../../src/commands/connections/stats.js";
 import * as Ably from "ably";
-import { describe, beforeEach, afterEach } from "mocha";
 
 // Create a testable version of ConnectionsStats
 class TestableConnectionsStats extends ConnectionsStats {
@@ -174,19 +173,19 @@ describe("ConnectionsStats", function () {
   it("should retrieve and display connection stats successfully", async function () {
     await command.run();
 
-    expect(mockStatsMethod.calledOnce).to.be.true;
+    expect(mockStatsMethod.calledOnce).toBe(true);
 
     // Verify the stats method was called with correct parameters
     const callArgs = mockStatsMethod.firstCall.args[0];
-    expect(callArgs).to.have.property("unit", "minute");
-    expect(callArgs).to.have.property("limit", 10);
-    expect(callArgs).to.have.property("direction", "backwards");
+    expect(callArgs).toHaveProperty("unit", "minute");
+    expect(callArgs).toHaveProperty("limit", 10);
+    expect(callArgs).toHaveProperty("direction", "backwards");
 
     // Check that stats were displayed via console.log (StatsDisplay output)
     const output = command.consoleOutput.join("\n");
-    expect(output).to.include("Connections:");
-    expect(output).to.include("Channels:");
-    expect(output).to.include("Messages:");
+    expect(output).toContain("Connections:");
+    expect(output).toContain("Channels:");
+    expect(output).toContain("Messages:");
   });
 
   it("should handle different time units", async function () {
@@ -205,11 +204,11 @@ describe("ConnectionsStats", function () {
 
     await command.run();
 
-    expect(mockStatsMethod.calledOnce).to.be.true;
+    expect(mockStatsMethod.calledOnce).toBe(true);
 
     const callArgs = mockStatsMethod.firstCall.args[0];
-    expect(callArgs).to.have.property("unit", "hour");
-    expect(callArgs).to.have.property("limit", 24);
+    expect(callArgs).toHaveProperty("unit", "hour");
+    expect(callArgs).toHaveProperty("limit", 24);
   });
 
   it("should handle custom time range with start and end", async function () {
@@ -233,11 +232,11 @@ describe("ConnectionsStats", function () {
 
     await command.run();
 
-    expect(mockStatsMethod.calledOnce).to.be.true;
+    expect(mockStatsMethod.calledOnce).toBe(true);
 
     const callArgs = mockStatsMethod.firstCall.args[0];
-    expect(callArgs).to.have.property("start", startTime);
-    expect(callArgs).to.have.property("end", endTime);
+    expect(callArgs).toHaveProperty("start", startTime);
+    expect(callArgs).toHaveProperty("end", endTime);
   });
 
   it("should handle empty stats response", async function () {
@@ -245,11 +244,11 @@ describe("ConnectionsStats", function () {
 
     await command.run();
 
-    expect(mockStatsMethod.calledOnce).to.be.true;
+    expect(mockStatsMethod.calledOnce).toBe(true);
 
     // The "No connection stats available" message comes from this.log(), not console.log
     const output = command.logOutput.join("\n");
-    expect(output).to.include("No connection stats available");
+    expect(output).toContain("No connection stats available");
   });
 
   it("should handle API errors", async function () {
@@ -260,7 +259,7 @@ describe("ConnectionsStats", function () {
       await command.run();
       expect.fail("Command should have thrown an error");
     } catch (error: any) {
-      expect(error.message).to.include("Failed to fetch stats");
+      expect(error.message).toContain("Failed to fetch stats");
     }
   });
 
@@ -269,7 +268,7 @@ describe("ConnectionsStats", function () {
 
     await command.run();
 
-    expect(mockStatsMethod.calledOnce).to.be.true;
+    expect(mockStatsMethod.calledOnce).toBe(true);
 
     // Check for JSON output in the console logs (StatsDisplay uses console.log for JSON)
     const jsonOutput = command.consoleOutput.find((log) => {
@@ -280,7 +279,7 @@ describe("ConnectionsStats", function () {
         return false;
       }
     });
-    expect(jsonOutput).to.exist;
+    expect(jsonOutput).toBeDefined();
   });
 
   it("should handle live stats mode setup", async function () {
@@ -312,11 +311,11 @@ describe("ConnectionsStats", function () {
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Verify that stats were called at least once for the initial display
-      expect(mockStatsMethod.called).to.be.true;
+      expect(mockStatsMethod.called).toBe(true);
 
       // Verify that process event listeners were set up for graceful shutdown
-      expect(processOnStub.calledWith("SIGINT")).to.be.true;
-      expect(processOnStub.calledWith("SIGTERM")).to.be.true;
+      expect(processOnStub.calledWith("SIGINT")).toBe(true);
+      expect(processOnStub.calledWith("SIGTERM")).toBe(true);
     } finally {
       // Restore process.on
       processOnStub.restore();
@@ -349,7 +348,7 @@ describe("ConnectionsStats", function () {
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Verify debug mode was enabled
-      expect(mockStatsMethod.called).to.be.true;
+      expect(mockStatsMethod.called).toBe(true);
     } finally {
       processOnStub.restore();
     }

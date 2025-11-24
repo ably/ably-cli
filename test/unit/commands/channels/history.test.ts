@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
@@ -251,7 +251,7 @@ describe("ChannelsHistory", function () {
     it("should retrieve channel history successfully", async function () {
       // Relies on default getApiKeyMock returning a key
       await command.run();
-      expect(historyStub.calledOnce).to.be.true;
+      expect(historyStub.calledOnce).toBe(true);
       // ... other assertions
     });
 
@@ -266,14 +266,14 @@ describe("ChannelsHistory", function () {
 
       await command.run();
 
-      expect(getApiKeyMock.calledOnce).to.be.true;
-      expect(historyStub.calledOnce).to.be.true;
+      expect(getApiKeyMock.calledOnce).toBe(true);
+      expect(historyStub.calledOnce).toBe(true);
       expect(
         logStub.args.some(
           (args) =>
             typeof args[0] === "string" && args[0].includes("Found 2 messages"),
         ),
-      ).to.be.true;
+      ).toBe(true);
     });
 
     it("should fail gracefully if no API key is found (env or flag)", async function () {
@@ -288,9 +288,9 @@ describe("ChannelsHistory", function () {
 
       await command.run();
 
-      expect(getApiKeyMock.calledOnce).to.be.true;
-      expect(ensureAppAndKeyStub.calledOnce).to.be.true;
-      expect(historyStub.called).to.be.false;
+      expect(getApiKeyMock.calledOnce).toBe(true);
+      expect(ensureAppAndKeyStub.calledOnce).toBe(true);
+      expect(historyStub.called).toBe(false);
     });
 
     it("should handle empty history response", async function () {
@@ -301,7 +301,7 @@ describe("ChannelsHistory", function () {
       await command.run();
 
       // Verify history was called
-      expect(historyStub.calledOnce).to.be.true;
+      expect(historyStub.calledOnce).toBe(true);
 
       // Verify that we log "No messages found"
       const noMessagesLog = logStub.args.find(
@@ -309,7 +309,7 @@ describe("ChannelsHistory", function () {
           typeof args[0] === "string" &&
           args[0] === "No messages found in the channel history.",
       );
-      expect(noMessagesLog).to.exist;
+      expect(noMessagesLog).toBeDefined();
     });
 
     it("should handle API errors", async function () {
@@ -320,8 +320,8 @@ describe("ChannelsHistory", function () {
       await command.run();
 
       // Verify the error was handled
-      expect(errorStub.calledOnce).to.be.true;
-      expect(errorStub.firstCall.args[0]).to.include(
+      expect(errorStub.calledOnce).toBe(true);
+      expect(errorStub.firstCall.args[0]).toContain(
         "Error retrieving channel history",
       );
     });
@@ -339,8 +339,8 @@ describe("ChannelsHistory", function () {
       await command.run();
 
       // Verify history was called with the correct direction
-      expect(historyStub.calledOnce).to.be.true;
-      expect(historyStub.firstCall.args[0]).to.deep.equal({
+      expect(historyStub.calledOnce).toBe(true);
+      expect(historyStub.firstCall.args[0]).toEqual({
         direction: "forwards",
         limit: 100,
       });
@@ -368,8 +368,8 @@ describe("ChannelsHistory", function () {
       await command.run();
 
       // Verify history was called with the correct time range
-      expect(historyStub.calledOnce).to.be.true;
-      expect(historyStub.firstCall.args[0]).to.deep.equal({
+      expect(historyStub.calledOnce).toBe(true);
+      expect(historyStub.firstCall.args[0]).toEqual({
         direction: "backwards",
         limit: 100,
         start: new Date(start).getTime(),
@@ -390,19 +390,19 @@ describe("ChannelsHistory", function () {
       await command.run();
 
       // Verify the JSON output was generated
-      expect(logStub.calledOnce).to.be.true;
+      expect(logStub.calledOnce).toBe(true);
 
       // Parse the JSON that was output
       const jsonOutput = JSON.parse(logStub.firstCall.args[0]);
 
       // Verify the structure of the JSON output
-      expect(jsonOutput).to.have.property("messages").that.is.an("array");
-      expect(jsonOutput.messages).to.have.lengthOf(2);
-      expect(jsonOutput.messages[0]).to.have.property("id", "message1");
-      expect(jsonOutput.messages[0]).to.have.property("name", "event1");
-      expect(jsonOutput.messages[0])
-        .to.have.property("data")
-        .that.deep.equals({ text: "Hello world 1" });
+      expect(jsonOutput).toHaveProperty("messages");
+      expect(jsonOutput.messages).toBeInstanceOf(Array);
+      expect(jsonOutput.messages).toHaveLength(2);
+      expect(jsonOutput.messages[0]).toHaveProperty("id", "message1");
+      expect(jsonOutput.messages[0]).toHaveProperty("name", "event1");
+      expect(jsonOutput.messages[0]).toHaveProperty("data");
+      expect(jsonOutput.messages[0].data).toEqual({ text: "Hello world 1" });
     });
 
     it("should output JSON when requested with error", async function () {
@@ -416,19 +416,19 @@ describe("ChannelsHistory", function () {
       await command.run();
 
       // Verify the JSON output was generated
-      expect(logStub.calledOnce).to.be.true;
+      expect(logStub.calledOnce).toBe(true);
 
       // Parse the JSON that was output
       const jsonOutput = JSON.parse(logStub.firstCall.args[0]);
 
       // Verify the structure of the JSON output
-      expect(jsonOutput).to.have.property("messages").that.is.an("array");
-      expect(jsonOutput.messages).to.have.lengthOf(2);
-      expect(jsonOutput.messages[0]).to.have.property("id", "message1");
-      expect(jsonOutput.messages[0]).to.have.property("name", "event1");
-      expect(jsonOutput.messages[0])
-        .to.have.property("data")
-        .that.deep.equals({ text: "Hello world 1" });
+      expect(jsonOutput).toHaveProperty("messages");
+      expect(jsonOutput.messages).toBeInstanceOf(Array);
+      expect(jsonOutput.messages).toHaveLength(2);
+      expect(jsonOutput.messages[0]).toHaveProperty("id", "message1");
+      expect(jsonOutput.messages[0]).toHaveProperty("name", "event1");
+      expect(jsonOutput.messages[0]).toHaveProperty("data");
+      expect(jsonOutput.messages[0].data).toEqual({ text: "Hello world 1" });
     });
 
     it("should output JSON when requested with error and shouldOutputJson set to false", async function () {
@@ -443,10 +443,10 @@ describe("ChannelsHistory", function () {
 
       // In this case, we should NOT be outputting JSON since shouldOutputJson returns false
       // The UI format should be used instead
-      expect(logStub.called).to.be.true;
+      expect(logStub.called).toBe(true);
 
       // Verify that we're not formatting as JSON (checking the first call which should be about found messages)
-      expect(logStub.firstCall.args[0]).to.include("Found");
+      expect(logStub.firstCall.args[0]).toContain("Found");
     });
 
     it("should output JSON when requested with error and shouldOutputJson set to true", async function () {
@@ -460,19 +460,19 @@ describe("ChannelsHistory", function () {
       await command.run();
 
       // Verify the JSON output was generated
-      expect(logStub.calledOnce).to.be.true;
+      expect(logStub.calledOnce).toBe(true);
 
       // Parse the JSON that was output
       const jsonOutput = JSON.parse(logStub.firstCall.args[0]);
 
       // Verify the structure of the JSON output
-      expect(jsonOutput).to.have.property("messages").that.is.an("array");
-      expect(jsonOutput.messages).to.have.lengthOf(2);
-      expect(jsonOutput.messages[0]).to.have.property("id", "message1");
-      expect(jsonOutput.messages[0]).to.have.property("name", "event1");
-      expect(jsonOutput.messages[0])
-        .to.have.property("data")
-        .that.deep.equals({ text: "Hello world 1" });
+      expect(jsonOutput).toHaveProperty("messages");
+      expect(jsonOutput.messages).toBeInstanceOf(Array);
+      expect(jsonOutput.messages).toHaveLength(2);
+      expect(jsonOutput.messages[0]).toHaveProperty("id", "message1");
+      expect(jsonOutput.messages[0]).toHaveProperty("name", "event1");
+      expect(jsonOutput.messages[0]).toHaveProperty("data");
+      expect(jsonOutput.messages[0].data).toEqual({ text: "Hello world 1" });
     });
   });
 });

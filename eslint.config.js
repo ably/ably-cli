@@ -7,8 +7,8 @@ import eslintPluginUnicorn from "eslint-plugin-unicorn";
 import eslintConfigPrettier from "eslint-config-prettier";
 import eslintPluginPrettier from "eslint-plugin-prettier";
 import eslint from "@eslint/js"; // Import base eslint config
-// import mochaGlobals from 'eslint-plugin-mocha/lib/configs/globals.js'; // Import mocha globals
-import eslintPluginMocha from "eslint-plugin-mocha"; // Import the plugin
+import eslintPluginVitest from "eslint-plugin-vitest"; // Import vitest plugin
+import eslintPluginMocha from "eslint-plugin-mocha";
 
 export default [
   {
@@ -46,7 +46,8 @@ export default [
       "test/e2e/commands/rooms-e2e.test.ts",
       "test/e2e/commands/spaces-e2e.test.ts",
       "test/integration/test-utils.ts",
-      "playwright-report/**"
+      "playwright-report/**",
+      "vitest.config.ts"
     ], // Updated to match all ignorePatterns from .eslintrc.json
   },
   {
@@ -138,6 +139,28 @@ export default [
   },
   {
     // Configuration specific to test files
+    // TODO: REMOVE and go global
+    files: ["test/unit/**/*.test.ts"],
+    plugins: {
+      vitest: eslintPluginVitest,
+    },
+    languageOptions: {
+      globals: {
+        ...eslintPluginVitest.environments.env.globals,
+      },
+    },
+    rules: {
+      // Apply recommended vitest rules
+      ...eslintPluginVitest.configs.recommended.rules,
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-expressions": "off",
+      "vitest/no-focused-tests": "error", // Equivalent to mocha/no-exclusive-tests
+      "vitest/no-disabled-tests": "warn", // Equivalent to mocha/no-skipped-tests
+    },
+  },
+  // TODO: Remove once fully on vitest
+  {
+    // Configuration specific to test files
     files: ["test/**/*.test.ts"],
     plugins: {
       mocha: eslintPluginMocha,
@@ -151,41 +174,34 @@ export default [
         after: "readonly",
         beforeEach: "readonly",
         afterEach: "readonly",
+        ...eslintPluginVitest.environments.env.globals,
       },
     },
     rules: {
-      // Apply recommended mocha rules which include globals
+      // Apply recommended vitest rules
       ...eslintPluginMocha.configs.recommended.rules,
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-expressions": "off",
-      "mocha/no-exclusive-tests": "error",
-      "mocha/no-skipped-tests": "warn",
     },
   },
   {
     // Configuration specific to server test files
     files: ["server/tests/**/*.test.ts"],
     plugins: {
-      mocha: eslintPluginMocha,
+      vitest: eslintPluginVitest,
     },
     languageOptions: {
       globals: {
-        ...globals.mocha,
-        describe: "readonly",
-        it: "readonly",
-        before: "readonly",
-        after: "readonly",
-        beforeEach: "readonly",
-        afterEach: "readonly",
+        ...eslintPluginVitest.environments.env.globals,
       },
     },
     rules: {
-      // Apply recommended mocha rules which include globals
-      ...eslintPluginMocha.configs.recommended.rules,
+      // Apply recommended vitest rules
+      ...eslintPluginVitest.configs.recommended.rules,
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-expressions": "off",
-      "mocha/no-exclusive-tests": "error",
-      "mocha/no-skipped-tests": "warn",
+      "vitest/no-focused-tests": "error", // Equivalent to mocha/no-exclusive-tests
+      "vitest/no-disabled-tests": "warn", // Equivalent to mocha/no-skipped-tests
       "unicorn/prefer-optional-catch-binding": "off", // Allow catch (error) in tests
       "n/no-unpublished-import": "off", // Allow dev dependencies like chai in tests
     },

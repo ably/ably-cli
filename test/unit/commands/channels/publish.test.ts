@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import ChannelsPublish from "../../../../src/commands/channels/publish.js";
@@ -161,12 +161,12 @@ describe("ChannelsPublish", function () {
     await command.run();
 
     const getChannel = command.mockRestClient.channels.get;
-    expect(getChannel.calledOnce).to.be.true;
-    expect(getChannel.firstCall.args[0]).to.equal("test-channel");
+    expect(getChannel.calledOnce).toBe(true);
+    expect(getChannel.firstCall.args[0]).toBe("test-channel");
 
-    expect(mockRestPublish.calledOnce).to.be.true;
-    expect(mockRestPublish.firstCall.args[0]).to.deep.equal({ data: "hello" });
-    expect(command.logOutput.join("\n")).to.include(
+    expect(mockRestPublish.calledOnce).toBe(true);
+    expect(mockRestPublish.firstCall.args[0]).toEqual({ data: "hello" });
+    expect(command.logOutput.join("\n")).toContain(
       "Message published successfully",
     );
   });
@@ -188,14 +188,14 @@ describe("ChannelsPublish", function () {
     await command.run();
 
     const getChannel = command.mockRealtimeClient.channels.get;
-    expect(getChannel.calledOnce).to.be.true;
-    expect(getChannel.firstCall.args[0]).to.equal("test-channel");
+    expect(getChannel.calledOnce).toBe(true);
+    expect(getChannel.firstCall.args[0]).toBe("test-channel");
 
-    expect(mockRealtimePublish.calledOnce).to.be.true;
-    expect(mockRealtimePublish.firstCall.args[0]).to.deep.equal({
+    expect(mockRealtimePublish.calledOnce).toBe(true);
+    expect(mockRealtimePublish.firstCall.args[0]).toEqual({
       data: "realtime hello",
     });
-    expect(command.logOutput.join("\n")).to.include(
+    expect(command.logOutput.join("\n")).toContain(
       "Message published successfully",
     );
   });
@@ -216,11 +216,11 @@ describe("ChannelsPublish", function () {
       errorThrown = true;
       // The error could come from different places in the code path
       // Just check that some error was thrown during REST publish
-      expect(mockRestPublish.called).to.be.true;
+      expect(mockRestPublish.called).toBe(true);
     }
 
     // Verify an error was thrown
-    expect(errorThrown).to.be.true;
+    expect(errorThrown).toBe(true);
   });
 
   it("should handle API errors during Realtime publish", async function () {
@@ -252,11 +252,11 @@ describe("ChannelsPublish", function () {
       errorThrown = true;
       // The error could come from different places in the code path
       // Just check that some error was thrown during Realtime publish
-      expect(mockRealtimePublish.called).to.be.true;
+      expect(mockRealtimePublish.called).toBe(true);
     }
 
     // Verify an error was thrown
-    expect(errorThrown).to.be.true;
+    expect(errorThrown).toBe(true);
   });
 
   it("should publish with specified event name", async function () {
@@ -275,12 +275,12 @@ describe("ChannelsPublish", function () {
 
     await command.run();
 
-    expect(mockRestPublish.calledOnce).to.be.true;
+    expect(mockRestPublish.calledOnce).toBe(true);
 
     // Check that the name parameter was set correctly in the published message
     const publishArgs = mockRestPublish.firstCall.args[0];
-    expect(publishArgs).to.have.property("name", "custom-event");
-    expect(publishArgs).to.have.property("data", "hello");
+    expect(publishArgs).toHaveProperty("name", "custom-event");
+    expect(publishArgs).toHaveProperty("data", "hello");
   });
 
   it("should publish multiple messages with --count", async function () {
@@ -299,8 +299,8 @@ describe("ChannelsPublish", function () {
 
     await command.run();
 
-    expect(mockRestPublish.callCount).to.equal(3);
-    expect(command.logOutput.join("\n")).to.include(
+    expect(mockRestPublish.callCount).toBe(3);
+    expect(command.logOutput.join("\n")).toContain(
       "messages published successfully",
     );
   });
@@ -317,17 +317,17 @@ describe("ChannelsPublish", function () {
 
     await command.run();
 
-    expect(mockRestPublish.calledOnce).to.be.true;
+    expect(mockRestPublish.calledOnce).toBe(true);
 
     // Check for JSON output in the logs
     const jsonOutput = command.logOutput.find((log) => log.includes("success"));
-    expect(jsonOutput).to.exist;
+    expect(jsonOutput).toBeDefined();
 
     // Parse and verify properties
     if (jsonOutput) {
       const parsed = JSON.parse(jsonOutput);
-      expect(parsed).to.have.property("success", true);
-      expect(parsed).to.have.property("channel", "test-channel");
+      expect(parsed).toHaveProperty("success", true);
+      expect(parsed).toHaveProperty("channel", "test-channel");
     }
   });
 
@@ -360,7 +360,7 @@ describe("ChannelsPublish", function () {
       await command.run();
       expect.fail("Command should have thrown an error");
     } catch (error: any) {
-      expect(error.message).to.include("Invalid JSON");
+      expect(error.message).toContain("Invalid JSON");
     }
   });
 });

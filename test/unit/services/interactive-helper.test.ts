@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import inquirer from "inquirer";
 import sinon from "sinon";
 import { InteractiveHelper } from "../../../src/services/interactive-helper.js";
@@ -35,9 +35,9 @@ describe("InteractiveHelper", function () {
 
       const result = await interactiveHelper.confirm("Confirm this action?");
 
-      expect(result).to.be.true;
-      expect(promptStub.calledOnce).to.be.true;
-      expect(promptStub.firstCall.args[0][0].message).to.equal(
+      expect(result).toBe(true);
+      expect(promptStub.calledOnce).toBe(true);
+      expect(promptStub.firstCall.args[0][0].message).toBe(
         "Confirm this action?",
       );
     });
@@ -47,8 +47,8 @@ describe("InteractiveHelper", function () {
 
       const result = await interactiveHelper.confirm("Confirm this action?");
 
-      expect(result).to.be.false;
-      expect(promptStub.calledOnce).to.be.true;
+      expect(result).toBe(false);
+      expect(promptStub.calledOnce).toBe(true);
     });
   });
 
@@ -81,10 +81,10 @@ describe("InteractiveHelper", function () {
 
       const result = await interactiveHelper.selectAccount();
 
-      expect(result).to.equal(selectedAccount);
-      expect(promptStub.calledOnce).to.be.true;
-      expect(configManagerStub.listAccounts.calledOnce).to.be.true;
-      expect(configManagerStub.getCurrentAccountAlias.calledOnce).to.be.true;
+      expect(result).toBe(selectedAccount);
+      expect(promptStub.calledOnce).toBe(true);
+      expect(configManagerStub.listAccounts.calledOnce).toBe(true);
+      expect(configManagerStub.getCurrentAccountAlias.calledOnce).toBe(true);
     });
 
     it("should handle no configured accounts", async function () {
@@ -92,10 +92,11 @@ describe("InteractiveHelper", function () {
 
       const result = await interactiveHelper.selectAccount();
 
-      expect(result).to.be.null;
-      expect(promptStub.called).to.be.false;
-      expect(consoleLogSpy.calledWith(sinon.match(/No accounts configured/))).to
-        .be.true;
+      expect(result).toBeNull();
+      expect(promptStub.called).toBe(false);
+      expect(
+        consoleLogSpy.calledWith(sinon.match(/No accounts configured/)),
+      ).toBe(true);
     });
 
     it("should handle errors", async function () {
@@ -103,7 +104,7 @@ describe("InteractiveHelper", function () {
 
       const result = await interactiveHelper.selectAccount();
 
-      expect(result).to.be.null;
+      expect(result).toBeNull();
     });
   });
 
@@ -143,9 +144,9 @@ describe("InteractiveHelper", function () {
 
       const result = await interactiveHelper.selectApp(controlApiStub);
 
-      expect(result).to.equal(selectedApp);
-      expect(promptStub.calledOnce).to.be.true;
-      expect(controlApiStub.listApps.calledOnce).to.be.true;
+      expect(result).toBe(selectedApp);
+      expect(promptStub.calledOnce).toBe(true);
+      expect(controlApiStub.listApps.calledOnce).toBe(true);
     });
 
     it("should handle no apps found", async function () {
@@ -153,9 +154,9 @@ describe("InteractiveHelper", function () {
 
       const result = await interactiveHelper.selectApp(controlApiStub);
 
-      expect(result).to.be.null;
-      expect(promptStub.called).to.be.false;
-      expect(consoleLogSpy.calledWith(sinon.match(/No apps found/))).to.be.true;
+      expect(result).toBeNull();
+      expect(promptStub.called).toBe(false);
+      expect(consoleLogSpy.calledWith(sinon.match(/No apps found/))).toBe(true);
     });
 
     it("should handle errors", async function () {
@@ -163,7 +164,7 @@ describe("InteractiveHelper", function () {
 
       const result = await interactiveHelper.selectApp(controlApiStub);
 
-      expect(result).to.be.null;
+      expect(result).toBeNull();
     });
   });
 
@@ -207,10 +208,10 @@ describe("InteractiveHelper", function () {
 
       const result = await interactiveHelper.selectKey(controlApiStub, "app1");
 
-      expect(result).to.equal(selectedKey);
-      expect(promptStub.calledOnce).to.be.true;
-      expect(controlApiStub.listKeys.calledOnce).to.be.true;
-      expect(controlApiStub.listKeys.calledWith("app1")).to.be.true;
+      expect(result).toBe(selectedKey);
+      expect(promptStub.calledOnce).toBe(true);
+      expect(controlApiStub.listKeys.calledOnce).toBe(true);
+      expect(controlApiStub.listKeys.calledWith("app1")).toBe(true);
     });
 
     it("should handle unnamed keys", async function () {
@@ -246,7 +247,7 @@ describe("InteractiveHelper", function () {
 
       // Check that the prompt choices include "Unnamed key" for the first key
       const choices = promptStub.firstCall.args[0][0].choices;
-      expect(choices[0].name).to.include("Unnamed key");
+      expect(choices[0].name).toContain("Unnamed key");
     });
 
     it("should handle no keys found", async function () {
@@ -254,9 +255,9 @@ describe("InteractiveHelper", function () {
 
       const result = await interactiveHelper.selectKey(controlApiStub, "app1");
 
-      expect(result).to.be.null;
-      expect(promptStub.called).to.be.false;
-      expect(consoleLogSpy.calledWith(sinon.match(/No keys found/))).to.be.true;
+      expect(result).toBeNull();
+      expect(promptStub.called).toBe(false);
+      expect(consoleLogSpy.calledWith(sinon.match(/No keys found/))).toBe(true);
     });
 
     it("should handle errors", async function () {
@@ -264,7 +265,7 @@ describe("InteractiveHelper", function () {
 
       const result = await interactiveHelper.selectKey(controlApiStub, "app1");
 
-      expect(result).to.be.null;
+      expect(result).toBeNull();
     });
   });
 });

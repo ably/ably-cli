@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import stripAnsi from "strip-ansi";
@@ -85,30 +85,30 @@ describe("CLI Help", function () {
 
         await help.showRootHelp();
 
-        expect(consoleLogStub.calledOnce).to.be.true;
+        expect(consoleLogStub.calledOnce).toBe(true);
         const output = stripAnsi(consoleLogStub.firstCall.args[0]);
 
         // Should show COMMON COMMANDS section
-        expect(output).to.include("COMMON COMMANDS");
+        expect(output).toContain("COMMON COMMANDS");
 
         // Check for commands in tabular format (less brittle - just check key parts)
-        expect(output).to.include("channels publish [channel] [message]");
-        expect(output).to.include("Publish a message");
-        expect(output).to.include("channels subscribe [channel]");
-        expect(output).to.include("Subscribe to a channel");
+        expect(output).toContain("channels publish [channel] [message]");
+        expect(output).toContain("Publish a message");
+        expect(output).toContain("channels subscribe [channel]");
+        expect(output).toContain("Subscribe to a channel");
 
         // Should show channels:logs command for authenticated users
-        expect(output).to.include("channels logs");
-        expect(output).to.include("View live channel events");
+        expect(output).toContain("channels logs");
+        expect(output).toContain("View live channel events");
 
         // Check for help instructions (less brittle - just check key parts)
-        expect(output).to.include("Type");
-        expect(output).to.include("help");
-        expect(output).to.include("complete list of commands");
+        expect(output).toContain("Type");
+        expect(output).toContain("help");
+        expect(output).toContain("complete list of commands");
 
         // Should NOT show the full COMMANDS list section (with topic lists)
-        expect(output).to.not.include("accounts");
-        expect(output).to.not.include("apps");
+        expect(output).not.toContain("accounts");
+        expect(output).not.toContain("apps");
       });
 
       it("should show full command list when --help flag is provided", async function () {
@@ -141,30 +141,30 @@ describe("CLI Help", function () {
 
         await help.showRootHelp();
 
-        expect(consoleLogStub.calledOnce).to.be.true;
+        expect(consoleLogStub.calledOnce).toBe(true);
         const output = stripAnsi(consoleLogStub.firstCall.args[0]);
 
         // Should show browser-based CLI title
-        expect(output).to.include(
+        expect(output).toContain(
           "ably.com browser-based CLI for Pub/Sub, Chat and Spaces",
         );
 
         // Should show COMMANDS section
-        expect(output).to.include("COMMANDS");
+        expect(output).toContain("COMMANDS");
 
         // Should show allowed commands
-        expect(output).to.include("channels");
-        expect(output).to.include("rooms");
-        expect(output).to.include("spaces");
+        expect(output).toContain("channels");
+        expect(output).toContain("rooms");
+        expect(output).toContain("spaces");
 
         // Should show accounts topic (only specific subcommands are restricted in authenticated mode)
-        expect(output).to.include("accounts");
+        expect(output).toContain("accounts");
 
         // Should NOT show config (wildcard restriction)
-        expect(output).to.not.include("config");
+        expect(output).not.toContain("config");
 
         // Should NOT show COMMON COMMANDS section
-        expect(output).to.not.include("COMMON COMMANDS");
+        expect(output).not.toContain("COMMON COMMANDS");
       });
 
       it("should show full command list when -h flag is provided", async function () {
@@ -188,13 +188,13 @@ describe("CLI Help", function () {
 
         await help.showRootHelp();
 
-        expect(consoleLogStub.calledOnce).to.be.true;
+        expect(consoleLogStub.calledOnce).toBe(true);
         const output = stripAnsi(consoleLogStub.firstCall.args[0]);
 
         // Should show COMMANDS section
-        expect(output).to.include("COMMANDS");
-        expect(output).to.include("channels");
-        expect(output).to.include("help");
+        expect(output).toContain("COMMANDS");
+        expect(output).toContain("channels");
+        expect(output).toContain("help");
       });
 
       it("should filter out wildcard restricted commands", async function () {
@@ -220,15 +220,15 @@ describe("CLI Help", function () {
 
         await help.showRootHelp();
 
-        expect(consoleLogStub.calledOnce).to.be.true;
+        expect(consoleLogStub.calledOnce).toBe(true);
         const output = stripAnsi(consoleLogStub.firstCall.args[0]);
 
         // Should show allowed command
-        expect(output).to.include("channels");
+        expect(output).toContain("channels");
 
         // Should NOT show commands matching wildcard patterns (config*, mcp*)
-        expect(output).to.not.include("config");
-        expect(output).to.not.include("mcp");
+        expect(output).not.toContain("config");
+        expect(output).not.toContain("mcp");
       });
 
       it("should hide channels:logs in anonymous mode", async function () {
@@ -246,20 +246,20 @@ describe("CLI Help", function () {
 
         await help.showRootHelp();
 
-        expect(consoleLogStub.calledOnce).to.be.true;
+        expect(consoleLogStub.calledOnce).toBe(true);
         const output = stripAnsi(consoleLogStub.firstCall.args[0]);
 
         // Should show COMMON COMMANDS section
-        expect(output).to.include("COMMON COMMANDS");
+        expect(output).toContain("COMMON COMMANDS");
         // Check for basic commands in tabular format
-        expect(output).to.include("channels publish [channel] [message]");
-        expect(output).to.include("Publish a message");
-        expect(output).to.include("channels subscribe [channel]");
-        expect(output).to.include("Subscribe to a channel");
+        expect(output).toContain("channels publish [channel] [message]");
+        expect(output).toContain("Publish a message");
+        expect(output).toContain("channels subscribe [channel]");
+        expect(output).toContain("Subscribe to a channel");
 
         // Should NOT show channels:logs command for anonymous users
-        expect(output).to.not.include("channels logs");
-        expect(output).to.not.include("View live channel events");
+        expect(output).not.toContain("channels logs");
+        expect(output).not.toContain("View live channel events");
 
         // Clean up
         delete process.env.ABLY_ANONYMOUS_USER_MODE;
@@ -294,10 +294,10 @@ describe("CLI Help", function () {
 
         const output = stripAnsi(help.formatCommand(restrictedCommand as any));
 
-        expect(output).to.include(
+        expect(output).toContain(
           "This command is not available in the web CLI mode",
         );
-        expect(output).to.include(
+        expect(output).toContain(
           "Please use the standalone CLI installation instead",
         );
       });
@@ -325,8 +325,8 @@ describe("CLI Help", function () {
 
         const output = help.formatCommand(allowedCommand as any);
 
-        expect(output).to.equal("Normal command help");
-        expect(output).to.not.include("not available in the web CLI mode");
+        expect(output).toBe("Normal command help");
+        expect(output).not.toContain("not available in the web CLI mode");
 
         // Restore the stub
         superStub.restore();
@@ -342,18 +342,20 @@ describe("CLI Help", function () {
         (help as any).configManager = configManagerStub;
 
         // Test restricted commands
-        expect(help.shouldDisplay({ id: "accounts:login" } as any)).to.be.false;
-        expect(help.shouldDisplay({ id: "config" } as any)).to.be.false;
-        expect(help.shouldDisplay({ id: "mcp:start" } as any)).to.be.false;
+        expect(help.shouldDisplay({ id: "accounts:login" } as any)).toBe(false);
+        expect(help.shouldDisplay({ id: "config" } as any)).toBe(false);
+        expect(help.shouldDisplay({ id: "mcp:start" } as any)).toBe(false);
 
         // Test allowed commands
-        expect(help.shouldDisplay({ id: "channels:publish" } as any)).to.be
-          .true;
-        expect(help.shouldDisplay({ id: "channels:subscribe" } as any)).to.be
-          .true;
-        expect(help.shouldDisplay({ id: "channels:logs" } as any)).to.be.true; // Now allowed for authenticated users
-        expect(help.shouldDisplay({ id: "rooms:get" } as any)).to.be.true;
-        expect(help.shouldDisplay({ id: "help" } as any)).to.be.true;
+        expect(help.shouldDisplay({ id: "channels:publish" } as any)).toBe(
+          true,
+        );
+        expect(help.shouldDisplay({ id: "channels:subscribe" } as any)).toBe(
+          true,
+        );
+        expect(help.shouldDisplay({ id: "channels:logs" } as any)).toBe(true); // Now allowed for authenticated users
+        expect(help.shouldDisplay({ id: "rooms:get" } as any)).toBe(true);
+        expect(help.shouldDisplay({ id: "help" } as any)).toBe(true);
       });
     });
   });
@@ -438,16 +440,16 @@ describe("CLI Help", function () {
 
       await help.showRootHelp();
 
-      expect(consoleLogStub.calledOnce).to.be.true;
+      expect(consoleLogStub.calledOnce).toBe(true);
       const output = stripAnsi(consoleLogStub.firstCall.args[0]);
 
       // Should show standard CLI title
-      expect(output).to.include("ably.com CLI for Pub/Sub, Chat and Spaces");
+      expect(output).toContain("ably.com CLI for Pub/Sub, Chat and Spaces");
 
       // Should show all commands (no filtering)
-      expect(output).to.include("channels");
-      expect(output).to.include("accounts");
-      expect(output).to.include("config");
+      expect(output).toContain("channels");
+      expect(output).toContain("accounts");
+      expect(output).toContain("config");
     });
   });
 });

@@ -1,3 +1,4 @@
+/* eslint-disable mocha/no-setup-in-describe */
 import { Args, Command, Config, Errors, Flags } from "@oclif/core";
 import { expect, test } from "@oclif/test";
 import * as path from "node:path";
@@ -233,7 +234,6 @@ describe("Command Not Found Hook", function () {
 
   // --- Tests using the standard context setup ---
 
-  // eslint-disable-next-line mocha/no-setup-in-describe
   setupTestContext.it(
     "should warn with space separator and run the suggested command (colon input)",
     async (ctx: TestContext) => {
@@ -258,7 +258,6 @@ describe("Command Not Found Hook", function () {
     },
   );
 
-  // eslint-disable-next-line mocha/no-setup-in-describe
   setupTestContext.it(
     "should warn with space separator and run the suggested command (space input)",
     async (ctx: TestContext) => {
@@ -283,7 +282,6 @@ describe("Command Not Found Hook", function () {
     },
   );
 
-  // eslint-disable-next-line mocha/no-setup-in-describe
   setupTestContext.it(
     "should pass arguments when running suggested command (space input)",
     async (ctx: TestContext) => {
@@ -325,7 +323,6 @@ describe("Command Not Found Hook", function () {
     },
   );
 
-  // eslint-disable-next-line mocha/no-setup-in-describe
   setupTestContext.it(
     "should error correctly for completely unknown command (space input)",
     async (ctx: TestContext) => {
@@ -364,7 +361,6 @@ describe("Command Not Found Hook", function () {
     },
   );
 
-  // eslint-disable-next-line mocha/no-setup-in-describe
   setupTestContext.it(
     "should show generic help if no close command is found",
     async (ctx: TestContext) => {
@@ -397,7 +393,6 @@ describe("Command Not Found Hook", function () {
     },
   );
 
-  // eslint-disable-next-line mocha/no-setup-in-describe
   setupRejectingTestContext.it(
     "should show command help with full help command for missing required arguments",
     async (ctx: TestContext) => {
@@ -466,7 +461,6 @@ describe("Command Not Found Hook", function () {
     },
   );
 
-  // eslint-disable-next-line mocha/no-setup-in-describe
   setupTestContext.it(
     "should correctly suggest and run help for a command",
     async (ctx: TestContext) => {
@@ -488,7 +482,6 @@ describe("Command Not Found Hook", function () {
 
   // --- Tests using the rejecting context setup (or standard if needed) ---
 
-  // eslint-disable-next-line mocha/no-setup-in-describe
   setupTestContext.it(
     "should attempt suggested command and propagate its error (space input)",
     async (ctx: TestContext) => {
@@ -531,7 +524,6 @@ describe("Command Not Found Hook", function () {
     },
   );
 
-  // eslint-disable-next-line mocha/no-setup-in-describe
   setupTestContext.it(
     "should handle arguments when suggesting commands with a typo",
     async (ctx: TestContext) => {

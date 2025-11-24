@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
@@ -287,14 +287,14 @@ describe("ChannelsList", function () {
       await command.run();
 
       // Verify the REST client request was called with correct parameters
-      expect(requestStub.calledOnce).to.be.true;
-      expect(requestStub.firstCall.args[0]).to.equal("get");
-      expect(requestStub.firstCall.args[1]).to.equal("/channels");
-      expect(requestStub.firstCall.args[2]).to.equal(2);
-      expect(requestStub.firstCall.args[3]).to.deep.equal({ limit: 100 });
+      expect(requestStub.calledOnce).toBe(true);
+      expect(requestStub.firstCall.args[0]).toBe("get");
+      expect(requestStub.firstCall.args[1]).toBe("/channels");
+      expect(requestStub.firstCall.args[2]).toBe(2);
+      expect(requestStub.firstCall.args[3]).toEqual({ limit: 100 });
 
       // Verify that we log channel information
-      expect(logStub.called).to.be.true;
+      expect(logStub.called).toBe(true);
 
       // Verify first call contains the channel count
       const foundChannels = logStub.args.find(
@@ -302,7 +302,7 @@ describe("ChannelsList", function () {
           typeof args[0] === "string" &&
           args[0].includes("Found 2 active channels"),
       );
-      expect(foundChannels).to.exist;
+      expect(foundChannels).toBeDefined();
     });
 
     it("should handle empty channels response", async function () {
@@ -316,7 +316,7 @@ describe("ChannelsList", function () {
       await command.run();
 
       // Verify the REST client request was called
-      expect(requestStub.calledOnce).to.be.true;
+      expect(requestStub.calledOnce).toBe(true);
 
       // Verify that we log "No active channels found"
       const noChannelsLog = logStub.args.find(
@@ -324,7 +324,7 @@ describe("ChannelsList", function () {
           typeof args[0] === "string" &&
           args[0] === "No active channels found.",
       );
-      expect(noChannelsLog).to.exist;
+      expect(noChannelsLog).toBeDefined();
     });
 
     it("should handle API errors", async function () {
@@ -338,8 +338,8 @@ describe("ChannelsList", function () {
       await command.run();
 
       // Verify the error was handled
-      expect(errorStub.calledOnce).to.be.true;
-      expect(errorStub.firstCall.args[0]).to.include("Failed to list channels");
+      expect(errorStub.calledOnce).toBe(true);
+      expect(errorStub.firstCall.args[0]).toContain("Failed to list channels");
     });
 
     it("should respect limit flag", async function () {
@@ -358,8 +358,8 @@ describe("ChannelsList", function () {
       await command.run();
 
       // Verify the request was called with the correct limit
-      expect(requestStub.calledOnce).to.be.true;
-      expect(requestStub.firstCall.args[3]).to.deep.equal({ limit: 50 });
+      expect(requestStub.calledOnce).toBe(true);
+      expect(requestStub.firstCall.args[3]).toEqual({ limit: 50 });
     });
 
     it("should respect prefix flag", async function () {
@@ -378,8 +378,8 @@ describe("ChannelsList", function () {
       await command.run();
 
       // Verify the request was called with the correct parameters
-      expect(requestStub.calledOnce).to.be.true;
-      expect(requestStub.firstCall.args[3]).to.deep.equal({
+      expect(requestStub.calledOnce).toBe(true);
+      expect(requestStub.firstCall.args[3]).toEqual({
         limit: 100,
         prefix: "test-",
       });
@@ -401,20 +401,21 @@ describe("ChannelsList", function () {
       await command.run();
 
       // Verify the JSON output was generated
-      expect(logStub.calledOnce).to.be.true;
+      expect(logStub.calledOnce).toBe(true);
 
       // Parse the JSON that was output
       const jsonOutput = JSON.parse(logStub.firstCall.args[0]);
 
       // Verify the structure of the JSON output
-      expect(jsonOutput).to.have.property("channels").that.is.an("array");
-      expect(jsonOutput.channels).to.have.lengthOf(2);
-      expect(jsonOutput.channels[0]).to.have.property(
+      expect(jsonOutput).toHaveProperty("channels");
+      expect(jsonOutput.channels).toBeInstanceOf(Array);
+      expect(jsonOutput.channels).toHaveLength(2);
+      expect(jsonOutput.channels[0]).toHaveProperty(
         "channelId",
         "test-channel-1",
       );
-      expect(jsonOutput.channels[0]).to.have.property("metrics");
-      expect(jsonOutput).to.have.property("success", true);
+      expect(jsonOutput.channels[0]).toHaveProperty("metrics");
+      expect(jsonOutput).toHaveProperty("success", true);
     });
   });
 });

@@ -1,4 +1,13 @@
-import { expect } from "chai";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+  vi,
+} from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
@@ -20,11 +29,15 @@ class TestableBenchPublisher extends BenchPublisher {
     return this._parseResult;
   }
 
-  protected override async createAblyRealtimeClient(_flags: any): Promise<Ably.Realtime | null> {
+  protected override async createAblyRealtimeClient(
+    _flags: any,
+  ): Promise<Ably.Realtime | null> {
     return this.mockRealtimeClient as unknown as Ably.Realtime;
   }
 
-  protected override async createAblyRestClient(_flags: any): Promise<Ably.Rest | null> {
+  protected override async createAblyRestClient(
+    _flags: any,
+  ): Promise<Ably.Rest | null> {
     return this.mockRestClient as unknown as Ably.Rest;
   }
 
@@ -51,17 +64,27 @@ class TestableBenchPublisher extends BenchPublisher {
 
   public testGenerateRandomData(size: number) {
     // Implement random data generation directly in test since method doesn't exist in source
-    const baseContent = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    return baseContent.repeat(Math.ceil(size / baseContent.length)).slice(0, size);
+    const baseContent =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    return baseContent
+      .repeat(Math.ceil(size / baseContent.length))
+      .slice(0, size);
   }
 
-  public testCalculateMetrics(startTime: number, endTime: number, messageCount: number, errorCount: number) {
+  public testCalculateMetrics(
+    startTime: number,
+    endTime: number,
+    messageCount: number,
+    errorCount: number,
+  ) {
     // Implement metrics calculation directly since calculateMetrics doesn't exist in source
     const durationMs = endTime - startTime;
     const successfulMessages = messageCount - errorCount;
     const failedMessages = errorCount;
-    const messagesPerSecond = durationMs > 0 ? messageCount / (durationMs / 1000) : Infinity;
-    const successRate = messageCount > 0 ? successfulMessages / messageCount : 1;
+    const messagesPerSecond =
+      durationMs > 0 ? messageCount / (durationMs / 1000) : Infinity;
+    const successRate =
+      messageCount > 0 ? successfulMessages / messageCount : 1;
 
     return {
       totalMessages: messageCount,
@@ -87,7 +110,9 @@ class TestableBenchSubscriber extends BenchSubscriber {
     return this._parseResult;
   }
 
-  protected override async createAblyRealtimeClient(_flags: any): Promise<Ably.Realtime | null> {
+  protected override async createAblyRealtimeClient(
+    _flags: any,
+  ): Promise<Ably.Realtime | null> {
     return this.mockRealtimeClient as unknown as Ably.Realtime;
   }
 
@@ -108,30 +133,27 @@ class TestableBenchSubscriber extends BenchSubscriber {
   }
 }
 
-describe("benchmarking commands", function () {
-  // Set reasonable timeout for unit tests
-  this.timeout(15000); // 15 seconds max per test
-
+describe("benchmarking commands", () => {
   let sandbox: sinon.SinonSandbox;
   let mockConfig: Config;
 
-  beforeEach(function () {
+  beforeEach(() => {
     sandbox = sinon.createSandbox();
     mockConfig = { runHook: sinon.stub() } as unknown as Config;
   });
 
-  afterEach(function () {
+  afterEach(() => {
     sandbox.restore();
   });
 
-  describe("bench publisher", function () {
+  describe("bench publisher", () => {
     let command: TestableBenchPublisher;
     let mockChannel: any;
     let publishStub: sinon.SinonStub;
 
-    beforeEach(function () {
+    beforeEach(() => {
       command = new TestableBenchPublisher([], mockConfig);
-      
+
       publishStub = sandbox.stub().resolves();
       mockChannel = {
         publish: publishStub,
@@ -172,27 +194,32 @@ describe("benchmarking commands", function () {
       });
     });
 
-    it("should publish messages at the specified rate", async function () {
+    it("should publish messages at the specified rate", async () => {
       await command.run();
 
       // Should publish 5 test messages + 2 control envelopes (start and end)
-      expect(publishStub.callCount).to.equal(7);
+      expect(publishStub.callCount).toBe(7);
     });
 
-    it("should generate random data of specified size", function () {
+    it("should generate random data of specified size", () => {
       const data = command.testGenerateRandomData(100);
-      
-      expect(typeof data).to.equal("string");
-      expect(data.length).to.equal(100);
+
+      expect(typeof data).toBe("string");
+      expect(data.length).toBe(100);
     });
 
-    it("should calculate metrics correctly", function () {
+    it("should calculate metrics correctly", () => {
       const startTime = 1000;
       const endTime = 2000; // 1 second duration
       const messageCount = 100;
       const errorCount = 5;
 
-      const metrics = command.testCalculateMetrics(startTime, endTime, messageCount, errorCount);
+      const metrics = command.testCalculateMetrics(
+        startTime,
+        endTime,
+        messageCount,
+        errorCount,
+      );
 
       expect(metrics).to.deep.include({
         totalMessages: messageCount,
@@ -204,7 +231,7 @@ describe("benchmarking commands", function () {
       });
     });
 
-    it("should handle rate limiting with small intervals", async function () {
+    it("should handle rate limiting with small intervals", async () => {
       command.setParseResult({
         flags: {
           transport: "realtime",
@@ -227,12 +254,12 @@ describe("benchmarking commands", function () {
       const endTime = Date.now();
 
       // Should publish 3 test messages + 2 control envelopes (start and end)
-      expect(publishStub.callCount).to.equal(5);
+      expect(publishStub.callCount).toBe(5);
       // Should take at least some time due to rate limiting
-      expect(endTime - startTime).to.be.greaterThan(50);
+      expect(endTime - startTime).toBeGreaterThan(50);
     });
 
-    it("should handle publish errors gracefully", async function () {
+    it("should handle publish errors gracefully", async () => {
       publishStub.onFirstCall().rejects(new Error("Publish failed"));
       publishStub.onSecondCall().resolves();
       publishStub.onThirdCall().resolves();
@@ -243,19 +270,21 @@ describe("benchmarking commands", function () {
         await command.run();
       } catch (error) {
         errorThrown = true;
-        expect(error instanceof Error ? error.message : String(error)).to.include("Benchmark failed: Publish failed");
+        expect(
+          error instanceof Error ? error.message : String(error),
+        ).toContain("Benchmark failed: Publish failed");
       }
-      expect(errorThrown).to.be.true;
+      expect(errorThrown).toBe(true);
 
-      expect(publishStub.callCount).to.be.greaterThan(0);
+      expect(publishStub.callCount).toBeGreaterThan(0);
     });
 
-    it("should wait for subscribers when flag is set", async function () {
+    it("should wait for subscribers when flag is set", async () => {
       const presenceGetStub = mockChannel.presence.get;
       // Mock subscriber with correct data structure that the code expects
-      const mockSubscriber = { 
+      const mockSubscriber = {
         clientId: "subscriber1",
-        data: { role: "subscriber" }
+        data: { role: "subscriber" },
       };
       presenceGetStub.resolves([mockSubscriber]); // Subscriber already present
 
@@ -274,12 +303,12 @@ describe("benchmarking commands", function () {
 
       await command.run();
 
-      expect(presenceGetStub.callCount).to.be.greaterThan(0);
+      expect(presenceGetStub.callCount).toBeGreaterThan(0);
       // Should publish 2 test messages + 2 control envelopes (start and end)
-      expect(publishStub.callCount).to.equal(4);
+      expect(publishStub.callCount).toBe(4);
     });
 
-    it("should use REST transport when specified", async function () {
+    it("should use REST transport when specified", async () => {
       command.setParseResult({
         flags: {
           transport: "rest",
@@ -296,18 +325,18 @@ describe("benchmarking commands", function () {
       await command.run();
 
       // Should publish 3 test messages + 2 control envelopes (start and end)
-      expect(publishStub.callCount).to.equal(5);
+      expect(publishStub.callCount).toBe(5);
     });
   });
 
-  describe("bench subscriber", function () {
+  describe("bench subscriber", () => {
     let command: TestableBenchSubscriber;
     let mockChannel: any;
     let subscribeStub: sinon.SinonStub;
 
-    beforeEach(function () {
+    beforeEach(() => {
       command = new TestableBenchSubscriber([], mockConfig);
-      
+
       subscribeStub = sandbox.stub();
       mockChannel = {
         subscribe: subscribeStub,
@@ -336,7 +365,7 @@ describe("benchmarking commands", function () {
       });
     });
 
-    it("should subscribe to channel successfully", async function () {
+    it("should subscribe to channel successfully", async () => {
       subscribeStub.callsFake((callback) => {
         // Simulate receiving messages
         setTimeout(() => {
@@ -351,29 +380,29 @@ describe("benchmarking commands", function () {
 
       // Since subscribe runs indefinitely, we'll test the setup
       const _runPromise = command.run(); // Prefix with underscore for intentionally unused
-      
-      await new Promise(resolve => setTimeout(resolve, 20)); // Reduced from 50ms
-      
-      expect(subscribeStub.calledOnce).to.be.true;
-      expect(mockChannel.presence.enter.calledOnce).to.be.true;
-      
+
+      await new Promise((resolve) => setTimeout(resolve, 20)); // Reduced from 50ms
+
+      expect(subscribeStub.calledOnce).toBe(true);
+      expect(mockChannel.presence.enter.calledOnce).toBe(true);
+
       command.mockRealtimeClient.close();
     });
 
-    it("should enter presence when subscribing", async function () {
+    it("should enter presence when subscribing", async () => {
       subscribeStub.resolves();
 
       const _runPromise = command.run(); // Prefix with underscore for intentionally unused
-      
-      await new Promise(resolve => setTimeout(resolve, 20)); // Reduced from 50ms
-      
-      expect(mockChannel.presence.enter.calledOnce).to.be.true;
-      
+
+      await new Promise((resolve) => setTimeout(resolve, 20)); // Reduced from 50ms
+
+      expect(mockChannel.presence.enter.calledOnce).toBe(true);
+
       command.mockRealtimeClient.close();
     });
 
     // TODO: Fix this test - subscription error handling needs investigation
-    // it("should handle subscription errors gracefully", async function () {
+    // it("should handle subscription errors gracefully", async () => {
     //   subscribeStub.rejects(new Error("Subscription failed"));
 
     //   // The command should throw an error when subscription fails
@@ -383,12 +412,12 @@ describe("benchmarking commands", function () {
     //   } catch {
     //     errorThrown = true;
     //   }
-    //   expect(errorThrown).to.be.true;
+    //   expect(errorThrown).toBe(true);
     // });
 
-    it("should process incoming messages and calculate stats", async function () {
+    it("should process incoming messages and calculate stats", async () => {
       const _receivedMessages: any[] = []; // Prefix with underscore for intentionally unused
-      
+
       subscribeStub.callsFake((callback) => {
         // Simulate multiple messages over time
         for (let i = 0; i < 5; i++) {
@@ -406,75 +435,95 @@ describe("benchmarking commands", function () {
       });
 
       const _runPromise = command.run(); // Prefix with underscore for intentionally unused
-      
-      await new Promise(resolve => setTimeout(resolve, 50)); // Reduced from 100ms
-      
-      expect(subscribeStub.calledOnce).to.be.true;
-      
+
+      await new Promise((resolve) => setTimeout(resolve, 50)); // Reduced from 100ms
+
+      expect(subscribeStub.calledOnce).toBe(true);
+
       command.mockRealtimeClient.close();
     });
   });
 
-  describe("benchmarking metrics calculation", function () {
+  describe("benchmarking metrics calculation", () => {
     let command: TestableBenchPublisher;
 
-    beforeEach(function () {
+    beforeEach(() => {
       command = new TestableBenchPublisher([], mockConfig);
     });
 
-    it("should calculate correct throughput metrics", function () {
+    it("should calculate correct throughput metrics", () => {
       const startTime = 1000;
       const endTime = 3000; // 2 seconds
       const messageCount = 200;
       const errorCount = 10;
 
-      const metrics = command.testCalculateMetrics(startTime, endTime, messageCount, errorCount);
+      const metrics = command.testCalculateMetrics(
+        startTime,
+        endTime,
+        messageCount,
+        errorCount,
+      );
 
-      expect(metrics.totalMessages).to.equal(200);
-      expect(metrics.successfulMessages).to.equal(190);
-      expect(metrics.failedMessages).to.equal(10);
-      expect(metrics.durationMs).to.equal(2000);
-      expect(metrics.messagesPerSecond).to.equal(100); // 200 messages in 2 seconds
-      expect(metrics.successRate).to.equal(0.95); // 95% success rate
+      expect(metrics.totalMessages).toBe(200);
+      expect(metrics.successfulMessages).toBe(190);
+      expect(metrics.failedMessages).toBe(10);
+      expect(metrics.durationMs).toBe(2000);
+      expect(metrics.messagesPerSecond).toBe(100); // 200 messages in 2 seconds
+      expect(metrics.successRate).toBe(0.95); // 95% success rate
     });
 
-    it("should handle zero duration edge case", function () {
+    it("should handle zero duration edge case", () => {
       const startTime = 1000;
       const endTime = 1000; // Same time = 0 duration
       const messageCount = 100;
       const errorCount = 0;
 
-      const metrics = command.testCalculateMetrics(startTime, endTime, messageCount, errorCount);
+      const metrics = command.testCalculateMetrics(
+        startTime,
+        endTime,
+        messageCount,
+        errorCount,
+      );
 
-      expect(metrics.durationMs).to.equal(0);
-      expect(metrics.messagesPerSecond).to.equal(Infinity); // Division by zero
-      expect(metrics.successRate).to.equal(1);
+      expect(metrics.durationMs).toBe(0);
+      expect(metrics.messagesPerSecond).toBe(Infinity); // Division by zero
+      expect(metrics.successRate).toBe(1);
     });
 
-    it("should handle all failed messages", function () {
+    it("should handle all failed messages", () => {
       const startTime = 1000;
       const endTime = 2000;
       const messageCount = 50;
       const errorCount = 50; // All messages failed
 
-      const metrics = command.testCalculateMetrics(startTime, endTime, messageCount, errorCount);
+      const metrics = command.testCalculateMetrics(
+        startTime,
+        endTime,
+        messageCount,
+        errorCount,
+      );
 
-      expect(metrics.successfulMessages).to.equal(0);
-      expect(metrics.failedMessages).to.equal(50);
-      expect(metrics.successRate).to.equal(0);
+      expect(metrics.successfulMessages).toBe(0);
+      expect(metrics.failedMessages).toBe(50);
+      expect(metrics.successRate).toBe(0);
     });
 
-    it("should calculate metrics for very fast operations", function () {
+    it("should calculate metrics for very fast operations", () => {
       const startTime = 1000;
       const endTime = 1100; // 100ms
       const messageCount = 10;
       const errorCount = 1;
 
-      const metrics = command.testCalculateMetrics(startTime, endTime, messageCount, errorCount);
+      const metrics = command.testCalculateMetrics(
+        startTime,
+        endTime,
+        messageCount,
+        errorCount,
+      );
 
-      expect(metrics.durationMs).to.equal(100);
-      expect(metrics.messagesPerSecond).to.equal(100); // 10 messages in 0.1 seconds = 100/sec
-      expect(metrics.successRate).to.equal(0.9);
+      expect(metrics.durationMs).toBe(100);
+      expect(metrics.messagesPerSecond).toBe(100); // 10 messages in 0.1 seconds = 100/sec
+      expect(metrics.successRate).toBe(0.9);
     });
   });
 });

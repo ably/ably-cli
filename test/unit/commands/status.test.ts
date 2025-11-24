@@ -1,5 +1,4 @@
-import { expect } from "chai";
-import { describe, it } from "mocha";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 
 describe("Status Command Tests", function () {
@@ -29,10 +28,10 @@ describe("Status Command Tests", function () {
       } as any;
 
       // Status should exist at root
-      expect(mockConfig.findCommand("status")).to.not.be.null;
+      expect(mockConfig.findCommand("status")).not.toBeNull();
 
       // help:status should not exist
-      expect(mockConfig.findCommand("help:status")).to.be.null;
+      expect(mockConfig.findCommand("help:status")).toBeNull();
     });
 
     it("should have --open flag", function () {
@@ -48,8 +47,8 @@ describe("Status Command Tests", function () {
         },
       };
 
-      expect(mockStatusCommand.flags).to.have.property("open");
-      expect(mockStatusCommand.flags.open.type).to.equal("boolean");
+      expect(mockStatusCommand.flags).toHaveProperty("open");
+      expect(mockStatusCommand.flags.open.type).toBe("boolean");
     });
 
     it("should have correct description", function () {
@@ -58,8 +57,8 @@ describe("Status Command Tests", function () {
         description: "Check the status of Ably services",
       };
 
-      expect(mockCommand.description).to.include("status");
-      expect(mockCommand.description).to.include("Ably services");
+      expect(mockCommand.description).toContain("status");
+      expect(mockCommand.description).toContain("Ably services");
     });
   });
 
@@ -73,11 +72,11 @@ describe("Status Command Tests", function () {
 
       if (isInteractive) {
         // In interactive mode, ora should not be used
-        expect(mockOra.called).to.be.false;
+        expect(mockOra.called).toBe(false);
       } else {
         // In non-interactive mode, ora can be used
         mockOra("Checking status...");
-        expect(mockOra.called).to.be.true;
+        expect(mockOra.called).toBe(true);
       }
     });
 
@@ -87,8 +86,9 @@ describe("Status Command Tests", function () {
 
       if (isInteractive) {
         console.log("Checking Ably service status...");
-        expect(consoleLogStub.calledWith("Checking Ably service status...")).to
-          .be.true;
+        expect(
+          consoleLogStub.calledWith("Checking Ably service status..."),
+        ).toBe(true);
       }
     });
   });
@@ -96,7 +96,7 @@ describe("Status Command Tests", function () {
   describe("Status Page URL", function () {
     it("should have correct status page URL", function () {
       const STATUS_PAGE_URL = "https://status.ably.com";
-      expect(STATUS_PAGE_URL).to.equal("https://status.ably.com");
+      expect(STATUS_PAGE_URL).toBe("https://status.ably.com");
     });
 
     it("should open browser when --open flag is used", async function () {
@@ -107,7 +107,7 @@ describe("Status Command Tests", function () {
 
       if (flags.open) {
         await openStub("https://status.ably.com");
-        expect(openStub.calledWith("https://status.ably.com")).to.be.true;
+        expect(openStub.calledWith("https://status.ably.com")).toBe(true);
       }
     });
   });

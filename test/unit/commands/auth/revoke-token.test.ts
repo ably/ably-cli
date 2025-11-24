@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import fs from "node:fs";
 import * as _https from "node:https";
@@ -52,29 +52,24 @@ describe("RevokeTokenCommand", function () {
 
   describe("command properties", function () {
     it("should have correct static properties", function () {
-      expect(RevokeTokenCommand.description).to.equal(
-        "Revokes the token provided",
-      );
-      expect(RevokeTokenCommand.examples).to.be.an("array");
-      expect(RevokeTokenCommand.args).to.have.property("token");
-      expect(RevokeTokenCommand.flags).to.have.property("client-id");
-      expect(RevokeTokenCommand.flags).to.have.property("debug");
+      expect(RevokeTokenCommand.description).toBe("Revokes the token provided");
+      expect(RevokeTokenCommand.examples).toBeInstanceOf(Array);
+      expect(RevokeTokenCommand.args).toHaveProperty("token");
+      expect(RevokeTokenCommand.flags).toHaveProperty("client-id");
+      expect(RevokeTokenCommand.flags).toHaveProperty("debug");
     });
 
     it("should have required token argument", function () {
-      expect(RevokeTokenCommand.args.token).to.have.property("required", true);
-      expect(RevokeTokenCommand.args.token).to.have.property("name", "token");
+      expect(RevokeTokenCommand.args.token).toHaveProperty("required", true);
+      expect(RevokeTokenCommand.args.token).toHaveProperty("name", "token");
     });
 
     it("should have client-id flag with char 'c'", function () {
-      expect(RevokeTokenCommand.flags["client-id"]).to.have.property(
-        "char",
-        "c",
-      );
+      expect(RevokeTokenCommand.flags["client-id"]).toHaveProperty("char", "c");
     });
 
     it("should have debug flag with default false", function () {
-      expect(RevokeTokenCommand.flags.debug).to.have.property("default", false);
+      expect(RevokeTokenCommand.flags.debug).toHaveProperty("default", false);
     });
   });
 
@@ -86,9 +81,9 @@ describe("RevokeTokenCommand", function () {
       const apiKey = "appId.keyId:keySecret";
       const keyParts = apiKey.split(":");
 
-      expect(keyParts).to.have.length(2);
-      expect(keyParts[0]).to.equal("appId.keyId");
-      expect(keyParts[1]).to.equal("keySecret");
+      expect(keyParts).toHaveLength(2);
+      expect(keyParts[0]).toBe("appId.keyId");
+      expect(keyParts[1]).toBe("keySecret");
     });
 
     it("should extract keyName from API key", function () {
@@ -97,7 +92,7 @@ describe("RevokeTokenCommand", function () {
       const apiKey = "appId.keyId:keySecret";
       const keyName = apiKey.split(":")[0];
 
-      expect(keyName).to.equal("appId.keyId");
+      expect(keyName).toBe("appId.keyId");
     });
 
     it("should handle invalid API key format", function () {
@@ -106,9 +101,9 @@ describe("RevokeTokenCommand", function () {
       const invalidApiKey = "invalidkey";
       const keyParts = invalidApiKey.split(":");
 
-      expect(keyParts).to.have.length(1);
+      expect(keyParts).toHaveLength(1);
       // This would trigger an error in the actual command
-      expect(keyParts.length !== 2).to.be.true;
+      expect(keyParts.length !== 2).toBe(true);
     });
   });
 
@@ -121,9 +116,9 @@ describe("RevokeTokenCommand", function () {
         targets: [`clientId:${clientId}`],
       };
 
-      expect(requestBody).to.have.property("targets");
-      expect(requestBody.targets).to.be.an("array");
-      expect(requestBody.targets[0]).to.equal("clientId:testClient");
+      expect(requestBody).toHaveProperty("targets");
+      expect(requestBody.targets).toBeInstanceOf(Array);
+      expect(requestBody.targets[0]).toBe("clientId:testClient");
     });
 
     it("should use token as client ID when no client-id flag provided", function () {
@@ -135,7 +130,7 @@ describe("RevokeTokenCommand", function () {
         targets: [`clientId:${clientId}`],
       };
 
-      expect(requestBody.targets[0]).to.equal("clientId:testToken123");
+      expect(requestBody.targets[0]).toBe("clientId:testToken123");
     });
   });
 
@@ -161,10 +156,10 @@ describe("RevokeTokenCommand", function () {
         port: 443,
       };
 
-      expect(expectedOptions.hostname).to.equal("rest.ably.io");
-      expect(expectedOptions.method).to.equal("POST");
-      expect(expectedOptions.path).to.equal("/keys/appId.keyId/revokeTokens");
-      expect(expectedOptions.headers.Authorization).to.include("Basic");
+      expect(expectedOptions.hostname).toBe("rest.ably.io");
+      expect(expectedOptions.method).toBe("POST");
+      expect(expectedOptions.path).toBe("/keys/appId.keyId/revokeTokens");
+      expect(expectedOptions.headers.Authorization).toContain("Basic");
     });
 
     it("should encode authorization header correctly", function () {
@@ -176,8 +171,8 @@ describe("RevokeTokenCommand", function () {
         "base64",
       );
 
-      expect(expectedEncoded).to.be.a("string");
-      expect(expectedEncoded.length).to.be.greaterThan(0);
+      expect(expectedEncoded).toBeTypeOf("string");
+      expect(expectedEncoded.length).toBeGreaterThan(0);
     });
   });
 
@@ -193,8 +188,8 @@ describe("RevokeTokenCommand", function () {
       if (debugFlag) {
         // This would be logged in debug mode
         const debugMessage = `Debug: Using API key: ${maskedKey}`;
-        expect(debugMessage).to.include("Debug: Using API key:");
-        expect(debugMessage).to.include(":***");
+        expect(debugMessage).toContain("Debug: Using API key:");
+        expect(debugMessage).toContain(":***");
       }
     });
 
@@ -204,8 +199,8 @@ describe("RevokeTokenCommand", function () {
       const apiKey = "appId.keyId:realSecret";
       const maskedKey = apiKey.replace(/:.+/, ":***");
 
-      expect(maskedKey).to.equal("appId.keyId:***");
-      expect(maskedKey).to.not.include("realSecret");
+      expect(maskedKey).toBe("appId.keyId:***");
+      expect(maskedKey).not.toContain("realSecret");
     });
 
     it("should log request details in debug mode", function () {
@@ -219,8 +214,8 @@ describe("RevokeTokenCommand", function () {
         `Debug: Request body: ${JSON.stringify(requestBody)}`,
       ];
 
-      expect(debugMessages[0]).to.include("/keys/appId.keyId/revokeTokens");
-      expect(debugMessages[1]).to.include("clientId:testClient");
+      expect(debugMessages[0]).toContain("/keys/appId.keyId/revokeTokens");
+      expect(debugMessages[1]).toContain("clientId:testClient");
     });
   });
 
@@ -236,8 +231,8 @@ describe("RevokeTokenCommand", function () {
       ];
 
       expectedWarnings.forEach((warning) => {
-        expect(warning).to.be.a("string");
-        expect(warning.length).to.be.greaterThan(0);
+        expect(warning).toBeTypeOf("string");
+        expect(warning.length).toBeGreaterThan(0);
       });
     });
   });
@@ -253,9 +248,9 @@ describe("RevokeTokenCommand", function () {
       };
 
       const jsonOutput = JSON.stringify(successData);
-      expect(jsonOutput).to.include('"success":true');
-      expect(jsonOutput).to.include('"message"');
-      expect(jsonOutput).to.include("Token revocation processed successfully");
+      expect(jsonOutput).toContain('"success":true');
+      expect(jsonOutput).toContain('"message"');
+      expect(jsonOutput).toContain("Token revocation processed successfully");
     });
 
     it("should format error JSON output", function () {
@@ -267,9 +262,9 @@ describe("RevokeTokenCommand", function () {
       };
 
       const jsonOutput = JSON.stringify(errorData);
-      expect(jsonOutput).to.include('"success":false');
-      expect(jsonOutput).to.include('"error"');
-      expect(jsonOutput).to.include("Token not found");
+      expect(jsonOutput).toContain('"success":false');
+      expect(jsonOutput).toContain('"error"');
+      expect(jsonOutput).toContain("Token not found");
     });
 
     it("should handle successful text output", function () {
@@ -277,7 +272,7 @@ describe("RevokeTokenCommand", function () {
       const _logSpy = sandbox.spy(_command, "log");
 
       const successMessage = "Token successfully revoked";
-      expect(successMessage).to.equal("Token successfully revoked");
+      expect(successMessage).toBe("Token successfully revoked");
     });
   });
 
@@ -288,11 +283,11 @@ describe("RevokeTokenCommand", function () {
       const error = new Error("token_not_found");
       const isTokenNotFound = error.message.includes("token_not_found");
 
-      expect(isTokenNotFound).to.be.true;
+      expect(isTokenNotFound).toBe(true);
 
       if (isTokenNotFound) {
         const errorMessage = "Token not found or already revoked";
-        expect(errorMessage).to.include("not found or already revoked");
+        expect(errorMessage).toContain("not found or already revoked");
       }
     });
 
@@ -303,8 +298,8 @@ describe("RevokeTokenCommand", function () {
       const networkError = new Error("Network connection failed");
       const errorMessage = `Error revoking token: ${networkError.message}`;
 
-      expect(errorMessage).to.include("Error revoking token:");
-      expect(errorMessage).to.include("Network connection failed");
+      expect(errorMessage).toContain("Error revoking token:");
+      expect(errorMessage).toContain("Network connection failed");
     });
 
     it("should handle non-Error objects", function () {
@@ -316,8 +311,8 @@ describe("RevokeTokenCommand", function () {
           ? JSON.stringify(unknownError)
           : String(unknownError);
 
-      expect(errorMessage).to.include("500");
-      expect(errorMessage).to.include("Internal Server Error");
+      expect(errorMessage).toContain("500");
+      expect(errorMessage).toContain("Internal Server Error");
     });
   });
 
@@ -333,8 +328,8 @@ describe("RevokeTokenCommand", function () {
       configManagerStub.getCurrentAppId.returns("testApp");
       configManagerStub.getApiKey.returns("testApp.keyId:keySecret");
 
-      expect(configManagerStub.getCurrentAppId).to.exist;
-      expect(configManagerStub.getApiKey).to.exist;
+      expect(configManagerStub.getCurrentAppId).toBeDefined();
+      expect(configManagerStub.getApiKey).toBeDefined();
     });
 
     it("should close client after operation", function () {
@@ -344,7 +339,7 @@ describe("RevokeTokenCommand", function () {
       const mockClient = mockAblyClient;
       const closeStub = mockClient.close as sinon.SinonStub;
 
-      expect(closeStub).to.be.a("function");
+      expect(closeStub).toBeTypeOf("function");
     });
 
     it("should handle client creation failure", function () {
@@ -358,8 +353,8 @@ describe("RevokeTokenCommand", function () {
       const appId = configManagerStub.getCurrentAppId();
       const apiKey = configManagerStub.getApiKey();
 
-      expect(appId).to.equal("");
-      expect(apiKey).to.equal("");
+      expect(appId).toBe("");
+      expect(apiKey).toBe("");
     });
   });
 
@@ -370,7 +365,7 @@ describe("RevokeTokenCommand", function () {
       const keyName = "appId.keyId";
       const endpoint = `/keys/${keyName}/revokeTokens`;
 
-      expect(endpoint).to.equal("/keys/appId.keyId/revokeTokens");
+      expect(endpoint).toBe("/keys/appId.keyId/revokeTokens");
     });
 
     it("should use rest.ably.io as hostname", function () {
@@ -379,8 +374,8 @@ describe("RevokeTokenCommand", function () {
       const hostname = "rest.ably.io";
       const port = 443;
 
-      expect(hostname).to.equal("rest.ably.io");
-      expect(port).to.equal(443);
+      expect(hostname).toBe("rest.ably.io");
+      expect(port).toBe(443);
     });
   });
 
@@ -397,8 +392,8 @@ describe("RevokeTokenCommand", function () {
         jsonResponse = responseData;
       }
 
-      expect(jsonResponse).to.be.an("object");
-      expect(jsonResponse.success).to.be.true;
+      expect(jsonResponse).toBeTypeOf("object");
+      expect(jsonResponse.success).toBe(true);
     });
 
     it("should handle empty response", function () {
@@ -407,7 +402,7 @@ describe("RevokeTokenCommand", function () {
       const emptyData = "";
       const jsonResponse = emptyData.length > 0 ? JSON.parse(emptyData) : null;
 
-      expect(jsonResponse).to.be.null;
+      expect(jsonResponse).toBeNull();
     });
 
     it("should handle non-JSON response", function () {
@@ -422,7 +417,7 @@ describe("RevokeTokenCommand", function () {
         jsonResponse = textData;
       }
 
-      expect(jsonResponse).to.equal("Token revoked successfully");
+      expect(jsonResponse).toBe("Token revoked successfully");
     });
   });
 });

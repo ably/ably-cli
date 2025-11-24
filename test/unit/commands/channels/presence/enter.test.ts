@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import ChannelsPresenceEnter from "../../../../../src/commands/channels/presence/enter.js";
@@ -190,7 +190,7 @@ describe("ChannelsPresenceEnter", function () {
 
     await command.run();
 
-    expect(createClientSpy.calledOnce).to.be.true;
+    expect(createClientSpy.calledOnce).toBe(true);
 
     createClientSpy.restore();
     runStub.restore();
@@ -204,7 +204,7 @@ describe("ChannelsPresenceEnter", function () {
     });
 
     const parseResult = await command.parse();
-    expect(parseResult.flags.data).to.equal('{"status":"online"}');
+    expect(parseResult.flags.data).toBe('{"status":"online"}');
   });
 
   it("should handle invalid JSON in data", function () {
@@ -216,12 +216,12 @@ describe("ChannelsPresenceEnter", function () {
 
     // Test JSON parsing logic directly
     const invalidJson = "{invalid-json}";
-    expect(() => JSON.parse(invalidJson)).to.throw();
+    expect(() => JSON.parse(invalidJson)).toThrow();
   });
 
   it("should return mock client from createAblyRealtimeClient", async function () {
     const client = await command.createAblyRealtimeClient({});
-    expect(client).to.equal(command.mockClient);
+    expect(client).toBe(command.mockClient);
   });
 
   it("should format JSON output when shouldOutputJson is true", function () {
@@ -231,10 +231,10 @@ describe("ChannelsPresenceEnter", function () {
     const testData = { channel: "test", action: "enter" };
     const result = command.formatJsonOutput(testData);
 
-    expect(result).to.be.a("string");
-    expect(() => JSON.parse(result)).to.not.throw();
+    expect(result).toBeTypeOf("string");
+    expect(() => JSON.parse(result)).not.toThrow();
 
     const parsed = JSON.parse(result);
-    expect(parsed).to.deep.equal(testData);
+    expect(parsed).toEqual(testData);
   });
 });

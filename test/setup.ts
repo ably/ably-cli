@@ -4,6 +4,17 @@ import { resolve } from "node:path";
 import { existsSync } from "node:fs";
 import { exec } from "node:child_process";
 import * as Ably from "ably";
+import { it as vitestIt, describe as vitestDescribe } from "vitest";
+
+// Polyfill mocha globals for fancy-test compatibility
+// fancy-test is a dependency of @oclif/test and expects mocha globals
+// We provide vitest equivalents to prevent errors during module loading
+if (globalThis.it === undefined) {
+  globalThis.it = vitestIt as typeof globalThis.it;
+}
+if (globalThis.describe === undefined) {
+  globalThis.describe = vitestDescribe as typeof globalThis.describe;
+}
 
 // Global type declarations for test mocks
 declare global {
@@ -114,74 +125,74 @@ if (process.env.ABLY_CLI_TEST_SHOW_OUTPUT) {
 }
 
 // Suppress console output unless ABLY_CLI_TEST_SHOW_OUTPUT is set
-if (!process.env.ABLY_CLI_TEST_SHOW_OUTPUT) {
-  // Store original console methods
-  const originalConsole = {
-    log: console.log,
-    info: console.info,
-    warn: console.warn,
-    error: console.error,
-    debug: console.debug,
-  };
+// if (!process.env.ABLY_CLI_TEST_SHOW_OUTPUT) {
+//   // Store original console methods
+//   const originalConsole = {
+//     log: console.log,
+//     info: console.info,
+//     warn: console.warn,
+//     error: console.error,
+//     debug: console.debug,
+//   };
 
-  // Override console methods to filter output
-  console.log = (..._args) => {
-    // Only show output for test failures or if the message contains critical keywords
-    if (
-      _args.some(
-        (arg) =>
-          typeof arg === "string" &&
-          (arg.includes("failing") ||
-            arg.includes("Error:") ||
-            arg.includes("FAIL")),
-      )
-    ) {
-      originalConsole.log(..._args);
-    }
-  };
+//   // Override console methods to filter output
+//   console.log = (..._args) => {
+//     // Only show output for test failures or if the message contains critical keywords
+//     if (
+//       _args.some(
+//         (arg) =>
+//           typeof arg === "string" &&
+//           (arg.includes("failing") ||
+//             arg.includes("Error:") ||
+//             arg.includes("FAIL")),
+//       )
+//     ) {
+//       originalConsole.log(..._args);
+//     }
+//   };
 
-  console.info = (..._args) => {
-    // Suppress info messages completely during tests
-    if (
-      _args.some(
-        (arg) =>
-          typeof arg === "string" &&
-          (arg.includes("Error:") || arg.includes("FAIL")),
-      )
-    ) {
-      originalConsole.info(..._args);
-    }
-  };
+//   console.info = (..._args) => {
+//     // Suppress info messages completely during tests
+//     if (
+//       _args.some(
+//         (arg) =>
+//           typeof arg === "string" &&
+//           (arg.includes("Error:") || arg.includes("FAIL")),
+//       )
+//     ) {
+//       originalConsole.info(..._args);
+//     }
+//   };
 
-  console.warn = (..._args) => {
-    // Show warnings only if they're critical
-    if (
-      _args.some(
-        (arg) =>
-          typeof arg === "string" &&
-          (arg.includes("Error:") ||
-            arg.includes("Warning:") ||
-            arg.includes("FAIL")),
-      )
-    ) {
-      originalConsole.warn(..._args);
-    }
-  };
+//   console.warn = (..._args) => {
+//     // Show warnings only if they're critical
+//     if (
+//       _args.some(
+//         (arg) =>
+//           typeof arg === "string" &&
+//           (arg.includes("Error:") ||
+//             arg.includes("Warning:") ||
+//             arg.includes("FAIL")),
+//       )
+//     ) {
+//       originalConsole.warn(..._args);
+//     }
+//   };
 
-  console.error = (..._args) => {
-    // Always show errors
-    originalConsole.error(..._args);
-  };
+//   console.error = (..._args) => {
+//     // Always show errors
+//     originalConsole.error(..._args);
+//   };
 
-  console.debug = (..._args) => {
-    // Suppress debug messages completely
-  };
+//   console.debug = (..._args) => {
+//     // Suppress debug messages completely
+//   };
 
-  // Store original methods for potential restoration
-  (
-    globalThis as unknown as { __originalConsole: typeof originalConsole }
-  ).__originalConsole = originalConsole;
-}
+//   // Store original methods for potential restoration
+//   (
+//     globalThis as unknown as { __originalConsole: typeof originalConsole }
+//   ).__originalConsole = originalConsole;
+// }
 
 /**
  * Utility to track an Ably client for cleanup

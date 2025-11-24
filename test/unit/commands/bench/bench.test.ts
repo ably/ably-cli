@@ -1,4 +1,13 @@
-import { expect } from "chai";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+  vi,
+} from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
@@ -102,14 +111,14 @@ describe("bench publisher control envelopes", function () {
     // Extract the data argument from publish calls
     const publishedPayloads = publishStub.getCalls().map((c) => c.args[1]);
 
-    expect(publishedPayloads[0]).to.have.property("type", "start");
+    expect(publishedPayloads[0]).toHaveProperty("type", "start");
 
     // There should be at least one message payload with type "message"
     const messagePayload = publishedPayloads.find((p) => p.type === "message");
-    expect(messagePayload).to.not.be.undefined;
+    expect(messagePayload).not.toBeUndefined();
 
     // Last payload should be end control
     const lastPayload = publishedPayloads.at(-1);
-    expect(lastPayload).to.have.property("type", "end");
+    expect(lastPayload).toHaveProperty("type", "end");
   });
-}); 
+});

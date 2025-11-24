@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import LogsConnectionSubscribe from "../../../../../src/commands/logs/connection/subscribe.js";
@@ -152,7 +152,7 @@ describe("LogsConnectionSubscribe", function () {
     // Run the command with a short duration
     await command.run();
 
-    expect(createClientStub.calledOnce).to.be.true;
+    expect(createClientStub.calledOnce).toBe(true);
   });
 
   it("should subscribe to [meta]connection.lifecycle channel", async function () {
@@ -177,11 +177,10 @@ describe("LogsConnectionSubscribe", function () {
     // The test's ensureAppAndKey returns appId: 'dummy-app'
     expect(
       command.mockClient.channels.get.calledWith("[meta]connection.lifecycle"),
-    ).to.be.true;
-    expect(subscribeStub.called).to.be.true;
+    ).toBe(true);
+    expect(subscribeStub.called).toBe(true);
   });
 
-  // eslint-disable-next-line mocha/no-skipped-tests
   it.skip("should handle rewind parameter", async function () {
     // Skip this test - the logs/connection/subscribe command doesn't support rewind parameter
     // Only logs/connection-lifecycle/subscribe supports rewind
@@ -201,7 +200,7 @@ describe("LogsConnectionSubscribe", function () {
     await command.run();
 
     // Verify that connection state change handlers were set up
-    expect(connectionOnStub.called).to.be.true;
+    expect(connectionOnStub.called).toBe(true);
   });
 
   it("should handle log message reception", async function () {
@@ -220,7 +219,7 @@ describe("LogsConnectionSubscribe", function () {
     await command.run();
 
     // Verify subscribe was called
-    expect(subscribeStub.called).to.be.true;
+    expect(subscribeStub.called).toBe(true);
 
     // Simulate receiving a log message
     const messageCallback = subscribeStub.firstCall.args[0];
@@ -238,7 +237,7 @@ describe("LogsConnectionSubscribe", function () {
 
       // Check that the message was logged
       const output = command.logOutput.join("\n");
-      expect(output).to.include("connection.opened");
+      expect(output).toContain("connection.opened");
     }
   });
 
@@ -287,7 +286,7 @@ describe("LogsConnectionSubscribe", function () {
           return false;
         }
       });
-      expect(jsonOutput).to.exist;
+      expect(jsonOutput).toBeDefined();
     }
   });
 
@@ -313,7 +312,7 @@ describe("LogsConnectionSubscribe", function () {
       // The command should handle connection failures gracefully
       // Check that error was logged appropriately
       const output = command.logOutput.join("\n");
-      expect(output.length).to.be.greaterThan(0); // Some output should have been generated
+      expect(output.length).toBeGreaterThan(0); // Some output should have been generated
     }
   });
 
@@ -330,6 +329,6 @@ describe("LogsConnectionSubscribe", function () {
     await command.run();
 
     // Verify that subscribe was never called since client creation failed
-    expect(command.mockClient.channels.get().subscribe.called).to.be.false;
+    expect(command.mockClient.channels.get().subscribe.called).toBe(false);
   });
 });

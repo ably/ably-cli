@@ -1,4 +1,13 @@
-import { expect } from "chai";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+  vi,
+} from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
@@ -177,13 +186,13 @@ describe("rooms messages commands", function () {
     it("should send a single message successfully", async function () {
       await command.run();
 
-      expect(sendStub.calledOnce).to.be.true;
+      expect(sendStub.calledOnce).toBe(true);
       expect(sendStub.getCall(0).args[0]).to.deep.include({
         text: "Hello World",
       });
       expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
         .true;
-      expect(mockRoom.attach.calledOnce).to.be.true;
+      expect(mockRoom.attach.calledOnce).toBe(true);
     });
 
     it("should send multiple messages with interpolation", async function () {
@@ -197,14 +206,14 @@ describe("rooms messages commands", function () {
       await command.run();
 
       // Should eventually send 3 messages
-      expect(sendStub.callCount).to.equal(3);
+      expect(sendStub.callCount).toBe(3);
 
       // Check first and last calls for interpolation
       const firstCall = sendStub.getCall(0);
       const lastCall = sendStub.getCall(2);
 
-      expect(firstCall.args[0].text).to.equal("Message 1");
-      expect(lastCall.args[0].text).to.equal("Message 3");
+      expect(firstCall.args[0].text).toBe("Message 1");
+      expect(lastCall.args[0].text).toBe("Message 3");
     });
 
     it("should handle metadata in messages", async function () {
@@ -217,7 +226,7 @@ describe("rooms messages commands", function () {
 
       await command.run();
 
-      expect(sendStub.calledOnce).to.be.true;
+      expect(sendStub.calledOnce).toBe(true);
       expect(sendStub.getCall(0).args[0]).to.deep.include({
         text: "Important message",
         metadata: { isImportant: true },
@@ -236,7 +245,7 @@ describe("rooms messages commands", function () {
         await command.run();
         expect.fail("Should have thrown an error");
       } catch (error) {
-        expect((error as Error).message).to.include("Invalid metadata JSON");
+        expect((error as Error).message).toContain("Invalid metadata JSON");
       }
     });
   });
@@ -315,8 +324,8 @@ describe("rooms messages commands", function () {
 
       expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
         .true;
-      expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(subscribeStub.calledOnce).to.be.true;
+      expect(mockRoom.attach.calledOnce).toBe(true);
+      expect(subscribeStub.calledOnce).toBe(true);
 
       // Cleanup - this would normally be done by SIGINT
       command.mockRealtimeClient.close();
@@ -391,8 +400,8 @@ describe("rooms messages commands", function () {
 
       expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
         .true;
-      expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(historyStub.calledOnce).to.be.true;
+      expect(mockRoom.attach.calledOnce).toBe(true);
+      expect(historyStub.calledOnce).toBe(true);
     });
 
     it("should handle query options for history", async function () {
@@ -405,9 +414,9 @@ describe("rooms messages commands", function () {
 
       await command.run();
 
-      expect(historyStub.calledOnce).to.be.true;
+      expect(historyStub.calledOnce).toBe(true);
       const queryOptions = historyStub.getCall(0).args[0];
-      expect(queryOptions).to.deep.equal({ limit: 50 });
+      expect(queryOptions).toEqual({ limit: 50 });
     });
   });
 });

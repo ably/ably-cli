@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import fs from "node:fs";
 import AccountsLogout from "../../../../src/commands/accounts/logout.js";
@@ -29,35 +29,33 @@ describe("AccountsLogout", function () {
 
   describe("command properties", function () {
     it("should have correct static properties", function () {
-      expect(AccountsLogout.description).to.equal(
-        "Log out from an Ably account",
-      );
-      expect(AccountsLogout.examples).to.be.an("array");
-      expect(AccountsLogout.flags).to.have.property("force");
-      expect(AccountsLogout.args).to.have.property("alias");
+      expect(AccountsLogout.description).toBe("Log out from an Ably account");
+      expect(AccountsLogout.examples).toBeInstanceOf(Array);
+      expect(AccountsLogout.flags).toHaveProperty("force");
+      expect(AccountsLogout.args).toHaveProperty("alias");
     });
 
     it("should have correct flag configuration", function () {
-      expect(AccountsLogout.flags.force).to.have.property("char", "f");
-      expect(AccountsLogout.flags.force).to.have.property("default", false);
+      expect(AccountsLogout.flags.force).toHaveProperty("char", "f");
+      expect(AccountsLogout.flags.force).toHaveProperty("default", false);
     });
 
     it("should have correct argument configuration", function () {
-      expect(AccountsLogout.args.alias).to.have.property("required", false);
-      expect(AccountsLogout.args.alias).to.have.property("description");
+      expect(AccountsLogout.args.alias).toHaveProperty("required", false);
+      expect(AccountsLogout.args.alias).toHaveProperty("description");
     });
   });
 
   describe("command instantiation", function () {
     it("should create command instance", function () {
       const command = new AccountsLogout([], {} as any);
-      expect(command).to.be.instanceOf(AccountsLogout);
-      expect(command.run).to.be.a("function");
+      expect(command).toBeInstanceOf(AccountsLogout);
+      expect(command.run).toBeTypeOf("function");
     });
 
     it("should have correct command structure", function () {
       const command = new AccountsLogout([], {} as any);
-      expect(command.constructor.name).to.equal("AccountsLogout");
+      expect(command.constructor.name).toBe("AccountsLogout");
     });
   });
 
@@ -72,9 +70,9 @@ describe("AccountsLogout", function () {
         userEmail: "test@example.com",
       };
 
-      expect(mockAccount.alias).to.be.a("string");
-      expect(mockAccount.accountId).to.be.a("string");
-      expect(mockAccount.accountName).to.be.a("string");
+      expect(mockAccount.alias).toBeTypeOf("string");
+      expect(mockAccount.accountId).toBeTypeOf("string");
+      expect(mockAccount.accountName).toBeTypeOf("string");
     });
 
     it("should validate account alias format", function () {
@@ -82,8 +80,8 @@ describe("AccountsLogout", function () {
       const invalidAliases = [null, undefined, ""];
 
       validAliases.forEach((alias) => {
-        expect(alias).to.be.a("string");
-        expect(alias.length).to.be.greaterThan(0);
+        expect(alias).toBeTypeOf("string");
+        expect(alias.length).toBeGreaterThan(0);
       });
 
       invalidAliases.forEach((alias) => {
@@ -92,7 +90,7 @@ describe("AccountsLogout", function () {
           alias === null ||
           alias === undefined ||
           (typeof alias === "string" && alias.length === 0);
-        expect(isInvalid).to.be.true;
+        expect(isInvalid).toBe(true);
       });
     });
   });
@@ -104,12 +102,12 @@ describe("AccountsLogout", function () {
 
       yesResponses.forEach((response) => {
         const isYes = ["y", "yes"].includes(response.toLowerCase());
-        expect(isYes).to.be.true;
+        expect(isYes).toBe(true);
       });
 
       noResponses.forEach((response) => {
         const isNo = ["n", "no"].includes(response.toLowerCase());
-        expect(isNo).to.be.true;
+        expect(isNo).toBe(true);
       });
     });
 
@@ -121,7 +119,7 @@ describe("AccountsLogout", function () {
           const isValid = ["y", "yes", "n", "no"].includes(
             response.toLowerCase(),
           );
-          expect(isValid).to.be.false;
+          expect(isValid).toBe(false);
         }
       });
     });
@@ -135,8 +133,8 @@ describe("AccountsLogout", function () {
       };
 
       const jsonOutput = JSON.stringify(successData);
-      expect(jsonOutput).to.include('"success":true');
-      expect(jsonOutput).to.include('"message"');
+      expect(jsonOutput).toContain('"success":true');
+      expect(jsonOutput).toContain('"message"');
     });
 
     it("should format all accounts logout JSON output", function () {
@@ -147,8 +145,8 @@ describe("AccountsLogout", function () {
       };
 
       const jsonOutput = JSON.stringify(allAccountsData);
-      expect(jsonOutput).to.include('"success":true');
-      expect(jsonOutput).to.include('"removedAccounts"');
+      expect(jsonOutput).toContain('"success":true');
+      expect(jsonOutput).toContain('"removedAccounts"');
     });
 
     it("should format error JSON output", function () {
@@ -158,8 +156,8 @@ describe("AccountsLogout", function () {
       };
 
       const jsonOutput = JSON.stringify(errorData);
-      expect(jsonOutput).to.include('"success":false');
-      expect(jsonOutput).to.include('"error"');
+      expect(jsonOutput).toContain('"success":false');
+      expect(jsonOutput).toContain('"error"');
     });
   });
 
@@ -168,17 +166,17 @@ describe("AccountsLogout", function () {
       const accountToRemove = "test-account";
       const remainingAccounts = ["other-account"];
 
-      expect(accountToRemove).to.be.a("string");
-      expect(remainingAccounts).to.be.an("array");
-      expect(remainingAccounts).to.not.include(accountToRemove);
+      expect(accountToRemove).toBeTypeOf("string");
+      expect(remainingAccounts).toBeInstanceOf(Array);
+      expect(remainingAccounts).not.toContain(accountToRemove);
     });
 
     it("should handle all accounts removal", function () {
       const allAccounts = ["account1", "account2", "account3"];
       const afterRemoval: string[] = [];
 
-      expect(allAccounts.length).to.be.greaterThan(0);
-      expect(afterRemoval.length).to.equal(0);
+      expect(allAccounts.length).toBeGreaterThan(0);
+      expect(afterRemoval.length).toBe(0);
     });
 
     it("should handle current account switching logic", function () {
@@ -189,14 +187,14 @@ describe("AccountsLogout", function () {
       const nextAccount =
         availableAccounts.length > 0 ? availableAccounts[0] : null;
 
-      expect(nextAccount).to.equal("other-account1");
+      expect(nextAccount).toBe("other-account1");
     });
   });
 
   describe("configuration integration", function () {
     it("should work with ConfigManager", function () {
       // Test basic instantiation without complex mocking
-      expect(() => new ConfigManager()).to.not.throw();
+      expect(() => new ConfigManager()).not.toThrow();
     });
 
     it("should handle account listing operations", function () {
@@ -206,11 +204,11 @@ describe("AccountsLogout", function () {
         { alias: "test", account: {} },
       ];
 
-      expect(mockAccounts).to.be.an("array");
-      expect(mockAccounts.length).to.equal(2);
+      expect(mockAccounts).toBeInstanceOf(Array);
+      expect(mockAccounts.length).toBe(2);
       mockAccounts.forEach((acc) => {
-        expect(acc).to.have.property("alias");
-        expect(acc).to.have.property("account");
+        expect(acc).toHaveProperty("alias");
+        expect(acc).toHaveProperty("account");
       });
     });
   });
@@ -218,7 +216,7 @@ describe("AccountsLogout", function () {
   describe("validation edge cases", function () {
     it("should handle empty account list", function () {
       const emptyList: any[] = [];
-      expect(emptyList.length).to.equal(0);
+      expect(emptyList.length).toBe(0);
     });
 
     it("should handle non-existent account", function () {
@@ -226,14 +224,14 @@ describe("AccountsLogout", function () {
       const requestedAccount = "non-existent";
 
       const accountExists = accounts.includes(requestedAccount);
-      expect(accountExists).to.be.false;
+      expect(accountExists).toBe(false);
     });
 
     it("should handle default account special case", function () {
       const defaultAlias = "default";
       const isDefault = defaultAlias === "default";
 
-      expect(isDefault).to.be.true;
+      expect(isDefault).toBe(true);
     });
   });
 
@@ -241,12 +239,12 @@ describe("AccountsLogout", function () {
     it("should have valid examples", function () {
       const examples = AccountsLogout.examples;
 
-      expect(examples).to.be.an("array");
-      expect(examples.length).to.be.greaterThan(0);
+      expect(examples).toBeInstanceOf(Array);
+      expect(examples.length).toBeGreaterThan(0);
 
       examples.forEach((example) => {
-        expect(example).to.be.a("string");
-        expect(example.length).to.be.greaterThan(0);
+        expect(example).toBeTypeOf("string");
+        expect(example.length).toBeGreaterThan(0);
       });
     });
 
@@ -254,7 +252,7 @@ describe("AccountsLogout", function () {
       const examples = AccountsLogout.examples;
       const hasJsonExample = examples.some((ex) => ex.includes("--json"));
 
-      expect(hasJsonExample).to.be.true;
+      expect(hasJsonExample).toBe(true);
     });
   });
 });

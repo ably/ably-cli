@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 
 import { AblyBaseCommand } from "../../../src/base-command.js";
@@ -94,18 +94,19 @@ describe("Auth Info Display", function () {
   describe("shouldHideAccountInfo", function () {
     it("should return true when no account is configured", function () {
       configManagerStub.getCurrentAccount.returns(undefined as any);
-      expect(command.testShouldHideAccountInfo({})).to.be.true;
+      expect(command.testShouldHideAccountInfo({})).toBe(true);
     });
 
     it("should return true when API key is provided explicitly", function () {
       expect(
         command.testShouldHideAccountInfo({ "api-key": "app-id.key:secret" }),
-      ).to.be.true;
+      ).toBe(true);
     });
 
     it("should return true when token is provided explicitly", function () {
-      expect(command.testShouldHideAccountInfo({ token: "some-token" })).to.be
-        .true;
+      expect(command.testShouldHideAccountInfo({ token: "some-token" })).toBe(
+        true,
+      );
     });
 
     it("should return true when access token is provided explicitly", function () {
@@ -113,21 +114,21 @@ describe("Auth Info Display", function () {
         command.testShouldHideAccountInfo({
           "access-token": "some-access-token",
         }),
-      ).to.be.true;
+      ).toBe(true);
     });
 
     it("should return true when ABLY_API_KEY environment variable is set", function () {
       process.env.ABLY_API_KEY = "app-id.key:secret";
-      expect(command.testShouldHideAccountInfo({})).to.be.true;
+      expect(command.testShouldHideAccountInfo({})).toBe(true);
     });
 
     it("should return true when ABLY_ACCESS_TOKEN environment variable is set", function () {
       process.env.ABLY_ACCESS_TOKEN = "some-access-token";
-      expect(command.testShouldHideAccountInfo({})).to.be.true;
+      expect(command.testShouldHideAccountInfo({})).toBe(true);
     });
 
     it("should return false when account is configured and no auth overrides", function () {
-      expect(command.testShouldHideAccountInfo({})).to.be.false;
+      expect(command.testShouldHideAccountInfo({})).toBe(false);
     });
   });
 
@@ -156,13 +157,13 @@ describe("Auth Info Display", function () {
       await command.testDisplayAuthInfo({});
 
       // Verify that the log output doesn't contain account info
-      expect(logStub.called).to.be.true;
+      expect(logStub.called).toBe(true);
       const outputCalls = logStub.getCalls().map((call) => call.args[0]);
       const outputWithUsingPrefix = outputCalls.find(
         (output) => typeof output === "string" && output.includes("Using:"),
       );
-      expect(outputWithUsingPrefix).to.not.include("Account=");
-      expect(outputWithUsingPrefix).to.include("App=");
+      expect(outputWithUsingPrefix).not.toContain("Account=");
+      expect(outputWithUsingPrefix).toContain("App=");
     });
 
     it("should include account info when shouldHideAccountInfo returns false", async function () {
@@ -173,12 +174,12 @@ describe("Auth Info Display", function () {
       await command.testDisplayAuthInfo({});
 
       // Verify that the log output contains account info
-      expect(logStub.called).to.be.true;
+      expect(logStub.called).toBe(true);
       const outputCalls = logStub.getCalls().map((call) => call.args[0]);
       const outputWithUsingPrefix = outputCalls.find(
         (output) => typeof output === "string" && output.includes("Using:"),
       );
-      expect(outputWithUsingPrefix).to.include("Account=");
+      expect(outputWithUsingPrefix).toContain("Account=");
     });
 
     it("should not display anything when there are no parts to show", async function () {
@@ -189,7 +190,7 @@ describe("Auth Info Display", function () {
       await command.testDisplayAuthInfo({}, false);
 
       // Verify that nothing was logged
-      expect(logStub.called).to.be.false;
+      expect(logStub.called).toBe(false);
     });
 
     it("should display app and auth info when token is provided", async function () {
@@ -201,15 +202,15 @@ describe("Auth Info Display", function () {
       await command.testDisplayAuthInfo(flags);
 
       // Verify output includes token info but not account info
-      expect(logStub.called).to.be.true;
+      expect(logStub.called).toBe(true);
       const outputCalls = logStub.getCalls().map((call) => call.args[0]);
       const outputWithUsingPrefix = outputCalls.find(
         (output) => typeof output === "string" && output.includes("Using:"),
       );
-      expect(outputWithUsingPrefix).to.not.include("Account=");
-      expect(outputWithUsingPrefix).to.include("App=");
+      expect(outputWithUsingPrefix).not.toContain("Account=");
+      expect(outputWithUsingPrefix).toContain("App=");
       // The token is shown in a special format that may include ANSI color codes
-      expect(outputWithUsingPrefix).to.include("Token");
+      expect(outputWithUsingPrefix).toContain("Token");
     });
 
     it("should display app and key info when API key is provided", async function () {
@@ -222,14 +223,14 @@ describe("Auth Info Display", function () {
       });
 
       // Verify output includes key info but not account info
-      expect(logStub.called).to.be.true;
+      expect(logStub.called).toBe(true);
       const outputCalls = logStub.getCalls().map((call) => call.args[0]);
       const outputWithUsingPrefix = outputCalls.find(
         (output) => typeof output === "string" && output.includes("Using:"),
       );
-      expect(outputWithUsingPrefix).to.not.include("Account=");
-      expect(outputWithUsingPrefix).to.include("App=");
-      expect(outputWithUsingPrefix).to.include("Key=");
+      expect(outputWithUsingPrefix).not.toContain("Account=");
+      expect(outputWithUsingPrefix).toContain("App=");
+      expect(outputWithUsingPrefix).toContain("Key=");
     });
   });
 
@@ -274,16 +275,16 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(debugStub.calledOnce).to.be.true;
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(debugStub.calledOnce).toBe(true);
+      expect(displayDataPlaneInfoStub.called).toBe(false);
+      expect(displayControlPlaneInfoStub.called).toBe(false);
     });
 
     it("should skip display when quiet flag is true", async function () {
       await command.testShowAuthInfoIfNeeded({ quiet: true });
 
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub.called).toBe(false);
+      expect(displayControlPlaneInfoStub.called).toBe(false);
     });
 
     it("should skip display when in JSON output mode", async function () {
@@ -291,15 +292,15 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub.called).toBe(false);
+      expect(displayControlPlaneInfoStub.called).toBe(false);
     });
 
     it("should skip display when token-only flag is true", async function () {
       await command.testShowAuthInfoIfNeeded({ "token-only": true });
 
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub.called).toBe(false);
+      expect(displayControlPlaneInfoStub.called).toBe(false);
     });
 
     it("should skip display when shouldSuppressOutput returns true", async function () {
@@ -307,8 +308,8 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub.called).toBe(false);
+      expect(displayControlPlaneInfoStub.called).toBe(false);
     });
 
     // Note: The logic for skipping display when API key or token is explicitly provided
@@ -321,9 +322,9 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(debugStub.calledOnce).to.be.true;
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(debugStub.calledOnce).toBe(true);
+      expect(displayDataPlaneInfoStub.called).toBe(false);
+      expect(displayControlPlaneInfoStub.called).toBe(false);
     });
 
     it("should call displayDataPlaneInfo for apps: commands", async function () {
@@ -331,8 +332,8 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.calledOnce).to.be.true;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub.calledOnce).toBe(true);
+      expect(displayControlPlaneInfoStub.called).toBe(false);
     });
 
     it("should call displayDataPlaneInfo for channels: commands", async function () {
@@ -340,8 +341,8 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.calledOnce).to.be.true;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub.calledOnce).toBe(true);
+      expect(displayControlPlaneInfoStub.called).toBe(false);
     });
 
     it("should call displayDataPlaneInfo for auth: commands", async function () {
@@ -349,8 +350,8 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.calledOnce).to.be.true;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub.calledOnce).toBe(true);
+      expect(displayControlPlaneInfoStub.called).toBe(false);
     });
 
     it("should call displayDataPlaneInfo for rooms: commands", async function () {
@@ -358,8 +359,8 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.calledOnce).to.be.true;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub.calledOnce).toBe(true);
+      expect(displayControlPlaneInfoStub.called).toBe(false);
     });
 
     it("should call displayControlPlaneInfo for accounts: commands", async function () {
@@ -367,8 +368,8 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.calledOnce).to.be.true;
+      expect(displayDataPlaneInfoStub.called).toBe(false);
+      expect(displayControlPlaneInfoStub.calledOnce).toBe(true);
     });
 
     it("should call displayControlPlaneInfo for integrations: commands", async function () {
@@ -376,8 +377,8 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.calledOnce).to.be.true;
+      expect(displayDataPlaneInfoStub.called).toBe(false);
+      expect(displayControlPlaneInfoStub.calledOnce).toBe(true);
     });
 
     it("should not call any display method for other commands", async function () {
@@ -385,8 +386,8 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub.called).toBe(false);
+      expect(displayControlPlaneInfoStub.called).toBe(false);
     });
 
     it("should pass flags to display methods", async function () {
@@ -395,7 +396,7 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded(flags);
 
-      expect(displayDataPlaneInfoStub.calledOnceWith(flags)).to.be.true;
+      expect(displayDataPlaneInfoStub.calledOnceWith(flags)).toBe(true);
     });
   });
 });

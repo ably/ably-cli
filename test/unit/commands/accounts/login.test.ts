@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import fs from "node:fs";
 import AccountsLogin from "../../../../src/commands/accounts/login.js";
@@ -29,37 +29,37 @@ describe("AccountsLogin", function () {
 
   describe("command properties", function () {
     it("should have correct static properties", function () {
-      expect(AccountsLogin.description).to.equal("Log in to your Ably account");
-      expect(AccountsLogin.examples).to.be.an("array");
-      expect(AccountsLogin.args).to.have.property("token");
-      expect(AccountsLogin.flags).to.have.property("alias");
-      expect(AccountsLogin.flags).to.have.property("no-browser");
+      expect(AccountsLogin.description).toBe("Log in to your Ably account");
+      expect(AccountsLogin.examples).toBeInstanceOf(Array);
+      expect(AccountsLogin.args).toHaveProperty("token");
+      expect(AccountsLogin.flags).toHaveProperty("alias");
+      expect(AccountsLogin.flags).toHaveProperty("no-browser");
     });
 
     it("should have required flags configuration", function () {
-      expect(AccountsLogin.flags.alias).to.have.property("char", "a");
-      expect(AccountsLogin.flags["no-browser"]).to.have.property(
+      expect(AccountsLogin.flags.alias).toHaveProperty("char", "a");
+      expect(AccountsLogin.flags["no-browser"]).toHaveProperty(
         "default",
         false,
       );
     });
 
     it("should have token argument configuration", function () {
-      expect(AccountsLogin.args.token).to.have.property("required", false);
-      expect(AccountsLogin.args.token).to.have.property("description");
+      expect(AccountsLogin.args.token).toHaveProperty("required", false);
+      expect(AccountsLogin.args.token).toHaveProperty("description");
     });
   });
 
   describe("command instantiation", function () {
     it("should create command instance", function () {
       const command = new AccountsLogin([], {} as any);
-      expect(command).to.be.instanceOf(AccountsLogin);
-      expect(command.run).to.be.a("function");
+      expect(command).toBeInstanceOf(AccountsLogin);
+      expect(command.run).toBeTypeOf("function");
     });
 
     it("should have correct command structure", function () {
       const command = new AccountsLogin([], {} as any);
-      expect(command.constructor.name).to.equal("AccountsLogin");
+      expect(command.constructor.name).toBe("AccountsLogin");
     });
   });
 
@@ -68,25 +68,21 @@ describe("AccountsLogin", function () {
       const localHost = "localhost:3000";
       const expectedUrl = `http://${localHost}/users/access_tokens`;
 
-      expect(expectedUrl).to.equal("http://localhost:3000/users/access_tokens");
+      expect(expectedUrl).toBe("http://localhost:3000/users/access_tokens");
     });
 
     it("should construct production URLs correctly", function () {
       const productionHost = "control.ably.net";
       const expectedUrl = `https://${productionHost}/users/access_tokens`;
 
-      expect(expectedUrl).to.equal(
-        "https://control.ably.net/users/access_tokens",
-      );
+      expect(expectedUrl).toBe("https://control.ably.net/users/access_tokens");
     });
 
     it("should handle custom control host URLs", function () {
       const customHost = "custom.ably.net";
       const expectedUrl = `https://${customHost}/users/access_tokens`;
 
-      expect(expectedUrl).to.equal(
-        "https://custom.ably.net/users/access_tokens",
-      );
+      expect(expectedUrl).toBe("https://custom.ably.net/users/access_tokens");
     });
   });
 
@@ -96,7 +92,7 @@ describe("AccountsLogin", function () {
 
       // Test that these would be considered valid formats
       validAliases.forEach((alias) => {
-        expect(/^[a-z][\d_a-z-]*$/i.test(alias)).to.be.true;
+        expect(/^[a-z][\d_a-z-]*$/i.test(alias)).toBe(true);
       });
     });
 
@@ -110,15 +106,15 @@ describe("AccountsLogin", function () {
 
       // Test that these would be rejected
       invalidAliases.forEach((alias) => {
-        expect(/^[a-z][\d_a-z-]*$/i.test(alias)).to.be.false;
+        expect(/^[a-z][\d_a-z-]*$/i.test(alias)).toBe(false);
       });
     });
 
     it("should require alias to start with letter", function () {
       const startsWithLetter = /^[a-z]/i;
 
-      expect(startsWithLetter.test("valid")).to.be.true;
-      expect(startsWithLetter.test("123invalid")).to.be.false;
+      expect(startsWithLetter.test("valid")).toBe(true);
+      expect(startsWithLetter.test("123invalid")).toBe(false);
     });
   });
 
@@ -137,8 +133,8 @@ describe("AccountsLogin", function () {
       };
 
       const jsonOutput = JSON.stringify(successData);
-      expect(jsonOutput).to.include('"success":true');
-      expect(jsonOutput).to.include('"account"');
+      expect(jsonOutput).toContain('"success":true');
+      expect(jsonOutput).toContain('"account"');
     });
 
     it("should format error JSON output", function () {
@@ -148,15 +144,15 @@ describe("AccountsLogin", function () {
       };
 
       const jsonOutput = JSON.stringify(errorData);
-      expect(jsonOutput).to.include('"success":false');
-      expect(jsonOutput).to.include('"error"');
+      expect(jsonOutput).toContain('"success":false');
+      expect(jsonOutput).toContain('"error"');
     });
   });
 
   describe("browser command detection", function () {
     it("should use correct open command for different platforms", function () {
       ["win32", "darwin", "linux"].forEach((_platform) => {
-        expect("open").to.be.a("string");
+        expect("open").toBeTypeOf("string");
       });
     });
   });
@@ -164,7 +160,7 @@ describe("AccountsLogin", function () {
   describe("configuration integration", function () {
     it("should work with ConfigManager", function () {
       // Test basic instantiation without complex mocking
-      expect(() => new ConfigManager()).to.not.throw();
+      expect(() => new ConfigManager()).not.toThrow();
     });
   });
 
@@ -174,11 +170,11 @@ describe("AccountsLogin", function () {
       const noResponses = ["n", "no", "N", "NO"];
 
       yesResponses.forEach((response) => {
-        expect(["y", "yes"].includes(response.toLowerCase())).to.be.true;
+        expect(["y", "yes"].includes(response.toLowerCase())).toBe(true);
       });
 
       noResponses.forEach((response) => {
-        expect(["n", "no"].includes(response.toLowerCase())).to.be.true;
+        expect(["n", "no"].includes(response.toLowerCase())).toBe(true);
       });
     });
   });
@@ -208,18 +204,18 @@ describe("AccountsLogin", function () {
       };
 
       // Verify structure
-      expect(loginResponse).to.have.property("account");
-      expect(loginResponse).to.have.property("app");
-      expect(loginResponse).to.have.property("key");
-      expect(loginResponse.success).to.be.true;
+      expect(loginResponse).toHaveProperty("account");
+      expect(loginResponse).toHaveProperty("app");
+      expect(loginResponse).toHaveProperty("key");
+      expect(loginResponse.success).toBe(true);
 
       // Verify app info
-      expect(loginResponse.app.autoSelected).to.be.true;
-      expect(loginResponse.app.id).to.equal("app-456");
+      expect(loginResponse.app.autoSelected).toBe(true);
+      expect(loginResponse.app.id).toBe("app-456");
 
       // Verify key info
-      expect(loginResponse.key.autoSelected).to.be.false;
-      expect(loginResponse.key.id).to.equal("key-789");
+      expect(loginResponse.key.autoSelected).toBe(false);
+      expect(loginResponse.key.id).toBe("key-789");
     });
 
     it("should format login response without app when none selected", function () {
@@ -236,10 +232,10 @@ describe("AccountsLogin", function () {
       };
 
       // Verify minimal structure when no app/key selected
-      expect(loginResponse).to.have.property("account");
-      expect(loginResponse).to.not.have.property("app");
-      expect(loginResponse).to.not.have.property("key");
-      expect(loginResponse.success).to.be.true;
+      expect(loginResponse).toHaveProperty("account");
+      expect(loginResponse).not.toHaveProperty("app");
+      expect(loginResponse).not.toHaveProperty("key");
+      expect(loginResponse.success).toBe(true);
     });
 
     it("should format login response with app but no key", function () {
@@ -260,10 +256,10 @@ describe("AccountsLogin", function () {
         success: true,
       };
 
-      expect(loginResponse).to.have.property("account");
-      expect(loginResponse).to.have.property("app");
-      expect(loginResponse).to.not.have.property("key");
-      expect(loginResponse.app.autoSelected).to.be.true;
+      expect(loginResponse).toHaveProperty("account");
+      expect(loginResponse).toHaveProperty("app");
+      expect(loginResponse).not.toHaveProperty("key");
+      expect(loginResponse.app.autoSelected).toBe(true);
     });
   });
 
@@ -274,15 +270,15 @@ describe("AccountsLogin", function () {
       ];
 
       // Test the logic that would be used for single app selection
-      expect(apps.length).to.equal(1);
+      expect(apps.length).toBe(1);
 
       const selectedApp = apps[0];
-      expect(selectedApp.id).to.equal("app-123");
-      expect(selectedApp.name).to.equal("Only App");
+      expect(selectedApp.id).toBe("app-123");
+      expect(selectedApp.name).toBe("Only App");
 
       // In single app scenario, it should be auto-selected
       const isAutoSelected = true;
-      expect(isAutoSelected).to.be.true;
+      expect(isAutoSelected).toBe(true);
     });
 
     it("should handle multiple apps scenario correctly", function () {
@@ -292,13 +288,13 @@ describe("AccountsLogin", function () {
       ];
 
       // Test the logic for multiple apps - should prompt user
-      expect(apps.length).to.be.greaterThan(1);
+      expect(apps.length).toBeGreaterThan(1);
 
       // Verify app structure
       apps.forEach((app) => {
-        expect(app).to.have.property("id");
-        expect(app).to.have.property("name");
-        expect(app).to.have.property("accountId");
+        expect(app).toHaveProperty("id");
+        expect(app).toHaveProperty("name");
+        expect(app).toHaveProperty("accountId");
       });
     });
 
@@ -306,7 +302,7 @@ describe("AccountsLogin", function () {
       const apps: any[] = [];
 
       // Test the logic for no apps - should offer to create
-      expect(apps.length).to.equal(0);
+      expect(apps.length).toBe(0);
 
       // Simulate app creation response
       const createdApp = {
@@ -316,8 +312,8 @@ describe("AccountsLogin", function () {
         tlsOnly: true,
       };
 
-      expect(createdApp.name).to.equal("My First App");
-      expect(createdApp.tlsOnly).to.be.true;
+      expect(createdApp.name).toBe("My First App");
+      expect(createdApp.tlsOnly).toBe(true);
     });
   });
 
@@ -326,15 +322,15 @@ describe("AccountsLogin", function () {
       const keys = [{ id: "key-456", name: "Root Key", key: "app.key:value" }];
 
       // Test single key auto-selection logic
-      expect(keys.length).to.equal(1);
+      expect(keys.length).toBe(1);
 
       const selectedKey = keys[0];
-      expect(selectedKey.id).to.equal("key-456");
-      expect(selectedKey.name).to.equal("Root Key");
+      expect(selectedKey.id).toBe("key-456");
+      expect(selectedKey.name).toBe("Root Key");
 
       // Single key should be auto-selected
       const isAutoSelected = true;
-      expect(isAutoSelected).to.be.true;
+      expect(isAutoSelected).toBe(true);
     });
 
     it("should handle multiple keys scenario correctly", function () {
@@ -344,13 +340,13 @@ describe("AccountsLogin", function () {
       ];
 
       // Test multiple keys logic - should prompt user
-      expect(keys.length).to.be.greaterThan(1);
+      expect(keys.length).toBeGreaterThan(1);
 
       // Verify key structure
       keys.forEach((key) => {
-        expect(key).to.have.property("id");
-        expect(key).to.have.property("name");
-        expect(key).to.have.property("key");
+        expect(key).toHaveProperty("id");
+        expect(key).toHaveProperty("name");
+        expect(key).toHaveProperty("key");
       });
     });
 
@@ -358,7 +354,7 @@ describe("AccountsLogin", function () {
       const keys: any[] = [];
 
       // Test no keys scenario - should continue without error
-      expect(keys.length).to.equal(0);
+      expect(keys.length).toBe(0);
 
       // This should not cause the login to fail
       // User would need to create keys separately
@@ -370,8 +366,8 @@ describe("AccountsLogin", function () {
       const validNames = ["My App", "production-app", "test_app_123", "App"];
 
       validNames.forEach((name) => {
-        expect(name.trim().length).to.be.greaterThan(0);
-        expect(typeof name).to.equal("string");
+        expect(name.trim().length).toBeGreaterThan(0);
+        expect(typeof name).toBe("string");
       });
     });
 
@@ -379,7 +375,7 @@ describe("AccountsLogin", function () {
       const invalidNames = ["", "   ", "\t\n"];
 
       invalidNames.forEach((name) => {
-        expect(name.trim().length).to.equal(0);
+        expect(name.trim().length).toBe(0);
       });
     });
 
@@ -393,8 +389,8 @@ describe("AccountsLogin", function () {
       ];
 
       edgeCases.forEach((name) => {
-        expect(name.trim().length).to.be.greaterThan(0);
-        expect(typeof name).to.equal("string");
+        expect(name.trim().length).toBeGreaterThan(0);
+        expect(typeof name).toBe("string");
       });
     });
   });
@@ -404,48 +400,48 @@ describe("AccountsLogin", function () {
       const apiError = new Error("Network timeout");
 
       // Test that errors don't crash the login process
-      expect(apiError.message).to.equal("Network timeout");
-      expect(apiError).to.be.instanceOf(Error);
+      expect(apiError.message).toBe("Network timeout");
+      expect(apiError).toBeInstanceOf(Error);
 
       // Login should continue and warn about failures
       const warningMessage = `Could not fetch apps: ${apiError.message}`;
-      expect(warningMessage).to.include("Network timeout");
+      expect(warningMessage).toContain("Network timeout");
     });
 
     it("should handle authentication failures", function () {
       const authError = new Error("Invalid token");
       authError.name = "AuthenticationError";
 
-      expect(authError.message).to.equal("Invalid token");
-      expect(authError.name).to.equal("AuthenticationError");
+      expect(authError.message).toBe("Invalid token");
+      expect(authError.name).toBe("AuthenticationError");
 
       const errorResponse = {
         error: authError.message,
         success: false,
       };
 
-      expect(errorResponse.success).to.be.false;
-      expect(errorResponse.error).to.equal("Invalid token");
+      expect(errorResponse.success).toBe(false);
+      expect(errorResponse.error).toBe("Invalid token");
     });
 
     it("should handle app creation failures", function () {
       const createError = new Error("Insufficient permissions");
 
-      expect(createError.message).to.equal("Insufficient permissions");
+      expect(createError.message).toBe("Insufficient permissions");
 
       // App creation failure should not prevent login completion
       const warningMessage = `Failed to create app: ${createError.message}`;
-      expect(warningMessage).to.include("Insufficient permissions");
+      expect(warningMessage).toContain("Insufficient permissions");
     });
 
     it("should handle key fetching failures", function () {
       const keyError = new Error("Key access denied");
 
-      expect(keyError.message).to.equal("Key access denied");
+      expect(keyError.message).toBe("Key access denied");
 
       // Key fetching failure should not prevent login
       const warningMessage = `Could not fetch API keys: ${keyError.message}`;
-      expect(warningMessage).to.include("Key access denied");
+      expect(warningMessage).toContain("Key access denied");
     });
   });
 });

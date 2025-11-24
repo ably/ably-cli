@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import ChannelsSubscribe from "../../../../src/commands/channels/subscribe.js";
@@ -270,16 +270,17 @@ describe("ChannelsSubscribe (Simplified)", function () {
     const createClientStub =
       command.createAblyRealtimeClient as sinon.SinonStub;
     await runCommandAndSimulateLifecycle();
-    expect(createClientStub.calledOnce).to.be.true;
+    expect(createClientStub.calledOnce).toBe(true);
   });
 
   it("should attempt to get and subscribe to a single channel", async function () {
     const channelMock = command.mockClient.channels.get();
     await runCommandAndSimulateLifecycle();
-    expect(command.mockClient.channels.get.calledOnceWith("test-channel")).to.be
-      .true;
+    expect(command.mockClient.channels.get.calledOnceWith("test-channel")).toBe(
+      true,
+    );
     // Check subscribe was called *at least* once after attach simulation
-    expect(channelMock.subscribe.called).to.be.true; // Changed from calledOnce
+    expect(channelMock.subscribe.called).toBe(true); // Changed from calledOnce
   });
 
   it("should attempt to get and subscribe to multiple channels", async function () {
@@ -310,12 +311,12 @@ describe("ChannelsSubscribe (Simplified)", function () {
     await runCommandAndSimulateLifecycle(200);
 
     // Verify get was called for each channel
-    expect(command.mockClient.channels.get.callCount).to.equal(
+    expect(command.mockClient.channels.get.callCount).toBe(
       channelsToTest.length,
     );
     channelsToTest.forEach((name) => {
-      expect(command.mockClient.channels.get.calledWith(name)).to.be.true;
-      expect(channelMocks[name].subscribe.called).to.be.true; // Changed from calledOnce
+      expect(command.mockClient.channels.get.calledWith(name)).toBe(true);
+      expect(channelMocks[name].subscribe.called).toBe(true); // Changed from calledOnce
     });
   });
 
@@ -339,11 +340,11 @@ describe("ChannelsSubscribe (Simplified)", function () {
 
     await runCommandAndSimulateLifecycle();
 
-    expect(command.mockClient.channels.get.calledOnce).to.be.true;
+    expect(command.mockClient.channels.get.calledOnce).toBe(true);
     const getCall = command.mockClient.channels.get.getCall(0);
-    expect(getCall.args[0]).to.equal(channelName);
-    expect(getCall.args[1]).to.deep.include({ params: { rewind: "5" } });
-    expect(channelMock.subscribe.called).to.be.true; // Changed from calledOnce
+    expect(getCall.args[0]).toBe(channelName);
+    expect(getCall.args[1]).toMatchObject({ params: { rewind: "5" } });
+    expect(channelMock.subscribe.called).toBe(true); // Changed from calledOnce
   });
 
   it("should throw error if no channel names provided", async function () {
@@ -359,7 +360,7 @@ describe("ChannelsSubscribe (Simplified)", function () {
       expect.fail("Command should have thrown an error for missing channels");
     } catch {
       // Check the error message stored by the overridden error method
-      expect(command.errorOutput).to.contain(
+      expect(command.errorOutput).toContain(
         "At least one channel name is required",
       );
     }

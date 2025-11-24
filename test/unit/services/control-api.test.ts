@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import nock from "nock";
 import { ControlApi } from "../../../src/services/control-api.js";
 
@@ -35,7 +35,7 @@ describe("ControlApi", function () {
 
       // Make request to verify host
       return customApi.getMe().then(() => {
-        expect(scope.isDone()).to.be.true;
+        expect(scope.isDone()).toBe(true);
       });
     });
 
@@ -49,7 +49,7 @@ describe("ControlApi", function () {
 
       // Make request to verify host
       return defaultApi.getMe().then(() => {
-        expect(scope.isDone()).to.be.true;
+        expect(scope.isDone()).toBe(true);
       });
     });
   });
@@ -77,7 +77,7 @@ describe("ControlApi", function () {
 
       const apps = await api.listApps();
 
-      expect(apps).to.deep.equal(expectedApps);
+      expect(apps).toEqual(expectedApps);
     });
 
     it("should handle empty app list", async function () {
@@ -98,7 +98,8 @@ describe("ControlApi", function () {
 
       const apps = await api.listApps();
 
-      expect(apps).to.be.an("array").that.is.empty;
+      expect(apps).toBeInstanceOf(Array);
+      expect(apps).toHaveLength(0);
     });
 
     it("should handle error response", async function () {
@@ -121,8 +122,8 @@ describe("ControlApi", function () {
         await api.listApps();
         expect.fail("Should have thrown an error");
       } catch (error) {
-        expect(error).to.be.an.instanceOf(Error);
-        expect((error as Error).message).to.include("Unauthorized");
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toContain("Unauthorized");
       }
     });
   });
@@ -145,7 +146,7 @@ describe("ControlApi", function () {
 
       const app = await api.createApp(appData);
 
-      expect(app).to.deep.equal(expectedApp);
+      expect(app).toEqual(expectedApp);
     });
 
     it("should handle error when creating app", async function () {
@@ -166,8 +167,8 @@ describe("ControlApi", function () {
         await api.createApp(appData);
         expect.fail("Should have thrown an error");
       } catch (error) {
-        expect(error).to.be.an.instanceOf(Error);
-        expect((error as Error).message).to.include("Invalid app name");
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toContain("Invalid app name");
       }
     });
   });
@@ -190,7 +191,7 @@ describe("ControlApi", function () {
 
       const app = await api.updateApp(appId, updateData);
 
-      expect(app).to.deep.equal(expectedApp);
+      expect(app).toEqual(expectedApp);
     });
   });
 
@@ -206,7 +207,7 @@ describe("ControlApi", function () {
         .get("/v1/me")
         .reply(200, { account: { id: "test-account-id" } });
 
-      await api.deleteApp(appId);
+      await expect(api.deleteApp(appId)).resolves.toBeDefined();
       // No assertion needed as the test would fail if the promise was rejected
     });
   });
@@ -233,7 +234,7 @@ describe("ControlApi", function () {
 
       const app = await api.getApp(appId);
 
-      expect(app).to.deep.equal(expectedApp);
+      expect(app).toEqual(expectedApp);
     });
 
     it("should throw error if app not found", async function () {
@@ -258,8 +259,8 @@ describe("ControlApi", function () {
         await api.getApp(appId);
         expect.fail("Should have thrown an error");
       } catch (error) {
-        expect(error).to.be.an.instanceOf(Error);
-        expect((error as Error).message).to.include("not found");
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toContain("not found");
       }
     });
   });
@@ -276,7 +277,7 @@ describe("ControlApi", function () {
 
       const info = await api.getMe();
 
-      expect(info).to.deep.equal(expectedResponse);
+      expect(info).toEqual(expectedResponse);
     });
   });
 
@@ -300,7 +301,7 @@ describe("ControlApi", function () {
 
       const keys = await api.listKeys(appId);
 
-      expect(keys).to.deep.equal(expectedKeys);
+      expect(keys).toEqual(expectedKeys);
     });
 
     it("should create an API key", async function () {
@@ -327,7 +328,7 @@ describe("ControlApi", function () {
 
       const key = await api.createKey(appId, keyData);
 
-      expect(key).to.deep.equal(expectedKey);
+      expect(key).toEqual(expectedKey);
     });
 
     it("should handle error when creating API key", async function () {
@@ -351,8 +352,8 @@ describe("ControlApi", function () {
         await api.createKey(appId, keyData);
         expect.fail("Should have thrown an error");
       } catch (error) {
-        expect(error).to.be.an.instanceOf(Error);
-        expect((error as Error).message).to.include("Bad Request");
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toContain("Bad Request");
       }
     });
 
@@ -373,8 +374,8 @@ describe("ControlApi", function () {
         await api.listKeys(appId);
         expect.fail("Should have thrown an error");
       } catch (error) {
-        expect(error).to.be.an.instanceOf(Error);
-        expect((error as Error).message).to.include("Key not found");
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toContain("Key not found");
       }
     });
 
@@ -396,8 +397,8 @@ describe("ControlApi", function () {
         await api.revokeKey(appId, keyId);
         expect.fail("Should have thrown an error");
       } catch (error) {
-        expect(error).to.be.an.instanceOf(Error);
-        expect((error as Error).message).to.include("Failed to revoke key");
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toContain("Failed to revoke key");
       }
     });
 
@@ -423,8 +424,8 @@ describe("ControlApi", function () {
         await api.updateKey(appId, keyId, updateData);
         expect.fail("Should have thrown an error");
       } catch (error) {
-        expect(error).to.be.an.instanceOf(Error);
-        expect((error as Error).message).to.include("Failed to update key");
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toContain("Failed to update key");
       }
     });
   });

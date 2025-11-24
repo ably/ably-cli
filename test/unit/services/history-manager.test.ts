@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect } from "vitest";
 import { HistoryManager } from "../../../src/services/history-manager.js";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -8,13 +8,13 @@ describe("HistoryManager", function () {
     it("should use default history file path", function () {
       const manager = new HistoryManager();
       const expectedPath = path.join(os.homedir(), ".ably", "history");
-      expect(manager.getHistoryFile()).to.equal(expectedPath);
+      expect(manager.getHistoryFile()).toBe(expectedPath);
     });
 
     it("should use custom history file path", function () {
       const customPath = "/custom/path/history";
       const manager = new HistoryManager(customPath);
-      expect(manager.getHistoryFile()).to.equal(customPath);
+      expect(manager.getHistoryFile()).toBe(customPath);
     });
 
     it("should use ABLY_HISTORY_FILE environment variable", function () {
@@ -22,7 +22,7 @@ describe("HistoryManager", function () {
       process.env.ABLY_HISTORY_FILE = "/env/path/history";
 
       const manager = new HistoryManager();
-      expect(manager.getHistoryFile()).to.equal("/env/path/history");
+      expect(manager.getHistoryFile()).toBe("/env/path/history");
 
       // Restore original value
       if (originalEnv === undefined) {
@@ -40,7 +40,7 @@ describe("HistoryManager", function () {
       const mockRl = { history: [] } as any;
 
       // Should not throw
-      await manager.loadHistory(mockRl);
+      await expect(manager.loadHistory(mockRl)).resolves.toBeUndefined();
     });
 
     it("should not throw on saveCommand errors", async function () {
@@ -48,7 +48,9 @@ describe("HistoryManager", function () {
       const manager = new HistoryManager("/definitely/does/not/exist/history");
 
       // Should not throw
-      await manager.saveCommand("test command");
+      await expect(
+        manager.saveCommand("test command"),
+      ).resolves.toBeUndefined();
     });
 
     it("should not save empty commands", async function () {
@@ -60,7 +62,7 @@ describe("HistoryManager", function () {
       await manager.saveCommand("\t\n");
 
       // If we got here without throwing, the test passes
-      expect(true).to.be.true;
+      expect(true).toBe(true);
     });
   });
 });

@@ -1,5 +1,4 @@
-import { expect } from "chai";
-import { describe, it, beforeEach, afterEach } from "mocha";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as sinon from "sinon";
 import Interactive from "../../../src/commands/interactive.js";
 import { Readable, Writable } from "node:stream";
@@ -113,14 +112,14 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     const completer = (cmd as any).completer.bind(cmd);
     const result = completer("ch");
 
-    expect(result).to.deep.equal([[], "ch"]);
+    expect(result).toEqual([[], "ch"]);
 
     // Exit search mode
     simulateKeypress(null, { name: "escape" });
 
     // Verify autocomplete works again
     const result2 = completer("ch");
-    expect(result2[0]).to.include("channels");
+    expect(result2[0]).toContain("channels");
   });
 
   it("should maintain cursor position across operations", async () => {
@@ -145,13 +144,13 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     simulateKeypress(null, { ctrl: true, name: "r" });
 
     const historySearch = (cmd as any).historySearch;
-    expect(historySearch.originalCursorPos).to.equal(5);
+    expect(historySearch.originalCursorPos).toBe(5);
 
     // Cancel search
     simulateKeypress(null, { name: "escape" });
 
     // Cursor should be restored
-    expect((rl as any).cursor).to.equal(5);
+    expect((rl as any).cursor).toBe(5);
   });
 
   it("should handle empty history gracefully", async () => {
@@ -179,14 +178,14 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     rl.emit("history", 1);
 
     // Line should remain unchanged
-    expect((rl as any).line).to.equal(originalLine);
+    expect((rl as any).line).toBe(originalLine);
 
     // Try history search
     simulateKeypress(null, { ctrl: true, name: "r" });
     simulateKeypress("t", { name: "t" });
 
     const historySearch = (cmd as any).historySearch;
-    expect(historySearch.matches.length).to.equal(0);
+    expect(historySearch.matches.length).toBe(0);
   });
 
   it("should handle rapid key sequences", async () => {
@@ -224,7 +223,7 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
 
     // Should handle all keys without errors
     const historySearch = (cmd as any).historySearch;
-    expect(historySearch.active).to.be.false;
+    expect(historySearch.active).toBe(false);
   });
 
   it("should preserve prompt state after errors", async () => {
@@ -249,7 +248,7 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Prompt should be called again after error
-    expect(promptStub.called).to.be.true;
+    expect(promptStub.called).toBe(true);
   });
 
   it("should handle special characters in autocomplete", async () => {
@@ -276,7 +275,7 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
 
     // Test autocomplete with special characters
     const result = completer("test-");
-    expect(result[0]).to.include("test-command");
+    expect(result[0]).toContain("test-command");
   });
 
   it("should handle concurrent operations correctly", async () => {
@@ -303,8 +302,8 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     simulateKeypress("o", { name: "o" });
 
     const historySearch = (cmd as any).historySearch;
-    expect(historySearch.searchTerm).to.equal("co");
-    expect(historySearch.active).to.be.true;
+    expect(historySearch.searchTerm).toBe("co");
+    expect(historySearch.active).toBe(true);
   });
 
   it("should handle edge cases in history cycling", async () => {
@@ -333,14 +332,14 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     const historySearch = (cmd as any).historySearch;
 
     // Should find 2 matches
-    expect(historySearch.matches.length).to.equal(2);
+    expect(historySearch.matches.length).toBe(2);
 
     // Cycle through all matches and wrap around
     simulateKeypress(null, { ctrl: true, name: "r" }); // to match2
     simulateKeypress(null, { ctrl: true, name: "r" }); // back to match1
     simulateKeypress(null, { ctrl: true, name: "r" }); // to match2 again
 
-    expect(historySearch.currentIndex).to.equal(1);
+    expect(historySearch.currentIndex).toBe(1);
   });
 
   it("should clean up resources on exit", async () => {
@@ -365,6 +364,6 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Readline should be closed
-    expect(closeStub.called).to.be.true;
+    expect(closeStub.called).toBe(true);
   });
 });

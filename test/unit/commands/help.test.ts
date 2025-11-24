@@ -1,5 +1,4 @@
-import { expect } from "chai";
-import { describe, it } from "mocha";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import HelpCommand from "../../../src/commands/help.js";
@@ -55,29 +54,30 @@ describe("Help Command Tests", function () {
   describe("Help Command Structure", function () {
     it("should be a simple command, not a topic", function () {
       // Help should not have any subcommands
-      expect((HelpCommand as any).topic).to.be.undefined;
-      expect(HelpCommand.description).to.include("help");
+      expect((HelpCommand as any).topic).toBeUndefined();
+      expect(HelpCommand.description).toContain("help");
     });
 
     it("should have --web-cli-help flag", function () {
       const flags = HelpCommand.flags;
-      expect(flags).to.have.property("web-cli-help");
-      expect(flags["web-cli-help"].type).to.equal("boolean");
-      expect(flags["web-cli-help"].hidden).to.be.true;
+      expect(flags).toHaveProperty("web-cli-help");
+      expect(flags["web-cli-help"].type).toBe("boolean");
+      expect(flags["web-cli-help"].hidden).toBe(true);
     });
 
     it("should have correct usage examples", function () {
       const examples = HelpCommand.examples;
-      expect(examples).to.be.an("array");
-      expect(examples).to.have.length.greaterThan(0);
+      expect(examples).toBeInstanceOf(Array);
+      expect(examples.length).toBeGreaterThan(0);
 
       // Check for standard help examples
       const exampleStrings = examples.map((e: any) =>
         typeof e === "string" ? e : e.command,
       );
-      expect(exampleStrings.some((e: string) => e.includes("help"))).to.be.true;
-      expect(exampleStrings.some((e: string) => e.includes("channels"))).to.be
-        .true;
+      expect(exampleStrings.some((e: string) => e.includes("help"))).toBe(true);
+      expect(exampleStrings.some((e: string) => e.includes("channels"))).toBe(
+        true,
+      );
     });
   });
 
@@ -117,9 +117,9 @@ describe("Help Command Tests", function () {
 
       await help.run();
 
-      expect(findCommandStub.calledWith("channels")).to.be.true;
+      expect(findCommandStub.calledWith("channels")).toBe(true);
 
-      expect(_showCommandStub.calledWith("abc")).to.be.true;
+      expect(_showCommandStub.calledWith("abc")).toBe(true);
     });
 
     it("should handle --web-cli-help flag", async function () {
@@ -141,7 +141,7 @@ describe("Help Command Tests", function () {
 
       await help.run();
 
-      expect(_formatWebCliRootStub.calledOnce).to.be.true;
+      expect(_formatWebCliRootStub.calledOnce).toBe(true);
     });
 
     it("should pass through multiple arguments", async function () {
@@ -165,9 +165,9 @@ describe("Help Command Tests", function () {
 
       await help.run();
 
-      expect(findCommandStub.calledWith("channels:publish")).to.be.true;
+      expect(findCommandStub.calledWith("channels:publish")).toBe(true);
 
-      expect(_showCommandStub.calledWith("abc")).to.be.true;
+      expect(_showCommandStub.calledWith("abc")).toBe(true);
     });
   });
 
@@ -185,8 +185,8 @@ describe("Help Command Tests", function () {
         },
       } as any;
 
-      expect(mockConfig.findCommand("help:ask")).to.be.null;
-      expect(mockConfig.findCommand("support:ask")).to.not.be.null;
+      expect(mockConfig.findCommand("help:ask")).toBeNull();
+      expect(mockConfig.findCommand("support:ask")).not.toBeNull();
     });
 
     it("should not have help:status command", function () {
@@ -201,8 +201,8 @@ describe("Help Command Tests", function () {
         },
       } as any;
 
-      expect(mockConfig.findCommand("help:status")).to.be.null;
-      expect(mockConfig.findCommand("status")).to.not.be.null;
+      expect(mockConfig.findCommand("help:status")).toBeNull();
+      expect(mockConfig.findCommand("status")).not.toBeNull();
     });
   });
 });

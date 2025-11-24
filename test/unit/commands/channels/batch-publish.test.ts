@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as sinon from "sinon";
 import BatchPublish from "../../../../src/commands/channels/batch-publish.js";
 
@@ -141,7 +141,7 @@ describe("Channels Batch Publish Command", function () {
       // Should not reach here
       expect.fail("Should have thrown an error");
     } catch {
-      expect(command.errorOutput).to.include("Failed to execute batch publish");
+      expect(command.errorOutput).toContain("Failed to execute batch publish");
     }
   });
 
@@ -158,7 +158,7 @@ describe("Channels Batch Publish Command", function () {
       // Should not reach here
       expect.fail("Should have thrown an error");
     } catch {
-      expect(command.errorOutput).to.include(
+      expect(command.errorOutput).toContain(
         "You must specify either --channels, --channels-json, or --spec",
       );
     }
@@ -200,15 +200,15 @@ describe("Channels Batch Publish Command", function () {
     await command.run();
 
     // Verify the request was called on our mock client
-    expect(mockRest.request.called).to.be.true;
+    expect(mockRest.request.called).toBe(true);
 
     // Verify the request was called with correct parameters
     const requestCall = mockRest.request.getCall(0);
-    expect(requestCall.args[0]).to.equal("post");
-    expect(requestCall.args[1]).to.equal("/messages");
+    expect(requestCall.args[0]).toBe("post");
+    expect(requestCall.args[1]).toBe("/messages");
 
     // Verify the log shows success
-    expect(command.logOutput.length).to.be.greaterThan(0);
-    expect(command.logOutput[0]).to.include("Sending batch publish request");
+    expect(command.logOutput.length).toBeGreaterThan(0);
+    expect(command.logOutput[0]).toContain("Sending batch publish request");
   });
 });

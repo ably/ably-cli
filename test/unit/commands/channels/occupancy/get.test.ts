@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import ChannelsOccupancyGet from "../../../../../src/commands/channels/occupancy/get.js";
@@ -126,24 +126,24 @@ describe("ChannelsOccupancyGet", function () {
     await command.run();
 
     // Check that request was called with the right parameters
-    expect(command.mockClient.request.calledOnce).to.be.true;
+    expect(command.mockClient.request.calledOnce).toBe(true);
     const [method, path, version, params, body] =
       command.mockClient.request.firstCall.args;
-    expect(method).to.equal("get");
-    expect(path).to.equal("/channels/test-occupancy-channel");
-    expect(version).to.equal(2);
-    expect(params).to.deep.equal({ occupancy: "metrics" });
-    expect(body).to.be.null;
+    expect(method).toBe("get");
+    expect(path).toBe("/channels/test-occupancy-channel");
+    expect(version).toBe(2);
+    expect(params).toEqual({ occupancy: "metrics" });
+    expect(body).toBeNull();
 
     // Check for expected output in logs
     const output = command.logOutput.join("\n");
-    expect(output).to.include("test-occupancy-channel");
-    expect(output).to.include("Connections: 10");
-    expect(output).to.include("Presence Connections: 5");
-    expect(output).to.include("Presence Members: 8");
-    expect(output).to.include("Presence Subscribers: 4");
-    expect(output).to.include("Publishers: 2");
-    expect(output).to.include("Subscribers: 6");
+    expect(output).toContain("test-occupancy-channel");
+    expect(output).toContain("Connections: 10");
+    expect(output).toContain("Presence Connections: 5");
+    expect(output).toContain("Presence Members: 8");
+    expect(output).toContain("Presence Subscribers: 4");
+    expect(output).toContain("Publishers: 2");
+    expect(output).toContain("Subscribers: 6");
   });
 
   it("should output occupancy in JSON format when requested", async function () {
@@ -154,13 +154,13 @@ describe("ChannelsOccupancyGet", function () {
 
     // Find the JSON output in logs
     const jsonOutput = command.logOutput.find((log) => log.startsWith("{"));
-    expect(jsonOutput).to.exist;
+    expect(jsonOutput).toBeDefined();
 
     // Parse and verify the JSON output
     const parsedOutput = JSON.parse(jsonOutput!);
-    expect(parsedOutput).to.have.property("channel", "test-occupancy-channel");
-    expect(parsedOutput).to.have.property("metrics");
-    expect(parsedOutput.metrics).to.deep.include({
+    expect(parsedOutput).toHaveProperty("channel", "test-occupancy-channel");
+    expect(parsedOutput).toHaveProperty("metrics");
+    expect(parsedOutput.metrics).toMatchObject({
       connections: 10,
       presenceConnections: 5,
       presenceMembers: 8,
@@ -168,7 +168,7 @@ describe("ChannelsOccupancyGet", function () {
       publishers: 2,
       subscribers: 6,
     });
-    expect(parsedOutput).to.have.property("success", true);
+    expect(parsedOutput).toHaveProperty("success", true);
   });
 
   it("should handle empty occupancy metrics", async function () {
@@ -183,9 +183,9 @@ describe("ChannelsOccupancyGet", function () {
 
     // Check for expected output with zeros
     const output = command.logOutput.join("\n");
-    expect(output).to.include("test-occupancy-channel");
-    expect(output).to.include("Connections: 0");
-    expect(output).to.include("Publishers: 0");
-    expect(output).to.include("Subscribers: 0");
+    expect(output).toContain("test-occupancy-channel");
+    expect(output).toContain("Connections: 0");
+    expect(output).toContain("Publishers: 0");
+    expect(output).toContain("Subscribers: 0");
   });
 });

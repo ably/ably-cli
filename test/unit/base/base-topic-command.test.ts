@@ -1,5 +1,4 @@
-import { expect } from "chai";
-import { describe, it, beforeEach } from "mocha";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { BaseTopicCommand } from "../../../src/base-topic-command.js";
 import { Config } from "@oclif/core";
@@ -72,34 +71,32 @@ describe("BaseTopicCommand", () => {
   it("should list all non-hidden sub-commands", async () => {
     await command.run();
 
-    expect(logStub.callCount).to.be.greaterThan(0);
-    expect(logStub.calledWith("Ably test management commands:")).to.be.true;
-    expect(logStub.calledWithMatch(/test command1.*Test command 1/)).to.be.true;
-    expect(logStub.calledWithMatch(/test command2.*Test command 2/)).to.be.true;
+    expect(logStub.callCount).toBeGreaterThan(0);
+    expect(logStub.calledWith("Ably test management commands:")).toBe(true);
+    expect(logStub.calledWithMatch(/test command1.*Test command 1/)).toBe(true);
+    expect(logStub.calledWithMatch(/test command2.*Test command 2/)).toBe(true);
 
     // Should not show hidden command
-    expect(logStub.calledWithMatch(/hidden/)).to.be.false;
+    expect(logStub.calledWithMatch(/hidden/)).toBe(false);
 
     // Should not show other topic commands
-    expect(logStub.calledWithMatch(/other:command/)).to.be.false;
+    expect(logStub.calledWithMatch(/other:command/)).toBe(false);
   });
 
   it("should format output consistently", async () => {
     await command.run();
 
     // Check header
-    expect(logStub.firstCall.args[0]).to.equal(
-      "Ably test management commands:",
-    );
+    expect(logStub.firstCall.args[0]).toBe("Ably test management commands:");
 
     // Check empty line after header
-    expect(logStub.secondCall.args[0]).to.equal("");
+    expect(logStub.secondCall.args[0]).toBe("");
 
     // Check footer
     const lastCalls = logStub.getCalls().slice(-2);
-    expect(lastCalls[0].args[0]).to.equal("");
-    expect(lastCalls[1].args[0]).to.contain("Run `");
-    expect(lastCalls[1].args[0]).to.contain("ably test COMMAND --help");
+    expect(lastCalls[0].args[0]).toBe("");
+    expect(lastCalls[1].args[0]).toContain("Run `");
+    expect(lastCalls[1].args[0]).toContain("ably test COMMAND --help");
   });
 
   it("should handle commands that fail to load", async () => {
@@ -119,11 +116,11 @@ describe("BaseTopicCommand", () => {
     } catch (error_) {
       error = error_ as Error;
     }
-    expect(error).to.be.undefined;
+    expect(error).toBeUndefined();
 
     // Should still show other commands
-    expect(logStub.calledWithMatch(/test command1/)).to.be.true;
-    expect(logStub.calledWithMatch(/test command2/)).to.be.true;
+    expect(logStub.calledWithMatch(/test command1/)).toBe(true);
+    expect(logStub.calledWithMatch(/test command2/)).toBe(true);
   });
 
   it("should sort commands alphabetically", async () => {
@@ -156,9 +153,9 @@ describe("BaseTopicCommand", () => {
         call.args[0].includes("test zebra"),
     );
 
-    expect(commandCalls[0].args[0]).to.match(/test alpha/);
-    expect(commandCalls[1].args[0]).to.match(/test beta/);
-    expect(commandCalls[2].args[0]).to.match(/test zebra/);
+    expect(commandCalls[0].args[0]).toMatch(/test alpha/);
+    expect(commandCalls[1].args[0]).toMatch(/test beta/);
+    expect(commandCalls[2].args[0]).toMatch(/test zebra/);
   });
 
   it("should handle empty command list gracefully", async () => {
@@ -166,17 +163,17 @@ describe("BaseTopicCommand", () => {
 
     await command.run();
 
-    expect(logStub.calledWith("Ably test management commands:")).to.be.true;
-    expect(logStub.calledWith("")).to.be.true;
-    expect(logStub.calledWith("  No commands found.")).to.be.true;
+    expect(logStub.calledWith("Ably test management commands:")).toBe(true);
+    expect(logStub.calledWith("")).toBe(true);
+    expect(logStub.calledWith("  No commands found.")).toBe(true);
   });
 
   it("should replace colons with spaces in command IDs", async () => {
     await command.run();
 
     // Should show "test command1" not "test:command1"
-    expect(logStub.calledWithMatch(/test command1/)).to.be.true;
-    expect(logStub.calledWithMatch(/test:command1/)).to.be.false;
+    expect(logStub.calledWithMatch(/test command1/)).toBe(true);
+    expect(logStub.calledWithMatch(/test:command1/)).toBe(false);
   });
 
   it("should pad command names for alignment", async () => {
@@ -203,10 +200,10 @@ describe("BaseTopicCommand", () => {
     );
 
     // Both commands should be aligned
-    expect(commandCalls).to.have.lengthOf(2);
+    expect(commandCalls).toHaveLength(2);
     commandCalls.forEach((call) => {
       const dashIndex = call.args[0].indexOf(" - ");
-      expect(dashIndex).to.be.greaterThan(0);
+      expect(dashIndex).toBeGreaterThan(0);
     });
   });
 
@@ -221,7 +218,7 @@ describe("BaseTopicCommand", () => {
 
     await command.run();
 
-    expect(logStub.calledWithMatch(/test no-desc.*-\s*$/)).to.be.true;
+    expect(logStub.calledWithMatch(/test no-desc.*-\s*$/)).toBe(true);
   });
 
   it("should respect command-level hidden flag from loaded command", async () => {
@@ -238,7 +235,7 @@ describe("BaseTopicCommand", () => {
 
     await command.run();
 
-    expect(logStub.calledWithMatch(/Should be hidden/)).to.be.false;
+    expect(logStub.calledWithMatch(/Should be hidden/)).toBe(false);
   });
 
   describe("interactive mode", () => {
@@ -258,8 +255,8 @@ describe("BaseTopicCommand", () => {
       );
 
       commandCalls.forEach((call) => {
-        expect(call.args[0]).to.not.include("ably test command");
-        expect(call.args[0]).to.match(/^\s+.*test command/);
+        expect(call.args[0]).not.toContain("ably test command");
+        expect(call.args[0]).toMatch(/^\s+.*test command/);
       });
     });
 
@@ -268,9 +265,9 @@ describe("BaseTopicCommand", () => {
 
       // Check footer help text
       const lastCall = logStub.getCall(logStub.callCount - 1);
-      expect(lastCall.args[0]).to.contain("Run `");
-      expect(lastCall.args[0]).to.contain("test COMMAND --help");
-      expect(lastCall.args[0]).to.not.contain("ably test COMMAND --help");
+      expect(lastCall.args[0]).toContain("Run `");
+      expect(lastCall.args[0]).toContain("test COMMAND --help");
+      expect(lastCall.args[0]).not.toContain("ably test COMMAND --help");
     });
 
     it("should show ably prefix in normal mode", async () => {
@@ -287,12 +284,12 @@ describe("BaseTopicCommand", () => {
       );
 
       commandCalls.forEach((call) => {
-        expect(call.args[0]).to.include("ably test command");
+        expect(call.args[0]).toContain("ably test command");
       });
 
       // Check footer
       const lastCall = logStub.getCall(logStub.callCount - 1);
-      expect(lastCall.args[0]).to.contain("ably test COMMAND --help");
+      expect(lastCall.args[0]).toContain("ably test COMMAND --help");
     });
   });
 
@@ -363,12 +360,12 @@ describe("BaseTopicCommand", () => {
       await authCommand.run();
 
       // Should show the allowed commands
-      expect(logStub.calledWithMatch(/auth issue-ably-token/)).to.be.true;
-      expect(logStub.calledWithMatch(/auth issue-jwt-token/)).to.be.true;
+      expect(logStub.calledWithMatch(/auth issue-ably-token/)).toBe(true);
+      expect(logStub.calledWithMatch(/auth issue-jwt-token/)).toBe(true);
 
       // Should NOT show restricted commands
-      expect(logStub.calledWithMatch(/auth keys/)).to.be.false;
-      expect(logStub.calledWithMatch(/auth revoke-token/)).to.be.false;
+      expect(logStub.calledWithMatch(/auth keys/)).toBe(false);
+      expect(logStub.calledWithMatch(/auth revoke-token/)).toBe(false);
     });
 
     it("should show all commands when not in anonymous mode", async () => {
@@ -378,9 +375,9 @@ describe("BaseTopicCommand", () => {
       await command.run();
 
       // All commands should be visible
-      expect(logStub.calledWithMatch(/test issue-token/)).to.be.true;
-      expect(logStub.calledWithMatch(/test keys/)).to.be.true;
-      expect(logStub.calledWithMatch(/test revoke-token/)).to.be.true;
+      expect(logStub.calledWithMatch(/test issue-token/)).toBe(true);
+      expect(logStub.calledWithMatch(/test keys/)).toBe(true);
+      expect(logStub.calledWithMatch(/test revoke-token/)).toBe(true);
     });
 
     it("should show all commands when not in web CLI mode", async () => {
@@ -391,9 +388,9 @@ describe("BaseTopicCommand", () => {
       await command.run();
 
       // All commands should be visible
-      expect(logStub.calledWithMatch(/test issue-token/)).to.be.true;
-      expect(logStub.calledWithMatch(/test keys/)).to.be.true;
-      expect(logStub.calledWithMatch(/test revoke-token/)).to.be.true;
+      expect(logStub.calledWithMatch(/test issue-token/)).toBe(true);
+      expect(logStub.calledWithMatch(/test keys/)).toBe(true);
+      expect(logStub.calledWithMatch(/test revoke-token/)).toBe(true);
     });
   });
 });

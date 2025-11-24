@@ -1,5 +1,4 @@
-import { expect } from "chai";
-import { describe, it, beforeEach, afterEach } from "mocha";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import Interactive from "../../../src/commands/interactive.js";
 import { Config } from "@oclif/core";
@@ -51,7 +50,7 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       );
 
       const result = parseCommand('echo "Hello \\"World\\""');
-      expect(result).to.deep.equal(["echo", 'Hello "World"']);
+      expect(result).toEqual(["echo", 'Hello "World"']);
     });
 
     it("should handle escaped quotes in single-quoted strings", () => {
@@ -60,7 +59,7 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       );
 
       const result = parseCommand("echo 'It\\'s great'");
-      expect(result).to.deep.equal(["echo", "It's great"]);
+      expect(result).toEqual(["echo", "It's great"]);
     });
 
     it("should handle empty quoted strings", () => {
@@ -69,7 +68,7 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       );
 
       const result = parseCommand("test \"\" ''");
-      expect(result).to.deep.equal(["test", "", ""]);
+      expect(result).toEqual(["test", "", ""]);
     });
 
     it("should warn about unclosed quotes", () => {
@@ -82,7 +81,7 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
         stubs.consoleError.calledWith(
           chalk.yellow("Warning: Unclosed double quote in command"),
         ),
-      ).to.be.true;
+      ).toBe(true);
     });
 
     it("should handle complex mixed quoting", () => {
@@ -93,7 +92,7 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       const result = parseCommand(
         "cmd --opt=\"value with spaces\" 'single' unquoted",
       );
-      expect(result).to.deep.equal([
+      expect(result).toEqual([
         "cmd",
         "--opt=value with spaces",
         "single",
@@ -107,7 +106,7 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       );
 
       const result = parseCommand("path\\to\\file");
-      expect(result).to.deep.equal(["path\\to\\file"]);
+      expect(result).toEqual(["path\\to\\file"]);
     });
 
     it("should handle multiple spaces between arguments", () => {
@@ -116,7 +115,7 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       );
 
       const result = parseCommand("cmd   arg1    arg2     arg3");
-      expect(result).to.deep.equal(["cmd", "arg1", "arg2", "arg3"]);
+      expect(result).toEqual(["cmd", "arg1", "arg2", "arg3"]);
     });
   });
 
@@ -146,7 +145,7 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       // This is used for SIGINT handling decisions
 
       // Verify runningCommand state management
-      expect((interactiveCommand as any).runningCommand).to.be.false;
+      expect((interactiveCommand as any).runningCommand).toBe(false);
     });
 
     it("should reset runningCommand state after error", async () => {
@@ -165,7 +164,7 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       await handleCommand("error command");
 
       // Verify state was reset
-      expect((interactiveCommand as any).runningCommand).to.be.false;
+      expect((interactiveCommand as any).runningCommand).toBe(false);
     });
   });
 
@@ -179,8 +178,8 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       // returns to prompt (not exit with 130) unless it's a double Ctrl+C
 
       // Test the preconditions for SIGINT handling
-      expect((interactiveCommand as any).runningCommand).to.be.true;
-      expect((interactiveCommand as any).isWrapperMode).to.be.true;
+      expect((interactiveCommand as any).runningCommand).toBe(true);
+      expect((interactiveCommand as any).isWrapperMode).toBe(true);
     });
 
     it("should handle SIGINT normally when no command is running", () => {
@@ -188,7 +187,7 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       (interactiveCommand as any).runningCommand = false;
 
       // Test the preconditions for normal SIGINT handling
-      expect((interactiveCommand as any).runningCommand).to.be.false;
+      expect((interactiveCommand as any).runningCommand).toBe(false);
 
       // When runningCommand is false, SIGINT should:
       // 1. Clear the current line (call _deleteLineLeft and _deleteLineRight)
@@ -207,10 +206,10 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       (interactiveCommand as any).isWrapperMode = true;
 
       // Test that the special exit code is defined
-      expect(Interactive.EXIT_CODE_USER_EXIT).to.equal(42);
+      expect(Interactive.EXIT_CODE_USER_EXIT).toBe(42);
 
       // Test that wrapper mode is properly set
-      expect((interactiveCommand as any).isWrapperMode).to.be.true;
+      expect((interactiveCommand as any).isWrapperMode).toBe(true);
 
       // The actual behavior when user types exit:
       // 1. rl.close() is called
@@ -224,7 +223,7 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       (interactiveCommand as any).isWrapperMode = false;
 
       // Test that wrapper mode is properly unset
-      expect((interactiveCommand as any).isWrapperMode).to.be.false;
+      expect((interactiveCommand as any).isWrapperMode).toBe(false);
 
       // The behavior when not in wrapper mode:
       // When rl.close() is called, process.exit(0) should be used
@@ -264,8 +263,8 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       await handleCommand("test");
 
       // Verify state was set
-      expect(stateWhenCommandRan).to.be.true;
-      expect((interactiveCommand as any).runningCommand).to.be.false; // Should be reset after
+      expect(stateWhenCommandRan).toBe(true);
+      expect((interactiveCommand as any).runningCommand).toBe(false); // Should be reset after
     });
 
     it("should pause and resume readline properly", async () => {
@@ -291,9 +290,9 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       await clock.tickAsync(100);
 
       // Verify readline was paused and resumed
-      expect(rl.pause.called).to.be.true;
-      expect(rl.resume.called).to.be.true;
-      expect(rl.pause.calledBefore(rl.resume)).to.be.true;
+      expect(rl.pause.called).toBe(true);
+      expect(rl.resume.called).toBe(true);
+      expect(rl.pause.calledBefore(rl.resume)).toBe(true);
 
       clock.restore();
     });

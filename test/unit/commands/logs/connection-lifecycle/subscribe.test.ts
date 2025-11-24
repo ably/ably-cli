@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import LogsConnectionLifecycleSubscribe from "../../../../../src/commands/logs/connection-lifecycle/subscribe.js";
@@ -149,7 +149,7 @@ describe("LogsConnectionLifecycleSubscribe", function () {
     // Run the command with a short duration
     await command.run();
 
-    expect(createClientStub.calledOnce).to.be.true;
+    expect(createClientStub.calledOnce).toBe(true);
   });
 
   it("should subscribe to [meta]connection.lifecycle channel", async function () {
@@ -170,8 +170,8 @@ describe("LogsConnectionLifecycleSubscribe", function () {
     // Verify that we got the [meta]connection.lifecycle channel and subscribed to it
     expect(
       command.mockClient.channels.get.calledWith("[meta]connection.lifecycle"),
-    ).to.be.true;
-    expect(subscribeStub.called).to.be.true;
+    ).toBe(true);
+    expect(subscribeStub.called).toBe(true);
   });
 
   it("should handle rewind parameter", async function () {
@@ -197,7 +197,7 @@ describe("LogsConnectionLifecycleSubscribe", function () {
       command.mockClient.channels.get.calledWith("[meta]connection.lifecycle", {
         params: { rewind: "10" },
       }),
-    ).to.be.true;
+    ).toBe(true);
   });
 
   it("should handle connection state changes", async function () {
@@ -214,9 +214,9 @@ describe("LogsConnectionLifecycleSubscribe", function () {
     await command.run();
 
     // Verify that connection state change handlers were set up
-    expect(connectionOnStub.called).to.be.true;
+    expect(connectionOnStub.called).toBe(true);
     // Verify that channel state change handlers were set up
-    expect(channelOnStub.called).to.be.true;
+    expect(channelOnStub.called).toBe(true);
   });
 
   it("should handle log message reception for connection lifecycle events", async function () {
@@ -233,7 +233,7 @@ describe("LogsConnectionLifecycleSubscribe", function () {
     await command.run();
 
     // Verify subscribe was called
-    expect(subscribeStub.called).to.be.true;
+    expect(subscribeStub.called).toBe(true);
 
     // Simulate receiving a connection lifecycle log message
     const messageCallback = subscribeStub.firstCall.args[0];
@@ -255,7 +255,7 @@ describe("LogsConnectionLifecycleSubscribe", function () {
 
       // Check that the message was logged
       const output = command.logOutput.join("\n");
-      expect(output).to.include("connection.opened");
+      expect(output).toContain("connection.opened");
     }
   });
 
@@ -301,9 +301,9 @@ describe("LogsConnectionLifecycleSubscribe", function () {
 
       // Check that different event types were logged
       const output = command.logOutput.join("\n");
-      expect(output).to.include("connection.opened");
-      expect(output).to.include("connection.closed");
-      expect(output).to.include("connection.failed");
+      expect(output).toContain("connection.opened");
+      expect(output).toContain("connection.closed");
+      expect(output).toContain("connection.failed");
     }
   });
 
@@ -350,7 +350,7 @@ describe("LogsConnectionLifecycleSubscribe", function () {
           return false;
         }
       });
-      expect(jsonOutput).to.exist;
+      expect(jsonOutput).toBeDefined();
     }
   });
 
@@ -376,7 +376,7 @@ describe("LogsConnectionLifecycleSubscribe", function () {
     await command.run();
 
     // Verify that channel state change handlers were set up
-    expect(channelOnStub.called).to.be.true;
+    expect(channelOnStub.called).toBe(true);
 
     // Simulate channel state change
     const channelStateCallback = channelOnStub.firstCall.args[0];
@@ -388,7 +388,7 @@ describe("LogsConnectionLifecycleSubscribe", function () {
 
       // Check that channel state change was logged
       const output = command.logOutput.join("\n");
-      expect(output).to.include("attached");
+      expect(output).toContain("attached");
     }
   });
 
@@ -405,6 +405,6 @@ describe("LogsConnectionLifecycleSubscribe", function () {
     await command.run();
 
     // Verify that subscribe was never called since client creation failed
-    expect(command.mockClient.channels.get().subscribe.called).to.be.false;
+    expect(command.mockClient.channels.get().subscribe.called).toBe(false);
   });
 });

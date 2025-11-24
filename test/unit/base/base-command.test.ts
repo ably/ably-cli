@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import fs from "node:fs";
 import { AblyBaseCommand } from "../../../src/base-command.js";
@@ -142,7 +142,7 @@ describe("AblyBaseCommand", function () {
   describe("checkWebCliRestrictions", function () {
     it("should not throw error when not in web CLI mode", function () {
       command.testIsWebCliMode = false;
-      expect(() => command.testCheckWebCliRestrictions()).to.not.throw();
+      expect(() => command.testCheckWebCliRestrictions()).not.toThrow();
     });
 
     it("should throw error when in authenticated web CLI mode and command is restricted", function () {
@@ -154,7 +154,7 @@ describe("AblyBaseCommand", function () {
         configurable: true,
       });
 
-      expect(() => command.testCheckWebCliRestrictions()).to.throw(
+      expect(() => command.testCheckWebCliRestrictions()).toThrow(
         /already logged in/,
       );
     });
@@ -168,7 +168,7 @@ describe("AblyBaseCommand", function () {
         configurable: true,
       });
 
-      expect(() => command.testCheckWebCliRestrictions()).to.not.throw();
+      expect(() => command.testCheckWebCliRestrictions()).not.toThrow();
     });
 
     it("should throw error for anonymous-restricted commands in anonymous mode", function () {
@@ -220,7 +220,7 @@ describe("AblyBaseCommand", function () {
 
       testCases.forEach(({ id, expectedError }) => {
         Object.defineProperty(command, "id", { value: id, configurable: true });
-        expect(() => command.testCheckWebCliRestrictions()).to.throw(
+        expect(() => command.testCheckWebCliRestrictions()).toThrow(
           expectedError,
         );
       });
@@ -240,7 +240,7 @@ describe("AblyBaseCommand", function () {
 
       allowedCommands.forEach((id) => {
         Object.defineProperty(command, "id", { value: id, configurable: true });
-        expect(() => command.testCheckWebCliRestrictions()).to.not.throw();
+        expect(() => command.testCheckWebCliRestrictions()).not.toThrow();
       });
     });
 
@@ -304,7 +304,7 @@ describe("AblyBaseCommand", function () {
 
       testCases.forEach(({ id, expectedError }) => {
         Object.defineProperty(command, "id", { value: id, configurable: true });
-        expect(() => command.testCheckWebCliRestrictions()).to.throw(
+        expect(() => command.testCheckWebCliRestrictions()).toThrow(
           expectedError,
         );
       });
@@ -323,7 +323,7 @@ describe("AblyBaseCommand", function () {
 
       allowedCommands.forEach((id) => {
         Object.defineProperty(command, "id", { value: id, configurable: true });
-        expect(() => command.testCheckWebCliRestrictions()).to.not.throw();
+        expect(() => command.testCheckWebCliRestrictions()).not.toThrow();
       });
     });
   });
@@ -331,45 +331,45 @@ describe("AblyBaseCommand", function () {
   describe("isAllowedInWebCliMode", function () {
     it("should return true when not in web CLI mode", function () {
       command.testIsWebCliMode = false;
-      expect(command.testIsAllowedInWebCliMode()).to.be.true;
+      expect(command.testIsAllowedInWebCliMode()).toBe(true);
     });
 
     it("should return false for restricted commands", function () {
       command.testIsWebCliMode = true;
-      expect(command.testIsAllowedInWebCliMode("accounts:login")).to.be.false;
-      expect(command.testIsAllowedInWebCliMode("accounts:logout")).to.be.false;
-      expect(command.testIsAllowedInWebCliMode("config")).to.be.false;
-      expect(command.testIsAllowedInWebCliMode("config:set")).to.be.false;
-      expect(command.testIsAllowedInWebCliMode("mcp")).to.be.false;
-      expect(command.testIsAllowedInWebCliMode("mcp:start-server")).to.be.false;
+      expect(command.testIsAllowedInWebCliMode("accounts:login")).toBe(false);
+      expect(command.testIsAllowedInWebCliMode("accounts:logout")).toBe(false);
+      expect(command.testIsAllowedInWebCliMode("config")).toBe(false);
+      expect(command.testIsAllowedInWebCliMode("config:set")).toBe(false);
+      expect(command.testIsAllowedInWebCliMode("mcp")).toBe(false);
+      expect(command.testIsAllowedInWebCliMode("mcp:start-server")).toBe(false);
     });
 
     it("should return true for allowed commands", function () {
       command.testIsWebCliMode = true;
-      expect(command.testIsAllowedInWebCliMode("help")).to.be.true;
-      expect(command.testIsAllowedInWebCliMode("channels:publish")).to.be.true;
+      expect(command.testIsAllowedInWebCliMode("help")).toBe(true);
+      expect(command.testIsAllowedInWebCliMode("channels:publish")).toBe(true);
     });
   });
 
   describe("shouldOutputJson", function () {
     it("should return true when json flag is true", function () {
       const flags: BaseFlags = { json: true };
-      expect(command.testShouldOutputJson(flags)).to.be.true;
+      expect(command.testShouldOutputJson(flags)).toBe(true);
     });
 
     it("should return true when pretty-json flag is true", function () {
       const flags: BaseFlags = { "pretty-json": true };
-      expect(command.testShouldOutputJson(flags)).to.be.true;
+      expect(command.testShouldOutputJson(flags)).toBe(true);
     });
 
     it("should return true when format is json", function () {
       const flags: BaseFlags = { format: "json" };
-      expect(command.testShouldOutputJson(flags)).to.be.true;
+      expect(command.testShouldOutputJson(flags)).toBe(true);
     });
 
     it("should return false when no json flags are present", function () {
       const flags: BaseFlags = {};
-      expect(command.testShouldOutputJson(flags)).to.be.false;
+      expect(command.testShouldOutputJson(flags)).toBe(false);
     });
   });
 
@@ -378,28 +378,28 @@ describe("AblyBaseCommand", function () {
       const validKey = "appId.keyId:keySecret";
       const result = command.testParseApiKey(validKey);
 
-      expect(result).to.not.be.null;
-      expect(result?.appId).to.equal("appId");
-      expect(result?.keyId).to.equal("keyId");
-      expect(result?.keySecret).to.equal("keySecret");
+      expect(result).not.toBeNull();
+      expect(result?.appId).toBe("appId");
+      expect(result?.keyId).toBe("keyId");
+      expect(result?.keySecret).toBe("keySecret");
     });
 
     it("should return null for an API key without colon", function () {
       const invalidKey = "appId.keyId";
       const result = command.testParseApiKey(invalidKey);
 
-      expect(result).to.be.null;
+      expect(result).toBeNull();
     });
 
     it("should return null for an API key without period", function () {
       const invalidKey = "appIdkeyId:keySecret";
       const result = command.testParseApiKey(invalidKey);
 
-      expect(result).to.be.null;
+      expect(result).toBeNull();
     });
 
     it("should return null for an empty API key", function () {
-      expect(command.testParseApiKey("")).to.be.null;
+      expect(command.testParseApiKey("")).toBeNull();
     });
   });
 
@@ -432,7 +432,7 @@ describe("AblyBaseCommand", function () {
 
       const cmd = new TestCommand([], {} as Config);
       cmd.testConfigManager = configManagerStub;
-      expect(cmd.testIsAnonymousWebMode()).to.be.true;
+      expect(cmd.testIsAnonymousWebMode()).toBe(true);
     });
 
     it("should not detect anonymous mode when ABLY_ANONYMOUS_USER_MODE is not set", function () {
@@ -441,7 +441,7 @@ describe("AblyBaseCommand", function () {
 
       const cmd = new TestCommand([], {} as Config);
       cmd.testConfigManager = configManagerStub;
-      expect(cmd.testIsAnonymousWebMode()).to.be.false;
+      expect(cmd.testIsAnonymousWebMode()).toBe(false);
     });
 
     it("should not detect anonymous mode when ABLY_ANONYMOUS_USER_MODE is false", function () {
@@ -450,7 +450,7 @@ describe("AblyBaseCommand", function () {
 
       const cmd = new TestCommand([], {} as Config);
       cmd.testConfigManager = configManagerStub;
-      expect(cmd.testIsAnonymousWebMode()).to.be.false;
+      expect(cmd.testIsAnonymousWebMode()).toBe(false);
     });
 
     it("should not detect anonymous mode when not in web CLI mode", function () {
@@ -459,7 +459,7 @@ describe("AblyBaseCommand", function () {
 
       const cmd = new TestCommand([], {} as Config);
       cmd.testConfigManager = configManagerStub;
-      expect(cmd.testIsAnonymousWebMode()).to.be.false;
+      expect(cmd.testIsAnonymousWebMode()).toBe(false);
     });
 
     it("should identify commands restricted in anonymous mode", function () {
@@ -467,26 +467,29 @@ describe("AblyBaseCommand", function () {
       cmd.testConfigManager = configManagerStub;
 
       // Commands with wildcards
-      expect(cmd.testIsRestrictedInAnonymousMode("accounts")).to.be.true;
-      expect(cmd.testIsRestrictedInAnonymousMode("accounts:list")).to.be.true;
-      expect(cmd.testIsRestrictedInAnonymousMode("apps:create")).to.be.true;
-      expect(cmd.testIsRestrictedInAnonymousMode("auth:keys:list")).to.be.true;
-      expect(cmd.testIsRestrictedInAnonymousMode("bench:channel")).to.be.true;
-      expect(cmd.testIsRestrictedInAnonymousMode("integrations:rules:create"))
-        .to.be.true;
-      expect(cmd.testIsRestrictedInAnonymousMode("queues:publish")).to.be.true;
-      expect(cmd.testIsRestrictedInAnonymousMode("logs:tail")).to.be.true;
+      expect(cmd.testIsRestrictedInAnonymousMode("accounts")).toBe(true);
+      expect(cmd.testIsRestrictedInAnonymousMode("accounts:list")).toBe(true);
+      expect(cmd.testIsRestrictedInAnonymousMode("apps:create")).toBe(true);
+      expect(cmd.testIsRestrictedInAnonymousMode("auth:keys:list")).toBe(true);
+      expect(cmd.testIsRestrictedInAnonymousMode("bench:channel")).toBe(true);
+      expect(
+        cmd.testIsRestrictedInAnonymousMode("integrations:rules:create"),
+      ).toBe(true);
+      expect(cmd.testIsRestrictedInAnonymousMode("queues:publish")).toBe(true);
+      expect(cmd.testIsRestrictedInAnonymousMode("logs:tail")).toBe(true);
 
       // Specific commands
-      expect(cmd.testIsRestrictedInAnonymousMode("channels:list")).to.be.true;
-      expect(cmd.testIsRestrictedInAnonymousMode("rooms:list")).to.be.true;
-      expect(cmd.testIsRestrictedInAnonymousMode("auth:revoke-token")).to.be
-        .true;
+      expect(cmd.testIsRestrictedInAnonymousMode("channels:list")).toBe(true);
+      expect(cmd.testIsRestrictedInAnonymousMode("rooms:list")).toBe(true);
+      expect(cmd.testIsRestrictedInAnonymousMode("auth:revoke-token")).toBe(
+        true,
+      );
 
       // Commands that should be allowed
-      expect(cmd.testIsRestrictedInAnonymousMode("channels:publish")).to.be
-        .false;
-      expect(cmd.testIsRestrictedInAnonymousMode("rooms:get")).to.be.false;
+      expect(cmd.testIsRestrictedInAnonymousMode("channels:publish")).toBe(
+        false,
+      );
+      expect(cmd.testIsRestrictedInAnonymousMode("rooms:get")).toBe(false);
     });
 
     it("should match command patterns correctly", function () {
@@ -494,22 +497,27 @@ describe("AblyBaseCommand", function () {
       cmd.testConfigManager = configManagerStub;
 
       // Wildcard patterns
-      expect(cmd.testMatchesCommandPattern("accounts", "accounts*")).to.be.true;
-      expect(cmd.testMatchesCommandPattern("accounts:list", "accounts*")).to.be
-        .true;
-      expect(cmd.testMatchesCommandPattern("accountsettings", "accounts*")).to
-        .be.true;
+      expect(cmd.testMatchesCommandPattern("accounts", "accounts*")).toBe(true);
+      expect(cmd.testMatchesCommandPattern("accounts:list", "accounts*")).toBe(
+        true,
+      );
+      expect(
+        cmd.testMatchesCommandPattern("accountsettings", "accounts*"),
+      ).toBe(true);
 
       // Exact matches
-      expect(cmd.testMatchesCommandPattern("channels:list", "channels:list")).to
-        .be.true;
-      expect(cmd.testMatchesCommandPattern("channels:list", "channels:lis")).to
-        .be.false;
+      expect(
+        cmd.testMatchesCommandPattern("channels:list", "channels:list"),
+      ).toBe(true);
+      expect(
+        cmd.testMatchesCommandPattern("channels:list", "channels:lis"),
+      ).toBe(false);
 
       // Non-matches
-      expect(cmd.testMatchesCommandPattern("channels:publish", "channels:list"))
-        .to.be.false;
-      expect(cmd.testMatchesCommandPattern("account", "accounts*")).to.be.false;
+      expect(
+        cmd.testMatchesCommandPattern("channels:publish", "channels:list"),
+      ).toBe(false);
+      expect(cmd.testMatchesCommandPattern("account", "accounts*")).toBe(false);
     });
   });
 
@@ -522,9 +530,9 @@ describe("AblyBaseCommand", function () {
 
       const result = await command.testEnsureAppAndKey(flags);
 
-      expect(result).to.not.be.null;
-      expect(result?.appId).to.equal("testAppId");
-      expect(result?.apiKey).to.equal("testApiKey");
+      expect(result).not.toBeNull();
+      expect(result?.appId).toBe("testAppId");
+      expect(result?.apiKey).toBe("testApiKey");
     });
 
     it("should use app and key from config if available", async function () {
@@ -537,9 +545,9 @@ describe("AblyBaseCommand", function () {
 
       const result = await command.testEnsureAppAndKey(flags);
 
-      expect(result).to.not.be.null;
-      expect(result?.appId).to.equal("configAppId");
-      expect(result?.apiKey).to.equal("configApiKey");
+      expect(result).not.toBeNull();
+      expect(result?.appId).toBe("configAppId");
+      expect(result?.apiKey).toBe("configApiKey");
     });
 
     it("should use ABLY_API_KEY environment variable if available", async function () {
@@ -569,9 +577,9 @@ describe("AblyBaseCommand", function () {
 
       const result = await command.testEnsureAppAndKey(flags);
 
-      expect(result).to.not.be.null;
-      expect(result?.appId).to.equal("envApp");
-      expect(result?.apiKey).to.equal("envApp.keyId:keySecret");
+      expect(result).not.toBeNull();
+      expect(result?.appId).toBe("envApp");
+      expect(result?.apiKey).toBe("envApp.keyId:keySecret");
     });
 
     it("should handle web CLI mode appropriately", async function () {
@@ -581,9 +589,9 @@ describe("AblyBaseCommand", function () {
 
       const result = await command.testEnsureAppAndKey(flags);
 
-      expect(result).to.not.be.null;
-      expect(result?.appId).to.equal("webApp");
-      expect(result?.apiKey).to.equal("webApp.keyId:keySecret");
+      expect(result).not.toBeNull();
+      expect(result?.appId).toBe("webApp");
+      expect(result?.apiKey).toBe("webApp.keyId:keySecret");
     });
 
     it("should return null if no authentication is available", async function () {
@@ -599,7 +607,7 @@ describe("AblyBaseCommand", function () {
 
       const result = await command.testEnsureAppAndKey(flags);
 
-      expect(result).to.be.null;
+      expect(result).toBeNull();
     });
   });
 
@@ -612,7 +620,7 @@ describe("AblyBaseCommand", function () {
 
       const clientOptions = command.testGetClientOptions(flags);
 
-      expect(clientOptions.endpoint).to.equal("custom-endpoint.example.com");
+      expect(clientOptions.endpoint).toBe("custom-endpoint.example.com");
     });
 
     it("should not set endpoint when flag is not provided", function () {
@@ -622,7 +630,7 @@ describe("AblyBaseCommand", function () {
 
       const clientOptions = command.testGetClientOptions(flags);
 
-      expect(clientOptions.endpoint).to.be.undefined;
+      expect(clientOptions.endpoint).toBeUndefined();
     });
 
     it("should work alongside other flags like env and host", function () {
@@ -635,10 +643,10 @@ describe("AblyBaseCommand", function () {
 
       const clientOptions = command.testGetClientOptions(flags);
 
-      expect(clientOptions.endpoint).to.equal("custom-endpoint.example.com");
-      expect(clientOptions.environment).to.equal("sandbox");
-      expect(clientOptions.realtimeHost).to.equal("custom-host.example.com");
-      expect(clientOptions.restHost).to.equal("custom-host.example.com");
+      expect(clientOptions.endpoint).toBe("custom-endpoint.example.com");
+      expect(clientOptions.environment).toBe("sandbox");
+      expect(clientOptions.realtimeHost).toBe("custom-host.example.com");
+      expect(clientOptions.restHost).toBe("custom-host.example.com");
     });
   });
 });

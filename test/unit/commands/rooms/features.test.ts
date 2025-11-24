@@ -1,4 +1,13 @@
-import { expect } from "chai";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+  vi,
+} from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
@@ -304,8 +313,8 @@ describe("rooms feature commands", function () {
 
       expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
         .true;
-      expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(getStub.calledOnce).to.be.true;
+      expect(mockRoom.attach.calledOnce).toBe(true);
+      expect(getStub.calledOnce).toBe(true);
     });
   });
 
@@ -380,8 +389,8 @@ describe("rooms feature commands", function () {
 
       expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
         .true;
-      expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(subscribeStub.calledOnce).to.be.true;
+      expect(mockRoom.attach.calledOnce).toBe(true);
+      expect(subscribeStub.calledOnce).toBe(true);
 
       command.mockRealtimeClient.close();
     });
@@ -444,8 +453,8 @@ describe("rooms feature commands", function () {
 
       expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
         .true;
-      expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(enterStub.calledOnce).to.be.true;
+      expect(mockRoom.attach.calledOnce).toBe(true);
+      expect(enterStub.calledOnce).toBe(true);
 
       command.mockRealtimeClient.close();
     });
@@ -462,9 +471,9 @@ describe("rooms feature commands", function () {
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(enterStub.calledOnce).to.be.true;
+      expect(enterStub.calledOnce).toBe(true);
       const presenceData = enterStub.getCall(0).args[0];
-      expect(presenceData).to.deep.equal({
+      expect(presenceData).toEqual({
         status: "online",
         name: "Test User",
       });
@@ -526,9 +535,9 @@ describe("rooms feature commands", function () {
 
       expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
         .true;
-      expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(sendStub.calledOnce).to.be.true;
-      expect(sendStub.calledWith({ name: "👍", metadata: {} })).to.be.true;
+      expect(mockRoom.attach.calledOnce).toBe(true);
+      expect(sendStub.calledOnce).toBe(true);
+      expect(sendStub.calledWith({ name: "👍", metadata: {} })).toBe(true);
     });
 
     it("should handle metadata in reactions", async function () {
@@ -541,9 +550,9 @@ describe("rooms feature commands", function () {
 
       await command.run();
 
-      expect(sendStub.calledOnce).to.be.true;
+      expect(sendStub.calledOnce).toBe(true);
       const reactionCall = sendStub.getCall(0);
-      expect(reactionCall.args[0]).to.deep.equal({
+      expect(reactionCall.args[0]).toEqual({
         name: "🎉",
         metadata: { intensity: "high" },
       });
@@ -609,8 +618,8 @@ describe("rooms feature commands", function () {
 
       expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
         .true;
-      expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(keystrokeStub.calledOnce).to.be.true;
+      expect(mockRoom.attach.calledOnce).toBe(true);
+      expect(keystrokeStub.calledOnce).toBe(true);
 
       // Clean up
       command.mockRealtimeClient.close();
