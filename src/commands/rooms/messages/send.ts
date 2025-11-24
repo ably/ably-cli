@@ -86,6 +86,10 @@ export default class MessagesSend extends ChatBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesSend);
 
+    if (!args.room) {
+      throw new Error("Room ID is required");
+    }
+
     try {
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);

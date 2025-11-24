@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { spawn } from "node:child_process";
 import * as path from "node:path";
 import * as fs from "node:fs";
@@ -13,8 +13,6 @@ const testHistoryDir = path.join(os.tmpdir(), "ably-test-" + Date.now());
 const testHistoryFile = path.join(testHistoryDir, "history");
 
 describe('Interactive Mode - "ably" command feedback', function () {
-  this.timeout(10000); // Increase timeout for CI environments
-
   beforeEach(function () {
     // Create test history directory
     fs.mkdirSync(testHistoryDir, { recursive: true });
@@ -67,12 +65,12 @@ describe('Interactive Mode - "ably" command feedback', function () {
     });
 
     // Verify the helpful message was displayed
-    expect(output).to.include(
+    expect(output).toContain(
       "You're already in interactive mode. Type 'help' or press TAB to see available commands.",
     );
 
     // Verify no errors
-    expect(errorOutput).to.be.empty;
+    expect(errorOutput).toBe("");
   });
 
   it('should not trigger for commands containing "ably" as substring', async function () {
@@ -113,11 +111,11 @@ describe('Interactive Mode - "ably" command feedback', function () {
     });
 
     // Verify the helpful message was NOT displayed
-    expect(output).not.to.include("You're already in interactive mode");
+    expect(output).not.toContain("You're already in interactive mode");
 
     // Should see command not found error (might be in stdout or stderr)
     const combinedOutput = output + errorOutput;
-    expect(combinedOutput).to.match(/not found|unknown command/i);
+    expect(combinedOutput).toMatch(/not found|unknown command/i);
   });
 
   it('should save "ably" command to history', async function () {
@@ -148,6 +146,6 @@ describe('Interactive Mode - "ably" command feedback', function () {
 
     // Check history file
     const historyContent = fs.readFileSync(testHistoryFile, "utf8");
-    expect(historyContent).to.include("ably");
+    expect(historyContent).toContain("ably");
   });
 });

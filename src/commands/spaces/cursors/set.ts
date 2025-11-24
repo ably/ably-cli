@@ -402,7 +402,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         await new Promise((resolve) => setTimeout(resolve, 600));
 
         // In immediate exit mode, we don't keep the process alive beyond this.
-        process.exit(0);
+        this.exit(0);
       }
 
       // Start simulation if requested
@@ -485,7 +485,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
       this.cleanupInProgress = true;
       // After cleanup (handled in finally), ensure the process exits so user doesn't need multiple Ctrl-C
-      process.exit(0);
+      this.exit(0);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(flags, "cursor", "setError", errorMsg, {

@@ -53,8 +53,8 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
         null, // body
       );
 
-      const occupancyData = channelDetails.items?.[0] || channelDetails;
-      const occupancyMetrics: OccupancyMetrics = occupancyData.occupancy
+      const occupancyData = channelDetails.items?.[0] || {};
+      const occupancyMetrics: OccupancyMetrics = occupancyData.status?.occupancy
         ?.metrics || {
         connections: 0,
         presenceConnections: 0,

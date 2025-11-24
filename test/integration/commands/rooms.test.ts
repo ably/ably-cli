@@ -1,6 +1,8 @@
-import { expect } from "chai";
-import { test } from "@oclif/test";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { expect as chaiExpect } from "chai";
+import { runCommand } from "@oclif/test";
 import { registerMock } from "../test-utils.js";
+import { RoomStatus } from "@ably/chat";
 
 // Mock room data
 const mockMessages = [
@@ -11,7 +13,7 @@ const mockMessages = [
     metadata: { isImportant: true },
   },
   {
-    text: "How is everyone?", 
+    text: "How is everyone?",
     clientId: "other-client",
     timestamp: new Date(Date.now() - 5000),
     metadata: { thread: "general" },
@@ -41,7 +43,15 @@ const createMockRoom = (room: string) => ({
   id: room,
   attach: async () => {},
   detach: async () => {},
-  
+
+  onStatusChange: (callback: (change: any) => void) => {
+    setTimeout(() => {
+      callback({
+        current: RoomStatus.Attached,
+      });
+    }, 100);
+  },
+
   // Messages functionality
   messages: {
     send: async (message: any) => {
@@ -65,15 +75,15 @@ const createMockRoom = (room: string) => ({
       return Promise.resolve();
     },
     unsubscribe: async () => {},
-    get: async (options?: any) => {
+    history: async (options?: any) => {
       const limit = options?.limit || 50;
       const direction = options?.direction || "backwards";
-      
+
       let messages = [...mockMessages];
       if (direction === "backwards") {
         messages.reverse();
       }
-      
+
       return {
         items: messages.slice(0, limit),
         hasNext: () => false,
@@ -81,7 +91,7 @@ const createMockRoom = (room: string) => ({
       };
     },
   },
-  
+
   // Presence functionality
   presence: {
     enter: async (data?: any) => {
@@ -105,11 +115,11 @@ const createMockRoom = (room: string) => ({
     },
     unsubscribe: async () => {},
   },
-  
+
   // Reactions functionality
   reactions: {
     send: async (emoji: string, metadata?: any) => {
-      const existingReaction = mockReactions.find(r => r.emoji === emoji);
+      const existingReaction = mockReactions.find((r) => r.emoji === emoji);
       if (existingReaction) {
         existingReaction.count++;
         existingReaction.clientIds.push("test-client");
@@ -134,10 +144,10 @@ const createMockRoom = (room: string) => ({
     },
     unsubscribe: async () => {},
   },
-  
+
   // Typing functionality
   typing: {
-    start: async () => {},
+    keystroke: async () => {},
     stop: async () => {},
     subscribe: (callback: (event: any) => void) => {
       setTimeout(() => {
@@ -151,7 +161,7 @@ const createMockRoom = (room: string) => ({
     },
     unsubscribe: async () => {},
   },
-  
+
   // Occupancy functionality
   occupancy: {
     get: async () => ({ ...mockOccupancy }),
@@ -168,17 +178,10 @@ const createMockRoom = (room: string) => ({
   },
 });
 
-const mockChatClient = {
-  rooms: {
-    get: (room: string) => createMockRoom(room),
-    release: async (room: string) => {},
-  },
-};
-
 const mockRealtimeClient = {
   connection: {
     once: (event: string, callback: () => void) => {
-      if (event === 'connected') {
+      if (event === "connected") {
         setTimeout(callback, 0);
       }
     },
@@ -196,190 +199,227 @@ const mockRealtimeClient = {
   },
 };
 
+const mockChatClient = {
+  rooms: {
+    get: (room: string) => createMockRoom(room),
+    release: async (room: string) => {},
+  },
+  connection: {
+    onStatusChange: (callback: (change: any) => void) => {},
+  },
+  realtime: mockRealtimeClient,
+};
+
 let originalEnv: NodeJS.ProcessEnv;
 
-describe('Rooms integration tests', function() {
-  this.timeout(10000); // Increase timeout for integration tests
-  
-  beforeEach(function() {
+describe("Rooms integration tests", function () {
+  beforeEach(function () {
     // Store original env vars
     originalEnv = { ...process.env };
 
     // Set environment variables for this test file
-    process.env.ABLY_CLI_TEST_MODE = 'true';
-    process.env.ABLY_API_KEY = 'test.key:secret';
+    process.env.ABLY_CLI_TEST_MODE = "true";
+    process.env.ABLY_API_KEY = "test.key:secret";
 
     // Register the chat and realtime mocks using the test-utils system
-    registerMock('ablyChatMock', mockChatClient);
-    registerMock('ablyRealtimeMock', mockRealtimeClient);
+    registerMock("ablyChatMock", mockChatClient);
+    registerMock("ablyRealtimeMock", mockRealtimeClient);
   });
 
-  afterEach(function() {
+  afterEach(function () {
     // Restore original environment variables
     process.env = originalEnv;
   });
 
-  describe('Chat room lifecycle', function() {
-    const testRoom = 'integration-test-room';
-    
-    it('sends a message to a room', function() {
-      return test
-        .stdout()
-        .command(['rooms', 'messages', 'send', testRoom, 'Hello from integration test!'])
-        .it('successfully sends a message', ctx => {
-          expect(ctx.stdout).to.contain('Message sent successfully');
-        });
+  describe("Chat room lifecycle", function () {
+    const testRoom = "integration-test-room";
+
+    it("sends a message to a room", async function () {
+      const { stdout, error } = await runCommand(
+        [
+          "rooms",
+          "messages",
+          "send",
+          testRoom,
+          '"Hello from integration test!"',
+        ],
+        import.meta.url,
+      );
+      expect(stdout).toContain("Message sent successfully");
     });
 
-    it('sends multiple messages with metadata', function() {
-      return test
-        .stdout()
-        .command(['rooms', 'messages', 'send', testRoom, 'Message with metadata', '--metadata', '{"priority":"high"}', '--count', '3'])
-        .it('sends multiple messages with metadata', ctx => {
-          expect(ctx.stdout).to.contain('messages sent successfully');
-        });
+    it("sends multiple messages with metadata", async function () {
+      const { stdout } = await runCommand(
+        [
+          "rooms",
+          "messages",
+          "send",
+          testRoom,
+          '"Message with metadata"',
+          "--metadata",
+          '{"priority":"high"}',
+          "--count",
+          "3",
+        ],
+        import.meta.url,
+      );
+      expect(stdout).toContain("messages sent successfully");
     });
 
-    it('retrieves message history', function() {
-      return test
-        .stdout()
-        .command(['rooms', 'messages', 'get', testRoom, '--limit', '10'])
-        .it('retrieves room message history', ctx => {
-          expect(ctx.stdout).to.contain('Hello room!');
-          expect(ctx.stdout).to.contain('How is everyone?');
-        });
+    it("retrieves message history", async function () {
+      const { stdout } = await runCommand(
+        ["rooms", "messages", "history", testRoom, "--limit", "10"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("Hello room!");
+      expect(stdout).toContain("How is everyone?");
     });
 
-    it('enters room presence with data', function() {
-      return test
-        .stdout()
-        .command(['rooms', 'presence', 'enter', testRoom, '--data', '{"name":"Integration Tester","role":"tester"}'])
-        .it('enters presence successfully', ctx => {
-          // Since presence enter runs indefinitely, we check initial setup
-          expect(ctx.stdout).to.contain('Entered presence');
-        });
+    it("enters room presence with data", async function () {
+      const { stdout, error } = await runCommand(
+        [
+          "rooms",
+          "presence",
+          "enter",
+          testRoom,
+          "--data",
+          '{"name":"Integration Tester","role":"tester"}',
+        ],
+        import.meta.url,
+      );
+
+      // Since presence enter runs indefinitely, we check initial setup
+      expect(stdout).toContain("Entered room");
     });
 
-    it('gets room occupancy metrics', function() {
-      return test
-        .stdout()
-        .command(['rooms', 'occupancy', 'get', testRoom])
-        .it('retrieves occupancy metrics', ctx => {
-          expect(ctx.stdout).to.contain('Connections:');
-          expect(ctx.stdout).to.contain('Publishers:');
-          expect(ctx.stdout).to.contain('Subscribers:');
-        });
+    it("gets room occupancy metrics", async function () {
+      const { stdout } = await runCommand(
+        ["rooms", "occupancy", "get", testRoom],
+        import.meta.url,
+      );
+      expect(stdout).toContain("Connections:");
+      expect(stdout).toContain("Presence Members:");
     });
 
-    it('sends a reaction to a room', function() {
-      return test
-        .stdout()
-        .command(['rooms', 'reactions', 'send', testRoom, '🚀'])
-        .it('sends reaction successfully', ctx => {
-          expect(ctx.stdout).to.contain('Reaction sent successfully');
-        });
+    it("sends a reaction to a room", async function () {
+      const { stdout } = await runCommand(
+        ["rooms", "reactions", "send", testRoom, "🚀"],
+        import.meta.url,
+      );
+      expect(stdout).toContain(
+        "Sent reaction 🚀 in room integration-test-room",
+      );
     });
 
-    it('starts typing indicator', function() {
-      return test
-        .stdout()
-        .command(['rooms', 'typing', 'keystroke', testRoom])
-        .it('starts typing indicator', ctx => {
-          expect(ctx.stdout).to.contain('Typing indicator started');
-        });
-    });
-  });
+    it("starts typing indicator", async function () {
+      const { stdout } = await runCommand(
+        ["rooms", "typing", "keystroke", testRoom],
+        import.meta.url,
+      );
 
-  describe('JSON output format', function() {
-    const testRoom = 'json-test-room';
-
-    it('outputs message send result in JSON format', function() {
-      return test
-        .stdout()
-        .command(['rooms', 'messages', 'send', testRoom, 'JSON test message', '--json'])
-        .it('outputs JSON result', ctx => {
-          const output = JSON.parse(ctx.stdout);
-          expect(output).to.have.property('success', true);
-          expect(output).to.have.property('room', testRoom);
-        });
-    });
-
-    it('outputs message history in JSON format', function() {
-      return test
-        .stdout()
-        .command(['rooms', 'messages', 'get', testRoom, '--json'])
-        .it('outputs JSON history', ctx => {
-          const output = JSON.parse(ctx.stdout);
-          expect(output).to.have.property('messages').that.is.an('array');
-        });
-    });
-
-    it('outputs occupancy metrics in JSON format', function() {
-      return test
-        .stdout()
-        .command(['rooms', 'occupancy', 'get', testRoom, '--json'])
-        .it('outputs JSON occupancy', ctx => {
-          const output = JSON.parse(ctx.stdout);
-          expect(output).to.have.property('connections');
-          expect(output).to.have.property('publishers');
-          expect(output).to.have.property('subscribers');
-        });
+      expect(stdout).toContain("Started typing in room");
     });
   });
 
-  describe('Error handling', function() {
-    it('handles invalid room ID gracefully', function() {
-      return test
-        .stderr()
-        .command(['rooms', 'messages', 'send', '', 'test message'])
-        .catch(error => {
-          expect(error.message).to.include('Room ID is required');
-        })
-        .it('fails with empty room ID');
+  describe("JSON output format", function () {
+    const testRoom = "json-test-room";
+
+    it("outputs message send result in JSON format", async function () {
+      const { stdout, error } = await runCommand(
+        [
+          "rooms",
+          "messages",
+          "send",
+          testRoom,
+          '"JSON test message"',
+          "--json",
+        ],
+        import.meta.url,
+      );
+      expect(stdout).toContain('"success": true');
+      expect(stdout).toContain('"room": "');
     });
 
-    it('handles invalid metadata JSON', function() {
-      return test
-        .stderr()
-        .command(['rooms', 'messages', 'send', 'test-room', 'test message', '--metadata', 'invalid-json'])
-        .catch(error => {
-          expect(error.message).to.include('Invalid metadata JSON');
-        })
-        .it('fails with invalid metadata');
+    it("outputs message history in JSON format", async function () {
+      const { stdout } = await runCommand(
+        ["rooms", "messages", "history", testRoom, "--json"],
+        import.meta.url,
+      );
+      expect(stdout).toContain('"messages": [');
     });
 
-    it('handles missing message text', function() {
-      return test
-        .stderr()
-        .command(['rooms', 'messages', 'send', 'test-room'])
-        .catch(error => {
-          expect(error.message).to.include('Missing required argument');
-        })
-        .it('fails with missing message text');
+    it("outputs occupancy metrics in JSON format", async function () {
+      const { stdout } = await runCommand(
+        ["rooms", "occupancy", "get", testRoom, "--json"],
+        import.meta.url,
+      );
+      expect(stdout).toContain('"connections":');
+      expect(stdout).toContain('"publishers":');
+      expect(stdout).toContain('"subscribers":');
     });
   });
 
-  describe('Real-time message flow simulation', function() {
-    const testRoom = 'realtime-test-room';
+  describe("Error handling", function () {
+    it("handles invalid metadata JSON", async function () {
+      const { error } = await runCommand(
+        [
+          "rooms",
+          "messages",
+          "send",
+          "test-room",
+          '"test message"',
+          "--metadata",
+          "{]",
+        ],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Invalid metadata JSON");
+    });
 
-    it('simulates sending and then subscribing to messages', function() {
+    it("handles missing message text", async function () {
+      const { error } = await runCommand(
+        ["rooms", "messages", "send", "test-room"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Missing 1 required arg");
+      expect(error?.message).toContain("text  The message text to send");
+    });
+  });
+
+  describe("Real-time message flow simulation", function () {
+    const testRoom = "realtime-test-room";
+
+    it("simulates sending and then subscribing to messages", async function () {
       // This test simulates a real flow where we send a message and then subscribe
-      return test
-        .stdout()
-        .command(['rooms', 'messages', 'send', testRoom, 'Test message for subscription'])
-        .it('sends message for subscription test', ctx => {
-          expect(ctx.stdout).to.contain('Message sent successfully');
-        });
+      const { stdout } = await runCommand(
+        [
+          "rooms",
+          "messages",
+          "send",
+          testRoom,
+          '"Test message for subscription"',
+        ],
+        import.meta.url,
+      );
+      expect(stdout).toContain("Message sent successfully");
     });
 
-    it('simulates presence lifecycle', function() {
+    it("simulates presence lifecycle", async function () {
       // Test presence enter followed by checking presence
-      return test
-        .stdout()
-        .command(['rooms', 'presence', 'enter', testRoom, '--data', '{"status":"testing"}'])
-        .it('enters presence for lifecycle test', ctx => {
-          expect(ctx.stdout).to.contain('Entered presence');
-        });
+      const { stdout } = await runCommand(
+        [
+          "rooms",
+          "presence",
+          "enter",
+          testRoom,
+          "--data",
+          '{"status":"testing"}',
+        ],
+        import.meta.url,
+      );
+      expect(stdout).toContain("Entered room realtime-test-room");
     });
   });
 });

@@ -88,7 +88,7 @@ userEmail = "test@example.com"
           tlsOnly: false,
         });
 
-      const { stdout, result } = await runCommand([
+      const { stdout } = await runCommand([
         "apps:create",
         "--name",
         `"${mockAppName}"`,

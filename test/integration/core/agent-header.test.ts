@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import { AblyBaseCommand } from "../../../src/base-command.js";
@@ -38,8 +38,8 @@ describe("Agent Header Integration Tests", function () {
 
       const clientOptions = command.testGetClientOptions(flags);
 
-      expect(clientOptions.agents).to.exist;
-      expect(clientOptions.agents).to.deep.equal({
+      expect(clientOptions.agents).toBeDefined();
+      expect(clientOptions.agents).toEqual({
         "ably-cli": getCliVersion(),
       });
     });
@@ -51,7 +51,7 @@ describe("Agent Header Integration Tests", function () {
       const expectedAgentHeader = `ably-cli/${version}`;
 
       // Should match the format: ably-cli/x.y.z or ably-cli/x.y.z-alpha.n
-      expect(expectedAgentHeader).to.match(
+      expect(expectedAgentHeader).toMatch(
         /^ably-cli\/\d+\.\d+\.\d+(-alpha\.\d+)?$/,
       );
     });
