@@ -1,4 +1,12 @@
-import { expect } from "chai";
+import {
+  describe,
+  it,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+  expect,
+} from "vitest";
 import * as Ably from "ably";
 import {
   E2E_API_KEY,
@@ -10,7 +18,8 @@ import {
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
-  displayTestFailureDebugOutput,
+  setupTestFailureHandler,
+  resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
 
@@ -55,16 +64,16 @@ async function retryUntilSuccess<T>(
   return lastResult!;
 }
 
-describe("Channel E2E Tests", function () {
+describe("Channel E2E Tests", () => {
   // Skip all tests if API key not available
   // Set up vars for test data
   let historyChannel: string;
   let jsonHistoryChannel: string;
   let listChannel: string;
 
-  before(async function () {
+  beforeAll(async () => {
     if (SHOULD_SKIP_E2E) {
-      this.skip();
+      return;
     }
     process.on("SIGINT", forceExit);
 
@@ -89,27 +98,32 @@ describe("Channel E2E Tests", function () {
     }
   });
 
-  after(function () {
+  afterAll(() => {
     process.removeListener("SIGINT", forceExit);
   });
 
-  beforeEach(function () {
-    this.timeout(120000); // 2 minutes per individual test
+  beforeEach(() => {
+    resetTestTracking();
     // Clear tracked commands and output files before each test
     testOutputFiles.clear();
     testCommands.length = 0;
   });
 
-  afterEach(async function () {
-    // Display debug output if test failed
-    if (this.currentTest?.state === "failed") {
-      await displayTestFailureDebugOutput(this.currentTest?.title);
-    }
+  afterEach(async () => {
     await cleanupTrackedResources();
   });
 
   // Test channels list command with verification
-  it("should list channels and verify test channel is included", async function () {
+  it("should list channels and verify test channel is included", async () => {
+    setupTestFailureHandler(
+      "should list channels and verify test channel is included",
+    );
+
+    // Skip if E2E tests should be skipped
+    if (SHOULD_SKIP_E2E) {
+      return;
+    }
+
     // Run the CLI command
     const listResult = await runCommand(["channels", "list"], {
       env: { ABLY_API_KEY: E2E_API_KEY || "" },
@@ -117,10 +131,7 @@ describe("Channel E2E Tests", function () {
     });
 
     // Enhanced diagnostic error messages
-    expect(
-      listResult.exitCode,
-      `Expected exit code 0, got ${listResult.exitCode}. Stderr: ${listResult.stderr}. Stdout: ${listResult.stdout}`,
-    ).to.equal(0);
+    expect(listResult.exitCode).toBe(0);
 
     if (!listResult.stdout || listResult.stdout.trim() === "") {
       throw new Error(
@@ -128,10 +139,7 @@ describe("Channel E2E Tests", function () {
       );
     }
 
-    expect(
-      listResult.stdout,
-      `Expected stdout to contain 'Found', but got: ${listResult.stdout}. Exit code: ${listResult.exitCode}, Stderr: ${listResult.stderr}`,
-    ).to.include("Found");
+    expect(listResult.stdout).toContain("Found");
 
     // Now verify with SDK in a separate step
     const allChannels = await retryUntilSuccess(
@@ -141,14 +149,20 @@ describe("Channel E2E Tests", function () {
     );
 
     const channelExists = allChannels.includes(listChannel);
-    expect(
-      channelExists,
-      `Channel ${listChannel} should exist in the channel list`,
-    ).to.be.true;
+    expect(channelExists).toBe(true);
   });
 
   // Test channels list with JSON output and verification
-  it("should list channels in JSON format and verify test channel is included", async function () {
+  it("should list channels in JSON format and verify test channel is included", async () => {
+    setupTestFailureHandler(
+      "should list channels in JSON format and verify test channel is included",
+    );
+
+    // Skip if E2E tests should be skipped
+    if (SHOULD_SKIP_E2E) {
+      return;
+    }
+
     // First run the CLI command
     const listResult = await runCommand(["channels", "list", "--json"], {
       env: { ABLY_API_KEY: E2E_API_KEY || "" },
@@ -156,10 +170,7 @@ describe("Channel E2E Tests", function () {
     });
 
     // Enhanced diagnostic error messages
-    expect(
-      listResult.exitCode,
-      `Expected exit code 0, got ${listResult.exitCode}. Stderr: ${listResult.stderr}. Stdout: ${listResult.stdout}`,
-    ).to.equal(0);
+    expect(listResult.exitCode).toBe(0);
 
     if (!listResult.stdout || listResult.stdout.trim() === "") {
       throw new Error(
@@ -175,9 +186,11 @@ describe("Channel E2E Tests", function () {
         `Failed to parse JSON output. Parse error: ${parseError}. Exit code: ${listResult.exitCode}, Stderr: ${listResult.stderr}, Stdout: ${listResult.stdout}`,
       );
     }
-    expect(result).to.have.property("success", true);
-    expect(result).to.have.property("channels").that.is.an("array");
-    expect(result).to.have.property("timestamp").that.is.a("string");
+    expect(result).toHaveProperty("success", true);
+    expect(result).toHaveProperty("channels");
+    expect(Array.isArray(result.channels)).toBe(true);
+    expect(result).toHaveProperty("timestamp");
+    expect(typeof result.timestamp).toBe("string");
 
     // Now verify with SDK in a separate step
     const allChannels = await retryUntilSuccess(
@@ -187,12 +200,20 @@ describe("Channel E2E Tests", function () {
     );
 
     const foundChannel = allChannels.includes(listChannel);
-    expect(foundChannel, `Channel ${listChannel} should exist in channel list`)
-      .to.be.true;
+    expect(foundChannel).toBe(true);
   });
 
   // Test publishing with verification
-  it("should publish a message to a channel and verify it was published", async function () {
+  it("should publish a message to a channel and verify it was published", async () => {
+    setupTestFailureHandler(
+      "should publish a message to a channel and verify it was published",
+    );
+
+    // Skip if E2E tests should be skipped
+    if (SHOULD_SKIP_E2E) {
+      return;
+    }
+
     const messageData = { data: "E2E Test Message" };
     const uniqueChannel = getUniqueChannelName("cli");
 
@@ -206,10 +227,7 @@ describe("Channel E2E Tests", function () {
     );
 
     // Enhanced diagnostic error messages
-    expect(
-      publishResult.exitCode,
-      `Publish failed - Expected exit code 0, got ${publishResult.exitCode}. Stderr: ${publishResult.stderr}. Stdout: ${publishResult.stdout}`,
-    ).to.equal(0);
+    expect(publishResult.exitCode).toBe(0);
 
     if (!publishResult.stdout || publishResult.stdout.trim() === "") {
       throw new Error(
@@ -217,10 +235,7 @@ describe("Channel E2E Tests", function () {
       );
     }
 
-    expect(
-      publishResult.stdout,
-      `Expected publish stdout to contain success message, but got: ${publishResult.stdout}. Exit code: ${publishResult.exitCode}, Stderr: ${publishResult.stderr}`,
-    ).to.contain(
+    expect(publishResult.stdout).toContain(
       `Message published successfully to channel "${uniqueChannel}"`,
     );
 
@@ -237,10 +252,7 @@ describe("Channel E2E Tests", function () {
     );
 
     // Enhanced diagnostic error messages for history check
-    expect(
-      historyResult.exitCode,
-      `History failed - Expected exit code 0, got ${historyResult.exitCode}. Stderr: ${historyResult.stderr}. Stdout: ${historyResult.stdout}`,
-    ).to.equal(0);
+    expect(historyResult.exitCode).toBe(0);
 
     if (!historyResult.stdout || historyResult.stdout.trim() === "") {
       throw new Error(
@@ -248,14 +260,20 @@ describe("Channel E2E Tests", function () {
       );
     }
 
-    expect(
-      historyResult.stdout,
-      `Expected history stdout to contain 'E2E Test Message', but got: ${historyResult.stdout}. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}`,
-    ).to.contain("E2E Test Message");
+    expect(historyResult.stdout).toContain("E2E Test Message");
   });
 
   // Test history with verification
-  it("should retrieve message history and verify contents", async function () {
+  it("should retrieve message history and verify contents", async () => {
+    setupTestFailureHandler(
+      "should retrieve message history and verify contents",
+    );
+
+    // Skip if E2E tests should be skipped
+    if (SHOULD_SKIP_E2E) {
+      return;
+    }
+
     // First run the CLI command
     const historyResult = await runCommand(
       ["channels", "history", historyChannel],
@@ -266,10 +284,7 @@ describe("Channel E2E Tests", function () {
     );
 
     // Enhanced diagnostic error messages
-    expect(
-      historyResult.exitCode,
-      `History failed - Expected exit code 0, got ${historyResult.exitCode}. Stderr: ${historyResult.stderr}. Stdout: ${historyResult.stdout}`,
-    ).to.equal(0);
+    expect(historyResult.exitCode).toBe(0);
 
     if (!historyResult.stdout || historyResult.stdout.trim() === "") {
       throw new Error(
@@ -277,21 +292,12 @@ describe("Channel E2E Tests", function () {
       );
     }
 
-    expect(
-      historyResult.stdout,
-      `Expected history stdout to contain 'Found', but got: ${historyResult.stdout}. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}`,
-    ).to.contain("Found");
-    expect(
-      historyResult.stdout,
-      `Expected history stdout to contain 'E2E History Test', but got: ${historyResult.stdout}. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}`,
-    ).to.contain("E2E History Test");
+    expect(historyResult.stdout).toContain("Found");
+    expect(historyResult.stdout).toContain("E2E History Test");
 
     // Now verify with SDK in a separate step outside of Oclif's callback
     const history = await getChannelHistory(historyChannel);
-    expect(history.length).to.be.at.least(
-      1,
-      "History channel should have at least one message",
-    );
+    expect(history.length).toBeGreaterThanOrEqual(1);
 
     const testMsg = history.find(
       (msg) =>
@@ -300,12 +306,20 @@ describe("Channel E2E Tests", function () {
         msg.data.text === "E2E History Test",
     );
 
-    expect(testMsg, "History test message should be retrievable via SDK").to
-      .exist;
+    expect(testMsg).toBeDefined();
   });
 
   // Test JSON history with verification
-  it("should retrieve message history in JSON format and verify contents", async function () {
+  it("should retrieve message history in JSON format and verify contents", async () => {
+    setupTestFailureHandler(
+      "should retrieve message history in JSON format and verify contents",
+    );
+
+    // Skip if E2E tests should be skipped
+    if (SHOULD_SKIP_E2E) {
+      return;
+    }
+
     // First run the CLI command
     const historyResult = await runCommand(
       ["channels", "history", jsonHistoryChannel, "--json"],
@@ -316,10 +330,7 @@ describe("Channel E2E Tests", function () {
     );
 
     // Enhanced diagnostic error messages
-    expect(
-      historyResult.exitCode,
-      `JSON History failed - Expected exit code 0, got ${historyResult.exitCode}. Stderr: ${historyResult.stderr}. Stdout: ${historyResult.stdout}`,
-    ).to.equal(0);
+    expect(historyResult.exitCode).toBe(0);
 
     if (!historyResult.stdout || historyResult.stdout.trim() === "") {
       throw new Error(
@@ -335,8 +346,9 @@ describe("Channel E2E Tests", function () {
         `Failed to parse JSON history output. Parse error: ${parseError}. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}, Stdout: ${historyResult.stdout}`,
       );
     }
-    expect(result).to.have.property("messages").that.is.an("array");
-    expect(result.messages.length).to.be.at.least(1);
+    expect(result).toHaveProperty("messages");
+    expect(Array.isArray(result.messages)).toBe(true);
+    expect(result.messages.length).toBeGreaterThanOrEqual(1);
 
     const testMsg = result.messages.find(
       (msg: any) =>
@@ -344,14 +356,11 @@ describe("Channel E2E Tests", function () {
         typeof msg.data === "object" &&
         msg.data.text === "JSON History Test",
     );
-    expect(testMsg).to.exist;
+    expect(testMsg).toBeDefined();
 
     // Now verify with SDK in a separate step
     const history = await getChannelHistory(jsonHistoryChannel);
-    expect(history.length).to.be.at.least(
-      1,
-      "JSON history channel should have at least one message",
-    );
+    expect(history.length).toBeGreaterThanOrEqual(1);
 
     const sdkMsg = history.find(
       (msg) =>
@@ -360,12 +369,20 @@ describe("Channel E2E Tests", function () {
         msg.data.text === "JSON History Test",
     );
 
-    expect(sdkMsg, "JSON history test message should be retrievable via SDK").to
-      .exist;
+    expect(sdkMsg).toBeDefined();
   });
 
   // Test batch publish with verification
-  it("should batch publish messages and verify they were published", async function () {
+  it("should batch publish messages and verify they were published", async () => {
+    setupTestFailureHandler(
+      "should batch publish messages and verify they were published",
+    );
+
+    // Skip if E2E tests should be skipped
+    if (SHOULD_SKIP_E2E) {
+      return;
+    }
+
     const messageData = { data: "Batch Message 1" };
     const batchChannel = getUniqueChannelName("batch");
 
@@ -385,10 +402,7 @@ describe("Channel E2E Tests", function () {
     );
 
     // Enhanced diagnostic error messages
-    expect(
-      batchPublishResult.exitCode,
-      `Batch publish failed - Expected exit code 0, got ${batchPublishResult.exitCode}. Stderr: ${batchPublishResult.stderr}. Stdout: ${batchPublishResult.stdout}`,
-    ).to.equal(0);
+    expect(batchPublishResult.exitCode).toBe(0);
 
     if (!batchPublishResult.stdout || batchPublishResult.stdout.trim() === "") {
       throw new Error(
@@ -396,10 +410,7 @@ describe("Channel E2E Tests", function () {
       );
     }
 
-    expect(
-      batchPublishResult.stdout,
-      `Expected batch publish stdout to contain 'Batch publish successful', but got: ${batchPublishResult.stdout}. Exit code: ${batchPublishResult.exitCode}, Stderr: ${batchPublishResult.stderr}`,
-    ).to.contain("Batch publish successful");
+    expect(batchPublishResult.stdout).toContain("Batch publish successful");
 
     // Add a delay to ensure message is stored and available in history
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -414,10 +425,7 @@ describe("Channel E2E Tests", function () {
     );
 
     // Enhanced diagnostic error messages for batch history check
-    expect(
-      batchHistoryResult.exitCode,
-      `Batch history failed - Expected exit code 0, got ${batchHistoryResult.exitCode}. Stderr: ${batchHistoryResult.stderr}. Stdout: ${batchHistoryResult.stdout}`,
-    ).to.equal(0);
+    expect(batchHistoryResult.exitCode).toBe(0);
 
     if (!batchHistoryResult.stdout || batchHistoryResult.stdout.trim() === "") {
       throw new Error(
@@ -425,14 +433,20 @@ describe("Channel E2E Tests", function () {
       );
     }
 
-    expect(
-      batchHistoryResult.stdout,
-      `Expected batch history stdout to contain 'Batch Message 1', but got: ${batchHistoryResult.stdout}. Exit code: ${batchHistoryResult.exitCode}, Stderr: ${batchHistoryResult.stderr}`,
-    ).to.contain("Batch Message 1");
+    expect(batchHistoryResult.stdout).toContain("Batch Message 1");
   });
 
   // Test publishing multiple messages with count and verification
-  it("should publish multiple messages with count parameter and verify they were published", async function () {
+  it("should publish multiple messages with count parameter and verify they were published", async () => {
+    setupTestFailureHandler(
+      "should publish multiple messages with count parameter and verify they were published",
+    );
+
+    // Skip if E2E tests should be skipped
+    if (SHOULD_SKIP_E2E) {
+      return;
+    }
+
     const expectedMessages = [
       "Message number 1",
       "Message number 2",
@@ -457,10 +471,7 @@ describe("Channel E2E Tests", function () {
     );
 
     // Enhanced diagnostic error messages
-    expect(
-      countPublishResult.exitCode,
-      `Count publish failed - Expected exit code 0, got ${countPublishResult.exitCode}. Stderr: ${countPublishResult.stderr}. Stdout: ${countPublishResult.stdout}`,
-    ).to.equal(0);
+    expect(countPublishResult.exitCode).toBe(0);
 
     if (!countPublishResult.stdout || countPublishResult.stdout.trim() === "") {
       throw new Error(
@@ -468,22 +479,18 @@ describe("Channel E2E Tests", function () {
       );
     }
 
-    expect(
-      countPublishResult.stdout,
-      `Expected count publish stdout to contain 'Message 1 published successfully', but got: ${countPublishResult.stdout}. Exit code: ${countPublishResult.exitCode}, Stderr: ${countPublishResult.stderr}`,
-    ).to.contain("Message 1 published successfully");
-    expect(
-      countPublishResult.stdout,
-      `Expected count publish stdout to contain 'Message 2 published successfully', but got: ${countPublishResult.stdout}. Exit code: ${countPublishResult.exitCode}, Stderr: ${countPublishResult.stderr}`,
-    ).to.contain("Message 2 published successfully");
-    expect(
-      countPublishResult.stdout,
-      `Expected count publish stdout to contain 'Message 3 published successfully', but got: ${countPublishResult.stdout}. Exit code: ${countPublishResult.exitCode}, Stderr: ${countPublishResult.stderr}`,
-    ).to.contain("Message 3 published successfully");
-    expect(
-      countPublishResult.stdout,
-      `Expected count publish stdout to contain '3/3 messages published successfully', but got: ${countPublishResult.stdout}. Exit code: ${countPublishResult.exitCode}, Stderr: ${countPublishResult.stderr}`,
-    ).to.contain("3/3 messages published successfully");
+    expect(countPublishResult.stdout).toContain(
+      "Message 1 published successfully",
+    );
+    expect(countPublishResult.stdout).toContain(
+      "Message 2 published successfully",
+    );
+    expect(countPublishResult.stdout).toContain(
+      "Message 3 published successfully",
+    );
+    expect(countPublishResult.stdout).toContain(
+      "3/3 messages published successfully",
+    );
 
     // Add a delay to ensure messages are stored and available in history
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -498,10 +505,7 @@ describe("Channel E2E Tests", function () {
     );
 
     // Enhanced diagnostic error messages for count history check
-    expect(
-      countHistoryResult.exitCode,
-      `Count history failed - Expected exit code 0, got ${countHistoryResult.exitCode}. Stderr: ${countHistoryResult.stderr}. Stdout: ${countHistoryResult.stdout}`,
-    ).to.equal(0);
+    expect(countHistoryResult.exitCode).toBe(0);
 
     if (!countHistoryResult.stdout || countHistoryResult.stdout.trim() === "") {
       throw new Error(
@@ -510,10 +514,7 @@ describe("Channel E2E Tests", function () {
     }
 
     for (const expectedMsg of expectedMessages) {
-      expect(
-        countHistoryResult.stdout,
-        `Expected count history stdout to contain '${expectedMsg}', but got: ${countHistoryResult.stdout}. Exit code: ${countHistoryResult.exitCode}, Stderr: ${countHistoryResult.stderr}`,
-      ).to.contain(expectedMsg);
+      expect(countHistoryResult.stdout).toContain(expectedMsg);
     }
   });
 });

@@ -13,7 +13,6 @@ test.describe("Web CLI Terminal UI Tests", () => {
   test.setTimeout(120_000); // Overall test timeout
 
   test.describe("Connection Animation", () => {
-    // eslint-disable-next-line mocha/no-skipped-tests
     test.skip("should display ASCII box animation during connection - TIMING sensitive test", async ({
       page,
     }) => {

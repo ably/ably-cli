@@ -1,4 +1,12 @@
-import { expect } from "@oclif/test";
+import {
+  describe,
+  it,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+  expect,
+} from "vitest";
 import {
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
@@ -10,28 +18,29 @@ import {
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
-  displayTestFailureDebugOutput,
+  setupTestFailureHandler,
+  resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
 import { ChildProcess } from "node:child_process";
 
-describe("Channel Occupancy E2E Tests", function () {
+describe("Channel Occupancy E2E Tests", () => {
   // Skip all tests if API key not available
-  before(async function () {
+  beforeAll(async () => {
     if (SHOULD_SKIP_E2E) {
-      this.skip();
+      return;
     }
     process.on("SIGINT", forceExit);
   });
 
-  after(function () {
+  afterAll(() => {
     process.removeListener("SIGINT", forceExit);
   });
 
   let occupancyChannel: string;
   let outputPath: string;
 
-  beforeEach(async function () {
-    this.timeout(120000); // 2 minutes per individual test
+  beforeEach(async () => {
+    resetTestTracking();
     // Clear tracked commands and output files before each test
     testOutputFiles.clear();
     testCommands.length = 0;
@@ -39,15 +48,18 @@ describe("Channel Occupancy E2E Tests", function () {
     outputPath = await createTempOutputFile();
   });
 
-  afterEach(async function () {
-    // Display debug output if test failed
-    if (this.currentTest?.state === "failed") {
-      await displayTestFailureDebugOutput(this.currentTest?.title);
-    }
+  afterEach(async () => {
     await cleanupTrackedResources();
   });
 
-  it("should get channel occupancy with REST API", async function () {
+  it("should get channel occupancy with REST API", async () => {
+    setupTestFailureHandler("should get channel occupancy with REST API");
+
+    // Skip if E2E tests should be skipped
+    if (SHOULD_SKIP_E2E) {
+      return;
+    }
+
     let subscribeProcess: ChildProcess | null = null;
 
     try {
@@ -84,11 +96,11 @@ describe("Channel Occupancy E2E Tests", function () {
       console.log(`Occupancy result stdout: ${occupancyResult.stdout}`);
       console.log(`Occupancy result stderr: ${occupancyResult.stderr}`);
 
-      expect(occupancyResult.exitCode).to.equal(0);
-      expect(occupancyResult.stdout).to.contain(occupancyChannel);
-      expect(occupancyResult.stdout).to.match(/Connections:\s*\d+/i);
+      expect(occupancyResult.exitCode).toBe(0);
+      expect(occupancyResult.stdout).toContain(occupancyChannel);
+      expect(occupancyResult.stdout).toMatch(/Connections:\s*\d+/i);
       // The subscriber count might be 0 if the subscriber hasn't been registered yet
-      expect(occupancyResult.stdout).to.match(/Subscribers:\s*\d+/i);
+      expect(occupancyResult.stdout).toMatch(/Subscribers:\s*\d+/i);
 
       console.log(`Occupancy command completed successfully`);
     } finally {
@@ -101,7 +113,14 @@ describe("Channel Occupancy E2E Tests", function () {
     }
   });
 
-  it("should subscribe to channel occupancy updates", async function () {
+  it("should subscribe to channel occupancy updates", async () => {
+    setupTestFailureHandler("should subscribe to channel occupancy updates");
+
+    // Skip if E2E tests should be skipped
+    if (SHOULD_SKIP_E2E) {
+      return;
+    }
+
     let subscribeProcess: ChildProcess | null = null;
     let occupancyProcess: ChildProcess | null = null;
 
@@ -153,8 +172,8 @@ describe("Channel Occupancy E2E Tests", function () {
       // Check output file for occupancy update
       const fs = await import("node:fs");
       const output = fs.readFileSync(outputPath, "utf8");
-      expect(output).to.contain("Occupancy Update");
-      expect(output).to.contain("metrics");
+      expect(output).toContain("Occupancy Update");
+      expect(output).toContain("metrics");
 
       console.log(`Occupancy subscription test completed successfully`);
     } finally {

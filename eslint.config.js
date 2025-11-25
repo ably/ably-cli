@@ -139,8 +139,7 @@ export default [
   },
   {
     // Configuration specific to test files
-    // TODO: REMOVE and go global
-    files: ["test/unit/**/*.test.ts", "test/integration/**/*.test.ts"],
+    files: ["test/**/*.test.ts"],
     plugins: {
       vitest: eslintPluginVitest,
     },
@@ -156,32 +155,6 @@ export default [
       "@typescript-eslint/no-unused-expressions": "off",
       "vitest/no-focused-tests": "error", // Equivalent to mocha/no-exclusive-tests
       "vitest/no-disabled-tests": "warn", // Equivalent to mocha/no-skipped-tests
-    },
-  },
-  {
-    // Configuration specific to test files
-    files: ["test/e2e/**/*.test.ts", "test/hooks/**/*.test.ts"],
-    plugins: {
-      mocha: eslintPluginMocha,
-    },
-    languageOptions: {
-      globals: {
-        ...globals.mocha,
-        describe: "readonly",
-        it: "readonly",
-        before: "readonly",
-        after: "readonly",
-        beforeEach: "readonly",
-        afterEach: "readonly",
-        ...eslintPluginVitest.environments.env.globals,
-      },
-    },
-    rules: {
-      // Apply recommended vitest rules
-      ...eslintPluginMocha.configs.recommended.rules,
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unused-expressions": "off",
-      "mocha/no-skipped-tests": "off",
     },
   },
   {

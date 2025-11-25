@@ -4,7 +4,11 @@
 
 // Define the structure of the terminal React state
 interface AblyCliTerminalReactState {
-  componentConnectionStatus: 'connected' | 'connecting' | 'disconnected' | 'unknown';
+  componentConnectionStatus:
+    | "connected"
+    | "connecting"
+    | "disconnected"
+    | "unknown";
   isSessionActive: boolean;
 }
 

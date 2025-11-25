@@ -1,27 +1,36 @@
-import { expect } from "chai";
+import {
+  describe,
+  it,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+  expect,
+} from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
   forceExit,
   cleanupTrackedResources,
+  setupTestFailureHandler,
+  resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
 
-describe("Authentication E2E", function () {
+describe("Authentication E2E", () => {
   let tempConfigDir: string;
   let originalEnv: NodeJS.ProcessEnv;
 
-  // Apply E2E test setup for debug output on failures
-  before(async function () {
+  beforeAll(async () => {
     process.on("SIGINT", forceExit);
   });
 
-  after(function () {
+  afterAll(() => {
     process.removeListener("SIGINT", forceExit);
   });
 
-  beforeEach(function () {
-    this.timeout(120000); // 2 minutes per individual test
+  beforeEach(() => {
+    resetTestTracking();
     originalEnv = { ...process.env };
 
     // Create temporary config directory
@@ -34,7 +43,7 @@ describe("Authentication E2E", function () {
     process.env.ABLY_CLI_TEST_MODE = "true";
   });
 
-  afterEach(async function () {
+  afterEach(async () => {
     // Restore environment
     process.env = originalEnv;
 
@@ -47,14 +56,16 @@ describe("Authentication E2E", function () {
     await cleanupTrackedResources();
   });
 
-  describe("config persistence", function () {
-    it("should persist config in real file system", async function () {
+  describe("config persistence", () => {
+    it("should persist config in real file system", async () => {
+      setupTestFailureHandler("should persist config in real file system");
+
       // Verify config directory is created
-      expect(fs.existsSync(tempConfigDir)).to.be.true;
+      expect(fs.existsSync(tempConfigDir)).toBe(true);
 
       // Check that config directory is empty initially
       const initialFiles = fs.readdirSync(tempConfigDir);
-      expect(initialFiles).to.have.length(0);
+      expect(initialFiles).toHaveLength(0);
 
       // Create a config file by instantiating ConfigManager
       const { ConfigManager } = await import(
@@ -71,35 +82,39 @@ describe("Authentication E2E", function () {
 
       // Verify config file was created
       const configPath = path.join(tempConfigDir, "config");
-      expect(fs.existsSync(configPath)).to.be.true;
+      expect(fs.existsSync(configPath)).toBe(true);
 
       // Verify config file contains expected data
       const configContent = fs.readFileSync(configPath, "utf8");
-      expect(configContent).to.include("[current]");
-      expect(configContent).to.include('account = "e2e-test"');
-      expect(configContent).to.include("[accounts.e2e-test]");
-      expect(configContent).to.include('accessToken = "test-token"');
-      expect(configContent).to.include('accountId = "e2e_test_account"');
+      expect(configContent).toContain("[current]");
+      expect(configContent).toContain('account = "e2e-test"');
+      expect(configContent).toContain("[accounts.e2e-test]");
+      expect(configContent).toContain('accessToken = "test-token"');
+      expect(configContent).toContain('accountId = "e2e_test_account"');
     });
 
-    it("should handle environment variable authentication", function () {
+    it("should handle environment variable authentication", () => {
+      setupTestFailureHandler(
+        "should handle environment variable authentication",
+      );
+
       // Set API key environment variable
       process.env.ABLY_API_KEY = "test-app.test-key:test-secret";
 
       // Verify environment variable is accessible
-      expect(process.env.ABLY_API_KEY).to.equal(
-        "test-app.test-key:test-secret",
-      );
+      expect(process.env.ABLY_API_KEY).toBe("test-app.test-key:test-secret");
 
       // Extract app ID from API key (simulating BaseCommand logic)
       const apiKey = process.env.ABLY_API_KEY;
       const appId = apiKey.split(".")[0];
-      expect(appId).to.equal("test-app");
+      expect(appId).toBe("test-app");
     });
   });
 
-  describe("error scenarios", function () {
-    it("should handle invalid credentials gracefully", function () {
+  describe("error scenarios", () => {
+    it("should handle invalid credentials gracefully", () => {
+      setupTestFailureHandler("should handle invalid credentials gracefully");
+
       // Set invalid API key
       process.env.ABLY_API_KEY = "invalid.key:format";
 
@@ -112,25 +127,29 @@ describe("Authentication E2E", function () {
         const secret = keyParts[1];
 
         // Should have proper app.key format
-        expect(keyName.includes(".")).to.be.true;
-        expect(secret.length).to.be.greaterThan(0);
+        expect(keyName.includes(".")).toBe(true);
+        expect(secret.length).toBeGreaterThan(0);
       } else {
-        expect(true).to.be.true; // Invalid format detected
+        expect(true).toBe(true); // Invalid format detected
       }
     });
 
-    it("should handle missing config directory permissions", function () {
+    it("should handle missing config directory permissions", () => {
+      setupTestFailureHandler(
+        "should handle missing config directory permissions",
+      );
+
       // This test is conceptual - actual permissions testing
       // would be complex in a cross-platform way
 
       // Verify temp directory exists and is writable
-      expect(fs.existsSync(tempConfigDir)).to.be.true;
+      expect(fs.existsSync(tempConfigDir)).toBe(true);
 
       // Try to write a test file
       const testFile = path.join(tempConfigDir, "test.txt");
       expect(() => {
         fs.writeFileSync(testFile, "test");
-      }).to.not.throw();
+      }).not.toThrow();
 
       // Clean up test file
       if (fs.existsSync(testFile)) {
@@ -139,8 +158,10 @@ describe("Authentication E2E", function () {
     });
   });
 
-  describe("config file format", function () {
-    it("should create valid TOML config", async function () {
+  describe("config file format", () => {
+    it("should create valid TOML config", async () => {
+      setupTestFailureHandler("should create valid TOML config");
+
       const { ConfigManager } = await import(
         "../../../src/services/config-manager.js"
       );
@@ -168,19 +189,23 @@ describe("Authentication E2E", function () {
       const configContent = fs.readFileSync(configPath, "utf8");
 
       // Should have proper TOML sections
-      expect(configContent).to.include("[current]");
-      expect(configContent).to.include("[accounts.complex-account]");
-      expect(configContent).to.include(
+      expect(configContent).toContain("[current]");
+      expect(configContent).toContain("[accounts.complex-account]");
+      expect(configContent).toContain(
         "[accounts.complex-account.apps.complex-app]",
       );
 
       // Should escape special characters properly
-      expect(configContent).to.include('accountName = "Complex Account Name"');
-      expect(configContent).to.include('appName = "Complex App Name"');
-      expect(configContent).to.include('keyName = "Complex Key Name"');
+      expect(configContent).toContain('accountName = "Complex Account Name"');
+      expect(configContent).toContain('appName = "Complex App Name"');
+      expect(configContent).toContain('keyName = "Complex Key Name"');
     });
 
-    it("should handle special characters in account data", async function () {
+    it("should handle special characters in account data", async () => {
+      setupTestFailureHandler(
+        "should handle special characters in account data",
+      );
+
       const { ConfigManager } = await import(
         "../../../src/services/config-manager.js"
       );
@@ -195,26 +220,26 @@ describe("Authentication E2E", function () {
 
       // Verify it can be read back
       const accounts = configManager.listAccounts();
-      expect(accounts).to.have.length(1);
-      expect(accounts[0].account.accountName).to.equal(
+      expect(accounts).toHaveLength(1);
+      expect(accounts[0].account.accountName).toBe(
         'Account with "quotes" and symbols!@#$%',
       );
-      expect(accounts[0].account.userEmail).to.equal(
-        "user+test@domain-name.co.uk",
-      );
+      expect(accounts[0].account.userEmail).toBe("user+test@domain-name.co.uk");
     });
   });
 
-  describe("cross-platform compatibility", function () {
-    it("should work with different path separators", async function () {
+  describe("cross-platform compatibility", () => {
+    it("should work with different path separators", async () => {
+      setupTestFailureHandler("should work with different path separators");
+
       // Test that paths work on both Windows and Unix systems
       const configPath = path.join(tempConfigDir, "config");
 
       // Path should be normalized for the current platform
       if (process.platform === "win32") {
-        expect(configPath).to.include("\\");
+        expect(configPath).toContain("\\");
       } else {
-        expect(configPath).to.include("/");
+        expect(configPath).toContain("/");
       }
 
       // Should be able to create and access files
@@ -228,10 +253,12 @@ describe("Authentication E2E", function () {
         accountName: "Platform Test",
       });
 
-      expect(fs.existsSync(configPath)).to.be.true;
+      expect(fs.existsSync(configPath)).toBe(true);
     });
 
-    it("should handle different line endings", async function () {
+    it("should handle different line endings", async () => {
+      setupTestFailureHandler("should handle different line endings");
+
       const { ConfigManager } = await import(
         "../../../src/services/config-manager.js"
       );
@@ -247,15 +274,17 @@ describe("Authentication E2E", function () {
       const configContent = fs.readFileSync(configPath, "utf8");
 
       // Should contain expected content regardless of line ending style
-      expect(configContent).to.include('account = "lineending-test"');
-      expect(configContent).to.include('accountName = "Line Ending Test"');
+      expect(configContent).toContain('account = "lineending-test"');
+      expect(configContent).toContain('accountName = "Line Ending Test"');
     });
   });
 
-  describe("environment isolation", function () {
-    it("should use isolated config directory", async function () {
+  describe("environment isolation", () => {
+    it("should use isolated config directory", async () => {
+      setupTestFailureHandler("should use isolated config directory");
+
       // Verify we're using the test config directory
-      expect(process.env.ABLY_CLI_CONFIG_DIR).to.equal(tempConfigDir);
+      expect(process.env.ABLY_CLI_CONFIG_DIR).toBe(tempConfigDir);
 
       const { ConfigManager } = await import(
         "../../../src/services/config-manager.js"
@@ -270,7 +299,7 @@ describe("Authentication E2E", function () {
 
       // Verify it's in our temp directory, not the user's home
       const configPath = path.join(tempConfigDir, "config");
-      expect(fs.existsSync(configPath)).to.be.true;
+      expect(fs.existsSync(configPath)).toBe(true);
 
       // Verify it's not in the default location
       const homeDir = os.homedir();
@@ -278,7 +307,7 @@ describe("Authentication E2E", function () {
 
       // Only check if we're not accidentally using the same path
       if (tempConfigDir !== path.join(homeDir, ".ably")) {
-        expect(configPath).to.not.equal(defaultConfigPath);
+        expect(configPath).not.toBe(defaultConfigPath);
       }
     });
   });

@@ -58,6 +58,52 @@ export default defineConfig({
           },
         },
       },
+      {
+        extends: true,
+        test: {
+          name: "e2e",
+          include: ["test/e2e/**/*.test.ts"],
+          // Exclude web-cli tests (use Playwright separately)
+          exclude: [
+            "**/node_modules/**",
+            "**/dist/**",
+            "test/e2e/web-cli/**/*.test.ts",
+          ],
+          testTimeout: 300000, // 5 minutes default for e2e tests
+          hookTimeout: 60000, // 60 seconds for hooks
+          // Run e2e tests sequentially to avoid API rate limits
+          sequence: { shuffle: false },
+          pool: "forks",
+          poolOptions: {
+            forks: {
+              singleFork: true, // Run all tests in a single fork sequentially
+            },
+          },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "hooks",
+          include: ["test/hooks/**/*.test.ts"],
+          // Exclude web-cli tests (use Playwright separately)
+          exclude: [
+            "**/node_modules/**",
+            "**/dist/**",
+            "test/e2e/web-cli/**/*.test.ts",
+          ],
+          testTimeout: 300000, // 5 minutes default for e2e tests
+          hookTimeout: 60000, // 60 seconds for hooks
+          // Run e2e tests sequentially to avoid API rate limits
+          sequence: { shuffle: false },
+          pool: "forks",
+          poolOptions: {
+            forks: {
+              singleFork: true, // Run all tests in a single fork sequentially
+            },
+          },
+        },
+      },
     ],
   },
 
