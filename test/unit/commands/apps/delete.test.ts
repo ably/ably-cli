@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { mkdirSync, writeFileSync } from "fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { tmpdir } from "os";
+import { tmpdir } from "node:os";
 
 describe("apps:delete command", () => {
   const mockAccessToken = "fake_access_token";
@@ -181,27 +181,6 @@ userEmail = "test@example.com"
       expect(stdout).toContain("App deleted successfully");
     });
   });
-
-  // describe('confirmation prompts', () => {
-  //   // NOTE: These tests are skipped because interactive stdin tests cause timeouts in CI
-  //   // TODO: Fix readline mocking to make these tests work reliably
-  //   // These tests use stdin() which is not compatible with runCommand and are already skipped
-  //   // They would need to be reimplemented with a different approach when stdin testing is fixed
-
-  //   /* SKIPPED - Interactive stdin tests - See: https://github.com/ably/cli/issues/70
-  //   it.skip('should proceed with deletion when user confirms', async () => {
-  //     // Would need stdin mocking approach
-  //   });
-
-  //   it.skip('should cancel deletion when app name doesnt match', async () => {
-  //     // Would need stdin mocking approach
-  //   });
-
-  //   it.skip('should cancel deletion when user responds no to confirmation', async () => {
-  //     // Would need stdin mocking approach
-  //   });
-  //   */
-  // });
 
   describe("error handling", () => {
     it("should handle 401 authentication error", async () => {

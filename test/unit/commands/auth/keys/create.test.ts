@@ -417,7 +417,7 @@ userEmail = "test@example.com"
           revocable: true,
         });
 
-      const { stdout, error } = await runCommand(
+      const { stdout } = await runCommand(
         [
           "auth:keys:create",
           "--name",

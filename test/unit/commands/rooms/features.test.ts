@@ -1,13 +1,4 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  vi,
-} from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
@@ -15,11 +6,8 @@ import * as Ably from "ably";
 import RoomsOccupancyGet from "../../../../src/commands/rooms/occupancy/get.js";
 import RoomsOccupancySubscribe from "../../../../src/commands/rooms/occupancy/subscribe.js";
 import RoomsPresenceEnter from "../../../../src/commands/rooms/presence/enter.js";
-import RoomsPresenceSubscribe from "../../../../src/commands/rooms/presence/subscribe.js";
 import RoomsReactionsSend from "../../../../src/commands/rooms/reactions/send.js";
-import RoomsReactionsSubscribe from "../../../../src/commands/rooms/reactions/subscribe.js";
 import RoomsTypingKeystroke from "../../../../src/commands/rooms/typing/keystroke.js";
-import RoomsTypingSubscribe from "../../../../src/commands/rooms/typing/subscribe.js";
 import { RoomStatus } from "@ably/chat";
 
 // Base testable class for room feature commands
@@ -311,8 +299,9 @@ describe("rooms feature commands", function () {
     it("should get room occupancy metrics", async function () {
       await command.run();
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
-        .true;
+      expect(command.mockChatClient.rooms.get.calledWith("test-room")).toBe(
+        true,
+      );
       expect(mockRoom.attach.calledOnce).toBe(true);
       expect(getStub.calledOnce).toBe(true);
     });
@@ -383,12 +372,13 @@ describe("rooms feature commands", function () {
       });
 
       // Since subscribe runs indefinitely, we'll test the setup
-      const runPromise = command.run();
+      command.run();
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
-        .true;
+      expect(command.mockChatClient.rooms.get.calledWith("test-room")).toBe(
+        true,
+      );
       expect(mockRoom.attach.calledOnce).toBe(true);
       expect(subscribeStub.calledOnce).toBe(true);
 
@@ -447,12 +437,13 @@ describe("rooms feature commands", function () {
 
     it("should enter room presence successfully", async function () {
       // Since presence enter runs indefinitely, we'll test the setup
-      const runPromise = command.run();
+      command.run();
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
-        .true;
+      expect(command.mockChatClient.rooms.get.calledWith("test-room")).toBe(
+        true,
+      );
       expect(mockRoom.attach.calledOnce).toBe(true);
       expect(enterStub.calledOnce).toBe(true);
 
@@ -467,7 +458,7 @@ describe("rooms feature commands", function () {
         raw: [],
       });
 
-      const runPromise = command.run();
+      command.run();
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -533,8 +524,9 @@ describe("rooms feature commands", function () {
     it("should send a reaction successfully", async function () {
       await command.run();
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
-        .true;
+      expect(command.mockChatClient.rooms.get.calledWith("test-room")).toBe(
+        true,
+      );
       expect(mockRoom.attach.calledOnce).toBe(true);
       expect(sendStub.calledOnce).toBe(true);
       expect(sendStub.calledWith({ name: "👍", metadata: {} })).toBe(true);
@@ -616,8 +608,9 @@ describe("rooms feature commands", function () {
       // Wait for setup to complete
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
-        .true;
+      expect(command.mockChatClient.rooms.get.calledWith("test-room")).toBe(
+        true,
+      );
       expect(mockRoom.attach.calledOnce).toBe(true);
       expect(keystrokeStub.calledOnce).toBe(true);
 

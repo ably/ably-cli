@@ -1,19 +1,9 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  vi,
-} from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 
 import McpStartServer from "../../../../src/commands/mcp/start-server.js";
 import { AblyMcpServer } from "../../../../src/mcp/mcp-server.js";
-import { ConfigManager } from "../../../../src/services/config-manager.js";
 
 // Testable subclass for MCP start server command
 class TestableMcpStartServer extends McpStartServer {
@@ -124,7 +114,7 @@ describe("mcp commands", function () {
 
       // Check that the constructor would have been called with the correct options
       expect(command.constructorArgs).toHaveLength(2);
-      expect(command.constructorArgs[1]).to.deep.include({
+      expect(command.constructorArgs[1]).toEqual({
         controlHost: "custom.ably.io",
       });
     });
@@ -178,7 +168,7 @@ describe("mcp commands", function () {
 
       expect(() => {
         server = new AblyMcpServer(mockConfigManager);
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     describe("MCP protocol operations", function () {
@@ -193,6 +183,7 @@ describe("mcp commands", function () {
         expect(typeof server.start).toBe("function");
       });
 
+      // eslint-disable-next-line vitest/no-disabled-tests
       it.skip("should handle basic server lifecycle", async function () {
         // See: https://github.com/ably/cli/issues/70
         // Mock process.exit to prevent actual exit

@@ -1,14 +1,4 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeAll,
-  afterAll,
-  beforeEach,
-  afterEach,
-  vi,
-} from "vitest";
-import { expect as chaiExpect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { registerMock } from "../test-utils.js";
 
@@ -212,7 +202,7 @@ const createMockSpace = (spaceId: string) => ({
   },
 
   // Space lifecycle
-  enter: async (profileData?: any) => {
+  enter: async (_?: any) => {
     return mockMembers[0]; // Return first member as entered member
   },
   leave: async () => {},
@@ -220,7 +210,7 @@ const createMockSpace = (spaceId: string) => ({
 
 const mockSpacesClient = {
   get: (spaceId: string) => createMockSpace(spaceId),
-  release: async (spaceId: string) => {},
+  release: async (_: string) => {},
 };
 
 const mockRealtimeClient = {
@@ -300,6 +290,8 @@ describe("Spaces integration tests", function () {
       expect(stdout).toContain("Successfully set location");
     });
 
+    // See: FF-154
+    // eslint-disable-next-line vitest/no-disabled-tests
     it.skip("gets all locations in a space", async function () {
       const { stdout } = await runCommand(
         ["spaces", "locations", "get-all", testSpaceId],
@@ -331,6 +323,8 @@ describe("Spaces integration tests", function () {
       expect(stdout).toContain("Set cursor in space");
     });
 
+    // See: FF-154
+    // eslint-disable-next-line vitest/no-disabled-tests
     it.skip("gets all cursors in a space", async function () {
       const { stdout } = await runCommand(
         ["spaces", "cursors", "get-all", testSpaceId],
@@ -510,7 +504,7 @@ describe("Spaces integration tests", function () {
     });
 
     it("simulates cursor movement during collaboration", async function () {
-      const { stdout, error } = await runCommand(
+      const { stdout } = await runCommand(
         [
           "spaces",
           "cursors",
@@ -564,7 +558,7 @@ describe("Spaces integration tests", function () {
     });
 
     it("tests location state synchronization", async function () {
-      const { stdout, error } = await runCommand(
+      const { stdout } = await runCommand(
         [
           "spaces",
           "locations",

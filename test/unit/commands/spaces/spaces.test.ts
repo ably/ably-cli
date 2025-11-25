@@ -1,13 +1,4 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  vi,
-} from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
@@ -15,15 +6,8 @@ import * as Ably from "ably";
 import SpacesMembersEnter from "../../../../src/commands/spaces/members/enter.js";
 import SpacesMembersSubscribe from "../../../../src/commands/spaces/members/subscribe.js";
 import SpacesLocationsSet from "../../../../src/commands/spaces/locations/set.js";
-import SpacesLocationsGetAll from "../../../../src/commands/spaces/locations/get-all.js";
-import SpacesLocationsSubscribe from "../../../../src/commands/spaces/locations/subscribe.js";
 import SpacesLocksAcquire from "../../../../src/commands/spaces/locks/acquire.js";
-import SpacesLocksGet from "../../../../src/commands/spaces/locks/get.js";
-import SpacesLocksGetAll from "../../../../src/commands/spaces/locks/get-all.js";
-import SpacesLocksSubscribe from "../../../../src/commands/spaces/locks/subscribe.js";
 import SpacesCursorsSet from "../../../../src/commands/spaces/cursors/set.js";
-import SpacesCursorsGetAll from "../../../../src/commands/spaces/cursors/get-all.js";
-import SpacesCursorsSubscribe from "../../../../src/commands/spaces/cursors/subscribe.js";
 
 // Base testable class for spaces commands
 class TestableSpacesCommand {
@@ -358,7 +342,7 @@ describe("spaces commands", function () {
       });
 
       // Since members enter runs indefinitely, we'll test the setup
-      const runPromise = command.run();
+      command.run();
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -378,7 +362,7 @@ describe("spaces commands", function () {
 
       subscribeStub.resolves();
 
-      const runPromise = command.run();
+      command.run();
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -453,7 +437,7 @@ describe("spaces commands", function () {
         return Promise.resolve();
       });
 
-      const runPromise = command.run();
+      command.run();
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -590,7 +574,7 @@ describe("spaces commands", function () {
       expect(lockCall.args[0]).toBe("test-lock");
       // Attributes would typically be passed as second argument
       if (lockCall.args[1]) {
-        expect(lockCall.args[1]).to.deep.include({
+        expect(lockCall.args[1]).toEqual({
           priority: "high",
           timeout: 5000,
         });

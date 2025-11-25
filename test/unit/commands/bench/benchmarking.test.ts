@@ -1,13 +1,4 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  vi,
-} from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
@@ -221,7 +212,7 @@ describe("benchmarking commands", () => {
         errorCount,
       );
 
-      expect(metrics).to.deep.include({
+      expect(metrics).toEqual({
         totalMessages: messageCount,
         successfulMessages: messageCount - errorCount,
         failedMessages: errorCount,
@@ -400,20 +391,6 @@ describe("benchmarking commands", () => {
 
       command.mockRealtimeClient.close();
     });
-
-    // TODO: Fix this test - subscription error handling needs investigation
-    // it("should handle subscription errors gracefully", async () => {
-    //   subscribeStub.rejects(new Error("Subscription failed"));
-
-    //   // The command should throw an error when subscription fails
-    //   let errorThrown = false;
-    //   try {
-    //     await command.run();
-    //   } catch {
-    //     errorThrown = true;
-    //   }
-    //   expect(errorThrown).toBe(true);
-    // });
 
     it("should process incoming messages and calculate stats", async () => {
       const _receivedMessages: any[] = []; // Prefix with underscore for intentionally unused

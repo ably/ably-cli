@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { expect as chaiExpect } from "chai";
 import { runCommand } from "@oclif/test";
 import { registerMock } from "../test-utils.js";
 import { RoomStatus } from "@ably/chat";
@@ -118,7 +117,7 @@ const createMockRoom = (room: string) => ({
 
   // Reactions functionality
   reactions: {
-    send: async (emoji: string, metadata?: any) => {
+    send: async (emoji: string, _?: any) => {
       const existingReaction = mockReactions.find((r) => r.emoji === emoji);
       if (existingReaction) {
         existingReaction.count++;
@@ -202,10 +201,10 @@ const mockRealtimeClient = {
 const mockChatClient = {
   rooms: {
     get: (room: string) => createMockRoom(room),
-    release: async (room: string) => {},
+    release: async (_: string) => {},
   },
   connection: {
-    onStatusChange: (callback: (change: any) => void) => {},
+    onStatusChange: (_: (change: any) => void) => {},
   },
   realtime: mockRealtimeClient,
 };
@@ -235,7 +234,7 @@ describe("Rooms integration tests", function () {
     const testRoom = "integration-test-room";
 
     it("sends a message to a room", async function () {
-      const { stdout, error } = await runCommand(
+      const { stdout } = await runCommand(
         [
           "rooms",
           "messages",
@@ -276,7 +275,7 @@ describe("Rooms integration tests", function () {
     });
 
     it("enters room presence with data", async function () {
-      const { stdout, error } = await runCommand(
+      const { stdout } = await runCommand(
         [
           "rooms",
           "presence",
@@ -325,7 +324,7 @@ describe("Rooms integration tests", function () {
     const testRoom = "json-test-room";
 
     it("outputs message send result in JSON format", async function () {
-      const { stdout, error } = await runCommand(
+      const { stdout } = await runCommand(
         [
           "rooms",
           "messages",

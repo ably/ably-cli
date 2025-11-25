@@ -1,13 +1,4 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  vi,
-} from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import sinon from "sinon";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
@@ -187,11 +178,12 @@ describe("rooms messages commands", function () {
       await command.run();
 
       expect(sendStub.calledOnce).toBe(true);
-      expect(sendStub.getCall(0).args[0]).to.deep.include({
+      expect(sendStub.getCall(0).args[0]).toEqual({
         text: "Hello World",
       });
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
-        .true;
+      expect(command.mockChatClient.rooms.get.calledWith("test-room")).toBe(
+        true,
+      );
       expect(mockRoom.attach.calledOnce).toBe(true);
     });
 
@@ -227,7 +219,7 @@ describe("rooms messages commands", function () {
       await command.run();
 
       expect(sendStub.calledOnce).toBe(true);
-      expect(sendStub.getCall(0).args[0]).to.deep.include({
+      expect(sendStub.getCall(0).args[0]).toEqual({
         text: "Important message",
         metadata: { isImportant: true },
       });
@@ -317,13 +309,14 @@ describe("rooms messages commands", function () {
       });
 
       // Since subscribe runs indefinitely, we'll test the setup
-      const runPromise = command.run();
+      command.run();
 
       // Give it a moment to set up
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
-        .true;
+      expect(command.mockChatClient.rooms.get.calledWith("test-room")).toBe(
+        true,
+      );
       expect(mockRoom.attach.calledOnce).toBe(true);
       expect(subscribeStub.calledOnce).toBe(true);
 
@@ -398,8 +391,9 @@ describe("rooms messages commands", function () {
     it("should retrieve room message history", async function () {
       await command.run();
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
-        .true;
+      expect(command.mockChatClient.rooms.get.calledWith("test-room")).toBe(
+        true,
+      );
       expect(mockRoom.attach.calledOnce).toBe(true);
       expect(historyStub.calledOnce).toBe(true);
     });
