@@ -362,7 +362,11 @@ describe("Spaces E2E Tests", () => {
           await new Promise((resolve) => setTimeout(resolve, subscriptionWait));
 
           // Have client2 set cursor data (position will be random with --simulate)
-          const cursorData = { name: "TestUser2", color: "#ff0000" };
+          const cursorData = {
+            name: "TestUser2",
+            color: "#ff0000",
+            position: { x: 100, y: 100 },
+          };
           // First check if the cursor subscribe process is still running and has proper output
           let currentOutput = await readProcessOutput(outputPath);
           if (

@@ -495,14 +495,6 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
           this.debug(`Realtime close error: ${error}`);
         }
       }
-
-      // Force exit if we're done and cleaned up
-      if (cleanupInProgress) {
-        // Allow any pending I/O to complete
-        setImmediate(() => {
-          this.exit(0);
-        });
-      }
     }
   }
 }
