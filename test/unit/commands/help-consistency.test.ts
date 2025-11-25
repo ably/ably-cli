@@ -40,50 +40,51 @@ describe("Help Output Consistency", () => {
 
     it(
       "should show COMMANDS section in interactive mode",
-      (done) => {
-        const child = spawn("node", [binPath, "interactive"], {
-          stdio: ["pipe", "pipe", "pipe"],
-          env: {
-            ...process.env,
-            ABLY_INTERACTIVE_MODE: "true",
-            ABLY_SUPPRESS_WELCOME: "1",
-          },
-        });
+      async () =>
+        new Promise<void>((resolve) => {
+          const child = spawn("node", [binPath, "interactive"], {
+            stdio: ["pipe", "pipe", "pipe"],
+            env: {
+              ...process.env,
+              ABLY_INTERACTIVE_MODE: "true",
+              ABLY_SUPPRESS_WELCOME: "1",
+            },
+          });
 
-        let output = "";
+          let output = "";
 
-        child.stdout.on("data", (data) => {
-          output += data.toString();
-        });
+          child.stdout.on("data", (data) => {
+            output += data.toString();
+          });
 
-        setTimeout(() => {
-          child.stdin.write("accounts --help\n");
-        }, 500);
+          setTimeout(() => {
+            child.stdin.write("accounts --help\n");
+          }, 500);
 
-        setTimeout(() => {
-          child.stdin.write("exit\n");
-        }, 1500);
+          setTimeout(() => {
+            child.stdin.write("exit\n");
+          }, 1500);
 
-        child.on("exit", () => {
-          // Check for COMMANDS section
-          expect(output).toContain("COMMANDS");
+          child.on("exit", () => {
+            // Check for COMMANDS section
+            expect(output).toContain("COMMANDS");
 
-          // Check for proper formatting with spaces (not colons)
-          expect(output).toContain("accounts current");
-          expect(output).toContain("accounts list");
-          expect(output).toContain("accounts login");
+            // Check for proper formatting with spaces (not colons)
+            expect(output).toContain("accounts current");
+            expect(output).toContain("accounts list");
+            expect(output).toContain("accounts login");
 
-          // Should NOT have colons
-          expect(output).not.toContain("accounts:current");
-          expect(output).not.toContain("accounts:list");
-          expect(output).not.toContain("accounts:login");
+            // Should NOT have colons
+            expect(output).not.toContain("accounts:current");
+            expect(output).not.toContain("accounts:list");
+            expect(output).not.toContain("accounts:login");
 
-          // Should NOT have ably prefix in interactive mode
-          expect(output).not.toMatch(/COMMANDS[\s\S]*ably accounts current/);
+            // Should NOT have ably prefix in interactive mode
+            expect(output).not.toMatch(/COMMANDS[\s\S]*ably accounts current/);
 
-          done();
-        });
-      },
+            resolve();
+          });
+        }),
       timeout,
     );
 
@@ -155,47 +156,48 @@ describe("Help Output Consistency", () => {
   describe("Support Command Suggestions", () => {
     it(
       'should suggest "support ask" when typing "support aska"',
-      (done) => {
-        const child = spawn("node", [binPath, "interactive"], {
-          stdio: ["pipe", "pipe", "pipe"],
-          env: {
-            ...process.env,
-            ABLY_INTERACTIVE_MODE: "true",
-            ABLY_SUPPRESS_WELCOME: "1",
-          },
-        });
+      async () =>
+        new Promise<void>((resolve) => {
+          const child = spawn("node", [binPath, "interactive"], {
+            stdio: ["pipe", "pipe", "pipe"],
+            env: {
+              ...process.env,
+              ABLY_INTERACTIVE_MODE: "true",
+              ABLY_SUPPRESS_WELCOME: "1",
+            },
+          });
 
-        let output = "";
-        let foundSuggestion = false;
+          let output = "";
+          let foundSuggestion = false;
 
-        child.stdout.on("data", (data) => {
-          output += data.toString();
-          if (data.toString().includes("Did you mean support ask?")) {
-            foundSuggestion = true;
-            setTimeout(() => {
-              child.stdin.write("n\n");
-            }, 100);
-          }
-        });
+          child.stdout.on("data", (data) => {
+            output += data.toString();
+            if (data.toString().includes("Did you mean support ask?")) {
+              foundSuggestion = true;
+              setTimeout(() => {
+                child.stdin.write("n\n");
+              }, 100);
+            }
+          });
 
-        setTimeout(() => {
-          child.stdin.write("support aska\n");
-        }, 500);
+          setTimeout(() => {
+            child.stdin.write("support aska\n");
+          }, 500);
 
-        setTimeout(() => {
-          child.stdin.write("exit\n");
-        }, 2000);
+          setTimeout(() => {
+            child.stdin.write("exit\n");
+          }, 2000);
 
-        child.on("exit", () => {
-          expect(foundSuggestion).toBe(true);
-          // When declining suggestion, topic commands show their help
-          expect(output).toContain("Ably support commands:");
-          expect(output).toContain("support ask");
-          expect(output).toContain("support contact");
-          expect(output).toContain("support info");
-          done();
-        });
-      },
+          child.on("exit", () => {
+            expect(foundSuggestion).toBe(true);
+            // When declining suggestion, topic commands show their help
+            expect(output).toContain("Ably support commands:");
+            expect(output).toContain("support ask");
+            expect(output).toContain("support contact");
+            expect(output).toContain("support info");
+            resolve();
+          });
+        }),
       timeout,
     );
   });

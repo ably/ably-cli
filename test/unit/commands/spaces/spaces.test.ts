@@ -325,6 +325,7 @@ describe("spaces commands", function () {
       command.mockRealtimeClient = {
         connection: {
           on: sandbox.stub(),
+          once: sandbox.stub(),
           state: "connected",
           id: "test-connection-id",
         },

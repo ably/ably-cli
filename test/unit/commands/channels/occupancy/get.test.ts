@@ -105,16 +105,22 @@ describe("ChannelsOccupancyGet", function () {
 
     // Set up mock behavior for REST request
     command.mockClient.request.resolves({
-      occupancy: {
-        metrics: {
-          connections: 10,
-          presenceConnections: 5,
-          presenceMembers: 8,
-          presenceSubscribers: 4,
-          publishers: 2,
-          subscribers: 6,
+      items: [
+        {
+          status: {
+            occupancy: {
+              metrics: {
+                connections: 10,
+                presenceConnections: 5,
+                presenceMembers: 8,
+                presenceSubscribers: 4,
+                publishers: 2,
+                subscribers: 6,
+              },
+            },
+          },
         },
-      },
+      ],
     });
   });
 
