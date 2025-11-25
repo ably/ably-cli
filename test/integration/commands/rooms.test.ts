@@ -105,9 +105,11 @@ const createMockRoom = (room: string) => ({
     subscribe: (callback: (member: any) => void) => {
       setTimeout(() => {
         callback({
-          action: "enter",
-          clientId: "new-member",
-          data: { name: "Charlie", status: "active" },
+          member: {
+            action: "enter",
+            clientId: "new-member",
+            data: { name: "Charlie", status: "active" },
+          },
         });
       }, 100);
       return Promise.resolve();
@@ -192,6 +194,9 @@ const mockRealtimeClient = {
     },
     state: "connected",
     id: "test-connection-id",
+    auth: {
+      clientId: "foo",
+    },
   },
   close: () => {
     // Mock close method

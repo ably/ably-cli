@@ -116,12 +116,22 @@ const createMockSpace = (spaceId: string) => ({
       return;
     },
     getAll: async () => [...mockLocations],
-    subscribe: (callback: (location: any) => void) => {
+    subscribe: (
+      eventOrCallback: string | ((cursor: any) => void),
+      callback?: (cursor: any) => void,
+    ) => {
+      if (typeof eventOrCallback !== "string") {
+        callback = eventOrCallback;
+      }
+
       setTimeout(() => {
-        callback({
-          clientId: "moving-client",
-          location: { x: 500, y: 600, page: "settings" },
-          timestamp: Date.now(),
+        callback!({
+          member: {
+            clientId: "moving-client",
+            connectionId: "connection-foo",
+            location: { x: 500, y: 600, page: "settings" },
+            timestamp: Date.now(),
+          },
         });
       }, 100);
       return Promise.resolve();
@@ -150,9 +160,16 @@ const createMockSpace = (spaceId: string) => ({
       return;
     },
     getAll: async () => [...mockCursors],
-    subscribe: (callback: (cursor: any) => void) => {
+    subscribe: (
+      eventOrCallback: string | ((cursor: any) => void),
+      callback?: (cursor: any) => void,
+    ) => {
+      if (typeof eventOrCallback !== "string") {
+        callback = eventOrCallback;
+      }
+
       setTimeout(() => {
-        callback({
+        callback!({
           clientId: "cursor-client",
           position: { x: 200, y: 100 },
           data: { color: "green" },
@@ -227,6 +244,9 @@ const mockRealtimeClient = {
     },
     state: "connected",
     id: "test-connection-id",
+    auth: {
+      clientId: "foo",
+    },
   },
   close: () => {
     // Mock close method

@@ -500,7 +500,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
       if (cleanupInProgress) {
         // Allow any pending I/O to complete
         setImmediate(() => {
-          process.exit(0);
+          this.exit(0);
         });
       }
     }
