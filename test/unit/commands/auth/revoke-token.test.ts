@@ -1,53 +1,61 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import fs from "node:fs";
 import * as _https from "node:https";
-import * as Ably from "ably";
 import RevokeTokenCommand from "../../../../src/commands/auth/revoke-token.js";
 import { ConfigManager } from "../../../../src/services/config-manager.js";
 
 describe("RevokeTokenCommand", function () {
-  let configManagerStub: sinon.SinonStubbedInstance<ConfigManager>;
-  let sandbox: sinon.SinonSandbox;
+  let configManagerStub: {
+    getCurrentAppId: ReturnType<typeof vi.fn>;
+    getApiKey: ReturnType<typeof vi.fn>;
+  };
   let originalEnv: NodeJS.ProcessEnv;
-  let mockAblyClient: sinon.SinonStubbedInstance<Ably.Realtime>;
+  let mockAblyClient: {
+    connection: {
+      once: ReturnType<typeof vi.fn>;
+      state: string;
+    };
+    close: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
     originalEnv = { ...process.env };
 
     // Reset env before each test
     process.env = { ...originalEnv };
 
     // Stub fs operations
-    sandbox.stub(fs, "existsSync").returns(true);
-    sandbox.stub(fs, "readFileSync").returns("");
-    sandbox.stub(fs, "mkdirSync");
-    sandbox.stub(fs, "writeFileSync");
+    vi.spyOn(fs, "existsSync").mockReturnValue(true);
+    vi.spyOn(fs, "readFileSync").mockReturnValue("");
+    vi.spyOn(fs, "mkdirSync").mockReturnValue("");
+    vi.spyOn(fs, "writeFileSync").mockReturnValue();
 
     // Stub ConfigManager methods
-    configManagerStub = sandbox.createStubInstance(ConfigManager);
-    sandbox.stub(ConfigManager.prototype as any, "ensureConfigDirExists");
-    sandbox.stub(ConfigManager.prototype as any, "saveConfig");
+    configManagerStub = {
+      getCurrentAppId: vi.fn(),
+      getApiKey: vi.fn(),
+    };
+    vi.spyOn(
+      ConfigManager.prototype as any,
+      "ensureConfigDirExists",
+    ).mockReturnValue("");
+    vi.spyOn(ConfigManager.prototype as any, "saveConfig").mockReturnValue("");
 
     // Mock Ably client
-    mockAblyClient = sandbox.createStubInstance(Ably.Realtime);
-    mockAblyClient.connection = {
-      once: sandbox.stub(),
-      state: "connected",
-    } as any;
-    mockAblyClient.close = sandbox.stub();
+    mockAblyClient = {
+      connection: {
+        once: vi.fn(),
+        state: "connected",
+      },
+      close: vi.fn(),
+    };
 
     // Mock global test mocks for Ably client
     (globalThis as any).__TEST_MOCKS__ = {
-      ablyRestMock: sandbox.createStubInstance(Ably.Rest),
+      ablyRestMock: {
+        close: vi.fn(),
+      },
     };
-  });
-
-  afterEach(function () {
-    sandbox.restore();
-    process.env = originalEnv;
-    delete (globalThis as any).__TEST_MOCKS__;
   });
 
   describe("command properties", function () {
@@ -179,7 +187,7 @@ describe("RevokeTokenCommand", function () {
   describe("debug output", function () {
     it("should log debug information when debug flag is enabled", function () {
       const _command = new RevokeTokenCommand([], {} as any);
-      const _logSpy = sandbox.spy(_command, "log");
+      const _logSpy = vi.spyOn(_command, "log");
 
       const debugFlag = true;
       const apiKey = "appId.keyId:keySecret";
@@ -222,7 +230,7 @@ describe("RevokeTokenCommand", function () {
   describe("warning messages", function () {
     it("should warn about token revocation limitations", function () {
       const _command = new RevokeTokenCommand([], {} as any);
-      const _warnSpy = sandbox.spy(_command, "warn");
+      const _warnSpy = vi.spyOn(_command, "warn");
 
       const expectedWarnings = [
         "Revoking a specific token is only possible if it has a client ID or revocation key",
@@ -269,7 +277,7 @@ describe("RevokeTokenCommand", function () {
 
     it("should handle successful text output", function () {
       const _command = new RevokeTokenCommand([], {} as any);
-      const _logSpy = sandbox.spy(_command, "log");
+      const _logSpy = vi.spyOn(_command, "log");
 
       const successMessage = "Token successfully revoked";
       expect(successMessage).toBe("Token successfully revoked");
@@ -293,7 +301,7 @@ describe("RevokeTokenCommand", function () {
 
     it("should handle network errors", function () {
       const _command = new RevokeTokenCommand([], {} as any);
-      const _errorSpy = sandbox.spy(_command, "error");
+      const _errorSpy = vi.spyOn(_command, "error");
 
       const networkError = new Error("Network connection failed");
       const errorMessage = `Error revoking token: ${networkError.message}`;
@@ -325,8 +333,8 @@ describe("RevokeTokenCommand", function () {
       const _flags = {};
 
       // Mock ensureAppAndKey to return valid credentials
-      configManagerStub.getCurrentAppId.returns("testApp");
-      configManagerStub.getApiKey.returns("testApp.keyId:keySecret");
+      configManagerStub.getCurrentAppId.mockReturnValue("testApp");
+      configManagerStub.getApiKey.mockReturnValue("testApp.keyId:keySecret");
 
       expect(configManagerStub.getCurrentAppId).toBeDefined();
       expect(configManagerStub.getApiKey).toBeDefined();
@@ -337,7 +345,7 @@ describe("RevokeTokenCommand", function () {
 
       // Test that client would be closed in finally block
       const mockClient = mockAblyClient;
-      const closeStub = mockClient.close as sinon.SinonStub;
+      const closeStub = mockClient.close;
 
       expect(closeStub).toBeTypeOf("function");
     });
@@ -347,8 +355,8 @@ describe("RevokeTokenCommand", function () {
       (_command as any).configManager = configManagerStub;
 
       // Test scenario where ensureAppAndKey returns null
-      configManagerStub.getCurrentAppId.returns("");
-      configManagerStub.getApiKey.returns("");
+      configManagerStub.getCurrentAppId.mockReturnValue("");
+      configManagerStub.getApiKey.mockReturnValue("");
 
       const appId = configManagerStub.getCurrentAppId();
       const apiKey = configManagerStub.getApiKey();

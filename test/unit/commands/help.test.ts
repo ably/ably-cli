@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import HelpCommand from "../../../src/commands/help.js";
 import CustomHelp from "../../../src/help.js";
@@ -37,18 +36,9 @@ class TestableHelpCommand extends HelpCommand {
 }
 
 describe("Help Command Tests", function () {
-  let sandbox: sinon.SinonSandbox;
-  let _consoleLogStub: sinon.SinonStub;
-  let _processExitStub: sinon.SinonStub;
-
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    _consoleLogStub = sandbox.stub(console, "log");
-    _processExitStub = sandbox.stub(process, "exit");
-  });
-
-  afterEach(function () {
-    sandbox.restore();
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
   });
 
   describe("Help Command Structure", function () {
@@ -82,26 +72,20 @@ describe("Help Command Tests", function () {
   });
 
   describe("Help Command Behavior", function () {
-    let sandbox: sinon.SinonSandbox;
-    let _showCommandStub: sinon.SinonStub;
-    let _formatWebCliRootStub: sinon.SinonStub;
+    let showCommandStub: ReturnType<typeof vi.fn>;
+    let formatWebCliRootStub: ReturnType<typeof vi.fn>;
 
     beforeEach(function () {
-      sandbox = sinon.createSandbox();
-      _showCommandStub = sandbox.stub();
-      _formatWebCliRootStub = sandbox.stub();
-    });
-
-    afterEach(function () {
-      sandbox.restore();
+      showCommandStub = vi.fn();
+      formatWebCliRootStub = vi.fn();
     });
 
     it("should accept command names as arguments", async function () {
       const help = new TestableHelpCommand([], {} as Config);
-      help.setCustomHelp(_showCommandStub, _formatWebCliRootStub);
+      help.setCustomHelp(showCommandStub, formatWebCliRootStub);
 
       // Mock config.runCommand
-      const findCommandStub = sandbox.stub().returns("abc");
+      const findCommandStub = vi.fn().mockReturnValue("abc");
       help.config = {
         findCommand: findCommandStub,
         commands: ["publish", "subscribe"],
@@ -117,14 +101,14 @@ describe("Help Command Tests", function () {
 
       await help.run();
 
-      expect(findCommandStub.calledWith("channels")).toBe(true);
+      expect(findCommandStub).toHaveBeenCalledWith("channels");
 
-      expect(_showCommandStub.calledWith("abc")).toBe(true);
+      expect(showCommandStub).toHaveBeenCalledWith("abc");
     });
 
     it("should handle --web-cli-help flag", async function () {
       const help = new TestableHelpCommand([], {} as Config);
-      help.setCustomHelp(_showCommandStub, _formatWebCliRootStub);
+      help.setCustomHelp(showCommandStub, formatWebCliRootStub);
 
       // Mock config.runCommand
       help.config = {
@@ -141,15 +125,15 @@ describe("Help Command Tests", function () {
 
       await help.run();
 
-      expect(_formatWebCliRootStub.calledOnce).toBe(true);
+      expect(formatWebCliRootStub).toHaveBeenCalledOnce();
     });
 
     it("should pass through multiple arguments", async function () {
       const help = new TestableHelpCommand([], {} as Config);
-      help.setCustomHelp(_showCommandStub, _formatWebCliRootStub);
+      help.setCustomHelp(showCommandStub, formatWebCliRootStub);
 
       // Mock config.runCommand
-      const findCommandStub = sandbox.stub().returns("abc");
+      const findCommandStub = vi.fn().mockReturnValue("abc");
       help.config = {
         findCommand: findCommandStub,
         commands: ["publish", "subscribe"],
@@ -165,9 +149,9 @@ describe("Help Command Tests", function () {
 
       await help.run();
 
-      expect(findCommandStub.calledWith("channels:publish")).toBe(true);
+      expect(findCommandStub).toHaveBeenCalledWith("channels:publish");
 
-      expect(_showCommandStub.calledWith("abc")).toBe(true);
+      expect(showCommandStub).toHaveBeenCalledWith("abc");
     });
   });
 

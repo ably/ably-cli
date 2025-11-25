@@ -1,17 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, vi } from "vitest";
 
 describe("Status Command Tests", function () {
-  let sandbox: sinon.SinonSandbox;
-
-  beforeEach(function () {
-    sandbox = sinon.createSandbox();
-  });
-
-  afterEach(function () {
-    sandbox.restore();
-  });
-
   describe("Status Command Structure", function () {
     it("should be a root-level command", function () {
       // Mock config to verify status is at root
@@ -68,27 +57,29 @@ describe("Status Command Tests", function () {
       const isInteractive = true; // Simulating interactive mode
 
       // Mock ora usage
-      const mockOra = sandbox.stub();
+      const mockOra = vi.fn();
 
       if (isInteractive) {
         // In interactive mode, ora should not be used
-        expect(mockOra.called).toBe(false);
+        expect(mockOra).not.toHaveBeenCalled();
       } else {
         // In non-interactive mode, ora can be used
         mockOra("Checking status...");
-        expect(mockOra.called).toBe(true);
+        expect(mockOra).toHaveBeenCalled();
       }
     });
 
     it("should use console.log for status messages in interactive mode", function () {
-      const consoleLogStub = sandbox.stub(console, "log");
+      const consoleLogStub = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => {});
       const isInteractive = true;
 
       if (isInteractive) {
         console.log("Checking Ably service status...");
-        expect(
-          consoleLogStub.calledWith("Checking Ably service status..."),
-        ).toBe(true);
+        expect(consoleLogStub).toHaveBeenCalledWith(
+          "Checking Ably service status...",
+        );
       }
     });
   });
@@ -100,14 +91,14 @@ describe("Status Command Tests", function () {
     });
 
     it("should open browser when --open flag is used", async function () {
-      const openStub = sandbox.stub();
+      const openStub = vi.fn();
 
       // Simulate command with --open flag
       const flags = { open: true };
 
       if (flags.open) {
         await openStub("https://status.ably.com");
-        expect(openStub.calledWith("https://status.ably.com")).toBe(true);
+        expect(openStub).toHaveBeenCalledWith("https://status.ably.com");
       }
     });
   });

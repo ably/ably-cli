@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import * as sinon from "sinon";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import BatchPublish from "../../../../src/commands/channels/batch-publish.js";
 
 // Create a testable version of the BatchPublish command class
@@ -42,13 +41,14 @@ class TestableBatchPublish extends BatchPublish {
       get: (_channelName: string) => {
         // Return the mock channel for this channel name
         return {
-          publish: this._mockPublish,
+          publish:
+            this._mockPublish ?? vi.fn().mockImplementation(async () => {}),
         };
       },
     },
   };
 
-  private _mockPublish = sinon.stub().resolves();
+  private _mockPublish: ReturnType<typeof vi.fn>;
 
   // Method to set the mock Ably client
   public setMockAblyClient(client: any) {
@@ -116,25 +116,18 @@ class TestableBatchPublish extends BatchPublish {
   }
 
   // Add request property for testing REST API calls
-  public request: sinon.SinonStub = sinon.stub();
+  public request: ReturnType<typeof vi.fn> = vi.fn();
 }
 
 describe("Channels Batch Publish Command", function () {
   let command: TestableBatchPublish;
-  let sandbox: sinon.SinonSandbox;
-
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
     command = new TestableBatchPublish([], {} as any);
-  });
-
-  afterEach(function () {
-    sandbox.restore();
   });
 
   it("handles errors during batch publishing", async function () {
     const publishError = new Error("Publish failed");
-    command.setMockPublish(sinon.stub().rejects(publishError));
+    command.setMockPublish(vi.fn().mockRejectedValue(publishError));
 
     try {
       await command.run();
@@ -174,7 +167,7 @@ describe("Channels Batch Publish Command", function () {
 
     // Create a mock REST client with a request method that returns success
     const mockRest = {
-      request: sandbox.stub().resolves({
+      request: vi.fn().mockResolvedValue({
         statusCode: 201,
         items: mockItems,
         success: true,
@@ -200,12 +193,12 @@ describe("Channels Batch Publish Command", function () {
     await command.run();
 
     // Verify the request was called on our mock client
-    expect(mockRest.request.called).toBe(true);
+    expect(mockRest.request).toHaveBeenCalled();
 
     // Verify the request was called with correct parameters
-    const requestCall = mockRest.request.getCall(0);
-    expect(requestCall.args[0]).toBe("post");
-    expect(requestCall.args[1]).toBe("/messages");
+    const requestCallArgs = mockRest.request.mock.calls[0];
+    expect(requestCallArgs[0]).toBe("post");
+    expect(requestCallArgs[1]).toBe("/messages");
 
     // Verify the log shows success
     expect(command.logOutput.length).toBeGreaterThan(0);

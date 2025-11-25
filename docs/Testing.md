@@ -102,20 +102,19 @@ The script will:
 ### 🧪 Unit Tests (`test/unit`)
 
 *   **Primary Purpose:** Quickly verify command logic, flag parsing, input validation, error handling, and basic output formatting **in isolation**. Focus on testing individual functions or methods within a command class.
-*   **Dependencies:** **MUST** stub/mock all external dependencies (Ably SDK calls, Control API requests, filesystem access, `ConfigManager`, etc.). Use libraries like `sinon` and `nock`.
+*   **Dependencies:** **MUST** stub/mock all external dependencies (Ably SDK calls, Control API requests, filesystem access, `ConfigManager`, etc.). Use libraries like `vitest` and `nock`.
 *   **Speed:** Very fast; no network or filesystem dependency.
 *   **Value:** Useful for testing complex parsing, conditional logic, and edge cases within a command, but **less effective** at verifying core interactions with Ably services compared to Integration/E2E tests.
 
 **CLI Core and Commands:**
-*   **Tools:** Vitest, `@oclif/test`, `sinon`.
+*   **Tools:** Vitest, `@oclif/test`.
 *   **Location:** Primarily within the `test/unit/` directory, mirroring the `src/` structure.
 *   **Execution:** Run all unit tests with `pnpm test:unit` or target specific files, e.g., `pnpm vitest --project unit test/unit/commands/bench/bench.test.ts`.
 
-**Example (Vitest/Sinon):**
+**Example (Vitest):**
 ```typescript
 // Example unit test with proper mocking
-import {describe, it, expect, beforeEach, afterEach} from 'vitest'
-import * as sinon from 'sinon'
+import {describe, it, expect, beforeEach, vi} from 'vitest'
 import {AblyCommand} from '../../src/base/ably-command'
 
 describe('MyCommand', () => {
@@ -125,17 +124,11 @@ describe('MyCommand', () => {
     // Set up mocks
     mockClient = {
       channels: {
-        get: sinon.stub().returns({
-          publish: sinon.stub().resolves()
-        })
+        get: vi.fn().mockReturnedValue(...)
       },
-      close: sinon.stub().resolves()
+      close: vi.fn(),
     }
-    sinon.stub(AblyCommand.prototype, 'getAblyClient').resolves(mockClient)
-  })
-
-  afterEach(() => {
-    sinon.restore()
+    vi.spyOn(AblyCommand.prototype, 'getAblyClient').mockResolvedValue(mockClient)
   })
 
   it('publishes a message to the specified channel', async () => {
@@ -172,10 +165,10 @@ Everything else (exact countdown rendering, every internal state transition, con
 ### 🔄 Integration Tests (`test/integration`)
 
 *   **Primary Purpose:** Verify the interaction between multiple commands or components, including interactions with *mocked* Ably SDKs or Control API services. Test the CLI execution flow.
-*   **Dependencies:** Primarily stub/mock network calls (`nock` for Control API, `sinon` stubs for SDK methods), but may interact with the local filesystem for config management (ensure isolation). Use `ConfigManager` mocks.
+*   **Dependencies:** Primarily stub/mock network calls (`nock` for Control API, `vi` stubs for SDK methods), but may interact with the local filesystem for config management (ensure isolation). Use `ConfigManager` mocks.
 *   **Speed:** Relatively fast; generally avoids real network latency.
 *   **Value:** Good for testing command sequences (e.g., `config set` then `config get`), authentication flow logic (with mocked credentials), and ensuring different parts of the CLI work together correctly without relying on live Ably infrastructure.
-*   **Tools:** Vitest, `@oclif/test`, `nock`, `sinon`, `execa` (to run the CLI as a subprocess).
+*   **Tools:** Vitest, `@oclif/test`, `nock`, `execa` (to run the CLI as a subprocess).
 
 Refer to the [Debugging Guide](mdc:docs/Debugging.md) for tips on debugging failed tests, including Playwright and Vitest tests.
 
@@ -247,7 +240,7 @@ describe('channels commands', () => {
 *   **Test Output:** Test output (stdout/stderr) should be clean. Avoid polluting test logs with unnecessary debug output from the CLI itself. Failures should provide clear error messages.
 *   **Asynchronous Operations:** Use `async/await` properly. Avoid brittle `setTimeout` calls where possible; use event listeners or promise-based waits.
 *   **Resource Cleanup:** Ensure tests clean up resources (e.g., close Ably clients, kill subprocesses, delete temp files). Use the `afterEach` or `afterAll` hooks and helpers like `trackAblyClient`.
-*   **Realtime SDK Stubbing:** For Unit/Integration tests involving the Realtime SDK, stub the SDK methods directly (`sinon.stub(ably.channels.get('...'), 'subscribe')`) rather than trying to mock the underlying WebSocket, which is complex and brittle.
+*   **Realtime SDK Stubbing:** For Unit/Integration tests involving the Realtime SDK, stub the SDK methods directly (`vi.spyOn(ably.channels.get('...'), 'subscribe')`) rather than trying to mock the underlying WebSocket, which is complex and brittle.
 *   **Credentials:** E2E tests rely on `E2E_ABLY_API_KEY` (and potentially others) being set in the environment (locally via `.env` or in CI via secrets). **Never** hardcode credentials in tests.
 
 ## 🗂️ Codebase Integration & Structure
@@ -288,7 +281,7 @@ E2E tests are organized by feature/topic (e.g., `channels-e2e.test.ts`, `presenc
 
 1. **✅ DO** prioritize Integration and E2E tests for core Ably functionality
 2. **✅ DO** clean up all resources in tests (clients, connections, mocks)
-3. **✅ DO** use proper mocking (`sinon`, `nock`) for Unit/Integration tests
+3. **✅ DO** use proper mocking (`vitest`, `nock`) for Unit/Integration tests
 4. **✅ DO** avoid testing implementation details when possible (test behavior)
 5. **✅ DO** use path-based test execution for faster development workflow
 

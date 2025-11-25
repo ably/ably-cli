@@ -57,7 +57,6 @@ afterEach(async () => {
 ```
 
 - Check for unclosed connections or long-running promises that never resolve
-- Verify that `sinon.restore()` is called in `afterEach` blocks to clean up stubs/mocks
 
 ---
 
@@ -78,14 +77,14 @@ Timeout of 2000ms exceeded
 beforeEach(() => {
   // Create a fake WebSocket implementation
   const fakeWebSocketInstance = {
-    addEventListener: sinon.stub(),
-    removeEventListener: sinon.stub(),
-    send: sinon.stub(),
-    close: sinon.stub()
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    send: vi.fn(),
+    close: vi.fn(),
   }
 
   // Mock the WebSocket constructor
-  global.WebSocket = sinon.stub().returns(fakeWebSocketInstance) as any
+  global.WebSocket = vi.fn().mockReturnValue(fakeWebSocketInstance) as any
 })
 
 afterEach(() => {
@@ -109,7 +108,7 @@ Error: connect ECONNREFUSED
 ```
 
 **Solution**:
-- Use `nock` or `sinon` to properly mock HTTP requests:
+- Use `nock` or `vi` to properly mock HTTP requests:
 
 ```typescript
 // Using nock for HTTP mocking

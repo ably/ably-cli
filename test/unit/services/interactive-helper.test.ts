@@ -1,54 +1,57 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, vi, MockedFunction } from "vitest";
 import inquirer from "inquirer";
-import sinon from "sinon";
 import { InteractiveHelper } from "../../../src/services/interactive-helper.js";
 import { ConfigManager } from "../../../src/services/config-manager.js";
 import { ControlApi, App, Key } from "../../../src/services/control-api.js";
 
 describe("InteractiveHelper", function () {
   let interactiveHelper: InteractiveHelper;
-  let configManagerStub: sinon.SinonStubbedInstance<ConfigManager>;
-  let promptStub: sinon.SinonStub;
-  let consoleLogSpy: sinon.SinonSpy;
-  let sandbox: sinon.SinonSandbox;
-
+  let configManagerStub: Partial<ConfigManager> & {
+    listAccounts: MockedFunction<ConfigManager["listAccounts"]>;
+    getCurrentAccountAlias: MockedFunction<
+      ConfigManager["getCurrentAccountAlias"]
+    >;
+  };
+  let promptStub: ReturnType<typeof vi.fn>;
+  let consoleLogSpy: ReturnType<typeof vi.fn>;
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    // Create stubs and spies using sandbox
-    configManagerStub = sandbox.createStubInstance(ConfigManager);
-    promptStub = sandbox.stub(inquirer, "prompt");
-    consoleLogSpy = sandbox.spy(console, "log");
+    // Create stubs and spies
+    configManagerStub = {
+      listAccounts: vi.fn(),
+      getCurrentAccountAlias: vi.fn(),
+    };
+    promptStub = vi.spyOn(inquirer, "prompt");
+    consoleLogSpy = vi.spyOn(console, "log");
 
     // Create fresh instance for each test
-    interactiveHelper = new InteractiveHelper(configManagerStub, {
-      logErrors: false,
-    });
-  });
-
-  afterEach(function () {
-    sandbox.restore();
+    interactiveHelper = new InteractiveHelper(
+      configManagerStub as unknown as ConfigManager,
+      {
+        logErrors: false,
+      },
+    );
   });
 
   describe("#confirm", function () {
     it("should return true when user confirms", async function () {
-      promptStub.resolves({ confirmed: true });
+      promptStub.mockResolvedValue({ confirmed: true });
 
       const result = await interactiveHelper.confirm("Confirm this action?");
 
       expect(result).toBe(true);
-      expect(promptStub.calledOnce).toBe(true);
-      expect(promptStub.firstCall.args[0][0].message).toBe(
+      expect(promptStub).toHaveBeenCalledOnce();
+      expect(promptStub.mock.calls[0][0][0].message).toBe(
         "Confirm this action?",
       );
     });
 
     it("should return false when user denies", async function () {
-      promptStub.resolves({ confirmed: false });
+      promptStub.mockResolvedValue({ confirmed: false });
 
       const result = await interactiveHelper.confirm("Confirm this action?");
 
       expect(result).toBe(false);
-      expect(promptStub.calledOnce).toBe(true);
+      expect(promptStub).toHaveBeenCalledOnce();
     });
   });
 
@@ -73,34 +76,38 @@ describe("InteractiveHelper", function () {
         },
       ];
 
-      configManagerStub.listAccounts.returns(accounts);
-      configManagerStub.getCurrentAccountAlias.returns("default");
+      configManagerStub.listAccounts.mockReturnValue(accounts);
+      configManagerStub.getCurrentAccountAlias.mockReturnValue("default");
 
       const selectedAccount = accounts[1];
-      promptStub.resolves({ selectedAccount });
+      promptStub.mockResolvedValue({ selectedAccount });
 
       const result = await interactiveHelper.selectAccount();
 
       expect(result).toBe(selectedAccount);
-      expect(promptStub.calledOnce).toBe(true);
-      expect(configManagerStub.listAccounts.calledOnce).toBe(true);
-      expect(configManagerStub.getCurrentAccountAlias.calledOnce).toBe(true);
+      expect(promptStub).toHaveBeenCalledOnce();
+      expect(configManagerStub.listAccounts).toHaveBeenCalledOnce();
+      expect(configManagerStub.getCurrentAccountAlias).toHaveBeenCalledOnce();
     });
 
     it("should handle no configured accounts", async function () {
-      configManagerStub.listAccounts.returns([]);
+      configManagerStub.listAccounts.mockReturnValue([]);
 
       const result = await interactiveHelper.selectAccount();
 
       expect(result).toBeNull();
-      expect(promptStub.called).toBe(false);
+      expect(promptStub).not.toHaveBeenCalled();
       expect(
-        consoleLogSpy.calledWith(sinon.match(/No accounts configured/)),
+        consoleLogSpy.mock.calls.some((call) =>
+          /No accounts configured/.test(call[0]),
+        ),
       ).toBe(true);
     });
 
     it("should handle errors", async function () {
-      configManagerStub.listAccounts.throws(new Error("Test error"));
+      configManagerStub.listAccounts.mockImplementation(() => {
+        throw new Error("Test error");
+      });
 
       const result = await interactiveHelper.selectAccount();
 
@@ -109,10 +116,14 @@ describe("InteractiveHelper", function () {
   });
 
   describe("#selectApp", function () {
-    let controlApiStub: sinon.SinonStubbedInstance<ControlApi>;
+    let controlApiStub: Partial<ControlApi> & {
+      listApps: MockedFunction<ControlApi["listApps"]>;
+    };
 
     beforeEach(function () {
-      controlApiStub = sandbox.createStubInstance(ControlApi);
+      controlApiStub = {
+        listApps: vi.fn(),
+      };
     });
 
     it("should return selected app", async function () {
@@ -137,42 +148,54 @@ describe("InteractiveHelper", function () {
         },
       ];
 
-      controlApiStub.listApps.resolves(apps);
+      controlApiStub.listApps.mockResolvedValue(apps);
 
       const selectedApp = apps[1];
-      promptStub.resolves({ selectedApp });
+      promptStub.mockResolvedValue({ selectedApp });
 
-      const result = await interactiveHelper.selectApp(controlApiStub);
+      const result = await interactiveHelper.selectApp(
+        controlApiStub as unknown as ControlApi,
+      );
 
       expect(result).toBe(selectedApp);
-      expect(promptStub.calledOnce).toBe(true);
-      expect(controlApiStub.listApps.calledOnce).toBe(true);
+      expect(promptStub).toHaveBeenCalledOnce();
+      expect(controlApiStub.listApps).toHaveBeenCalledOnce();
     });
 
     it("should handle no apps found", async function () {
-      controlApiStub.listApps.resolves([]);
+      controlApiStub.listApps.mockResolvedValue([]);
 
-      const result = await interactiveHelper.selectApp(controlApiStub);
+      const result = await interactiveHelper.selectApp(
+        controlApiStub as unknown as ControlApi,
+      );
 
       expect(result).toBeNull();
-      expect(promptStub.called).toBe(false);
-      expect(consoleLogSpy.calledWith(sinon.match(/No apps found/))).toBe(true);
+      expect(promptStub).not.toHaveBeenCalled();
+      expect(
+        consoleLogSpy.mock.calls.some((call) => /No apps found/.test(call[0])),
+      ).toBe(true);
     });
 
     it("should handle errors", async function () {
-      controlApiStub.listApps.rejects(new Error("Test error"));
+      controlApiStub.listApps.mockRejectedValue(new Error("Test error"));
 
-      const result = await interactiveHelper.selectApp(controlApiStub);
+      const result = await interactiveHelper.selectApp(
+        controlApiStub as unknown as ControlApi,
+      );
 
       expect(result).toBeNull();
     });
   });
 
   describe("#selectKey", function () {
-    let controlApiStub: sinon.SinonStubbedInstance<ControlApi>;
+    let controlApiStub: {
+      listKeys: MockedFunction<ControlApi["listKeys"]>;
+    };
 
     beforeEach(function () {
-      controlApiStub = sandbox.createStubInstance(ControlApi);
+      controlApiStub = {
+        listKeys: vi.fn(),
+      };
     });
 
     it("should return selected key", async function () {
@@ -201,17 +224,20 @@ describe("InteractiveHelper", function () {
         },
       ];
 
-      controlApiStub.listKeys.resolves(keys);
+      controlApiStub.listKeys.mockResolvedValue(keys);
 
       const selectedKey = keys[1];
-      promptStub.resolves({ selectedKey });
+      promptStub.mockResolvedValue({ selectedKey });
 
-      const result = await interactiveHelper.selectKey(controlApiStub, "app1");
+      const result = await interactiveHelper.selectKey(
+        controlApiStub as unknown as ControlApi,
+        "app1",
+      );
 
       expect(result).toBe(selectedKey);
-      expect(promptStub.calledOnce).toBe(true);
-      expect(controlApiStub.listKeys.calledOnce).toBe(true);
-      expect(controlApiStub.listKeys.calledWith("app1")).toBe(true);
+      expect(promptStub).toHaveBeenCalledOnce();
+      expect(controlApiStub.listKeys).toHaveBeenCalledOnce();
+      expect(controlApiStub.listKeys).toHaveBeenCalledWith("app1");
     });
 
     it("should handle unnamed keys", async function () {
@@ -240,30 +266,41 @@ describe("InteractiveHelper", function () {
         },
       ];
 
-      controlApiStub.listKeys.resolves(keys);
-      promptStub.resolves({ selectedKey: keys[0] });
+      controlApiStub.listKeys.mockResolvedValue(keys);
+      promptStub.mockResolvedValue({ selectedKey: keys[0] });
 
-      await interactiveHelper.selectKey(controlApiStub, "app1");
+      await interactiveHelper.selectKey(
+        controlApiStub as unknown as ControlApi,
+        "app1",
+      );
 
       // Check that the prompt choices include "Unnamed key" for the first key
-      const choices = promptStub.firstCall.args[0][0].choices;
+      const choices = promptStub.mock.calls[0][0][0].choices;
       expect(choices[0].name).toContain("Unnamed key");
     });
 
     it("should handle no keys found", async function () {
-      controlApiStub.listKeys.resolves([]);
+      controlApiStub.listKeys.mockResolvedValue([]);
 
-      const result = await interactiveHelper.selectKey(controlApiStub, "app1");
+      const result = await interactiveHelper.selectKey(
+        controlApiStub as unknown as ControlApi,
+        "app1",
+      );
 
       expect(result).toBeNull();
-      expect(promptStub.called).toBe(false);
-      expect(consoleLogSpy.calledWith(sinon.match(/No keys found/))).toBe(true);
+      expect(promptStub).not.toHaveBeenCalled();
+      expect(
+        consoleLogSpy.mock.calls.some((call) => /No keys found/.test(call[0])),
+      ).toBe(true);
     });
 
     it("should handle errors", async function () {
-      controlApiStub.listKeys.rejects(new Error("Test error"));
+      controlApiStub.listKeys.mockRejectedValue(new Error("Test error"));
 
-      const result = await interactiveHelper.selectKey(controlApiStub, "app1");
+      const result = await interactiveHelper.selectKey(
+        controlApiStub as unknown as ControlApi,
+        "app1",
+      );
 
       expect(result).toBeNull();
     });

@@ -1,29 +1,25 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "node:fs";
 import AccountsLogin from "../../../../src/commands/accounts/login.js";
 import { ConfigManager } from "../../../../src/services/config-manager.js";
 
 describe("AccountsLogin", function () {
-  let sandbox: sinon.SinonSandbox;
   let originalEnv: NodeJS.ProcessEnv;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
     originalEnv = { ...process.env };
 
     // Reset env before each test
     process.env = { ...originalEnv };
 
     // Stub fs operations to prevent actual file access
-    sandbox.stub(fs, "existsSync").returns(true);
-    sandbox.stub(fs, "readFileSync").returns("");
-    sandbox.stub(fs, "mkdirSync");
-    sandbox.stub(fs, "writeFileSync");
+    vi.spyOn(fs, "existsSync").mockReturnValue(true);
+    vi.spyOn(fs, "readFileSync").mockReturnValue("");
+    vi.spyOn(fs, "mkdirSync").mockImplementation(() => {});
+    vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
   });
 
   afterEach(function () {
-    sandbox.restore();
     process.env = originalEnv;
   });
 

@@ -15,6 +15,9 @@ export default defineConfig({
     pool: "forks",
     typecheck: { enabled: false },
     reporters: ["default"],
+    // Auto-restore mocks after each test
+    restoreMocks: true,
+    clearMocks: true,
 
     // Coverage configuration (shared across projects)
     coverage: {
@@ -43,6 +46,10 @@ export default defineConfig({
           name: "unit",
           include: ["test/unit/**/*.test.ts"],
           testTimeout: 60000, // 60 seconds for unit tests
+          env: {
+            ABLY_CLI_DEFAULT_DURATION: "0.25",
+            ABLY_CLI_TEST_MODE: "true",
+          },
         },
       },
       {
@@ -54,6 +61,7 @@ export default defineConfig({
           testTimeout: 120000, // 120 seconds for integration tests
           env: {
             ABLY_CLI_DEFAULT_DURATION: "0.25",
+            ABLY_CLI_TEST_MODE: "true",
           },
         },
       },

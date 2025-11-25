@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import ChannelsOccupancyGet from "../../../../../src/commands/channels/occupancy/get.js";
 import * as Ably from "ably";
@@ -16,7 +15,7 @@ class TestableChannelsOccupancyGet extends ChannelsOccupancyGet {
 
   // Mock REST client for testing
   public mockClient: any = {
-    request: sinon.stub(),
+    request: vi.fn(),
   };
 
   // Override parse to return test data
@@ -86,13 +85,11 @@ class TestableChannelsOccupancyGet extends ChannelsOccupancyGet {
 }
 
 describe("ChannelsOccupancyGet", function () {
-  let sandbox: sinon.SinonSandbox;
   let command: TestableChannelsOccupancyGet;
   let mockConfig: Config;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    mockConfig = { runHook: sinon.stub() } as unknown as Config;
+    mockConfig = { runHook: vi.fn() } as unknown as Config;
     command = new TestableChannelsOccupancyGet([], mockConfig);
 
     // Set default parse result
@@ -104,7 +101,7 @@ describe("ChannelsOccupancyGet", function () {
     });
 
     // Set up mock behavior for REST request
-    command.mockClient.request.resolves({
+    command.mockClient.request.mockResolvedValue({
       items: [
         {
           status: {
@@ -124,17 +121,13 @@ describe("ChannelsOccupancyGet", function () {
     });
   });
 
-  afterEach(function () {
-    sandbox.restore();
-  });
-
   it("should successfully retrieve and display occupancy using REST API", async function () {
     await command.run();
 
     // Check that request was called with the right parameters
-    expect(command.mockClient.request.calledOnce).toBe(true);
+    expect(command.mockClient.request).toHaveBeenCalledOnce();
     const [method, path, version, params, body] =
-      command.mockClient.request.firstCall.args;
+      command.mockClient.request.mock.calls[0];
     expect(method).toBe("get");
     expect(path).toBe("/channels/test-occupancy-channel");
     expect(version).toBe(2);
@@ -179,7 +172,7 @@ describe("ChannelsOccupancyGet", function () {
 
   it("should handle empty occupancy metrics", async function () {
     // Override mock to return empty metrics
-    command.mockClient.request.resolves({
+    command.mockClient.request.mockResolvedValue({
       occupancy: {
         metrics: null,
       },

@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
 
@@ -37,9 +36,9 @@ class TestableBenchPublisher extends BenchPublisher {
   }
 
   protected override interactiveHelper = {
-    confirm: sinon.stub().resolves(true),
-    promptForText: sinon.stub().resolves("fake-input"),
-    promptToSelect: sinon.stub().resolves("fake-selection"),
+    confirm: vi.fn().mockResolvedValue(true),
+    promptForText: vi.fn().mockResolvedValue("fake-input"),
+    promptToSelect: vi.fn().mockResolvedValue("fake-selection"),
   } as any;
 
   // Override to suppress console clearing escape sequences during tests
@@ -112,9 +111,9 @@ class TestableBenchSubscriber extends BenchSubscriber {
   }
 
   protected override interactiveHelper = {
-    confirm: sinon.stub().resolves(true),
-    promptForText: sinon.stub().resolves("fake-input"),
-    promptToSelect: sinon.stub().resolves("fake-selection"),
+    confirm: vi.fn().mockResolvedValue(true),
+    promptForText: vi.fn().mockResolvedValue("fake-input"),
+    promptToSelect: vi.fn().mockResolvedValue("fake-selection"),
   } as any;
 
   // Override to suppress console clearing escape sequences during tests
@@ -125,51 +124,47 @@ class TestableBenchSubscriber extends BenchSubscriber {
 }
 
 describe("benchmarking commands", () => {
-  let sandbox: sinon.SinonSandbox;
   let mockConfig: Config;
 
   beforeEach(() => {
-    sandbox = sinon.createSandbox();
-    mockConfig = { runHook: sinon.stub() } as unknown as Config;
+    mockConfig = { runHook: vi.fn() } as unknown as Config;
   });
 
-  afterEach(() => {
-    sandbox.restore();
-  });
+  afterEach(() => {});
 
   describe("bench publisher", () => {
     let command: TestableBenchPublisher;
     let mockChannel: any;
-    let publishStub: sinon.SinonStub;
+    let publishStub: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
       command = new TestableBenchPublisher([], mockConfig);
 
-      publishStub = sandbox.stub().resolves();
+      publishStub = vi.fn().mockImplementation(async () => {});
       mockChannel = {
         publish: publishStub,
-        subscribe: sandbox.stub(),
+        subscribe: vi.fn(),
         presence: {
-          enter: sandbox.stub().resolves(),
-          get: sandbox.stub().resolves([]),
-          subscribe: sandbox.stub(),
-          unsubscribe: sandbox.stub(),
+          enter: vi.fn().mockImplementation(async () => {}),
+          get: vi.fn().mockResolvedValue([]),
+          subscribe: vi.fn(),
+          unsubscribe: vi.fn(),
         },
-        on: sandbox.stub(),
+        on: vi.fn(),
       };
 
       command.mockRealtimeClient = {
-        channels: { get: sandbox.stub().returns(mockChannel) },
-        connection: { on: sandbox.stub(), state: "connected" },
-        close: sandbox.stub(),
+        channels: { get: vi.fn().mockReturnValue(mockChannel) },
+        connection: { on: vi.fn(), state: "connected" },
+        close: vi.fn(),
       };
 
       command.mockRestClient = {
-        channels: { get: sandbox.stub().returns(mockChannel) },
+        channels: { get: vi.fn().mockReturnValue(mockChannel) },
       };
 
       // Speed up test by stubbing out internal delay utility
-      sandbox.stub(command as any, "delay").resolves();
+      vi.spyOn(command as any, "delay").mockImplementation(async () => {});
 
       command.setParseResult({
         flags: {
@@ -189,7 +184,7 @@ describe("benchmarking commands", () => {
       await command.run();
 
       // Should publish 5 test messages + 2 control envelopes (start and end)
-      expect(publishStub.callCount).toBe(7);
+      expect(publishStub).toHaveBeenCalledTimes(7);
     });
 
     it("should generate random data of specified size", () => {
@@ -236,24 +231,24 @@ describe("benchmarking commands", () => {
         raw: [],
       });
 
-      // Restore the delay stub to test timing
-      (command as any).delay.restore();
-      const _delaySpy = sandbox.spy(command, "testDelay"); // Prefix with underscore for intentionally unused
+      // Spy on delay to test timing
+      const _delaySpy = vi.spyOn(command, "testDelay"); // Prefix with underscore for intentionally unused
 
       const startTime = Date.now();
       await command.run();
       const endTime = Date.now();
 
       // Should publish 3 test messages + 2 control envelopes (start and end)
-      expect(publishStub.callCount).toBe(5);
+      expect(publishStub).toHaveBeenCalledTimes(5);
       // Should take at least some time due to rate limiting
       expect(endTime - startTime).toBeGreaterThan(50);
     });
 
     it("should handle publish errors gracefully", async () => {
-      publishStub.onFirstCall().rejects(new Error("Publish failed"));
-      publishStub.onSecondCall().resolves();
-      publishStub.onThirdCall().resolves();
+      publishStub
+        .mockRejectedValueOnce(new Error("Publish failed"))
+        .mockImplementationOnce(async () => {})
+        .mockImplementationOnce(async () => {});
 
       // Command should throw an error when publish fails
       let errorThrown = false;
@@ -267,7 +262,7 @@ describe("benchmarking commands", () => {
       }
       expect(errorThrown).toBe(true);
 
-      expect(publishStub.callCount).toBeGreaterThan(0);
+      expect(publishStub.mock.calls.length).toBeGreaterThan(0);
     });
 
     it("should wait for subscribers when flag is set", async () => {
@@ -277,7 +272,7 @@ describe("benchmarking commands", () => {
         clientId: "subscriber1",
         data: { role: "subscriber" },
       };
-      presenceGetStub.resolves([mockSubscriber]); // Subscriber already present
+      presenceGetStub.mockResolvedValue([mockSubscriber]); // Subscriber already present
 
       command.setParseResult({
         flags: {
@@ -294,9 +289,9 @@ describe("benchmarking commands", () => {
 
       await command.run();
 
-      expect(presenceGetStub.callCount).toBeGreaterThan(0);
+      expect(presenceGetStub.mock.calls.length).toBeGreaterThan(0);
       // Should publish 2 test messages + 2 control envelopes (start and end)
-      expect(publishStub.callCount).toBe(4);
+      expect(publishStub).toHaveBeenCalledTimes(4);
     });
 
     it("should use REST transport when specified", async () => {
@@ -316,36 +311,36 @@ describe("benchmarking commands", () => {
       await command.run();
 
       // Should publish 3 test messages + 2 control envelopes (start and end)
-      expect(publishStub.callCount).toBe(5);
+      expect(publishStub).toHaveBeenCalledTimes(5);
     });
   });
 
   describe("bench subscriber", () => {
     let command: TestableBenchSubscriber;
     let mockChannel: any;
-    let subscribeStub: sinon.SinonStub;
+    let subscribeStub: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
       command = new TestableBenchSubscriber([], mockConfig);
 
-      subscribeStub = sandbox.stub();
+      subscribeStub = vi.fn();
       mockChannel = {
         subscribe: subscribeStub,
-        unsubscribe: sandbox.stub().resolves(),
+        unsubscribe: vi.fn().mockImplementation(async () => {}),
         presence: {
-          enter: sandbox.stub().resolves(),
-          leave: sandbox.stub().resolves(),
-          get: sandbox.stub().resolves([]),
-          subscribe: sandbox.stub(),
-          unsubscribe: sandbox.stub(),
+          enter: vi.fn().mockImplementation(async () => {}),
+          leave: vi.fn().mockImplementation(async () => {}),
+          get: vi.fn().mockResolvedValue([]),
+          subscribe: vi.fn(),
+          unsubscribe: vi.fn(),
         },
-        on: sandbox.stub(),
+        on: vi.fn(),
       };
 
       command.mockRealtimeClient = {
-        channels: { get: sandbox.stub().returns(mockChannel) },
-        connection: { on: sandbox.stub(), state: "connected" },
-        close: sandbox.stub(),
+        channels: { get: vi.fn().mockReturnValue(mockChannel) },
+        connection: { on: vi.fn(), state: "connected" },
+        close: vi.fn(),
       };
 
       command.setParseResult({
@@ -357,7 +352,7 @@ describe("benchmarking commands", () => {
     });
 
     it("should subscribe to channel successfully", async () => {
-      subscribeStub.callsFake((callback) => {
+      subscribeStub.mockImplementation((callback) => {
         // Simulate receiving messages
         setTimeout(() => {
           callback({
@@ -374,20 +369,20 @@ describe("benchmarking commands", () => {
 
       await new Promise((resolve) => setTimeout(resolve, 20)); // Reduced from 50ms
 
-      expect(subscribeStub.calledOnce).toBe(true);
-      expect(mockChannel.presence.enter.calledOnce).toBe(true);
+      expect(subscribeStub).toHaveBeenCalledOnce();
+      expect(mockChannel.presence.enter).toHaveBeenCalledOnce();
 
       command.mockRealtimeClient.close();
     });
 
     it("should enter presence when subscribing", async () => {
-      subscribeStub.resolves();
+      subscribeStub.mockImplementation(async () => {});
 
       const _runPromise = command.run(); // Prefix with underscore for intentionally unused
 
       await new Promise((resolve) => setTimeout(resolve, 20)); // Reduced from 50ms
 
-      expect(mockChannel.presence.enter.calledOnce).toBe(true);
+      expect(mockChannel.presence.enter).toHaveBeenCalledOnce();
 
       command.mockRealtimeClient.close();
     });
@@ -395,7 +390,7 @@ describe("benchmarking commands", () => {
     it("should process incoming messages and calculate stats", async () => {
       const _receivedMessages: any[] = []; // Prefix with underscore for intentionally unused
 
-      subscribeStub.callsFake((callback) => {
+      subscribeStub.mockImplementation((callback) => {
         // Simulate multiple messages over time
         for (let i = 0; i < 5; i++) {
           setTimeout(() => {
@@ -415,7 +410,7 @@ describe("benchmarking commands", () => {
 
       await new Promise((resolve) => setTimeout(resolve, 50)); // Reduced from 100ms
 
-      expect(subscribeStub.calledOnce).toBe(true);
+      expect(subscribeStub).toHaveBeenCalledOnce();
 
       command.mockRealtimeClient.close();
     });

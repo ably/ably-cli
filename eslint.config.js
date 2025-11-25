@@ -31,8 +31,6 @@ export default [
       "packages/react-web-cli/dist/index.mjs",
       "bin/", // Added from .eslintrc.cjs
       "playwright-report/**", // Ignore Playwright report files
-      // New comprehensive test files - ignore to prevent CI blocking
-      "playwright-report/**",
       "vitest.config.ts"
     ], // Updated to match all ignorePatterns from .eslintrc.json
   },

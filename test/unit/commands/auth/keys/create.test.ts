@@ -205,7 +205,7 @@ userEmail = "test@example.com"
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/Missing required flag.*name/);
+      expect(error!.message).toMatch(/Missing required flag.*name/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -215,7 +215,7 @@ userEmail = "test@example.com"
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/No app specified/);
+      expect(error!.message).toMatch(/No app specified/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -240,7 +240,7 @@ userEmail = "test@example.com"
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/Invalid capabilities/);
+      expect(error!.message).toMatch(/Invalid capabilities/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
   });
@@ -257,7 +257,7 @@ userEmail = "test@example.com"
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/401/);
+      expect(error!.message).toMatch(/401/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -272,7 +272,7 @@ userEmail = "test@example.com"
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/403/);
+      expect(error!.message).toMatch(/403/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -287,7 +287,7 @@ userEmail = "test@example.com"
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/404/);
+      expect(error!.message).toMatch(/404/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -302,7 +302,7 @@ userEmail = "test@example.com"
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/500/);
+      expect(error!.message).toMatch(/500/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -317,7 +317,7 @@ userEmail = "test@example.com"
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/Network error/);
+      expect(error!.message).toMatch(/Network error/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -335,7 +335,7 @@ userEmail = "test@example.com"
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/400/);
+      expect(error!.message).toMatch(/400/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -350,7 +350,7 @@ userEmail = "test@example.com"
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/429/);
+      expect(error!.message).toMatch(/429/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
   });

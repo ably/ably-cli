@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import ConnectionsStats from "../../../../src/commands/connections/stats.js";
 import * as Ably from "ably";
@@ -88,10 +87,9 @@ class TestableConnectionsStats extends ConnectionsStats {
 }
 
 describe("ConnectionsStats", function () {
-  let sandbox: sinon.SinonSandbox;
   let command: TestableConnectionsStats;
   let mockConfig: Config;
-  let mockStatsMethod: sinon.SinonStub;
+  let mockStatsMethod: ReturnType<typeof vi.fn>;
   let originalConsoleLog: typeof console.log;
   let mockStats: any[]; // Declare without initialization
 
@@ -127,23 +125,22 @@ describe("ConnectionsStats", function () {
       },
     ];
 
-    sandbox = sinon.createSandbox();
-    mockConfig = { runHook: sinon.stub() } as unknown as Config;
+    mockConfig = { runHook: vi.fn() } as unknown as Config;
     command = new TestableConnectionsStats([], mockConfig);
 
     // Create stubs for the stats method
-    mockStatsMethod = sinon.stub().resolves({ items: mockStats });
+    mockStatsMethod = vi.fn().mockResolvedValue({ items: mockStats });
 
     // Set up the mock REST client
     command.mockRestClient = {
       stats: mockStatsMethod,
-      close: sinon.stub(),
+      close: vi.fn(),
     };
 
     // Properly stub the configManager.getApiKey method
-    sandbox
-      .stub(command.getConfigManager(), "getApiKey")
-      .resolves("dummy-key:secret");
+    vi.spyOn(command.getConfigManager(), "getApiKey").mockResolvedValue(
+      "dummy-key:secret",
+    );
 
     // Mock console.log to capture StatsDisplay output
     originalConsoleLog = console.log;
@@ -167,16 +164,15 @@ describe("ConnectionsStats", function () {
   afterEach(function () {
     // Restore console.log
     console.log = originalConsoleLog;
-    sandbox.restore();
   });
 
   it("should retrieve and display connection stats successfully", async function () {
     await command.run();
 
-    expect(mockStatsMethod.calledOnce).toBe(true);
+    expect(mockStatsMethod).toHaveBeenCalledOnce();
 
     // Verify the stats method was called with correct parameters
-    const callArgs = mockStatsMethod.firstCall.args[0];
+    const callArgs = mockStatsMethod.mock.calls[0][0];
     expect(callArgs).toHaveProperty("unit", "minute");
     expect(callArgs).toHaveProperty("limit", 10);
     expect(callArgs).toHaveProperty("direction", "backwards");
@@ -204,9 +200,9 @@ describe("ConnectionsStats", function () {
 
     await command.run();
 
-    expect(mockStatsMethod.calledOnce).toBe(true);
+    expect(mockStatsMethod).toHaveBeenCalledOnce();
 
-    const callArgs = mockStatsMethod.firstCall.args[0];
+    const callArgs = mockStatsMethod.mock.calls[0][0];
     expect(callArgs).toHaveProperty("unit", "hour");
     expect(callArgs).toHaveProperty("limit", 24);
   });
@@ -232,19 +228,19 @@ describe("ConnectionsStats", function () {
 
     await command.run();
 
-    expect(mockStatsMethod.calledOnce).toBe(true);
+    expect(mockStatsMethod).toHaveBeenCalledOnce();
 
-    const callArgs = mockStatsMethod.firstCall.args[0];
+    const callArgs = mockStatsMethod.mock.calls[0][0];
     expect(callArgs).toHaveProperty("start", startTime);
     expect(callArgs).toHaveProperty("end", endTime);
   });
 
   it("should handle empty stats response", async function () {
-    mockStatsMethod.resolves({ items: [] });
+    mockStatsMethod.mockResolvedValue({ items: [] });
 
     await command.run();
 
-    expect(mockStatsMethod.calledOnce).toBe(true);
+    expect(mockStatsMethod).toHaveBeenCalledOnce();
 
     // The "No connection stats available" message comes from this.log(), not console.log
     const output = command.logOutput.join("\n");
@@ -253,7 +249,7 @@ describe("ConnectionsStats", function () {
 
   it("should handle API errors", async function () {
     const apiError = new Error("API request failed");
-    mockStatsMethod.rejects(apiError);
+    mockStatsMethod.mockRejectedValue(apiError);
 
     try {
       await command.run();
@@ -268,7 +264,7 @@ describe("ConnectionsStats", function () {
 
     await command.run();
 
-    expect(mockStatsMethod.calledOnce).toBe(true);
+    expect(mockStatsMethod).toHaveBeenCalledOnce();
 
     // Check for JSON output in the console logs (StatsDisplay uses console.log for JSON)
     const jsonOutput = command.consoleOutput.find((log) => {
@@ -301,7 +297,7 @@ describe("ConnectionsStats", function () {
 
     // Mock the process.on method to prevent hanging in test
     const originalProcessOn = process.on;
-    const processOnStub = sinon.stub(process, "on");
+    const processOnStub = vi.spyOn(process, "on");
 
     try {
       // Start the command but don't wait for it to complete (since live mode runs indefinitely)
@@ -311,14 +307,18 @@ describe("ConnectionsStats", function () {
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Verify that stats were called at least once for the initial display
-      expect(mockStatsMethod.called).toBe(true);
+      expect(mockStatsMethod).toHaveBeenCalled();
 
       // Verify that process event listeners were set up for graceful shutdown
-      expect(processOnStub.calledWith("SIGINT")).toBe(true);
-      expect(processOnStub.calledWith("SIGTERM")).toBe(true);
+      expect(processOnStub).toHaveBeenCalledWith(
+        "SIGINT",
+        expect.any(Function),
+      );
+      expect(processOnStub).toHaveBeenCalledWith(
+        "SIGTERM",
+        expect.any(Function),
+      );
     } finally {
-      // Restore process.on
-      processOnStub.restore();
       process.on = originalProcessOn;
 
       // The live stats promise will never resolve naturally, so we don't await it
@@ -340,17 +340,13 @@ describe("ConnectionsStats", function () {
     });
 
     // Mock the process.on method to prevent hanging in test
-    const processOnStub = sinon.stub(process, "on");
+    vi.spyOn(process, "on");
 
-    try {
-      // Start the command and give it a moment to set up
-      const _liveStatsPromise = command.run();
-      await new Promise((resolve) => setTimeout(resolve, 50));
+    // Start the command and give it a moment to set up
+    const _liveStatsPromise = command.run();
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
-      // Verify debug mode was enabled
-      expect(mockStatsMethod.called).toBe(true);
-    } finally {
-      processOnStub.restore();
-    }
+    // Verify debug mode was enabled
+    expect(mockStatsMethod).toHaveBeenCalled();
   });
 });

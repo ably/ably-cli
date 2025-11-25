@@ -1,5 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  MockInstance,
+} from "vitest";
 import fs from "node:fs";
 import { AblyBaseCommand } from "../../../src/base-command.js";
 import { ConfigManager } from "../../../src/services/config-manager.js";
@@ -81,42 +88,70 @@ class TestCommand extends AblyBaseCommand {
   }
 }
 
+type MockConfigManager = ConfigManager & {
+  getCurrentAppId: ReturnType<typeof vi.fn>;
+  getApiKey: ReturnType<typeof vi.fn>;
+  getAccessToken: ReturnType<typeof vi.fn>;
+  selectKey: ReturnType<typeof vi.fn>;
+  selectApp: ReturnType<typeof vi.fn>;
+  setCurrentApp: ReturnType<typeof vi.fn>;
+  storeAppInfo: ReturnType<typeof vi.fn>;
+  storeAppKey: ReturnType<typeof vi.fn>;
+};
+
+type MockInteractiveHelper = InteractiveHelper & {
+  getApiKey: ReturnType<typeof vi.fn>;
+  selectKey: ReturnType<typeof vi.fn>;
+  selectApp: ReturnType<typeof vi.fn>;
+};
+
 describe("AblyBaseCommand", function () {
   let command: TestCommand;
-  let configManagerStub: sinon.SinonStubbedInstance<ConfigManager>;
-  let interactiveHelperStub: sinon.SinonStubbedInstance<InteractiveHelper>;
-  let _fsExistsStub: sinon.SinonStub;
-  let sandbox: sinon.SinonSandbox;
+  let configManagerStub: MockConfigManager;
+  let interactiveHelperStub: MockInteractiveHelper;
+  let _fsExistsStub: MockInstance<typeof fs.existsSync>;
   let originalEnv: NodeJS.ProcessEnv;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
     // Store original env vars to restore after tests
     originalEnv = { ...process.env };
 
     // Reset env before each test
     process.env = { ...originalEnv };
 
-    // Stub fs.existsSync to prevent file system operations using sandbox
-    _fsExistsStub = sandbox.stub(fs, "existsSync").returns(true);
+    // Stub fs.existsSync to prevent file system operations
+    _fsExistsStub = vi.spyOn(fs, "existsSync").mockReturnValue(true);
 
-    // Also stub fs.readFileSync to prevent actual file access using sandbox
-    sandbox.stub(fs, "readFileSync").returns("");
+    // Also stub fs.readFileSync to prevent actual file access
+    vi.spyOn(fs, "readFileSync").mockReturnValue("");
 
-    // Create stubs for dependencies using sandbox
-    // Note: createStubInstance doesn't need sandbox explicitly, but we manage other stubs with it.
-    configManagerStub = sandbox.createStubInstance(ConfigManager);
+    // Create stubs for dependencies
+    configManagerStub = {
+      getCurrentAppId: vi.fn(),
+      getApiKey: vi.fn(),
+      getAccessToken: vi.fn(),
+      selectKey: vi.fn(),
+      selectApp: vi.fn(),
+      setCurrentApp: vi.fn(),
+      storeAppInfo: vi.fn(),
+      storeAppKey: vi.fn(),
+    } as MockConfigManager;
 
-    // Instead of stubbing loadConfig which is private, we'll stub methods that might access the file system using sandbox
-    sandbox
-      .stub(ConfigManager.prototype as any, "ensureConfigDirExists")
-      .callsFake(() => {});
-    sandbox
-      .stub(ConfigManager.prototype as any, "saveConfig")
-      .callsFake(() => {});
+    // Instead of stubbing loadConfig which is private, we'll stub methods that might access the file system
+    vi.spyOn(
+      ConfigManager.prototype as any,
+      "ensureConfigDirExists",
+    ).mockImplementation(() => {});
+    vi.spyOn(ConfigManager.prototype as any, "saveConfig").mockImplementation(
+      () => {},
+    );
 
     // Note: createStubInstance doesn't need sandbox explicitly.
-    interactiveHelperStub = sandbox.createStubInstance(InteractiveHelper);
+    interactiveHelperStub = {
+      getApiKey: vi.fn(),
+      selectKey: vi.fn(),
+      selectApp: vi.fn(),
+    } as MockInteractiveHelper;
 
     // Mock a minimal config
     const mockConfig = {
@@ -132,9 +167,6 @@ describe("AblyBaseCommand", function () {
   });
 
   afterEach(function () {
-    // Clean up sinon stubs using the sandbox
-    sandbox.restore();
-
     // Restore original env
     process.env = originalEnv;
   });
@@ -538,26 +570,25 @@ describe("AblyBaseCommand", function () {
     it("should use app and key from config if available", async function () {
       const flags: BaseFlags = {};
 
-      configManagerStub.getCurrentAppId.returns("configAppId");
-      configManagerStub.getApiKey
-        .withArgs("configAppId")
-        .returns("configApiKey");
+      configManagerStub.getCurrentAppId.mockReturnValue("configAppId");
+      configManagerStub.getApiKey.mockReturnValue("configApiKey");
 
       const result = await command.testEnsureAppAndKey(flags);
 
       expect(result).not.toBeNull();
       expect(result?.appId).toBe("configAppId");
       expect(result?.apiKey).toBe("configApiKey");
+      expect(configManagerStub.getApiKey).toHaveBeenCalledWith("configAppId");
     });
 
     it("should use ABLY_API_KEY environment variable if available", async function () {
       const flags: BaseFlags = {};
 
       // Reset relevant stubs
-      configManagerStub.getCurrentAppId.returns(undefined as any);
-      configManagerStub.getApiKey.withArgs("").returns(undefined as any);
+      configManagerStub.getCurrentAppId.mockReturnValue(undefined as any);
+      configManagerStub.getApiKey.mockReturnValue(undefined as any);
       // Set access token to ensure the control API path is followed
-      configManagerStub.getAccessToken.returns("test-token");
+      configManagerStub.getAccessToken.mockReturnValue("test-token");
 
       // Set up interactive helper to simulate user selecting an app and key
       const mockApp = { id: "envApp", name: "Test App" } as any;
@@ -567,10 +598,8 @@ describe("AblyBaseCommand", function () {
         key: "envApp.keyId:keySecret",
       } as any;
 
-      interactiveHelperStub.selectApp.resolves(mockApp);
-      interactiveHelperStub.selectKey
-        .withArgs(sinon.match.any, "envApp")
-        .resolves(mockKey);
+      interactiveHelperStub.selectApp.mockResolvedValue(mockApp);
+      interactiveHelperStub.selectKey.mockResolvedValue(mockKey);
 
       // Set environment variable but it will be used in getClientOptions, not directly in this test path
       process.env.ABLY_API_KEY = "envApp.keyId:keySecret";
@@ -580,6 +609,10 @@ describe("AblyBaseCommand", function () {
       expect(result).not.toBeNull();
       expect(result?.appId).toBe("envApp");
       expect(result?.apiKey).toBe("envApp.keyId:keySecret");
+      expect(interactiveHelperStub.selectKey).toHaveBeenCalledWith(
+        expect.anything(),
+        "envApp",
+      );
     });
 
     it("should handle web CLI mode appropriately", async function () {
@@ -598,9 +631,9 @@ describe("AblyBaseCommand", function () {
       const flags: BaseFlags = {};
 
       // Reset all required stubs to return empty values
-      configManagerStub.getCurrentAppId.returns("" as any);
-      configManagerStub.getApiKey.withArgs("").returns("" as any);
-      configManagerStub.getAccessToken.returns("" as any);
+      configManagerStub.getCurrentAppId.mockReturnValue("" as any);
+      configManagerStub.getApiKey.mockReturnValue("" as any);
+      configManagerStub.getAccessToken.mockReturnValue("" as any);
 
       // Make sure environment variable is not set
       delete process.env.ABLY_API_KEY;

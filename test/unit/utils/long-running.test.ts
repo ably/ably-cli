@@ -1,19 +1,18 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { waitUntilInterruptedOrTimeout } from "../../../src/utils/long-running.js";
 
 describe("waitUntilInterruptedOrTimeout", function () {
-  let processOnStub: sinon.SinonStub;
-  let processRemoveListenerStub: sinon.SinonStub;
+  let processOnStub: ReturnType<typeof vi.fn>;
+  let processRemoveListenerStub: ReturnType<typeof vi.fn>;
 
   beforeEach(function () {
     // Stub the process event methods we need
-    processOnStub = sinon.stub(process, "on");
-    processRemoveListenerStub = sinon.stub(process, "removeListener");
+    processOnStub = vi.spyOn(process, "on");
+    processRemoveListenerStub = vi.spyOn(process, "removeListener");
   });
 
   afterEach(function () {
-    sinon.restore();
+    vi.restoreAllMocks();
   });
 
   describe("timeout behavior", function () {
@@ -46,7 +45,7 @@ describe("waitUntilInterruptedOrTimeout", function () {
       let _sigtermHandler: () => void;
 
       // Capture the event handlers when they're registered
-      processOnStub.callsFake((event: string, handler: () => void) => {
+      processOnStub.mockImplementation((event: string, handler: () => void) => {
         if (event === "SIGINT") sigintHandler = handler;
         if (event === "SIGTERM") _sigtermHandler = handler;
       });
@@ -80,7 +79,7 @@ describe("waitUntilInterruptedOrTimeout", function () {
       let sigtermHandler: () => void;
 
       // Capture the event handlers when they're registered
-      processOnStub.callsFake((event: string, handler: () => void) => {
+      processOnStub.mockImplementation((event: string, handler: () => void) => {
         if (event === "SIGINT") _sigintHandler = handler;
         if (event === "SIGTERM") sigtermHandler = handler;
       });
@@ -113,7 +112,7 @@ describe("waitUntilInterruptedOrTimeout", function () {
       let sigintHandler: () => void;
 
       // Capture the event handlers when they're registered
-      processOnStub.callsFake((event: string, handler: () => void) => {
+      processOnStub.mockImplementation((event: string, handler: () => void) => {
         if (event === "SIGINT") sigintHandler = handler;
       });
 
@@ -147,7 +146,7 @@ describe("waitUntilInterruptedOrTimeout", function () {
       let sigintHandler: () => void;
 
       // Capture the event handlers when they're registered
-      processOnStub.callsFake((event: string, handler: () => void) => {
+      processOnStub.mockImplementation((event: string, handler: () => void) => {
         if (event === "SIGINT") sigintHandler = handler;
       });
 
@@ -175,7 +174,7 @@ describe("waitUntilInterruptedOrTimeout", function () {
       let sigtermHandler: () => void;
 
       // Capture the event handlers when they're registered
-      processOnStub.callsFake((event: string, handler: () => void) => {
+      processOnStub.mockImplementation((event: string, handler: () => void) => {
         if (event === "SIGTERM") sigtermHandler = handler;
       });
 
@@ -203,7 +202,7 @@ describe("waitUntilInterruptedOrTimeout", function () {
       let sigintHandler: () => void;
 
       // Capture the event handlers when they're registered
-      processOnStub.callsFake((event: string, handler: () => void) => {
+      processOnStub.mockImplementation((event: string, handler: () => void) => {
         if (event === "SIGINT") sigintHandler = handler;
       });
 
@@ -219,9 +218,15 @@ describe("waitUntilInterruptedOrTimeout", function () {
 
       expect(result).toBe("signal");
 
-      // Verify removeListener was called for both events using sinon assertions
-      expect(processRemoveListenerStub.calledWith("SIGINT")).toBe(true);
-      expect(processRemoveListenerStub.calledWith("SIGTERM")).toBe(true);
+      // Verify removeListener was called for both events using vitest assertions
+      expect(processRemoveListenerStub).toHaveBeenCalledWith(
+        "SIGINT",
+        expect.any(Function),
+      );
+      expect(processRemoveListenerStub).toHaveBeenCalledWith(
+        "SIGTERM",
+        expect.any(Function),
+      );
     });
 
     it("should clean up event listeners when resolving via timeout", async function () {
@@ -233,9 +238,15 @@ describe("waitUntilInterruptedOrTimeout", function () {
 
       expect(result).toBe("timeout");
 
-      // Verify removeListener was called for both events using sinon assertions
-      expect(processRemoveListenerStub.calledWith("SIGINT")).toBe(true);
-      expect(processRemoveListenerStub.calledWith("SIGTERM")).toBe(true);
+      // Verify removeListener was called for both events using vitest assertions
+      expect(processRemoveListenerStub).toHaveBeenCalledWith(
+        "SIGINT",
+        expect.any(Function),
+      );
+      expect(processRemoveListenerStub).toHaveBeenCalledWith(
+        "SIGTERM",
+        expect.any(Function),
+      );
     });
   });
 
@@ -286,7 +297,7 @@ describe("waitUntilInterruptedOrTimeout", function () {
       let sigintHandler: () => void;
 
       // Capture the event handlers when they're registered
-      processOnStub.callsFake((event: string, handler: () => void) => {
+      processOnStub.mockImplementation((event: string, handler: () => void) => {
         if (event === "SIGINT") sigintHandler = handler;
       });
 
@@ -314,7 +325,7 @@ describe("waitUntilInterruptedOrTimeout", function () {
       let resolveCount = 0;
 
       // Capture the event handlers when they're registered
-      processOnStub.callsFake((event: string, handler: () => void) => {
+      processOnStub.mockImplementation((event: string, handler: () => void) => {
         if (event === "SIGINT") sigintHandler = handler;
         if (event === "SIGTERM") sigtermHandler = handler;
       });
@@ -346,7 +357,7 @@ describe("waitUntilInterruptedOrTimeout", function () {
       let sigintHandler: () => void;
 
       // Capture the event handlers when they're registered
-      processOnStub.callsFake((event: string, handler: () => void) => {
+      processOnStub.mockImplementation((event: string, handler: () => void) => {
         if (event === "SIGINT") sigintHandler = handler;
       });
 

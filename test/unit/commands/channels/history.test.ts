@@ -1,9 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, vi, MockInstance } from "vitest";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
 import ChannelsHistory from "../../../../src/commands/channels/history.js";
-import { AblyBaseCommand } from "../../../../src/base-command.js";
+import { ConfigManager } from "../../../../src/services/config-manager.js";
 
 // Create a testable version of ChannelsHistory to expose protected methods
 class TestableChannelsHistory extends ChannelsHistory {
@@ -209,31 +208,39 @@ const mockHistoryResponse = {
 describe("ChannelsHistory", function () {
   let command: TestableChannelsHistory;
   let mockConfig: Config;
-  let logStub: sinon.SinonStub;
-  let errorStub: sinon.SinonStub;
-  let historyStub: sinon.SinonStub;
-  let sandbox: sinon.SinonSandbox;
-  let ensureAppAndKeyStub: sinon.SinonStub;
-  let getApiKeyMock: sinon.SinonStub; // To hold the mock for getApiKey
+  let logStub: MockInstance<TestableChannelsHistory["log"]>;
+  let errorStub: MockInstance<TestableChannelsHistory["error"]>;
+  let historyStub: MockInstance<TestableChannelsHistory["mockHistoryFn"]>;
+  let ensureAppAndKeyStub: MockInstance<
+    TestableChannelsHistory["ensureAppAndKey"]
+  >;
+  let getApiKeyMock: MockInstance<ConfigManager["getApiKey"]>;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
     mockConfig = {} as Config;
-
-    ensureAppAndKeyStub = sandbox
-      .stub(AblyBaseCommand.prototype, <any>"ensureAppAndKey")
-      .resolves();
 
     command = new TestableChannelsHistory([], mockConfig);
 
-    // Stub getApiKey on the command instance's configManager *after* creation
-    getApiKeyMock = sandbox
-      .stub((command as any).configManager, "getApiKey")
-      .resolves("default.testapikey");
+    ensureAppAndKeyStub = vi
+      .spyOn(command as any, "ensureAppAndKey")
+      .mockImplementation(async () => {
+        return {
+          apiKey: "abc",
+          appId: "def",
+        };
+      });
 
-    logStub = sandbox.stub(command, "log");
-    errorStub = sandbox.stub(command, "error");
-    historyStub = sandbox.stub().resolves(mockHistoryResponse);
+    // Stub getApiKey on the command instance's configManager *after* creation
+    getApiKeyMock = vi
+      .spyOn((command as any).configManager, "getApiKey")
+      .mockReturnValue("default.testapikey");
+
+    logStub = vi.spyOn(command, "log");
+    errorStub = vi
+      .spyOn(command, "error")
+      // @ts-expect-error TS123
+      .mockImplementation((_: string | Error, __: any): never => {});
+    historyStub = vi.fn().mockResolvedValue(mockHistoryResponse);
     command.setMockHistoryFn(historyStub);
     command.setParseResult({
       flags: { limit: 100, direction: "backwards" }, // Default includes no api-key flag
@@ -243,15 +250,11 @@ describe("ChannelsHistory", function () {
     });
   });
 
-  afterEach(function () {
-    sandbox.restore(); // This will restore all stubs created by the sandbox, including getApiKeyMock
-  });
-
   describe("run", function () {
     it("should retrieve channel history successfully", async function () {
       // Relies on default getApiKeyMock returning a key
       await command.run();
-      expect(historyStub.calledOnce).toBe(true);
+      expect(historyStub).toHaveBeenCalledOnce();
       // ... other assertions
     });
 
@@ -262,14 +265,14 @@ describe("ChannelsHistory", function () {
         argv: [],
         raw: [],
       });
-      getApiKeyMock.resolves("env.apikeyfromconfig");
+      getApiKeyMock.mockResolvedValue("env.apikeyfromconfig");
 
       await command.run();
 
-      expect(getApiKeyMock.calledOnce).toBe(true);
-      expect(historyStub.calledOnce).toBe(true);
+      expect(getApiKeyMock).toHaveBeenCalledOnce();
+      expect(historyStub).toHaveBeenCalledOnce();
       expect(
-        logStub.args.some(
+        logStub.mock.calls.some(
           (args) =>
             typeof args[0] === "string" && args[0].includes("Found 2 messages"),
         ),
@@ -284,27 +287,29 @@ describe("ChannelsHistory", function () {
         raw: [],
       });
       // Override the getApiKey mock for this specific test to return no key
-      getApiKeyMock.resolves();
+      getApiKeyMock = vi
+        .spyOn((command as any).configManager, "getApiKey")
+        .mockImplementation(async () => {});
 
       await command.run();
 
-      expect(getApiKeyMock.calledOnce).toBe(true);
-      expect(ensureAppAndKeyStub.calledOnce).toBe(true);
-      expect(historyStub.called).toBe(false);
+      expect(getApiKeyMock).toHaveBeenCalledOnce();
+      expect(ensureAppAndKeyStub).toHaveBeenCalledOnce();
+      expect(historyStub).not.toHaveBeenCalled();
     });
 
     it("should handle empty history response", async function () {
       // Configure the stub to return empty array
-      historyStub.resolves({ items: [] });
+      historyStub.mockResolvedValue({ items: [] });
 
       // Run the command
       await command.run();
 
       // Verify history was called
-      expect(historyStub.calledOnce).toBe(true);
+      expect(historyStub).toHaveBeenCalledOnce();
 
       // Verify that we log "No messages found"
-      const noMessagesLog = logStub.args.find(
+      const noMessagesLog = logStub.mock.calls.find(
         (args) =>
           typeof args[0] === "string" &&
           args[0] === "No messages found in the channel history.",
@@ -314,14 +319,14 @@ describe("ChannelsHistory", function () {
 
     it("should handle API errors", async function () {
       // Configure the stub to throw an error
-      historyStub.rejects(new Error("API error"));
+      historyStub.mockRejectedValue(new Error("API error"));
 
       // Run the command and expect it to error
       await command.run();
 
       // Verify the error was handled
-      expect(errorStub.calledOnce).toBe(true);
-      expect(errorStub.firstCall.args[0]).toContain(
+      expect(errorStub).toHaveBeenCalledOnce();
+      expect(errorStub.mock.calls[0][0]).toContain(
         "Error retrieving channel history",
       );
     });
@@ -339,8 +344,8 @@ describe("ChannelsHistory", function () {
       await command.run();
 
       // Verify history was called with the correct direction
-      expect(historyStub.calledOnce).toBe(true);
-      expect(historyStub.firstCall.args[0]).toEqual({
+      expect(historyStub).toHaveBeenCalledOnce();
+      expect(historyStub.mock.calls[0][0]).toEqual({
         direction: "forwards",
         limit: 100,
       });
@@ -368,8 +373,8 @@ describe("ChannelsHistory", function () {
       await command.run();
 
       // Verify history was called with the correct time range
-      expect(historyStub.calledOnce).toBe(true);
-      expect(historyStub.firstCall.args[0]).toEqual({
+      expect(historyStub).toHaveBeenCalledOnce();
+      expect(historyStub.mock.calls[0][0]).toEqual({
         direction: "backwards",
         limit: 100,
         start: new Date(start).getTime(),
@@ -390,10 +395,10 @@ describe("ChannelsHistory", function () {
       await command.run();
 
       // Verify the JSON output was generated
-      expect(logStub.calledOnce).toBe(true);
+      expect(logStub).toHaveBeenCalledOnce();
 
       // Parse the JSON that was output
-      const jsonOutput = JSON.parse(logStub.firstCall.args[0]);
+      const jsonOutput = JSON.parse(logStub.mock.calls[0][0]!);
 
       // Verify the structure of the JSON output
       expect(jsonOutput).toHaveProperty("messages");
@@ -416,10 +421,10 @@ describe("ChannelsHistory", function () {
       await command.run();
 
       // Verify the JSON output was generated
-      expect(logStub.calledOnce).toBe(true);
+      expect(logStub).toHaveBeenCalledOnce();
 
       // Parse the JSON that was output
-      const jsonOutput = JSON.parse(logStub.firstCall.args[0]);
+      const jsonOutput = JSON.parse(logStub.mock.calls[0][0]!);
 
       // Verify the structure of the JSON output
       expect(jsonOutput).toHaveProperty("messages");
@@ -443,10 +448,10 @@ describe("ChannelsHistory", function () {
 
       // In this case, we should NOT be outputting JSON since shouldOutputJson returns false
       // The UI format should be used instead
-      expect(logStub.called).toBe(true);
+      expect(logStub).toHaveBeenCalled();
 
       // Verify that we're not formatting as JSON (checking the first call which should be about found messages)
-      expect(logStub.firstCall.args[0]).toContain("Found");
+      expect(logStub.mock.calls[0][0]).toContain("Found");
     });
 
     it("should output JSON when requested with error and shouldOutputJson set to true", async function () {
@@ -460,10 +465,10 @@ describe("ChannelsHistory", function () {
       await command.run();
 
       // Verify the JSON output was generated
-      expect(logStub.calledOnce).toBe(true);
+      expect(logStub).toHaveBeenCalledOnce();
 
       // Parse the JSON that was output
-      const jsonOutput = JSON.parse(logStub.firstCall.args[0]);
+      const jsonOutput = JSON.parse(logStub.mock.calls[0][0]!);
 
       // Verify the structure of the JSON output
       expect(jsonOutput).toHaveProperty("messages");

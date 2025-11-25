@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import ConnectionsTest from "../../../../src/commands/connections/test.js";
 import * as Ably from "ably";
@@ -101,20 +100,18 @@ class TestableConnectionsTest extends ConnectionsTest {
 }
 
 describe("ConnectionsTest", function () {
-  let sandbox: sinon.SinonSandbox;
   let command: TestableConnectionsTest;
   let mockConfig: Config;
   let originalConsoleLog: typeof console.log;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    mockConfig = { runHook: sinon.stub() } as unknown as Config;
+    mockConfig = { runHook: vi.fn() } as unknown as Config;
     command = new TestableConnectionsTest([], mockConfig);
 
     // Mock config manager to prevent "No API key found" errors
-    sandbox
-      .stub(command.getConfigManager(), "getApiKey")
-      .resolves("dummy-key:secret");
+    vi.spyOn(command.getConfigManager(), "getApiKey").mockResolvedValue(
+      "dummy-key:secret",
+    );
 
     // Mock console.log to capture any direct console output
     originalConsoleLog = console.log;
@@ -132,7 +129,6 @@ describe("ConnectionsTest", function () {
   afterEach(function () {
     // Restore console.log
     console.log = originalConsoleLog;
-    sandbox.restore();
   });
 
   it("should parse flags correctly", async function () {

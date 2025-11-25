@@ -1,35 +1,52 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import Interactive from "../../../src/commands/interactive.js";
 import { Config } from "@oclif/core";
 import chalk from "chalk";
 // import * as readline from 'node:readline'; // Unused
 
 describe("Interactive Command - Enhanced Features (Simplified)", () => {
-  let sandbox: sinon.SinonSandbox;
   let interactiveCommand: Interactive;
   let config: Config;
   let stubs: any = {};
 
   beforeEach(async () => {
-    sandbox = sinon.createSandbox();
-
     // Mock config
     config = {
       root: "/test/root",
       version: "1.0.0",
       commands: new Map(),
-      runCommand: sandbox.stub().resolves(),
-      findCommand: sandbox.stub(),
+      runCommand: vi.fn().mockImplementation(async () => {}),
+      findCommand: vi.fn(),
     } as any;
 
     // Create command instance
     interactiveCommand = new Interactive([], config);
 
+    vi.spyOn(
+      interactiveCommand as any,
+      "historyManager",
+      "get",
+    ).mockReturnValue({
+      saveCommand: vi.fn().mockImplementation(async () => {}),
+    });
+
+    const mockReadline = {
+      on: vi.fn(),
+      prompt: vi.fn(),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      close: vi.fn(),
+    };
+
+    // Setup readline interface
+    vi.spyOn(interactiveCommand as any, "rl", "get").mockReturnValue(
+      mockReadline,
+    );
+
     // Setup default stubs
-    stubs.consoleLog = sandbox.stub(console, "log");
-    stubs.consoleError = sandbox.stub(console, "error");
-    stubs.processExit = sandbox.stub(process, "exit");
+    stubs.consoleLog = vi.spyOn(console, "log");
+    stubs.consoleError = vi.spyOn(console, "error");
+    stubs.processExit = vi.spyOn(process, "exit");
 
     // Mock environment variables
     process.env.ABLY_WRAPPER_MODE = "1"; // Always set wrapper mode for simpler tests
@@ -37,7 +54,6 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
   });
 
   afterEach(() => {
-    sandbox.restore();
     delete process.env.ABLY_INTERACTIVE_MODE;
     delete process.env.ABLY_WRAPPER_MODE;
     delete process.env.ABLY_SUPPRESS_WELCOME;
@@ -77,11 +93,9 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       );
 
       parseCommand('echo "unclosed');
-      expect(
-        stubs.consoleError.calledWith(
-          chalk.yellow("Warning: Unclosed double quote in command"),
-        ),
-      ).toBe(true);
+      expect(stubs.consoleError).toHaveBeenCalledWith(
+        chalk.yellow("Warning: Unclosed double quote in command"),
+      );
     });
 
     it("should handle complex mixed quoting", () => {
@@ -123,18 +137,17 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
     beforeEach(() => {
       // Setup readline mock
       const mockReadline = {
-        on: sandbox.stub(),
-        prompt: sandbox.stub(),
-        pause: sandbox.stub(),
-        resume: sandbox.stub(),
-        close: sandbox.stub(),
+        on: vi.fn(),
+        prompt: vi.fn(),
+        pause: vi.fn(),
+        resume: vi.fn(),
+        close: vi.fn(),
       };
 
       // Setup readline interface
-      sandbox.stub(interactiveCommand as any, "rl").value(mockReadline);
-      sandbox.stub(interactiveCommand as any, "historyManager").value({
-        saveCommand: sandbox.stub().resolves(),
-      });
+      vi.spyOn(interactiveCommand as any, "rl", "get").mockReturnValue(
+        mockReadline,
+      );
     });
 
     // Removed test: The interactive command no longer implements command timeouts
@@ -150,12 +163,15 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
 
     it("should reset runningCommand state after error", async () => {
       // Mock parseCommand
-      sandbox
-        .stub(interactiveCommand as any, "parseCommand")
-        .returns(["error", "command"]);
+      vi.spyOn(interactiveCommand as any, "parseCommand").mockReturnValue([
+        "error",
+        "command",
+      ]);
 
       // Mock runCommand to reject
-      config.runCommand = sandbox.stub().rejects(new Error("Command failed"));
+      config.runCommand = vi
+        .fn()
+        .mockRejectedValue(new Error("Command failed"));
 
       // Run command
       const handleCommand = (interactiveCommand as any).handleCommand.bind(
@@ -234,24 +250,25 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
     beforeEach(() => {
       // Setup readline mock
       const mockReadline = {
-        pause: sandbox.stub(),
-        resume: sandbox.stub(),
-        prompt: sandbox.stub(),
+        pause: vi.fn(),
+        resume: vi.fn(),
+        prompt: vi.fn(),
       };
 
-      sandbox.stub(interactiveCommand as any, "rl").value(mockReadline);
-      sandbox.stub(interactiveCommand as any, "historyManager").value({
-        saveCommand: sandbox.stub().resolves(),
-      });
+      vi.spyOn(interactiveCommand as any, "rl", "get").mockReturnValue(
+        mockReadline,
+      );
     });
 
     it("should set runningCommand to true when command starts", async () => {
       // Mock parseCommand
-      sandbox.stub(interactiveCommand as any, "parseCommand").returns(["test"]);
+      vi.spyOn(interactiveCommand as any, "parseCommand").mockReturnValue([
+        "test",
+      ]);
 
       // Start tracking state changes
       let stateWhenCommandRan = false;
-      config.runCommand = sandbox.stub().callsFake(() => {
+      config.runCommand = vi.fn().mockImplementation(() => {
         stateWhenCommandRan = (interactiveCommand as any).runningCommand;
         return Promise.resolve();
       });
@@ -272,10 +289,12 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       const rl = (interactiveCommand as any).rl;
 
       // Mock parseCommand
-      sandbox.stub(interactiveCommand as any, "parseCommand").returns(["test"]);
+      vi.spyOn(interactiveCommand as any, "parseCommand").mockReturnValue([
+        "test",
+      ]);
 
       // Add a small delay to simulate async command completion
-      const clock = sandbox.useFakeTimers();
+      vi.useFakeTimers();
 
       // Run command
       const handleCommand = (interactiveCommand as any).handleCommand.bind(
@@ -287,14 +306,17 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
       await commandPromise;
 
       // Advance time for the finally block setTimeout
-      await clock.tickAsync(100);
+      await vi.advanceTimersByTimeAsync(100);
 
       // Verify readline was paused and resumed
-      expect(rl.pause.called).toBe(true);
-      expect(rl.resume.called).toBe(true);
-      expect(rl.pause.calledBefore(rl.resume)).toBe(true);
+      expect(rl.pause).toHaveBeenCalled();
+      expect(rl.resume).toHaveBeenCalled();
+      // Verify pause was called before resume
+      expect(rl.pause.mock.invocationCallOrder[0]).toBeLessThan(
+        rl.resume.mock.invocationCallOrder[0],
+      );
 
-      clock.restore();
+      vi.useRealTimers();
     });
   });
 });

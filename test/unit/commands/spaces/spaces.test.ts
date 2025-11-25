@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
 
@@ -45,9 +44,9 @@ class TestableSpacesCommand {
   }
 
   public interactiveHelper = {
-    confirm: sinon.stub().resolves(true),
-    promptForText: sinon.stub().resolves("fake-input"),
-    promptToSelect: sinon.stub().resolves("fake-selection"),
+    confirm: vi.fn().mockResolvedValue(true),
+    promptForText: vi.fn().mockResolvedValue("fake-input"),
+    promptToSelect: vi.fn().mockResolvedValue("fake-selection"),
   } as any;
 }
 
@@ -271,49 +270,43 @@ class TestableSpacesCursorsSet extends SpacesCursorsSet {
 }
 
 describe("spaces commands", function () {
-  let sandbox: sinon.SinonSandbox;
   let mockConfig: Config;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    mockConfig = { runHook: sinon.stub() } as unknown as Config;
-  });
-
-  afterEach(function () {
-    sandbox.restore();
+    mockConfig = { runHook: vi.fn() } as unknown as Config;
   });
 
   describe("spaces members enter", function () {
     let command: TestableSpacesMembersEnter;
     let mockMembers: any;
-    let enterStub: sinon.SinonStub;
-    let subscribeStub: sinon.SinonStub;
+    let enterStub: ReturnType<typeof vi.fn>;
+    let subscribeStub: ReturnType<typeof vi.fn>;
 
     beforeEach(function () {
       command = new TestableSpacesMembersEnter([], mockConfig);
 
-      enterStub = sandbox.stub().resolves();
-      subscribeStub = sandbox.stub();
+      enterStub = vi.fn().mockImplementation(async () => {});
+      subscribeStub = vi.fn();
       mockMembers = {
         enter: enterStub,
         subscribe: subscribeStub,
-        unsubscribe: sandbox.stub().resolves(),
+        unsubscribe: vi.fn().mockImplementation(async () => {}),
       };
 
       command.mockSpace = {
         enter: enterStub,
-        leave: sandbox.stub().resolves(),
+        leave: vi.fn().mockImplementation(async () => {}),
         members: mockMembers,
       };
 
       command.mockRealtimeClient = {
         connection: {
-          on: sandbox.stub(),
-          once: sandbox.stub(),
+          on: vi.fn(),
+          once: vi.fn(),
           state: "connected",
           id: "test-connection-id",
         },
-        close: sandbox.stub(),
+        close: vi.fn(),
       };
 
       command.mockSpacesClient = {};
@@ -327,7 +320,7 @@ describe("spaces commands", function () {
     });
 
     it("should enter space and subscribe to member updates", async function () {
-      subscribeStub.callsFake((eventType, callback) => {
+      subscribeStub.mockImplementation((eventType, callback) => {
         // Simulate receiving a member update
         setTimeout(() => {
           callback({
@@ -346,8 +339,11 @@ describe("spaces commands", function () {
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(enterStub.calledOnce).toBe(true);
-      expect(subscribeStub.calledWith("update")).toBe(true);
+      expect(enterStub).toHaveBeenCalledOnce();
+      expect(subscribeStub).toHaveBeenCalledWith(
+        "update",
+        expect.any(Function),
+      );
 
       command.mockRealtimeClient.close();
     });
@@ -360,14 +356,14 @@ describe("spaces commands", function () {
         raw: [],
       });
 
-      subscribeStub.resolves();
+      subscribeStub.mockImplementation(async () => {});
 
       command.run();
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(enterStub.calledOnce).toBe(true);
-      const profileData = enterStub.getCall(0).args[0];
+      expect(enterStub).toHaveBeenCalledOnce();
+      const profileData = enterStub.mock.calls[0][0];
       expect(profileData).toEqual({ name: "Test User", role: "admin" });
 
       command.mockRealtimeClient.close();
@@ -377,16 +373,16 @@ describe("spaces commands", function () {
   describe("spaces members subscribe", function () {
     let command: TestableSpacesMembersSubscribe;
     let mockMembers: any;
-    let subscribeStub: sinon.SinonStub;
+    let subscribeStub: ReturnType<typeof vi.fn>;
 
     beforeEach(function () {
       command = new TestableSpacesMembersSubscribe([], mockConfig);
 
-      subscribeStub = sandbox.stub();
+      subscribeStub = vi.fn();
       mockMembers = {
         subscribe: subscribeStub,
-        unsubscribe: sandbox.stub().resolves(),
-        getAll: sandbox.stub().resolves([
+        unsubscribe: vi.fn().mockImplementation(async () => {}),
+        getAll: vi.fn().mockResolvedValue([
           {
             clientId: "abc",
             connectionId: "def",
@@ -398,16 +394,16 @@ describe("spaces commands", function () {
 
       command.mockSpace = {
         members: mockMembers,
-        enter: sandbox.stub().resolves(),
+        enter: vi.fn().mockImplementation(async () => {}),
       };
 
       command.mockRealtimeClient = {
         connection: {
-          on: sandbox.stub(),
-          once: sandbox.stub(),
+          on: vi.fn(),
+          once: vi.fn(),
           state: "connected",
         },
-        close: sandbox.stub(),
+        close: vi.fn(),
         auth: {
           clientId: "foo",
         },
@@ -424,7 +420,7 @@ describe("spaces commands", function () {
     });
 
     it("should subscribe to member updates", async function () {
-      subscribeStub.callsFake((eventName, callback) => {
+      subscribeStub.mockImplementation((eventName, callback) => {
         setTimeout(() => {
           callback({
             clientId: "client-123",
@@ -441,7 +437,7 @@ describe("spaces commands", function () {
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(subscribeStub.calledOnce).toBe(true);
+      expect(subscribeStub).toHaveBeenCalledOnce();
 
       command.mockRealtimeClient.close();
     });
@@ -450,31 +446,31 @@ describe("spaces commands", function () {
   describe("spaces locations set", function () {
     let command: TestableSpacesLocationsSet;
     let mockLocations: any;
-    let setStub: sinon.SinonStub;
+    let setStub: ReturnType<typeof vi.fn>;
 
     beforeEach(function () {
       command = new TestableSpacesLocationsSet([], mockConfig);
 
-      setStub = sandbox.stub().resolves();
+      setStub = vi.fn().mockImplementation(async () => {});
       mockLocations = {
         set: setStub,
-        subscribe: sandbox.stub(),
+        subscribe: vi.fn(),
       };
 
       command.mockSpace = {
-        enter: sandbox.stub().resolves(),
+        enter: vi.fn().mockImplementation(async () => {}),
         locations: mockLocations,
       };
 
       command.mockRealtimeClient = {
         connection: {
-          on: sandbox.stub(),
+          on: vi.fn(),
           state: "connected",
         },
         auth: {
           clientId: "test-client-id",
         },
-        close: sandbox.stub(),
+        close: vi.fn(),
       };
 
       command.mockSpacesClient = {};
@@ -499,8 +495,8 @@ describe("spaces commands", function () {
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(setStub.calledOnce).toBe(true);
-      const locationData = setStub.getCall(0).args[0];
+      expect(setStub).toHaveBeenCalledOnce();
+      const locationData = setStub.mock.calls[0][0];
       expect(locationData).toEqual({ x: 100, y: 200, page: "dashboard" });
     });
   });
@@ -508,12 +504,12 @@ describe("spaces commands", function () {
   describe("spaces locks acquire", function () {
     let command: TestableSpacesLocksAcquire;
     let mockLocks: any;
-    let acquireStub: sinon.SinonStub;
+    let acquireStub: ReturnType<typeof vi.fn>;
 
     beforeEach(function () {
       command = new TestableSpacesLocksAcquire([], mockConfig);
 
-      acquireStub = sandbox.stub().resolves({
+      acquireStub = vi.fn().mockResolvedValue({
         id: "test-lock",
         member: { clientId: "test-client" },
         timestamp: Date.now(),
@@ -523,16 +519,16 @@ describe("spaces commands", function () {
       };
 
       command.mockSpace = {
-        enter: sandbox.stub().resolves(),
+        enter: vi.fn().mockImplementation(async () => {}),
         locks: mockLocks,
       };
 
       command.mockRealtimeClient = {
         connection: {
-          on: sandbox.stub(),
+          on: vi.fn(),
           state: "connected",
         },
-        close: sandbox.stub(),
+        close: vi.fn(),
         auth: {
           clientId: "foo",
         },
@@ -553,8 +549,8 @@ describe("spaces commands", function () {
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(acquireStub.calledOnce).toBe(true);
-      expect(acquireStub.calledWith("test-lock")).toBe(true);
+      expect(acquireStub).toHaveBeenCalledOnce();
+      expect(acquireStub).toHaveBeenCalledWith("test-lock", undefined);
     });
 
     it("should handle lock attributes", async function () {
@@ -569,12 +565,12 @@ describe("spaces commands", function () {
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(acquireStub.calledOnce).toBe(true);
-      const lockCall = acquireStub.getCall(0);
-      expect(lockCall.args[0]).toBe("test-lock");
+      expect(acquireStub).toHaveBeenCalledOnce();
+      const lockCallArgs = acquireStub.mock.calls[0];
+      expect(lockCallArgs[0]).toBe("test-lock");
       // Attributes would typically be passed as second argument
-      if (lockCall.args[1]) {
-        expect(lockCall.args[1]).toEqual({
+      if (lockCallArgs[1]) {
+        expect(lockCallArgs[1]).toEqual({
           priority: "high",
           timeout: 5000,
         });
@@ -585,27 +581,27 @@ describe("spaces commands", function () {
   describe("spaces cursors set", function () {
     let command: TestableSpacesCursorsSet;
     let mockCursors: any;
-    let setStub: sinon.SinonStub;
+    let setStub: ReturnType<typeof vi.fn>;
 
     beforeEach(function () {
       command = new TestableSpacesCursorsSet([], mockConfig);
 
-      setStub = sandbox.stub().resolves();
+      setStub = vi.fn().mockImplementation(async () => {});
       mockCursors = {
         set: setStub,
       };
 
       command.mockSpace = {
         cursors: mockCursors,
-        enter: sandbox.stub().resolves(),
+        enter: vi.fn().mockImplementation(async () => {}),
       };
 
       command.mockRealtimeClient = {
         connection: {
-          on: sandbox.stub(),
+          on: vi.fn(),
           state: "connected",
         },
-        close: sandbox.stub(),
+        close: vi.fn(),
         auth: {
           clientId: "foo",
         },
@@ -633,8 +629,8 @@ describe("spaces commands", function () {
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(setStub.calledOnce).toBe(true);
-      const cursorData = setStub.getCall(0).args[0];
+      expect(setStub).toHaveBeenCalledOnce();
+      const cursorData = setStub.mock.calls[0][0];
       expect(cursorData).toEqual({ position: { x: 150, y: 250 } });
     });
 
@@ -652,9 +648,9 @@ describe("spaces commands", function () {
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(setStub.calledOnce).toBe(true);
-      const cursorCall = setStub.getCall(0);
-      expect(cursorCall.args[0]).toEqual({
+      expect(setStub).toHaveBeenCalledOnce();
+      const cursorCallArgs = setStub.mock.calls[0];
+      expect(cursorCallArgs[0]).toEqual({
         position: { x: 150, y: 250 },
         data: { color: "red", size: "large" },
       });

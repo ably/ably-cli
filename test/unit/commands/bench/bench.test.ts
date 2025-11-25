@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
 
@@ -31,9 +30,9 @@ class TestableBenchPublisher extends BenchPublisher {
 
   // Mock interactive helper for non-interactive unit testing
   protected override interactiveHelper = {
-    confirm: sinon.stub().resolves(true),
-    promptForText: sinon.stub().resolves("fake-input"),
-    promptToSelect: sinon.stub().resolves("fake-selection"),
+    confirm: vi.fn().mockResolvedValue(true),
+    promptForText: vi.fn().mockResolvedValue("fake-input"),
+    promptToSelect: vi.fn().mockResolvedValue("fake-selection"),
   } as any;
 
   // Override to suppress console clearing escape sequences during tests
@@ -44,39 +43,37 @@ class TestableBenchPublisher extends BenchPublisher {
 }
 
 describe("bench publisher control envelopes", function () {
-  let sandbox: sinon.SinonSandbox;
   let command: TestableBenchPublisher;
   let mockConfig: Config;
-  let publishStub: sinon.SinonStub;
+  let publishStub: ReturnType<typeof vi.fn>;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    mockConfig = { runHook: sinon.stub() } as unknown as Config;
+    mockConfig = { runHook: vi.fn() } as unknown as Config;
     command = new TestableBenchPublisher([], mockConfig);
 
-    publishStub = sandbox.stub().resolves();
+    publishStub = vi.fn().mockImplementation(async () => {});
 
     // Minimal mock channel
     const mockChannel = {
       publish: publishStub,
-      subscribe: sandbox.stub(),
+      subscribe: vi.fn(),
       presence: {
-        enter: sandbox.stub().resolves(),
-        get: sandbox.stub().resolves([]),
-        subscribe: sandbox.stub(),
-        unsubscribe: sandbox.stub(),
+        enter: vi.fn().mockImplementation(async () => {}),
+        get: vi.fn().mockResolvedValue([]),
+        subscribe: vi.fn(),
+        unsubscribe: vi.fn(),
       },
-      on: sandbox.stub(),
+      on: vi.fn(),
     };
 
     command.mockRealtimeClient = {
-      channels: { get: sandbox.stub().returns(mockChannel) },
-      connection: { on: sandbox.stub(), state: "connected" },
-      close: sandbox.stub(),
+      channels: { get: vi.fn().mockReturnValue(mockChannel) },
+      connection: { on: vi.fn(), state: "connected" },
+      close: vi.fn(),
     };
 
     // Speed up test by stubbing out internal delay utility (3000 ms wait)
-    sandbox.stub(command as any, "delay").resolves();
+    vi.spyOn(command as any, "delay").mockImplementation(async () => {});
 
     command.setParseResult({
       flags: {
@@ -92,15 +89,11 @@ describe("bench publisher control envelopes", function () {
     });
   });
 
-  afterEach(function () {
-    sandbox.restore();
-  });
-
   it("should publish start, message and end control envelopes in order", async function () {
     await command.run();
 
     // Extract the data argument from publish calls
-    const publishedPayloads = publishStub.getCalls().map((c) => c.args[1]);
+    const publishedPayloads = publishStub.mock.calls.map((c) => c[1]);
 
     expect(publishedPayloads[0]).toHaveProperty("type", "start");
 

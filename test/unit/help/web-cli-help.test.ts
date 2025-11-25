@@ -1,76 +1,81 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  MockInstance,
+} from "vitest";
 import { Config } from "@oclif/core";
 import stripAnsi from "strip-ansi";
 
 import CustomHelp from "../../../src/help.js";
 import { ConfigManager } from "../../../src/services/config-manager.js";
 
+function createMockConfig(commands: any[] = [], topics: any[] = []): Config {
+  return {
+    bin: "ably",
+    root: "",
+    dataDir: "",
+    configDir: "",
+    cacheDir: "",
+    name: "@ably/cli",
+    version: "0.8.1",
+    pjson: {} as any,
+    channel: "stable",
+    commands: commands,
+    topics: topics,
+    findCommand: vi.fn().mockReturnValue(null),
+    findTopic: vi.fn().mockReturnValue(null),
+    runHook: vi.fn(),
+    runCommand: vi.fn(),
+    s3Url: "",
+    s3Key: vi.fn(),
+    valid: true,
+    plugins: [],
+    binPath: "",
+    userAgent: "",
+    shellEnabled: false,
+    topicSeparator: " ",
+    versionAdd: vi.fn(),
+    scopedEnvVar: vi.fn(),
+    scopedEnvVarTrue: vi.fn(),
+    scopedEnvVarKey: vi.fn(),
+  } as unknown as Config;
+}
+
 describe("CLI Help", function () {
   describe("Web CLI Help", function () {
-    let sandbox: sinon.SinonSandbox;
     let originalEnv: NodeJS.ProcessEnv;
-    let consoleLogStub: sinon.SinonStub;
-    let _processExitStub: sinon.SinonStub;
-    let configManagerStub: sinon.SinonStubbedInstance<ConfigManager>;
+    let consoleLogStub: MockInstance<typeof console.log>;
+    let _processExitStub: MockInstance<NodeJS.Process["exit"]>;
+    let configManagerStub: Partial<ConfigManager>;
 
     beforeEach(function () {
-      sandbox = sinon.createSandbox();
       originalEnv = { ...process.env };
 
       // Stub console.log to capture output
-      consoleLogStub = sandbox.stub(console, "log");
+      consoleLogStub = vi.spyOn(console, "log").mockImplementation(vi.fn());
 
       // Stub process.exit to prevent test runner from exiting
-      _processExitStub = sandbox.stub(process, "exit");
+      _processExitStub = vi
+        .spyOn(process, "exit")
+        // @ts-expect-error TS-2534
+        .mockImplementation((): never => {});
 
       // Stub ConfigManager
-      configManagerStub = sandbox.createStubInstance(ConfigManager);
-      configManagerStub.getAccessToken.returns(undefined as any);
+      configManagerStub = {
+        getAccessToken: vi.fn(),
+      } as Partial<ConfigManager>;
 
       // Enable Web CLI mode
       process.env.ABLY_WEB_CLI_MODE = "true";
     });
 
     afterEach(function () {
-      sandbox.restore();
       process.env = originalEnv;
     });
-
-    function createMockConfig(
-      commands: any[] = [],
-      topics: any[] = [],
-    ): Config {
-      return {
-        bin: "ably",
-        root: "",
-        dataDir: "",
-        configDir: "",
-        cacheDir: "",
-        name: "@ably/cli",
-        version: "0.8.1",
-        pjson: {} as any,
-        channel: "stable",
-        commands: commands,
-        topics: topics,
-        findCommand: sandbox.stub().returns(null),
-        findTopic: sandbox.stub().returns(null),
-        runHook: sandbox.stub(),
-        runCommand: sandbox.stub(),
-        s3Url: "",
-        s3Key: sandbox.stub(),
-        valid: true,
-        plugins: [],
-        binPath: "",
-        userAgent: "",
-        shellEnabled: false,
-        topicSeparator: " ",
-        versionAdd: sandbox.stub(),
-        scopedEnvVar: sandbox.stub(),
-        scopedEnvVarTrue: sandbox.stub(),
-        scopedEnvVarKey: sandbox.stub(),
-      } as unknown as Config;
-    }
 
     describe("formatRoot in Web CLI mode", function () {
       it("should show simplified help when no --help flag is provided", async function () {
@@ -85,8 +90,8 @@ describe("CLI Help", function () {
 
         await help.showRootHelp();
 
-        expect(consoleLogStub.calledOnce).toBe(true);
-        const output = stripAnsi(consoleLogStub.firstCall.args[0]);
+        expect(consoleLogStub).toHaveBeenCalledOnce();
+        const output = stripAnsi(consoleLogStub.mock.calls[0][0]);
 
         // Should show COMMON COMMANDS section
         expect(output).toContain("COMMON COMMANDS");
@@ -141,8 +146,8 @@ describe("CLI Help", function () {
 
         await help.showRootHelp();
 
-        expect(consoleLogStub.calledOnce).toBe(true);
-        const output = stripAnsi(consoleLogStub.firstCall.args[0]);
+        expect(consoleLogStub).toHaveBeenCalledOnce();
+        const output = stripAnsi(consoleLogStub.mock.calls[0][0]);
 
         // Should show browser-based CLI title
         expect(output).toContain(
@@ -188,8 +193,8 @@ describe("CLI Help", function () {
 
         await help.showRootHelp();
 
-        expect(consoleLogStub.calledOnce).toBe(true);
-        const output = stripAnsi(consoleLogStub.firstCall.args[0]);
+        expect(consoleLogStub).toHaveBeenCalledOnce();
+        const output = stripAnsi(consoleLogStub.mock.calls[0][0]);
 
         // Should show COMMANDS section
         expect(output).toContain("COMMANDS");
@@ -220,8 +225,8 @@ describe("CLI Help", function () {
 
         await help.showRootHelp();
 
-        expect(consoleLogStub.calledOnce).toBe(true);
-        const output = stripAnsi(consoleLogStub.firstCall.args[0]);
+        expect(consoleLogStub).toHaveBeenCalledOnce();
+        const output = stripAnsi(consoleLogStub.mock.calls[0][0]);
 
         // Should show allowed command
         expect(output).toContain("channels");
@@ -246,8 +251,8 @@ describe("CLI Help", function () {
 
         await help.showRootHelp();
 
-        expect(consoleLogStub.calledOnce).toBe(true);
-        const output = stripAnsi(consoleLogStub.firstCall.args[0]);
+        expect(consoleLogStub).toHaveBeenCalledOnce();
+        const output = stripAnsi(consoleLogStub.mock.calls[0][0]);
 
         // Should show COMMON COMMANDS section
         expect(output).toContain("COMMON COMMANDS");
@@ -277,14 +282,12 @@ describe("CLI Help", function () {
         (help as any).configManager = configManagerStub;
 
         // Stub super.formatCommand to return a dummy help text
-        sandbox
-          .stub(
-            Object.getPrototypeOf(Object.getPrototypeOf(help)),
-            "formatCommand",
-          )
-          .returns(
-            "USAGE\n  $ ably accounts login\n\nDESCRIPTION\n  Login to your account",
-          );
+        vi.spyOn(
+          Object.getPrototypeOf(Object.getPrototypeOf(help)),
+          "formatCommand",
+        ).mockReturnValue(
+          "USAGE\n  $ ably accounts login\n\nDESCRIPTION\n  Login to your account",
+        );
 
         const restrictedCommand = {
           id: "accounts:login",
@@ -316,20 +319,15 @@ describe("CLI Help", function () {
         };
 
         // Stub super.formatCommand for this specific test
-        const superStub = sandbox
-          .stub(
-            Object.getPrototypeOf(Object.getPrototypeOf(help)),
-            "formatCommand",
-          )
-          .returns("Normal command help");
+        vi.spyOn(
+          Object.getPrototypeOf(Object.getPrototypeOf(help)),
+          "formatCommand",
+        ).mockReturnValue("Normal command help");
 
         const output = help.formatCommand(allowedCommand as any);
 
         expect(output).toBe("Normal command help");
         expect(output).not.toContain("not available in the web CLI mode");
-
-        // Restore the stub
-        superStub.restore();
       });
     });
 
@@ -361,59 +359,27 @@ describe("CLI Help", function () {
   });
 
   describe("Standard CLI Help (non-Web mode)", function () {
-    let sandbox: sinon.SinonSandbox;
     let originalEnv: NodeJS.ProcessEnv;
-    let consoleLogStub: sinon.SinonStub;
-    let _processExitStub: sinon.SinonStub;
-
-    function createMockConfig(
-      commands: any[] = [],
-      topics: any[] = [],
-    ): Config {
-      return {
-        bin: "ably",
-        root: "",
-        dataDir: "",
-        configDir: "",
-        cacheDir: "",
-        name: "@ably/cli",
-        version: "0.8.1",
-        pjson: {} as any,
-        channel: "stable",
-        commands: commands,
-        topics: topics,
-        findCommand: sandbox.stub().returns(null),
-        findTopic: sandbox.stub().returns(null),
-        runHook: sandbox.stub(),
-        runCommand: sandbox.stub(),
-        s3Url: "",
-        s3Key: sandbox.stub(),
-        valid: true,
-        plugins: [],
-        binPath: "",
-        userAgent: "",
-        shellEnabled: false,
-        topicSeparator: " ",
-        versionAdd: sandbox.stub(),
-        scopedEnvVar: sandbox.stub(),
-        scopedEnvVarTrue: sandbox.stub(),
-        scopedEnvVarKey: sandbox.stub(),
-      } as unknown as Config;
-    }
+    let consoleLogStub: MockInstance<typeof console.log>;
+    let _processExitStub: MockInstance<NodeJS.Process["exit"]>;
 
     beforeEach(function () {
-      sandbox = sinon.createSandbox();
       originalEnv = { ...process.env };
 
-      consoleLogStub = sandbox.stub(console, "log");
-      _processExitStub = sandbox.stub(process, "exit");
+      // Stub console.log to capture output
+      consoleLogStub = vi.spyOn(console, "log").mockImplementation(vi.fn());
+
+      // Stub process.exit to prevent test runner from exiting
+      _processExitStub = vi
+        .spyOn(process, "exit")
+        // @ts-expect-error TS-2534
+        .mockImplementation((): never => {});
 
       // Disable Web CLI mode
       process.env.ABLY_WEB_CLI_MODE = "false";
     });
 
     afterEach(function () {
-      sandbox.restore();
       process.env = originalEnv;
     });
 
@@ -433,15 +399,15 @@ describe("CLI Help", function () {
       const help = new CustomHelp(mockConfig);
 
       // Stub the configManager property
-      const standardConfigManagerStub =
-        sandbox.createStubInstance(ConfigManager);
-      standardConfigManagerStub.getAccessToken.returns(undefined as any);
+      const standardConfigManagerStub = {
+        getAccessToken: vi.fn(),
+      } as Partial<ConfigManager>;
       (help as any).configManager = standardConfigManagerStub;
 
       await help.showRootHelp();
 
-      expect(consoleLogStub.calledOnce).toBe(true);
-      const output = stripAnsi(consoleLogStub.firstCall.args[0]);
+      expect(consoleLogStub).toHaveBeenCalledOnce();
+      const output = stripAnsi(consoleLogStub.mock.calls[0][0]);
 
       // Should show standard CLI title
       expect(output).toContain("ably.com CLI for Pub/Sub, Chat and Spaces");

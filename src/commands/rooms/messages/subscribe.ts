@@ -110,7 +110,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         "gettingRoom",
         `Getting room handle for ${this.roomName}`,
       );
-      const room = await this.chatClient.rooms.get(this.roomName, {});
+      const room = await this.chatClient.rooms.get(this.roomName);
       this.logCliEvent(
         flags,
         "room",

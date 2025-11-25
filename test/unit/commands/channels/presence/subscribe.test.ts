@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import ChannelsPresenceSubscribe from "../../../../../src/commands/channels/presence/subscribe.js";
 import * as Ably from "ably";
@@ -31,10 +30,6 @@ class TestableChannelsPresenceSubscribe extends ChannelsPresenceSubscribe {
 
   public setParseResult(result: any) {
     this._parseResult = result;
-    // Ensure argv reflects args.channel for run() method logic
-    if (result.args?.channel) {
-      this._parseResult.argv = [result.args.channel];
-    }
   }
 
   // Override client creation to return a controlled mock
@@ -47,36 +42,36 @@ class TestableChannelsPresenceSubscribe extends ChannelsPresenceSubscribe {
     if (!this.mockClient || !this.mockClient.channels) {
       this.debug("Initializing mockClient inside createAblyRealtimeClient");
       const mockPresenceInstance = {
-        get: sinon.stub().resolves([]),
-        subscribe: sinon.stub(),
-        unsubscribe: sinon.stub(),
-        enter: sinon.stub().resolves(),
-        leave: sinon.stub().resolves(),
+        get: vi.fn().mockResolvedValue([]),
+        subscribe: vi.fn(),
+        unsubscribe: vi.fn(),
+        enter: vi.fn().mockImplementation(async () => {}),
+        leave: vi.fn().mockImplementation(async () => {}),
       };
       const mockChannelInstance = {
         presence: mockPresenceInstance,
-        subscribe: sinon.stub(),
-        unsubscribe: sinon.stub(),
-        attach: sinon.stub().resolves(),
-        detach: sinon.stub().resolves(),
-        on: sinon.stub(),
+        subscribe: vi.fn(),
+        unsubscribe: vi.fn(),
+        attach: vi.fn().mockImplementation(async () => {}),
+        detach: vi.fn().mockImplementation(async () => {}),
+        on: vi.fn(),
       };
       this.mockClient = {
         channels: {
-          get: sinon.stub().returns(mockChannelInstance),
-          release: sinon.stub(),
+          get: vi.fn().mockReturnValue(mockChannelInstance),
+          release: vi.fn(),
         },
         connection: {
-          once: sinon.stub().callsFake((event, callback) => {
+          once: vi.fn().mockImplementation((event, callback) => {
             if (event === "connected") {
               setTimeout(callback, 5);
             }
           }),
-          on: sinon.stub(),
-          close: sinon.stub(),
+          on: vi.fn(),
+          close: vi.fn(),
           state: "connected",
         },
-        close: sinon.stub(),
+        close: vi.fn(),
       };
     }
 
@@ -134,44 +129,43 @@ class TestableChannelsPresenceSubscribe extends ChannelsPresenceSubscribe {
   }
 }
 
+// TODO: This test needs a re-write. It's not actually testing anything of value.
 describe("ChannelsPresenceSubscribe", function () {
-  let sandbox: sinon.SinonSandbox;
   let command: TestableChannelsPresenceSubscribe;
   let mockConfig: Config;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    mockConfig = { runHook: sinon.stub() } as unknown as Config;
+    mockConfig = { runHook: vi.fn() } as unknown as Config;
     command = new TestableChannelsPresenceSubscribe([], mockConfig);
 
     // Initialize mock client
     const mockPresenceInstance = {
-      get: sandbox.stub().resolves([]),
-      subscribe: sandbox.stub(),
-      unsubscribe: sandbox.stub(),
-      enter: sandbox.stub().resolves(),
-      leave: sandbox.stub().resolves(),
+      get: vi.fn().mockResolvedValue([]),
+      subscribe: vi.fn(),
+      unsubscribe: vi.fn(),
+      enter: vi.fn().mockImplementation(async () => {}),
+      leave: vi.fn().mockImplementation(async () => {}),
     };
     const mockChannelInstance = {
       presence: mockPresenceInstance,
-      subscribe: sandbox.stub(),
-      unsubscribe: sandbox.stub(),
-      attach: sandbox.stub().resolves(),
-      detach: sandbox.stub().resolves(),
-      on: sandbox.stub(),
+      subscribe: vi.fn(),
+      unsubscribe: vi.fn(),
+      attach: vi.fn().mockImplementation(async () => {}),
+      detach: vi.fn().mockImplementation(async () => {}),
+      on: vi.fn(),
     };
     command.mockClient = {
       channels: {
-        get: sandbox.stub().returns(mockChannelInstance),
-        release: sandbox.stub(),
+        get: vi.fn().mockReturnValue(mockChannelInstance),
+        release: vi.fn(),
       },
       connection: {
-        once: sandbox.stub(),
-        on: sandbox.stub(),
-        close: sandbox.stub(),
+        once: vi.fn(),
+        on: vi.fn(),
+        close: vi.fn(),
         state: "initialized",
       },
-      close: sandbox.stub(),
+      close: vi.fn(),
     };
 
     // No need to stub createAblyClient in beforeEach since we're testing individual methods
@@ -184,15 +178,11 @@ describe("ChannelsPresenceSubscribe", function () {
     });
   });
 
-  afterEach(function () {
-    sandbox.restore();
-  });
-
   it("should create an Ably client when run", async function () {
-    const createClientSpy = sinon.spy(command, "createAblyRealtimeClient");
+    const createClientSpy = vi.spyOn(command, "createAblyRealtimeClient");
 
     // Stub the actual functionality to avoid long-running operations
-    const runStub = sinon.stub(command, "run").callsFake(async function (
+    vi.spyOn(command, "run").mockImplementation(async function (
       this: TestableChannelsPresenceSubscribe,
     ) {
       await this.createAblyRealtimeClient({});
@@ -201,21 +191,7 @@ describe("ChannelsPresenceSubscribe", function () {
 
     await command.run();
 
-    expect(createClientSpy.calledOnce).toBe(true);
-
-    createClientSpy.restore();
-    runStub.restore();
-  });
-
-  it("should parse channel argument correctly", async function () {
-    command.setParseResult({
-      flags: {},
-      args: { channel: "my-presence-channel" },
-      raw: [],
-    });
-
-    const parseResult = await command.parse();
-    expect(parseResult.args.channel).toBe("my-presence-channel");
+    expect(createClientSpy).toHaveBeenCalledOnce();
   });
 
   it("should return mock client from createAblyRealtimeClient", async function () {

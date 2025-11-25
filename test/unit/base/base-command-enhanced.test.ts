@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
 import * as _fs from "node:fs";
 import * as _Ably from "ably";
 import { AblyBaseCommand } from "../../../src/base-command.js";
@@ -56,11 +55,9 @@ class TestCommand extends AblyBaseCommand {
 
 describe("AblyBaseCommand - Enhanced Coverage", function () {
   let command: TestCommand;
-  let sandbox: sinon.SinonSandbox;
   let originalEnv: NodeJS.ProcessEnv;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
     originalEnv = { ...process.env };
 
     // Reset env before each test
@@ -74,7 +71,6 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
   });
 
   afterEach(function () {
-    sandbox.restore();
     process.env = originalEnv;
   });
 

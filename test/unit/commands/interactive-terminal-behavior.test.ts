@@ -1,19 +1,17 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import * as sinon from "sinon";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import Interactive from "../../../src/commands/interactive.js";
 import { Readable, Writable } from "node:stream";
 import * as readline from "node:readline";
 
 describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
-  let sandbox: sinon.SinonSandbox;
   let mockInput: Readable;
   let mockOutput: Writable;
   let _outputData: string;
   let originalStdin: any;
   let originalStdout: any;
+  let exitStub: any;
 
   beforeEach(() => {
-    sandbox = sinon.createSandbox();
     _outputData = "";
 
     // Create mock streams
@@ -23,7 +21,7 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
 
     // Add properties needed by the interactive command
     (mockInput as any).isTTY = true;
-    (mockInput as any).setRawMode = sandbox.stub().returns(mockInput);
+    (mockInput as any).setRawMode = vi.fn().mockReturnValue(mockInput);
 
     // Enable keypress events on our mock input
     readline.emitKeypressEvents(mockInput);
@@ -54,9 +52,14 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
       configurable: true,
     });
 
+    exitStub = vi
+      .spyOn(process, "exit")
+      // @ts-expect-error Because we're mocking process.exit which is a never.
+      .mockImplementation((_: number): never => {});
+
     // Stub console methods
-    sandbox.stub(console, "log");
-    sandbox.stub(console, "error");
+    vi.spyOn(console, "log");
+    vi.spyOn(console, "error");
 
     // Suppress welcome message for tests
     process.env.ABLY_SUPPRESS_WELCOME = "true";
@@ -75,8 +78,6 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     });
 
     delete process.env.ABLY_SUPPRESS_WELCOME;
-
-    sandbox.restore();
   });
 
   const simulateKeypress = (str: string | null, key: any) => {
@@ -93,11 +94,11 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
           description: "Manage channels",
           flags: {},
           args: {},
-          run: sandbox.stub(),
+          run: vi.fn(),
         },
       ],
-      runCommand: sandbox.stub(),
-      findCommand: sandbox.stub(),
+      runCommand: vi.fn(),
+      findCommand: vi.fn(),
       root: "/test",
     } as any;
 
@@ -127,8 +128,8 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     cmd.config = {
       version: "1.0.0",
       commands: [],
-      runCommand: sandbox.stub(),
-      findCommand: sandbox.stub(),
+      runCommand: vi.fn(),
+      findCommand: vi.fn(),
       root: "/test",
     } as any;
 
@@ -158,8 +159,8 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     cmd.config = {
       version: "1.0.0",
       commands: [],
-      runCommand: sandbox.stub(),
-      findCommand: sandbox.stub(),
+      runCommand: vi.fn(),
+      findCommand: vi.fn(),
       root: "/test",
     } as any;
 
@@ -198,11 +199,11 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
           description: "Test command",
           flags: {},
           args: {},
-          run: sandbox.stub(),
+          run: vi.fn(),
         },
       ],
-      runCommand: sandbox.stub(),
-      findCommand: sandbox.stub(),
+      runCommand: vi.fn(),
+      findCommand: vi.fn(),
       root: "/test",
     } as any;
 
@@ -231,15 +232,15 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     cmd.config = {
       version: "1.0.0",
       commands: [],
-      runCommand: sandbox.stub().rejects(new Error("Command failed")),
-      findCommand: sandbox.stub(),
+      runCommand: vi.fn().mockRejectedValue(new Error("Command failed")),
+      findCommand: vi.fn(),
       root: "/test",
     } as any;
 
     await cmd.run();
 
     const rl = (cmd as any).rl;
-    const promptStub = sandbox.stub(rl, "prompt");
+    const promptStub = vi.spyOn(rl, "prompt");
 
     // Simulate command execution
     rl.emit("line", "invalid command");
@@ -248,7 +249,7 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Prompt should be called again after error
-    expect(promptStub.called).toBe(true);
+    expect(promptStub).toHaveBeenCalled();
   });
 
   it("should handle special characters in autocomplete", async () => {
@@ -261,11 +262,11 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
           description: "Test command with dash",
           flags: {},
           args: {},
-          run: sandbox.stub(),
+          run: vi.fn(),
         },
       ],
-      runCommand: sandbox.stub(),
-      findCommand: sandbox.stub(),
+      runCommand: vi.fn(),
+      findCommand: vi.fn(),
       root: "/test",
     } as any;
 
@@ -283,8 +284,8 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     cmd.config = {
       version: "1.0.0",
       commands: [],
-      runCommand: sandbox.stub(),
-      findCommand: sandbox.stub(),
+      runCommand: vi.fn(),
+      findCommand: vi.fn(),
       root: "/test",
     } as any;
 
@@ -311,8 +312,8 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     cmd.config = {
       version: "1.0.0",
       commands: [],
-      runCommand: sandbox.stub(),
-      findCommand: sandbox.stub(),
+      runCommand: vi.fn(),
+      findCommand: vi.fn(),
       root: "/test",
     } as any;
 
@@ -347,15 +348,15 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     cmd.config = {
       version: "1.0.0",
       commands: [],
-      runCommand: sandbox.stub(),
-      findCommand: sandbox.stub(),
+      runCommand: vi.fn(),
+      findCommand: vi.fn(),
       root: "/test",
     } as any;
 
     await cmd.run();
 
     const rl = (cmd as any).rl;
-    const closeStub = sandbox.stub(rl, "close");
+    const closeStub = vi.spyOn(rl, "close");
 
     // Simulate exit command
     rl.emit("line", "exit");
@@ -364,6 +365,10 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Readline should be closed
-    expect(closeStub.called).toBe(true);
+    expect(closeStub).toHaveBeenCalled();
+
+    await vi.waitFor(() => {
+      expect(exitStub).toHaveBeenCalled();
+    });
   });
 });

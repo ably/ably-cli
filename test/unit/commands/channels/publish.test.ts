@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import ChannelsPublish from "../../../../src/commands/channels/publish.js";
 import * as Ably from "ably";
@@ -93,20 +92,18 @@ class TestableChannelsPublish extends ChannelsPublish {
 }
 
 describe("ChannelsPublish", function () {
-  let sandbox: sinon.SinonSandbox;
   let command: TestableChannelsPublish;
   let mockConfig: Config;
-  let mockRestPublish: sinon.SinonStub;
-  let mockRealtimePublish: sinon.SinonStub;
+  let mockRestPublish: ReturnType<typeof vi.fn>;
+  let mockRealtimePublish: ReturnType<typeof vi.fn>;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    mockConfig = { runHook: sinon.stub() } as unknown as Config;
+    mockConfig = { runHook: vi.fn() } as unknown as Config;
     command = new TestableChannelsPublish([], mockConfig);
 
     // Create stubs for the publish methods
-    mockRestPublish = sinon.stub().resolves();
-    mockRealtimePublish = sinon.stub().resolves();
+    mockRestPublish = vi.fn().mockImplementation(async () => {});
+    mockRealtimePublish = vi.fn().mockImplementation(async () => {});
 
     // Set up the mock REST client
     const mockRestChannel = {
@@ -114,28 +111,30 @@ describe("ChannelsPublish", function () {
     };
     command.mockRestClient = {
       channels: {
-        get: sinon.stub().returns(mockRestChannel),
+        get: vi.fn().mockReturnValue(mockRestChannel),
       },
-      request: sinon.stub().resolves({ statusCode: 201 }),
-      close: sinon.stub(),
+      request: vi.fn().mockResolvedValue({ statusCode: 201 }),
+      close: vi.fn(),
     };
 
     // Set up the mock Realtime client
     const mockRealtimeChannel = {
       publish: mockRealtimePublish,
-      on: sinon.stub(), // Add the missing 'on' method
+      on: vi.fn(), // Add the missing 'on' method
     };
     command.mockRealtimeClient = {
       channels: {
-        get: sinon.stub().returns(mockRealtimeChannel),
+        get: vi.fn().mockReturnValue(mockRealtimeChannel),
       },
       connection: {
-        once: sinon.stub().callsArg(1), // Simulate immediate connection
-        on: sinon.stub(), // Add the missing 'on' method
+        once: vi
+          .fn()
+          .mockImplementation((_event: string, cb: () => void) => cb()), // Simulate immediate connection
+        on: vi.fn(), // Add the missing 'on' method
         state: "connected",
-        close: sinon.stub(),
+        close: vi.fn(),
       },
-      close: sinon.stub(),
+      close: vi.fn(),
     };
 
     // Set default parse result for REST transport
@@ -153,19 +152,15 @@ describe("ChannelsPublish", function () {
     });
   });
 
-  afterEach(function () {
-    sandbox.restore();
-  });
-
   it("should publish a message using REST successfully", async function () {
     await command.run();
 
     const getChannel = command.mockRestClient.channels.get;
-    expect(getChannel.calledOnce).toBe(true);
-    expect(getChannel.firstCall.args[0]).toBe("test-channel");
+    expect(getChannel).toHaveBeenCalledOnce();
+    expect(getChannel.mock.calls[0][0]).toBe("test-channel");
 
-    expect(mockRestPublish.calledOnce).toBe(true);
-    expect(mockRestPublish.firstCall.args[0]).toEqual({ data: "hello" });
+    expect(mockRestPublish).toHaveBeenCalledOnce();
+    expect(mockRestPublish.mock.calls[0][0]).toEqual({ data: "hello" });
     expect(command.logOutput.join("\n")).toContain(
       "Message published successfully",
     );
@@ -188,11 +183,11 @@ describe("ChannelsPublish", function () {
     await command.run();
 
     const getChannel = command.mockRealtimeClient.channels.get;
-    expect(getChannel.calledOnce).toBe(true);
-    expect(getChannel.firstCall.args[0]).toBe("test-channel");
+    expect(getChannel).toHaveBeenCalledOnce();
+    expect(getChannel.mock.calls[0][0]).toBe("test-channel");
 
-    expect(mockRealtimePublish.calledOnce).toBe(true);
-    expect(mockRealtimePublish.firstCall.args[0]).toEqual({
+    expect(mockRealtimePublish).toHaveBeenCalledOnce();
+    expect(mockRealtimePublish.mock.calls[0][0]).toEqual({
       data: "realtime hello",
     });
     expect(command.logOutput.join("\n")).toContain(
@@ -204,7 +199,7 @@ describe("ChannelsPublish", function () {
     const apiError = new Error("REST API Error");
 
     // Make the publish method reject with our error
-    mockRestPublish.rejects(apiError);
+    mockRestPublish.mockRejectedValue(apiError);
 
     // Test for thrown error
     let errorThrown = false;
@@ -216,7 +211,7 @@ describe("ChannelsPublish", function () {
       errorThrown = true;
       // The error could come from different places in the code path
       // Just check that some error was thrown during REST publish
-      expect(mockRestPublish.called).toBe(true);
+      expect(mockRestPublish).toHaveBeenCalled();
     }
 
     // Verify an error was thrown
@@ -240,7 +235,7 @@ describe("ChannelsPublish", function () {
     const apiError = new Error("Realtime API Error");
 
     // Make the publish method reject with our error
-    mockRealtimePublish.rejects(apiError);
+    mockRealtimePublish.mockRejectedValue(apiError);
 
     // Test for thrown error
     let errorThrown = false;
@@ -252,7 +247,7 @@ describe("ChannelsPublish", function () {
       errorThrown = true;
       // The error could come from different places in the code path
       // Just check that some error was thrown during Realtime publish
-      expect(mockRealtimePublish.called).toBe(true);
+      expect(mockRealtimePublish).toHaveBeenCalled();
     }
 
     // Verify an error was thrown
@@ -275,10 +270,10 @@ describe("ChannelsPublish", function () {
 
     await command.run();
 
-    expect(mockRestPublish.calledOnce).toBe(true);
+    expect(mockRestPublish).toHaveBeenCalledOnce();
 
     // Check that the name parameter was set correctly in the published message
-    const publishArgs = mockRestPublish.firstCall.args[0];
+    const publishArgs = mockRestPublish.mock.calls[0][0];
     expect(publishArgs).toHaveProperty("name", "custom-event");
     expect(publishArgs).toHaveProperty("data", "hello");
   });
@@ -299,7 +294,7 @@ describe("ChannelsPublish", function () {
 
     await command.run();
 
-    expect(mockRestPublish.callCount).toBe(3);
+    expect(mockRestPublish).toHaveBeenCalledTimes(3);
     expect(command.logOutput.join("\n")).toContain(
       "messages published successfully",
     );
@@ -317,7 +312,7 @@ describe("ChannelsPublish", function () {
 
     await command.run();
 
-    expect(mockRestPublish.calledOnce).toBe(true);
+    expect(mockRestPublish).toHaveBeenCalledOnce();
 
     // Check for JSON output in the logs
     const jsonOutput = command.logOutput.find((log) => log.includes("success"));
@@ -333,12 +328,12 @@ describe("ChannelsPublish", function () {
 
   it("should handle invalid message JSON", async function () {
     // Override the prepareMessage method to simulate a JSON parsing error
-    sinon
-      .stub(command, "prepareMessage" as any)
-      .throws(new Error("Invalid JSON"));
+    vi.spyOn(command, "prepareMessage" as any).mockImplementation(() => {
+      throw new Error("Invalid JSON");
+    });
 
     // Override the error method to mock the error behavior
-    sinon.stub(command, "error").callsFake((msg) => {
+    vi.spyOn(command, "error").mockImplementation((msg) => {
       command.errorOutput = typeof msg === "string" ? msg : msg.message;
       throw new Error("Invalid JSON");
     });

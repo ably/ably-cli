@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import { AblyBaseCommand } from "../../../src/base-command.js";
 import { getCliVersion } from "../../../src/utils/version.js";
@@ -17,19 +16,11 @@ class TestCommand extends AblyBaseCommand {
 }
 
 describe("Agent Header Integration Tests", function () {
-  let sandbox: sinon.SinonSandbox;
-
-  beforeEach(function () {
-    sandbox = sinon.createSandbox();
-  });
-
-  afterEach(function () {
-    sandbox.restore();
-  });
+  beforeEach(function () {});
 
   describe("Ably SDK Agent Header", function () {
     it("should include agent header in client options", function () {
-      const mockConfig = { runHook: sandbox.stub() } as unknown as Config;
+      const mockConfig = { runHook: vi.fn() } as unknown as Config;
       const command = new TestCommand([], mockConfig);
 
       const flags = {

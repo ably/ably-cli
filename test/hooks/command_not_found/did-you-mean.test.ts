@@ -1,8 +1,7 @@
-import { describe, it, beforeEach, afterEach, expect } from "vitest";
+import { describe, it, beforeEach, afterEach, expect, vi } from "vitest";
 import { Args, Command, Config, Errors, Flags } from "@oclif/core";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import * as sinon from "sinon";
 import { dirname } from "node:path";
 
 // Import the compiled hook function
@@ -104,33 +103,32 @@ async function createTestConfig(): Promise<Config> {
 interface TestContext {
   config: Config;
   mockContext: any;
-  sandbox: sinon.SinonSandbox;
   stubs: {
-    log: sinon.SinonStub;
-    warn: sinon.SinonStub;
-    error: sinon.SinonStub;
-    exit: sinon.SinonStub;
-    runCommand: sinon.SinonStub;
+    log: ReturnType<typeof vi.fn>;
+    warn: ReturnType<typeof vi.fn>;
+    error: ReturnType<typeof vi.fn>;
+    exit: ReturnType<typeof vi.fn>;
+    runCommand: ReturnType<typeof vi.fn>;
   };
 }
 
 // Helper function to setup test context
-async function setupTestContext(
-  sandbox: sinon.SinonSandbox,
-): Promise<TestContext> {
+async function setupTestContext(): Promise<TestContext> {
   const config = await createTestConfig();
 
   const stubs = {
-    log: sandbox.stub(console, "log"),
-    warn: sandbox.stub(console, "warn"),
-    error: sandbox.stub(console, "error"),
-    exit: sandbox.stub(process, "exit").returns(undefined as never),
-    runCommand: sandbox.stub(Config.prototype, "runCommand").resolves(),
+    log: vi.spyOn(console, "log"),
+    warn: vi.spyOn(console, "warn"),
+    error: vi.spyOn(console, "error"),
+    exit: vi.spyOn(process, "exit").mockReturnValue(undefined as never),
+    runCommand: vi
+      .spyOn(Config.prototype, "runCommand")
+      .mockImplementation(async () => {}),
   };
 
   const mockContext = {
     config: config,
-    debug: sandbox.stub(),
+    debug: vi.fn(),
     error(
       input: Error | string,
       options: { code?: string; exit: false | number } = { exit: 1 },
@@ -155,26 +153,24 @@ async function setupTestContext(
     warn: (...args: any[]) => stubs.warn(...args),
   };
 
-  return { config, mockContext, sandbox, stubs };
+  return { config, mockContext, stubs };
 }
 
 // Helper function to setup test context with rejecting runCommand stub
-async function setupRejectingTestContext(
-  sandbox: sinon.SinonSandbox,
-): Promise<TestContext> {
+async function setupRejectingTestContext(): Promise<TestContext> {
   const config = await createTestConfig();
 
   const stubs = {
-    log: sandbox.stub(console, "log"),
-    warn: sandbox.stub(console, "warn"),
-    error: sandbox.stub(console, "error"),
-    exit: sandbox.stub(process, "exit").returns(undefined as never),
-    runCommand: sandbox.stub(Config.prototype, "runCommand"),
+    log: vi.spyOn(console, "log"),
+    warn: vi.spyOn(console, "warn"),
+    error: vi.spyOn(console, "error"),
+    exit: vi.spyOn(process, "exit").mockReturnValue(undefined as never),
+    runCommand: vi.spyOn(Config.prototype, "runCommand"),
   };
 
   const mockContext = {
     config: config,
-    debug: sandbox.stub(),
+    debug: vi.fn(),
     error(
       input: Error | string,
       options: { code?: string; exit: false | number } = { exit: 1 },
@@ -199,24 +195,20 @@ async function setupRejectingTestContext(
     warn: (...args: any[]) => stubs.warn(...args),
   };
 
-  return { config, mockContext, sandbox, stubs };
+  return { config, mockContext, stubs };
 }
 
 describe("Command Not Found Hook", () => {
-  let sandbox: sinon.SinonSandbox;
-
   beforeEach(() => {
-    sandbox = sinon.createSandbox();
     process.env.SKIP_CONFIRMATION = "true";
   });
 
   afterEach(() => {
-    sandbox.restore();
     delete process.env.SKIP_CONFIRMATION;
   });
 
   it("should warn with space separator and run the suggested command (colon input)", async () => {
-    const ctx = await setupTestContext(sandbox);
+    const ctx = await setupTestContext();
     const hookOpts = {
       argv: [],
       config: ctx.config,
@@ -227,18 +219,17 @@ describe("Command Not Found Hook", () => {
 
     await hook.apply(ctx.mockContext, [hookOpts]);
 
-    expect(ctx.stubs.warn.calledOnce).toBe(true);
-    const warnArg = ctx.stubs.warn.firstCall.args[0];
+    expect(ctx.stubs.warn).toHaveBeenCalledOnce();
+    const warnArg = ctx.stubs.warn.mock.calls[0][0];
     expect(stripAnsi(warnArg)).toContain(
       "channels pubish is not an ably command",
     );
-    expect(ctx.stubs.runCommand.calledOnceWith("channels:publish", [])).toBe(
-      true,
-    );
+    expect(ctx.stubs.runCommand).toHaveBeenCalledOnce();
+    expect(ctx.stubs.runCommand).toHaveBeenCalledWith("channels:publish", []);
   });
 
   it("should warn with space separator and run the suggested command (space input)", async () => {
-    const ctx = await setupTestContext(sandbox);
+    const ctx = await setupTestContext();
     const hookOpts = {
       argv: [],
       config: ctx.config,
@@ -249,18 +240,17 @@ describe("Command Not Found Hook", () => {
 
     await hook.apply(ctx.mockContext, [hookOpts]);
 
-    expect(ctx.stubs.warn.calledOnce).toBe(true);
-    const warnArg = ctx.stubs.warn.firstCall.args[0];
+    expect(ctx.stubs.warn).toHaveBeenCalledOnce();
+    const warnArg = ctx.stubs.warn.mock.calls[0][0];
     expect(stripAnsi(warnArg)).toContain(
       "channels pubish is not an ably command",
     );
-    expect(ctx.stubs.runCommand.calledOnceWith("channels:publish", [])).toBe(
-      true,
-    );
+    expect(ctx.stubs.runCommand).toHaveBeenCalledOnce();
+    expect(ctx.stubs.runCommand).toHaveBeenCalledWith("channels:publish", []);
   });
 
   it("should pass arguments when running suggested command (space input)", async () => {
-    const ctx = await setupTestContext(sandbox);
+    const ctx = await setupTestContext();
     const originalArgv = process.argv;
     process.argv = [
       "node",
@@ -280,23 +270,22 @@ describe("Command Not Found Hook", () => {
 
     await hook.apply(ctx.mockContext, [hookOpts]);
 
-    expect(ctx.stubs.warn.calledOnce).toBe(true);
-    const warnArg = ctx.stubs.warn.firstCall.args[0];
+    expect(ctx.stubs.warn).toHaveBeenCalledOnce();
+    const warnArg = ctx.stubs.warn.mock.calls[0][0];
     expect(stripAnsi(warnArg)).toContain(
       "channels publsh is not an ably command",
     );
-    expect(
-      ctx.stubs.runCommand.calledOnceWith("channels:publish", [
-        "my-arg1",
-        "--flag",
-      ]),
-    ).toBe(true);
+    expect(ctx.stubs.runCommand).toHaveBeenCalledOnce();
+    expect(ctx.stubs.runCommand).toHaveBeenCalledWith("channels:publish", [
+      "my-arg1",
+      "--flag",
+    ]);
 
     process.argv = originalArgv;
   });
 
   it("should error correctly for completely unknown command (space input)", async () => {
-    const ctx = await setupTestContext(sandbox);
+    const ctx = await setupTestContext();
     const hookOpts = {
       argv: [],
       config: ctx.config,
@@ -316,11 +305,11 @@ describe("Command Not Found Hook", () => {
     }
 
     expect(errorCaught).toBe(true);
-    expect(ctx.stubs.warn.called).toBe(false);
-    expect(ctx.stubs.runCommand.called).toBe(false);
-    expect(ctx.stubs.error.calledOnce).toBe(true);
+    expect(ctx.stubs.warn).not.toHaveBeenCalled();
+    expect(ctx.stubs.runCommand).not.toHaveBeenCalled();
+    expect(ctx.stubs.error).toHaveBeenCalledOnce();
 
-    const errorArg = ctx.stubs.error.firstCall.args[0];
+    const errorArg = ctx.stubs.error.mock.calls[0][0];
     expect(stripAnsi(String(errorArg))).toContain(
       "xyzxyzxyz completely nonexistent command not found",
     );
@@ -330,7 +319,7 @@ describe("Command Not Found Hook", () => {
   });
 
   it("should show generic help if no close command is found", async () => {
-    const ctx = await setupTestContext(sandbox);
+    const ctx = await setupTestContext();
     const hookOpts = {
       argv: [],
       config: ctx.config,
@@ -346,11 +335,11 @@ describe("Command Not Found Hook", () => {
     }
 
     expect(errorThrown).toBe(true);
-    expect(ctx.stubs.warn.called).toBe(false);
-    expect(ctx.stubs.runCommand.called).toBe(false);
+    expect(ctx.stubs.warn).not.toHaveBeenCalled();
+    expect(ctx.stubs.runCommand).not.toHaveBeenCalled();
 
-    expect(ctx.stubs.error.calledOnce).toBe(true);
-    const errorArg = ctx.stubs.error.firstCall.args[0];
+    expect(ctx.stubs.error).toHaveBeenCalledOnce();
+    const errorArg = ctx.stubs.error.mock.calls[0][0];
     expect(stripAnsi(String(errorArg))).toContain("xyzxyzxyzabc not found");
     expect(stripAnsi(String(errorArg))).toContain(
       "Run ably --help for a list of available commands",
@@ -358,7 +347,7 @@ describe("Command Not Found Hook", () => {
   });
 
   it("should show command help with full help command for missing required arguments", async () => {
-    const ctx = await setupRejectingTestContext(sandbox);
+    const ctx = await setupRejectingTestContext();
     const missingArgsError = new Errors.CLIError(
       "Missing 1 required arg: channel\nSee more help with --help",
     );
@@ -366,7 +355,7 @@ describe("Command Not Found Hook", () => {
 
     ctx.stubs.runCommand
       .withArgs("channels:subscribe", [])
-      .rejects(missingArgsError);
+      .mockRejectedValue(missingArgsError);
 
     const hookOpts = {
       argv: [],
@@ -389,18 +378,17 @@ describe("Command Not Found Hook", () => {
     }
 
     expect(errorCaught).toBe(true);
-    expect(ctx.stubs.warn.calledOnce).toBe(true);
-    expect(ctx.stubs.runCommand.calledOnceWith("channels:subscribe", [])).toBe(
-      true,
-    );
+    expect(ctx.stubs.warn).toHaveBeenCalledOnce();
+    expect(ctx.stubs.runCommand).toHaveBeenCalledOnce();
+    expect(ctx.stubs.runCommand).toHaveBeenCalledWith("channels:subscribe", []);
 
-    expect(ctx.stubs.log.called).toBe(true);
+    expect(ctx.stubs.log).toHaveBeenCalled();
 
     let usageCall = false;
     let helpCall = false;
 
-    for (let i = 0; i < ctx.stubs.log.callCount; i++) {
-      const callArg = ctx.stubs.log.getCall(i).args[0];
+    for (let i = 0; i < ctx.stubs.log.mock.calls.length; i++) {
+      const callArg = ctx.stubs.log.mock.calls[i][0];
       if (typeof callArg === "string") {
         if (callArg === "\nUSAGE") {
           usageCall = true;
@@ -416,7 +404,7 @@ describe("Command Not Found Hook", () => {
   });
 
   it("should correctly suggest and run help for a command", async () => {
-    const ctx = await setupTestContext(sandbox);
+    const ctx = await setupTestContext();
     const hookOpts = {
       argv: [],
       config: ctx.config,
@@ -425,14 +413,14 @@ describe("Command Not Found Hook", () => {
     };
     await hook.apply(ctx.mockContext, [hookOpts]);
 
-    expect(ctx.stubs.warn.calledOnce).toBe(true);
-    const warnArg = ctx.stubs.warn.firstCall.args[0];
+    expect(ctx.stubs.warn).toHaveBeenCalledOnce();
+    const warnArg = ctx.stubs.warn.mock.calls[0][0];
     expect(stripAnsi(warnArg)).toContain("hep is not an ably command");
-    expect(ctx.stubs.runCommand.calledOnceWith("help", [])).toBe(true);
+    expect(ctx.stubs.runCommand).toHaveBeenCalledWith("help", []);
   });
 
   it("should attempt suggested command and propagate its error (space input)", async () => {
-    const ctx = await setupTestContext(sandbox);
+    const ctx = await setupTestContext();
     const missingArgsError = new Errors.CLIError(
       "Missing 1 required arg: channel",
     );
@@ -440,7 +428,7 @@ describe("Command Not Found Hook", () => {
 
     ctx.stubs.runCommand
       .withArgs("channels:subscribe", [])
-      .rejects(missingArgsError);
+      .mockRejectedValue(missingArgsError);
 
     const hookOpts = {
       argv: [],
@@ -459,14 +447,13 @@ describe("Command Not Found Hook", () => {
     }
 
     expect(errorCaught).toBe(true);
-    expect(ctx.stubs.warn.calledOnce).toBe(true);
-    expect(ctx.stubs.runCommand.calledOnceWith("channels:subscribe", [])).toBe(
-      true,
-    );
+    expect(ctx.stubs.warn).toHaveBeenCalledOnce();
+    expect(ctx.stubs.runCommand).toHaveBeenCalledOnce();
+    expect(ctx.stubs.runCommand).toHaveBeenCalledWith("channels:subscribe", []);
   });
 
   it("should handle arguments when suggesting commands with a typo", async () => {
-    const ctx = await setupTestContext(sandbox);
+    const ctx = await setupTestContext();
     const hookOpts = {
       argv: [],
       config: ctx.config,
@@ -477,14 +464,16 @@ describe("Command Not Found Hook", () => {
 
     await hook.apply(ctx.mockContext, [hookOpts]);
 
-    expect(ctx.stubs.warn.calledOnce).toBe(true);
-    const warnArg = ctx.stubs.warn.firstCall.args[0];
+    expect(ctx.stubs.warn).toHaveBeenCalledOnce();
+    const warnArg = ctx.stubs.warn.mock.calls[0][0];
     expect(stripAnsi(warnArg)).toContain(
       "channels publis is not an ably command",
     );
 
-    expect(
-      ctx.stubs.runCommand.calledOnceWith("channels:publish", ["foo", "bar"]),
-    ).toBe(true);
+    expect(ctx.stubs.runCommand).toHaveBeenCalledOnce();
+    expect(ctx.stubs.runCommand).toHaveBeenCalledWith("channels:publish", [
+      "foo",
+      "bar",
+    ]);
   });
 });

@@ -1,17 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
+import { describe, it, expect, vi } from "vitest";
 
 describe("Support Command Tests", function () {
-  let sandbox: sinon.SinonSandbox;
-
-  beforeEach(function () {
-    sandbox = sinon.createSandbox();
-  });
-
-  afterEach(function () {
-    sandbox.restore();
-  });
-
   describe("Support Topic Structure", function () {
     it("should be a topic command with subcommands", function () {
       // Mock config to simulate the support topic structure
@@ -111,6 +100,7 @@ describe("Support Command Tests", function () {
 
   describe("Topic Command Behavior", function () {
     it("should show help when run without subcommand", async function () {
+      const runCommandMock = vi.fn().mockImplementation(async () => {});
       // Mock a topic command behavior
       const mockTopicCommand = {
         run: async function () {
@@ -118,18 +108,13 @@ describe("Support Command Tests", function () {
           return this.config.runCommand("help", ["support"]);
         },
         config: {
-          runCommand: sandbox.stub().resolves(),
+          runCommand: runCommandMock,
         },
       };
 
       await mockTopicCommand.run();
 
-      expect(
-        (mockTopicCommand.config.runCommand as sinon.SinonStub).calledWith(
-          "help",
-          ["support"],
-        ),
-      ).toBe(true);
+      expect(runCommandMock).toHaveBeenCalledWith("help", ["support"]);
     });
   });
 });

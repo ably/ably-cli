@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import sinon from "sinon";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -8,12 +7,10 @@ import _AccountsLogin from "../../../src/commands/accounts/login.js";
 import _AccountsLogout from "../../../src/commands/accounts/logout.js";
 
 describe("Authentication Flow Integration", function () {
-  let sandbox: sinon.SinonSandbox;
   let originalEnv: NodeJS.ProcessEnv;
   let tempConfigDir: string;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
     originalEnv = { ...process.env };
 
     // Create a unique temporary directory for each test
@@ -31,7 +28,6 @@ describe("Authentication Flow Integration", function () {
   });
 
   afterEach(function () {
-    sandbox.restore();
     process.env = originalEnv;
 
     // Clean up temporary directory
