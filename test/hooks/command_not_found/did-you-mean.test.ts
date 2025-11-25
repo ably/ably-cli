@@ -353,9 +353,7 @@ describe("Command Not Found Hook", () => {
     );
     missingArgsError.oclif = { exit: 1 };
 
-    ctx.stubs.runCommand
-      .withArgs("channels:subscribe", [])
-      .mockRejectedValue(missingArgsError);
+    ctx.stubs.runCommand.mockRejectedValue(missingArgsError);
 
     const hookOpts = {
       argv: [],
@@ -426,9 +424,7 @@ describe("Command Not Found Hook", () => {
     );
     missingArgsError.oclif = { exit: 1 };
 
-    ctx.stubs.runCommand
-      .withArgs("channels:subscribe", [])
-      .mockRejectedValue(missingArgsError);
+    ctx.stubs.runCommand.mockRejectedValue(missingArgsError);
 
     const hookOpts = {
       argv: [],
