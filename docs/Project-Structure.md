@@ -86,7 +86,6 @@ This document outlines the directory structure of the Ably CLI project.
 ├── .eslintignore           # Files/patterns ignored by ESLint.
 ├── .eslintrc.js            # ESLint configuration file.
 ├── .gitignore              # Files/patterns ignored by Git.
-├── .mocharc.json           # Mocha test runner configuration.
 ├── .prettierrc.json        # Prettier code formatter configuration.
 ├── CHANGELOG.md            # Log of changes across versions.
 ├── README.md               # Main project README file.
@@ -95,3 +94,4 @@ This document outlines the directory structure of the Ably CLI project.
 ├── pnpm-lock.yaml          # pnpm lock file for deterministic installs.
 ├── pnpm-workspace.yaml     # Defines the pnpm workspace configuration.
 └── tsconfig.json           # Main TypeScript configuration file.
+└── vitest.config.ts        # Config for vitest

@@ -191,7 +191,7 @@ Property 'x' does not exist on type 'Y'
 **Solution**:
 - Check that type definitions are up to date:
   ```bash
-  pnpm install @types/node@latest @types/mocha@latest
+  pnpm install @types/node@latest
   ```
 - Use proper type assertions when necessary:
   ```typescript

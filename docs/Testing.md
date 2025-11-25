@@ -63,10 +63,10 @@ The test runner includes built-in debugging support to help diagnose test failur
 E2E_DEBUG=true ABLY_CLI_TEST_SHOW_OUTPUT=true pnpm test:e2e
 
 # Debug specific failing tests
-E2E_DEBUG=true pnpm test:mocha 'test/e2e/rooms/*.test.ts'
+E2E_DEBUG=true pnpm run test 'test/e2e/rooms/*.test.ts'
 
 # Debug specific test file with grep filter
-pnpm test:mocha test/e2e/spaces/*.test.ts --grep "should handle presence"
+pnpm test test/e2e/spaces/*.test.ts --t "should have properly structured spaces member commands"
 ```
 
 ### Debug Output Features
@@ -107,14 +107,14 @@ The script will:
 *   **Value:** Useful for testing complex parsing, conditional logic, and edge cases within a command, but **less effective** at verifying core interactions with Ably services compared to Integration/E2E tests.
 
 **CLI Core and Commands:**
-*   **Tools:** Mocha, `@oclif/test`, `sinon`.
+*   **Tools:** Vitest, `@oclif/test`, `sinon`.
 *   **Location:** Primarily within the `test/unit/` directory, mirroring the `src/` structure.
-*   **Execution:** Run all unit tests with `pnpm test:unit` or target specific files, e.g., `pnpm test test/unit/commands/bench/bench.test.ts`.
+*   **Execution:** Run all unit tests with `pnpm test:unit` or target specific files, e.g., `pnpm vitest --project unit test/unit/commands/bench/bench.test.ts`.
 
-**Example (Mocha/Sinon):**
+**Example (Vitest/Sinon):**
 ```typescript
 // Example unit test with proper mocking
-import {expect} from '@oclif/test'
+import {describe, it, expect, beforeEach, afterEach} from 'vitest'
 import * as sinon from 'sinon'
 import {AblyCommand} from '../../src/base/ably-command'
 
@@ -175,9 +175,9 @@ Everything else (exact countdown rendering, every internal state transition, con
 *   **Dependencies:** Primarily stub/mock network calls (`nock` for Control API, `sinon` stubs for SDK methods), but may interact with the local filesystem for config management (ensure isolation). Use `ConfigManager` mocks.
 *   **Speed:** Relatively fast; generally avoids real network latency.
 *   **Value:** Good for testing command sequences (e.g., `config set` then `config get`), authentication flow logic (with mocked credentials), and ensuring different parts of the CLI work together correctly without relying on live Ably infrastructure.
-*   **Tools:** Mocha, `@oclif/test`, `nock`, `sinon`, `execa` (to run the CLI as a subprocess).
+*   **Tools:** Vitest, `@oclif/test`, `nock`, `sinon`, `execa` (to run the CLI as a subprocess).
 
-Refer to the [Debugging Guide](mdc:docs/Debugging.md) for tips on debugging failed tests, including Playwright and Mocha tests.
+Refer to the [Debugging Guide](mdc:docs/Debugging.md) for tips on debugging failed tests, including Playwright and Vitest tests.
 
 ### 🌐 End-to-End (E2E) Tests (`test/e2e`)
 
@@ -186,19 +186,16 @@ Refer to the [Debugging Guide](mdc:docs/Debugging.md) for tips on debugging fail
 *   **Scope:** Focus on essential commands and common workflows (login, app/key management basics, channel publish/subscribe/presence/history, logs subscribe).
 *   **Speed:** Slowest test type due to network latency and real API interactions.
 *   **Value:** Provides the highest confidence that the CLI works correctly for end-users in a real environment. **Preferred** over unit tests for verifying core Ably interactions.
-*   **Tools:** Mocha, `@oclif/test`, `execa`, environment variables (`E2E_ABLY_API_KEY`, etc.).
+*   **Tools:** Vitest, `@oclif/test`, `execa`, environment variables (`E2E_ABLY_API_KEY`, etc.).
 *   **Frequency:** Run automatically in CI (GitHub Actions) on PRs and merges. Can be run locally but may incur costs.
 
 **Example:**
 ```typescript
 // Example E2E test with real services
-import {expect, test} from '@oclif/test'
+import {describe, it, expect} from 'vitest'
 import {execSync} from 'child_process'
 
-describe('channels commands', function() {
-  // Longer timeout for E2E tests
-  this.timeout(10000)
-
+describe('channels commands', () => {
   const testChannel = `test-${Date.now()}`
   const testMessage = 'Hello E2E test'
 
@@ -215,10 +212,11 @@ describe('channels commands', function() {
     ).toString()
 
     const history = JSON.parse(result)
-    expect(history).to.be.an('array').with.lengthOf.at.least(1)
-    expect(history[0].data).to.equal(testMessage)
+    expect(history).toBeInstanceOf(Array)
+    expect(history.length).toBeGreaterThanOrEqual(1)
+    expect(history[0].data).toBe(testMessage)
   })
-})
+}, {timeout: 10000})
 ```
 
 ### 🎭 Playwright Tests (`test/e2e/web-cli`)
@@ -228,7 +226,7 @@ describe('channels commands', function() {
 *   **Speed:** Slow; involves browser automation and WebSocket connections.
 *   **Value:** Ensures the embeddable React component works correctly with the hosted terminal server.
 *   **Tools:** Playwright Test runner (`@playwright/test`).
-*   **Frequency:** Run automatically in CI, separate from Mocha tests.
+*   **Frequency:** Run automatically in CI, separate from Vitest tests.
 
 </details>
 
@@ -273,7 +271,7 @@ describe('channels commands', function() {
 │   │   ├── base/
 │   │   ├── commands/
 │   │   └── services/
-│   ├── setup.ts            # Full setup for E2E tests (runs in Mocha context)
+│   ├── setup.ts            # Full setup for E2E tests (runs in Vitest context)
 │   └── mini-setup.ts       # Minimal setup for Unit/Integration tests
 └── ...
 ```

@@ -110,14 +110,14 @@ pnpm test:web-cli:parallel:ui           # UI tests only
 
 ### Running Specific Test Files
 
-To run a specific test file, use the base `test:mocha` command:
+To run a specific test file, use vitest with the file path:
 ```bash
-pnpm test:mocha test/unit/commands/channels/list.test.ts
+pnpm test:unit test/unit/commands/channels/list.test.ts
 ```
 
-To run specific tests with additional mocha options:
+To run specific tests with a name filter:
 ```bash
-pnpm test:mocha test/unit/**/*.test.ts --grep "should publish"
+pnpm vitest --project unit --grep "should publish"
 ```
 
 ### Debug Mode

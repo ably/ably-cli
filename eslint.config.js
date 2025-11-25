@@ -8,7 +8,6 @@ import eslintConfigPrettier from "eslint-config-prettier";
 import eslintPluginPrettier from "eslint-plugin-prettier";
 import eslint from "@eslint/js"; // Import base eslint config
 import eslintPluginVitest from "eslint-plugin-vitest"; // Import vitest plugin
-import eslintPluginMocha from "eslint-plugin-mocha";
 
 export default [
   {

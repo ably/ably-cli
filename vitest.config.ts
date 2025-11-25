@@ -50,7 +50,6 @@ export default defineConfig({
         test: {
           name: "integration",
           include: ["test/integration/**/*.test.ts"],
-          // Exclude tests that use @oclif/test (mocha-specific)
           exclude: ["**/node_modules/**", "**/dist/**"],
           testTimeout: 120000, // 120 seconds for integration tests
           env: {
@@ -87,11 +86,7 @@ export default defineConfig({
           name: "hooks",
           include: ["test/hooks/**/*.test.ts"],
           // Exclude web-cli tests (use Playwright separately)
-          exclude: [
-            "**/node_modules/**",
-            "**/dist/**",
-            "test/e2e/web-cli/**/*.test.ts",
-          ],
+          exclude: ["**/node_modules/**", "**/dist/**"],
           testTimeout: 300000, // 5 minutes default for e2e tests
           hookTimeout: 60000, // 60 seconds for hooks
           // Run e2e tests sequentially to avoid API rate limits

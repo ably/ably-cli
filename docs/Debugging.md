@@ -12,21 +12,11 @@ This guide provides tips for debugging common issues when developing the Ably CL
 
 Refer to [docs/Testing.md](mdc:docs/Testing.md) for how to run specific tests.
 
-### Mocha Tests (Unit, Integration, E2E)
+### Vitest Tests (Unit, Integration, E2E)
 
-*   **Verbose Output:** Run Mocha with increased verbosity by enabling debug mode:
-    ```bash
-    E2E_DEBUG=true ABLY_CLI_TEST_SHOW_OUTPUT=true pnpm test:unit
-    ```
-*   **Debugger:** Use the Node.js inspector:
-    ```bash
-    # Add --inspect-brk flag before mocha
-    node --inspect-brk --import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("ts-node/esm", pathToFileURL("./"), { project: "./tsconfig.test.json" });' ./node_modules/mocha/bin/mocha --require ./test/setup.ts test/unit/your-test.test.ts
-    ```
-    Then attach your debugger (e.g., Chrome DevTools, VS Code debugger).
 *   **`console.log`:** Add temporary `console.log` statements in the test or the code being tested.
 *   **Mocking Issues (Unit/Integration):**
-    *   Verify mocks (`sinon`, `nock`) are correctly set up and restored (`beforeEach`/`afterEach`).
+    *   Verify mocks (`vitest`, `nock`) are correctly set up and restored (`beforeEach`/`afterEach`).
     *   Ensure stubs match the actual function signatures.
     *   Check that network requests are being intercepted as expected (e.g., using `nock.recorder`).
 *   **E2E Failures:**
