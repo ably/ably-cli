@@ -2,6 +2,7 @@ import { type Space } from "@ably/spaces";
 import { Args } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
+import { BaseFlags } from "../../../types/cli.js";
 
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 
@@ -41,9 +42,77 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
   private realtimeClient: Ably.Realtime | null = null;
   private spacesClient: unknown | null = null;
   private space: Space | null = null;
+  private parsedFlags: BaseFlags = {};
+
+  async finally(error: Error | undefined): Promise<void> {
+    // Always clean up connections
+    try {
+      if (this.space !== null) {
+        await this.space!.leave();
+        // Wait a bit after leaving space
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
+        // Spaces maintains an internal map of members which have timeouts. This keeps node alive.
+        // This is a workaround to hold off until those timeouts are cleared by the client, as otherwise
+        // we'll get unhandled presence rejections as the connection closes.
+        await new Promise<void>((resolve) => {
+          let intervalId: ReturnType<typeof setInterval>;
+          const getAll = async () => {
+            const members = await this.space!.members.getAll();
+            if (members.filter((member) => !member.isConnected).length === 0) {
+              clearInterval(intervalId);
+              this.debug("space members cleared");
+              resolve();
+            } else {
+              this.debug(
+                `waiting for spaces members to clear, ${members.length} remaining`,
+              );
+            }
+          };
+
+          intervalId = setInterval(() => {
+            getAll();
+          }, 1000);
+        });
+      }
+    } catch (error) {
+      // Log but don't throw cleanup errors
+      if (!this.shouldOutputJson(this.parsedFlags)) {
+        this.debug(`Space leave error: ${error}`);
+      }
+    }
+
+    try {
+      if (
+        this.realtimeClient &&
+        this.realtimeClient!.connection.state !== "closed"
+      ) {
+        // Ensure we're not in the middle of any operations
+        if (
+          this.realtimeClient!.connection.state === "connecting" ||
+          this.realtimeClient!.connection.state === "disconnected"
+        ) {
+          // Wait for connection to stabilize before closing
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+
+        this.realtimeClient!.close();
+        // Give the connection a moment to close
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    } catch (error) {
+      // Log but don't throw cleanup errors
+      if (!this.shouldOutputJson(this.parsedFlags)) {
+        this.debug(`Realtime close error: ${error}`);
+      }
+    }
+
+    super.finally(error);
+  }
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsGetAll);
+    this.parsedFlags = flags;
 
     let cleanupInProgress = false;
     const { space: spaceName } = args;
@@ -451,49 +520,6 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
           ? "Connection was closed before operation completed. Please try again."
           : `Error getting cursors: ${errorMessage}`;
         this.log(chalk.red(message));
-      }
-    } finally {
-      if (!cleanupInProgress) {
-        cleanupInProgress = true;
-      }
-
-      // Always clean up connections
-      try {
-        if (this.space) {
-          await this.space.leave();
-          // Wait a bit after leaving space
-          await new Promise((resolve) => setTimeout(resolve, 200));
-        }
-      } catch (error) {
-        // Log but don't throw cleanup errors
-        if (!this.shouldOutputJson(flags)) {
-          this.debug(`Space leave error: ${error}`);
-        }
-      }
-
-      try {
-        if (
-          this.realtimeClient &&
-          this.realtimeClient.connection.state !== "closed"
-        ) {
-          // Ensure we're not in the middle of any operations
-          if (
-            this.realtimeClient.connection.state === "connecting" ||
-            this.realtimeClient.connection.state === "disconnected"
-          ) {
-            // Wait for connection to stabilize before closing
-            await new Promise((resolve) => setTimeout(resolve, 500));
-          }
-
-          this.realtimeClient.close();
-          // Give the connection a moment to close
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
-      } catch (error) {
-        // Log but don't throw cleanup errors
-        if (!this.shouldOutputJson(flags)) {
-          this.debug(`Realtime close error: ${error}`);
-        }
       }
     }
   }

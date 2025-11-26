@@ -1,5 +1,5 @@
 import * as Ably from "ably";
-import Spaces, { type Space } from "@ably/spaces";
+import Spaces, { type Space, type SpaceOptions } from "@ably/spaces";
 import { AblyBaseCommand } from "./base-command.js";
 import { BaseFlags } from "./types/cli.js";
 
@@ -41,8 +41,13 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     // Create a Spaces client using the Ably client
     const spacesClient = await this.createSpacesClient(realtimeClient);
 
+    // We set the offline timeout to 1s otherwise Spaces will hang on to left members for 2 minutes.
+    const options: Partial<SpaceOptions> = {
+      offlineTimeout: 2000,
+    };
+
     // Get a space instance with the provided name
-    const space = await spacesClient.get(spaceName);
+    const space = await spacesClient.get(spaceName, options);
 
     return {
       realtimeClient,
