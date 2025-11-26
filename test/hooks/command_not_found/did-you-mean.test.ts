@@ -117,9 +117,9 @@ async function setupTestContext(): Promise<TestContext> {
   const config = await createTestConfig();
 
   const stubs = {
-    log: vi.spyOn(console, "log"),
-    warn: vi.spyOn(console, "warn"),
-    error: vi.spyOn(console, "error"),
+    log: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
     exit: vi.spyOn(process, "exit").mockReturnValue(undefined as never),
     runCommand: vi
       .spyOn(Config.prototype, "runCommand")
@@ -161,9 +161,9 @@ async function setupRejectingTestContext(): Promise<TestContext> {
   const config = await createTestConfig();
 
   const stubs = {
-    log: vi.spyOn(console, "log"),
-    warn: vi.spyOn(console, "warn"),
-    error: vi.spyOn(console, "error"),
+    log: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
     exit: vi.spyOn(process, "exit").mockReturnValue(undefined as never),
     runCommand: vi.spyOn(Config.prototype, "runCommand"),
   };

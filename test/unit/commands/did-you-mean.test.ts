@@ -78,7 +78,6 @@ describe("Did You Mean Functionality", () => {
             expect.fail("Should have timed out");
           } catch (error: any) {
             const fullOutput = (error.stdout || "") + (error.stderr || "");
-            console.log("FULL OUTPUT:", fullOutput);
             expect(fullOutput).toContain("Did you mean accounts current?");
             expect(fullOutput).toContain("(Y/n)");
           }

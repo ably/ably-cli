@@ -44,8 +44,10 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
     );
 
     // Setup default stubs
-    stubs.consoleLog = vi.spyOn(console, "log");
-    stubs.consoleError = vi.spyOn(console, "error");
+    stubs.consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    stubs.consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
     stubs.processExit = vi.spyOn(process, "exit");
 
     // Mock environment variables
