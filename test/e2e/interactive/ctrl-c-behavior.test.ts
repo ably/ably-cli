@@ -163,7 +163,7 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
         });
 
         // Wait for prompt using simple polling
-        await new Promise<void>((resolve) => {
+        await new Promise<void>((resolve, reject) => {
           const checkInterval = setInterval(() => {
             if (output.includes("ably> ")) {
               clearInterval(checkInterval);
@@ -173,7 +173,7 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
 
           setTimeout(() => {
             clearInterval(checkInterval);
-            resolve(); // Continue even if no prompt
+            reject(new Error("Timeout waiting for initial prompt"));
           }, 5000);
         });
 

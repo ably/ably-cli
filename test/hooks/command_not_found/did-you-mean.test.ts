@@ -205,6 +205,7 @@ describe("Command Not Found Hook", () => {
 
   afterEach(() => {
     delete process.env.SKIP_CONFIRMATION;
+    vi.restoreAllMocks();
   });
 
   it("should warn with space separator and run the suggested command (colon input)", async () => {
@@ -252,36 +253,38 @@ describe("Command Not Found Hook", () => {
   it("should pass arguments when running suggested command (space input)", async () => {
     const ctx = await setupTestContext();
     const originalArgv = process.argv;
-    process.argv = [
-      "node",
-      "bin/run",
-      "channels",
-      "publsh", // Typo
-      "my-arg1", // Arg intended for corrected command
-      "--flag", // Flag intended for corrected command
-    ];
-    const hookOpts = {
-      argv: ["my-arg1", "--flag"],
-      config: ctx.config,
-      context: ctx.mockContext,
-      id: "channels publsh", // Typo with space
-    };
-    ctx.config.topicSeparator = " ";
+    try {
+      process.argv = [
+        "node",
+        "bin/run",
+        "channels",
+        "publsh", // Typo
+        "my-arg1", // Arg intended for corrected command
+        "--flag", // Flag intended for corrected command
+      ];
+      const hookOpts = {
+        argv: ["my-arg1", "--flag"],
+        config: ctx.config,
+        context: ctx.mockContext,
+        id: "channels publsh", // Typo with space
+      };
+      ctx.config.topicSeparator = " ";
 
-    await hook.apply(ctx.mockContext, [hookOpts]);
+      await hook.apply(ctx.mockContext, [hookOpts]);
 
-    expect(ctx.stubs.warn).toHaveBeenCalledOnce();
-    const warnArg = ctx.stubs.warn.mock.calls[0][0];
-    expect(stripAnsi(warnArg)).toContain(
-      "channels publsh is not an ably command",
-    );
-    expect(ctx.stubs.runCommand).toHaveBeenCalledOnce();
-    expect(ctx.stubs.runCommand).toHaveBeenCalledWith("channels:publish", [
-      "my-arg1",
-      "--flag",
-    ]);
-
-    process.argv = originalArgv;
+      expect(ctx.stubs.warn).toHaveBeenCalledOnce();
+      const warnArg = ctx.stubs.warn.mock.calls[0][0];
+      expect(stripAnsi(warnArg)).toContain(
+        "channels publsh is not an ably command",
+      );
+      expect(ctx.stubs.runCommand).toHaveBeenCalledOnce();
+      expect(ctx.stubs.runCommand).toHaveBeenCalledWith("channels:publish", [
+        "my-arg1",
+        "--flag",
+      ]);
+    } finally {
+      process.argv = originalArgv;
+    }
   });
 
   it("should error correctly for completely unknown command (space input)", async () => {

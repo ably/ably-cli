@@ -80,15 +80,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         }
 
         // Wait for the duration even with auth failures
-        const effectiveDuration =
-          typeof flags.duration === "number" && flags.duration > 0
-            ? flags.duration
-            : process.env.ABLY_CLI_DEFAULT_DURATION
-              ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-              : undefined;
-
-        const exitReason =
-          await waitUntilInterruptedOrTimeout(effectiveDuration);
+        const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
         this.logCliEvent(
           flags,
           "presence",
@@ -117,15 +109,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         }
 
         // Wait for the duration even with auth failures
-        const effectiveDuration =
-          typeof flags.duration === "number" && flags.duration > 0
-            ? flags.duration
-            : process.env.ABLY_CLI_DEFAULT_DURATION
-              ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-              : undefined;
-
-        const exitReason =
-          await waitUntilInterruptedOrTimeout(effectiveDuration);
+        const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
         this.logCliEvent(
           flags,
           "presence",
@@ -286,14 +270,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       }
 
       // Wait until the user interrupts or the optional duration elapses
-      const effectiveDuration =
-        typeof flags.duration === "number" && flags.duration > 0
-          ? flags.duration
-          : process.env.ABLY_CLI_DEFAULT_DURATION
-            ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-            : undefined;
-
-      const exitReason = await waitUntilInterruptedOrTimeout(effectiveDuration);
+      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
       this.logCliEvent(flags, "presence", "runComplete", "Exiting wait loop", {
         exitReason,
       });

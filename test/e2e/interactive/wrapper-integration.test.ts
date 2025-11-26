@@ -160,6 +160,7 @@ describe("Interactive Mode - Wrapper Integration", () => {
       // Wait for prompt with timeout
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
+          clearInterval(checkPrompt);
           reject(new Error("Timeout waiting for prompt from wrapper"));
         }, 10000);
 

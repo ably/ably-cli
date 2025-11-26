@@ -408,13 +408,9 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
 
     describe("Error Handling", () => {
       it("should handle 404 errors for non-existent resources", async () => {
-        try {
-          await controlApi.getApp("non-existent-app-id");
-          expect.fail("Should have thrown an error");
-        } catch (error) {
-          expect(error).toBeInstanceOf(Error);
-          expect((error as Error).message).toContain("not found");
-        }
+        await expect(controlApi.getApp("non-existent-app-id")).rejects.toThrow(
+          /not found/,
+        );
       });
 
       it("should handle invalid API keys", async () => {
@@ -423,24 +419,13 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
           logErrors: false,
         });
 
-        try {
-          await invalidControlApi.listApps();
-          expect.fail("Should have thrown an error");
-        } catch (error) {
-          expect(error).toBeInstanceOf(Error);
-          expect((error as Error).message).toContain("401");
-        }
+        await expect(invalidControlApi.listApps()).rejects.toThrow(/401/);
       });
 
       it("should handle malformed requests", async () => {
-        try {
-          // Try to create an app with invalid data
-          await controlApi.createApp({ name: "" } as any);
-          expect.fail("Should have thrown an error");
-        } catch (error) {
-          expect(error).toBeInstanceOf(Error);
-          // Could be 400 (validation) or other error
-        }
+        await expect(
+          controlApi.createApp({ name: "" } as any),
+        ).rejects.toThrow();
       });
     });
 

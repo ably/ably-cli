@@ -41,7 +41,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     // Create a Spaces client using the Ably client
     const spacesClient = await this.createSpacesClient(realtimeClient);
 
-    // We set the offline timeout to 1s otherwise Spaces will hang on to left members for 2 minutes.
+    // We set the offline timeout to 2s otherwise Spaces will hang on to left members for 2 minutes.
     const options: Partial<SpaceOptions> = {
       offlineTimeout: 2000,
     };

@@ -235,12 +235,13 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * Get test mocks if in test mode
    * @returns Test mocks object or undefined if not in test mode
    */
-  protected getMockAblyRealtime(): Ably.Rest | undefined {
+  protected getMockAblyRealtime(): Ably.Realtime | undefined {
     if (!this.isTestMode()) return undefined;
 
     // Access global mock if running in test mode
-    return (globalThis as { __TEST_MOCKS__?: { ablyRealtimeMock: Ably.Rest } })
-      .__TEST_MOCKS__?.ablyRealtimeMock;
+    return (
+      globalThis as { __TEST_MOCKS__?: { ablyRealtimeMock: Ably.Realtime } }
+    ).__TEST_MOCKS__?.ablyRealtimeMock;
   }
 
   /**

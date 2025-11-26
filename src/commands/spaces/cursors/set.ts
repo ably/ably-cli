@@ -389,14 +389,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       }
 
       // Decide how long to remain connected
-      const effectiveDuration =
-        typeof flags.duration === "number"
-          ? flags.duration
-          : process.env.ABLY_CLI_DEFAULT_DURATION
-            ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-            : undefined;
-
-      if (effectiveDuration === 0) {
+      if (flags.duration === 0) {
         // Give Ably a moment to propagate the cursor update before exiting so that
         // subscribers in automated tests have a chance to receive the event.
         await new Promise((resolve) => setTimeout(resolve, 600));
@@ -463,18 +456,18 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         "cursor",
         "waiting",
         "Cursor set – waiting for further instructions",
-        { duration: effectiveDuration ?? "indefinite" },
+        { duration: flags.duration ?? "indefinite" },
       );
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          effectiveDuration
-            ? `Waiting ${effectiveDuration}s before exiting… Press Ctrl+C to exit sooner.`
+          flags.duration
+            ? `Waiting ${flags.duration}s before exiting… Press Ctrl+C to exit sooner.`
             : `Cursor set. Press Ctrl+C to exit.`,
         );
       }
 
-      const exitReason = await waitUntilInterruptedOrTimeout(effectiveDuration);
+      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
       this.logCliEvent(
         flags,
         "cursor",

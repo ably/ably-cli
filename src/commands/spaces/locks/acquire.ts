@@ -240,14 +240,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
         `Holding lock ${lockId}. Press Ctrl+C to release.`,
       );
       // Decide how long to remain connected
-      const effectiveDuration =
-        typeof flags.duration === "number"
-          ? flags.duration
-          : process.env.ABLY_CLI_DEFAULT_DURATION
-            ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-            : undefined;
-
-      await waitUntilInterruptedOrTimeout(effectiveDuration);
+      await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error) {
       this.error(error instanceof Error ? error.message : String(error));
     }

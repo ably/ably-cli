@@ -57,7 +57,17 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
         // we'll get unhandled presence rejections as the connection closes.
         await new Promise<void>((resolve) => {
           let intervalId: ReturnType<typeof setInterval>;
+          const maxWaitMs = 10000; // 10 second timeout
+          const startTime = Date.now();
           const getAll = async () => {
+            // Avoid waiting forever
+            if (Date.now() - startTime > maxWaitMs) {
+              clearInterval(intervalId);
+              this.debug("Timed out waiting for space members to clear");
+              resolve();
+              return;
+            }
+
             const members = await this.space!.members.getAll();
             if (members.filter((member) => !member.isConnected).length === 0) {
               clearInterval(intervalId);

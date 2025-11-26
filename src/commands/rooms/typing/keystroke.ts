@@ -208,14 +208,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
       );
 
       // Decide how long to remain connected
-      const effectiveDuration =
-        typeof flags.duration === "number"
-          ? flags.duration
-          : process.env.ABLY_CLI_DEFAULT_DURATION
-            ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-            : undefined;
-
-      await waitUntilInterruptedOrTimeout(effectiveDuration);
+      await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(
