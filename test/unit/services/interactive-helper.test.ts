@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach, vi, MockedFunction } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  MockedFunction,
+} from "vitest";
 import inquirer from "inquirer";
 import { InteractiveHelper } from "../../../src/services/interactive-helper.js";
 import { ConfigManager } from "../../../src/services/config-manager.js";
@@ -30,6 +38,10 @@ describe("InteractiveHelper", function () {
         logErrors: false,
       },
     );
+  });
+
+  afterEach(function () {
+    vi.restoreAllMocks();
   });
 
   describe("#confirm", function () {
@@ -236,8 +248,7 @@ describe("InteractiveHelper", function () {
 
       expect(result).toBe(selectedKey);
       expect(promptStub).toHaveBeenCalledOnce();
-      expect(controlApiStub.listKeys).toHaveBeenCalledOnce();
-      expect(controlApiStub.listKeys).toHaveBeenCalledWith("app1");
+      expect(controlApiStub.listKeys).toHaveBeenCalledExactlyOnceWith("app1");
     });
 
     it("should handle unnamed keys", async function () {

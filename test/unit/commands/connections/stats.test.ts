@@ -164,6 +164,7 @@ describe("ConnectionsStats", function () {
   afterEach(function () {
     // Restore console.log
     console.log = originalConsoleLog;
+    vi.restoreAllMocks();
   });
 
   it("should retrieve and display connection stats successfully", async function () {
@@ -251,12 +252,7 @@ describe("ConnectionsStats", function () {
     const apiError = new Error("API request failed");
     mockStatsMethod.mockRejectedValue(apiError);
 
-    try {
-      await command.run();
-      expect.fail("Command should have thrown an error");
-    } catch (error: any) {
-      expect(error.message).toContain("Failed to fetch stats");
-    }
+    await expect(command.run()).rejects.toThrow("Failed to fetch stats");
   });
 
   it("should output JSON when requested", async function () {

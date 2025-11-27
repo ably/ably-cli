@@ -78,6 +78,7 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     });
 
     delete process.env.ABLY_SUPPRESS_WELCOME;
+    vi.restoreAllMocks();
   });
 
   const simulateKeypress = (str: string | null, key: any) => {

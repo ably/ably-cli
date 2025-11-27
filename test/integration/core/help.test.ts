@@ -38,10 +38,8 @@ describe("Help commands integration", function () {
     it("should show all high-level topics", async function () {
       const { stdout, stderr } = await runCommand(["--help"], import.meta.url);
 
-      // Allow warnings in stderr (e.g., version mismatch warnings)
-      if (stderr && !stderr.includes("Warning:")) {
-        expect(stderr).toBe("");
-      }
+      // Allow warnings in stderr (e.g., version mismatch warnings), otherwise should be empty
+      expect(!stderr || stderr.includes("Warning:")).toBe(true);
       expect(stdout).toContain("USAGE");
       // Check for some core topics
       expect(stdout).toContain("ably.com CLI for Pub/Sub");

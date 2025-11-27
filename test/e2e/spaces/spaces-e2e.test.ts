@@ -58,6 +58,7 @@ describe("Spaces E2E Tests", () => {
   describe("Members presence functionality", () => {
     it(
       "should allow two connections where one person entering is visible to the other",
+      { timeout: 120000 },
       async () => {
         setupTestFailureHandler(
           "should allow two connections where one person entering is visible to the other",
@@ -129,13 +130,13 @@ describe("Spaces E2E Tests", () => {
           }
         }
       },
-      { timeout: 120000 },
     );
   });
 
   describe("Location state synchronization", () => {
     it(
       "should synchronize location updates between clients",
+      { timeout: 120000 },
       async () => {
         setupTestFailureHandler(
           "should synchronize location updates between clients",
@@ -287,13 +288,13 @@ describe("Spaces E2E Tests", () => {
           }
         }
       },
-      { timeout: 120000 },
     );
   });
 
   describe("Cursor state synchronization", () => {
     it(
       "should synchronize cursor updates between clients",
+      { timeout: 120000 },
       async () => {
         setupTestFailureHandler(
           "should synchronize cursor updates between clients",
@@ -450,13 +451,13 @@ describe("Spaces E2E Tests", () => {
           return; // Skip test by early return
         }
       },
-      { timeout: 120000 },
     );
   });
 
   describe("Locks synchronization", () => {
     it(
       "should synchronize lock acquisition and release between clients",
+      { timeout: 120000 },
       async () => {
         setupTestFailureHandler(
           "should synchronize lock acquisition and release between clients",
@@ -613,13 +614,13 @@ describe("Spaces E2E Tests", () => {
           }
         }
       },
-      { timeout: 120000 },
     );
   });
 
   describe("Command Structure Tests", () => {
     it(
       "should have properly structured spaces member commands",
+      { timeout: 30000 },
       async () => {
         setupTestFailureHandler(
           "should have properly structured spaces member commands",
@@ -636,11 +637,11 @@ describe("Spaces E2E Tests", () => {
           "Subscribe to member presence events",
         );
       },
-      { timeout: 30000 },
     );
 
     it(
       "should have properly structured spaces location commands",
+      { timeout: 30000 },
       async () => {
         setupTestFailureHandler(
           "should have properly structured spaces location commands",
@@ -654,11 +655,11 @@ describe("Spaces E2E Tests", () => {
         expect(helpResult.exitCode).toBe(0);
         expect(helpResult.stdout).toContain("Subscribe to location updates");
       },
-      { timeout: 30000 },
     );
 
     it(
       "should have properly structured spaces cursor commands",
+      { timeout: 30000 },
       async () => {
         setupTestFailureHandler(
           "should have properly structured spaces cursor commands",
@@ -672,11 +673,11 @@ describe("Spaces E2E Tests", () => {
         expect(helpResult.exitCode).toBe(0);
         expect(helpResult.stdout).toContain("Subscribe to cursor movements");
       },
-      { timeout: 30000 },
     );
 
     it(
       "should have properly structured spaces lock commands",
+      { timeout: 30000 },
       async () => {
         setupTestFailureHandler(
           "should have properly structured spaces lock commands",
@@ -690,7 +691,6 @@ describe("Spaces E2E Tests", () => {
         expect(helpResult.exitCode).toBe(0);
         expect(helpResult.stdout).toContain("Subscribe to lock events");
       },
-      { timeout: 30000 },
     );
   });
 });

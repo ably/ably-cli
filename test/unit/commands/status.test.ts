@@ -54,33 +54,24 @@ describe("Status Command Tests", function () {
   describe("Interactive Mode Compatibility", function () {
     it("should not use ora spinner in interactive mode", function () {
       // This test verifies the fix for the UI clearing issue
-      const isInteractive = true; // Simulating interactive mode
+      // Simulating interactive mode
 
       // Mock ora usage
       const mockOra = vi.fn();
 
-      if (isInteractive) {
-        // In interactive mode, ora should not be used
-        expect(mockOra).not.toHaveBeenCalled();
-      } else {
-        // In non-interactive mode, ora can be used
-        mockOra("Checking status...");
-        expect(mockOra).toHaveBeenCalled();
-      }
+      // In interactive mode, ora should not be used
+      expect(mockOra).not.toHaveBeenCalled();
     });
 
     it("should use console.log for status messages in interactive mode", function () {
       const consoleLogStub = vi
         .spyOn(console, "log")
         .mockImplementation(() => {});
-      const isInteractive = true;
 
-      if (isInteractive) {
-        console.log("Checking Ably service status...");
-        expect(consoleLogStub).toHaveBeenCalledWith(
-          "Checking Ably service status...",
-        );
-      }
+      console.log("Checking Ably service status...");
+      expect(consoleLogStub).toHaveBeenCalledWith(
+        "Checking Ably service status...",
+      );
     });
   });
 
@@ -94,12 +85,8 @@ describe("Status Command Tests", function () {
       const openStub = vi.fn();
 
       // Simulate command with --open flag
-      const flags = { open: true };
-
-      if (flags.open) {
-        await openStub("https://status.ably.com");
-        expect(openStub).toHaveBeenCalledWith("https://status.ably.com");
-      }
+      await openStub("https://status.ably.com");
+      expect(openStub).toHaveBeenCalledWith("https://status.ably.com");
     });
   });
 });

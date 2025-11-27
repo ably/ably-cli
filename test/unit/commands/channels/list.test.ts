@@ -283,6 +283,7 @@ describe("ChannelsList", function () {
 
   afterEach(function () {
     // Restore only the sandbox
+    vi.restoreAllMocks();
   });
 
   describe("run", function () {

@@ -59,6 +59,7 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
     delete process.env.ABLY_INTERACTIVE_MODE;
     delete process.env.ABLY_WRAPPER_MODE;
     delete process.env.ABLY_SUPPRESS_WELCOME;
+    vi.restoreAllMocks();
   });
 
   describe("Command Parsing - Enhanced", () => {

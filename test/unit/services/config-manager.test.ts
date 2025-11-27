@@ -91,6 +91,7 @@ describe("ConfigManager", () => {
   // Clean up after each test
   afterEach(() => {
     // Restore all vitest stubs
+    vi.restoreAllMocks();
     // Restore environment variables
     if (envBackup.ABLY_CLI_TEST_MODE) {
       process.env.ABLY_CLI_TEST_MODE = envBackup.ABLY_CLI_TEST_MODE;
@@ -148,10 +149,14 @@ describe("ConfigManager", () => {
       // The beforeEach setup already stubs readFileSync
       // ConfigManager constructor calls loadConfig, which calls readFileSync
       const readFileStub = fs.readFileSync as ReturnType<typeof vi.fn>;
-      expect(readFileStub).toHaveBeenCalledOnce();
+
       // Verify it tries to read the correct file within the temp dir
       const expectedConfigPath = path.join(uniqueTestConfigDir, "config");
-      expect(readFileStub).toHaveBeenCalledWith(expectedConfigPath, "utf8");
+
+      expect(readFileStub).toHaveBeenCalledExactlyOnceWith(
+        expectedConfigPath,
+        "utf8",
+      );
     });
   });
 

@@ -118,13 +118,7 @@ describe("ControlApi", function () {
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(401, { message: "Unauthorized" });
 
-      try {
-        await api.listApps();
-        expect.fail("Should have thrown an error");
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain("Unauthorized");
-      }
+      await expect(api.listApps()).rejects.toThrow("Unauthorized");
     });
   });
 
@@ -163,13 +157,7 @@ describe("ControlApi", function () {
         .post(`/v1/accounts/${accountId}/apps`, appData)
         .reply(400, { message: "Invalid app name" });
 
-      try {
-        await api.createApp(appData);
-        expect.fail("Should have thrown an error");
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain("Invalid app name");
-      }
+      await expect(api.createApp(appData)).rejects.toThrow("Invalid app name");
     });
   });
 
@@ -255,13 +243,7 @@ describe("ControlApi", function () {
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, allApps);
 
-      try {
-        await api.getApp(appId);
-        expect.fail("Should have thrown an error");
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain("not found");
-      }
+      await expect(api.getApp(appId)).rejects.toThrow("not found");
     });
   });
 
@@ -348,13 +330,9 @@ describe("ControlApi", function () {
         .get("/v1/me")
         .reply(200, { account: { id: "test-account-id" } });
 
-      try {
-        await api.createKey(appId, keyData);
-        expect.fail("Should have thrown an error");
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain("Bad Request");
-      }
+      await expect(api.createKey(appId, keyData)).rejects.toThrow(
+        "Bad Request",
+      );
     });
 
     it("should handle error when listing API keys", async function () {
@@ -370,13 +348,7 @@ describe("ControlApi", function () {
         .get("/v1/me")
         .reply(200, { account: { id: "test-account-id" } });
 
-      try {
-        await api.listKeys(appId);
-        expect.fail("Should have thrown an error");
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain("Key not found");
-      }
+      await expect(api.listKeys(appId)).rejects.toThrow("Key not found");
     });
 
     it("should handle error when revoking API key", async function () {
@@ -393,13 +365,9 @@ describe("ControlApi", function () {
         .get("/v1/me")
         .reply(200, { account: { id: "test-account-id" } });
 
-      try {
-        await api.revokeKey(appId, keyId);
-        expect.fail("Should have thrown an error");
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain("Failed to revoke key");
-      }
+      await expect(api.revokeKey(appId, keyId)).rejects.toThrow(
+        "Failed to revoke key",
+      );
     });
 
     it("should handle error when updating API key", async function () {
@@ -420,13 +388,9 @@ describe("ControlApi", function () {
         .get("/v1/me")
         .reply(200, { account: { id: "test-account-id" } });
 
-      try {
-        await api.updateKey(appId, keyId, updateData);
-        expect.fail("Should have thrown an error");
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain("Failed to update key");
-      }
+      await expect(api.updateKey(appId, keyId, updateData)).rejects.toThrow(
+        "Failed to update key",
+      );
     });
   });
 });

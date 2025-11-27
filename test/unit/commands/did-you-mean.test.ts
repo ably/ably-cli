@@ -71,16 +71,13 @@ describe("Did You Mean Functionality", () => {
       it(
         "should show Y/N prompt for misspelled commands",
         async () => {
-          try {
-            await execAsync(`node ${binPath} account current`, {
-              timeout: 2000,
-            });
-            expect.fail("Should have timed out");
-          } catch (error: any) {
-            const fullOutput = (error.stdout || "") + (error.stderr || "");
-            expect(fullOutput).toContain("Did you mean accounts current?");
-            expect(fullOutput).toContain("(Y/n)");
-          }
+          const result = await execAsync(`node ${binPath} account current`, {
+            timeout: 2000,
+          }).catch((error) => error);
+
+          const fullOutput = (result.stdout || "") + (result.stderr || "");
+          expect(fullOutput).toContain("Did you mean accounts current?");
+          expect(fullOutput).toContain("(Y/n)");
         },
         timeout,
       );
@@ -88,29 +85,22 @@ describe("Did You Mean Functionality", () => {
       it(
         "should auto-execute with SKIP_CONFIRMATION=1",
         async () => {
-          try {
-            const { stdout, stderr } = await execAsync(
-              `SKIP_CONFIRMATION=1 ABLY_ACCESS_TOKEN=test node ${binPath} account current`,
-              {
-                timeout: 5000,
-                env: {
-                  ...process.env,
-                  SKIP_CONFIRMATION: "1",
-                  ABLY_ACCESS_TOKEN: "test",
-                },
+          const result = await execAsync(
+            `SKIP_CONFIRMATION=1 ABLY_ACCESS_TOKEN=test node ${binPath} account current`,
+            {
+              timeout: 5000,
+              env: {
+                ...process.env,
+                SKIP_CONFIRMATION: "1",
+                ABLY_ACCESS_TOKEN: "test",
               },
-            );
+            },
+          ).catch((error) => error);
 
-            const fullOutput = stdout + stderr;
-            expect(fullOutput).toContain(
-              "account current is not an ably command",
-            );
-          } catch (error: any) {
-            const fullOutput = (error.stdout || "") + (error.stderr || "");
-            expect(fullOutput).toContain(
-              "account current is not an ably command",
-            );
-          }
+          const fullOutput = (result.stdout || "") + (result.stderr || "");
+          expect(fullOutput).toContain(
+            "account current is not an ably command",
+          );
         },
         timeout,
       );
@@ -268,16 +258,13 @@ describe("Did You Mean Functionality", () => {
       it(
         'should show Y/N prompt for "accounts curren"',
         async () => {
-          try {
-            await execAsync(`node ${binPath} accounts curren`, {
-              timeout: 2000,
-            });
-            expect.fail("Should have timed out");
-          } catch (error: any) {
-            const fullOutput = (error.stdout || "") + (error.stderr || "");
-            expect(fullOutput).toContain("Did you mean accounts current?");
-            expect(fullOutput).toContain("(Y/n)");
-          }
+          const result = await execAsync(`node ${binPath} accounts curren`, {
+            timeout: 2000,
+          }).catch((error) => error);
+
+          const fullOutput = (result.stdout || "") + (result.stderr || "");
+          expect(fullOutput).toContain("Did you mean accounts current?");
+          expect(fullOutput).toContain("(Y/n)");
         },
         timeout,
       );
@@ -395,19 +382,15 @@ describe("Did You Mean Functionality", () => {
       "should behave consistently between top-level and second-level commands",
       async () => {
         // Both should timeout waiting for Y/N prompt
-        try {
-          await execAsync(`node ${binPath} account current`, { timeout: 2000 });
-          expect.fail("Top-level should have timed out");
-        } catch (error: any) {
-          expect(error.stdout + error.stderr).toContain("(Y/n)");
-        }
+        const result1 = await execAsync(`node ${binPath} account current`, {
+          timeout: 2000,
+        }).catch((error) => error);
+        expect(result1.stdout + result1.stderr).toContain("(Y/n)");
 
-        try {
-          await execAsync(`node ${binPath} accounts curren`, { timeout: 2000 });
-          expect.fail("Second-level should have timed out");
-        } catch (error: any) {
-          expect(error.stdout + error.stderr).toContain("(Y/n)");
-        }
+        const result2 = await execAsync(`node ${binPath} accounts curren`, {
+          timeout: 2000,
+        }).catch((error) => error);
+        expect(result2.stdout + result2.stderr).toContain("(Y/n)");
       },
       timeout,
     );

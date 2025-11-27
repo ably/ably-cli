@@ -59,6 +59,7 @@ describe("Rooms E2E Tests", () => {
   describe("Room occupancy functionality", () => {
     it(
       "should show occupancy metrics for active room",
+      { timeout: 120000 },
       async () => {
         setupTestFailureHandler(
           "should show occupancy metrics for active room",
@@ -136,13 +137,13 @@ describe("Rooms E2E Tests", () => {
           }
         }
       },
-      { timeout: 120000 },
     );
   });
 
   describe("Presence functionality", () => {
     it(
       "should allow two connections where one person entering is visible to the other",
+      { timeout: process.env.CI ? 90000 : 75000 },
       async () => {
         setupTestFailureHandler(
           "should allow two connections where one person entering is visible to the other",
@@ -233,13 +234,13 @@ describe("Rooms E2E Tests", () => {
         }
         expect(true).toBe(true);
       },
-      { timeout: process.env.CI ? 90000 : 75000 },
     );
   });
 
   describe("Message publish and subscribe functionality", () => {
     it(
       "should allow publishing and subscribing to messages",
+      { timeout: process.env.CI ? 60000 : 45000 },
       async () => {
         setupTestFailureHandler(
           "should allow publishing and subscribing to messages",
@@ -361,13 +362,13 @@ describe("Rooms E2E Tests", () => {
           }
         }
       },
-      { timeout: process.env.CI ? 60000 : 45000 },
     );
   });
 
   describe("Command Structure Tests", () => {
     it(
       "should have properly structured presence commands",
+      { timeout: 30000 },
       async () => {
         setupTestFailureHandler(
           "should have properly structured presence commands",
@@ -385,11 +386,11 @@ describe("Rooms E2E Tests", () => {
         expect(helpResult.exitCode).toBe(0);
         expect(helpResult.stdout).toContain("Subscribe to presence events");
       },
-      { timeout: 30000 },
     );
 
     it(
       "should have properly structured message commands",
+      { timeout: 30000 },
       async () => {
         setupTestFailureHandler(
           "should have properly structured message commands",
@@ -406,7 +407,6 @@ describe("Rooms E2E Tests", () => {
         expect(helpResult.exitCode).toBe(0);
         expect(helpResult.stdout).toContain("Subscribe to messages");
       },
-      { timeout: 30000 },
     );
   });
 });

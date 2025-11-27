@@ -129,6 +129,7 @@ describe("ConnectionsTest", function () {
   afterEach(function () {
     // Restore console.log
     console.log = originalConsoleLog;
+    vi.restoreAllMocks();
   });
 
   it("should parse flags correctly", async function () {

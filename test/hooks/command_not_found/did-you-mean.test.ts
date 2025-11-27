@@ -225,8 +225,10 @@ describe("Command Not Found Hook", () => {
     expect(stripAnsi(warnArg)).toContain(
       "channels pubish is not an ably command",
     );
-    expect(ctx.stubs.runCommand).toHaveBeenCalledOnce();
-    expect(ctx.stubs.runCommand).toHaveBeenCalledWith("channels:publish", []);
+    expect(ctx.stubs.runCommand).toHaveBeenCalledExactlyOnceWith(
+      "channels:publish",
+      [],
+    );
   });
 
   it("should warn with space separator and run the suggested command (space input)", async () => {
@@ -246,8 +248,10 @@ describe("Command Not Found Hook", () => {
     expect(stripAnsi(warnArg)).toContain(
       "channels pubish is not an ably command",
     );
-    expect(ctx.stubs.runCommand).toHaveBeenCalledOnce();
-    expect(ctx.stubs.runCommand).toHaveBeenCalledWith("channels:publish", []);
+    expect(ctx.stubs.runCommand).toHaveBeenCalledExactlyOnceWith(
+      "channels:publish",
+      [],
+    );
   });
 
   it("should pass arguments when running suggested command (space input)", async () => {
@@ -277,11 +281,10 @@ describe("Command Not Found Hook", () => {
       expect(stripAnsi(warnArg)).toContain(
         "channels publsh is not an ably command",
       );
-      expect(ctx.stubs.runCommand).toHaveBeenCalledOnce();
-      expect(ctx.stubs.runCommand).toHaveBeenCalledWith("channels:publish", [
-        "my-arg1",
-        "--flag",
-      ]);
+      expect(ctx.stubs.runCommand).toHaveBeenCalledExactlyOnceWith(
+        "channels:publish",
+        ["my-arg1", "--flag"],
+      );
     } finally {
       process.argv = originalArgv;
     }
@@ -297,17 +300,13 @@ describe("Command Not Found Hook", () => {
     };
     ctx.config.topicSeparator = " ";
 
-    let errorCaught = false;
-    try {
-      await hook.apply(ctx.mockContext, [hookOpts]);
-    } catch (error: unknown) {
-      errorCaught = true;
-      expect((error as Error).message).toContain(
-        "Command xyzxyzxyz completely nonexistent command not found",
-      );
-    }
-
-    expect(errorCaught).toBe(true);
+    const error = await hook
+      .apply(ctx.mockContext, [hookOpts])
+      .catch((error_) => error_);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toContain(
+      "Command xyzxyzxyz completely nonexistent command not found",
+    );
     expect(ctx.stubs.warn).not.toHaveBeenCalled();
     expect(ctx.stubs.runCommand).not.toHaveBeenCalled();
     expect(ctx.stubs.error).toHaveBeenCalledOnce();
@@ -366,22 +365,20 @@ describe("Command Not Found Hook", () => {
     };
     ctx.config.topicSeparator = " ";
 
-    let errorCaught = false;
-    try {
-      await hook.apply(ctx.mockContext, [hookOpts]);
-    } catch (error: unknown) {
-      errorCaught = true;
-      const errorMsg = (error as Error).message;
-      expect(errorMsg).toContain("Missing 1 required arg: channel");
-      expect(errorMsg).toContain("See more help with:");
-      expect(errorMsg).toContain("ably channels subscribe --help");
-      expect(errorMsg).not.toContain("See more help with --help");
-    }
-
-    expect(errorCaught).toBe(true);
+    const error = await hook
+      .apply(ctx.mockContext, [hookOpts])
+      .catch((error_) => error_);
+    expect(error).toBeInstanceOf(Error);
+    const errorMsg = (error as Error).message;
+    expect(errorMsg).toContain("Missing 1 required arg: channel");
+    expect(errorMsg).toContain("See more help with:");
+    expect(errorMsg).toContain("ably channels subscribe --help");
+    expect(errorMsg).not.toContain("See more help with --help");
     expect(ctx.stubs.warn).toHaveBeenCalledOnce();
-    expect(ctx.stubs.runCommand).toHaveBeenCalledOnce();
-    expect(ctx.stubs.runCommand).toHaveBeenCalledWith("channels:subscribe", []);
+    expect(ctx.stubs.runCommand).toHaveBeenCalledExactlyOnceWith(
+      "channels:subscribe",
+      [],
+    );
 
     expect(ctx.stubs.log).toHaveBeenCalled();
 
@@ -391,12 +388,8 @@ describe("Command Not Found Hook", () => {
     for (let i = 0; i < ctx.stubs.log.mock.calls.length; i++) {
       const callArg = ctx.stubs.log.mock.calls[i][0];
       if (typeof callArg === "string") {
-        if (callArg === "\nUSAGE") {
-          usageCall = true;
-        }
-        if (callArg.includes("See more help with:")) {
-          helpCall = true;
-        }
+        usageCall = usageCall || callArg === "\nUSAGE";
+        helpCall = helpCall || callArg.includes("See more help with:");
       }
     }
 
@@ -437,18 +430,16 @@ describe("Command Not Found Hook", () => {
     };
     ctx.config.topicSeparator = " ";
 
-    let errorCaught = false;
-    try {
-      await hook.apply(ctx.mockContext, [hookOpts]);
-    } catch (error: unknown) {
-      errorCaught = true;
-      expect((error as Error).message).toBe("Missing 1 required arg: channel");
-    }
-
-    expect(errorCaught).toBe(true);
+    const error = await hook
+      .apply(ctx.mockContext, [hookOpts])
+      .catch((error_) => error_);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toBe("Missing 1 required arg: channel");
     expect(ctx.stubs.warn).toHaveBeenCalledOnce();
-    expect(ctx.stubs.runCommand).toHaveBeenCalledOnce();
-    expect(ctx.stubs.runCommand).toHaveBeenCalledWith("channels:subscribe", []);
+    expect(ctx.stubs.runCommand).toHaveBeenCalledExactlyOnceWith(
+      "channels:subscribe",
+      [],
+    );
   });
 
   it("should handle arguments when suggesting commands with a typo", async () => {
@@ -469,10 +460,9 @@ describe("Command Not Found Hook", () => {
       "channels publis is not an ably command",
     );
 
-    expect(ctx.stubs.runCommand).toHaveBeenCalledOnce();
-    expect(ctx.stubs.runCommand).toHaveBeenCalledWith("channels:publish", [
-      "foo",
-      "bar",
-    ]);
+    expect(ctx.stubs.runCommand).toHaveBeenCalledExactlyOnceWith(
+      "channels:publish",
+      ["foo", "bar"],
+    );
   });
 });

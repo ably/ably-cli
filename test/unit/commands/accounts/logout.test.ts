@@ -15,12 +15,15 @@ describe("AccountsLogout", function () {
     // Stub fs operations to prevent actual file access
     vi.spyOn(fs, "existsSync").mockReturnValue(true);
     vi.spyOn(fs, "readFileSync").mockReturnValue("");
-    vi.spyOn(fs, "mkdirSync").mockImplementation(() => {});
+    vi.spyOn(fs, "mkdirSync").mockImplementation(() => {
+      return "";
+    });
     vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
   });
 
   afterEach(function () {
     process.env = originalEnv;
+    vi.restoreAllMocks();
   });
 
   describe("command properties", function () {
@@ -87,36 +90,6 @@ describe("AccountsLogout", function () {
           alias === undefined ||
           (typeof alias === "string" && alias.length === 0);
         expect(isInvalid).toBe(true);
-      });
-    });
-  });
-
-  describe("confirmation prompt logic", function () {
-    it("should validate confirmation responses", function () {
-      const yesResponses = ["y", "yes", "Y", "YES"];
-      const noResponses = ["n", "no", "N", "NO"];
-
-      yesResponses.forEach((response) => {
-        const isYes = ["y", "yes"].includes(response.toLowerCase());
-        expect(isYes).toBe(true);
-      });
-
-      noResponses.forEach((response) => {
-        const isNo = ["n", "no"].includes(response.toLowerCase());
-        expect(isNo).toBe(true);
-      });
-    });
-
-    it("should handle empty or invalid responses", function () {
-      const invalidResponses = ["", "maybe", "sure", null, undefined];
-
-      invalidResponses.forEach((response) => {
-        if (response) {
-          const isValid = ["y", "yes", "n", "no"].includes(
-            response.toLowerCase(),
-          );
-          expect(isValid).toBe(false);
-        }
       });
     });
   });

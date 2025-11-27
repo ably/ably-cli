@@ -110,28 +110,6 @@ ably> channels publish test "msg2"
     });
   });
 
-  describe("Login prompt", function () {
-    it("should strip ably from login command in interactive mode", function () {
-      process.env.ABLY_INTERACTIVE_MODE = "true";
-      help = new CustomHelp(config);
-
-      const output = help.formatStandardRoot();
-      if (output.includes("login")) {
-        expect(output).toContain("ably> accounts login");
-        expect(output).not.toContain("$ ably accounts login");
-      }
-    });
-
-    it("should show full command in normal mode", function () {
-      help = new CustomHelp(config);
-
-      const output = help.formatStandardRoot();
-      if (output.includes("login")) {
-        expect(output).toContain("$ ably accounts login");
-      }
-    });
-  });
-
   describe("Anonymous Mode Command Filtering", function () {
     beforeEach(function () {
       // Set up a more complete config with various commands

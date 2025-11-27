@@ -66,6 +66,7 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
   describe("Ctrl+C at Empty Prompt", () => {
     it(
       "should show message about typing exit when Ctrl+C pressed at empty prompt",
+      { timeout: 30000 },
       async () => {
         proc = spawn(
           "node",
@@ -97,11 +98,11 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
         // Clean exit
         proc.stdin!.write("exit\n");
       },
-      { timeout: 30000 },
     );
 
     it(
       "should remain functional after Ctrl+C at empty prompt",
+      { timeout: 30000 },
       async () => {
         proc = spawn(
           "node",
@@ -131,13 +132,13 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
         // Clean exit
         proc.stdin!.write("exit\n");
       },
-      { timeout: 30000 },
     );
   });
 
   describe("Ctrl+C During Command Execution", () => {
     it(
       "should interrupt test:wait command and return to prompt",
+      { timeout: 30000 },
       async () => {
         // In interactive mode, Ctrl+C should interrupt the command but NOT exit the process
         proc = spawn(
@@ -236,11 +237,11 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
         proc.stdin!.write("exit\n");
         await new Promise((resolve) => proc.on("exit", resolve));
       },
-      { timeout: 30000 },
     );
 
     it(
       "should return to prompt when SIGINT is received during command execution",
+      { timeout: 30000 },
       async () => {
         // In interactive mode, SIGINT should NOT exit the process
         // Instead, it should interrupt the command and return to the prompt
@@ -316,13 +317,13 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
 
         expect(exitCode).toBe(0); // Normal exit after 'exit' command
       },
-      { timeout: 30000 },
     );
   });
 
   describe("User Feedback", () => {
     it(
       "should show interrupt feedback when Ctrl+C is pressed during command",
+      { timeout: 30000 },
       async () => {
         const cliPath = path.resolve(__dirname, "../../../bin/development.js");
 
@@ -388,11 +389,11 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
         // Clean exit
         proc.stdin!.write("exit\n");
       },
-      { timeout: 30000 },
     );
 
     it(
       "should handle double Ctrl+C for force quit",
+      { timeout: 30000 },
       async () => {
         const cliPath = path.resolve(__dirname, "../../../bin/development.js");
 
@@ -453,13 +454,7 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
         await new Promise((resolve) => setTimeout(resolve, 300));
 
         // Check if process has exited after first SIGINT (it shouldn't in interactive mode)
-        if (hasExited) {
-          // If it exited after first SIGINT, that's wrong for interactive mode
-          // but we'll check the exit code anyway
-          const exitCode = await exitPromise;
-          expect(exitCode).toBe(130);
-          return;
-        }
+        expect(hasExited).toBe(false);
 
         // Send second SIGINT for force quit
         proc.kill("SIGINT");
@@ -471,13 +466,13 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
         const allOutput = output + errorOutput;
         expect(allOutput).toContain("⚠ Force quit");
       },
-      { timeout: 30000 },
     );
   });
 
   describe("Edge Cases", () => {
     it(
       "should handle Ctrl+C during partial command entry",
+      { timeout: 30000 },
       async () => {
         proc = spawn(
           "node",
@@ -510,11 +505,11 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
         // Clean exit
         proc.stdin!.write("exit\n");
       },
-      { timeout: 30000 },
     );
 
     it(
       "should handle multiple rapid Ctrl+C presses",
+      { timeout: 30000 },
       async () => {
         proc = spawn(
           "node",
@@ -569,13 +564,13 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
         proc.stdin!.write("exit\n");
         await new Promise((resolve) => proc.on("exit", resolve));
       },
-      { timeout: 30000 },
     );
   });
 
   describe("Real TTY Behavior", () => {
     it(
       "should NOT crash with setRawMode EIO after Ctrl+C during command execution",
+      { timeout: 30000 },
       async () => {
         // This test verifies that Ctrl+C during a long-running command doesn't corrupt the terminal
         // We'll test this without node-pty by using regular spawn
@@ -661,11 +656,11 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
           });
         });
       },
-      { timeout: 30000 },
     );
 
     it(
       "should handle Ctrl+C gracefully without terminal corruption",
+      { timeout: 30000 },
       async () => {
         // Test that Ctrl+C during command execution doesn't corrupt the terminal
         proc = spawn(
@@ -785,7 +780,6 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
           });
         });
       },
-      { timeout: 30000 },
     );
   });
 });

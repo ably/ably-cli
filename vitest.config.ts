@@ -2,22 +2,10 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    // Shared configuration for all projects
-    environment: "node",
+    // Needed for oclif testing
     disableConsoleIntercept: true,
+
     setupFiles: ["./test/setup.ts"],
-    hookTimeout: 30000,
-    allowOnly: process.env.CI !== "true",
-    globals: false,
-    sequence: { shuffle: false },
-    retry: 0,
-    isolate: true,
-    pool: "forks",
-    typecheck: { enabled: false },
-    reporters: ["default"],
-    // Auto-restore mocks after each test
-    restoreMocks: true,
-    clearMocks: true,
 
     // Coverage configuration (shared across projects)
     coverage: {
@@ -45,7 +33,6 @@ export default defineConfig({
         test: {
           name: "unit",
           include: ["test/unit/**/*.test.ts"],
-          testTimeout: 60000, // 60 seconds for unit tests
           env: {
             ABLY_CLI_DEFAULT_DURATION: "0.25",
             ABLY_CLI_TEST_MODE: "true",
@@ -58,7 +45,6 @@ export default defineConfig({
           name: "integration",
           include: ["test/integration/**/*.test.ts"],
           exclude: ["**/node_modules/**", "**/dist/**"],
-          testTimeout: 120000, // 120 seconds for integration tests
           env: {
             ABLY_CLI_DEFAULT_DURATION: "0.25",
             ABLY_CLI_TEST_MODE: "true",
@@ -80,12 +66,7 @@ export default defineConfig({
           hookTimeout: 60000, // 60 seconds for hooks
           // Run e2e tests sequentially to avoid API rate limits
           sequence: { shuffle: false },
-          pool: "forks",
-          poolOptions: {
-            forks: {
-              singleFork: true, // Run all tests in a single fork sequentially
-            },
-          },
+          fileParallelism: false,
         },
       },
       {
@@ -95,22 +76,8 @@ export default defineConfig({
           include: ["test/hooks/**/*.test.ts"],
           // Exclude web-cli tests (use Playwright separately)
           exclude: ["**/node_modules/**", "**/dist/**"],
-          testTimeout: 300000, // 5 minutes default for e2e tests
-          hookTimeout: 60000, // 60 seconds for hooks
-          // Run e2e tests sequentially to avoid API rate limits
-          sequence: { shuffle: false },
-          pool: "forks",
-          poolOptions: {
-            forks: {
-              singleFork: true, // Run all tests in a single fork sequentially
-            },
-          },
         },
       },
     ],
-  },
-
-  resolve: {
-    alias: {},
   },
 });

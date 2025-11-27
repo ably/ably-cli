@@ -3,8 +3,6 @@ import { describe, it, expect } from "vitest";
 
 // This is the absolute minimum test to see if oclif tests work at all
 describe("Minimal oclif test", function () {
-  // Set very short timeout to fail fast if hanging
-
   // Just try to execute the help command which should be fast and reliable
   it("runs help command", async function () {
     // Try to run the simplest possible command

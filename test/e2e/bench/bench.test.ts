@@ -63,6 +63,7 @@ describe("E2E: ably bench publisher and subscriber", () => {
 
   it(
     "should run publisher and subscriber, and report correct message counts",
+    { timeout: 120000 },
     async () => {
       setupTestFailureHandler(
         "should run publisher and subscriber, and report correct message counts",
@@ -396,13 +397,12 @@ describe("E2E: ably bench publisher and subscriber", () => {
 
       expect(publisherSummary).toBeDefined();
       expect(publisherSummary?.data).toBeDefined();
-      if (publisherSummary?.data) {
-        expect(publisherSummary.data.messagesSent).toBe(messageCount);
-        expect(publisherSummary.data.messagesEchoed).toBeGreaterThanOrEqual(
-          messageCount * 0.9,
-        );
-        expect(publisherSummary.data.errors).toBe(0);
-      }
+      const publisherData = publisherSummary!.data;
+      expect(publisherData.messagesSent).toBe(messageCount);
+      expect(publisherData.messagesEchoed).toBeGreaterThanOrEqual(
+        messageCount * 0.9,
+      );
+      expect(publisherData.errors).toBe(0);
 
       const subscriberLogEntries = subscriberOutput
         .trim()
@@ -422,12 +422,8 @@ describe("E2E: ably bench publisher and subscriber", () => {
         );
       expect(subscriberSummary).toBeDefined();
       expect(subscriberSummary?.data?.results).toBeDefined();
-      if (subscriberSummary?.data?.results) {
-        expect(subscriberSummary.data.results.messagesReceived).toBe(
-          messageCount,
-        );
-      }
+      const subscriberResults = subscriberSummary!.data!.results;
+      expect(subscriberResults.messagesReceived).toBe(messageCount);
     },
-    { timeout: 120000 },
   );
 });

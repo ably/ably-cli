@@ -17,6 +17,7 @@ describe("Interactive Mode - Wrapper Integration", () => {
 
   it(
     "should use wrapper script when running node bin/run.js interactive",
+    { timeout: 30000 },
     async () => {
       // Start the process
       const proc = spawn("node", [binPath, "interactive"], {
@@ -62,11 +63,11 @@ describe("Interactive Mode - Wrapper Integration", () => {
       // Note: We can't reliably check process tree in test environment
       // but at least verify the command works
     },
-    { timeout: 30000 },
   );
 
   it(
     "should restart after SIGINT when using wrapper",
+    { timeout: 30000 },
     async () => {
       const proc = spawn("node", [binPath, "interactive"], {
         stdio: "pipe",
@@ -137,11 +138,11 @@ describe("Interactive Mode - Wrapper Integration", () => {
       // In wrapper mode, we should see at least one prompt
       expect(promptCount).toBeGreaterThanOrEqual(1);
     },
-    { timeout: 30000 },
   );
 
   it(
     "should have consistent behavior between bin/run.js interactive and bin/ably-interactive",
+    { timeout: 30000 },
     async () => {
       // Test direct wrapper
       const proc1 = spawn(wrapperPath, [], {
@@ -219,12 +220,12 @@ describe("Interactive Mode - Wrapper Integration", () => {
       expect(output1).toContain("Goodbye!");
       expect(output2).toContain("Goodbye!");
     },
-    { timeout: 30000 },
   );
 
   describe("Wrapper restart after SIGINT", () => {
     it(
       "should NOT fail with setRawMode EIO when wrapper restarts after SIGINT",
+      { timeout: 30000 },
       async () => {
         // This test specifically targets the issue where:
         // 1. User runs test:wait command
@@ -327,13 +328,11 @@ describe("Interactive Mode - Wrapper Integration", () => {
         expect(promptCount).toBeGreaterThan(beforeSigintPromptCount);
 
         // Verify the CLI is functional after restart
-        if (errorCount === 0 && promptCount > beforeSigintPromptCount) {
-          proc.stdin!.write("version\n");
+        proc.stdin!.write("version\n");
 
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
-          expect(output).toMatch(/\d+\.\d+\.\d+/); // Version number
-        }
+        expect(output).toMatch(/\d+\.\d+\.\d+/); // Version number
 
         // Clean exit
         proc.stdin!.write("exit\n");
@@ -347,13 +346,13 @@ describe("Interactive Mode - Wrapper Integration", () => {
           }, 2000);
         });
       },
-      { timeout: 30000 },
     );
   });
 
   describe("Terminal corruption prevention", () => {
     it(
       "should prevent terminal corruption after SIGINT in wrapper mode",
+      { timeout: 30000 },
       async () => {
         const proc = spawn(wrapperPath, [], {
           stdio: ["pipe", "pipe", "pipe"],
@@ -445,7 +444,6 @@ describe("Interactive Mode - Wrapper Integration", () => {
           }, 2000);
         });
       },
-      { timeout: 30000 },
     );
   });
 });

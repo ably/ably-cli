@@ -549,13 +549,17 @@ describe("spaces commands", function () {
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(acquireStub).toHaveBeenCalledOnce();
-      expect(acquireStub).toHaveBeenCalledWith("test-lock", undefined);
+      expect(acquireStub).toHaveBeenCalledExactlyOnceWith(
+        "test-lock",
+        expect.toSatisfy((v) => v === undefined),
+      );
     });
 
     it("should handle lock attributes", async function () {
       command.setParseResult({
-        flags: { attributes: '{"priority": "high", "timeout": 5000}' },
+        flags: {
+          data: '{"attributes": {"priority": "high", "timeout": 5000}}',
+        },
         args: { space: "test-space", lockId: "test-lock" },
         argv: [],
         raw: [],
@@ -569,12 +573,13 @@ describe("spaces commands", function () {
       const lockCallArgs = acquireStub.mock.calls[0];
       expect(lockCallArgs[0]).toBe("test-lock");
       // Attributes would typically be passed as second argument
-      if (lockCallArgs[1]) {
-        expect(lockCallArgs[1]).toEqual({
+      expect(lockCallArgs[1]).toBeDefined();
+      expect(lockCallArgs[1]).toEqual({
+        attributes: {
           priority: "high",
           timeout: 5000,
-        });
-      }
+        },
+      });
     });
   });
 

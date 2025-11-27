@@ -112,28 +112,6 @@ describe("Authentication E2E", () => {
   });
 
   describe("error scenarios", () => {
-    it("should handle invalid credentials gracefully", () => {
-      setupTestFailureHandler("should handle invalid credentials gracefully");
-
-      // Set invalid API key
-      process.env.ABLY_API_KEY = "invalid.key:format";
-
-      // Test that this would be detected as invalid format
-      const apiKey = process.env.ABLY_API_KEY;
-      const keyParts = apiKey.split(":");
-
-      if (keyParts.length === 2) {
-        const keyName = keyParts[0];
-        const secret = keyParts[1];
-
-        // Should have proper app.key format
-        expect(keyName.includes(".")).toBe(true);
-        expect(secret.length).toBeGreaterThan(0);
-      } else {
-        expect(true).toBe(true); // Invalid format detected
-      }
-    });
-
     it("should handle missing config directory permissions", () => {
       setupTestFailureHandler(
         "should handle missing config directory permissions",
@@ -236,11 +214,8 @@ describe("Authentication E2E", () => {
       const configPath = path.join(tempConfigDir, "config");
 
       // Path should be normalized for the current platform
-      if (process.platform === "win32") {
-        expect(configPath).toContain("\\");
-      } else {
-        expect(configPath).toContain("/");
-      }
+      const configPathSeparator = process.platform === "win32" ? "\\" : "/";
+      expect(configPath).toContain(configPathSeparator);
 
       // Should be able to create and access files
       const { ConfigManager } = await import(
@@ -306,9 +281,9 @@ describe("Authentication E2E", () => {
       const defaultConfigPath = path.join(homeDir, ".ably", "config");
 
       // Only check if we're not accidentally using the same path
-      if (tempConfigDir !== path.join(homeDir, ".ably")) {
-        expect(configPath).not.toBe(defaultConfigPath);
-      }
+      const isUsingDefaultPath = tempConfigDir === path.join(homeDir, ".ably");
+      expect(isUsingDefaultPath || configPath !== defaultConfigPath).toBe(true);
+      expect(configPath).not.toBe(defaultConfigPath);
     });
   });
 });

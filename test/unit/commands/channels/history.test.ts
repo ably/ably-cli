@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach, vi, MockInstance } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  MockInstance,
+} from "vitest";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
 import ChannelsHistory from "../../../../src/commands/channels/history.js";
@@ -248,6 +256,10 @@ describe("ChannelsHistory", function () {
       argv: [],
       raw: [],
     });
+  });
+
+  afterEach(function () {
+    vi.restoreAllMocks();
   });
 
   describe("run", function () {

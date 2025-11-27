@@ -129,13 +129,8 @@ describe("Channels Batch Publish Command", function () {
     const publishError = new Error("Publish failed");
     command.setMockPublish(vi.fn().mockRejectedValue(publishError));
 
-    try {
-      await command.run();
-      // Should not reach here
-      expect.fail("Should have thrown an error");
-    } catch {
-      expect(command.errorOutput).toContain("Failed to execute batch publish");
-    }
+    await expect(command.run()).rejects.toThrow();
+    expect(command.errorOutput).toContain("Failed to execute batch publish");
   });
 
   it("handles invalid channels input", async function () {
@@ -146,15 +141,10 @@ describe("Channels Batch Publish Command", function () {
       raw: [],
     });
 
-    try {
-      await command.run();
-      // Should not reach here
-      expect.fail("Should have thrown an error");
-    } catch {
-      expect(command.errorOutput).toContain(
-        "You must specify either --channels, --channels-json, or --spec",
-      );
-    }
+    await expect(command.run()).rejects.toThrow();
+    expect(command.errorOutput).toContain(
+      "You must specify either --channels, --channels-json, or --spec",
+    );
   });
 
   it("handles message publishing with custom event name", async function () {

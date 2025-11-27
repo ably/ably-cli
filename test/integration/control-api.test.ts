@@ -449,10 +449,9 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
         const apps = await controlApi.listApps();
         expect(apps).toBeInstanceOf(Array);
         // Just verify the structure is correct
-        if (apps.length > 0) {
-          expect(apps[0]).toHaveProperty("id");
-          expect(apps[0]).toHaveProperty("name");
-        }
+        expect(apps.length).toBeGreaterThan(0);
+        expect(apps[0]).toHaveProperty("id");
+        expect(apps[0]).toHaveProperty("name");
       });
     });
   },

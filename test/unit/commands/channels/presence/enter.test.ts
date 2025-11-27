@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import ChannelsPresenceEnter from "../../../../../src/commands/channels/presence/enter.js";
 import * as Ably from "ably";
@@ -100,6 +100,10 @@ describe("ChannelsPresenceEnter", function () {
     mockConfig = { runHook: vi.fn() } as unknown as Config;
     command = new TestableChannelsPresenceEnter([], mockConfig);
     _logStub = vi.spyOn(command, "log");
+  });
+
+  afterEach(function () {
+    vi.restoreAllMocks();
 
     // No need to stub the ES module - we override the method in run() below
 

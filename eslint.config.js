@@ -7,7 +7,7 @@ import eslintPluginUnicorn from "eslint-plugin-unicorn";
 import eslintConfigPrettier from "eslint-config-prettier";
 import eslintPluginPrettier from "eslint-plugin-prettier";
 import eslint from "@eslint/js"; // Import base eslint config
-import eslintPluginVitest from "eslint-plugin-vitest"; // Import vitest plugin
+import vitest from '@vitest/eslint-plugin'
 
 export default [
   {
@@ -125,16 +125,37 @@ export default [
     // Configuration specific to test files
     files: ["test/**/*.test.ts"],
     plugins: {
-      vitest: eslintPluginVitest,
+      vitest: vitest,
     },
     languageOptions: {
       globals: {
-        ...eslintPluginVitest.environments.env.globals,
+        ...vitest.environments.env.globals,
       },
     },
     rules: {
       // Apply recommended vitest rules
-      ...eslintPluginVitest.configs.recommended.rules,
+      ...vitest.configs.recommended.rules,
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-expressions": "off",
+      "vitest/no-focused-tests": "error", // Equivalent to mocha/no-exclusive-tests
+      "vitest/no-disabled-tests": "warn", // Equivalent to mocha/no-skipped-tests
+    },
+  },
+  {
+    // Configuration specific to test files
+    files: ["packages/react-web-cli/**/*.test.ts", "packages/react-web-cli/**/*.test.tsx"],
+    plugins: {
+      vitest: vitest,
+    },
+    languageOptions: {
+      globals: {
+        ...vitest.environments.env.globals,
+        ...globals.browser,
+      },
+    },
+    rules: {
+      // Apply recommended vitest rules
+      ...vitest.configs.recommended.rules,
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-expressions": "off",
       "vitest/no-focused-tests": "error", // Equivalent to mocha/no-exclusive-tests
@@ -145,16 +166,16 @@ export default [
     // Configuration specific to server test files
     files: ["server/tests/**/*.test.ts"],
     plugins: {
-      vitest: eslintPluginVitest,
+      vitest: vitest,
     },
     languageOptions: {
       globals: {
-        ...eslintPluginVitest.environments.env.globals,
+        ...vitest.environments.env.globals,
       },
     },
     rules: {
       // Apply recommended vitest rules
-      ...eslintPluginVitest.configs.recommended.rules,
+      ...vitest.configs.recommended.rules,
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-expressions": "off",
       "vitest/no-focused-tests": "error", // Equivalent to mocha/no-exclusive-tests

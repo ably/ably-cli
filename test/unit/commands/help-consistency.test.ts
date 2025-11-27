@@ -206,10 +206,10 @@ describe("Help Output Consistency", () => {
     it(
       "should show consistent help for different topic commands",
       async () => {
-        // Test multiple topic commands
-        const topicCommands = ["accounts", "apps", "channels"];
+        // Test multiple topic commands with subcommands
+        const topicsWithCommands = ["accounts", "apps", "channels"];
 
-        for (const topic of topicCommands) {
+        for (const topic of topicsWithCommands) {
           const { stdout } = await execAsync(`node ${binPath} ${topic} --help`);
 
           // Should have standard sections
@@ -217,16 +217,10 @@ describe("Help Output Consistency", () => {
           expect(stdout).toContain("DESCRIPTION");
           expect(stdout).toContain("EXAMPLES");
 
-          // Should have COMMANDS section if it has subcommands
-          if (
-            topic === "accounts" ||
-            topic === "apps" ||
-            topic === "channels"
-          ) {
-            expect(stdout).toContain("COMMANDS");
-            // Commands should use spaces, not colons
-            expect(stdout).not.toMatch(new RegExp(`${topic}:[a-z]+`));
-          }
+          // Should have COMMANDS section for topics with subcommands
+          expect(stdout).toContain("COMMANDS");
+          // Commands should use spaces, not colons
+          expect(stdout).not.toMatch(new RegExp(`${topic}:[a-z]+`));
         }
       },
       timeout,

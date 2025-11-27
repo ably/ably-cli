@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import HelpCommand from "../../../src/commands/help.js";
 import CustomHelp from "../../../src/help.js";
@@ -39,6 +39,10 @@ describe("Help Command Tests", function () {
   beforeEach(function () {
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
+  });
+
+  afterEach(function () {
+    vi.restoreAllMocks();
   });
 
   describe("Help Command Structure", function () {

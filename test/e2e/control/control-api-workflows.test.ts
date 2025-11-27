@@ -155,6 +155,7 @@ describe("Control API E2E Workflow Tests", () => {
   describe("Complete App Lifecycle Workflow", () => {
     it(
       "should create, update, and manage an app through CLI",
+      { timeout: 30000 },
       async () => {
         setupTestFailureHandler(
           "should create, update, and manage an app through CLI",
@@ -216,7 +217,6 @@ describe("Control API E2E Workflow Tests", () => {
         expect(updateOutput.app).toHaveProperty("name", updatedName);
         expect(updateOutput.app).toHaveProperty("tlsOnly", true);
       },
-      { timeout: 30000 },
     );
   });
 
@@ -532,6 +532,7 @@ describe("Control API E2E Workflow Tests", () => {
 
     it(
       "should create and manage channel rules through CLI",
+      { timeout: 20000 },
       async () => {
         setupTestFailureHandler(
           "should create and manage channel rules through CLI",
@@ -592,13 +593,13 @@ describe("Control API E2E Workflow Tests", () => {
         expect(foundRule).toHaveProperty("persisted", true);
         expect(foundRule).toHaveProperty("pushEnabled", true);
       },
-      { timeout: 20000 },
     );
   });
 
   describe("Error Handling and Edge Cases", () => {
     it(
       "should handle invalid access tokens gracefully",
+      { timeout: 10000 },
       async () => {
         setupTestFailureHandler(
           "should handle invalid access tokens gracefully",
@@ -614,52 +615,42 @@ describe("Control API E2E Workflow Tests", () => {
         expect(result.exitCode).not.toBe(0);
         expect(result.stderr + result.stdout).toContain("401");
       },
-      { timeout: 10000 },
     );
 
-    it(
-      "should handle non-existent resources",
-      async () => {
-        setupTestFailureHandler("should handle non-existent resources");
+    it("should handle non-existent resources", { timeout: 10000 }, async () => {
+      setupTestFailureHandler("should handle non-existent resources");
 
-        if (shouldSkip) return;
+      if (shouldSkip) return;
 
-        const result = await runCommand(
-          ["apps", "update", "non-existent-app-id", "--name", "Test", "--json"],
-          {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
-          },
-        );
-
-        expect(result.exitCode).not.toBe(0);
-        expect(result.stderr + result.stdout).toContain("404");
-      },
-      { timeout: 10000 },
-    );
-
-    it(
-      "should validate required parameters",
-      async () => {
-        setupTestFailureHandler("should validate required parameters");
-
-        if (shouldSkip) return;
-
-        const result = await runCommand(["apps", "create"], {
+      const result = await runCommand(
+        ["apps", "update", "non-existent-app-id", "--name", "Test", "--json"],
+        {
           env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
-        });
+        },
+      );
 
-        expect(result.exitCode).not.toBe(0);
-        expect(result.stderr + result.stdout).toContain(
-          "Missing required flag",
-        );
-      },
-      { timeout: 10000 },
-    );
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr + result.stdout).toContain("404");
+    });
+
+    it("should validate required parameters", { timeout: 10000 }, async () => {
+      setupTestFailureHandler("should validate required parameters");
+
+      if (shouldSkip) return;
+
+      const result = await runCommand(["apps", "create"], {
+        env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+      });
+
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr + result.stdout).toContain("Missing required flag");
+    });
   });
 
   describe("Cross-Command Workflows", () => {
     it(
       "should handle complete app setup workflow",
+      { timeout: 45000 },
       async () => {
         setupTestFailureHandler("should handle complete app setup workflow");
 
@@ -787,7 +778,6 @@ describe("Control API E2E Workflow Tests", () => {
           integrationsOutput.rules.find((rule: any) => rule.id === ruleId),
         ).toBeDefined();
       },
-      { timeout: 45000 },
     );
   });
 });

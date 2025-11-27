@@ -207,22 +207,22 @@ describe("LogsConnectionSubscribe", function () {
 
     // Simulate receiving a log message
     const messageCallback = subscribeStub.mock.calls[0][0];
-    if (typeof messageCallback === "function") {
-      const mockMessage = {
-        name: "connection.opened",
-        data: { connectionId: "test-connection-123" },
-        timestamp: Date.now(),
-        clientId: "test-client",
-        connectionId: "test-connection-123",
-        id: "msg-123",
-      };
+    expect(typeof messageCallback).toBe("function");
 
-      messageCallback(mockMessage);
+    const mockMessage = {
+      name: "connection.opened",
+      data: { connectionId: "test-connection-123" },
+      timestamp: Date.now(),
+      clientId: "test-client",
+      connectionId: "test-connection-123",
+      id: "msg-123",
+    };
 
-      // Check that the message was logged
-      const output = command.logOutput.join("\n");
-      expect(output).toContain("connection.opened");
-    }
+    messageCallback(mockMessage);
+
+    // Check that the message was logged
+    const output = command.logOutput.join("\n");
+    expect(output).toContain("connection.opened");
   });
 
   it("should output JSON when requested", async function () {
@@ -245,33 +245,33 @@ describe("LogsConnectionSubscribe", function () {
 
     // Simulate receiving a message in JSON mode
     const messageCallback = subscribeStub.mock.calls[0][0];
-    if (typeof messageCallback === "function") {
-      const mockMessage = {
-        name: "connection.opened",
-        data: { connectionId: "test-connection-123" },
-        timestamp: Date.now(),
-        clientId: "test-client",
-        connectionId: "test-connection-123",
-        id: "msg-123",
-      };
+    expect(typeof messageCallback).toBe("function");
 
-      messageCallback(mockMessage);
+    const mockMessage = {
+      name: "connection.opened",
+      data: { connectionId: "test-connection-123" },
+      timestamp: Date.now(),
+      clientId: "test-client",
+      connectionId: "test-connection-123",
+      id: "msg-123",
+    };
 
-      // Check for JSON output
-      const jsonOutput = command.logOutput.find((log) => {
-        try {
-          const parsed = JSON.parse(log);
-          return (
-            parsed.event === "connection.opened" &&
-            parsed.timestamp &&
-            parsed.id === "msg-123"
-          );
-        } catch {
-          return false;
-        }
-      });
-      expect(jsonOutput).toBeDefined();
-    }
+    messageCallback(mockMessage);
+
+    // Check for JSON output
+    const jsonOutput = command.logOutput.find((log) => {
+      try {
+        const parsed = JSON.parse(log);
+        return (
+          parsed.event === "connection.opened" &&
+          parsed.timestamp &&
+          parsed.id === "msg-123"
+        );
+      } catch {
+        return false;
+      }
+    });
+    expect(jsonOutput).toBeDefined();
   });
 
   it("should handle connection failures", async function () {
@@ -293,11 +293,12 @@ describe("LogsConnectionSubscribe", function () {
       await command.run();
       expect.fail("Command should have handled connection failure");
     } catch {
-      // The command should handle connection failures gracefully
-      // Check that error was logged appropriately
-      const output = command.logOutput.join("\n");
-      expect(output.length).toBeGreaterThan(0); // Some output should have been generated
+      // The command should handle connection failures gracefully - catch block intentionally empty
     }
+
+    // Check that error was logged appropriately
+    const output = command.logOutput.join("\n");
+    expect(output.length).toBeGreaterThan(0); // Some output should have been generated
   });
 
   it("should handle client creation failure", async function () {

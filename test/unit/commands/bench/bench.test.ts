@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
 
@@ -87,6 +87,10 @@ describe("bench publisher control envelopes", function () {
       argv: [],
       raw: [],
     });
+  });
+
+  afterEach(function () {
+    vi.restoreAllMocks();
   });
 
   it("should publish start, message and end control envelopes in order", async function () {

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import ChannelsPresenceSubscribe from "../../../../../src/commands/channels/presence/subscribe.js";
 import * as Ably from "ably";
@@ -137,6 +137,10 @@ describe("ChannelsPresenceSubscribe", function () {
   beforeEach(function () {
     mockConfig = { runHook: vi.fn() } as unknown as Config;
     command = new TestableChannelsPresenceSubscribe([], mockConfig);
+  });
+
+  afterEach(function () {
+    vi.restoreAllMocks();
 
     // Initialize mock client
     const mockPresenceInstance = {

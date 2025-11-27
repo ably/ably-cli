@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import { AblyBaseCommand } from "../../../src/base-command.js";
 
@@ -91,6 +91,10 @@ describe("Auth Info Display", function () {
     // Make sure environment variables are clean
     delete process.env.ABLY_API_KEY;
     delete process.env.ABLY_ACCESS_TOKEN;
+  });
+
+  afterEach(function () {
+    vi.restoreAllMocks();
   });
 
   describe("shouldHideAccountInfo", function () {

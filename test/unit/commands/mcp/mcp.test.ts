@@ -115,12 +115,7 @@ describe("mcp commands", function () {
     it("should handle MCP server startup errors", async function () {
       startStub.mockRejectedValue(new Error("Failed to bind to port"));
 
-      try {
-        await command.run();
-        expect.fail("Should have thrown an error");
-      } catch (error) {
-        expect((error as Error).message).toContain("Failed to bind to port");
-      }
+      await expect(command.run()).rejects.toThrow("Failed to bind to port");
     });
   });
 
@@ -141,6 +136,7 @@ describe("mcp commands", function () {
     afterEach(function () {
       // Clean up server if it was created
       server = null as any;
+      vi.restoreAllMocks();
     });
 
     it("should initialize with default options", function () {

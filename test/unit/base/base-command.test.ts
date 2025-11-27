@@ -169,6 +169,7 @@ describe("AblyBaseCommand", function () {
   afterEach(function () {
     // Restore original env
     process.env = originalEnv;
+    vi.restoreAllMocks();
   });
 
   describe("checkWebCliRestrictions", function () {

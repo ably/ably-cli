@@ -42,6 +42,7 @@ describe("Connections E2E Tests", () => {
   describe("Connection Stats E2E", () => {
     it(
       "should retrieve real connection stats successfully",
+      { timeout: 60000 },
       async () => {
         setupTestFailureHandler(
           "should retrieve real connection stats successfully",
@@ -60,11 +61,11 @@ describe("Connections E2E Tests", () => {
         expect(result.stdout).toContain("Channels:");
         expect(result.stdout).toContain("Messages:");
       },
-      { timeout: 60000 },
     );
 
     it(
       "should output connection stats in JSON format",
+      { timeout: 60000 },
       async () => {
         setupTestFailureHandler(
           "should output connection stats in JSON format",
@@ -91,11 +92,11 @@ describe("Connections E2E Tests", () => {
         // Check for expected stats structure
         expect(jsonOutput).toHaveProperty("intervalId");
       },
-      { timeout: 60000 },
     );
 
     it(
       "should handle different time units correctly",
+      { timeout: 60000 },
       async () => {
         setupTestFailureHandler("should handle different time units correctly");
 
@@ -110,73 +111,65 @@ describe("Connections E2E Tests", () => {
         expect(result.exitCode).toBe(0);
         expect(result.stdout).toContain("Stats for");
       },
-      { timeout: 60000 },
     );
 
-    it(
-      "should handle custom time ranges",
-      async () => {
-        setupTestFailureHandler("should handle custom time ranges");
+    it("should handle custom time ranges", { timeout: 60000 }, async () => {
+      setupTestFailureHandler("should handle custom time ranges");
 
-        const endTime = Date.now();
-        const startTime = endTime - 60 * 60 * 1000; // 1 hour ago
+      const endTime = Date.now();
+      const startTime = endTime - 60 * 60 * 1000; // 1 hour ago
 
-        const result = await runCommand(
-          [
-            "connections",
-            "stats",
-            "--start",
-            startTime.toString(),
-            "--end",
-            endTime.toString(),
-            "--limit",
-            "2",
-          ],
-          {
-            timeoutMs: 30000,
-            env: { ABLY_CLI_TEST_MODE: "false" },
-          },
-        );
+      const result = await runCommand(
+        [
+          "connections",
+          "stats",
+          "--start",
+          startTime.toString(),
+          "--end",
+          endTime.toString(),
+          "--limit",
+          "2",
+        ],
+        {
+          timeoutMs: 30000,
+          env: { ABLY_CLI_TEST_MODE: "false" },
+        },
+      );
 
-        expect(result.exitCode).toBe(0);
-      },
-      { timeout: 60000 },
-    );
+      expect(result.exitCode).toBe(0);
+    });
 
-    it(
-      "should handle empty stats gracefully",
-      async () => {
-        setupTestFailureHandler("should handle empty stats gracefully");
+    it("should handle empty stats gracefully", { timeout: 60000 }, async () => {
+      setupTestFailureHandler("should handle empty stats gracefully");
 
-        // Use a very recent time range that's unlikely to have stats
-        const endTime = Date.now();
-        const startTime = endTime - 1000; // 1 second ago
+      // Use a very recent time range that's unlikely to have stats
+      const endTime = Date.now();
+      const startTime = endTime - 1000; // 1 second ago
 
-        const result = await runCommand(
-          [
-            "connections",
-            "stats",
-            "--start",
-            startTime.toString(),
-            "--end",
-            endTime.toString(),
-          ],
-          {
-            timeoutMs: 30000,
-            env: { ABLY_CLI_TEST_MODE: "false" },
-          },
-        );
+      const result = await runCommand(
+        [
+          "connections",
+          "stats",
+          "--start",
+          startTime.toString(),
+          "--end",
+          endTime.toString(),
+        ],
+        {
+          timeoutMs: 30000,
+          env: { ABLY_CLI_TEST_MODE: "false" },
+        },
+      );
 
-        // Should exit successfully even with no stats
-        expect(result.exitCode).toBe(0);
-      },
-      { timeout: 60000 },
-    );
+      // Should exit successfully even with no stats
+      expect(result.exitCode).toBe(0);
+    });
   });
 
   describe("Connection Test E2E", () => {
     it(
       "should test WebSocket connection successfully",
+      { timeout: 90000 },
       async () => {
         setupTestFailureHandler(
           "should test WebSocket connection successfully",
@@ -193,11 +186,11 @@ describe("Connections E2E Tests", () => {
         expect(result.exitCode).toBe(0);
         expect(result.stdout).toContain("WebSocket connection");
       },
-      { timeout: 90000 },
     );
 
     it(
       "should test HTTP connection successfully",
+      { timeout: 90000 },
       async () => {
         setupTestFailureHandler("should test HTTP connection successfully");
 
@@ -212,30 +205,26 @@ describe("Connections E2E Tests", () => {
         expect(result.exitCode).toBe(0);
         expect(result.stdout).toContain("HTTP connection");
       },
-      { timeout: 90000 },
     );
 
-    it(
-      "should test all connection types",
-      async () => {
-        setupTestFailureHandler("should test all connection types");
+    it("should test all connection types", { timeout: 120000 }, async () => {
+      setupTestFailureHandler("should test all connection types");
 
-        const result = await runCommand(
-          ["connections", "test", "--transport", "all"],
-          {
-            timeoutMs: 120000,
-            env: { ABLY_CLI_TEST_MODE: "false" },
-          },
-        );
+      const result = await runCommand(
+        ["connections", "test", "--transport", "all"],
+        {
+          timeoutMs: 120000,
+          env: { ABLY_CLI_TEST_MODE: "false" },
+        },
+      );
 
-        expect(result.exitCode).toBe(0);
-        expect(result.stdout).toContain("Connection Test Summary");
-      },
-      { timeout: 120000 },
-    );
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Connection Test Summary");
+    });
 
     it(
       "should output connection test results in JSON format",
+      { timeout: 90000 },
       async () => {
         setupTestFailureHandler(
           "should output connection test results in JSON format",
@@ -264,13 +253,13 @@ describe("Connections E2E Tests", () => {
         expect(jsonOutput).toHaveProperty("transport");
         expect(jsonOutput.transport).toBe("ws");
       },
-      { timeout: 90000 },
     );
   });
 
   describe("Error Handling E2E", () => {
     it(
       "should handle invalid time units gracefully",
+      { timeout: 30000 },
       async () => {
         setupTestFailureHandler("should handle invalid time units gracefully");
 
@@ -285,11 +274,11 @@ describe("Connections E2E Tests", () => {
         expect(result.exitCode).not.toBe(0);
         expect(result.stderr).toContain("Expected --unit=");
       },
-      { timeout: 30000 },
     );
 
     it(
       "should handle invalid transport types gracefully",
+      { timeout: 30000 },
       async () => {
         setupTestFailureHandler(
           "should handle invalid transport types gracefully",
@@ -306,11 +295,11 @@ describe("Connections E2E Tests", () => {
         expect(result.exitCode).not.toBe(0);
         expect(result.stderr).toContain("Expected --transport=");
       },
-      { timeout: 30000 },
     );
 
     it(
       "should handle invalid timestamp formats gracefully",
+      { timeout: 30000 },
       async () => {
         setupTestFailureHandler(
           "should handle invalid timestamp formats gracefully",
@@ -326,13 +315,13 @@ describe("Connections E2E Tests", () => {
 
         expect(result.exitCode).not.toBe(0);
       },
-      { timeout: 30000 },
     );
   });
 
   describe("Performance and Reliability E2E", () => {
     it(
       "should complete stats retrieval within reasonable time",
+      { timeout: 45000 },
       async () => {
         setupTestFailureHandler(
           "should complete stats retrieval within reasonable time",
@@ -351,11 +340,11 @@ describe("Connections E2E Tests", () => {
         expect(result.exitCode).toBe(0);
         expect(endTime - startTime).toBeLessThan(30000); // Should complete within 30 seconds
       },
-      { timeout: 45000 },
     );
 
     it(
       "should handle multiple consecutive stats requests",
+      { timeout: 120000 },
       async () => {
         setupTestFailureHandler(
           "should handle multiple consecutive stats requests",
@@ -373,11 +362,11 @@ describe("Connections E2E Tests", () => {
           expect(result.exitCode).toBe(0);
         }
       },
-      { timeout: 120000 },
     );
 
     it(
       "should maintain consistent output format across requests",
+      { timeout: 90000 },
       async () => {
         setupTestFailureHandler(
           "should maintain consistent output format across requests",
@@ -414,13 +403,13 @@ describe("Connections E2E Tests", () => {
         // Both should have the same structure
         expect(Object.keys(json1)).toEqual(Object.keys(json2));
       },
-      { timeout: 90000 },
     );
   });
 
   describe("Live Connection Monitoring E2E", () => {
     it(
       "should monitor live connections with real client lifecycle",
+      { timeout: 180000 },
       async () => {
         setupTestFailureHandler(
           "should monitor live connections with real client lifecycle",
@@ -627,11 +616,11 @@ describe("Connections E2E Tests", () => {
           true,
         );
       },
-      { timeout: 180000 },
     );
 
     it(
       "should handle live connection monitoring gracefully on cleanup",
+      { timeout: 60000 },
       async () => {
         setupTestFailureHandler(
           "should handle live connection monitoring gracefully on cleanup",
@@ -671,7 +660,6 @@ describe("Connections E2E Tests", () => {
           setTimeout(doResolve, 5000); // Fallback timeout
         });
       },
-      { timeout: 60000 },
     );
   });
 });

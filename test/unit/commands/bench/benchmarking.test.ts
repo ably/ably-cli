@@ -130,7 +130,9 @@ describe("benchmarking commands", () => {
     mockConfig = { runHook: vi.fn() } as unknown as Config;
   });
 
-  afterEach(() => {});
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   describe("bench publisher", () => {
     let command: TestableBenchPublisher;
@@ -251,17 +253,9 @@ describe("benchmarking commands", () => {
         .mockImplementationOnce(async () => {});
 
       // Command should throw an error when publish fails
-      let errorThrown = false;
-      try {
-        await command.run();
-      } catch (error) {
-        errorThrown = true;
-        expect(
-          error instanceof Error ? error.message : String(error),
-        ).toContain("Benchmark failed: Publish failed");
-      }
-      expect(errorThrown).toBe(true);
-
+      await expect(command.run()).rejects.toThrow(
+        "Benchmark failed: Publish failed",
+      );
       expect(publishStub.mock.calls.length).toBeGreaterThan(0);
     });
 

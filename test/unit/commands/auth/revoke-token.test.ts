@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "node:fs";
 import * as _https from "node:https";
 import RevokeTokenCommand from "../../../../src/commands/auth/revoke-token.js";
@@ -23,6 +23,10 @@ describe("RevokeTokenCommand", function () {
 
     // Reset env before each test
     process.env = { ...originalEnv };
+  });
+
+  afterEach(function () {
+    vi.restoreAllMocks();
 
     // Stub fs operations
     vi.spyOn(fs, "existsSync").mockReturnValue(true);
@@ -189,16 +193,13 @@ describe("RevokeTokenCommand", function () {
       const _command = new RevokeTokenCommand([], {} as any);
       const _logSpy = vi.spyOn(_command, "log");
 
-      const debugFlag = true;
       const apiKey = "appId.keyId:keySecret";
       const maskedKey = apiKey.replace(/:.+/, ":***");
 
-      if (debugFlag) {
-        // This would be logged in debug mode
-        const debugMessage = `Debug: Using API key: ${maskedKey}`;
-        expect(debugMessage).toContain("Debug: Using API key:");
-        expect(debugMessage).toContain(":***");
-      }
+      // This would be logged in debug mode
+      const debugMessage = `Debug: Using API key: ${maskedKey}`;
+      expect(debugMessage).toContain("Debug: Using API key:");
+      expect(debugMessage).toContain(":***");
     });
 
     it("should mask API key secret in debug output", function () {
@@ -292,11 +293,8 @@ describe("RevokeTokenCommand", function () {
       const isTokenNotFound = error.message.includes("token_not_found");
 
       expect(isTokenNotFound).toBe(true);
-
-      if (isTokenNotFound) {
-        const errorMessage = "Token not found or already revoked";
-        expect(errorMessage).toContain("not found or already revoked");
-      }
+      const errorMessage = "Token not found or already revoked";
+      expect(errorMessage).toContain("not found or already revoked");
     });
 
     it("should handle network errors", function () {
@@ -348,21 +346,6 @@ describe("RevokeTokenCommand", function () {
       const closeStub = mockClient.close;
 
       expect(closeStub).toBeTypeOf("function");
-    });
-
-    it("should handle client creation failure", function () {
-      const _command = new RevokeTokenCommand([], {} as any);
-      (_command as any).configManager = configManagerStub;
-
-      // Test scenario where ensureAppAndKey returns null
-      configManagerStub.getCurrentAppId.mockReturnValue("");
-      configManagerStub.getApiKey.mockReturnValue("");
-
-      const appId = configManagerStub.getCurrentAppId();
-      const apiKey = configManagerStub.getApiKey();
-
-      expect(appId).toBe("");
-      expect(apiKey).toBe("");
     });
   });
 

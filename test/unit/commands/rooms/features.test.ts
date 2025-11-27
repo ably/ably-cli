@@ -526,8 +526,10 @@ describe("rooms feature commands", function () {
         "test-room",
       );
       expect(mockRoom.attach).toHaveBeenCalledOnce();
-      expect(sendStub).toHaveBeenCalledOnce();
-      expect(sendStub).toHaveBeenCalledWith({ name: "👍", metadata: {} });
+      expect(sendStub).toHaveBeenCalledExactlyOnceWith({
+        name: "👍",
+        metadata: {},
+      });
     });
 
     it("should handle metadata in reactions", async function () {

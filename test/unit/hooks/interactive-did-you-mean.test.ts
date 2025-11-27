@@ -63,6 +63,7 @@ describe("Did You Mean Hook - Interactive Mode", function () {
 
   afterEach(function () {
     process.env = originalEnv;
+    vi.restoreAllMocks();
   });
 
   describe("command not found handling", function () {

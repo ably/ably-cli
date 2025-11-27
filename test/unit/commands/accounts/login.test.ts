@@ -21,6 +21,7 @@ describe("AccountsLogin", function () {
 
   afterEach(function () {
     process.env = originalEnv;
+    vi.restoreAllMocks();
   });
 
   describe("command properties", function () {

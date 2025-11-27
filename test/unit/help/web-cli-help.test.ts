@@ -75,6 +75,7 @@ describe("CLI Help", function () {
 
     afterEach(function () {
       process.env = originalEnv;
+      vi.restoreAllMocks();
     });
 
     describe("formatRoot in Web CLI mode", function () {

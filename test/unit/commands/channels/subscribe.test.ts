@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import ChannelsSubscribe from "../../../../src/commands/channels/subscribe.js";
 import * as Ably from "ably";
@@ -176,10 +176,13 @@ describe("ChannelsSubscribe (Simplified)", function () {
 
     // IMPORTANT: Stub createAblyRealtimeClient directly on the instance IN beforeEach
     // This ensures the command uses OUR mockClient setup here.
-    vi.spyOn(
-      command,
-      "createAblyRealtimeClient" as keyof TestableChannelsSubscribe,
-    ).mockResolvedValue(command.mockClient as unknown as Ably.Realtime);
+    vi.spyOn(command, "createAblyRealtimeClient").mockResolvedValue(
+      command.mockClient as unknown as Ably.Realtime,
+    );
+  });
+
+  afterEach(function () {
+    vi.restoreAllMocks();
   });
 
   // Helper function to manage test run with timeout/abort
@@ -355,10 +358,11 @@ describe("ChannelsSubscribe (Simplified)", function () {
       await command.run();
       expect.fail("Command should have thrown an error for missing channels");
     } catch {
-      // Check the error message stored by the overridden error method
-      expect(command.errorOutput).toContain(
-        "At least one channel name is required",
-      );
+      // Catch block intentionally empty - error is expected
     }
+    // Check the error message stored by the overridden error method
+    expect(command.errorOutput).toContain(
+      "At least one channel name is required",
+    );
   });
 });
