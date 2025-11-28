@@ -108,18 +108,24 @@ describe("Help Output Consistency", () => {
           });
 
           let output = "";
+          let helpReceived = false;
 
           child.stdout.on("data", (data) => {
             output += data.toString();
+
+            // Once we see USAGE in the output, send the exit command
+            if (!helpReceived && output.includes("USAGE")) {
+              helpReceived = true;
+              // Give a small delay to ensure all help output is captured
+              setTimeout(() => {
+                child.stdin.write("exit\n");
+              }, 1000);
+            }
           });
 
           setTimeout(() => {
             child.stdin.write("accounts --help\n");
           }, 500);
-
-          setTimeout(() => {
-            child.stdin.write("exit\n");
-          }, 1500);
 
           child.on("exit", () => {
             resolve(output);

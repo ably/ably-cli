@@ -207,6 +207,11 @@ describe("Did You Mean Functionality", () => {
                 output.includes("Error:")
               ) {
                 executedCommand = true;
+
+                // Give more time for command execution
+                setTimeout(() => {
+                  child.stdin.write("exit\n");
+                }, 1000);
               }
             });
 
@@ -222,6 +227,11 @@ describe("Did You Mean Functionality", () => {
                 errorOutput.includes("Error:")
               ) {
                 executedCommand = true;
+
+                // Give more time for command execution
+                setTimeout(() => {
+                  child.stdin.write("exit\n");
+                }, 1000);
               }
             });
 
@@ -229,11 +239,6 @@ describe("Did You Mean Functionality", () => {
             setTimeout(() => {
               child.stdin.write("accounts curren\n");
             }, 1000);
-
-            // Give more time for command execution
-            setTimeout(() => {
-              child.stdin.write("exit\n");
-            }, 4000);
 
             child.on("exit", (code) => {
               // Debug output for CI failures
@@ -349,6 +354,9 @@ describe("Did You Mean Functionality", () => {
               data.toString().includes("Show the current Ably account")
             ) {
               foundCommandsList = true;
+              setTimeout(() => {
+                child.stdin.write("exit\n");
+              }, 1500);
             }
           });
 
@@ -359,10 +367,6 @@ describe("Did You Mean Functionality", () => {
           setTimeout(() => {
             child.stdin.write("accounts xyz\n");
           }, 500);
-
-          setTimeout(() => {
-            child.stdin.write("exit\n");
-          }, 1500);
 
           child.on("exit", () => {
             const fullOutput = output + errorOutput;

@@ -49,6 +49,7 @@ export default defineConfig({
             ABLY_CLI_DEFAULT_DURATION: "0.25",
             ABLY_CLI_TEST_MODE: "true",
           },
+          testTimeout: 20000, // Allow 20s per test for plenty of time on actions
         },
       },
       {
@@ -62,7 +63,7 @@ export default defineConfig({
             "**/dist/**",
             "test/e2e/web-cli/**/*.test.ts",
           ],
-          testTimeout: 300000, // 5 minutes default for e2e tests
+          testTimeout: 20000, // Allow 20s per test for plenty of time on actions
           hookTimeout: 60000, // 60 seconds for hooks
           // Run e2e tests sequentially to avoid API rate limits
           sequence: { shuffle: false },
