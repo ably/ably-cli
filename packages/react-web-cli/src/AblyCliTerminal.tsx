@@ -882,6 +882,11 @@ const AblyCliTerminalInner = (
   ] = useState(false);
   const secondaryReconnectScheduledThisCycleReference = useRef<boolean>(false);
 
+  // Secondary terminal: pending initial command and timeout refs
+  const pendingSecondaryInitialCommandReference = useRef<string | null>(null);
+  const secondaryPromptDetectionTimeoutReference =
+    useRef<NodeJS.Timeout | null>(null);
+
   // Extracted control message handler to avoid duplication
   const handleControlMessage = useCallback(
     (message: any) => {
@@ -1105,6 +1110,45 @@ const AblyCliTerminalInner = (
     debugLog("[AblyCLITerminal] Secondary terminal status display cleared");
   }, []);
 
+  const clearSecondaryPromptDetectionTimeout = useCallback(() => {
+    if (secondaryPromptDetectionTimeoutReference.current) {
+      clearTimeout(secondaryPromptDetectionTimeoutReference.current);
+      secondaryPromptDetectionTimeoutReference.current = null;
+    }
+  }, []);
+
+  // Shared logic for activating secondary session
+  const activateSecondarySessionAndSendCommand = useCallback(() => {
+    setIsSecondarySessionActive(true);
+    updateSecondaryConnectionStatus("connected");
+
+    if (secondaryTerm.current) {
+      debugLog(
+        "[AblyCLITerminal] [Secondary] Session is now active, focusing terminal",
+      );
+      secondaryTerm.current.focus();
+    }
+
+    clearSecondaryPromptDetectionTimeout();
+
+    // Send initial command if one is pending
+    if (pendingSecondaryInitialCommandReference.current) {
+      const commandToSend = pendingSecondaryInitialCommandReference.current;
+      pendingSecondaryInitialCommandReference.current = null;
+      debugLog(
+        `[AblyCLITerminal] [Secondary] Sending pending initial command: "${commandToSend}"`,
+      );
+      setTimeout(() => {
+        if (
+          secondarySocketReference.current &&
+          secondarySocketReference.current.readyState === WebSocket.OPEN
+        ) {
+          secondarySocketReference.current.send(`${commandToSend}\r`);
+        }
+      }, 50);
+    }
+  }, [clearSecondaryPromptDetectionTimeout]);
+
   const handleSecondaryPtyData = useCallback(
     (data: string) => {
       if (!isSecondarySessionActive) {
@@ -1138,16 +1182,18 @@ const AblyCliTerminalInner = (
 
           // Only set active if not already active
           if (!isSecondarySessionActive) {
-            setIsSecondarySessionActive(true);
-            updateSecondaryConnectionStatus("connected");
-            if (secondaryTerm.current) secondaryTerm.current.focus();
+            activateSecondarySessionAndSendCommand();
           }
 
           secondaryPtyBuffer.current = "";
         }
       }
     },
-    [clearSecondaryStatusDisplay, isSecondarySessionActive],
+    [
+      clearSecondaryStatusDisplay,
+      isSecondarySessionActive,
+      activateSecondarySessionAndSendCommand,
+    ],
   );
 
   const clearAnimationMessages = useCallback(() => {
@@ -2878,6 +2924,12 @@ const AblyCliTerminalInner = (
       showConnectingMessage(secondaryTerm.current);
     }
 
+    // Reset handshake filter for new connection
+    secondaryHandshakeFilterState.current = createHandshakeFilterState();
+    debugLog(
+      "[AblyCLITerminal] [Secondary] Reset handshake filter for new connection",
+    );
+
     // Create new WebSocket
     const newSocket = new WebSocket(websocketUrl);
     secondarySocketReference.current = newSocket;
@@ -2910,7 +2962,18 @@ const AblyCliTerminalInner = (
         newSocket.send(JSON.stringify(payload));
       }
 
-      // Don't send any other data until shell prompt is detected
+      // Set up initial command to be sent when prompt is detected
+      // Skip initial command if we're resuming an existing session
+      if (initialCommand && !secondarySessionId) {
+        debugLog(
+          `[AblyCLITerminal] [Secondary] Initial command present: "${initialCommand}" - will be sent when prompt is detected`,
+        );
+        pendingSecondaryInitialCommandReference.current = initialCommand;
+      } else if (initialCommand && secondarySessionId) {
+        debugLog(
+          `[AblyCLITerminal] [Secondary] Skipping initial command for resumed session ${secondarySessionId}`,
+        );
+      }
     });
 
     // WebSocket message handler with binary framing support
@@ -2928,6 +2991,7 @@ const AblyCliTerminalInner = (
             debugLog(
               `[Secondary] Received hello. sessionId=${message.sessionId}`,
             );
+            const previousSessionId = secondarySessionId;
             setSecondarySessionId(message.sessionId);
 
             // Persist to session storage if enabled
@@ -2938,18 +3002,35 @@ const AblyCliTerminalInner = (
               );
             }
 
-            // Always activate session after hello message
-            debugLog(`[Secondary] Activating session after hello message`);
-
-            // Clear the "Connecting..." message BEFORE activating session
+            // Clear the "Connecting..." message and status box
             if (secondaryTerm.current) {
               clearConnectingMessage(secondaryTerm.current);
               secondaryTerm.current.focus();
             }
-
-            setIsSecondarySessionActive(true);
-            updateSecondaryConnectionStatus("connected");
             clearSecondaryStatusDisplay();
+
+            // Check if this is a resumed session
+            const isResumedSession =
+              previousSessionId !== null &&
+              previousSessionId === message.sessionId;
+
+            if (isResumedSession) {
+              // For resumed sessions, activate immediately without waiting for prompt
+              debugLog(
+                `[Secondary] Resumed existing session ${message.sessionId} - activating immediately`,
+              );
+              updateSecondaryConnectionStatus("connected");
+
+              if (!isSecondarySessionActive) {
+                activateSecondarySessionAndSendCommand();
+              }
+            } else {
+              // For new sessions, wait for prompt detection
+              debugLog(
+                `[Secondary] New session ${message.sessionId} - waiting for prompt before activating`,
+              );
+              updateSecondaryConnectionStatus("connected");
+            }
 
             return;
           }
@@ -2962,17 +3043,46 @@ const AblyCliTerminalInner = (
               // Clear any overlay when connected
               clearSecondaryStatusDisplay();
 
-              // Clear the "Connecting..." message BEFORE activating session
+              // Clear the "Connecting..." message
               if (secondaryTerm.current) {
                 clearConnectingMessage(secondaryTerm.current);
                 secondaryTerm.current.focus();
               }
 
-              updateSecondaryConnectionStatus("connected");
-              setIsSecondarySessionActive(true);
+              // Check if we're resuming an existing session
+              const isResuming = secondarySessionId !== null;
 
-              // Don't send a carriage return to the server
-              // The server will handle displaying the prompt
+              if (isResuming) {
+                // For resumed sessions, activate immediately
+                debugLog(
+                  `[Secondary] Resuming session ${secondarySessionId} - activating immediately`,
+                );
+                updateSecondaryConnectionStatus("connected");
+
+                if (!isSecondarySessionActive) {
+                  activateSecondarySessionAndSendCommand();
+                }
+              } else {
+                // For new sessions, wait for prompt detection
+                debugLog(
+                  `[Secondary] New session - waiting for prompt before activating`,
+                );
+                updateSecondaryConnectionStatus("connected");
+
+                // Start timeout fallback in case prompt is never detected
+                clearSecondaryPromptDetectionTimeout();
+                secondaryPromptDetectionTimeoutReference.current = setTimeout(
+                  () => {
+                    debugLog(
+                      `[Secondary] Prompt detection timeout - activating session anyway after ${PROMPT_DETECTION_TIMEOUT_MS}ms`,
+                    );
+                    if (!isSecondarySessionActive) {
+                      activateSecondarySessionAndSendCommand();
+                    }
+                  },
+                  PROMPT_DETECTION_TIMEOUT_MS,
+                );
+              }
 
               return;
             }
@@ -3053,55 +3163,8 @@ const AblyCliTerminalInner = (
             secondaryTerm.current.write(filteredData);
           }
 
-          // Use the improved prompt detection logic for the secondary terminal too
-          if (!isSecondarySessionActive) {
-            secondaryPtyBuffer.current += filteredData;
-
-            // Log received data in a way that makes control chars visible
-            const sanitizedData = filteredData
-              .replaceAll("\r", "\\r")
-              .replaceAll("\n", "\\n")
-              .replaceAll("\t", "\\t");
-            debugLog(
-              `[AblyCLITerminal] [Secondary] Received PTY data: "${sanitizedData}"`,
-            );
-
-            if (secondaryPtyBuffer.current.length > MAX_PTY_BUFFER_LENGTH) {
-              secondaryPtyBuffer.current = secondaryPtyBuffer.current.slice(
-                secondaryPtyBuffer.current.length - MAX_PTY_BUFFER_LENGTH,
-              );
-            }
-
-            // Strip ANSI codes
-            const cleanBuf = secondaryPtyBuffer.current.replaceAll(
-              /\u001B\[[0-9;]*[mGKHF]/g,
-              "",
-            );
-
-            // Only detect the prompt if it appears at the end of the buffer
-            if (TERMINAL_PROMPT_PATTERN.test(cleanBuf)) {
-              debugLog(
-                "[AblyCLITerminal] [Secondary] Shell prompt detected at end of buffer",
-              );
-              clearSecondaryStatusDisplay(); // Clear the overlay when prompt is detected
-
-              // Only set active if not already active
-              if (!isSecondarySessionActive) {
-                setIsSecondarySessionActive(true);
-                updateSecondaryConnectionStatus("connected");
-
-                // Clear the connecting message if it exists
-                if (secondaryTerm.current) {
-                  clearConnectingMessage(secondaryTerm.current);
-                  secondaryTerm.current.focus();
-                }
-                // Note: We don't need to write the buffer content here because
-                // we're now writing all PTY data immediately as it arrives
-              }
-
-              secondaryPtyBuffer.current = "";
-            }
-          }
+          // Call handleSecondaryPtyData for prompt detection
+          handleSecondaryPtyData(filteredData);
         }
       } catch (error) {
         console.error(
