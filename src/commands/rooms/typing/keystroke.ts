@@ -3,6 +3,7 @@ import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 // The heartbeats are throttled to one every 10 seconds. There's a 2 second
 // leeway to send a keystroke/heartbeat after the 10 second mark so the
@@ -78,7 +79,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
         "gettingRoom",
         `Getting room handle for ${roomName}`,
       );
-      const room = await this.chatClient.rooms.get(roomName, {});
+      const room = await this.chatClient.rooms.get(roomName);
       this.logCliEvent(
         flags,
         "room",
@@ -206,42 +207,8 @@ export default class TypingKeystroke extends ChatBaseCommand {
         "Maintaining typing status...",
       );
 
-      // Keep the process running until Ctrl+C
-      await new Promise<void>((resolve) => {
-        // This promise intentionally never resolves
-        process.on("SIGINT", async () => {
-          this.logCliEvent(
-            flags,
-            "typing",
-            "cleanupInitiated",
-            "Cleanup initiated (Ctrl+C pressed)",
-          );
-          if (!this.shouldOutputJson(flags)) {
-            this.log("");
-            this.log(
-              `${chalk.yellow("Stopping typing and disconnecting from room...")}`,
-            );
-          }
-
-          // Clear the typing interval
-          if (this.typingIntervalId) {
-            this.logCliEvent(
-              flags,
-              "typing",
-              "clearingInterval",
-              "Clearing typing refresh interval",
-            );
-            clearInterval(this.typingIntervalId);
-            this.typingIntervalId = null;
-          }
-
-          if (!this.shouldOutputJson(flags)) {
-            this.log(`${chalk.green("Successfully disconnected.")}`);
-          }
-
-          resolve();
-        });
-      });
+      // Decide how long to remain connected
+      await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(

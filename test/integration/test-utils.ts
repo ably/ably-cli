@@ -8,15 +8,15 @@
  * Returns true if we're running in test mode
  */
 export function isTestMode(): boolean {
-  return process.env.ABLY_CLI_TEST_MODE === 'true';
+  return process.env.ABLY_CLI_TEST_MODE === "true";
 }
 
 /**
  * Gets the mock Ably Rest client from the global test mocks
  */
-export function getMockAblyRest(): any {
+export function getMockAblyRest(): unknown {
   if (!isTestMode() || !globalThis.__TEST_MOCKS__) {
-    throw new Error('Not running in test mode or test mocks not set up');
+    throw new Error("Not running in test mode or test mocks not set up");
   }
   return globalThis.__TEST_MOCKS__.ablyRestMock;
 }
@@ -32,15 +32,22 @@ export function registerMock<T>(key: string, mock: T): void {
     globalThis.__TEST_MOCKS__ = {
       ablyRestMock: {
         // Default successful empty list response for Control API usually
-        request: () => Promise.resolve({ statusCode: 200, items: [], headers: new Map(), status: 200 }),
+        request: () =>
+          Promise.resolve({
+            statusCode: 200,
+            items: [],
+            headers: new Map(),
+            status: 200,
+          }),
         channels: {
-          // Fix: make channels.get compatible with expected signature  
+          // Fix: make channels.get compatible with expected signature
           get: () => ({
             name: "mock-channel",
             publish: async () => ({}), // Mock publish
-            subscribe: () => {},      // Mock subscribe
-            presence: {              // Mock presence
-              get: async () => ([]),
+            subscribe: () => {}, // Mock subscribe
+            presence: {
+              // Mock presence
+              get: async () => [],
               subscribe: () => {},
               enter: async () => ({}),
               leave: async () => ({}),
@@ -50,20 +57,25 @@ export function registerMock<T>(key: string, mock: T): void {
             detach: async () => ({}),
           }),
         },
-        auth: { // Add required auth object
+        auth: {
+          // Add required auth object
           clientId: "mock-clientId",
           requestToken: async () => ({ token: "mock-token" }),
           createTokenRequest: async () => ({ keyName: "mock-keyName" }),
         },
-        options: { // Add required options object
+        options: {
+          // Add required options object
           key: "mock-app.key:secret",
           clientId: "mock-clientId",
         },
         close: () => {},
-        connection: { // Fix: make connection compatible with base expectations
-          once: (event: string, cb: () => void) => { if (event === 'connected') setTimeout(cb, 0); }
-        }
-      }
+        connection: {
+          // Fix: make connection compatible with base expectations
+          once: (event: string, cb: () => void) => {
+            if (event === "connected") setTimeout(cb, 0);
+          },
+        },
+      },
     };
   }
   // Fix: Add null check before assignment
@@ -79,7 +91,7 @@ export function registerMock<T>(key: string, mock: T): void {
 export function getMock<T>(key: string): T {
   // Check for test mode first
   if (!isTestMode()) {
-    throw new Error('Attempted to get mock outside of test mode');
+    throw new Error("Attempted to get mock outside of test mode");
   }
   // Fix: Add proper null checking for globalThis.__TEST_MOCKS__
   if (!globalThis.__TEST_MOCKS__ || !(key in globalThis.__TEST_MOCKS__)) {

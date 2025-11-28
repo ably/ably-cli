@@ -1,4 +1,12 @@
-import { expect } from "chai";
+import {
+  describe,
+  it,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+  expect,
+} from "vitest";
 import stripAnsi from "strip-ansi";
 import { runCommand } from "../../helpers/command-helpers.js";
 import {
@@ -6,7 +14,8 @@ import {
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
-  displayTestFailureDebugOutput,
+  setupTestFailureHandler,
+  resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
 
 // Helper function to extract JSON from potentially noisy stdout
@@ -42,191 +51,218 @@ const _parseJsonFromOutput = (output: string): any => {
 };
 
 // These tests check the basic CLI functionality in a real environment
-describe("Basic CLI E2E", function () {
-  before(function () {
+describe("Basic CLI E2E", () => {
+  beforeAll(() => {
     process.on("SIGINT", forceExit);
   });
 
-  after(function () {
+  afterAll(() => {
     process.removeListener("SIGINT", forceExit);
   });
 
-  beforeEach(function () {
-    this.timeout(120000); // 2 minutes per individual test
+  beforeEach(() => {
+    resetTestTracking();
     // Clear tracked output files and commands for this test
     testOutputFiles.clear();
     testCommands.length = 0;
   });
 
-  afterEach(async function () {
-    if (this.currentTest?.state === "failed") {
-      await displayTestFailureDebugOutput(this.currentTest?.title);
-    }
+  afterEach(async () => {
     await cleanupTrackedResources();
   });
 
-  describe("CLI version", function () {
-    it("should output the correct version", async function () {
+  describe("CLI version", () => {
+    it("should output the correct version", async () => {
+      setupTestFailureHandler("should output the correct version");
+
       const result = await runCommand(["--version"], {
         env: { NODE_OPTIONS: "", ABLY_CLI_NON_INTERACTIVE: "true" },
         timeoutMs: 10000,
       });
 
-      expect(result.exitCode).to.equal(0);
+      expect(result.exitCode).toBe(0);
       // Check if stdout starts with the package name and version format
-      expect(result.stdout).to.match(/^@ably\/cli\/[0-9]+\.[0-9]+\.[0-9]+/);
+      expect(result.stdout).toMatch(/^@ably\/cli\/[0-9]+\.[0-9]+\.[0-9]+/);
     });
   });
 
-  describe("Global flags", function () {
-    it("should accept --json flag without error", async function () {
+  describe("Global flags", () => {
+    it("should accept --json flag without error", async () => {
+      setupTestFailureHandler("should accept --json flag without error");
+
       // Test --version flag with --json
       const result = await runCommand(["--version", "--json"], {
         env: { NODE_OPTIONS: "", ABLY_CLI_NON_INTERACTIVE: "true" },
         timeoutMs: 10000,
       });
 
-      expect(result.exitCode).to.equal(0);
-      expect(result.stderr).to.be.empty; // Ensure no errors
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe(""); // Ensure no errors
 
       // Check for valid JSON output
       let jsonOutput;
       expect(() => {
         jsonOutput = JSON.parse(result.stdout);
-      }).not.to.throw();
+      }).not.toThrow();
 
       // Validate the JSON structure
-      expect(jsonOutput).to.have.property("version").that.is.a("string");
-      expect(jsonOutput).to.have.property("name").that.equals("@ably/cli");
-      expect(jsonOutput)
-        .to.have.property("platform")
-        .that.equals(process.platform);
+      expect(jsonOutput).toHaveProperty("version");
+      expect(typeof jsonOutput.version).toBe("string");
+      expect(jsonOutput).toHaveProperty("name", "@ably/cli");
+      expect(jsonOutput).toHaveProperty("platform", process.platform);
     });
 
-    it("should accept --pretty-json flag without error", async function () {
+    it("should accept --pretty-json flag without error", async () => {
+      setupTestFailureHandler("should accept --pretty-json flag without error");
+
       // Test --version flag with --pretty-json
       const result = await runCommand(["--version", "--pretty-json"], {
         env: { NODE_OPTIONS: "", ABLY_CLI_NON_INTERACTIVE: "true" },
         timeoutMs: 10000,
       });
 
-      expect(result.exitCode).to.equal(0);
-      expect(result.stderr).to.be.empty; // Ensure no errors
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe(""); // Ensure no errors
 
       // Pretty JSON should contain line breaks
-      expect(result.stdout).to.include("\n");
+      expect(result.stdout).toContain("\n");
 
       // Check for valid JSON output - use _parseJsonFromOutput helper to handle ANSI color codes
       let jsonOutput;
       expect(() => {
         jsonOutput = _parseJsonFromOutput(result.stdout);
-      }).not.to.throw();
+      }).not.toThrow();
 
       // Validate the JSON structure
-      expect(jsonOutput).to.have.property("version").that.is.a("string");
-      expect(jsonOutput).to.have.property("name").that.equals("@ably/cli");
-      expect(jsonOutput)
-        .to.have.property("platform")
-        .that.equals(process.platform);
+      expect(jsonOutput).toHaveProperty("version");
+      expect(typeof jsonOutput.version).toBe("string");
+      expect(jsonOutput).toHaveProperty("name", "@ably/cli");
+      expect(jsonOutput).toHaveProperty("platform", process.platform);
     });
 
-    it("should error when both --json and --pretty-json are used", async function () {
+    it("should error when both --json and --pretty-json are used", async () => {
+      setupTestFailureHandler(
+        "should error when both --json and --pretty-json are used",
+      );
+
       // Test on a base command (`config`) that inherits global flags
       const result = await runCommand(["config", "--json", "--pretty-json"], {
         env: { NODE_OPTIONS: "", ABLY_CLI_NON_INTERACTIVE: "true" },
         timeoutMs: 10000,
       });
 
-      expect(result.exitCode).not.to.equal(0); // Command should fail due to exclusive flags
+      expect(result.exitCode).not.toBe(0); // Command should fail due to exclusive flags
       // Check stderr for the specific error message (oclif v3 style)
-      expect(result.stderr).to.include("cannot also be provided");
+      expect(result.stderr).toContain("cannot also be provided");
     });
   });
 
-  describe("CLI help", function () {
-    it("should display help for root command", async function () {
+  describe("CLI help", () => {
+    it("should display help for root command", async () => {
+      setupTestFailureHandler("should display help for root command");
+
       const result = await runCommand(["help"], {
         env: { NODE_OPTIONS: "", ABLY_CLI_NON_INTERACTIVE: "true" },
         timeoutMs: 10000,
       });
 
-      expect(result.exitCode).to.equal(0);
-      expect(result.stderr).to.be.empty;
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe("");
 
       // Check that main topics are listed
-      expect(result.stdout).to.include("accounts");
-      expect(result.stdout).to.include("apps");
-      expect(result.stdout).to.include("channels");
-      expect(result.stdout).to.include("auth");
-      expect(result.stdout).to.include("config"); // Base topic exists
-      expect(result.stdout).to.include("help"); // Help command itself
-      expect(result.stdout).to.include("status"); // Status is now root command
-      expect(result.stdout).to.include("support"); // Support topic
+      expect(result.stdout).toContain("accounts");
+      expect(result.stdout).toContain("apps");
+      expect(result.stdout).toContain("channels");
+      expect(result.stdout).toContain("auth");
+      expect(result.stdout).toContain("config"); // Base topic exists
+      expect(result.stdout).toContain("help"); // Help command itself
+      expect(result.stdout).toContain("status"); // Status is now root command
+      expect(result.stdout).toContain("support"); // Support topic
     });
 
-    it("should fail when attempting to get help for a non-existent command", async function () {
+    it("should fail when attempting to get help for a non-existent command", async () => {
+      setupTestFailureHandler(
+        "should fail when attempting to get help for a non-existent command",
+      );
+
       // Use the help command on a non-existent command
       const result = await runCommand(["help", "doesnotexist"], {
         env: { NODE_OPTIONS: "", ABLY_CLI_NON_INTERACTIVE: "true" },
         timeoutMs: 5000,
       });
 
-      expect(result.exitCode).not.to.equal(0);
+      expect(result.exitCode).not.toBe(0);
       // Should show command not found error
-      expect(result.stderr).to.include('Command "doesnotexist" not found');
+      expect(result.stderr).toContain('Command "doesnotexist" not found');
     });
 
-    it("should display web CLI help when running help with --web-cli-help flag", async function () {
+    it("should display web CLI help when running help with --web-cli-help flag", async () => {
+      setupTestFailureHandler(
+        "should display web CLI help when running help with --web-cli-help flag",
+      );
+
       const result = await runCommand(["help", "--web-cli-help"], {
         env: { NODE_OPTIONS: "", ABLY_CLI_NON_INTERACTIVE: "true" },
         timeoutMs: 5000,
       });
 
-      expect(result.exitCode).to.equal(0);
-      expect(result.stdout).to.include("browser-based CLI");
-      expect(result.stdout).to.include("COMMON COMMANDS");
-      expect(result.stdout).to.include(
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("browser-based CLI");
+      expect(result.stdout).toContain("COMMON COMMANDS");
+      expect(result.stdout).toContain(
         "Type ably help to see the complete list of commands",
       );
-      expect(result.stdout).to.include("Publish a message");
-      expect(result.stdout).to.include("Subscribe to a channel");
+      expect(result.stdout).toContain("Publish a message");
+      expect(result.stdout).toContain("Subscribe to a channel");
       // Should NOT include the regular help commands section
-      expect(result.stdout).not.to.include("accounts");
-      expect(result.stdout).not.to.include("apps");
-      expect(result.stdout).not.to.include("Ably help commands:");
+      expect(result.stdout).not.toContain("accounts");
+      expect(result.stdout).not.toContain("apps");
+      expect(result.stdout).not.toContain("Ably help commands:");
     });
   });
 
-  describe("Command not found handling", function () {
-    it("should suggest and run similar command for a typo (colon input)", async function () {
+  describe("Command not found handling", () => {
+    it("should suggest and run similar command for a typo (colon input)", async () => {
+      setupTestFailureHandler(
+        "should suggest and run similar command for a typo (colon input)",
+      );
+
       const result = await runCommand(["channels:pubish"], {
         env: { NODE_OPTIONS: "", ABLY_CLI_NON_INTERACTIVE: "true" },
         timeoutMs: 5000,
       });
 
       // Expect specific warning format and failure
-      expect(result.stderr).to.include(
+      expect(result.stderr).toContain(
         "Warning: channels pubish is not an ably command.",
       ); // Match actual warning
       // Do not expect "Did you mean" in non-interactive output from the hook itself
-      expect(result.exitCode).not.to.equal(0);
+      expect(result.exitCode).not.toBe(0);
     });
 
-    it("should suggest and run similar command for a typo (space input)", async function () {
+    it("should suggest and run similar command for a typo (space input)", async () => {
+      setupTestFailureHandler(
+        "should suggest and run similar command for a typo (space input)",
+      );
+
       const result = await runCommand(["channels", "pubish"], {
         env: { NODE_OPTIONS: "", ABLY_CLI_NON_INTERACTIVE: "true" },
         timeoutMs: 5000,
       });
 
       // Expect specific warning format and failure
-      expect(result.stderr).to.include(
+      expect(result.stderr).toContain(
         "Warning: channels pubish is not an ably command.",
       ); // Match actual warning
       // Do not expect "Did you mean" in non-interactive output from the hook itself
-      expect(result.exitCode).not.to.equal(0);
+      expect(result.exitCode).not.toBe(0);
     });
 
-    it("should suggest help for completely unknown commands", async function () {
+    it("should suggest help for completely unknown commands", async () => {
+      setupTestFailureHandler(
+        "should suggest help for completely unknown commands",
+      );
+
       const result = await runCommand(
         ["completelyunknowncommand", "--non-interactive"],
         {
@@ -235,13 +271,17 @@ describe("Basic CLI E2E", function () {
         },
       );
 
-      expect(result.exitCode).not.to.equal(0); // Should fail as no suggestion is found
+      expect(result.exitCode).not.toBe(0); // Should fail as no suggestion is found
       // Check stderr for the 'command not found' and help suggestion
-      expect(result.stderr).to.include("completelyunknowncommand not found");
-      expect(result.stderr).to.include("Run ably --help");
+      expect(result.stderr).toContain("completelyunknowncommand not found");
+      expect(result.stderr).toContain("Run ably --help");
     });
 
-    it("should show command not found for topic typo with subcommand", async function () {
+    it("should show command not found for topic typo with subcommand", async () => {
+      setupTestFailureHandler(
+        "should show command not found for topic typo with subcommand",
+      );
+
       // Example: `ably config doesnotexist` -> input is `config:doesnotexist` internally
       const result = await runCommand(
         ["config", "doesnotexist", "--non-interactive"],
@@ -251,10 +291,10 @@ describe("Basic CLI E2E", function () {
         },
       );
 
-      expect(result.exitCode).not.to.equal(0);
+      expect(result.exitCode).not.toBe(0);
       // With our updated implementation, it will try to find a close match for "config"
       // and if found, will warn with "config is not an ably command"
-      expect(result.stderr).to.include("config is not an ably command");
+      expect(result.stderr).toContain("config is not an ably command");
     });
   });
 });

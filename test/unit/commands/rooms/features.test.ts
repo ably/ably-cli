@@ -1,16 +1,12 @@
-import { expect } from "chai";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
 
 import RoomsOccupancyGet from "../../../../src/commands/rooms/occupancy/get.js";
 import RoomsOccupancySubscribe from "../../../../src/commands/rooms/occupancy/subscribe.js";
 import RoomsPresenceEnter from "../../../../src/commands/rooms/presence/enter.js";
-import RoomsPresenceSubscribe from "../../../../src/commands/rooms/presence/subscribe.js";
 import RoomsReactionsSend from "../../../../src/commands/rooms/reactions/send.js";
-import RoomsReactionsSubscribe from "../../../../src/commands/rooms/reactions/subscribe.js";
 import RoomsTypingKeystroke from "../../../../src/commands/rooms/typing/keystroke.js";
-import RoomsTypingSubscribe from "../../../../src/commands/rooms/typing/subscribe.js";
 import { RoomStatus } from "@ably/chat";
 
 // Base testable class for room feature commands
@@ -43,9 +39,9 @@ class TestableRoomCommand {
   }
 
   public interactiveHelper = {
-    confirm: sinon.stub().resolves(true),
-    promptForText: sinon.stub().resolves("fake-input"),
-    promptToSelect: sinon.stub().resolves("fake-selection"),
+    confirm: vi.fn().mockResolvedValue(true),
+    promptForText: vi.fn().mockResolvedValue("fake-input"),
+    promptToSelect: vi.fn().mockResolvedValue("fake-selection"),
   } as any;
 }
 
@@ -233,28 +229,22 @@ class TestableRoomsTypingKeystroke extends RoomsTypingKeystroke {
 }
 
 describe("rooms feature commands", function () {
-  let sandbox: sinon.SinonSandbox;
   let mockConfig: Config;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    mockConfig = { runHook: sinon.stub() } as unknown as Config;
-  });
-
-  afterEach(function () {
-    sandbox.restore();
+    mockConfig = { runHook: vi.fn() } as unknown as Config;
   });
 
   describe("rooms occupancy get", function () {
     let command: TestableRoomsOccupancyGet;
     let mockRoom: any;
     let mockOccupancy: any;
-    let getStub: sinon.SinonStub;
+    let getStub: ReturnType<typeof vi.fn>;
 
     beforeEach(function () {
       command = new TestableRoomsOccupancyGet([], mockConfig);
 
-      getStub = sandbox.stub().resolves({
+      getStub = vi.fn().mockResolvedValue({
         connections: 5,
         publishers: 2,
         subscribers: 3,
@@ -267,26 +257,26 @@ describe("rooms feature commands", function () {
       };
 
       mockRoom = {
-        attach: sandbox.stub().resolves(),
+        attach: vi.fn().mockImplementation(async () => {}),
         occupancy: mockOccupancy,
       };
 
       command.mockRealtimeClient = {
         connection: {
-          on: sandbox.stub(),
-          off: sandbox.stub(),
+          on: vi.fn(),
+          off: vi.fn(),
           state: "connected",
         },
-        close: sandbox.stub(),
+        close: vi.fn(),
       };
 
       command.mockChatClient = {
         rooms: {
-          get: sandbox.stub().resolves(mockRoom),
-          release: sandbox.stub().resolves(),
+          get: vi.fn().mockResolvedValue(mockRoom),
+          release: vi.fn().mockImplementation(async () => {}),
         },
         connection: {
-          onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+          onStatusChange: vi.fn().mockReturnValue({ off: vi.fn() }),
         },
         realtime: command.mockRealtimeClient,
       };
@@ -302,10 +292,11 @@ describe("rooms feature commands", function () {
     it("should get room occupancy metrics", async function () {
       await command.run();
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
-        .true;
-      expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(getStub.calledOnce).to.be.true;
+      expect(command.mockChatClient.rooms.get).toHaveBeenCalledWith(
+        "test-room",
+      );
+      expect(mockRoom.attach).toHaveBeenCalledOnce();
+      expect(getStub).toHaveBeenCalledOnce();
     });
   });
 
@@ -313,40 +304,40 @@ describe("rooms feature commands", function () {
     let command: TestableRoomsOccupancySubscribe;
     let mockRoom: any;
     let mockOccupancy: any;
-    let subscribeStub: sinon.SinonStub;
+    let subscribeStub: ReturnType<typeof vi.fn>;
 
     beforeEach(function () {
       command = new TestableRoomsOccupancySubscribe([], mockConfig);
 
-      subscribeStub = sandbox.stub();
+      subscribeStub = vi.fn();
       mockOccupancy = {
         subscribe: subscribeStub,
-        unsubscribe: sandbox.stub().resolves(),
-        get: sandbox.stub().resolves({ connections: 0, presenceMembers: 0 }),
+        unsubscribe: vi.fn().mockImplementation(async () => {}),
+        get: vi.fn().mockResolvedValue({ connections: 0, presenceMembers: 0 }),
       };
 
       mockRoom = {
-        attach: sandbox.stub().resolves(),
+        attach: vi.fn().mockImplementation(async () => {}),
         occupancy: mockOccupancy,
-        onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+        onStatusChange: vi.fn().mockReturnValue({ off: vi.fn() }),
       };
 
       command.mockRealtimeClient = {
         connection: {
-          on: sandbox.stub(),
-          off: sandbox.stub(),
+          on: vi.fn(),
+          off: vi.fn(),
           state: "connected",
         },
-        close: sandbox.stub(),
+        close: vi.fn(),
       };
 
       command.mockChatClient = {
         rooms: {
-          get: sandbox.stub().resolves(mockRoom),
-          release: sandbox.stub().resolves(),
+          get: vi.fn().mockResolvedValue(mockRoom),
+          release: vi.fn().mockImplementation(async () => {}),
         },
         connection: {
-          onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+          onStatusChange: vi.fn().mockReturnValue({ off: vi.fn() }),
         },
         realtime: command.mockRealtimeClient,
       };
@@ -360,7 +351,7 @@ describe("rooms feature commands", function () {
     });
 
     it("should subscribe to room occupancy updates", async function () {
-      subscribeStub.callsFake((callback) => {
+      subscribeStub.mockImplementation((callback) => {
         setTimeout(() => {
           callback({
             connections: 6,
@@ -374,14 +365,20 @@ describe("rooms feature commands", function () {
       });
 
       // Since subscribe runs indefinitely, we'll test the setup
-      const runPromise = command.run();
+      command.run();
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
-        .true;
-      expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(subscribeStub.calledOnce).to.be.true;
+      expect(command.mockChatClient.rooms.get).toHaveBeenCalledWith(
+        "test-room",
+        {
+          occupancy: {
+            enableEvents: true,
+          },
+        },
+      );
+      expect(mockRoom.attach).toHaveBeenCalledOnce();
+      expect(subscribeStub).toHaveBeenCalledOnce();
 
       command.mockRealtimeClient.close();
     });
@@ -391,39 +388,39 @@ describe("rooms feature commands", function () {
     let command: TestableRoomsPresenceEnter;
     let mockRoom: any;
     let mockPresence: any;
-    let enterStub: sinon.SinonStub;
+    let enterStub: ReturnType<typeof vi.fn>;
 
     beforeEach(function () {
       command = new TestableRoomsPresenceEnter([], mockConfig);
 
-      enterStub = sandbox.stub().resolves();
+      enterStub = vi.fn().mockImplementation(async () => {});
       mockPresence = {
         enter: enterStub,
-        subscribe: sandbox.stub(),
-        unsubscribe: sandbox.stub().resolves(),
+        subscribe: vi.fn(),
+        unsubscribe: vi.fn().mockImplementation(async () => {}),
       };
 
       mockRoom = {
-        attach: sandbox.stub().resolves(),
+        attach: vi.fn().mockImplementation(async () => {}),
         presence: mockPresence,
       };
 
       command.mockRealtimeClient = {
         connection: {
-          on: sandbox.stub(),
+          on: vi.fn(),
           state: "connected",
           id: "test-connection-id",
         },
-        close: sandbox.stub(),
+        close: vi.fn(),
       };
 
       command.mockChatClient = {
         rooms: {
-          get: sandbox.stub().resolves(mockRoom),
-          release: sandbox.stub().resolves(),
+          get: vi.fn().mockResolvedValue(mockRoom),
+          release: vi.fn().mockImplementation(async () => {}),
         },
         connection: {
-          onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+          onStatusChange: vi.fn().mockReturnValue({ off: vi.fn() }),
         },
         realtime: command.mockRealtimeClient,
       };
@@ -438,14 +435,15 @@ describe("rooms feature commands", function () {
 
     it("should enter room presence successfully", async function () {
       // Since presence enter runs indefinitely, we'll test the setup
-      const runPromise = command.run();
+      command.run();
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
-        .true;
-      expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(enterStub.calledOnce).to.be.true;
+      expect(command.mockChatClient.rooms.get).toHaveBeenCalledWith(
+        "test-room",
+      );
+      expect(mockRoom.attach).toHaveBeenCalledOnce();
+      expect(enterStub).toHaveBeenCalledOnce();
 
       command.mockRealtimeClient.close();
     });
@@ -458,13 +456,13 @@ describe("rooms feature commands", function () {
         raw: [],
       });
 
-      const runPromise = command.run();
+      command.run();
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(enterStub.calledOnce).to.be.true;
-      const presenceData = enterStub.getCall(0).args[0];
-      expect(presenceData).to.deep.equal({
+      expect(enterStub).toHaveBeenCalledOnce();
+      const presenceData = enterStub.mock.calls[0][0];
+      expect(presenceData).toEqual({
         status: "online",
         name: "Test User",
       });
@@ -477,38 +475,38 @@ describe("rooms feature commands", function () {
     let command: TestableRoomsReactionsSend;
     let mockRoom: any;
     let mockReactions: any;
-    let sendStub: sinon.SinonStub;
+    let sendStub: ReturnType<typeof vi.fn>;
 
     beforeEach(function () {
       command = new TestableRoomsReactionsSend([], mockConfig);
 
-      sendStub = sandbox.stub().resolves();
+      sendStub = vi.fn().mockImplementation(async () => {});
       mockReactions = {
         send: sendStub,
       };
 
       mockRoom = {
-        attach: sandbox.stub().resolves(),
+        attach: vi.fn().mockImplementation(async () => {}),
         reactions: mockReactions,
-        onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+        onStatusChange: vi.fn().mockReturnValue({ off: vi.fn() }),
       };
 
       command.mockRealtimeClient = {
         connection: {
-          on: sandbox.stub(),
-          off: sandbox.stub(),
+          on: vi.fn(),
+          off: vi.fn(),
           state: "connected",
         },
-        close: sandbox.stub(),
+        close: vi.fn(),
       };
 
       command.mockChatClient = {
         rooms: {
-          get: sandbox.stub().resolves(mockRoom),
-          release: sandbox.stub().resolves(),
+          get: vi.fn().mockResolvedValue(mockRoom),
+          release: vi.fn().mockImplementation(async () => {}),
         },
         connection: {
-          onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+          onStatusChange: vi.fn().mockReturnValue({ off: vi.fn() }),
         },
         realtime: command.mockRealtimeClient,
       };
@@ -524,11 +522,14 @@ describe("rooms feature commands", function () {
     it("should send a reaction successfully", async function () {
       await command.run();
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
-        .true;
-      expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(sendStub.calledOnce).to.be.true;
-      expect(sendStub.calledWith({ name: "👍", metadata: {} })).to.be.true;
+      expect(command.mockChatClient.rooms.get).toHaveBeenCalledWith(
+        "test-room",
+      );
+      expect(mockRoom.attach).toHaveBeenCalledOnce();
+      expect(sendStub).toHaveBeenCalledExactlyOnceWith({
+        name: "👍",
+        metadata: {},
+      });
     });
 
     it("should handle metadata in reactions", async function () {
@@ -541,9 +542,9 @@ describe("rooms feature commands", function () {
 
       await command.run();
 
-      expect(sendStub.calledOnce).to.be.true;
-      const reactionCall = sendStub.getCall(0);
-      expect(reactionCall.args[0]).to.deep.equal({
+      expect(sendStub).toHaveBeenCalledOnce();
+      const reactionCallArgs = sendStub.mock.calls[0];
+      expect(reactionCallArgs[0]).toEqual({
         name: "🎉",
         metadata: { intensity: "high" },
       });
@@ -554,41 +555,41 @@ describe("rooms feature commands", function () {
     let command: TestableRoomsTypingKeystroke;
     let mockRoom: any;
     let mockTyping: any;
-    let keystrokeStub: sinon.SinonStub;
+    let keystrokeStub: ReturnType<typeof vi.fn>;
 
     beforeEach(function () {
       command = new TestableRoomsTypingKeystroke([], mockConfig);
 
-      keystrokeStub = sandbox.stub().resolves();
+      keystrokeStub = vi.fn().mockImplementation(async () => {});
       mockTyping = {
         keystroke: keystrokeStub,
       };
 
       mockRoom = {
-        attach: sandbox.stub().resolves(),
+        attach: vi.fn().mockImplementation(async () => {}),
         typing: mockTyping,
-        onStatusChange: sandbox.stub().callsFake((listener) => {
+        onStatusChange: vi.fn().mockImplementation((listener) => {
           listener({ current: RoomStatus.Attached });
-          return { off: sandbox.stub() };
+          return { off: vi.fn() };
         }),
       };
 
       command.mockRealtimeClient = {
         connection: {
-          on: sandbox.stub(),
-          off: sandbox.stub(),
+          on: vi.fn(),
+          off: vi.fn(),
           state: "connected",
         },
-        close: sandbox.stub(),
+        close: vi.fn(),
       };
 
       command.mockChatClient = {
         rooms: {
-          get: sandbox.stub().resolves(mockRoom),
-          release: sandbox.stub().resolves(),
+          get: vi.fn().mockResolvedValue(mockRoom),
+          release: vi.fn().mockImplementation(async () => {}),
         },
         connection: {
-          onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+          onStatusChange: vi.fn().mockReturnValue({ off: vi.fn() }),
         },
         realtime: command.mockRealtimeClient,
       };
@@ -607,10 +608,11 @@ describe("rooms feature commands", function () {
       // Wait for setup to complete
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
-        .true;
-      expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(keystrokeStub.calledOnce).to.be.true;
+      expect(command.mockChatClient.rooms.get).toHaveBeenCalledWith(
+        "test-room",
+      );
+      expect(mockRoom.attach).toHaveBeenCalledOnce();
+      expect(keystrokeStub).toHaveBeenCalledOnce();
 
       // Clean up
       command.mockRealtimeClient.close();

@@ -41,7 +41,7 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
       const { room: roomName } = args;
 
       // Get the room with occupancy enabled
-      this.room = await this.chatClient.rooms.get(roomName, {});
+      this.room = await this.chatClient.rooms.get(roomName);
 
       // Attach to the room to access occupancy with timeout
       let attachTimeout;

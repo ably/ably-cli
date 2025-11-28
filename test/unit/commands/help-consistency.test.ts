@@ -1,5 +1,4 @@
-import { expect } from "chai";
-import { describe, it } from "mocha";
+import { describe, it, expect, beforeAll } from "vitest";
 import { exec, spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,208 +12,224 @@ describe("Help Output Consistency", () => {
   const timeout = 10000;
   let binPath: string;
 
-  before(function () {
+  beforeAll(() => {
     binPath = path.join(__dirname, "../../../bin/development.js");
   });
 
   describe("Topic Command Help (e.g., accounts --help)", () => {
-    it("should show COMMANDS section in non-interactive mode", async function () {
-      this.timeout(timeout);
+    it(
+      "should show COMMANDS section in non-interactive mode",
+      async () => {
+        const { stdout } = await execAsync(`node ${binPath} accounts --help`);
 
-      const { stdout } = await execAsync(`node ${binPath} accounts --help`);
-
-      // Check for COMMANDS section
-      expect(stdout).to.include("COMMANDS");
-
-      // Check for proper formatting with spaces (not colons)
-      expect(stdout).to.include("ably accounts current");
-      expect(stdout).to.include("ably accounts list");
-      expect(stdout).to.include("ably accounts login");
-
-      // Should NOT have colons
-      expect(stdout).to.not.include("accounts:current");
-      expect(stdout).to.not.include("accounts:list");
-      expect(stdout).to.not.include("accounts:login");
-    });
-
-    it("should show COMMANDS section in interactive mode", function (done) {
-      this.timeout(timeout);
-
-      const child = spawn("node", [binPath, "interactive"], {
-        stdio: ["pipe", "pipe", "pipe"],
-        env: {
-          ...process.env,
-          ABLY_INTERACTIVE_MODE: "true",
-          ABLY_SUPPRESS_WELCOME: "1",
-        },
-      });
-
-      let output = "";
-
-      child.stdout.on("data", (data) => {
-        output += data.toString();
-      });
-
-      setTimeout(() => {
-        child.stdin.write("accounts --help\n");
-      }, 500);
-
-      setTimeout(() => {
-        child.stdin.write("exit\n");
-      }, 1500);
-
-      child.on("exit", () => {
         // Check for COMMANDS section
-        expect(output).to.include("COMMANDS");
+        expect(stdout).toContain("COMMANDS");
 
         // Check for proper formatting with spaces (not colons)
-        expect(output).to.include("accounts current");
-        expect(output).to.include("accounts list");
-        expect(output).to.include("accounts login");
+        expect(stdout).toContain("ably accounts current");
+        expect(stdout).toContain("ably accounts list");
+        expect(stdout).toContain("ably accounts login");
 
         // Should NOT have colons
-        expect(output).to.not.include("accounts:current");
-        expect(output).to.not.include("accounts:list");
-        expect(output).to.not.include("accounts:login");
+        expect(stdout).not.toContain("accounts:current");
+        expect(stdout).not.toContain("accounts:list");
+        expect(stdout).not.toContain("accounts:login");
+      },
+      timeout,
+    );
 
-        // Should NOT have ably prefix in interactive mode
-        expect(output).to.not.match(/COMMANDS[\s\S]*ably accounts current/);
+    it(
+      "should show COMMANDS section in interactive mode",
+      async () =>
+        new Promise<void>((resolve) => {
+          const child = spawn("node", [binPath, "interactive"], {
+            stdio: ["pipe", "pipe", "pipe"],
+            env: {
+              ...process.env,
+              ABLY_INTERACTIVE_MODE: "true",
+              ABLY_SUPPRESS_WELCOME: "1",
+            },
+          });
 
-        done();
-      });
-    });
+          let output = "";
 
-    it("should have same sections in both modes", async function () {
-      this.timeout(timeout);
+          child.stdout.on("data", (data) => {
+            output += data.toString();
+          });
 
-      // Get non-interactive output
-      const { stdout: nonInteractive } = await execAsync(
-        `node ${binPath} accounts --help`,
-      );
+          setTimeout(() => {
+            child.stdin.write("accounts --help\n");
+          }, 500);
 
-      // Get interactive output
-      const interactiveOutput = await new Promise<string>((resolve) => {
-        const child = spawn("node", [binPath, "interactive"], {
-          stdio: ["pipe", "pipe", "pipe"],
-          env: {
-            ...process.env,
-            ABLY_INTERACTIVE_MODE: "true",
-            ABLY_SUPPRESS_WELCOME: "1",
-          },
+          setTimeout(() => {
+            child.stdin.write("exit\n");
+          }, 1500);
+
+          child.on("exit", () => {
+            // Check for COMMANDS section
+            expect(output).toContain("COMMANDS");
+
+            // Check for proper formatting with spaces (not colons)
+            expect(output).toContain("accounts current");
+            expect(output).toContain("accounts list");
+            expect(output).toContain("accounts login");
+
+            // Should NOT have colons
+            expect(output).not.toContain("accounts:current");
+            expect(output).not.toContain("accounts:list");
+            expect(output).not.toContain("accounts:login");
+
+            // Should NOT have ably prefix in interactive mode
+            expect(output).not.toMatch(/COMMANDS[\s\S]*ably accounts current/);
+
+            resolve();
+          });
+        }),
+      timeout,
+    );
+
+    it(
+      "should have same sections in both modes",
+      async () => {
+        // Get non-interactive output
+        const { stdout: nonInteractive } = await execAsync(
+          `node ${binPath} accounts --help`,
+        );
+
+        // Get interactive output
+        const interactiveOutput = await new Promise<string>((resolve) => {
+          const child = spawn("node", [binPath, "interactive"], {
+            stdio: ["pipe", "pipe", "pipe"],
+            env: {
+              ...process.env,
+              ABLY_INTERACTIVE_MODE: "true",
+              ABLY_SUPPRESS_WELCOME: "1",
+            },
+          });
+
+          let output = "";
+          let helpReceived = false;
+
+          child.stdout.on("data", (data) => {
+            output += data.toString();
+
+            // Once we see USAGE in the output, send the exit command
+            if (!helpReceived && output.includes("USAGE")) {
+              helpReceived = true;
+              // Give a small delay to ensure all help output is captured
+              setTimeout(() => {
+                child.stdin.write("exit\n");
+              }, 1000);
+            }
+          });
+
+          setTimeout(() => {
+            child.stdin.write("accounts --help\n");
+          }, 500);
+
+          child.on("exit", () => {
+            resolve(output);
+          });
         });
 
-        let output = "";
+        // Both should have these sections
+        const sections = ["USAGE", "DESCRIPTION", "EXAMPLES", "COMMANDS"];
 
-        child.stdout.on("data", (data) => {
-          output += data.toString();
+        sections.forEach((section) => {
+          expect(nonInteractive).toContain(section);
+          expect(interactiveOutput).toContain(section);
         });
 
-        setTimeout(() => {
-          child.stdin.write("accounts --help\n");
-        }, 500);
+        // Both should list the same commands (ignoring the ably prefix)
+        const commands = [
+          "current",
+          "list",
+          "login",
+          "logout",
+          "stats",
+          "switch",
+        ];
 
-        setTimeout(() => {
-          child.stdin.write("exit\n");
-        }, 1500);
-
-        child.on("exit", () => {
-          resolve(output);
+        commands.forEach((cmd) => {
+          expect(nonInteractive).toContain(`accounts ${cmd}`);
+          expect(interactiveOutput).toContain(`accounts ${cmd}`);
         });
-      });
-
-      // Both should have these sections
-      const sections = ["USAGE", "DESCRIPTION", "EXAMPLES", "COMMANDS"];
-
-      sections.forEach((section) => {
-        expect(nonInteractive).to.include(section);
-        expect(interactiveOutput).to.include(section);
-      });
-
-      // Both should list the same commands (ignoring the ably prefix)
-      const commands = [
-        "current",
-        "list",
-        "login",
-        "logout",
-        "stats",
-        "switch",
-      ];
-
-      commands.forEach((cmd) => {
-        expect(nonInteractive).to.include(`accounts ${cmd}`);
-        expect(interactiveOutput).to.include(`accounts ${cmd}`);
-      });
-    });
+      },
+      timeout,
+    );
   });
 
   describe("Support Command Suggestions", () => {
-    it('should suggest "support ask" when typing "support aska"', function (done) {
-      this.timeout(timeout);
+    it(
+      'should suggest "support ask" when typing "support aska"',
+      async () =>
+        new Promise<void>((resolve) => {
+          const child = spawn("node", [binPath, "interactive"], {
+            stdio: ["pipe", "pipe", "pipe"],
+            env: {
+              ...process.env,
+              ABLY_INTERACTIVE_MODE: "true",
+              ABLY_SUPPRESS_WELCOME: "1",
+            },
+          });
 
-      const child = spawn("node", [binPath, "interactive"], {
-        stdio: ["pipe", "pipe", "pipe"],
-        env: {
-          ...process.env,
-          ABLY_INTERACTIVE_MODE: "true",
-          ABLY_SUPPRESS_WELCOME: "1",
-        },
-      });
+          let output = "";
+          let foundSuggestion = false;
 
-      let output = "";
-      let foundSuggestion = false;
+          child.stdout.on("data", (data) => {
+            output += data.toString();
+            if (data.toString().includes("Did you mean support ask?")) {
+              foundSuggestion = true;
+              setTimeout(() => {
+                child.stdin.write("n\n");
+              }, 100);
+            }
+          });
 
-      child.stdout.on("data", (data) => {
-        output += data.toString();
-        if (data.toString().includes("Did you mean support ask?")) {
-          foundSuggestion = true;
           setTimeout(() => {
-            child.stdin.write("n\n");
-          }, 100);
-        }
-      });
+            child.stdin.write("support aska\n");
+          }, 500);
 
-      setTimeout(() => {
-        child.stdin.write("support aska\n");
-      }, 500);
+          setTimeout(() => {
+            child.stdin.write("exit\n");
+          }, 2000);
 
-      setTimeout(() => {
-        child.stdin.write("exit\n");
-      }, 2000);
-
-      child.on("exit", () => {
-        expect(foundSuggestion).to.be.true;
-        // When declining suggestion, topic commands show their help
-        expect(output).to.include("Ably support commands:");
-        expect(output).to.include("support ask");
-        expect(output).to.include("support contact");
-        expect(output).to.include("support info");
-        done();
-      });
-    });
+          child.on("exit", () => {
+            expect(foundSuggestion).toBe(true);
+            // When declining suggestion, topic commands show their help
+            expect(output).toContain("Ably support commands:");
+            expect(output).toContain("support ask");
+            expect(output).toContain("support contact");
+            expect(output).toContain("support info");
+            resolve();
+          });
+        }),
+      timeout,
+    );
   });
 
   describe("Multiple Topic Commands", () => {
-    it("should show consistent help for different topic commands", async function () {
-      this.timeout(timeout);
+    it(
+      "should show consistent help for different topic commands",
+      async () => {
+        // Test multiple topic commands with subcommands
+        const topicsWithCommands = ["accounts", "apps", "channels"];
 
-      // Test multiple topic commands
-      const topicCommands = ["accounts", "apps", "channels"];
+        for (const topic of topicsWithCommands) {
+          const { stdout } = await execAsync(`node ${binPath} ${topic} --help`);
 
-      for (const topic of topicCommands) {
-        const { stdout } = await execAsync(`node ${binPath} ${topic} --help`);
+          // Should have standard sections
+          expect(stdout).toContain("USAGE");
+          expect(stdout).toContain("DESCRIPTION");
+          expect(stdout).toContain("EXAMPLES");
 
-        // Should have standard sections
-        expect(stdout).to.include("USAGE");
-        expect(stdout).to.include("DESCRIPTION");
-        expect(stdout).to.include("EXAMPLES");
-
-        // Should have COMMANDS section if it has subcommands
-        if (topic === "accounts" || topic === "apps" || topic === "channels") {
-          expect(stdout).to.include("COMMANDS");
+          // Should have COMMANDS section for topics with subcommands
+          expect(stdout).toContain("COMMANDS");
           // Commands should use spaces, not colons
-          expect(stdout).to.not.match(new RegExp(`${topic}:[a-z]+`));
+          expect(stdout).not.toMatch(new RegExp(`${topic}:[a-z]+`));
         }
-      }
-    });
+      },
+      timeout,
+    );
   });
 });

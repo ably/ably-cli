@@ -1,4 +1,12 @@
-import { expect } from "@oclif/test";
+import {
+  describe,
+  it,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+  expect,
+} from "vitest";
 import {
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
@@ -11,20 +19,21 @@ import {
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
-  displayTestFailureDebugOutput,
+  setupTestFailureHandler,
+  resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
 import { ChildProcess } from "node:child_process";
 
-describe("Channel Subscribe E2E Tests", function () {
+describe("Channel Subscribe E2E Tests", () => {
   // Skip all tests if API key not available
-  before(async function () {
+  beforeAll(async () => {
     if (SHOULD_SKIP_E2E) {
-      this.skip();
+      return;
     }
     process.on("SIGINT", forceExit);
   });
 
-  after(function () {
+  afterAll(() => {
     process.removeListener("SIGINT", forceExit);
   });
 
@@ -35,8 +44,8 @@ describe("Channel Subscribe E2E Tests", function () {
     processId: string;
   } | null = null;
 
-  beforeEach(async function () {
-    this.timeout(120000); // 2 minutes per individual test
+  beforeEach(async () => {
+    resetTestTracking();
     // Clear tracked commands and output files before each test
     testOutputFiles.clear();
     testCommands.length = 0;
@@ -44,11 +53,7 @@ describe("Channel Subscribe E2E Tests", function () {
     outputPath = await createTempOutputFile();
   });
 
-  afterEach(async function () {
-    // Display debug output if test failed
-    if (this.currentTest?.state === "failed") {
-      await displayTestFailureDebugOutput(this.currentTest?.title);
-    }
+  afterEach(async () => {
     // Kill specific process if necessary
     if (subscribeProcessInfo) {
       await killProcess(subscribeProcessInfo.process);
@@ -59,7 +64,16 @@ describe("Channel Subscribe E2E Tests", function () {
   });
 
   // Test subscribe functionality - subscribe in one process, publish in another
-  it("should subscribe to a channel and receive messages", async function () {
+  it("should subscribe to a channel and receive messages", async () => {
+    setupTestFailureHandler(
+      "should subscribe to a channel and receive messages",
+    );
+
+    // Skip if E2E tests should be skipped
+    if (SHOULD_SKIP_E2E) {
+      return;
+    }
+
     const readySignal = "Successfully attached to channel"; // Wait for channel to be fully attached
 
     // Start the subscribe process, waiting for the ready signal
@@ -91,7 +105,6 @@ describe("Channel Subscribe E2E Tests", function () {
       for (let i = 0; i < 50; i++) {
         // ~7.5 seconds polling
         const output = await readProcessOutput(outputPath);
-        // console.log(`[Test Subscribe] Attempt ${i + 1}/50 (message): Reading output file. Content length: ${output.length}`);
         if (output.includes("Subscribe E2E Test")) {
           console.log(`[Test Subscribe] Message received in output.`);
           messageReceived = true;
@@ -105,10 +118,9 @@ describe("Channel Subscribe E2E Tests", function () {
           `[Test Subscribe] FAILED TO FIND MESSAGE. Final output:\n${finalOutput}`,
         );
       }
-      expect(messageReceived, "Subscribe process should receive the message").to
-        .be.true;
+      expect(messageReceived).toBe(true);
     } finally {
-      // Cleanup is handled by applyE2ETestSetup's afterEach hook
+      // Cleanup is handled by afterEach hook
       console.log(
         `[Test Subscribe] Test finished, cleanup will handle process ${subscribeProcessInfo?.processId}`,
       );

@@ -1,18 +1,12 @@
-import { test } from "@oclif/test";
+import { runCommand } from "@oclif/test";
+import { describe, it, expect } from "vitest";
 
 // This is the absolute minimum test to see if oclif tests work at all
 describe("Minimal oclif test", function () {
-  // Set very short timeout to fail fast if hanging
-  this.timeout(5000);
-
   // Just try to execute the help command which should be fast and reliable
-  it("runs help command", function () {
+  it("runs help command", async function () {
     // Try to run the simplest possible command
-    test
-      .stdout()
-      .command(["help"])
-      .it("should show help", (_ctx) => {
-        // Assertion is just that the command executed without error
-      });
+    const { stdout } = await runCommand(["help"]);
+    expect(stdout).toContain("$ ably [COMMAND]");
   });
 });

@@ -1,5 +1,4 @@
-import { expect } from "chai";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import { AblyBaseCommand } from "../../../src/base-command.js";
 import { getCliVersion } from "../../../src/utils/version.js";
@@ -17,19 +16,11 @@ class TestCommand extends AblyBaseCommand {
 }
 
 describe("Agent Header Integration Tests", function () {
-  let sandbox: sinon.SinonSandbox;
-
-  beforeEach(function () {
-    sandbox = sinon.createSandbox();
-  });
-
-  afterEach(function () {
-    sandbox.restore();
-  });
+  beforeEach(function () {});
 
   describe("Ably SDK Agent Header", function () {
     it("should include agent header in client options", function () {
-      const mockConfig = { runHook: sandbox.stub() } as unknown as Config;
+      const mockConfig = { runHook: vi.fn() } as unknown as Config;
       const command = new TestCommand([], mockConfig);
 
       const flags = {
@@ -38,8 +29,8 @@ describe("Agent Header Integration Tests", function () {
 
       const clientOptions = command.testGetClientOptions(flags);
 
-      expect(clientOptions.agents).to.exist;
-      expect(clientOptions.agents).to.deep.equal({
+      expect(clientOptions.agents).toBeDefined();
+      expect(clientOptions.agents).toEqual({
         "ably-cli": getCliVersion(),
       });
     });
@@ -51,7 +42,7 @@ describe("Agent Header Integration Tests", function () {
       const expectedAgentHeader = `ably-cli/${version}`;
 
       // Should match the format: ably-cli/x.y.z or ably-cli/x.y.z-alpha.n
-      expect(expectedAgentHeader).to.match(
+      expect(expectedAgentHeader).toMatch(
         /^ably-cli\/\d+\.\d+\.\d+(-alpha\.\d+)?$/,
       );
     });

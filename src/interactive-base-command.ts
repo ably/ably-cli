@@ -80,6 +80,11 @@ export abstract class InteractiveBaseCommand extends Command {
    * Override log to ensure proper output in interactive mode
    */
   log(message?: string, ...args: unknown[]): void {
+    // If we have this, the command wasn't run in oclif.runCommand, so don't log to avoid polluting.
+    if (!this.config.root) {
+      return;
+    }
+
     // Ensure logs are displayed properly in interactive mode
     if (message === undefined) {
       console.log();

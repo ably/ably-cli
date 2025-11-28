@@ -110,7 +110,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         "gettingRoom",
         `Getting room handle for ${this.roomName}`,
       );
-      const room = await this.chatClient.rooms.get(this.roomName, {});
+      const room = await this.chatClient.rooms.get(this.roomName);
       this.logCliEvent(
         flags,
         "room",
@@ -249,14 +249,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      const effectiveDuration =
-        typeof flags.duration === "number" && flags.duration > 0
-          ? flags.duration
-          : process.env.ABLY_CLI_DEFAULT_DURATION
-            ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-            : undefined;
-
-      const exitReason = await waitUntilInterruptedOrTimeout(effectiveDuration);
+      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
       this.logCliEvent(flags, "subscribe", "runComplete", "Exiting wait loop", {
         exitReason,
       });

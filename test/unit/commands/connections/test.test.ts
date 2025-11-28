@@ -1,5 +1,4 @@
-import { expect } from "chai";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import ConnectionsTest from "../../../../src/commands/connections/test.js";
 import * as Ably from "ably";
@@ -101,20 +100,18 @@ class TestableConnectionsTest extends ConnectionsTest {
 }
 
 describe("ConnectionsTest", function () {
-  let sandbox: sinon.SinonSandbox;
   let command: TestableConnectionsTest;
   let mockConfig: Config;
   let originalConsoleLog: typeof console.log;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    mockConfig = { runHook: sinon.stub() } as unknown as Config;
+    mockConfig = { runHook: vi.fn() } as unknown as Config;
     command = new TestableConnectionsTest([], mockConfig);
 
     // Mock config manager to prevent "No API key found" errors
-    sandbox
-      .stub(command.getConfigManager(), "getApiKey")
-      .resolves("dummy-key:secret");
+    vi.spyOn(command.getConfigManager(), "getApiKey").mockResolvedValue(
+      "dummy-key:secret",
+    );
 
     // Mock console.log to capture any direct console output
     originalConsoleLog = console.log;
@@ -132,7 +129,7 @@ describe("ConnectionsTest", function () {
   afterEach(function () {
     // Restore console.log
     console.log = originalConsoleLog;
-    sandbox.restore();
+    vi.restoreAllMocks();
   });
 
   it("should parse flags correctly", async function () {
@@ -156,19 +153,19 @@ describe("ConnectionsTest", function () {
 
     // Check that parse was called
     const result = await command.parse();
-    expect(result.flags.timeout).to.equal(5000);
-    expect(result.flags.transport).to.equal("ws");
+    expect(result.flags.timeout).toBe(5000);
+    expect(result.flags.transport).toBe("ws");
   });
 
   it("should handle getClientOptions", function () {
     const options = command.getClientOptions({ "api-key": "test-key:secret" });
-    expect(options).to.have.property("key", "dummy-key:secret");
+    expect(options).toHaveProperty("key", "dummy-key:secret");
   });
 
   it("should output JSON when requested", function () {
     // Test that we can set JSON output mode
     command.setShouldOutputJson(true);
-    expect(command.shouldOutputJson({})).to.be.true;
+    expect(command.shouldOutputJson({})).toBe(true);
 
     // Test JSON formatting
     const testData = {
@@ -179,10 +176,10 @@ describe("ConnectionsTest", function () {
     };
 
     const formatted = command.formatJsonOutput(testData, {});
-    expect(formatted).to.be.a("string");
+    expect(formatted).toBeTypeOf("string");
 
     const parsed = JSON.parse(formatted);
-    expect(parsed).to.deep.equal(testData);
+    expect(parsed).toEqual(testData);
   });
 
   it("should format JSON output correctly", function () {
@@ -190,13 +187,13 @@ describe("ConnectionsTest", function () {
       { test: "data" },
       { "pretty-json": false },
     );
-    expect(formatted).to.equal('{"test":"data"}');
+    expect(formatted).toBe('{"test":"data"}');
   });
 
   it("should detect JSON output mode", function () {
-    expect(command.shouldOutputJson({ json: true })).to.be.true;
-    expect(command.shouldOutputJson({ "pretty-json": true })).to.be.true;
-    expect(command.shouldOutputJson({ format: "json" })).to.be.true;
-    expect(command.shouldOutputJson({})).to.be.false;
+    expect(command.shouldOutputJson({ json: true })).toBe(true);
+    expect(command.shouldOutputJson({ "pretty-json": true })).toBe(true);
+    expect(command.shouldOutputJson({ format: "json" })).toBe(true);
+    expect(command.shouldOutputJson({})).toBe(false);
   });
 });

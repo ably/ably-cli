@@ -389,20 +389,13 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       }
 
       // Decide how long to remain connected
-      const effectiveDuration =
-        typeof flags.duration === "number"
-          ? flags.duration
-          : process.env.ABLY_CLI_DEFAULT_DURATION
-            ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-            : undefined;
-
-      if (effectiveDuration === 0) {
+      if (flags.duration === 0) {
         // Give Ably a moment to propagate the cursor update before exiting so that
         // subscribers in automated tests have a chance to receive the event.
         await new Promise((resolve) => setTimeout(resolve, 600));
 
         // In immediate exit mode, we don't keep the process alive beyond this.
-        process.exit(0);
+        this.exit(0);
       }
 
       // Start simulation if requested
@@ -463,18 +456,18 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         "cursor",
         "waiting",
         "Cursor set – waiting for further instructions",
-        { duration: effectiveDuration ?? "indefinite" },
+        { duration: flags.duration ?? "indefinite" },
       );
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          effectiveDuration
-            ? `Waiting ${effectiveDuration}s before exiting… Press Ctrl+C to exit sooner.`
+          flags.duration
+            ? `Waiting ${flags.duration}s before exiting… Press Ctrl+C to exit sooner.`
             : `Cursor set. Press Ctrl+C to exit.`,
         );
       }
 
-      const exitReason = await waitUntilInterruptedOrTimeout(effectiveDuration);
+      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
       this.logCliEvent(
         flags,
         "cursor",
@@ -485,7 +478,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
       this.cleanupInProgress = true;
       // After cleanup (handled in finally), ensure the process exits so user doesn't need multiple Ctrl-C
-      process.exit(0);
+      this.exit(0);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(flags, "cursor", "setError", errorMsg, {

@@ -48,14 +48,6 @@ pnpm test test/unit/commands/auth/**/*.test.ts
 
 The test runner includes built-in debugging support to help diagnose test failures, especially for E2E tests that interact with real services.
 
-### Debugging Flags
-
-| Flag | Description |
-|------|-------------|
-| `--debug` | Enable detailed test debugging output |
-| `--show-output` | Show CLI command output during tests |
-| `--verbose` | Enable both debug and show-output (full verbosity) |
-
 ### Environment Variables
 
 | Variable | Description |
@@ -68,53 +60,22 @@ The test runner includes built-in debugging support to help diagnose test failur
 
 ```bash
 # Debug E2E tests with verbose output
-pnpm test:e2e --debug
+E2E_DEBUG=true ABLY_CLI_TEST_SHOW_OUTPUT=true pnpm test:e2e
 
-# Debug specific failing tests with full verbosity
-pnpm test:e2e test/e2e/commands/rooms* --verbose
+# Debug specific failing tests
+E2E_DEBUG=true pnpm run test 'test/e2e/rooms/*.test.ts'
 
-# Debug using environment variables
-E2E_DEBUG=true pnpm test:e2e
-
-# Debug specific test file with output capture
-pnpm test:e2e test/e2e/commands/spaces-e2e.test.ts --show-output
-
-# Debug all E2E command tests with full verbosity
-pnpm test:e2e:commands --verbose
+# Debug specific test file with grep filter
+pnpm test test/e2e/spaces/*.test.ts --t "should have properly structured spaces member commands"
 ```
 
 ### Debug Output Features
 
-When debugging is enabled, you'll see:
-- ✅ **Detailed timing information** for test execution phases
-- ✅ **Environment variable status** (API keys, debug flags)
-- ✅ **Command execution details** (patterns, arguments, runner type)
-- ✅ **Process cleanup information** (hanging processes detection)
-- ✅ **Enhanced error reporting** with exit codes and timing
-- ✅ **Pre/post test cleanup** to avoid process conflicts
-
-**Example debug output:**
-```bash
-=== TEST DEBUG MODE ENABLED ===
-Starting debug run at Wed Dec 18 10:30:45 PST 2024
-Environment variables:
-  E2E_DEBUG=true
-  TEST_DEBUG=true
-  NODE_OPTIONS=--trace-warnings --trace-deprecation
-  ABLY_CLI_TEST_SHOW_OUTPUT=true
-  E2E_ABLY_API_KEY is configured
-=================================
-
-=== Test Execution Details ===
-Test pattern: test/e2e/commands/rooms*
-Additional args: --timeout 30000
-Using Playwright: false
-Starting test execution at: Wed Dec 18 10:30:46 PST 2024
-==============================
-
-=== Running Mocha Tests ===
-Executing command: CURSOR_DISABLE_DEBUGGER=true NODE_OPTIONS="..." node --import '...' ./node_modules/mocha/bin/mocha --require ./test/setup.ts --forbid-only --allow-uncaught --exit --reporter spec 'test/e2e/commands/rooms*' --timeout 30000 --exclude 'test/e2e/web-cli/**/*.test.ts'
-```
+When debugging is enabled (`E2E_DEBUG=true` and/or `ABLY_CLI_TEST_SHOW_OUTPUT=true`), you'll see:
+- ✅ **Detailed console output** from the CLI commands being tested
+- ✅ **Ably SDK logs** showing connection and API interactions
+- ✅ **Process cleanup information** from the test setup
+- ✅ **Enhanced error reporting** with full stack traces
 
 ---
 
@@ -141,20 +102,19 @@ The script will:
 ### 🧪 Unit Tests (`test/unit`)
 
 *   **Primary Purpose:** Quickly verify command logic, flag parsing, input validation, error handling, and basic output formatting **in isolation**. Focus on testing individual functions or methods within a command class.
-*   **Dependencies:** **MUST** stub/mock all external dependencies (Ably SDK calls, Control API requests, filesystem access, `ConfigManager`, etc.). Use libraries like `sinon` and `nock`.
+*   **Dependencies:** **MUST** stub/mock all external dependencies (Ably SDK calls, Control API requests, filesystem access, `ConfigManager`, etc.). Use libraries like `vitest` and `nock`.
 *   **Speed:** Very fast; no network or filesystem dependency.
 *   **Value:** Useful for testing complex parsing, conditional logic, and edge cases within a command, but **less effective** at verifying core interactions with Ably services compared to Integration/E2E tests.
 
 **CLI Core and Commands:**
-*   **Tools:** Mocha, `@oclif/test`, `sinon`.
+*   **Tools:** Vitest, `@oclif/test`.
 *   **Location:** Primarily within the `test/unit/` directory, mirroring the `src/` structure.
-*   **Execution:** Run all unit tests with `pnpm test:unit` or target specific files, e.g., `pnpm test test/unit/commands/bench/bench.test.ts`.
+*   **Execution:** Run all unit tests with `pnpm test:unit` or target specific files, e.g., `pnpm vitest --project unit test/unit/commands/bench/bench.test.ts`.
 
-**Example (Mocha/Sinon):**
+**Example (Vitest):**
 ```typescript
 // Example unit test with proper mocking
-import {expect} from '@oclif/test'
-import * as sinon from 'sinon'
+import {describe, it, expect, beforeEach, vi} from 'vitest'
 import {AblyCommand} from '../../src/base/ably-command'
 
 describe('MyCommand', () => {
@@ -164,17 +124,11 @@ describe('MyCommand', () => {
     // Set up mocks
     mockClient = {
       channels: {
-        get: sinon.stub().returns({
-          publish: sinon.stub().resolves()
-        })
+        get: vi.fn().mockReturnedValue(...)
       },
-      close: sinon.stub().resolves()
+      close: vi.fn(),
     }
-    sinon.stub(AblyCommand.prototype, 'getAblyClient').resolves(mockClient)
-  })
-
-  afterEach(() => {
-    sinon.restore()
+    vi.spyOn(AblyCommand.prototype, 'getAblyClient').mockResolvedValue(mockClient)
   })
 
   it('publishes a message to the specified channel', async () => {
@@ -211,12 +165,12 @@ Everything else (exact countdown rendering, every internal state transition, con
 ### 🔄 Integration Tests (`test/integration`)
 
 *   **Primary Purpose:** Verify the interaction between multiple commands or components, including interactions with *mocked* Ably SDKs or Control API services. Test the CLI execution flow.
-*   **Dependencies:** Primarily stub/mock network calls (`nock` for Control API, `sinon` stubs for SDK methods), but may interact with the local filesystem for config management (ensure isolation). Use `ConfigManager` mocks.
+*   **Dependencies:** Primarily stub/mock network calls (`nock` for Control API, `vi` stubs for SDK methods), but may interact with the local filesystem for config management (ensure isolation). Use `ConfigManager` mocks.
 *   **Speed:** Relatively fast; generally avoids real network latency.
 *   **Value:** Good for testing command sequences (e.g., `config set` then `config get`), authentication flow logic (with mocked credentials), and ensuring different parts of the CLI work together correctly without relying on live Ably infrastructure.
-*   **Tools:** Mocha, `@oclif/test`, `nock`, `sinon`, `execa` (to run the CLI as a subprocess).
+*   **Tools:** Vitest, `@oclif/test`, `nock`, `execa` (to run the CLI as a subprocess).
 
-Refer to the [Debugging Guide](mdc:docs/Debugging.md) for tips on debugging failed tests, including Playwright and Mocha tests.
+Refer to the [Debugging Guide](mdc:docs/Debugging.md) for tips on debugging failed tests, including Playwright and Vitest tests.
 
 ### 🌐 End-to-End (E2E) Tests (`test/e2e`)
 
@@ -225,19 +179,16 @@ Refer to the [Debugging Guide](mdc:docs/Debugging.md) for tips on debugging fail
 *   **Scope:** Focus on essential commands and common workflows (login, app/key management basics, channel publish/subscribe/presence/history, logs subscribe).
 *   **Speed:** Slowest test type due to network latency and real API interactions.
 *   **Value:** Provides the highest confidence that the CLI works correctly for end-users in a real environment. **Preferred** over unit tests for verifying core Ably interactions.
-*   **Tools:** Mocha, `@oclif/test`, `execa`, environment variables (`E2E_ABLY_API_KEY`, etc.).
+*   **Tools:** Vitest, `@oclif/test`, `execa`, environment variables (`E2E_ABLY_API_KEY`, etc.).
 *   **Frequency:** Run automatically in CI (GitHub Actions) on PRs and merges. Can be run locally but may incur costs.
 
 **Example:**
 ```typescript
 // Example E2E test with real services
-import {expect, test} from '@oclif/test'
+import {describe, it, expect} from 'vitest'
 import {execSync} from 'child_process'
 
-describe('channels commands', function() {
-  // Longer timeout for E2E tests
-  this.timeout(10000)
-
+describe('channels commands', () => {
   const testChannel = `test-${Date.now()}`
   const testMessage = 'Hello E2E test'
 
@@ -254,10 +205,11 @@ describe('channels commands', function() {
     ).toString()
 
     const history = JSON.parse(result)
-    expect(history).to.be.an('array').with.lengthOf.at.least(1)
-    expect(history[0].data).to.equal(testMessage)
+    expect(history).toBeInstanceOf(Array)
+    expect(history.length).toBeGreaterThanOrEqual(1)
+    expect(history[0].data).toBe(testMessage)
   })
-})
+}, {timeout: 10000})
 ```
 
 ### 🎭 Playwright Tests (`test/e2e/web-cli`)
@@ -267,7 +219,7 @@ describe('channels commands', function() {
 *   **Speed:** Slow; involves browser automation and WebSocket connections.
 *   **Value:** Ensures the embeddable React component works correctly with the hosted terminal server.
 *   **Tools:** Playwright Test runner (`@playwright/test`).
-*   **Frequency:** Run automatically in CI, separate from Mocha tests.
+*   **Frequency:** Run automatically in CI, separate from Vitest tests.
 
 </details>
 
@@ -288,7 +240,7 @@ describe('channels commands', function() {
 *   **Test Output:** Test output (stdout/stderr) should be clean. Avoid polluting test logs with unnecessary debug output from the CLI itself. Failures should provide clear error messages.
 *   **Asynchronous Operations:** Use `async/await` properly. Avoid brittle `setTimeout` calls where possible; use event listeners or promise-based waits.
 *   **Resource Cleanup:** Ensure tests clean up resources (e.g., close Ably clients, kill subprocesses, delete temp files). Use the `afterEach` or `afterAll` hooks and helpers like `trackAblyClient`.
-*   **Realtime SDK Stubbing:** For Unit/Integration tests involving the Realtime SDK, stub the SDK methods directly (`sinon.stub(ably.channels.get('...'), 'subscribe')`) rather than trying to mock the underlying WebSocket, which is complex and brittle.
+*   **Realtime SDK Stubbing:** For Unit/Integration tests involving the Realtime SDK, stub the SDK methods directly (`vi.spyOn(ably.channels.get('...'), 'subscribe')`) rather than trying to mock the underlying WebSocket, which is complex and brittle.
 *   **Credentials:** E2E tests rely on `E2E_ABLY_API_KEY` (and potentially others) being set in the environment (locally via `.env` or in CI via secrets). **Never** hardcode credentials in tests.
 
 ## 🗂️ Codebase Integration & Structure
@@ -312,7 +264,7 @@ describe('channels commands', function() {
 │   │   ├── base/
 │   │   ├── commands/
 │   │   └── services/
-│   ├── setup.ts            # Full setup for E2E tests (runs in Mocha context)
+│   ├── setup.ts            # Full setup for E2E tests (runs in Vitest context)
 │   └── mini-setup.ts       # Minimal setup for Unit/Integration tests
 └── ...
 ```
@@ -329,7 +281,7 @@ E2E tests are organized by feature/topic (e.g., `channels-e2e.test.ts`, `presenc
 
 1. **✅ DO** prioritize Integration and E2E tests for core Ably functionality
 2. **✅ DO** clean up all resources in tests (clients, connections, mocks)
-3. **✅ DO** use proper mocking (`sinon`, `nock`) for Unit/Integration tests
+3. **✅ DO** use proper mocking (`vitest`, `nock`) for Unit/Integration tests
 4. **✅ DO** avoid testing implementation details when possible (test behavior)
 5. **✅ DO** use path-based test execution for faster development workflow
 

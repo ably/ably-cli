@@ -1,76 +1,82 @@
-import { expect } from "chai";
-import sinon from "sinon";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  MockInstance,
+} from "vitest";
 import { Config } from "@oclif/core";
 import stripAnsi from "strip-ansi";
 
 import CustomHelp from "../../../src/help.js";
 import { ConfigManager } from "../../../src/services/config-manager.js";
 
+function createMockConfig(commands: any[] = [], topics: any[] = []): Config {
+  return {
+    bin: "ably",
+    root: "",
+    dataDir: "",
+    configDir: "",
+    cacheDir: "",
+    name: "@ably/cli",
+    version: "0.8.1",
+    pjson: {} as any,
+    channel: "stable",
+    commands: commands,
+    topics: topics,
+    findCommand: vi.fn().mockReturnValue(null),
+    findTopic: vi.fn().mockReturnValue(null),
+    runHook: vi.fn(),
+    runCommand: vi.fn(),
+    s3Url: "",
+    s3Key: vi.fn(),
+    valid: true,
+    plugins: [],
+    binPath: "",
+    userAgent: "",
+    shellEnabled: false,
+    topicSeparator: " ",
+    versionAdd: vi.fn(),
+    scopedEnvVar: vi.fn(),
+    scopedEnvVarTrue: vi.fn(),
+    scopedEnvVarKey: vi.fn(),
+  } as unknown as Config;
+}
+
 describe("CLI Help", function () {
   describe("Web CLI Help", function () {
-    let sandbox: sinon.SinonSandbox;
     let originalEnv: NodeJS.ProcessEnv;
-    let consoleLogStub: sinon.SinonStub;
-    let _processExitStub: sinon.SinonStub;
-    let configManagerStub: sinon.SinonStubbedInstance<ConfigManager>;
+    let consoleLogStub: MockInstance<typeof console.log>;
+    let _processExitStub: MockInstance<NodeJS.Process["exit"]>;
+    let configManagerStub: Partial<ConfigManager>;
 
     beforeEach(function () {
-      sandbox = sinon.createSandbox();
       originalEnv = { ...process.env };
 
       // Stub console.log to capture output
-      consoleLogStub = sandbox.stub(console, "log");
+      consoleLogStub = vi.spyOn(console, "log").mockImplementation(vi.fn());
 
       // Stub process.exit to prevent test runner from exiting
-      _processExitStub = sandbox.stub(process, "exit");
+      _processExitStub = vi
+        .spyOn(process, "exit")
+        // @ts-expect-error TS-2534
+        .mockImplementation((): never => {});
 
       // Stub ConfigManager
-      configManagerStub = sandbox.createStubInstance(ConfigManager);
-      configManagerStub.getAccessToken.returns(undefined as any);
+      configManagerStub = {
+        getAccessToken: vi.fn(),
+      } as Partial<ConfigManager>;
 
       // Enable Web CLI mode
       process.env.ABLY_WEB_CLI_MODE = "true";
     });
 
     afterEach(function () {
-      sandbox.restore();
       process.env = originalEnv;
+      vi.restoreAllMocks();
     });
-
-    function createMockConfig(
-      commands: any[] = [],
-      topics: any[] = [],
-    ): Config {
-      return {
-        bin: "ably",
-        root: "",
-        dataDir: "",
-        configDir: "",
-        cacheDir: "",
-        name: "@ably/cli",
-        version: "0.8.1",
-        pjson: {} as any,
-        channel: "stable",
-        commands: commands,
-        topics: topics,
-        findCommand: sandbox.stub().returns(null),
-        findTopic: sandbox.stub().returns(null),
-        runHook: sandbox.stub(),
-        runCommand: sandbox.stub(),
-        s3Url: "",
-        s3Key: sandbox.stub(),
-        valid: true,
-        plugins: [],
-        binPath: "",
-        userAgent: "",
-        shellEnabled: false,
-        topicSeparator: " ",
-        versionAdd: sandbox.stub(),
-        scopedEnvVar: sandbox.stub(),
-        scopedEnvVarTrue: sandbox.stub(),
-        scopedEnvVarKey: sandbox.stub(),
-      } as unknown as Config;
-    }
 
     describe("formatRoot in Web CLI mode", function () {
       it("should show simplified help when no --help flag is provided", async function () {
@@ -85,30 +91,30 @@ describe("CLI Help", function () {
 
         await help.showRootHelp();
 
-        expect(consoleLogStub.calledOnce).to.be.true;
-        const output = stripAnsi(consoleLogStub.firstCall.args[0]);
+        expect(consoleLogStub).toHaveBeenCalledOnce();
+        const output = stripAnsi(consoleLogStub.mock.calls[0][0]);
 
         // Should show COMMON COMMANDS section
-        expect(output).to.include("COMMON COMMANDS");
+        expect(output).toContain("COMMON COMMANDS");
 
         // Check for commands in tabular format (less brittle - just check key parts)
-        expect(output).to.include("channels publish [channel] [message]");
-        expect(output).to.include("Publish a message");
-        expect(output).to.include("channels subscribe [channel]");
-        expect(output).to.include("Subscribe to a channel");
+        expect(output).toContain("channels publish [channel] [message]");
+        expect(output).toContain("Publish a message");
+        expect(output).toContain("channels subscribe [channel]");
+        expect(output).toContain("Subscribe to a channel");
 
         // Should show channels:logs command for authenticated users
-        expect(output).to.include("channels logs");
-        expect(output).to.include("View live channel events");
+        expect(output).toContain("channels logs");
+        expect(output).toContain("View live channel events");
 
         // Check for help instructions (less brittle - just check key parts)
-        expect(output).to.include("Type");
-        expect(output).to.include("help");
-        expect(output).to.include("complete list of commands");
+        expect(output).toContain("Type");
+        expect(output).toContain("help");
+        expect(output).toContain("complete list of commands");
 
         // Should NOT show the full COMMANDS list section (with topic lists)
-        expect(output).to.not.include("accounts");
-        expect(output).to.not.include("apps");
+        expect(output).not.toContain("accounts");
+        expect(output).not.toContain("apps");
       });
 
       it("should show full command list when --help flag is provided", async function () {
@@ -141,30 +147,30 @@ describe("CLI Help", function () {
 
         await help.showRootHelp();
 
-        expect(consoleLogStub.calledOnce).to.be.true;
-        const output = stripAnsi(consoleLogStub.firstCall.args[0]);
+        expect(consoleLogStub).toHaveBeenCalledOnce();
+        const output = stripAnsi(consoleLogStub.mock.calls[0][0]);
 
         // Should show browser-based CLI title
-        expect(output).to.include(
+        expect(output).toContain(
           "ably.com browser-based CLI for Pub/Sub, Chat and Spaces",
         );
 
         // Should show COMMANDS section
-        expect(output).to.include("COMMANDS");
+        expect(output).toContain("COMMANDS");
 
         // Should show allowed commands
-        expect(output).to.include("channels");
-        expect(output).to.include("rooms");
-        expect(output).to.include("spaces");
+        expect(output).toContain("channels");
+        expect(output).toContain("rooms");
+        expect(output).toContain("spaces");
 
         // Should show accounts topic (only specific subcommands are restricted in authenticated mode)
-        expect(output).to.include("accounts");
+        expect(output).toContain("accounts");
 
         // Should NOT show config (wildcard restriction)
-        expect(output).to.not.include("config");
+        expect(output).not.toContain("config");
 
         // Should NOT show COMMON COMMANDS section
-        expect(output).to.not.include("COMMON COMMANDS");
+        expect(output).not.toContain("COMMON COMMANDS");
       });
 
       it("should show full command list when -h flag is provided", async function () {
@@ -188,13 +194,13 @@ describe("CLI Help", function () {
 
         await help.showRootHelp();
 
-        expect(consoleLogStub.calledOnce).to.be.true;
-        const output = stripAnsi(consoleLogStub.firstCall.args[0]);
+        expect(consoleLogStub).toHaveBeenCalledOnce();
+        const output = stripAnsi(consoleLogStub.mock.calls[0][0]);
 
         // Should show COMMANDS section
-        expect(output).to.include("COMMANDS");
-        expect(output).to.include("channels");
-        expect(output).to.include("help");
+        expect(output).toContain("COMMANDS");
+        expect(output).toContain("channels");
+        expect(output).toContain("help");
       });
 
       it("should filter out wildcard restricted commands", async function () {
@@ -220,15 +226,15 @@ describe("CLI Help", function () {
 
         await help.showRootHelp();
 
-        expect(consoleLogStub.calledOnce).to.be.true;
-        const output = stripAnsi(consoleLogStub.firstCall.args[0]);
+        expect(consoleLogStub).toHaveBeenCalledOnce();
+        const output = stripAnsi(consoleLogStub.mock.calls[0][0]);
 
         // Should show allowed command
-        expect(output).to.include("channels");
+        expect(output).toContain("channels");
 
         // Should NOT show commands matching wildcard patterns (config*, mcp*)
-        expect(output).to.not.include("config");
-        expect(output).to.not.include("mcp");
+        expect(output).not.toContain("config");
+        expect(output).not.toContain("mcp");
       });
 
       it("should hide channels:logs in anonymous mode", async function () {
@@ -246,20 +252,20 @@ describe("CLI Help", function () {
 
         await help.showRootHelp();
 
-        expect(consoleLogStub.calledOnce).to.be.true;
-        const output = stripAnsi(consoleLogStub.firstCall.args[0]);
+        expect(consoleLogStub).toHaveBeenCalledOnce();
+        const output = stripAnsi(consoleLogStub.mock.calls[0][0]);
 
         // Should show COMMON COMMANDS section
-        expect(output).to.include("COMMON COMMANDS");
+        expect(output).toContain("COMMON COMMANDS");
         // Check for basic commands in tabular format
-        expect(output).to.include("channels publish [channel] [message]");
-        expect(output).to.include("Publish a message");
-        expect(output).to.include("channels subscribe [channel]");
-        expect(output).to.include("Subscribe to a channel");
+        expect(output).toContain("channels publish [channel] [message]");
+        expect(output).toContain("Publish a message");
+        expect(output).toContain("channels subscribe [channel]");
+        expect(output).toContain("Subscribe to a channel");
 
         // Should NOT show channels:logs command for anonymous users
-        expect(output).to.not.include("channels logs");
-        expect(output).to.not.include("View live channel events");
+        expect(output).not.toContain("channels logs");
+        expect(output).not.toContain("View live channel events");
 
         // Clean up
         delete process.env.ABLY_ANONYMOUS_USER_MODE;
@@ -277,14 +283,12 @@ describe("CLI Help", function () {
         (help as any).configManager = configManagerStub;
 
         // Stub super.formatCommand to return a dummy help text
-        sandbox
-          .stub(
-            Object.getPrototypeOf(Object.getPrototypeOf(help)),
-            "formatCommand",
-          )
-          .returns(
-            "USAGE\n  $ ably accounts login\n\nDESCRIPTION\n  Login to your account",
-          );
+        vi.spyOn(
+          Object.getPrototypeOf(Object.getPrototypeOf(help)),
+          "formatCommand",
+        ).mockReturnValue(
+          "USAGE\n  $ ably accounts login\n\nDESCRIPTION\n  Login to your account",
+        );
 
         const restrictedCommand = {
           id: "accounts:login",
@@ -294,10 +298,10 @@ describe("CLI Help", function () {
 
         const output = stripAnsi(help.formatCommand(restrictedCommand as any));
 
-        expect(output).to.include(
+        expect(output).toContain(
           "This command is not available in the web CLI mode",
         );
-        expect(output).to.include(
+        expect(output).toContain(
           "Please use the standalone CLI installation instead",
         );
       });
@@ -316,20 +320,15 @@ describe("CLI Help", function () {
         };
 
         // Stub super.formatCommand for this specific test
-        const superStub = sandbox
-          .stub(
-            Object.getPrototypeOf(Object.getPrototypeOf(help)),
-            "formatCommand",
-          )
-          .returns("Normal command help");
+        vi.spyOn(
+          Object.getPrototypeOf(Object.getPrototypeOf(help)),
+          "formatCommand",
+        ).mockReturnValue("Normal command help");
 
         const output = help.formatCommand(allowedCommand as any);
 
-        expect(output).to.equal("Normal command help");
-        expect(output).to.not.include("not available in the web CLI mode");
-
-        // Restore the stub
-        superStub.restore();
+        expect(output).toBe("Normal command help");
+        expect(output).not.toContain("not available in the web CLI mode");
       });
     });
 
@@ -342,76 +341,46 @@ describe("CLI Help", function () {
         (help as any).configManager = configManagerStub;
 
         // Test restricted commands
-        expect(help.shouldDisplay({ id: "accounts:login" } as any)).to.be.false;
-        expect(help.shouldDisplay({ id: "config" } as any)).to.be.false;
-        expect(help.shouldDisplay({ id: "mcp:start" } as any)).to.be.false;
+        expect(help.shouldDisplay({ id: "accounts:login" } as any)).toBe(false);
+        expect(help.shouldDisplay({ id: "config" } as any)).toBe(false);
+        expect(help.shouldDisplay({ id: "mcp:start" } as any)).toBe(false);
 
         // Test allowed commands
-        expect(help.shouldDisplay({ id: "channels:publish" } as any)).to.be
-          .true;
-        expect(help.shouldDisplay({ id: "channels:subscribe" } as any)).to.be
-          .true;
-        expect(help.shouldDisplay({ id: "channels:logs" } as any)).to.be.true; // Now allowed for authenticated users
-        expect(help.shouldDisplay({ id: "rooms:get" } as any)).to.be.true;
-        expect(help.shouldDisplay({ id: "help" } as any)).to.be.true;
+        expect(help.shouldDisplay({ id: "channels:publish" } as any)).toBe(
+          true,
+        );
+        expect(help.shouldDisplay({ id: "channels:subscribe" } as any)).toBe(
+          true,
+        );
+        expect(help.shouldDisplay({ id: "channels:logs" } as any)).toBe(true); // Now allowed for authenticated users
+        expect(help.shouldDisplay({ id: "rooms:get" } as any)).toBe(true);
+        expect(help.shouldDisplay({ id: "help" } as any)).toBe(true);
       });
     });
   });
 
   describe("Standard CLI Help (non-Web mode)", function () {
-    let sandbox: sinon.SinonSandbox;
     let originalEnv: NodeJS.ProcessEnv;
-    let consoleLogStub: sinon.SinonStub;
-    let _processExitStub: sinon.SinonStub;
-
-    function createMockConfig(
-      commands: any[] = [],
-      topics: any[] = [],
-    ): Config {
-      return {
-        bin: "ably",
-        root: "",
-        dataDir: "",
-        configDir: "",
-        cacheDir: "",
-        name: "@ably/cli",
-        version: "0.8.1",
-        pjson: {} as any,
-        channel: "stable",
-        commands: commands,
-        topics: topics,
-        findCommand: sandbox.stub().returns(null),
-        findTopic: sandbox.stub().returns(null),
-        runHook: sandbox.stub(),
-        runCommand: sandbox.stub(),
-        s3Url: "",
-        s3Key: sandbox.stub(),
-        valid: true,
-        plugins: [],
-        binPath: "",
-        userAgent: "",
-        shellEnabled: false,
-        topicSeparator: " ",
-        versionAdd: sandbox.stub(),
-        scopedEnvVar: sandbox.stub(),
-        scopedEnvVarTrue: sandbox.stub(),
-        scopedEnvVarKey: sandbox.stub(),
-      } as unknown as Config;
-    }
+    let consoleLogStub: MockInstance<typeof console.log>;
+    let _processExitStub: MockInstance<NodeJS.Process["exit"]>;
 
     beforeEach(function () {
-      sandbox = sinon.createSandbox();
       originalEnv = { ...process.env };
 
-      consoleLogStub = sandbox.stub(console, "log");
-      _processExitStub = sandbox.stub(process, "exit");
+      // Stub console.log to capture output
+      consoleLogStub = vi.spyOn(console, "log").mockImplementation(vi.fn());
+
+      // Stub process.exit to prevent test runner from exiting
+      _processExitStub = vi
+        .spyOn(process, "exit")
+        // @ts-expect-error TS-2534
+        .mockImplementation((): never => {});
 
       // Disable Web CLI mode
       process.env.ABLY_WEB_CLI_MODE = "false";
     });
 
     afterEach(function () {
-      sandbox.restore();
       process.env = originalEnv;
     });
 
@@ -431,23 +400,23 @@ describe("CLI Help", function () {
       const help = new CustomHelp(mockConfig);
 
       // Stub the configManager property
-      const standardConfigManagerStub =
-        sandbox.createStubInstance(ConfigManager);
-      standardConfigManagerStub.getAccessToken.returns(undefined as any);
+      const standardConfigManagerStub = {
+        getAccessToken: vi.fn(),
+      } as Partial<ConfigManager>;
       (help as any).configManager = standardConfigManagerStub;
 
       await help.showRootHelp();
 
-      expect(consoleLogStub.calledOnce).to.be.true;
-      const output = stripAnsi(consoleLogStub.firstCall.args[0]);
+      expect(consoleLogStub).toHaveBeenCalledOnce();
+      const output = stripAnsi(consoleLogStub.mock.calls[0][0]);
 
       // Should show standard CLI title
-      expect(output).to.include("ably.com CLI for Pub/Sub, Chat and Spaces");
+      expect(output).toContain("ably.com CLI for Pub/Sub, Chat and Spaces");
 
       // Should show all commands (no filtering)
-      expect(output).to.include("channels");
-      expect(output).to.include("accounts");
-      expect(output).to.include("config");
+      expect(output).toContain("channels");
+      expect(output).toContain("accounts");
+      expect(output).toContain("config");
     });
   });
 });

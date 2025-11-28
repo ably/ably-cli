@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { spawn } from "node:child_process";
 import * as path from "node:path";
 import * as fs from "node:fs";
@@ -13,8 +13,6 @@ const testHistoryDir = path.join(os.tmpdir(), "ably-test-" + Date.now());
 const testHistoryFile = path.join(testHistoryDir, "history");
 
 describe("Interactive Command Integration", function () {
-  this.timeout(15000); // Increase timeout for CI environments
-
   beforeEach(function () {
     // Create test history directory
     fs.mkdirSync(testHistoryDir, { recursive: true });
@@ -60,9 +58,9 @@ describe("Interactive Command Integration", function () {
     });
 
     // Verify output
-    expect(output).to.include("interactive CLI"); // Part of the tagline
-    expect(output).to.include("ably>"); // Prompt
-    expect(output).to.include("Goodbye!");
+    expect(output).toContain("interactive CLI"); // Part of the tagline
+    expect(output).toContain("ably>"); // Prompt
+    expect(output).toContain("Goodbye!");
   });
 
   it("should handle exit command with special exit code in wrapper mode", async function () {
@@ -85,7 +83,7 @@ describe("Interactive Command Integration", function () {
       proc.on("exit", (code) => resolve(code || 0));
     });
 
-    expect(exitCode).to.equal(42); // Special exit code
+    expect(exitCode).toBe(42); // Special exit code
   });
 
   it("should save command history", async function () {
@@ -157,13 +155,13 @@ describe("Interactive Command Integration", function () {
     });
 
     // Check history file
-    expect(fs.existsSync(testHistoryFile)).to.be.true;
+    expect(fs.existsSync(testHistoryFile)).toBe(true);
     const history = fs.readFileSync(testHistoryFile, "utf8").trim();
     const historyLines = history.split("\n").filter((line) => line.trim());
 
     // Both commands should be in history
-    expect(historyLines).to.include("help");
-    expect(historyLines).to.include("version");
+    expect(historyLines).toContain("help");
+    expect(historyLines).toContain("version");
   });
 
   it("should handle SIGINT without exiting", async function () {
@@ -199,10 +197,10 @@ describe("Interactive Command Integration", function () {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Process should still be running
-    expect(exitCode).to.be.null;
+    expect(exitCode).toBeNull();
 
     // Should see Ctrl+C feedback
-    expect(output).to.include("^C");
+    expect(output).toContain("^C");
 
     // Send exit command
     proc.stdin.write("exit\n");
@@ -213,6 +211,6 @@ describe("Interactive Command Integration", function () {
     });
 
     // Should have exited normally
-    expect(exitCode).to.equal(0);
+    expect(exitCode).toBe(0);
   });
 });

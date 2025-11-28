@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { describe, it, expect, afterEach } from "vitest";
 import Interactive from "../../../src/commands/interactive.js";
 import { Config } from "@oclif/core";
 import { spawn } from "node:child_process";
@@ -8,29 +8,29 @@ import path from "node:path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-describe("Interactive Command", function () {
-  describe("static properties", function () {
-    it("should have correct description", function () {
-      expect(Interactive.description).to.equal(
+describe("Interactive Command", () => {
+  describe("static properties", () => {
+    it("should have correct description", () => {
+      expect(Interactive.description).toBe(
         "Launch interactive Ably shell (ALPHA - experimental feature)",
       );
     });
 
-    it("should be hidden", function () {
-      expect(Interactive.hidden).to.be.true;
+    it("should be hidden", () => {
+      expect(Interactive.hidden).toBe(true);
     });
 
-    it("should have special exit code", function () {
-      expect(Interactive.EXIT_CODE_USER_EXIT).to.equal(42);
+    it("should have special exit code", () => {
+      expect(Interactive.EXIT_CODE_USER_EXIT).toBe(42);
     });
   });
 
-  describe("interactive mode environment", function () {
-    afterEach(function () {
+  describe("interactive mode environment", () => {
+    afterEach(() => {
       delete process.env.ABLY_INTERACTIVE_MODE;
     });
 
-    it("should set ABLY_INTERACTIVE_MODE environment variable", async function () {
+    it("should set ABLY_INTERACTIVE_MODE environment variable", async () => {
       // Create a minimal config with required properties
       const config = {
         version: "1.0.0",
@@ -74,12 +74,12 @@ describe("Interactive Command", function () {
       console.error = originalConsoleError;
       process.exit = originalProcessExit;
 
-      expect(process.env.ABLY_INTERACTIVE_MODE).to.equal("true");
+      expect(process.env.ABLY_INTERACTIVE_MODE).toBe("true");
     });
   });
 
-  describe("parseCommand", function () {
-    it("should parse commands correctly", function () {
+  describe("parseCommand", () => {
+    it("should parse commands correctly", () => {
       const config = {
         version: "1.0.0",
         commands: [],
@@ -91,18 +91,18 @@ describe("Interactive Command", function () {
       const parseCommand = (cmd as any).parseCommand.bind(cmd);
 
       // Test simple command
-      expect(parseCommand("help")).to.deep.equal(["help"]);
+      expect(parseCommand("help")).toEqual(["help"]);
 
       // Test command with arguments
-      expect(parseCommand("apps list")).to.deep.equal(["apps", "list"]);
+      expect(parseCommand("apps list")).toEqual(["apps", "list"]);
 
       // Test command with quoted strings
       expect(
         parseCommand('channels publish "my channel" "hello world"'),
-      ).to.deep.equal(["channels", "publish", "my channel", "hello world"]);
+      ).toEqual(["channels", "publish", "my channel", "hello world"]);
 
       // Test mixed quotes
-      expect(parseCommand(`channels publish 'single' "double"`)).to.deep.equal([
+      expect(parseCommand(`channels publish 'single' "double"`)).toEqual([
         "channels",
         "publish",
         "single",
@@ -110,22 +110,18 @@ describe("Interactive Command", function () {
       ]);
 
       // Test empty quotes - should return empty string
-      expect(parseCommand('test "" empty')).to.deep.equal([
-        "test",
-        "",
-        "empty",
-      ]);
+      expect(parseCommand('test "" empty')).toEqual(["test", "", "empty"]);
 
       // Test with backslashes - regex doesn't handle escapes specially
-      expect(parseCommand('test "quoted string"')).to.deep.equal([
+      expect(parseCommand('test "quoted string"')).toEqual([
         "test",
         "quoted string",
       ]);
     });
   });
 
-  describe("environment variables", function () {
-    it("should detect wrapper mode", function () {
+  describe("environment variables", () => {
+    it("should detect wrapper mode", () => {
       process.env.ABLY_WRAPPER_MODE = "1";
       const config = {
         version: "1.0.0",
@@ -133,27 +129,25 @@ describe("Interactive Command", function () {
         root: __dirname,
       } as unknown as Config;
       const cmd = new Interactive([], config);
-      expect((cmd as any).isWrapperMode).to.be.true;
+      expect((cmd as any).isWrapperMode).toBe(true);
       delete process.env.ABLY_WRAPPER_MODE;
     });
 
-    it("should not be in wrapper mode by default", function () {
+    it("should not be in wrapper mode by default", () => {
       const config = {
         version: "1.0.0",
         commands: [],
         root: __dirname,
       } as unknown as Config;
       const cmd = new Interactive([], config);
-      expect((cmd as any).isWrapperMode).to.be.false;
+      expect((cmd as any).isWrapperMode).toBe(false);
     });
   });
 
-  // eslint-disable-next-line mocha/no-skipped-tests
-  describe.skip("Ctrl+C Handling Integration Tests - FLAKY in CI", function () {
+  // eslint-disable-next-line vitest/no-disabled-tests
+  describe.skip("Ctrl+C Handling Integration Tests - FLAKY in CI", () => {
     // See: https://github.com/ably/cli/issues/70
-    it("should exit cleanly with code 130 when Ctrl+C is pressed during command execution", function (done) {
-      this.timeout(15000);
-
+    it("should exit cleanly with code 130 when Ctrl+C is pressed during command execution", (done) => {
       // Use the development.js script directly to test the actual CLI behavior
       const binPath = path.join(__dirname, "../../../bin/development.js");
       const child = spawn("node", [binPath, "interactive"], {
@@ -199,22 +193,20 @@ describe("Interactive Command", function () {
 
       child.on("exit", (code, signal) => {
         // Should exit with code 130 (128 + 2 for SIGINT)
-        expect(code).to.equal(130);
-        expect(signal).to.be.null;
-        expect(output).to.include("Listening for messages");
-        expect(output).to.not.include("Error: read EIO");
-        expect(output).to.not.include("setRawMode EIO");
+        expect(code).toBe(130);
+        expect(signal).toBeNull();
+        expect(output).toContain("Listening for messages");
+        expect(output).not.toContain("Error: read EIO");
+        expect(output).not.toContain("setRawMode EIO");
         done();
       });
 
       child.on("error", (err) => {
         done(err);
       });
-    });
+    }, 15000);
 
-    it("should handle Ctrl+C on empty prompt", function (done) {
-      this.timeout(10000);
-
+    it("should handle Ctrl+C on empty prompt", (done) => {
       const binPath = path.join(__dirname, "../../../bin/development.js");
       const child = spawn("node", [binPath, "interactive"], {
         stdio: "pipe",
@@ -247,14 +239,14 @@ describe("Interactive Command", function () {
       });
 
       child.on("exit", (code) => {
-        expect(code).to.equal(0); // Normal exit after 'exit' command
-        expect(output).to.include("^C");
+        expect(code).toBe(0); // Normal exit after 'exit' command
+        expect(output).toContain("^C");
         done();
       });
 
       child.on("error", (err) => {
         done(err);
       });
-    });
+    }, 10000);
   });
 });

@@ -1,8 +1,6 @@
-import { expect } from "chai";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import { AblyBaseCommand } from "../../../src/base-command.js";
-import { ConfigManager } from "../../../src/services/config-manager.js";
 
 // Test implementation of AblyBaseCommand for testing protected methods
 class TestCommand extends AblyBaseCommand {
@@ -53,15 +51,25 @@ class TestCommand extends AblyBaseCommand {
 
 describe("Auth Info Display", function () {
   let command: TestCommand;
-  let configManagerStub: sinon.SinonStubbedInstance<ConfigManager>;
-  let logStub: sinon.SinonStub;
-  let debugStub: sinon.SinonStub;
-  let sandbox: sinon.SinonSandbox;
+  let configManagerStub: {
+    getCurrentAccount: ReturnType<typeof vi.fn>;
+    getCurrentAppId: ReturnType<typeof vi.fn>;
+    getAppName: ReturnType<typeof vi.fn>;
+    getApiKey: ReturnType<typeof vi.fn>;
+    getKeyName: ReturnType<typeof vi.fn>;
+  };
+  let logStub: ReturnType<typeof vi.fn>;
+  let debugStub: ReturnType<typeof vi.fn>;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    // Create stubs using sandbox where applicable
-    configManagerStub = sandbox.createStubInstance(ConfigManager);
+    // Create mock config manager
+    configManagerStub = {
+      getCurrentAccount: vi.fn(),
+      getCurrentAppId: vi.fn(),
+      getAppName: vi.fn(),
+      getApiKey: vi.fn(),
+      getKeyName: vi.fn(),
+    };
 
     // Initialize command with stubs
     command = new TestCommand([], {} as any);
@@ -70,15 +78,15 @@ describe("Auth Info Display", function () {
     (command as any).configManager = configManagerStub;
 
     // Set up common stub behaviors - will be overridden in specific tests
-    configManagerStub.getCurrentAccount.returns({
+    configManagerStub.getCurrentAccount.mockReturnValue({
       accountId: "test-account-id",
       accountName: "Test Account",
       accessToken: "test-token",
     });
 
-    // Stub log and debug methods using sandbox
-    logStub = sandbox.stub(command as any, "log");
-    debugStub = sandbox.stub(command as any, "debug");
+    // Stub log and debug methods
+    logStub = vi.spyOn(command as any, "log");
+    debugStub = vi.spyOn(command as any, "debug");
 
     // Make sure environment variables are clean
     delete process.env.ABLY_API_KEY;
@@ -86,26 +94,25 @@ describe("Auth Info Display", function () {
   });
 
   afterEach(function () {
-    sandbox.restore();
-    delete process.env.ABLY_API_KEY;
-    delete process.env.ABLY_ACCESS_TOKEN;
+    vi.restoreAllMocks();
   });
 
   describe("shouldHideAccountInfo", function () {
     it("should return true when no account is configured", function () {
-      configManagerStub.getCurrentAccount.returns(undefined as any);
-      expect(command.testShouldHideAccountInfo({})).to.be.true;
+      configManagerStub.getCurrentAccount.mockReturnValue(undefined as any);
+      expect(command.testShouldHideAccountInfo({})).toBe(true);
     });
 
     it("should return true when API key is provided explicitly", function () {
       expect(
         command.testShouldHideAccountInfo({ "api-key": "app-id.key:secret" }),
-      ).to.be.true;
+      ).toBe(true);
     });
 
     it("should return true when token is provided explicitly", function () {
-      expect(command.testShouldHideAccountInfo({ token: "some-token" })).to.be
-        .true;
+      expect(command.testShouldHideAccountInfo({ token: "some-token" })).toBe(
+        true,
+      );
     });
 
     it("should return true when access token is provided explicitly", function () {
@@ -113,108 +120,108 @@ describe("Auth Info Display", function () {
         command.testShouldHideAccountInfo({
           "access-token": "some-access-token",
         }),
-      ).to.be.true;
+      ).toBe(true);
     });
 
     it("should return true when ABLY_API_KEY environment variable is set", function () {
       process.env.ABLY_API_KEY = "app-id.key:secret";
-      expect(command.testShouldHideAccountInfo({})).to.be.true;
+      expect(command.testShouldHideAccountInfo({})).toBe(true);
     });
 
     it("should return true when ABLY_ACCESS_TOKEN environment variable is set", function () {
       process.env.ABLY_ACCESS_TOKEN = "some-access-token";
-      expect(command.testShouldHideAccountInfo({})).to.be.true;
+      expect(command.testShouldHideAccountInfo({})).toBe(true);
     });
 
     it("should return false when account is configured and no auth overrides", function () {
-      expect(command.testShouldHideAccountInfo({})).to.be.false;
+      expect(command.testShouldHideAccountInfo({})).toBe(false);
     });
   });
 
   describe("displayAuthInfo", function () {
-    let shouldHideAccountInfoStub: sinon.SinonStub;
+    let shouldHideAccountInfoStub: ReturnType<typeof vi.fn>;
 
     beforeEach(function () {
-      // Stub using the sandbox created in the parent describe
-      shouldHideAccountInfoStub = sandbox.stub(
+      // Stub shouldHideAccountInfo
+      shouldHideAccountInfoStub = vi.spyOn(
         command as any,
         "shouldHideAccountInfo",
       );
 
       // Set up stubs for app info (already stubbed via configManagerStub in parent beforeEach)
-      configManagerStub.getCurrentAppId.returns("test-app-id");
-      configManagerStub.getAppName.returns("Test App");
-      configManagerStub.getApiKey.returns("test-app-id.key:secret");
-      configManagerStub.getKeyName.returns("Test Key");
+      configManagerStub.getCurrentAppId.mockReturnValue("test-app-id");
+      configManagerStub.getAppName.mockReturnValue("Test App");
+      configManagerStub.getApiKey.mockReturnValue("test-app-id.key:secret");
+      configManagerStub.getKeyName.mockReturnValue("Test Key");
     });
 
     it("should not include account info when shouldHideAccountInfo returns true", async function () {
       // Setup
-      shouldHideAccountInfoStub.returns(true);
+      shouldHideAccountInfoStub.mockReturnValue(true);
 
       // Execute
       await command.testDisplayAuthInfo({});
 
       // Verify that the log output doesn't contain account info
-      expect(logStub.called).to.be.true;
-      const outputCalls = logStub.getCalls().map((call) => call.args[0]);
+      expect(logStub).toHaveBeenCalled();
+      const outputCalls = logStub.mock.calls.map((call) => call[0]);
       const outputWithUsingPrefix = outputCalls.find(
         (output) => typeof output === "string" && output.includes("Using:"),
       );
-      expect(outputWithUsingPrefix).to.not.include("Account=");
-      expect(outputWithUsingPrefix).to.include("App=");
+      expect(outputWithUsingPrefix).not.toContain("Account=");
+      expect(outputWithUsingPrefix).toContain("App=");
     });
 
     it("should include account info when shouldHideAccountInfo returns false", async function () {
       // Setup
-      shouldHideAccountInfoStub.returns(false);
+      shouldHideAccountInfoStub.mockReturnValue(false);
 
       // Execute
       await command.testDisplayAuthInfo({});
 
       // Verify that the log output contains account info
-      expect(logStub.called).to.be.true;
-      const outputCalls = logStub.getCalls().map((call) => call.args[0]);
+      expect(logStub).toHaveBeenCalled();
+      const outputCalls = logStub.mock.calls.map((call) => call[0]);
       const outputWithUsingPrefix = outputCalls.find(
         (output) => typeof output === "string" && output.includes("Using:"),
       );
-      expect(outputWithUsingPrefix).to.include("Account=");
+      expect(outputWithUsingPrefix).toContain("Account=");
     });
 
     it("should not display anything when there are no parts to show", async function () {
       // Setup - hide account and don't show app info
-      shouldHideAccountInfoStub.returns(true);
+      shouldHideAccountInfoStub.mockReturnValue(true);
 
       // Execute - setting showAppInfo to false means no app info is included
       await command.testDisplayAuthInfo({}, false);
 
       // Verify that nothing was logged
-      expect(logStub.called).to.be.false;
+      expect(logStub).not.toHaveBeenCalled();
     });
 
     it("should display app and auth info when token is provided", async function () {
       // Setup
-      shouldHideAccountInfoStub.returns(true);
+      shouldHideAccountInfoStub.mockReturnValue(true);
 
       // Execute with token - also need to ensure the command has a token that's reflected in output
       const flags = { token: "test-token" };
       await command.testDisplayAuthInfo(flags);
 
       // Verify output includes token info but not account info
-      expect(logStub.called).to.be.true;
-      const outputCalls = logStub.getCalls().map((call) => call.args[0]);
+      expect(logStub).toHaveBeenCalled();
+      const outputCalls = logStub.mock.calls.map((call) => call[0]);
       const outputWithUsingPrefix = outputCalls.find(
         (output) => typeof output === "string" && output.includes("Using:"),
       );
-      expect(outputWithUsingPrefix).to.not.include("Account=");
-      expect(outputWithUsingPrefix).to.include("App=");
+      expect(outputWithUsingPrefix).not.toContain("Account=");
+      expect(outputWithUsingPrefix).toContain("App=");
       // The token is shown in a special format that may include ANSI color codes
-      expect(outputWithUsingPrefix).to.include("Token");
+      expect(outputWithUsingPrefix).toContain("Token");
     });
 
     it("should display app and key info when API key is provided", async function () {
       // Setup
-      shouldHideAccountInfoStub.returns(true);
+      shouldHideAccountInfoStub.mockReturnValue(true);
 
       // Execute with API key
       await command.testDisplayAuthInfo({
@@ -222,93 +229,90 @@ describe("Auth Info Display", function () {
       });
 
       // Verify output includes key info but not account info
-      expect(logStub.called).to.be.true;
-      const outputCalls = logStub.getCalls().map((call) => call.args[0]);
+      expect(logStub).toHaveBeenCalled();
+      const outputCalls = logStub.mock.calls.map((call) => call[0]);
       const outputWithUsingPrefix = outputCalls.find(
         (output) => typeof output === "string" && output.includes("Using:"),
       );
-      expect(outputWithUsingPrefix).to.not.include("Account=");
-      expect(outputWithUsingPrefix).to.include("App=");
-      expect(outputWithUsingPrefix).to.include("Key=");
+      expect(outputWithUsingPrefix).not.toContain("Account=");
+      expect(outputWithUsingPrefix).toContain("App=");
+      expect(outputWithUsingPrefix).toContain("Key=");
     });
   });
 
   describe("showAuthInfoIfNeeded", function () {
-    let displayDataPlaneInfoStub: sinon.SinonStub;
-    let displayControlPlaneInfoStub: sinon.SinonStub;
-    let shouldShowAuthInfoStub: sinon.SinonStub;
-    let shouldOutputJsonStub: sinon.SinonStub;
-    let shouldSuppressOutputStub: sinon.SinonStub;
+    let displayDataPlaneInfoStub: ReturnType<typeof vi.fn>;
+    let displayControlPlaneInfoStub: ReturnType<typeof vi.fn>;
+    let shouldShowAuthInfoStub: ReturnType<typeof vi.fn>;
+    let shouldOutputJsonStub: ReturnType<typeof vi.fn>;
+    let shouldSuppressOutputStub: ReturnType<typeof vi.fn>;
 
     beforeEach(function () {
-      // Create stubs using the sandbox from the parent describe
-      displayDataPlaneInfoStub = sandbox.stub(
+      // Create stubs
+      displayDataPlaneInfoStub = vi.spyOn(
         command as any,
         "displayDataPlaneInfo",
       );
-      displayControlPlaneInfoStub = sandbox.stub(
+      displayControlPlaneInfoStub = vi.spyOn(
         command as any,
         "displayControlPlaneInfo",
       );
-      shouldShowAuthInfoStub = sandbox.stub(
-        command as any,
-        "shouldShowAuthInfo",
-      );
-      shouldOutputJsonStub = sandbox.stub(command as any, "shouldOutputJson");
-      shouldSuppressOutputStub = sandbox.stub(
+      shouldShowAuthInfoStub = vi.spyOn(command as any, "shouldShowAuthInfo");
+      shouldOutputJsonStub = vi.spyOn(command as any, "shouldOutputJson");
+      shouldSuppressOutputStub = vi.spyOn(
         command as any,
         "shouldSuppressOutput",
       );
 
       // Default behavior - will be overridden in specific tests
-      shouldShowAuthInfoStub.returns(true);
-      shouldOutputJsonStub.returns(false);
-      shouldSuppressOutputStub.returns(false);
+      shouldShowAuthInfoStub.mockReturnValue(true);
+      shouldOutputJsonStub.mockReturnValue(false);
+      shouldSuppressOutputStub.mockReturnValue(false);
 
       // Default to non-web CLI mode
       (command as any).isWebCliMode = false;
     });
 
     it("should skip display when shouldShowAuthInfo returns false", async function () {
-      shouldShowAuthInfoStub.returns(false);
+      shouldShowAuthInfoStub.mockReturnValue(false);
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(debugStub.calledOnce).to.be.true;
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(debugStub).toHaveBeenCalledOnce();
+      expect(displayDataPlaneInfoStub).not.toHaveBeenCalled();
+      expect(displayControlPlaneInfoStub).not.toHaveBeenCalled();
     });
 
     it("should skip display when quiet flag is true", async function () {
       await command.testShowAuthInfoIfNeeded({ quiet: true });
 
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub).not.toHaveBeenCalled();
+      expect(displayControlPlaneInfoStub).not.toHaveBeenCalled();
     });
 
     it("should skip display when in JSON output mode", async function () {
-      shouldOutputJsonStub.returns(true);
+      shouldOutputJsonStub.mockReturnValue(true);
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub).not.toHaveBeenCalled();
+      expect(displayControlPlaneInfoStub).not.toHaveBeenCalled();
     });
 
     it("should skip display when token-only flag is true", async function () {
       await command.testShowAuthInfoIfNeeded({ "token-only": true });
 
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub).not.toHaveBeenCalled();
+      expect(displayControlPlaneInfoStub).not.toHaveBeenCalled();
     });
 
     it("should skip display when shouldSuppressOutput returns true", async function () {
-      shouldSuppressOutputStub.returns(true);
+      shouldSuppressOutputStub.mockReturnValue(true);
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub).not.toHaveBeenCalled();
+      expect(displayControlPlaneInfoStub).not.toHaveBeenCalled();
     });
 
     // Note: The logic for skipping display when API key or token is explicitly provided
@@ -321,9 +325,9 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(debugStub.calledOnce).to.be.true;
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(debugStub).toHaveBeenCalledOnce();
+      expect(displayDataPlaneInfoStub).not.toHaveBeenCalled();
+      expect(displayControlPlaneInfoStub).not.toHaveBeenCalled();
     });
 
     it("should call displayDataPlaneInfo for apps: commands", async function () {
@@ -331,8 +335,8 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.calledOnce).to.be.true;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub).toHaveBeenCalledOnce();
+      expect(displayControlPlaneInfoStub).not.toHaveBeenCalled();
     });
 
     it("should call displayDataPlaneInfo for channels: commands", async function () {
@@ -340,8 +344,8 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.calledOnce).to.be.true;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub).toHaveBeenCalledOnce();
+      expect(displayControlPlaneInfoStub).not.toHaveBeenCalled();
     });
 
     it("should call displayDataPlaneInfo for auth: commands", async function () {
@@ -349,8 +353,8 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.calledOnce).to.be.true;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub).toHaveBeenCalledOnce();
+      expect(displayControlPlaneInfoStub).not.toHaveBeenCalled();
     });
 
     it("should call displayDataPlaneInfo for rooms: commands", async function () {
@@ -358,8 +362,8 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.calledOnce).to.be.true;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub).toHaveBeenCalledOnce();
+      expect(displayControlPlaneInfoStub).not.toHaveBeenCalled();
     });
 
     it("should call displayControlPlaneInfo for accounts: commands", async function () {
@@ -367,8 +371,8 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.calledOnce).to.be.true;
+      expect(displayDataPlaneInfoStub).not.toHaveBeenCalled();
+      expect(displayControlPlaneInfoStub).toHaveBeenCalledOnce();
     });
 
     it("should call displayControlPlaneInfo for integrations: commands", async function () {
@@ -376,8 +380,8 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.calledOnce).to.be.true;
+      expect(displayDataPlaneInfoStub).not.toHaveBeenCalled();
+      expect(displayControlPlaneInfoStub).toHaveBeenCalledOnce();
     });
 
     it("should not call any display method for other commands", async function () {
@@ -385,8 +389,8 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded({});
 
-      expect(displayDataPlaneInfoStub.called).to.be.false;
-      expect(displayControlPlaneInfoStub.called).to.be.false;
+      expect(displayDataPlaneInfoStub).not.toHaveBeenCalled();
+      expect(displayControlPlaneInfoStub).not.toHaveBeenCalled();
     });
 
     it("should pass flags to display methods", async function () {
@@ -395,7 +399,7 @@ describe("Auth Info Display", function () {
 
       await command.testShowAuthInfoIfNeeded(flags);
 
-      expect(displayDataPlaneInfoStub.calledOnceWith(flags)).to.be.true;
+      expect(displayDataPlaneInfoStub).toHaveBeenCalledWith(flags);
     });
   });
 });

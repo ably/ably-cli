@@ -1,10 +1,8 @@
-import { expect } from "chai";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 
 import McpStartServer from "../../../../src/commands/mcp/start-server.js";
 import { AblyMcpServer } from "../../../../src/mcp/mcp-server.js";
-import { ConfigManager } from "../../../../src/services/config-manager.js";
 
 // Testable subclass for MCP start server command
 class TestableMcpStartServer extends McpStartServer {
@@ -27,7 +25,10 @@ class TestableMcpStartServer extends McpStartServer {
     const { flags } = await this.parse();
 
     // Simulate the constructor call
-    this.constructorArgs = [this.mockConfigManager, { controlHost: flags["control-host"] }];
+    this.constructorArgs = [
+      this.mockConfigManager,
+      { controlHost: flags["control-host"] },
+    ];
 
     // Simulate calling start
     this.startCalled = true;
@@ -41,45 +42,39 @@ class TestableMcpStartServer extends McpStartServer {
   }
 
   protected override interactiveHelper = {
-    confirm: sinon.stub().resolves(true),
-    promptForText: sinon.stub().resolves("fake-input"),
-    promptToSelect: sinon.stub().resolves("fake-selection"),
+    confirm: vi.fn().mockResolvedValue(true),
+    promptForText: vi.fn().mockResolvedValue("fake-input"),
+    promptToSelect: vi.fn().mockResolvedValue("fake-selection"),
   } as any;
 }
 
 describe("mcp commands", function () {
-  let sandbox: sinon.SinonSandbox;
   let mockConfig: Config;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    mockConfig = { runHook: sinon.stub() } as unknown as Config;
-  });
-
-  afterEach(function () {
-    sandbox.restore();
+    mockConfig = { runHook: vi.fn() } as unknown as Config;
   });
 
   describe("mcp start-server", function () {
     let command: TestableMcpStartServer;
-    let startStub: sinon.SinonStub;
+    let startStub: ReturnType<typeof vi.fn>;
     let mockMcpServer: any;
     let mockConfigManager: any;
 
     beforeEach(function () {
       command = new TestableMcpStartServer([], mockConfig);
-      
-      startStub = sandbox.stub().resolves();
+
+      startStub = vi.fn().mockImplementation(async () => {});
       mockMcpServer = {
         start: startStub,
       };
 
       mockConfigManager = {
-        getConfig: sandbox.stub().returns({
+        getConfig: vi.fn().mockReturnValue({
           defaultAccount: { alias: "test-account" },
           accounts: { "test-account": { accessToken: "test-token" } },
         }),
-        saveConfig: sandbox.stub().resolves(),
+        saveConfig: vi.fn().mockImplementation(async () => {}),
       };
 
       command.mockMcpServer = mockMcpServer;
@@ -96,8 +91,8 @@ describe("mcp commands", function () {
     it("should start MCP server successfully", async function () {
       await command.run();
 
-      expect(command.startCalled).to.be.true;
-      expect(startStub.calledOnce).to.be.true;
+      expect(command.startCalled).toBe(true);
+      expect(startStub).toHaveBeenCalledOnce();
     });
 
     it("should pass control host option to MCP server", async function () {
@@ -111,21 +106,16 @@ describe("mcp commands", function () {
       await command.run();
 
       // Check that the constructor would have been called with the correct options
-      expect(command.constructorArgs).to.have.lengthOf(2);
-      expect(command.constructorArgs[1]).to.deep.include({
+      expect(command.constructorArgs).toHaveLength(2);
+      expect(command.constructorArgs[1]).toEqual({
         controlHost: "custom.ably.io",
       });
     });
 
     it("should handle MCP server startup errors", async function () {
-      startStub.rejects(new Error("Failed to bind to port"));
+      startStub.mockRejectedValue(new Error("Failed to bind to port"));
 
-      try {
-        await command.run();
-        expect.fail("Should have thrown an error");
-      } catch (error) {
-        expect((error as Error).message).to.include("Failed to bind to port");
-      }
+      await expect(command.run()).rejects.toThrow("Failed to bind to port");
     });
   });
 
@@ -135,38 +125,39 @@ describe("mcp commands", function () {
 
     beforeEach(function () {
       mockConfigManager = {
-        getConfig: sandbox.stub().returns({
+        getConfig: vi.fn().mockReturnValue({
           defaultAccount: { alias: "test-account" },
           accounts: { "test-account": { accessToken: "test-token" } },
         }),
-        saveConfig: sandbox.stub().resolves(),
+        saveConfig: vi.fn().mockImplementation(async () => {}),
       };
     });
 
     afterEach(function () {
       // Clean up server if it was created
       server = null as any;
+      vi.restoreAllMocks();
     });
 
     it("should initialize with default options", function () {
       server = new AblyMcpServer(mockConfigManager);
-      
-      expect(server).to.be.instanceOf(AblyMcpServer);
+
+      expect(server).toBeInstanceOf(AblyMcpServer);
     });
 
     it("should initialize with custom control host", function () {
       const options = { controlHost: "custom.ably.io" };
       server = new AblyMcpServer(mockConfigManager, options);
-      
-      expect(server).to.be.instanceOf(AblyMcpServer);
+
+      expect(server).toBeInstanceOf(AblyMcpServer);
     });
 
     it("should handle missing configuration gracefully", function () {
-      mockConfigManager.getConfig.returns({});
-      
+      mockConfigManager.getConfig.mockReturnValue({});
+
       expect(() => {
         server = new AblyMcpServer(mockConfigManager);
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     describe("MCP protocol operations", function () {
@@ -177,66 +168,62 @@ describe("mcp commands", function () {
       it("should expose available start method", function () {
         // Since AblyMcpServer is a complex class, we'll test the basic structure
         // In a real implementation, you'd test the MCP protocol methods
-        expect(server).to.have.property("start");
-        expect(typeof server.start).to.equal("function");
+        expect(server).toHaveProperty("start");
+        expect(typeof server.start).toBe("function");
       });
 
+      // eslint-disable-next-line vitest/no-disabled-tests
       it.skip("should handle basic server lifecycle", async function () {
         // See: https://github.com/ably/cli/issues/70
         // Mock process.exit to prevent actual exit
         const _originalExit = process.exit;
-        const exitSpy = sandbox.stub(process, "exit");
-        
-        try {
-          // Start the server in the background
-          const _startPromise = server.start();
-          
-          // Give it a moment to start
-          await new Promise(resolve => setTimeout(resolve, 10));
-          
-          // Simulate SIGINT signal for graceful shutdown
-          process.emit("SIGINT", "SIGINT");
-          
-          // Give it a moment to shutdown
-          await new Promise(resolve => setTimeout(resolve, 10));
-          
-          // Verify that process.exit was called
-          expect(exitSpy.calledWith(0)).to.be.true;
-        } finally {
-          // Restore process.exit
-          exitSpy.restore();
-        }
+        const exitSpy = vi.spyOn(process, "exit");
+
+        // Start the server in the background
+        const _startPromise = server.start();
+
+        // Give it a moment to start
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        // Simulate SIGINT signal for graceful shutdown
+        process.emit("SIGINT", "SIGINT");
+
+        // Give it a moment to shutdown
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        // Verify that process.exit was called
+        expect(exitSpy).toHaveBeenCalledWith(0);
       });
     });
 
     describe("error handling", function () {
       it("should handle server startup with invalid configuration", function () {
         // Test with null configuration
-        mockConfigManager.getConfig.returns(null);
-        
+        mockConfigManager.getConfig.mockReturnValue(null);
+
         server = new AblyMcpServer(mockConfigManager);
-        
+
         // Server should still be created, errors would occur on start()
-        expect(server).to.be.instanceOf(AblyMcpServer);
+        expect(server).toBeInstanceOf(AblyMcpServer);
       });
 
       it("should handle empty configuration", function () {
-        mockConfigManager.getConfig.returns({});
-        
+        mockConfigManager.getConfig.mockReturnValue({});
+
         server = new AblyMcpServer(mockConfigManager);
-        
-        expect(server).to.be.instanceOf(AblyMcpServer);
+
+        expect(server).toBeInstanceOf(AblyMcpServer);
       });
 
       it("should handle missing config manager methods", function () {
         const incompleteConfigManager = {
-          getConfig: sandbox.stub().returns({}),
+          getConfig: vi.fn().mockReturnValue({}),
           // Missing other methods
         };
-        
+
         server = new AblyMcpServer(incompleteConfigManager as any);
-        
-        expect(server).to.be.instanceOf(AblyMcpServer);
+
+        expect(server).toBeInstanceOf(AblyMcpServer);
       });
     });
   });

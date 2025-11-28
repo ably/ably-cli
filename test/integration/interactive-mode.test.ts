@@ -1,5 +1,5 @@
-import { expect } from "chai";
-import { describe, it } from "mocha";
+import { describe, it, expect, beforeAll } from "vitest";
+
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,17 +8,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 describe("Interactive Mode Command Tests", function () {
-  const timeout = 10000;
   let binPath: string;
 
-  before(function () {
+  beforeAll(function () {
     binPath = path.join(__dirname, "../../bin/development.js");
   });
 
   describe("Version Command in Interactive Mode", function () {
     it("should work as a command in interactive mode", function (done) {
-      this.timeout(timeout);
-
       const child = spawn("node", [binPath, "interactive"], {
         stdio: ["pipe", "pipe", "pipe"],
         env: {
@@ -46,16 +43,14 @@ describe("Interactive Mode Command Tests", function () {
       }, 500);
 
       child.on("exit", (code) => {
-        expect(versionFound).to.be.true;
-        expect(output).to.include("Version:");
-        expect(code).to.equal(0);
+        expect(versionFound).toBe(true);
+        expect(output).toContain("Version:");
+        expect(code).toBe(0);
         done();
       });
     });
 
     it("should handle --version flag as global flag in interactive mode", function (done) {
-      this.timeout(timeout);
-
       const child = spawn("node", [binPath, "interactive"], {
         stdio: ["pipe", "pipe", "pipe"],
         env: {
@@ -84,8 +79,8 @@ describe("Interactive Mode Command Tests", function () {
 
       child.on("exit", () => {
         // --version flag is specially handled to show version
-        expect(versionFound).to.be.true;
-        expect(output).to.include("Version:");
+        expect(versionFound).toBe(true);
+        expect(output).toContain("Version:");
         done();
       });
     });
@@ -96,8 +91,6 @@ describe("Interactive Mode Command Tests", function () {
 
     for (const cmd of unsuitableCommands) {
       it(`should block ${cmd} command in interactive mode`, function (done) {
-        this.timeout(timeout);
-
         const child = spawn("node", [binPath, "interactive"], {
           stdio: ["pipe", "pipe", "pipe"],
           env: {
@@ -156,7 +149,7 @@ describe("Interactive Mode Command Tests", function () {
           expect(
             blockedMessage ||
               /command.*not.*found|Unknown command/i.test(fullOutput),
-          ).to.be.true;
+          ).toBe(true);
           done();
         });
       });
@@ -165,8 +158,6 @@ describe("Interactive Mode Command Tests", function () {
 
   describe("Ably Command Feedback", function () {
     it('should show helpful feedback when typing "ably" in interactive mode', function (done) {
-      this.timeout(timeout);
-
       const child = spawn("node", [binPath, "interactive"], {
         stdio: ["pipe", "pipe", "pipe"],
         env: {
@@ -194,16 +185,14 @@ describe("Interactive Mode Command Tests", function () {
       }, 500);
 
       child.on("exit", () => {
-        expect(feedbackFound).to.be.true;
-        expect(output).to.include("You're already in interactive mode");
-        expect(output).to.include("Type 'help' or press TAB");
+        expect(feedbackFound).toBe(true);
+        expect(output).toContain("You're already in interactive mode");
+        expect(output).toContain("Type 'help' or press TAB");
         done();
       });
     });
 
     it('should not trigger feedback for commands containing "ably" as substring', function (done) {
-      this.timeout(timeout);
-
       const child = spawn("node", [binPath, "interactive"], {
         stdio: ["pipe", "pipe", "pipe"],
         env: {
@@ -234,10 +223,10 @@ describe("Interactive Mode Command Tests", function () {
 
       child.on("exit", () => {
         // Should NOT show the interactive mode message
-        expect(output).to.not.include("You're already in interactive mode");
+        expect(output).not.toContain("You're already in interactive mode");
         // Should show command not found instead
         const fullOutput = output + errorOutput;
-        expect(fullOutput).to.match(/command.*not.*found|Unknown command/i);
+        expect(fullOutput).toMatch(/command.*not.*found|Unknown command/i);
         done();
       });
     });
@@ -245,8 +234,6 @@ describe("Interactive Mode Command Tests", function () {
 
   describe("Command Availability", function () {
     it("should have access to all regular commands", function (done) {
-      this.timeout(timeout);
-
       const child = spawn("node", [binPath, "interactive"], {
         stdio: ["pipe", "pipe", "pipe"],
         env: {
@@ -277,13 +264,13 @@ describe("Interactive Mode Command Tests", function () {
       }, 500);
 
       child.on("exit", () => {
-        expect(helpFound).to.be.true;
+        expect(helpFound).toBe(true);
         // Check for key commands that should be available
-        expect(output).to.include("channels");
-        expect(output).to.include("accounts");
-        expect(output).to.include("apps");
-        expect(output).to.include("status");
-        expect(output).to.include("support");
+        expect(output).toContain("channels");
+        expect(output).toContain("accounts");
+        expect(output).toContain("apps");
+        expect(output).toContain("status");
+        expect(output).toContain("support");
         done();
       });
     });
@@ -291,8 +278,6 @@ describe("Interactive Mode Command Tests", function () {
 
   describe("Help Command Behavior", function () {
     it('should show help without "ably" prefix in interactive mode', function (done) {
-      this.timeout(timeout);
-
       const child = spawn("node", [binPath, "interactive"], {
         stdio: ["pipe", "pipe", "pipe"],
         env: {
@@ -318,17 +303,15 @@ describe("Interactive Mode Command Tests", function () {
 
       child.on("exit", () => {
         // Should show channels help
-        expect(output).to.include("Interact with Ably Pub/Sub channels");
+        expect(output).toContain("Interact with Ably Pub/Sub channels");
         // Usage should not have "ably" prefix
-        expect(output).to.match(/ably>\s+channels/);
-        expect(output).to.not.match(/ably>\s+ably\s+channels/);
+        expect(output).toMatch(/ably>\s+channels/);
+        expect(output).not.toMatch(/ably>\s+ably\s+channels/);
         done();
       });
     });
 
     it("should work with new help structure (no subcommands)", function (done) {
-      this.timeout(timeout);
-
       const child = spawn("node", [binPath, "interactive"], {
         stdio: ["pipe", "pipe", "pipe"],
         env: {
@@ -361,7 +344,7 @@ describe("Interactive Mode Command Tests", function () {
       child.on("exit", () => {
         // Should not find "help ask" command
         const fullOutput = output + errorOutput;
-        expect(fullOutput).to.match(/command.*not.*found|Unknown command/i);
+        expect(fullOutput).toMatch(/command.*not.*found|Unknown command/i);
         done();
       });
     });
@@ -369,8 +352,6 @@ describe("Interactive Mode Command Tests", function () {
 
   describe("Anonymous Mode Help Filtering", function () {
     it("should hide restricted commands in anonymous mode help output", function (done) {
-      this.timeout(timeout);
-
       const child = spawn("node", [binPath, "interactive"], {
         stdio: ["pipe", "pipe", "pipe"],
         env: {
@@ -400,12 +381,12 @@ describe("Interactive Mode Command Tests", function () {
       }, 500);
 
       child.on("exit", () => {
-        expect(helpFound).to.be.true;
+        expect(helpFound).toBe(true);
 
         // Should show allowed commands
-        expect(output).to.include("channels");
-        expect(output).to.include("spaces");
-        expect(output).to.include("rooms");
+        expect(output).toContain("channels");
+        expect(output).toContain("spaces");
+        expect(output).toContain("rooms");
 
         // Should NOT show restricted commands like accounts, apps, bench, logs, etc.
         // Note: we check that these commands don't appear in the commands list
@@ -414,20 +395,18 @@ describe("Interactive Mode Command Tests", function () {
         const commandLines = lines.filter((line) => line.match(/^\s{2}\w+/)); // Command lines start with 2 spaces
         const commandsText = commandLines.join("\n");
 
-        expect(commandsText).to.not.match(/^\s{2}accounts/m);
-        expect(commandsText).to.not.match(/^\s{2}apps/m);
-        expect(commandsText).to.not.match(/^\s{2}bench/m);
-        expect(commandsText).to.not.match(/^\s{2}logs/m);
-        expect(commandsText).to.not.match(/^\s{2}integrations/m);
-        expect(commandsText).to.not.match(/^\s{2}queues/m);
+        expect(commandsText).not.toMatch(/^\s{2}accounts/m);
+        expect(commandsText).not.toMatch(/^\s{2}apps/m);
+        expect(commandsText).not.toMatch(/^\s{2}bench/m);
+        expect(commandsText).not.toMatch(/^\s{2}logs/m);
+        expect(commandsText).not.toMatch(/^\s{2}integrations/m);
+        expect(commandsText).not.toMatch(/^\s{2}queues/m);
 
         done();
       });
     });
 
     it("should show restricted message when trying to run anonymous restricted commands", function (done) {
-      this.timeout(timeout);
-
       const child = spawn("node", [binPath, "interactive"], {
         stdio: ["pipe", "pipe", "pipe"],
         env: {
@@ -461,8 +440,8 @@ describe("Interactive Mode Command Tests", function () {
       child.on("exit", () => {
         const fullOutput = output + errorOutput;
         // Should show anonymous restriction message
-        expect(fullOutput).to.include("not available in anonymous mode");
-        expect(fullOutput).to.include(
+        expect(fullOutput).toContain("not available in anonymous mode");
+        expect(fullOutput).toContain(
           "provide an access token to use this command",
         );
         done();
@@ -470,8 +449,6 @@ describe("Interactive Mode Command Tests", function () {
     });
 
     it("should filter restricted subcommands in topic help output", function (done) {
-      this.timeout(timeout);
-
       const child = spawn("node", [binPath, "interactive"], {
         stdio: ["pipe", "pipe", "pipe"],
         env: {
@@ -499,10 +476,10 @@ describe("Interactive Mode Command Tests", function () {
 
       child.on("exit", () => {
         // Should show auth commands but NOT auth keys or auth revoke-token
-        expect(output).to.include("auth issue-ably-token");
-        expect(output).to.include("auth issue-jwt-token");
-        expect(output).to.not.include("auth keys");
-        expect(output).to.not.include("auth revoke-token");
+        expect(output).toContain("auth issue-ably-token");
+        expect(output).toContain("auth issue-jwt-token");
+        expect(output).not.toContain("auth keys");
+        expect(output).not.toContain("auth revoke-token");
         done();
       });
     });

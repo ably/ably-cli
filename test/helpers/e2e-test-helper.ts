@@ -11,17 +11,7 @@ import {
   cleanupGlobalProcesses,
 } from "../setup.js";
 import stripAnsi from "strip-ansi";
-import type * as Mocha from "mocha";
-
-// Declare Mocha global functions
-declare const beforeEach: (fn: () => void | Promise<void>) => void;
-declare const before: (fn: () => void | Promise<void>) => void;
-declare const afterEach: (fn: () => void | Promise<void>) => void;
-declare const after: (fn: () => void | Promise<void>) => void;
-declare const describe: {
-  skip: (title: string, fn: () => void) => void;
-};
-declare const it: (title: string, fn: () => void) => void;
+import { onTestFailed } from "vitest";
 
 // Constants
 export const E2E_API_KEY = process.env.E2E_ABLY_API_KEY;
@@ -751,18 +741,12 @@ export async function killProcess(
 }
 
 /**
- * Skip tests if E2E API key is not available or tests are explicitly skipped
+ * Check if E2E tests should be skipped and return early if so.
+ * Call this at the start of beforeAll or individual tests.
+ * Returns true if tests should be skipped.
  */
-export function skipTestsIfNeeded(suiteDescription: string): void {
-  if (SHOULD_SKIP_E2E) {
-    // Use mocha's describe.skip to skip all tests
-    describe.skip(suiteDescription, () => {
-      // Empty function for skipped tests
-      it("skipped tests", () => {
-        // Tests are skipped
-      });
-    });
-  }
+export function shouldSkipE2ETests(): boolean {
+  return SHOULD_SKIP_E2E;
 }
 
 // Global tracking for test output files to display on failure
@@ -801,156 +785,21 @@ export function trackTestCommand(
 }
 
 /**
- * Apply standard E2E test setup
- * This method should be called inside the describe block
+ * Setup test failure handler using vitest's onTestFailed hook.
+ * Call this at the start of each test to enable debug output on failure.
  */
-export function applyE2ETestSetup(): void {
-  // Set test timeout - increased for complex E2E tests
-  beforeEach(function (this: Mocha.Context) {
-    this.timeout(120000); // 2 minutes per individual test
-    // Clear tracked output files and commands for this test
-    testOutputFiles.clear();
-    testCommands.length = 0;
+export function setupTestFailureHandler(testTitle?: string): void {
+  onTestFailed(async () => {
+    await displayTestFailureDebugOutput(testTitle);
   });
+}
 
-  // Setup signal handler
-  before(async function () {
-    process.on("SIGINT", forceExit);
-  });
-
-  // Teardown signal handler
-  after(function () {
-    process.removeListener("SIGINT", forceExit);
-  });
-
-  // Clean up TRACKED resources after each test
-  afterEach(async function (this: Mocha.Context) {
-    if (this.currentTest?.state === "failed") {
-      // Ensure any background processes are fully terminated so that their stdio
-      // streams are flushed to disk before we read the corresponding files.
-      await killActiveProcessesForDebug();
-
-      // Ensure that any buffered writes from background processes have been flushed to the
-      // tracked output files before we read them.  We poll each file until the size is
-      // stable (or until a short timeout is reached) so that late writes that occur right
-      // after a child-process exit are not missed in the diagnostic output.
-      const waitForFileStability = async (
-        filePath: string,
-        timeoutMs = 750,
-      ): Promise<void> => {
-        const start = Date.now();
-        let previousSize = -1;
-        for (;;) {
-          try {
-            const { size } = fsSync.statSync(filePath);
-            if (size === previousSize) {
-              return; // size is stable – we assume all data has been flushed
-            }
-            previousSize = size;
-          } catch {
-            // ignore – file may not exist yet
-          }
-          if (Date.now() - start > timeoutMs) return; // give up after timeout
-          await new Promise((r) => setTimeout(r, 50));
-        }
-      };
-
-      // Wait for stability on all files in parallel – this only adds a very small
-      // delay (sub-second) but dramatically increases the chance that we capture
-      // the full stdout/stderr from background commands when a test fails.
-      await Promise.all(
-        [...testOutputFiles].map((p) => waitForFileStability(p)),
-      );
-
-      try {
-        console.error(
-          `\n=== TEST FAILURE DEBUG OUTPUT FOR: ${this.currentTest?.title} ===`,
-        );
-        console.error(
-          `Commands tracked: ${testCommands.length}, Output files tracked: ${testOutputFiles.size}`,
-        );
-
-        // Display commands that were executed
-        if (testCommands.length > 0) {
-          console.error(`\n--- COMMANDS EXECUTED (${testCommands.length}) ---`);
-          testCommands.forEach((cmd, index) => {
-            console.error(`[${index + 1}] ${cmd.timestamp}: ${cmd.command}`);
-            if (cmd.outputPath) {
-              console.error(`    Output file: ${cmd.outputPath}`);
-            }
-            if (cmd.result) {
-              console.error(`    Exit code: ${cmd.result.exitCode}`);
-              if (cmd.result.stdout)
-                console.error(
-                  `    Stdout: ${cmd.result.stdout.slice(0, 200)}${cmd.result.stdout.length > 200 ? "..." : ""}`,
-                );
-              if (cmd.result.stderr)
-                console.error(
-                  `    Stderr: ${cmd.result.stderr.slice(0, 200)}${cmd.result.stderr.length > 200 ? "..." : ""}`,
-                );
-            }
-          });
-        } else {
-          console.error("\n--- NO COMMANDS TRACKED ---");
-        }
-
-        if (testOutputFiles.size === 0) {
-          console.error("\n--- NO OUTPUT FILES TRACKED ---");
-        } else {
-          console.error(`\n--- OUTPUT FILES (${testOutputFiles.size}) ---`);
-
-          for (const filePath of testOutputFiles) {
-            try {
-              // Check if file exists and get stats
-              const fileExists = fsSync.existsSync(filePath);
-
-              if (!fileExists) {
-                console.error(`\n--- ${filePath} ---`);
-                console.error("FILE DOES NOT EXIST");
-                continue;
-              }
-
-              const stats = fsSync.statSync(filePath);
-              console.error(`\n--- ${filePath} ---`);
-              console.error(`File size: ${stats.size} bytes`);
-              console.error(`Modified: ${stats.mtime.toISOString()}`);
-              console.error(`Created: ${stats.birthtime.toISOString()}`);
-
-              if (stats.size === 0) {
-                console.error("FILE IS EMPTY");
-                continue;
-              }
-
-              const content = await readProcessOutput(filePath);
-              if (content.trim()) {
-                console.error("File contents:");
-                console.error(content);
-              } else {
-                console.error("FILE CONTENT IS EMPTY (after processing)");
-              }
-            } catch (error) {
-              console.error(`\n--- ${filePath} (error reading) ---`);
-              console.error(`Error: ${error}`);
-            }
-          }
-
-          console.error(`=== END TEST FAILURE DEBUG OUTPUT ===`);
-        }
-      } catch (debugError) {
-        console.error(`\n=== DEBUG OUTPUT ERROR ===`);
-        console.error(`Error in debug output: ${debugError}`);
-        console.error(`testCommands.length: ${testCommands.length}`);
-        console.error(`testOutputFiles.size: ${testOutputFiles.size}`);
-        console.error(`=== END DEBUG OUTPUT ERROR ===`);
-      }
-    }
-
-    // Clear tracked files for next test
-    testOutputFiles.clear();
-
-    // Perform normal cleanup
-    await cleanupTrackedResources();
-  });
+/**
+ * Reset test tracking state. Call this in beforeEach.
+ */
+export function resetTestTracking(): void {
+  testOutputFiles.clear();
+  testCommands.length = 0;
 }
 
 // Kill all tracked child-processes *without* touching temporary output files.  This is
