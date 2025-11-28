@@ -682,8 +682,6 @@ const AblyCliTerminalInner = (
       );
     }
     ptyBuffer.current = "";
-    // Reset handshake filter when clearing buffer
-    handshakeFilterState.current = createHandshakeFilterState();
   }, []);
 
   // Helper to update both session active state and ref
@@ -712,6 +710,60 @@ const AblyCliTerminalInner = (
       installInstructionsTimerReference.current = null;
     }
   }, []);
+
+  // Ref to track if we should send initial command when prompt is detected
+  const pendingInitialCommandReference = useRef<string | null>(null);
+
+  // Timeout reference for prompt detection fallback
+  const promptDetectionTimeoutReference = useRef<NodeJS.Timeout | null>(null);
+  const PROMPT_DETECTION_TIMEOUT_MS = 5000; // 5 seconds
+
+  const clearPromptDetectionTimeout = useCallback(() => {
+    if (promptDetectionTimeoutReference.current) {
+      clearTimeout(promptDetectionTimeoutReference.current);
+      promptDetectionTimeoutReference.current = null;
+    }
+  }, []);
+
+  // Shared logic for activating session (called by both prompt detection and timeout)
+  const activateSessionAndSendCommand = useCallback(() => {
+    updateSessionActive(true);
+    grSuccessfulConnectionReset();
+    updateConnectionStatusAndExpose("connected");
+
+    if (term.current) {
+      debugLog(`⚠️ DIAGNOSTIC: Session is now active, focusing terminal`);
+      term.current.focus();
+    }
+
+    // Reset connection tracking
+    setConnectionStartTime(null);
+    setShowInstallInstructions(false);
+    clearInstallInstructionsTimer();
+    clearPromptDetectionTimeout();
+
+    // Send initial command if one is pending
+    if (pendingInitialCommandReference.current) {
+      const commandToSend = pendingInitialCommandReference.current;
+      pendingInitialCommandReference.current = null;
+      debugLog(
+        `⚠️ DIAGNOSTIC: Sending pending initial command: "${commandToSend}"`,
+      );
+      setTimeout(() => {
+        if (
+          socketReference.current &&
+          socketReference.current.readyState === WebSocket.OPEN
+        ) {
+          socketReference.current.send(`${commandToSend}\r`);
+        }
+      }, 100);
+    }
+  }, [
+    updateSessionActive,
+    updateConnectionStatusAndExpose,
+    clearInstallInstructionsTimer,
+    clearPromptDetectionTimeout,
+  ]);
 
   const handlePtyData = useCallback(
     (data: string) => {
@@ -770,23 +822,7 @@ const AblyCliTerminalInner = (
 
           // Only set active if not already active to prevent multiple state updates
           if (!isSessionActiveReference.current) {
-            updateSessionActive(true);
-            grSuccessfulConnectionReset();
-            updateConnectionStatusAndExpose("connected"); // Explicitly set to connected
-
-            // The buffered content has already been written to the terminal
-            // Just focus the terminal now that session is active
-            if (term.current) {
-              debugLog(
-                `⚠️ DIAGNOSTIC: Session is now active, focusing terminal`,
-              );
-              term.current.focus();
-            }
-
-            // Reset connection tracking
-            setConnectionStartTime(null);
-            setShowInstallInstructions(false);
-            clearInstallInstructionsTimer();
+            activateSessionAndSendCommand();
           }
 
           clearPtyBuffer();
@@ -801,6 +837,7 @@ const AblyCliTerminalInner = (
       clearPtyBuffer,
       clearStatusDisplay,
       clearInstallInstructionsTimer,
+      activateSessionAndSendCommand,
     ],
   );
 
@@ -866,7 +903,7 @@ const AblyCliTerminalInner = (
           ")",
         );
 
-        // Clear the "Connecting..." message and status box BEFORE activating session
+        // Clear the "Connecting..." message and status box
         if (term.current) {
           clearConnectingMessage(term.current);
           term.current.focus();
@@ -875,11 +912,30 @@ const AblyCliTerminalInner = (
         // Clear the status box
         clearStatusDisplay();
 
-        updateSessionActive(true);
-        updateConnectionStatusAndExpose("connected");
+        // Check if this is a resumed session (we sent a sessionId in auth payload)
+        const isResumedSession =
+          sessionId !== null && sessionId === message.sessionId;
 
-        // Clear the buffer since content has already been written to terminal
-        clearPtyBuffer();
+        if (isResumedSession) {
+          // For resumed sessions, activate immediately without waiting for prompt
+          debugLog(
+            `⚠️ DIAGNOSTIC: Resumed existing session ${message.sessionId} - activating immediately`,
+          );
+          updateConnectionStatusAndExpose("connected");
+
+          // Activate session immediately for resumed sessions
+          if (!isSessionActiveReference.current) {
+            activateSessionAndSendCommand();
+          }
+        } else {
+          // For new sessions, wait for prompt detection
+          debugLog(
+            `⚠️ DIAGNOSTIC: New session ${message.sessionId} - waiting for prompt before activating`,
+          );
+          updateConnectionStatusAndExpose("connected");
+        }
+
+        // Don't clear the buffer yet - let prompt detection handle it (for new sessions)
 
         // Persist to session storage if enabled (domain-scoped)
         if (resumeOnReload && globalThis.window !== undefined) {
@@ -910,7 +966,7 @@ const AblyCliTerminalInner = (
           debugLog(`⚠️ DIAGNOSTIC: Handling 'connected' status message`);
           clearStatusDisplay();
 
-          // Clear the "Connecting..." message BEFORE activating session
+          // Clear the "Connecting..." message
           if (term.current) {
             debugLog(
               `⚠️ DIAGNOSTIC: Clearing connecting message and focusing terminal`,
@@ -919,18 +975,39 @@ const AblyCliTerminalInner = (
             term.current.focus();
           }
 
-          // Now update connection status and activate session
-          updateConnectionStatusAndExpose("connected");
+          // Check if we're resuming an existing session
+          const isResuming = sessionIdReference.current !== null;
 
-          // Set session active immediately on connected status
-          debugLog(
-            `⚠️ DIAGNOSTIC: Setting session active on 'connected' status`,
-          );
-          updateSessionActive(true);
-          grSuccessfulConnectionReset();
+          if (isResuming) {
+            // For resumed sessions, activate immediately
+            debugLog(
+              `⚠️ DIAGNOSTIC: Resuming session ${sessionIdReference.current} - activating immediately`,
+            );
+            updateConnectionStatusAndExpose("connected");
 
-          // Clear the buffer since content has already been written to terminal
-          clearPtyBuffer();
+            if (!isSessionActiveReference.current) {
+              activateSessionAndSendCommand();
+            }
+          } else {
+            // For new sessions, wait for prompt detection
+            debugLog(
+              `⚠️ DIAGNOSTIC: New session - waiting for prompt before activating`,
+            );
+            updateConnectionStatusAndExpose("connected");
+
+            // Start timeout fallback in case prompt is never detected
+            clearPromptDetectionTimeout();
+            promptDetectionTimeoutReference.current = setTimeout(() => {
+              debugLog(
+                `⚠️ DIAGNOSTIC: Prompt detection timeout - activating session anyway after ${PROMPT_DETECTION_TIMEOUT_MS}ms`,
+              );
+              if (!isSessionActiveReference.current) {
+                activateSessionAndSendCommand();
+              }
+            }, PROMPT_DETECTION_TIMEOUT_MS);
+          }
+
+          // Don't clear the buffer or set session active yet - let prompt detection handle it
           return;
         }
 
@@ -1250,6 +1327,10 @@ const AblyCliTerminalInner = (
       "⚠️ DIAGNOSTIC: Creating fresh WebSocket instance to " + websocketUrl,
     );
 
+    // Reset handshake filter for new connection
+    handshakeFilterState.current = createHandshakeFilterState();
+    debugLog("⚠️ DIAGNOSTIC: Reset handshake filter for new connection");
+
     // Track when connection attempts started and set timer only once
     if (!connectionStartTime) {
       setConnectionStartTime(Date.now());
@@ -1410,41 +1491,19 @@ const AblyCliTerminalInner = (
       socketReference.current.send(JSON.stringify(payload));
     }
 
-    // Wait until we detect the prompt before sending an initialCommand if there is one
-    // This prevents sending commands before the shell is ready
+    // Set up initial command to be sent when prompt is detected
     // Skip initial command if we're resuming an existing session
     if (initialCommand && !sessionId) {
       debugLog(
-        `⚠️ DIAGNOSTIC: Initial command present: "${initialCommand}" - will wait for prompt (new session)`,
+        `⚠️ DIAGNOSTIC: Initial command present: "${initialCommand}" - will be sent when prompt is detected`,
       );
-      const waitForPrompt = () => {
-        if (isSessionActiveReference.current && term.current) {
-          debugLog("⚠️ DIAGNOSTIC: Session active, sending initial command");
-          setTimeout(() => {
-            if (
-              term.current &&
-              socketReference.current &&
-              socketReference.current.readyState === WebSocket.OPEN
-            ) {
-              debugLog("⚠️ DIAGNOSTIC: Sending initial command now");
-              term.current.write(`${initialCommand}\r`);
-            }
-          }, 100);
-        } else {
-          // Keep checking until the session is active
-          debugLog(
-            "⚠️ DIAGNOSTIC: Session not active yet, waiting to send initial command",
-          );
-          setTimeout(waitForPrompt, 100);
-        }
-      };
-
-      // Start waiting for prompt
-      waitForPrompt();
+      pendingInitialCommandReference.current = initialCommand;
     } else if (initialCommand && sessionId) {
       debugLog(
         `⚠️ DIAGNOSTIC: Skipping initial command for resumed session ${sessionId}`,
       );
+    } else if (!initialCommand) {
+      debugLog("⚠️ DIAGNOSTIC: No initial command provided");
     }
 
     // persistence handled by dedicated useEffect
