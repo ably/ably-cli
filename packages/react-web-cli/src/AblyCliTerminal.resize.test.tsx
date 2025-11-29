@@ -1,10 +1,10 @@
-import React from 'react';
-import { render, act, waitFor } from '@testing-library/react';
-import { describe, vi, test, expect, beforeEach } from 'vitest';
-import { AblyCliTerminal } from './AblyCliTerminal';
+import React from "react";
+import { render, act, waitFor } from "@testing-library/react";
+import { describe, vi, test, expect, beforeEach } from "vitest";
+import { AblyCliTerminal } from "./AblyCliTerminal";
 
 // Re-use mocks from the main test file
-vi.mock('./global-reconnect', () => ({
+vi.mock("./global-reconnect", () => ({
   getAttempts: () => 0,
   getMaxAttempts: () => 15,
   isMaxAttemptsReached: () => false,
@@ -20,14 +20,14 @@ vi.mock('./global-reconnect', () => ({
 // Track calls to fit()
 const fitSpy = vi.fn();
 
-vi.mock('@xterm/addon-fit', () => ({
+vi.mock("@xterm/addon-fit", () => ({
   FitAddon: vi.fn().mockImplementation(() => ({
     fit: fitSpy,
   })),
 }));
 
 // Minimal Terminal mock
-vi.mock('@xterm/xterm', () => ({
+vi.mock("@xterm/xterm", () => ({
   Terminal: vi.fn().mockImplementation(() => ({
     open: vi.fn(),
     loadAddon: vi.fn(),
@@ -40,20 +40,23 @@ vi.mock('@xterm/xterm', () => ({
   })),
 }));
 
-vi.mock('./use-terminal-visibility', () => ({
+vi.mock("./use-terminal-visibility", () => ({
   useTerminalVisibility: () => true,
 }));
 
 // lucide mock
-vi.mock('lucide-react', () => ({ SplitSquareHorizontal: () => null, X: () => null }));
+vi.mock("lucide-react", () => ({
+  SplitSquareHorizontal: () => null,
+  X: () => null,
+}));
 
-describe('AblyCliTerminal – debounced fit', () => {
+describe("AblyCliTerminal – debounced fit", () => {
   beforeEach(() => {
     fitSpy.mockClear();
     vi.useFakeTimers();
   });
 
-  test('fit() is called initially and at most once during rapid resize events', async () => {
+  test("fit() is called initially and at most once during rapid resize events", async () => {
     const { unmount } = render(
       <AblyCliTerminal websocketUrl="ws://dummy" ablyApiKey="key" />,
     );
@@ -63,8 +66,8 @@ describe('AblyCliTerminal – debounced fit', () => {
 
     // Fire 5 rapid resize events
     act(() => {
-      for (let i = 0; i < 5; i++) {
-        window.dispatchEvent(new Event('resize'));
+      for (let index = 0; index < 5; index++) {
+        globalThis.dispatchEvent(new Event("resize"));
       }
     });
 
@@ -82,4 +85,4 @@ describe('AblyCliTerminal – debounced fit', () => {
     unmount();
     vi.useRealTimers();
   });
-}); 
+});

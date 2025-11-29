@@ -9,6 +9,7 @@ import eslintPluginPrettier from "eslint-plugin-prettier";
 import eslint from "@eslint/js"; // Import base eslint config
 // import mochaGlobals from 'eslint-plugin-mocha/lib/configs/globals.js'; // Import mocha globals
 import eslintPluginMocha from "eslint-plugin-mocha"; // Import the plugin
+import eslintPluginReact from "eslint-plugin-react"
 
 export default [
   {
@@ -51,7 +52,7 @@ export default [
   },
   {
     // Base configuration for all JS/TS files
-    files: ["**/*.{js,mjs,cjs,ts}"],
+    files: ["**/*.{js,mjs,cjs,ts,tsx}"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
@@ -91,7 +92,7 @@ export default [
   },
   {
     // Configuration specific to TypeScript files
-    files: ["**/*.ts", "**/*.tsx"],
+    files: ["**/*.ts"],
     plugins: {
       "@typescript-eslint": tsPlugin, // Use the imported plugin object
     },
@@ -121,19 +122,50 @@ export default [
     },
   },
   {
-    // Configuration for React Web CLI package
-    files: ["packages/react-web-cli/**/*"],
+    // Configuration for React Web CLI package - TSX files
+    files: ["packages/react-web-cli/**/*.{ts,tsx}"],
+    plugins: {
+      react: eslintPluginReact,
+      "@typescript-eslint": tsPlugin,
+    },
     languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+        project: "./packages/react-web-cli/tsconfig.json",
+      },
       globals: {
         ...globals.browser,
       },
     },
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
     rules: {
+      // React recommended rules
+      ...eslintPluginReact.configs.recommended.rules,
+      ...eslintPluginReact.configs["jsx-runtime"].rules,
+      // TypeScript rules
+      ...tsPlugin.configs.recommended.rules,
+      // Custom overrides for this package
       "unicorn/prefer-module": "off",
       "unicorn/no-negated-condition": "off",
+      "unicorn/filename-case": "off",
+      "unicorn/prefer-string-slice": "off",
+      "unicorn/prefer-code-point": "off",
+      "unicorn/prevent-abbreviations": "off",
+      "unicorn/no-array-reduce": "off",
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "off",
       "no-console": "off",
+      "no-control-regex": "off", // Terminal escape sequences use control chars
+      "n/no-missing-import": "off", // TSX imports are handled by TypeScript
+      "react/prop-types": "off", // Using TypeScript for prop validation
+      "react/react-in-jsx-scope": "off", // Not needed in React 17+
     },
   },
   {
