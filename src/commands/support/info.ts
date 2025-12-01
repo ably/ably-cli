@@ -14,9 +14,16 @@ export default class InfoCommand extends Command {
   async run(): Promise<void> {
     await this.parse(InfoCommand);
 
-    this.log(
-      `${chalk.cyan("Opening")} https://ably.com/support ${chalk.cyan("in your browser")}...`,
-    );
-    await open("https://ably.com/support");
+    const url = "https://ably.com/support";
+    const isWebCliMode = process.env.ABLY_WEB_CLI_MODE === "true";
+
+    if (isWebCliMode) {
+      this.log(`${chalk.cyan("Support resources:")} ${url}`);
+    } else {
+      this.log(
+        `${chalk.cyan("Opening")} ${url} ${chalk.cyan("in your browser")}...`,
+      );
+      await open(url);
+    }
   }
 }

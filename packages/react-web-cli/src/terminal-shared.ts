@@ -5,6 +5,7 @@
 
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import { WebLinksAddon } from "@xterm/addon-web-links";
 
 // Constants
 export const MAX_PTY_BUFFER_LENGTH = 10000;
@@ -126,7 +127,9 @@ export const SHARED_TERMINAL_CONFIG = {
  * Creates and configures a new terminal instance with shared settings
  */
 export function createTerminal(): Terminal {
-  return new Terminal(SHARED_TERMINAL_CONFIG);
+  const terminal = new Terminal(SHARED_TERMINAL_CONFIG);
+  terminal.loadAddon(new WebLinksAddon());
+  return terminal;
 }
 
 /**

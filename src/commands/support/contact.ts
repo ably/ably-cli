@@ -14,9 +14,16 @@ export default class ContactCommand extends Command {
   async run(): Promise<void> {
     await this.parse(ContactCommand);
 
-    this.log(
-      `${chalk.cyan("Opening")} https://ably.com/contact ${chalk.cyan("in your browser")}...`,
-    );
-    await open("https://ably.com/contact");
+    const url = "https://ably.com/contact";
+    const isWebCliMode = process.env.ABLY_WEB_CLI_MODE === "true";
+
+    if (isWebCliMode) {
+      this.log(`${chalk.cyan("Contact Ably:")} ${url}`);
+    } else {
+      this.log(
+        `${chalk.cyan("Opening")} ${url} ${chalk.cyan("in your browser")}...`,
+      );
+      await open(url);
+    }
   }
 }
