@@ -137,6 +137,15 @@ describe("Did You Mean Functionality", () => {
                   child.stdin.write("n\n");
                 }, 100);
               }
+
+              // If we see this, then the `n` was received
+              if (
+                data.toString().includes("Ably accounts management commands")
+              ) {
+                setTimeout(() => {
+                  child.stdin.write("exit\n");
+                }, 1000);
+              }
             });
 
             child.stderr.on("data", (data) => {
@@ -147,10 +156,6 @@ describe("Did You Mean Functionality", () => {
             setTimeout(() => {
               child.stdin.write("accounts curren\n");
             }, 1000);
-
-            setTimeout(() => {
-              child.stdin.write("exit\n");
-            }, 3000);
 
             child.on("exit", () => {
               const fullOutput = output + errorOutput;
