@@ -1,4 +1,5 @@
 import { Command, Interfaces } from "@oclif/core";
+import isTestMode from "./utils/test-mode.js";
 
 type PrettyPrintableError = Interfaces.PrettyPrintableError;
 
@@ -61,7 +62,7 @@ export abstract class InteractiveBaseCommand extends Command {
    * Otherwise, defer to oclif to kill off the process.
    */
   exit(code = 0): never {
-    if (process.env.ABLY_CLI_TEST_MODE === "true") {
+    if (isTestMode()) {
       // @ts-expect-error TS2322: suppress type assignment error
       return;
     }

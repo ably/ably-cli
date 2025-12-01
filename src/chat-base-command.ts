@@ -3,6 +3,7 @@ import * as Ably from "ably";
 
 import { AblyBaseCommand } from "./base-command.js";
 import { BaseFlags } from "./types/cli.js";
+import isTestMode from "./utils/test-mode.js";
 
 export abstract class ChatBaseCommand extends AblyBaseCommand {
   protected _chatRealtimeClient: Ably.Realtime | null = null;
@@ -94,7 +95,7 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
     // Store the realtime client for access by subclasses
     this._chatRealtimeClient = realtimeClient;
 
-    if (this.isTestMode()) {
+    if (isTestMode()) {
       this.debug(`Running in test mode, using mock Ably Chat client`);
       const mockChat = this.getMockAblyChat();
 

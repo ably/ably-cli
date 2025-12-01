@@ -1,5 +1,6 @@
 import fetch, { type RequestInit } from "node-fetch";
 import { getCliVersion } from "../utils/version.js";
+import isTestMode from "../utils/test-mode.js";
 
 export interface ControlApiOptions {
   accessToken: string;
@@ -180,7 +181,7 @@ export class ControlApi {
       const suppressErrors =
         process.env.SUPPRESS_CONTROL_API_ERRORS === "true" ||
         process.env.CI === "true" ||
-        process.env.ABLY_CLI_TEST_MODE === "true";
+        isTestMode();
       this.logErrors = !suppressErrors;
     }
   }

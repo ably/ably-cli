@@ -5,6 +5,7 @@ import chalk from "chalk";
 import { BaseFlags } from "../../../types/cli.js";
 
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
+import isTestMode from "../../../utils/test-mode.js";
 
 interface CursorPosition {
   x: number;
@@ -248,7 +249,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
 
       // Show initial message
       if (!this.shouldOutputJson(flags)) {
-        const waitSeconds = this.isTestMode() ? "0.5" : "5";
+        const waitSeconds = isTestMode() ? "0.5" : "5";
         this.log(`Collecting cursor positions for ${waitSeconds} seconds...`);
         this.log(chalk.dim("─".repeat(60)));
       }
@@ -287,7 +288,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
       }
 
       // Wait for 5 seconds (or shorter in test mode)
-      const waitTime = this.isTestMode() ? 500 : 5000;
+      const waitTime = isTestMode() ? 500 : 5000;
       await new Promise<void>((resolve) => {
         setTimeout(() => {
           if (

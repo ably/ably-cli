@@ -29,10 +29,6 @@ class TestCommand extends AblyBaseCommand {
     this.checkWebCliRestrictions();
   }
 
-  public testIsTestMode(): boolean {
-    return this.isTestMode();
-  }
-
   public testFormatJsonOutput(
     data: Record<string, unknown>,
     flags: BaseFlags,
@@ -79,14 +75,6 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
       process.env.ABLY_WEB_CLI_MODE = "true";
       const webCommand = new TestCommand([], {} as Config);
       expect(webCommand.testIsWebCliMode).toBe(true);
-    });
-
-    it("should detect test mode correctly", function () {
-      process.env.ABLY_CLI_TEST_MODE = "true";
-      expect(command.testIsTestMode()).toBe(true);
-
-      delete process.env.ABLY_CLI_TEST_MODE;
-      expect(command.testIsTestMode()).toBe(false);
     });
   });
 
