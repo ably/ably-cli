@@ -2399,16 +2399,8 @@ const AblyCliTerminalInner = (
       grSetMaxAttempts(maxReconnectAttempts);
     }
 
-    // Initial connection on mount – only if already visible and credentials initialized
-    if (
-      componentConnectionStatus === "initial" &&
-      isVisible &&
-      credentialsInitialized
-    ) {
-      grResetState();
-      clearPtyBuffer();
-      connectWebSocket();
-    }
+    // Initial connection on mount - do NOT connect here, let the dedicated connection effects handle it
+    // This prevents duplicate connections from multiple effects running in the same render cycle
 
     // Cleanup terminal on unmount
     return () => {
@@ -2434,13 +2426,32 @@ const AblyCliTerminalInner = (
       grResetState(); // Ensure global state is clean
       clearConnectionTimeout(); // Clear any pending connection timeout
     };
+  }, []); // Empty deps - this effect only runs once on mount to initialize the terminal
+
+  // Single unified effect for initial connection (handles both mount and visibility changes)
+  // When resumeOnReload is enabled, waits for credentialsInitialized to ensure sessionId restoration completes first
+  useEffect(() => {
+    if (componentConnectionStatus !== "initial") return; // already attempted
+    if (!isVisible) return; // not visible yet
+
+    // If resumeOnReload is enabled, wait for credentials to be initialized first
+    if (resumeOnReload && !credentialsInitialized) return;
+
+    if (maxReconnectAttempts && maxReconnectAttempts !== grGetMaxAttempts()) {
+      grSetMaxAttempts(maxReconnectAttempts);
+    }
+
+    grResetState();
+    clearPtyBuffer();
+    connectWebSocket();
   }, [
-    componentConnectionStatus,
     isVisible,
     credentialsInitialized,
+    maxReconnectAttempts,
+    componentConnectionStatus,
     clearPtyBuffer,
     connectWebSocket,
-    clearConnectionTimeout,
+    // resumeOnReload is intentionally omitted - it's a prop that doesn't change during component lifecycle
   ]);
 
   useEffect(() => {
@@ -2589,31 +2600,6 @@ const AblyCliTerminalInner = (
   // -----------------------------------------------------------------------------------
   // Visibility & inactivity timer logic
   // -----------------------------------------------------------------------------------
-
-  // Kick-off the initial WebSocket connection the *first* time the terminal
-  // becomes visible. We cannot rely solely on the mount-time effect because
-  // `useTerminalVisibility` may report `false` on mount (e.g. drawer closed),
-  // so this secondary effect waits for the first visible=true transition.
-  useEffect(() => {
-    if (componentConnectionStatus !== "initial") return; // already attempted
-    if (!isVisible) return; // still not visible → wait
-    if (!credentialsInitialized) return; // wait for credentials to be validated
-
-    if (maxReconnectAttempts && maxReconnectAttempts !== grGetMaxAttempts()) {
-      grSetMaxAttempts(maxReconnectAttempts);
-    }
-
-    grResetState();
-    clearPtyBuffer();
-    connectWebSocket();
-  }, [
-    isVisible,
-    maxReconnectAttempts,
-    componentConnectionStatus,
-    clearPtyBuffer,
-    connectWebSocket,
-    credentialsInitialized,
-  ]);
 
   const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
   const inactivityTimerReference = useRef<ReturnType<typeof setTimeout> | null>(
