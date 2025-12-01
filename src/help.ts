@@ -10,6 +10,7 @@ import {
   WEB_CLI_RESTRICTED_COMMANDS,
   WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS,
 } from "./base-command.js"; // Import the single source of truth
+import isWebCliMode from "./utils/web-mode.js";
 
 export default class CustomHelp extends Help {
   static skipCache = true; // For development - prevents help commands from being cached
@@ -23,7 +24,7 @@ export default class CustomHelp extends Help {
 
   constructor(config: Config, opts?: Record<string, unknown>) {
     super(config, opts);
-    this.webCliMode = process.env.ABLY_WEB_CLI_MODE === "true";
+    this.webCliMode = isWebCliMode();
     this.interactiveMode = process.env.ABLY_INTERACTIVE_MODE === "true";
     this.anonymousMode = process.env.ABLY_ANONYMOUS_USER_MODE === "true";
     this.configManager = new ConfigManager();

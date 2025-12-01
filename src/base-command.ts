@@ -13,6 +13,7 @@ import { getCliVersion } from "./utils/version.js";
 import Spaces from "@ably/spaces";
 import { ChatClient } from "@ably/chat";
 import isTestMode from "./utils/test-mode.js";
+import isWebCliMode from "./utils/web-mode.js";
 
 // Export BaseFlags for potential use in other modules like MCP
 
@@ -170,7 +171,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     this.configManager = new ConfigManager();
     this.interactiveHelper = new InteractiveHelper(this.configManager);
     // Check if we're running in web CLI mode
-    this.isWebCliMode = process.env.ABLY_WEB_CLI_MODE === "true";
+    this.isWebCliMode = isWebCliMode();
   }
 
   protected isAnonymousWebMode(): boolean {

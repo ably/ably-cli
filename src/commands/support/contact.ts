@@ -1,6 +1,7 @@
 import { Command, Flags } from "@oclif/core";
 import chalk from "chalk";
 import openUrl from "../../utils/open-url.js";
+import isWebCliMode from "../../utils/web-mode.js";
 
 export default class ContactCommand extends Command {
   static description = "Contact Ably for assistance";
@@ -15,12 +16,10 @@ export default class ContactCommand extends Command {
     await this.parse(ContactCommand);
 
     const url = "https://ably.com/contact";
-    const isWebCliMode = process.env.ABLY_WEB_CLI_MODE === "true";
 
-    if (isWebCliMode) {
+    if (isWebCliMode()) {
       this.log(`${chalk.cyan("Contact Ably:")} ${url}`);
     } else {
-
       await openUrl(url, this);
     }
   }

@@ -8,6 +8,7 @@ import {
   WEB_CLI_RESTRICTED_COMMANDS,
   WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS,
 } from "./base-command.js";
+import isWebCliMode from "./utils/web-mode.js";
 
 const { get: levenshteinDistance } = pkg;
 
@@ -221,7 +222,7 @@ export abstract class BaseTopicCommand extends InteractiveBaseCommand {
    */
   protected shouldDisplayCommand(commandId: string): boolean {
     // Not in web CLI mode - show all commands
-    if (process.env.ABLY_WEB_CLI_MODE !== "true") {
+    if (!isWebCliMode()) {
       return true;
     }
 

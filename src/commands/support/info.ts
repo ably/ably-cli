@@ -1,6 +1,7 @@
 import { Command, Flags } from "@oclif/core";
 import chalk from "chalk";
 import openUrl from "../../utils/open-url.js";
+import isWebCliMode from "../../utils/web-mode.js";
 
 export default class InfoCommand extends Command {
   static description = "General support resources and documentation links";
@@ -15,9 +16,8 @@ export default class InfoCommand extends Command {
     await this.parse(InfoCommand);
 
     const url = "https://ably.com/support";
-    const isWebCliMode = process.env.ABLY_WEB_CLI_MODE === "true";
 
-    if (isWebCliMode) {
+    if (isWebCliMode()) {
       this.log(`${chalk.cyan("Support resources:")} ${url}`);
     } else {
       await openUrl(url, this);
