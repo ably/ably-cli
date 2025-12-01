@@ -56,15 +56,15 @@ vi.mock("./terminal-box", async (importOriginal) => {
 
   const actual = (await importOriginal()) as any;
   mockBoxColour = {
-    reset: "\x1b[0m",
-    bold: "\x1b[1m",
-    dim: "\x1b[2m",
-    red: "\x1b[31m",
-    green: "\x1b[32m",
-    yellow: "\x1b[33m",
-    blue: "\x1b[34m",
-    magenta: "\x1b[35m",
-    cyan: "\x1b[36m",
+    reset: "\u001B[0m",
+    bold: "\u001B[1m",
+    dim: "\u001B[2m",
+    red: "\u001B[31m",
+    green: "\u001B[32m",
+    yellow: "\u001B[33m",
+    blue: "\u001B[34m",
+    magenta: "\u001B[35m",
+    cyan: "\u001B[36m",
   } as const;
   return {
     ...actual,
@@ -84,42 +84,38 @@ const mockFocus = vi.fn();
 const mockOnData = vi.fn();
 const mockClear = vi.fn();
 
-vi.mock("@xterm/xterm", () => {
-  const MockTerminal = vi.fn(function (this: any) {
-    this.open = vi.fn();
-    this.write = mockWrite;
-    this.writeln = mockWriteln;
-    this.reset = mockReset;
-    this.focus = mockFocus;
-    this.clear = mockClear;
-    this.onData = mockOnData;
-    this.onResize = vi.fn();
-    this.dispose = vi.fn();
-    this.loadAddon = vi.fn().mockImplementation(() => ({
+vi.mock("@xterm/xterm", () => ({
+  Terminal: vi.fn().mockImplementation(function () {
+    return {
+      open: vi.fn(),
+      write: mockWrite,
+      writeln: mockWriteln,
+      reset: mockReset,
+      focus: mockFocus,
+      clear: mockClear,
+      onData: mockOnData,
+      onResize: vi.fn(),
+      dispose: vi.fn(),
+      loadAddon: vi.fn().mockImplementation(() => ({
+        fit: vi.fn(),
+      })),
+      options: {},
+      element: null,
+      textarea: null,
+      onWriteParsed: vi.fn(),
+      scrollToBottom: vi.fn(),
+      attachCustomKeyEventHandler: vi.fn(),
+    };
+  }),
+}));
+
+vi.mock("@xterm/addon-fit", () => ({
+  FitAddon: vi.fn().mockImplementation(function () {
+    return {
       fit: vi.fn(),
-    }));
-    this.options = {};
-    this.element = null;
-    this.textarea = null;
-    this.onWriteParsed = vi.fn();
-    this.scrollToBottom = vi.fn();
-    this.attachCustomKeyEventHandler = vi.fn();
-  });
-
-  return {
-    Terminal: MockTerminal,
-  };
-});
-
-vi.mock("@xterm/addon-fit", () => {
-  const MockFitAddon = vi.fn(function (this: any) {
-    this.fit = vi.fn();
-  });
-
-  return {
-    FitAddon: MockFitAddon,
-  };
-});
+    };
+  }),
+}));
 
 // Now import the modules AFTER mocks are defined
 import * as GlobalReconnect from "./global-reconnect";
@@ -134,8 +130,8 @@ vi.mock("./use-terminal-visibility", () => ({
 
 // Mock lucide-react icons to simple stubs to avoid SVG complexity in tests
 vi.mock("lucide-react", () => ({
-  SplitSquareHorizontal: (props: any) => null,
-  X: (props: any) => null,
+  SplitSquareHorizontal: (properties: any) => null,
+  X: (properties: any) => null,
 }));
 
 // Mock the crypto utility
@@ -162,7 +158,7 @@ describe("Minimal Hook Component Test", () => {
 });
 
 // Control message prefix used by the component
-const CONTROL_MESSAGE_PREFIX = "\x00\x00ABLY_CTRL:";
+const CONTROL_MESSAGE_PREFIX = "\u0000\u0000ABLY_CTRL:";
 
 // Helper to create control messages
 const createControlMessage = (payload: any) => {
@@ -173,7 +169,6 @@ const createControlMessage = (payload: any) => {
 let mockSocketInstance: Partial<WebSocket> & {
   listeners: Record<string, ((event: any) => void)[]>;
   triggerEvent: (eventName: string, eventData?: any) => void;
-  readyStateValue: number;
   onmessageCallback?: (event: any) => void; // Add direct onmessage callback storage
   onopen?: ((event: any) => void) | null; // Add onopen property
   onerror?: ((event: any) => void) | null; // Add onerror property
@@ -197,76 +192,78 @@ export const triggerWebSocketOpen = () => {
 };
 
 // Cast to any to satisfy TypeScript for the global assignment
-(global as any).WebSocket = vi.fn(function (this: any, url: string) {
-  mockSocketInstance = {
+const WebSocketMock: any = vi.fn().mockImplementation(function (url: string) {
+  const instance: any = {
     url,
     send: mockSend,
     close: mockClose,
     listeners: { open: [], message: [], close: [], error: [] },
-    addEventListener: vi.fn((event, cb) => {
-      mockSocketInstance.listeners[event]?.push(cb);
-      // If WebSocket is already open and we're adding an open listener, fire it immediately
-      if (
-        event === "open" &&
-        mockSocketInstance.readyStateValue === WebSocket.OPEN
-      ) {
-        cb({});
-      }
-    }),
-    removeEventListener: vi.fn((event, cb) => {
-      if (mockSocketInstance.listeners[event]) {
-        mockSocketInstance.listeners[event] = mockSocketInstance.listeners[
-          event
-        ].filter((l) => l !== cb);
-      }
-    }),
-    triggerEvent: (eventName: string, eventData?: any) => {
-      // Trigger property-based handlers
-      if (eventName === "message" && mockSocketInstance.onmessageCallback) {
-        mockSocketInstance.onmessageCallback(eventData);
-      }
-      if (eventName === "open" && mockSocketInstance.onopen) {
-        mockSocketInstance.onopen(eventData);
-      }
-      if (eventName === "error" && mockSocketInstance.onerror) {
-        mockSocketInstance.onerror(eventData);
-      }
-      if (eventName === "close" && mockSocketInstance.onclose) {
-        mockSocketInstance.onclose(eventData);
-      }
-      // Trigger addEventListener-based handlers
-      mockSocketInstance.listeners[eventName]?.forEach((cb) => cb(eventData));
-    },
-    readyStateValue: WebSocket.CONNECTING, // Initial state
-    get readyState() {
-      return this.readyStateValue;
-    },
-    set readyState(value: number) {
-      this.readyStateValue = value;
-    },
-    // Handle onmessage as a property (common usage pattern)
-    set onmessage(callback: (event: any) => void) {
-      mockSocketInstance.onmessageCallback = callback;
-    },
-    get onmessage() {
-      return mockSocketInstance.onmessageCallback || (() => {}); // Return no-op function if undefined
-    },
+    readyState: 0, // WebSocket.CONNECTING
     onopen: null,
     onerror: null,
     onclose: null,
+    onmessageCallback: undefined,
   };
+
+  instance.addEventListener = vi.fn((event, callback) => {
+    instance.listeners[event]?.push(callback);
+    // If WebSocket is already open and we're adding an open listener, fire it immediately
+    if (event === "open" && instance.readyState === WebSocket.OPEN) {
+      callback({});
+    }
+  });
+
+  instance.removeEventListener = vi.fn((event, callback) => {
+    if (instance.listeners[event]) {
+      instance.listeners[event] = instance.listeners[event].filter(
+        (l) => l !== callback,
+      );
+    }
+  });
+
+  instance.triggerEvent = (eventName: string, eventData?: any) => {
+    // Trigger property-based handlers
+    if (eventName === "message" && instance.onmessageCallback) {
+      instance.onmessageCallback(eventData);
+    }
+    if (eventName === "open" && instance.onopen) {
+      instance.onopen(eventData);
+    }
+    if (eventName === "error" && instance.onerror) {
+      instance.onerror(eventData);
+    }
+    if (eventName === "close" && instance.onclose) {
+      instance.onclose(eventData);
+    }
+    // Trigger addEventListener-based handlers
+    instance.listeners[eventName]?.forEach((callback) => callback(eventData));
+  };
+
+  // Define onmessage property with getter/setter
+  Object.defineProperty(instance, "onmessage", {
+    get() {
+      return instance.onmessageCallback || (() => {});
+    },
+    set(callback: (event: any) => void) {
+      instance.onmessageCallback = callback;
+    },
+    enumerable: true,
+    configurable: true,
+  });
+
+  mockSocketInstance = instance;
 
   if (manualWebSocketControl) {
     // Manual control - wait for explicit trigger
     pendingWebSocketOpen = () => {
       if (mockSocketInstance) {
-        mockSocketInstance.readyStateValue = WebSocket.OPEN;
+        mockSocketInstance.readyState = 1; // WebSocket.OPEN
         mockSocketInstance.triggerEvent("open", {});
       }
     };
   } else if (shouldOpenImmediately) {
     // Open synchronously for tests that need it
-    mockSocketInstance.readyStateValue = WebSocket.OPEN;
+    mockSocketInstance.readyState = 1; // WebSocket.OPEN
     // Store a reference to trigger open event after component mounts
     pendingWebSocketOpen = () => {
       if (mockSocketInstance) {
@@ -278,13 +275,21 @@ export const triggerWebSocketOpen = () => {
     // Use a longer delay to ensure all React effects have run
     setTimeout(() => {
       if (mockSocketInstance) {
-        mockSocketInstance.readyStateValue = WebSocket.OPEN;
+        mockSocketInstance.readyState = 1; // WebSocket.OPEN
         mockSocketInstance.triggerEvent("open", {});
       }
     }, 50); // Increased delay to allow React to process all state updates
   }
   return mockSocketInstance as WebSocket;
 });
+
+// Add WebSocket constants
+WebSocketMock.CONNECTING = 0;
+WebSocketMock.OPEN = 1;
+WebSocketMock.CLOSING = 2;
+WebSocketMock.CLOSED = 3;
+
+(globalThis as any).WebSocket = WebSocketMock;
 
 describe("AblyCliTerminal - Connection Status and Animation", () => {
   let onConnectionStatusChangeMock: ReturnType<typeof vi.fn>;
@@ -311,8 +316,8 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     mockSocketInstance = null as any;
 
     // Clear sessionStorage before each test to ensure isolation
-    if (typeof window !== "undefined" && window.sessionStorage) {
-      window.sessionStorage.clear();
+    if (globalThis.window !== undefined && globalThis.sessionStorage) {
+      globalThis.sessionStorage.clear();
     }
 
     // Reset all imported mock functions from GlobalReconnect
@@ -355,7 +360,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     });
 
     // Reset WebSocket constructor mock calls if needed for specific tests
-    vi.mocked((global as any).WebSocket).mockClear();
+    vi.mocked((globalThis as any).WebSocket).mockClear();
   });
 
   afterEach(() => {
@@ -364,7 +369,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   });
 
   const renderTerminal = (
-    props: Partial<React.ComponentProps<typeof AblyCliTerminal>> = {},
+    properties: Partial<React.ComponentProps<typeof AblyCliTerminal>> = {},
   ) => {
     return render(
       <AblyCliTerminal
@@ -373,7 +378,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
         ablyApiKey="test-key"
         onConnectionStatusChange={onConnectionStatusChangeMock}
         onSessionEnd={onSessionEndMock} // Pass the mock
-        {...props}
+        {...properties}
       />,
     );
   };
@@ -411,10 +416,10 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     await waitFor(() => {
       expect(mockDrawBox).toHaveBeenCalled();
     });
-    const drawBoxArgs = mockDrawBox.mock.calls[0];
-    expect(drawBoxArgs[1]).toBe(mockBoxColour.cyan); // headerColor
-    expect(drawBoxArgs[2]).toBe("CONNECTING"); // title
-    expect(drawBoxArgs[3][0]).toContain("Connecting to Ably CLI server"); // content line 1
+    const drawBoxArguments = mockDrawBox.mock.calls[0];
+    expect(drawBoxArguments[1]).toBe(mockBoxColour.cyan); // headerColor
+    expect(drawBoxArguments[2]).toBe("CONNECTING"); // title
+    expect(drawBoxArguments[3][0]).toContain("Connecting to Ably CLI server"); // content line 1
   });
 
   test('displays "Reconnecting..." box animation on WebSocket close if not max attempts', async () => {
@@ -439,10 +444,10 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     await waitFor(() => {
       expect(mockDrawBox).toHaveBeenCalled();
     });
-    const drawBoxArgs = mockDrawBox.mock.calls[0];
-    expect(drawBoxArgs[1]).toBe(mockBoxColour.yellow); // headerColor for reconnecting
-    expect(drawBoxArgs[2]).toBe("RECONNECTING"); // title
-    expect(drawBoxArgs[3][0]).toMatch(/Attempt 1\/\d+/); // content line 1
+    const drawBoxArguments = mockDrawBox.mock.calls[0];
+    expect(drawBoxArguments[1]).toBe(mockBoxColour.yellow); // headerColor for reconnecting
+    expect(drawBoxArguments[2]).toBe("RECONNECTING"); // title
+    expect(drawBoxArguments[3][0]).toMatch(/Attempt 1\/\d+/); // content line 1
     expect(onConnectionStatusChangeMock).toHaveBeenCalledWith("reconnecting");
   });
 
@@ -512,12 +517,14 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     await waitFor(() => {
       expect(mockDrawBox).toHaveBeenCalled();
     });
-    const drawBoxArgs = mockDrawBox.mock.calls[0];
-    expect(drawBoxArgs[1]).toBe(mockBoxColour.red);
-    expect(drawBoxArgs[2]).toBe("SERVER DISCONNECTED");
-    expect(drawBoxArgs[3][0]).toContain("Auth failed");
+    const drawBoxArguments = mockDrawBox.mock.calls[0];
+    expect(drawBoxArguments[1]).toBe(mockBoxColour.red);
+    expect(drawBoxArguments[2]).toBe("SERVER DISCONNECTED");
+    expect(drawBoxArguments[3][0]).toContain("Auth failed");
     expect(
-      drawBoxArgs[3].some((ln: string) => ln.includes("Press ⏎ to reconnect")),
+      drawBoxArguments[3].some((ln: string) =>
+        ln.includes("Press ⏎ to reconnect"),
+      ),
     ).toBe(true);
 
     expect(mockClearBox).toHaveBeenCalled(); // Previous box cleared before new error box
@@ -550,14 +557,16 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     await waitFor(() => {
       expect(mockDrawBox).toHaveBeenCalled();
     });
-    const drawBoxArgs = mockDrawBox.mock.calls[0];
-    expect(drawBoxArgs[1]).toBe(mockBoxColour.yellow); // Header color for max reconnects
-    expect(drawBoxArgs[2]).toBe("SERVICE UNAVAILABLE");
-    expect(drawBoxArgs[3][0]).toContain(
+    const drawBoxArguments = mockDrawBox.mock.calls[0];
+    expect(drawBoxArguments[1]).toBe(mockBoxColour.yellow); // Header color for max reconnects
+    expect(drawBoxArguments[2]).toBe("SERVICE UNAVAILABLE");
+    expect(drawBoxArguments[3][0]).toContain(
       "Web terminal service is temporarily unavailable.",
     );
     expect(
-      drawBoxArgs[3].some((ln: string) => ln.includes("Press ⏎ to reconnect")),
+      drawBoxArguments[3].some((ln: string) =>
+        ln.includes("Press ⏎ to reconnect"),
+      ),
     ).toBe(true);
 
     expect(mockClearBox).toHaveBeenCalled(); // Previous box cleared before new box
@@ -571,7 +580,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     await act(async () => {
       if (!mockSocketInstance)
         throw new Error("mockSocketInstance not initialized");
-      mockSocketInstance.readyStateValue = WebSocket.OPEN;
+      mockSocketInstance.readyState = WebSocket.OPEN;
       mockSocketInstance.triggerEvent("message", {
         data: createControlMessage({ type: "status", payload: "connected" }),
       });
@@ -590,7 +599,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     await act(async () => {
       if (!mockSocketInstance)
         throw new Error("mockSocketInstance not initialized");
-      mockSocketInstance.readyStateValue = WebSocket.OPEN;
+      mockSocketInstance.readyState = WebSocket.OPEN;
       const disconnectMessage = {
         type: "status",
         payload: "disconnected",
@@ -626,7 +635,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     await act(async () => {
       if (!mockSocketInstance)
         throw new Error("mockSocketInstance not initialized");
-      mockSocketInstance.readyStateValue = WebSocket.OPEN;
+      mockSocketInstance.readyState = WebSocket.OPEN;
       const errorMessage = {
         type: "status",
         payload: "error",
@@ -677,9 +686,9 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     renderTerminal();
 
     // Initial WebSocket is created by renderTerminal's useEffect
-    expect(vi.mocked((global as any).WebSocket)).toHaveBeenCalledTimes(1);
-    const initialWebSocketInstance = vi.mocked((global as any).WebSocket).mock
-      .results[0].value;
+    expect(vi.mocked((globalThis as any).WebSocket)).toHaveBeenCalledTimes(1);
+    const initialWebSocketInstance = vi.mocked((globalThis as any).WebSocket)
+      .mock.results[0].value;
 
     // Simulate first disconnection
     await act(async () => {
@@ -703,11 +712,10 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     // Simulate the scheduled reconnect callback firing (which is the `reconnect` function of the component)
     const reconnectCallback = vi.mocked(GlobalReconnect.scheduleReconnect).mock
       .calls[0][0];
-    vi.mocked((global as any).WebSocket).mockClear(); // Clear previous WebSocket creation count
+    vi.mocked((globalThis as any).WebSocket).mockClear(); // Clear previous WebSocket creation count
 
     await act(async () => {
-      if (mockSocketInstance)
-        mockSocketInstance.readyStateValue = WebSocket.CLOSED;
+      if (mockSocketInstance) mockSocketInstance.readyState = WebSocket.CLOSED;
       reconnectCallback(); // This should call the component's reconnect, creating a new WebSocket
     });
     await flushPromises();
@@ -776,7 +784,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     } finally {
       vi.useRealTimers();
     }
-  }, 15000);
+  }, 15_000);
 
   test("shows countdown timer during reconnection attempts (smoke)", async () => {
     renderTerminal();
@@ -787,10 +795,10 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     });
 
     // Provide countdown callback and verify it's hooked
-    const cb = vi.mocked(GlobalReconnect.setCountdownCallback).mock
+    const callback = vi.mocked(GlobalReconnect.setCountdownCallback).mock
       .calls[0][0] as (remaining: number) => void;
     act(() => {
-      cb(2000);
+      callback(2000);
     });
 
     // Ensure React state update occurred – overlay should contain countdown text
@@ -842,7 +850,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     } finally {
       vi.useRealTimers();
     }
-  }, 15000);
+  }, 15_000);
 
   test("manual reconnect works after non-recoverable server close (4008)", async () => {
     renderTerminal();
@@ -872,7 +880,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     const onDataHandler = mockOnData.mock.calls[0][0] as (data: string) => void;
 
     // Press Enter to initiate manual reconnect
-    vi.mocked((global as any).WebSocket).mockClear();
+    vi.mocked((globalThis as any).WebSocket).mockClear();
     act(() => {
       onDataHandler("\r");
     });
@@ -910,7 +918,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     // Clear mocks before manual reconnect
     vi.mocked(GlobalReconnect.successfulConnectionReset).mockClear();
     vi.mocked(GlobalReconnect.resetState).mockClear();
-    vi.mocked((global as any).WebSocket).mockClear();
+    vi.mocked((globalThis as any).WebSocket).mockClear();
     mockDrawBox.mockClear();
 
     // Get the Enter key handler
@@ -937,8 +945,8 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
         (call) => call[2] === "CONNECTING",
       );
       expect(connectingCall).toBeDefined();
-      expect(connectingCall![1]).toBe(mockBoxColour.cyan);
-      expect(connectingCall![3][0]).toContain(
+      expect(connectingCall[1]).toBe(mockBoxColour.cyan);
+      expect(connectingCall[3][0]).toContain(
         "Connecting to Ably CLI server...",
       );
     });
@@ -966,11 +974,11 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   test("includes stored sessionId in auth payload when resumeOnReload enabled", async () => {
     // Pre-populate sessionStorage with a sessionId and matching credential hash (domain-scoped)
     const expectedHash = "hash-test-key:test-token"; // Based on our mock
-    window.sessionStorage.setItem(
+    globalThis.sessionStorage.setItem(
       "ably.cli.sessionId.web-cli.ably.com",
       "resume-123",
     );
-    window.sessionStorage.setItem(
+    globalThis.sessionStorage.setItem(
       "ably.cli.credentialHash.web-cli.ably.com",
       expectedHash,
     );
@@ -1045,7 +1053,9 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     await waitFor(
       () =>
         expect(
-          window.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
+          globalThis.sessionStorage.getItem(
+            "ably.cli.sessionId.web-cli.ably.com",
+          ),
         ).toBe("new-session-456"),
       {
         timeout: 3000,
@@ -1114,14 +1124,16 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
       expect(mockDrawBox).toHaveBeenCalled();
     });
 
-    const drawBoxArgs = mockDrawBox.mock.calls[0];
-    expect(drawBoxArgs[1]).toBe(mockBoxColour.yellow);
-    expect(drawBoxArgs[2]).toBe("SERVICE UNAVAILABLE");
-    expect(drawBoxArgs[3][0]).toContain(
+    const drawBoxArguments = mockDrawBox.mock.calls[0];
+    expect(drawBoxArguments[1]).toBe(mockBoxColour.yellow);
+    expect(drawBoxArguments[2]).toBe("SERVICE UNAVAILABLE");
+    expect(drawBoxArguments[3][0]).toContain(
       "Web terminal service is temporarily unavailable.",
     );
     expect(
-      drawBoxArgs[3].some((ln: string) => ln.includes("Press ⏎ to reconnect")),
+      drawBoxArguments[3].some((ln: string) =>
+        ln.includes("Press ⏎ to reconnect"),
+      ),
     ).toBe(true);
     // Installation tip is now in the drawer, not in the lines
 
@@ -1142,7 +1154,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
 
     // Socket should be created and in CONNECTING state
     expect(mockSocketInstance).toBeDefined();
-    mockSocketInstance.readyStateValue = WebSocket.CONNECTING;
+    mockSocketInstance.readyState = WebSocket.CONNECTING;
 
     // Clear any previous calls
     mockDrawBox.mockClear();
@@ -1151,7 +1163,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
 
     // Advance time by 30 seconds to trigger timeout
     await act(async () => {
-      vi.advanceTimersByTime(30000);
+      vi.advanceTimersByTime(30_000);
       await Promise.resolve();
     });
 
@@ -1194,14 +1206,13 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
       .calls[0][0];
 
     // Pretend the old socket is still in CONNECTING state when the timer fires
-    mockSocketInstance.readyStateValue = WebSocket.CONNECTING; // 0
+    mockSocketInstance.readyState = WebSocket.CONNECTING; // 0
 
     // Clear constructor count for clarity
-    vi.mocked((global as any).WebSocket).mockClear();
+    vi.mocked((globalThis as any).WebSocket).mockClear();
 
     await act(async () => {
-      if (mockSocketInstance)
-        mockSocketInstance.readyStateValue = WebSocket.CLOSED;
+      if (mockSocketInstance) mockSocketInstance.readyState = WebSocket.CLOSED;
       reconnectCallback(); // This should call the component's reconnect, creating a new WebSocket
     });
 
@@ -1209,7 +1220,8 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
 
     // invoke reconnect again for bookkeeping
     reconnectCallback();
-    await expect(flushPromises()).resolves.toBeUndefined();
+    await flushPromises();
+    expect(true).toBe(true);
   });
 
   test("suppresses fragmented hijack meta JSON chunks", async () => {
@@ -1315,9 +1327,9 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     ).toBeNull();
 
     // Close the second pane via its X icon
-    const closeBtn = await screen.findByTestId("close-terminal-2-button");
+    const closeButton = await screen.findByTestId("close-terminal-2-button");
     await act(async () => {
-      closeBtn.click();
+      closeButton.click();
     });
 
     // Secondary pane and terminal 2 tab should be removed, split button visible again
@@ -1331,11 +1343,10 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   test("split-screen initializes a secondary terminal with its own WebSocket session", async () => {
     // Simply track WebSocket constructor calls without creating infinite loop
     const webSocketInstancesMock = vi.fn();
-    const originalMock = vi.mocked(global.WebSocket).getMockImplementation();
-    vi.mocked(global.WebSocket).mockImplementation(function (
-      this: any,
-      url: string,
-    ) {
+    const originalMock = vi
+      .mocked(globalThis.WebSocket)
+      .getMockImplementation();
+    vi.mocked(globalThis.WebSocket).mockImplementation(function (url) {
       webSocketInstancesMock(url);
       // Use the original mock implementation from the test setup
       return (originalMock as any).call(this, url);
@@ -1372,9 +1383,9 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     );
 
     // Close the second pane
-    const closeBtn = await screen.findByTestId("close-terminal-2-button");
+    const closeButton = await screen.findByTestId("close-terminal-2-button");
     await act(async () => {
-      closeBtn.click();
+      closeButton.click();
     });
 
     // Secondary terminal should be cleaned up
@@ -1394,11 +1405,11 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   });
 
   test("imperative handle can toggle split-screen externally when enabled", async () => {
-    const ref = React.createRef<AblyCliTerminalHandle>();
+    const reference = React.createRef<AblyCliTerminalHandle>();
 
     render(
       <AblyCliTerminal
-        ref={ref}
+        ref={reference}
         websocketUrl="wss://web-cli.ably.com"
         ablyAccessToken="test-token"
         ablyApiKey="test-key"
@@ -1412,7 +1423,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
 
     // Use imperative API to enable split
     await act(async () => {
-      ref.current?.enableSplitScreen();
+      reference.current?.enableSplitScreen();
       await Promise.resolve();
     });
 
@@ -1423,7 +1434,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
 
     // Toggle back via imperative API
     await act(async () => {
-      ref.current?.toggleSplitScreen();
+      reference.current?.toggleSplitScreen();
       await Promise.resolve();
     });
 
@@ -1536,6 +1547,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
 
   test.skip("prompt detection correctly handles ANSI color codes", async () => {
     // Skip this test due to React fiber internal structure changes that are not stable
+
     // Create a mock component and socket
     const mockSocket = {
       readyState: WebSocket.OPEN,
@@ -1548,9 +1560,9 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
 
     renderTerminal();
     // Hack: Access internal component state (not recommended in normal tests)
+    // @ts-expect-error - Mock our internal socketRef directly
     const component = screen.getByTestId(
       "terminal-outer-container",
-      // @ts-expect-error - Mock our internal socketRef directly
     ).__reactFiber$;
     const instance = component.child.stateNode;
     instance.socketRef.current = mockSocket;
@@ -1560,7 +1572,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     // Color codes should be stripped before prompt detection
     act(() => {
       // This would come in via handlePtyData -> term.write
-      const colored = "\u001b[32muser@host\u001b[0m:\u001b[34m~\u001b[0m$ ";
+      const colored = "\u001B[32muser@host\u001B[0m:\u001B[34m~\u001B[0m$ ";
       instance.handlePtyData(colored);
     });
 
@@ -1604,7 +1616,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
 
     // The WebSocket constructor should have been called a second time for the secondary terminal
     await waitFor(() => {
-      expect(vi.mocked((global as any).WebSocket)).toHaveBeenCalledTimes(2);
+      expect(vi.mocked((globalThis as any).WebSocket)).toHaveBeenCalledTimes(2);
     });
 
     // Clear the callback to check if the secondary terminal triggers it
@@ -1612,10 +1624,12 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
 
     // Get the second WebSocket instance from the mock
     const secondarySocketIndex = 1;
-    const allMockSocketInstances = vi.mocked((global as any).WebSocket).mock
+    const allMockSocketInstances = vi.mocked((globalThis as any).WebSocket).mock
       .results;
     const secondaryMockSocketInstance =
-      allMockSocketInstances[secondarySocketIndex]!.value;
+      allMockSocketInstances[secondarySocketIndex].value;
+
+    expect(secondaryMockSocketInstance).toBeDefined();
 
     // Trigger a status update on the secondary terminal
     act(() => {
@@ -1711,8 +1725,8 @@ describe("AblyCliTerminal - Credential Validation", () => {
     vi.mocked(mockOnData).mockClear();
 
     // Clear sessionStorage before each test
-    if (typeof window !== "undefined" && window.sessionStorage) {
-      window.sessionStorage.clear();
+    if (globalThis.window !== undefined && globalThis.sessionStorage) {
+      globalThis.sessionStorage.clear();
     }
 
     // Reset GlobalReconnect mocks
@@ -1720,11 +1734,11 @@ describe("AblyCliTerminal - Credential Validation", () => {
     vi.mocked(GlobalReconnect.getAttempts).mockReset().mockReturnValue(0);
 
     // Reset WebSocket mock
-    vi.mocked((global as any).WebSocket).mockClear();
+    vi.mocked((globalThis as any).WebSocket).mockClear();
   });
 
   const renderTerminal = (
-    props: Partial<React.ComponentProps<typeof AblyCliTerminal>> = {},
+    properties: Partial<React.ComponentProps<typeof AblyCliTerminal>> = {},
   ) => {
     return render(
       <AblyCliTerminal
@@ -1733,7 +1747,7 @@ describe("AblyCliTerminal - Credential Validation", () => {
         ablyApiKey="test-key"
         onConnectionStatusChange={onConnectionStatusChangeMock}
         resumeOnReload={true}
-        {...props}
+        {...properties}
       />,
     );
   };
@@ -1743,11 +1757,11 @@ describe("AblyCliTerminal - Credential Validation", () => {
     manualWebSocketControl = true;
 
     // Pre-populate sessionStorage with a sessionId and credential hash (domain-scoped)
-    window.sessionStorage.setItem(
+    globalThis.sessionStorage.setItem(
       "ably.cli.sessionId.web-cli.ably.com",
       "old-session-123",
     );
-    window.sessionStorage.setItem(
+    globalThis.sessionStorage.setItem(
       "ably.cli.credentialHash.web-cli.ably.com",
       "old-hash-value",
     );
@@ -1781,21 +1795,23 @@ describe("AblyCliTerminal - Credential Validation", () => {
 
     // Verify storage was cleared due to credential mismatch
     expect(
-      window.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
     ).toBeNull();
     expect(
-      window.sessionStorage.getItem("ably.cli.credentialHash.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem(
+        "ably.cli.credentialHash.web-cli.ably.com",
+      ),
     ).toBeNull();
   });
 
   test("restores session when credentials match", async () => {
     // First setup the stored session with matching hash
     const expectedHash = "hash-test-key:test-token"; // Based on our mock
-    window.sessionStorage.setItem(
+    globalThis.sessionStorage.setItem(
       "ably.cli.sessionId.web-cli.ably.com",
       "session-456",
     );
-    window.sessionStorage.setItem(
+    globalThis.sessionStorage.setItem(
       "ably.cli.credentialHash.web-cli.ably.com",
       expectedHash,
     );
@@ -1828,7 +1844,7 @@ describe("AblyCliTerminal - Credential Validation", () => {
         });
         expect(hasCorrectSessionId).toBe(true);
       },
-      { timeout: 10000 },
+      { timeout: 10_000 },
     );
 
     // Verify that at least one auth payload includes the correct sessionId
@@ -1841,14 +1857,16 @@ describe("AblyCliTerminal - Credential Validation", () => {
 
     // Verify storage wasn't cleared
     expect(
-      window.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
     ).toBe("session-456");
     expect(
-      window.sessionStorage.getItem("ably.cli.credentialHash.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem(
+        "ably.cli.credentialHash.web-cli.ably.com",
+      ),
     ).toBe(expectedHash);
 
     consoleLogSpy.mockRestore();
-  }, 10000);
+  }, 10_000);
 
   test("stores credential hash when new session is created", async () => {
     renderTerminal({
@@ -1876,20 +1894,22 @@ describe("AblyCliTerminal - Credential Validation", () => {
 
     // Both sessionId and credential hash should be stored (domain-scoped)
     expect(
-      window.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
     ).toBe("new-session-789");
     expect(
-      window.sessionStorage.getItem("ably.cli.credentialHash.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem(
+        "ably.cli.credentialHash.web-cli.ably.com",
+      ),
     ).toBe("hash-test-key-123:test-token-456");
-  }, 10000);
+  }, 10_000);
 
   test("clears credential hash when session is purged due to server disconnect", async () => {
     // Set up initial state with stored session and hash (domain-scoped)
-    window.sessionStorage.setItem(
+    globalThis.sessionStorage.setItem(
       "ably.cli.sessionId.web-cli.ably.com",
       "session-to-purge",
     );
-    window.sessionStorage.setItem(
+    globalThis.sessionStorage.setItem(
       "ably.cli.credentialHash.web-cli.ably.com",
       "hash-to-purge",
     );
@@ -1904,7 +1924,7 @@ describe("AblyCliTerminal - Credential Validation", () => {
     act(() => {
       if (!mockSocketInstance)
         throw new Error("mockSocketInstance not initialized");
-      mockSocketInstance.readyStateValue = WebSocket.OPEN;
+      mockSocketInstance.readyState = WebSocket.OPEN;
       const disconnectMessage = {
         type: "status",
         payload: "disconnected",
@@ -1919,12 +1939,14 @@ describe("AblyCliTerminal - Credential Validation", () => {
 
     // Both sessionId and credential hash should be cleared (domain-scoped)
     expect(
-      window.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
     ).toBeNull();
     expect(
-      window.sessionStorage.getItem("ably.cli.credentialHash.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem(
+        "ably.cli.credentialHash.web-cli.ably.com",
+      ),
     ).toBeNull();
-  }, 10000);
+  }, 10_000);
 
   test("handles missing credentials (undefined apiKey)", async () => {
     renderTerminal({ ablyApiKey: undefined, ablyAccessToken: "test-token" });
@@ -1936,7 +1958,7 @@ describe("AblyCliTerminal - Credential Validation", () => {
 
     // Should still create a connection
     await waitFor(() => expect(mockSend).toHaveBeenCalled(), {
-      timeout: 10000,
+      timeout: 10_000,
     });
 
     // Simulate hello message
@@ -1954,12 +1976,14 @@ describe("AblyCliTerminal - Credential Validation", () => {
 
     // Should store session and hash even with undefined apiKey (domain-scoped)
     expect(
-      window.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
     ).toBe("session-no-key");
     expect(
-      window.sessionStorage.getItem("ably.cli.credentialHash.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem(
+        "ably.cli.credentialHash.web-cli.ably.com",
+      ),
     ).toBe("hash-:test-token");
-  }, 10000);
+  }, 10_000);
 
   test("does not store session when resumeOnReload is false", async () => {
     renderTerminal({ resumeOnReload: false });
@@ -1979,15 +2003,19 @@ describe("AblyCliTerminal - Credential Validation", () => {
     await flushPromises();
 
     // Nothing should be stored in sessionStorage (checking both old and new keys)
-    expect(window.sessionStorage.getItem("ably.cli.sessionId")).toBeNull();
-    expect(window.sessionStorage.getItem("ably.cli.credentialHash")).toBeNull();
+    expect(globalThis.sessionStorage.getItem("ably.cli.sessionId")).toBeNull();
     expect(
-      window.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem("ably.cli.credentialHash"),
     ).toBeNull();
     expect(
-      window.sessionStorage.getItem("ably.cli.credentialHash.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
     ).toBeNull();
-  }, 10000);
+    expect(
+      globalThis.sessionStorage.getItem(
+        "ably.cli.credentialHash.web-cli.ably.com",
+      ),
+    ).toBeNull();
+  }, 10_000);
 });
 
 describe("AblyCliTerminal - Cross-Domain Security", () => {
@@ -2010,8 +2038,8 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
     vi.mocked(mockOnData).mockClear();
 
     // Clear sessionStorage before each test
-    if (typeof window !== "undefined" && window.sessionStorage) {
-      window.sessionStorage.clear();
+    if (globalThis.window !== undefined && globalThis.sessionStorage) {
+      globalThis.sessionStorage.clear();
     }
   });
 
@@ -2021,7 +2049,7 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
   });
 
   const renderTerminal = (
-    props: Partial<React.ComponentProps<typeof AblyCliTerminal>> = {},
+    properties: Partial<React.ComponentProps<typeof AblyCliTerminal>> = {},
   ) => {
     return render(
       <AblyCliTerminal
@@ -2030,7 +2058,7 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
         ablyApiKey="test-key"
         onConnectionStatusChange={onConnectionStatusChangeMock}
         resumeOnReload={true}
-        {...props}
+        {...properties}
       />,
     );
   };
@@ -2063,10 +2091,12 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
 
     // Verify credentials are stored for the ably domain
     expect(
-      window.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
     ).toBe("session-for-ably");
     expect(
-      window.sessionStorage.getItem("ably.cli.credentialHash.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem(
+        "ably.cli.credentialHash.web-cli.ably.com",
+      ),
     ).toBe("hash-secure-key-123:secure-token-456");
 
     // Clean up
@@ -2094,10 +2124,12 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
 
     // Verify no credentials from the attacker domain exist
     expect(
-      window.sessionStorage.getItem("ably.cli.sessionId.attacker.example.com"),
+      globalThis.sessionStorage.getItem(
+        "ably.cli.sessionId.attacker.example.com",
+      ),
     ).toBeNull();
     expect(
-      window.sessionStorage.getItem(
+      globalThis.sessionStorage.getItem(
         "ably.cli.credentialHash.attacker.example.com",
       ),
     ).toBeNull();
@@ -2105,20 +2137,20 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
 
   test("credentials are properly scoped per domain", async () => {
     // Set up credentials for multiple domains
-    window.sessionStorage.setItem(
+    globalThis.sessionStorage.setItem(
       "ably.cli.sessionId.web-cli.ably.com",
       "ably-session-123",
     );
-    window.sessionStorage.setItem(
+    globalThis.sessionStorage.setItem(
       "ably.cli.credentialHash.web-cli.ably.com",
       "hash-test-key:test-token",
     );
 
-    window.sessionStorage.setItem(
+    globalThis.sessionStorage.setItem(
       "ably.cli.sessionId.staging.ably.com",
       "staging-session-456",
     );
-    window.sessionStorage.setItem(
+    globalThis.sessionStorage.setItem(
       "ably.cli.credentialHash.staging.ably.com",
       "hash-test-key:test-token",
     );
@@ -2158,20 +2190,22 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
 
     // Verify credentials for other domains remain untouched
     expect(
-      window.sessionStorage.getItem("ably.cli.sessionId.staging.ably.com"),
+      globalThis.sessionStorage.getItem("ably.cli.sessionId.staging.ably.com"),
     ).toBe("staging-session-456");
     expect(
-      window.sessionStorage.getItem("ably.cli.credentialHash.staging.ably.com"),
+      globalThis.sessionStorage.getItem(
+        "ably.cli.credentialHash.staging.ably.com",
+      ),
     ).toBe("hash-test-key:test-token");
   });
 
   test("localStorage auth settings are not shared between domains", async () => {
     // Simulate user saving auth settings for one domain
-    window.localStorage.setItem(
+    globalThis.localStorage.setItem(
       "ably.web-cli.apiKey.trusted.ably.com",
       "saved-api-key",
     );
-    window.localStorage.setItem(
+    globalThis.localStorage.setItem(
       "ably.web-cli.accessToken.trusted.ably.com",
       "saved-token",
     );
@@ -2196,15 +2230,240 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
 
     // The saved credentials should remain safe and untouched
     expect(
-      window.localStorage.getItem("ably.web-cli.apiKey.trusted.ably.com"),
+      globalThis.localStorage.getItem("ably.web-cli.apiKey.trusted.ably.com"),
     ).toBe("saved-api-key");
     expect(
-      window.localStorage.getItem("ably.web-cli.accessToken.trusted.ably.com"),
+      globalThis.localStorage.getItem(
+        "ably.web-cli.accessToken.trusted.ably.com",
+      ),
     ).toBe("saved-token");
 
     // No credentials should be stored for the attacker domain without explicit user action
     expect(
-      window.localStorage.getItem("ably.web-cli.apiKey.evil-attacker.com"),
+      globalThis.localStorage.getItem("ably.web-cli.apiKey.evil-attacker.com"),
     ).toBeNull();
   });
+});
+
+describe("AblyCliTerminal - Initial Command Execution", () => {
+  let onConnectionStatusChangeMock: ReturnType<typeof vi.fn>;
+  let onSessionEndMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    onConnectionStatusChangeMock = vi.fn();
+    onSessionEndMock = vi.fn();
+
+    // Reset WebSocket control flags
+    shouldOpenImmediately = true; // Let WebSocket open automatically
+    manualWebSocketControl = false;
+    pendingWebSocketOpen = null;
+
+    // Clear standard mocks
+    mockWrite.mockClear();
+    mockWriteln.mockClear();
+    mockSend.mockClear();
+    mockClose.mockClear();
+    mockClear.mockClear();
+    vi.mocked(mockOnData).mockClear();
+
+    // Clear sessionStorage before each test
+    if (globalThis.window !== undefined && globalThis.sessionStorage) {
+      globalThis.sessionStorage.clear();
+    }
+
+    // Reset GlobalReconnect mocks
+    vi.mocked(GlobalReconnect.getAttempts).mockReset().mockReturnValue(0);
+    vi.mocked(GlobalReconnect.resetState).mockClear();
+    vi.mocked(GlobalReconnect.successfulConnectionReset).mockClear();
+
+    // Clear terminal-box mocks
+    mockDrawBox.mockClear();
+    mockClearBox.mockClear();
+
+    // Reset WebSocket constructor mock
+    vi.mocked((globalThis as any).WebSocket).mockClear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const renderTerminal = (
+    properties: Partial<React.ComponentProps<typeof AblyCliTerminal>> = {},
+  ) => {
+    return render(
+      <AblyCliTerminal
+        websocketUrl="wss://web-cli.ably.com"
+        ablyAccessToken="test-token"
+        ablyApiKey="test-key"
+        onConnectionStatusChange={onConnectionStatusChangeMock}
+        onSessionEnd={onSessionEndMock}
+        {...properties}
+      />,
+    );
+  };
+
+  test("initial command is sent after prompt is detected in new session", async () => {
+    renderTerminal({
+      initialCommand: "--version",
+    });
+
+    // Wait for WebSocket to open automatically
+    await waitFor(() => {
+      expect(mockSocketInstance).toBeTruthy();
+      expect(mockSocketInstance.readyState).toBe(WebSocket.OPEN);
+    });
+
+    // Send hello message for NEW session (no sessionId in storage)
+    await act(async () => {
+      mockSocketInstance.triggerEvent("message", {
+        data: createControlMessage({
+          type: "hello",
+          sessionId: "new-session-123",
+        }),
+      });
+      await Promise.resolve();
+    });
+
+    // Clear sends that happened during auth
+    mockSend.mockClear();
+
+    // Simulate PTY output with a prompt
+    // Send enough data to exceed MAX_HANDSHAKE_BUFFER_LENGTH (200 chars) to flush the filter
+    await act(async () => {
+      const padding = "X".repeat(200); // Ensure we exceed the buffer limit
+      mockSocketInstance.triggerEvent("message", {
+        data: new Uint8Array([
+          ...Buffer.from(`Welcome to Ably CLI\r\n${padding}\r\n`),
+          ...Buffer.from("ably> "),
+        ]),
+      });
+      // Wait for the 100ms setTimeout in activateSessionAndSendCommand
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    });
+
+    // Wait for the command to be sent (100ms setTimeout + buffer)
+    await waitFor(
+      () => {
+        const calls = mockSend.mock.calls;
+        const hasVersionCommand = calls.some((call) => {
+          const message = call[0];
+          return typeof message === "string" && message.includes("--version");
+        });
+        expect(hasVersionCommand).toBe(true);
+      },
+      { timeout: 2000 },
+    );
+
+    // Verify format includes carriage return
+    const versionCall = mockSend.mock.calls.find((call) =>
+      call[0].includes("--version"),
+    );
+    expect(versionCall[0]).toMatch(/--version\r/);
+  }, 15_000);
+
+  test("initial command is NOT sent when resuming existing session", async () => {
+    // Pre-populate storage with existing session
+    const expectedHash = "hash-test-key:test-token";
+    globalThis.sessionStorage.setItem(
+      "ably.cli.sessionId.web-cli.ably.com",
+      "resumed-session-456",
+    );
+    globalThis.sessionStorage.setItem(
+      "ably.cli.credentialHash.web-cli.ably.com",
+      expectedHash,
+    );
+
+    renderTerminal({
+      initialCommand: "should-not-run",
+      resumeOnReload: true,
+    });
+
+    // Wait for WebSocket to open
+    await waitFor(() => {
+      expect(mockSocketInstance).toBeTruthy();
+      expect(mockSocketInstance.readyState).toBe(WebSocket.OPEN);
+    });
+
+    // Send hello confirming resumed session
+    await act(async () => {
+      mockSocketInstance.triggerEvent("message", {
+        data: createControlMessage({
+          type: "hello",
+          sessionId: "resumed-session-456",
+        }),
+      });
+      await Promise.resolve();
+    });
+
+    // When resuming, the session is activated immediately without waiting for prompt
+    // The initial command should NOT be set because sessionId was already present
+    // However, due to timing, the component needs a moment to process
+
+    // Clear any sends up to this point
+    mockSend.mockClear();
+
+    // Even if we send a prompt, command should NOT be sent for resumed session
+    await act(async () => {
+      mockSocketInstance.triggerEvent("message", {
+        data: new Uint8Array(Buffer.from("ably> ")),
+      });
+      await Promise.resolve();
+    });
+
+    // Wait to ensure command is NOT sent
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    // Verify the command was NOT sent (should be empty after mockClear)
+    expect(mockSend.mock.calls.length).toBe(0);
+  });
+
+  test("initial command works with bash-style $ prompt", async () => {
+    renderTerminal({
+      initialCommand: "test-cmd",
+    });
+
+    await waitFor(() => {
+      expect(mockSocketInstance).toBeTruthy();
+      expect(mockSocketInstance.readyState).toBe(WebSocket.OPEN);
+    });
+
+    // New session
+    await act(async () => {
+      mockSocketInstance.triggerEvent("message", {
+        data: createControlMessage({
+          type: "hello",
+          sessionId: "bash-test-session",
+        }),
+      });
+      await Promise.resolve();
+    });
+
+    mockSend.mockClear();
+
+    // Send bash-style prompt
+    // Send enough data to exceed MAX_HANDSHAKE_BUFFER_LENGTH (200 chars) to flush the filter
+    await act(async () => {
+      const padding = "X".repeat(200); // Ensure we exceed the buffer limit
+      mockSocketInstance.triggerEvent("message", {
+        data: new Uint8Array(
+          Buffer.from(`${padding}\r\nuser@host:~/project$ `),
+        ),
+      });
+      await Promise.resolve();
+    });
+
+    // Wait for command send (setTimeout is 100ms in implementation)
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    });
+
+    // Verify command was sent
+    const hasTestCmd = mockSend.mock.calls.some((call) =>
+      String(call[0]).includes("test-cmd"),
+    );
+    expect(hasTestCmd).toBe(true);
+  }, 15_000);
 });
