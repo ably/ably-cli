@@ -2399,8 +2399,12 @@ const AblyCliTerminalInner = (
       grSetMaxAttempts(maxReconnectAttempts);
     }
 
-    // Initial connection on mount – only if already visible
-    if (componentConnectionStatus === "initial" && isVisible) {
+    // Initial connection on mount – only if already visible and credentials initialized
+    if (
+      componentConnectionStatus === "initial" &&
+      isVisible &&
+      credentialsInitialized
+    ) {
       grResetState();
       clearPtyBuffer();
       connectWebSocket();
@@ -2430,7 +2434,14 @@ const AblyCliTerminalInner = (
       grResetState(); // Ensure global state is clean
       clearConnectionTimeout(); // Clear any pending connection timeout
     };
-  }, []);
+  }, [
+    componentConnectionStatus,
+    isVisible,
+    credentialsInitialized,
+    clearPtyBuffer,
+    connectWebSocket,
+    clearConnectionTimeout,
+  ]);
 
   useEffect(() => {
     // Expose a debug function to get current component state for Playwright

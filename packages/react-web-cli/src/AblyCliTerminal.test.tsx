@@ -2416,11 +2416,8 @@ describe("AblyCliTerminal - Initial Command Execution", () => {
       await new Promise((resolve) => setTimeout(resolve, 300));
     });
 
-    // The command WILL be sent because sessionStorage restoration happens async
-    // This is actually a bug in the implementation - the command gets set before
-    // sessionId is restored from storage. For now, we'll skip this test.
-    // TODO: Fix the race condition in the implementation
-    expect(true).toBe(true); // Pass for now
+    // Verify the command was NOT sent (should be empty after mockClear)
+    expect(mockSend.mock.calls.length).toBe(0);
   });
 
   test("initial command works with bash-style $ prompt", async () => {
