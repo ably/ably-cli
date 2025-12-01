@@ -94,6 +94,19 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
     // Store the realtime client for access by subclasses
     this._chatRealtimeClient = realtimeClient;
 
+    if (this.isTestMode()) {
+      this.debug(`Running in test mode, using mock Ably Chat client`);
+      const mockChat = this.getMockAblyChat();
+
+      if (mockChat) {
+        // Return mock as appropriate type
+        this._chatClient = mockChat;
+        return mockChat;
+      }
+
+      this.error(`No mock Ably Chat client available in test mode`);
+    }
+
     // Use the Ably client to create the Chat client
     return (this._chatClient = new ChatClient(realtimeClient));
   }

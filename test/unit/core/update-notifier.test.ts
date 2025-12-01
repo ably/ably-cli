@@ -1,5 +1,4 @@
-import { expect } from "chai";
-import { describe, it, beforeEach, afterEach } from "mocha";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { execa } from "execa";
 
 describe("update notifier", function () {
@@ -27,8 +26,8 @@ describe("update notifier", function () {
     });
 
     // When update check is skipped, the command should run normally
-    expect(result.failed).to.be.false;
-    expect(result.stdout).to.contain("USAGE");
+    expect(result.failed).toBe(false);
+    expect(result.stdout).toContain("USAGE");
 
     // The update notification would appear in stderr if it was shown
     // With ABLY_SKIP_NEW_VERSION_CHECK=1, there should be no update notification
@@ -48,8 +47,8 @@ describe("update notifier", function () {
     });
 
     // Command should run normally regardless of update check
-    expect(result.failed).to.be.false;
-    expect(result.stdout).to.contain("USAGE");
+    expect(result.failed).toBe(false);
+    expect(result.stdout).toContain("USAGE");
   });
 
   it("should respect ABLY_FORCE_VERSION_CACHE_UPDATE", async function () {
@@ -64,7 +63,7 @@ describe("update notifier", function () {
     });
 
     // Command should run normally
-    expect(result.failed).to.be.false;
-    expect(result.stdout).to.contain("USAGE");
+    expect(result.failed).toBe(false);
+    expect(result.stdout).toContain("USAGE");
   });
 });

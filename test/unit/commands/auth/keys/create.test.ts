@@ -1,355 +1,439 @@
-import { expect } from 'chai';
-import nock from 'nock';
-import { test } from '@oclif/test';
-import { describe, afterEach, beforeEach } from 'mocha';
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { runCommand } from "@oclif/test";
+import nock from "nock";
+import { resolve } from "node:path";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 
-/* eslint-disable mocha/no-setup-in-describe */
-
-describe('auth:keys:create command', () => {
-  const mockAccessToken = 'fake_access_token';
-  const mockAppId = '550e8400-e29b-41d4-a716-446655440000';
-  const mockKeyName = 'Test Key';
-  const mockKeyId = 'test-key-id';
-  const mockKeySecret = 'test-key-secret';
+describe("auth:keys:create command", () => {
+  const mockAccessToken = "fake_access_token";
+  const mockAccountId = "MockAccount";
+  const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
+  const mockKeyName = "TestKey";
+  const mockKeyId = "test-key-id";
+  const mockKeySecret = "test-key-secret";
+  let testConfigDir: string;
+  let originalConfigDir: string;
 
   beforeEach(() => {
     // Set environment variable for access token
     process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
+
+    // Create a temporary config directory for testing
+    testConfigDir = resolve(tmpdir(), `ably-cli-test-${Date.now()}`);
+    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
+
+    // Store original config dir and set test config dir
+    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
+    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
+
+    // Create a minimal config file with a default account
+    const configContent = `[current]
+account = "default"
+
+[accounts.default]
+accessToken = "${mockAccessToken}"
+accountId = "${mockAccountId}"
+accountName = "Test Account"
+userEmail = "test@example.com"
+`;
+    writeFileSync(resolve(testConfigDir, "config"), configContent);
   });
 
   afterEach(() => {
     // Clean up nock interceptors
     nock.cleanAll();
     delete process.env.ABLY_ACCESS_TOKEN;
+    process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
   });
 
-  describe('successful key creation', () => {
-    test
-      .stdout()
-      .do(() => {
-        // Mock the key creation endpoint
-        nock('https://control.ably.net')
-          .post(`/v1/apps/${mockAppId}/keys`, {
-            name: mockKeyName,
-            capability: { '*': ['*'] }
-          })
-          .reply(201, {
-            id: mockKeyId,
-            appId: mockAppId,
-            name: mockKeyName,
-            key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
-            capability: { '*': ['*'] },
-            created: Date.now(),
-            modified: Date.now(),
-            status: 'enabled',
-            revocable: true
-          });
-      })
-      .command(['auth:keys:create', '--name', mockKeyName, '--app', mockAppId])
-      .it('should create a key successfully', ctx => {
-        expect(ctx.stdout).to.include('Key created successfully');
-        expect(ctx.stdout).to.include(mockKeyName);
-        expect(ctx.stdout).to.include(mockKeyId);
-      });
-
-    test
-      .stdout()
-      .do(() => {
-        // Mock the key creation endpoint with custom capabilities
-        nock('https://control.ably.net')
-          .post(`/v1/apps/${mockAppId}/keys`, {
-            name: mockKeyName,
-            capability: { 'channel1': ['publish', 'subscribe'], 'channel2': ['history'] }
-          })
-          .reply(201, {
-            id: mockKeyId,
-            appId: mockAppId,
-            name: mockKeyName,
-            key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
-            capability: { 'channel1': ['publish', 'subscribe'], 'channel2': ['history'] },
-            created: Date.now(),
-            modified: Date.now(),
-            status: 'enabled',
-            revocable: true
-          });
-      })
-      .command([
-        'auth:keys:create',
-        '--name', mockKeyName,
-        '--app', mockAppId,
-        '--capabilities', '{"channel1":["publish","subscribe"],"channel2":["history"]}'
-      ])
-      .it('should create a key with custom capabilities', ctx => {
-        expect(ctx.stdout).to.include('Key created successfully');
-        expect(ctx.stdout).to.include('channel1');
-        expect(ctx.stdout).to.include('publish');
-        expect(ctx.stdout).to.include('subscribe');
-      });
-
-    test
-      .stdout()
-      .do(() => {
-        const mockKey = {
+  describe("successful key creation", () => {
+    it("should create a key successfully", async () => {
+      // Mock the key creation endpoint
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/keys`, {
+          name: mockKeyName,
+          capability: { "*": ["*"] },
+        })
+        .reply(201, {
           id: mockKeyId,
           appId: mockAppId,
           name: mockKeyName,
           key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
-          capability: { '*': ['*'] },
+          capability: { "*": ["*"] },
           created: Date.now(),
           modified: Date.now(),
-          status: 'enabled',
-          revocable: true
-        };
+          status: "enabled",
+          revocable: true,
+        });
 
-        // Mock the key creation endpoint
-        nock('https://control.ably.net')
-          .post(`/v1/apps/${mockAppId}/keys`)
-          .reply(201, mockKey);
-      })
-      .command(['auth:keys:create', '--name', mockKeyName, '--app', mockAppId, '--json'])
-      .it('should output JSON format when --json flag is used', ctx => {
-        const result = JSON.parse(ctx.stdout);
-        expect(result).to.have.property('key');
-        expect(result.key).to.have.property('id', mockKeyId);
-        expect(result.key).to.have.property('name', mockKeyName);
-        expect(result.key).to.have.property('key');
-        expect(result).to.have.property('success', true);
-      });
+      const { stdout } = await runCommand(
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", mockAppId],
+        import.meta.url,
+      );
 
-    test
-      .stdout()
-      .do(() => {
-        const customToken = 'custom_access_token';
+      expect(stdout).toContain("Key created successfully");
+      expect(stdout).toContain(mockKeyName);
+      expect(stdout).toContain(mockKeyId);
+    });
 
-        // Mock the key creation endpoint with custom token
-        nock('https://control.ably.net', {
-          reqheaders: {
-            'authorization': `Bearer ${customToken}`
-          }
+    it("should create a key with custom capabilities", async () => {
+      // Mock the key creation endpoint with custom capabilities
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/keys`, {
+          name: mockKeyName,
+          capability: {
+            channel1: ["publish", "subscribe"],
+            channel2: ["history"],
+          },
         })
-          .post(`/v1/apps/${mockAppId}/keys`)
-          .reply(201, {
-            id: mockKeyId,
-            appId: mockAppId,
-            name: mockKeyName,
-            key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
-            capability: { '*': ['*'] },
-            created: Date.now(),
-            modified: Date.now(),
-            status: 'enabled',
-            revocable: true
-          });
+        .reply(201, {
+          id: mockKeyId,
+          appId: mockAppId,
+          name: mockKeyName,
+          key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
+          capability: {
+            channel1: ["publish", "subscribe"],
+            channel2: ["history"],
+          },
+          created: Date.now(),
+          modified: Date.now(),
+          status: "enabled",
+          revocable: true,
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "auth:keys:create",
+          "--name",
+          `"${mockKeyName}"`,
+          "--app",
+          mockAppId,
+          "--capabilities",
+          '{"channel1":["publish","subscribe"],"channel2":["history"]}',
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Key created successfully");
+      expect(stdout).toContain("channel1");
+      expect(stdout).toContain("publish");
+      expect(stdout).toContain("subscribe");
+    });
+
+    it("should output JSON format when --json flag is used", async () => {
+      const mockKey = {
+        id: mockKeyId,
+        appId: mockAppId,
+        name: mockKeyName,
+        key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
+        capability: { "*": ["*"] },
+        created: Date.now(),
+        modified: Date.now(),
+        status: "enabled",
+        revocable: true,
+      };
+
+      // Mock the key creation endpoint
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/keys`)
+        .reply(201, mockKey);
+
+      const { stdout } = await runCommand(
+        [
+          "auth:keys:create",
+          "--name",
+          `"${mockKeyName}"`,
+          "--app",
+          mockAppId,
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("key");
+      expect(result.key).toHaveProperty("id", mockKeyId);
+      expect(result.key).toHaveProperty("name", "TestKey");
+      expect(result.key).toHaveProperty("key");
+      expect(result).toHaveProperty("success", true);
+    });
+
+    it("should use custom access token when provided", async () => {
+      const customToken = "custom_access_token";
+
+      // Mock the key creation endpoint with custom token
+      nock("https://control.ably.net", {
+        reqheaders: {
+          authorization: `Bearer ${customToken}`,
+        },
       })
-      .command([
-        'auth:keys:create',
-        '--name', mockKeyName,
-        '--app', mockAppId,
-        '--access-token', 'custom_access_token'
-      ])
-      .it('should use custom access token when provided', ctx => {
-        expect(ctx.stdout).to.include('Key created successfully');
-      });
+        .post(`/v1/apps/${mockAppId}/keys`)
+        .reply(201, {
+          id: mockKeyId,
+          appId: mockAppId,
+          name: mockKeyName,
+          key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
+          capability: { "*": ["*"] },
+          created: Date.now(),
+          modified: Date.now(),
+          status: "enabled",
+          revocable: true,
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "auth:keys:create",
+          "--name",
+          `"${mockKeyName}"`,
+          "--app",
+          mockAppId,
+          "--access-token",
+          "custom_access_token",
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Key created successfully");
+    });
   });
 
-  describe('parameter validation', () => {
-    test
-      .command(['auth:keys:create', '--app', mockAppId])
-      .catch(error => {
-        expect(error.message).to.include('Missing required flag');
-        expect(error.message).to.include('name');
-      })
-      .it('should require name parameter');
+  describe("parameter validation", () => {
+    it("should require name parameter", async () => {
+      const { error } = await runCommand(
+        ["auth:keys:create", "--app", mockAppId],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/Missing required flag.*name/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
 
-    test
-      .env({ ABLY_ACCESS_TOKEN: mockAccessToken, ABLY_CLI_CONFIG_DIR: '/tmp/empty-config-dir-that-does-not-exist' }, { clear: true })
-      .command(['auth:keys:create', '--name', mockKeyName])
-      .catch(error => {
-        expect(error.message).to.include('No app specified');
-      })
-      .it('should require app parameter when no current app is set');
+    it("should require app parameter when no current app is set", async () => {
+      const { error } = await runCommand(
+        ["auth:keys:create", "--name", `"${mockKeyName}"`],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/No app specified/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
 
-    test
-      .do(() => {
-        // Mock the key creation endpoint with invalid capabilities
-        nock('https://control.ably.net')
-          .post(`/v1/apps/${mockAppId}/keys`)
-          .reply(400, {
-            error: 'Invalid capabilities format'
-          });
-      })
-      .command([
-        'auth:keys:create',
-        '--name', mockKeyName,
-        '--app', mockAppId,
-        '--capabilities', 'invalid-json'
-      ])
-      .catch(error => {
-        expect(error.message).to.include('Invalid capabilities');
-      })
-      .it('should handle invalid capabilities JSON');
+    it("should handle invalid capabilities JSON", async () => {
+      // Mock the key creation endpoint with invalid capabilities
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/keys`)
+        .reply(400, {
+          error: "Invalid capabilities format",
+        });
+
+      const { error } = await runCommand(
+        [
+          "auth:keys:create",
+          "--name",
+          `"${mockKeyName}"`,
+          "--app",
+          mockAppId,
+          "--capabilities",
+          "invalid-json",
+        ],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/Invalid capabilities/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
   });
 
-  describe('error handling', () => {
-    test
-      .do(() => {
-        // Mock authentication failure
-        nock('https://control.ably.net')
-          .post(`/v1/apps/${mockAppId}/keys`)
-          .reply(401, { error: 'Unauthorized' });
-      })
-      .command(['auth:keys:create', '--name', mockKeyName, '--app', mockAppId])
-      .catch(error => {
-        expect(error.message).to.include('401');
-      })
-      .it('should handle 401 authentication error');
+  describe("error handling", () => {
+    it("should handle 401 authentication error", async () => {
+      // Mock authentication failure
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/keys`)
+        .reply(401, { error: "Unauthorized" });
 
-    test
-      .do(() => {
-        // Mock forbidden response
-        nock('https://control.ably.net')
-          .post(`/v1/apps/${mockAppId}/keys`)
-          .reply(403, { error: 'Forbidden' });
-      })
-      .command(['auth:keys:create', '--name', mockKeyName, '--app', mockAppId])
-      .catch(error => {
-        expect(error.message).to.include('403');
-      })
-      .it('should handle 403 forbidden error');
+      const { error } = await runCommand(
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", mockAppId],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/401/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
 
-    test
-      .do(() => {
-        // Mock not found response (app doesn't exist)
-        nock('https://control.ably.net')
-          .post(`/v1/apps/${mockAppId}/keys`)
-          .reply(404, { error: 'App not found' });
-      })
-      .command(['auth:keys:create', '--name', mockKeyName, '--app', mockAppId])
-      .catch(error => {
-        expect(error.message).to.include('404');
-      })
-      .it('should handle 404 not found error');
+    it("should handle 403 forbidden error", async () => {
+      // Mock forbidden response
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/keys`)
+        .reply(403, { error: "Forbidden" });
 
-    test
-      .do(() => {
-        // Mock server error
-        nock('https://control.ably.net')
-          .post(`/v1/apps/${mockAppId}/keys`)
-          .reply(500, { error: 'Internal Server Error' });
-      })
-      .command(['auth:keys:create', '--name', mockKeyName, '--app', mockAppId])
-      .catch(error => {
-        expect(error.message).to.include('500');
-      })
-      .it('should handle 500 server error');
+      const { error } = await runCommand(
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", mockAppId],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/403/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
 
-    test
-      .do(() => {
-        // Mock network error
-        nock('https://control.ably.net')
-          .post(`/v1/apps/${mockAppId}/keys`)
-          .replyWithError('Network error');
-      })
-      .command(['auth:keys:create', '--name', mockKeyName, '--app', mockAppId])
-      .catch(error => {
-        expect(error.message).to.include('Network error');
-      })
-      .it('should handle network errors');
+    it("should handle 404 not found error", async () => {
+      // Mock not found response (app doesn't exist)
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/keys`)
+        .reply(404, { error: "App not found" });
 
-    test
-      .do(() => {
-        // Mock validation error
-        nock('https://control.ably.net')
-          .post(`/v1/apps/${mockAppId}/keys`)
-          .reply(400, {
-            error: 'Validation failed',
-            details: 'Key name already exists'
-          });
-      })
-      .command(['auth:keys:create', '--name', mockKeyName, '--app', mockAppId])
-      .catch(error => {
-        expect(error.message).to.include('400');
-      })
-      .it('should handle validation errors from API');
+      const { error } = await runCommand(
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", mockAppId],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/404/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
 
-    test
-      .do(() => {
-        // Mock rate limit error
-        nock('https://control.ably.net')
-          .post(`/v1/apps/${mockAppId}/keys`)
-          .reply(429, { error: 'Rate limit exceeded' });
-      })
-      .command(['auth:keys:create', '--name', mockKeyName, '--app', mockAppId])
-      .catch(error => {
-        expect(error.message).to.include('429');
-      })
-      .it('should handle rate limit errors');
+    it("should handle 500 server error", async () => {
+      // Mock server error
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/keys`)
+        .reply(500, { error: "Internal Server Error" });
+
+      const { error } = await runCommand(
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", mockAppId],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/500/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
+
+    it("should handle network errors", async () => {
+      // Mock network error
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/keys`)
+        .replyWithError("Network error");
+
+      const { error } = await runCommand(
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", mockAppId],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/Network error/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
+
+    it("should handle validation errors from API", async () => {
+      // Mock validation error
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/keys`)
+        .reply(400, {
+          error: "Validation failed",
+          details: "Key name already exists",
+        });
+
+      const { error } = await runCommand(
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", mockAppId],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/400/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
+
+    it("should handle rate limit errors", async () => {
+      // Mock rate limit error
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/keys`)
+        .reply(429, { error: "Rate limit exceeded" });
+
+      const { error } = await runCommand(
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", mockAppId],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/429/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
   });
 
-  describe('capability configurations', () => {
-    test
-      .stdout()
-      .do(() => {
-        // Mock the key creation endpoint with publish-only capabilities
-        nock('https://control.ably.net')
-          .post(`/v1/apps/${mockAppId}/keys`, {
-            name: mockKeyName,
-            capability: { 'channel:*': ['publish'] }
-          })
-          .reply(201, {
-            id: mockKeyId,
-            appId: mockAppId,
-            name: mockKeyName,
-            key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
-            capability: { 'channel:*': ['publish'] },
-            created: Date.now(),
-            modified: Date.now(),
-            status: 'enabled',
-            revocable: true
-          });
-      })
-      .command([
-        'auth:keys:create',
-        '--name', mockKeyName,
-        '--app', mockAppId,
-        '--capabilities', '{"channel:*":["publish"]}'
-      ])
-      .it('should create a publish-only key', ctx => {
-        expect(ctx.stdout).to.include('Key created successfully');
-        expect(ctx.stdout).to.include('publish');
-      });
+  describe("capability configurations", () => {
+    it("should create a publish-only key", async () => {
+      // Mock the key creation endpoint with publish-only capabilities
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/keys`, {
+          name: mockKeyName,
+          capability: { "channel:*": ["publish"] },
+        })
+        .reply(201, {
+          id: mockKeyId,
+          appId: mockAppId,
+          name: mockKeyName,
+          key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
+          capability: { "channel:*": ["publish"] },
+          created: Date.now(),
+          modified: Date.now(),
+          status: "enabled",
+          revocable: true,
+        });
 
-    test
-      .stdout()
-      .do(() => {
-        // Mock the key creation endpoint with subscribe-only capabilities
-        nock('https://control.ably.net')
-          .post(`/v1/apps/${mockAppId}/keys`, {
-            name: mockKeyName,
-            capability: { 'channel:chat-*': ['subscribe'], 'channel:updates': ['publish'] }
-          })
-          .reply(201, {
-            id: mockKeyId,
-            appId: mockAppId,
-            name: mockKeyName,
-            key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
-            capability: { 'channel:chat-*': ['subscribe'], 'channel:updates': ['publish'] },
-            created: Date.now(),
-            modified: Date.now(),
-            status: 'enabled',
-            revocable: true
-          });
-      })
-      .command([
-        'auth:keys:create',
-        '--name', mockKeyName,
-        '--app', mockAppId,
-        '--capabilities', '{"channel:chat-*":["subscribe"],"channel:updates":["publish"]}'
-      ])
-      .it('should create a key with mixed capabilities', ctx => {
-        expect(ctx.stdout).to.include('Key created successfully');
-        expect(ctx.stdout).to.include('chat-*');
-        expect(ctx.stdout).to.include('subscribe');
-        expect(ctx.stdout).to.include('updates');
-      });
+      const { stdout } = await runCommand(
+        [
+          "auth:keys:create",
+          "--name",
+          `"${mockKeyName}"`,
+          "--app",
+          mockAppId,
+          "--capabilities",
+          '{"channel:*":["publish"]}',
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Key created successfully");
+      expect(stdout).toContain("publish");
+    });
+
+    it("should create a key with mixed capabilities", async () => {
+      // Mock the key creation endpoint with subscribe-only capabilities
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/keys`, {
+          name: mockKeyName,
+          capability: {
+            "channel:chat-*": ["subscribe"],
+            "channel:updates": ["publish"],
+          },
+        })
+        .reply(201, {
+          id: mockKeyId,
+          appId: mockAppId,
+          name: mockKeyName,
+          key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
+          capability: {
+            "channel:chat-*": ["subscribe"],
+            "channel:updates": ["publish"],
+          },
+          created: Date.now(),
+          modified: Date.now(),
+          status: "enabled",
+          revocable: true,
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "auth:keys:create",
+          "--name",
+          `"${mockKeyName}"`,
+          "--app",
+          mockAppId,
+          "--capabilities",
+          '{"channel:chat-*":["subscribe"],"channel:updates":["publish"]}',
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Key created successfully");
+      expect(stdout).toContain("chat-*");
+      expect(stdout).toContain("subscribe");
+      expect(stdout).toContain("updates");
+    });
   });
 });

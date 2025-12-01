@@ -1,5 +1,4 @@
-import { expect } from "chai";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import ChannelsSubscribe from "../../../../src/commands/channels/subscribe.js";
 import * as Ably from "ably";
@@ -16,7 +15,7 @@ class TestableChannelsSubscribe extends ChannelsSubscribe {
     | null = null;
 
   // Spy on client creation attempt
-  public createAblyClientSpy = sinon.spy(super.createAblyRealtimeClient);
+  public createAblyClientSpy = vi.fn(super.createAblyRealtimeClient);
 
   // Override parse to simulate parse output
   public override async parse() {
@@ -50,24 +49,24 @@ class TestableChannelsSubscribe extends ChannelsSubscribe {
     // Initialize the mock client with basic structure
     const mockChannelInstance = {
       name: "mock-channel-from-create", // Add name for safety
-      subscribe: sinon.stub(),
-      attach: sinon.stub().resolves(),
-      on: sinon.stub(),
-      unsubscribe: sinon.stub(),
-      detach: sinon.stub().resolves(),
+      subscribe: vi.fn(),
+      attach: vi.fn().mockImplementation(async () => {}),
+      on: vi.fn(),
+      unsubscribe: vi.fn(),
+      detach: vi.fn().mockImplementation(async () => {}),
     };
     this.mockClient = {
       channels: {
-        get: sinon.stub().returns(mockChannelInstance),
-        release: sinon.stub(),
+        get: vi.fn().mockReturnValue(mockChannelInstance),
+        release: vi.fn(),
       },
       connection: {
-        once: sinon.stub(),
-        on: sinon.stub(),
-        close: sinon.stub(),
+        once: vi.fn(),
+        on: vi.fn(),
+        close: vi.fn(),
         state: "initialized",
       },
-      close: sinon.stub(),
+      close: vi.fn(),
     };
 
     return this.mockClient as unknown as Ably.Realtime;
@@ -138,36 +137,34 @@ class TestableChannelsSubscribe extends ChannelsSubscribe {
 }
 
 describe("ChannelsSubscribe (Simplified)", function () {
-  let sandbox: sinon.SinonSandbox;
   let command: TestableChannelsSubscribe;
   let mockConfig: Config;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    mockConfig = { runHook: sinon.stub() } as unknown as Config;
+    mockConfig = { runHook: vi.fn() } as unknown as Config;
     command = new TestableChannelsSubscribe([], mockConfig);
 
     // Setup mock client within beforeEach to ensure fresh state
     const mockChannelInstance = {
       name: "test-channel",
-      subscribe: sandbox.stub(),
-      attach: sandbox.stub().resolves(),
-      on: sandbox.stub(), // Handles channel state changes ('attached', 'failed', etc.)
-      unsubscribe: sandbox.stub(),
-      detach: sandbox.stub().resolves(),
+      subscribe: vi.fn(),
+      attach: vi.fn().mockImplementation(async () => {}),
+      on: vi.fn(), // Handles channel state changes ('attached', 'failed', etc.)
+      unsubscribe: vi.fn(),
+      detach: vi.fn().mockImplementation(async () => {}),
     };
     command.mockClient = {
       channels: {
-        get: sandbox.stub().returns(mockChannelInstance),
-        release: sandbox.stub(),
+        get: vi.fn().mockReturnValue(mockChannelInstance),
+        release: vi.fn(),
       },
       connection: {
-        once: sandbox.stub(), // Used for initial connection check
-        on: sandbox.stub(), // Used for continuous state monitoring
-        close: sandbox.stub(),
+        once: vi.fn(), // Used for initial connection check
+        on: vi.fn(), // Used for continuous state monitoring
+        close: vi.fn(),
         state: "initialized",
       },
-      close: sandbox.stub(),
+      close: vi.fn(),
     };
 
     // Set default parse result
@@ -179,16 +176,13 @@ describe("ChannelsSubscribe (Simplified)", function () {
 
     // IMPORTANT: Stub createAblyRealtimeClient directly on the instance IN beforeEach
     // This ensures the command uses OUR mockClient setup here.
-    sandbox
-      .stub(
-        command,
-        "createAblyRealtimeClient" as keyof TestableChannelsSubscribe,
-      )
-      .resolves(command.mockClient as unknown as Ably.Realtime);
+    vi.spyOn(command, "createAblyRealtimeClient").mockResolvedValue(
+      command.mockClient as unknown as Ably.Realtime,
+    );
   });
 
   afterEach(function () {
-    sandbox.restore();
+    vi.restoreAllMocks();
   });
 
   // Helper function to manage test run with timeout/abort
@@ -197,13 +191,14 @@ describe("ChannelsSubscribe (Simplified)", function () {
     const originalListeners = process.listeners("SIGINT");
 
     // Set up connection simulation
-    command.mockClient.connection.once.callsFake(
+    command.mockClient.connection.once.mockImplementation(
       (event: string, callback: () => void) => {
         if (event === "connected") {
           setTimeout(() => {
             command.mockClient.connection.state = "connected";
-            if (command.mockClient.connection.on.called) {
-              const onConnectionArgs = command.mockClient.connection.on.args[0];
+            if (command.mockClient.connection.on.mock.calls.length > 0) {
+              const onConnectionArgs =
+                command.mockClient.connection.on.mock.calls[0];
               if (
                 onConnectionArgs &&
                 typeof onConnectionArgs[0] === "function"
@@ -225,13 +220,13 @@ describe("ChannelsSubscribe (Simplified)", function () {
 
     // Simulate channel attach after connection
     const originalGet = command.mockClient.channels.get;
-    command.mockClient.channels.get = sandbox
-      .stub()
-      .callsFake((name, options) => {
+    command.mockClient.channels.get = vi
+      .fn()
+      .mockImplementation((name, options) => {
         const channelMock = originalGet(name, options);
         if (channelMock && channelMock.on) {
           setTimeout(() => {
-            const onAttachArgs = channelMock.on.args.find(
+            const onAttachArgs = channelMock.on.mock.calls.find(
               (args: any[]) => args[0] === "attached",
             );
             if (onAttachArgs && typeof onAttachArgs[1] === "function") {
@@ -267,19 +262,22 @@ describe("ChannelsSubscribe (Simplified)", function () {
   }
 
   it("should attempt to create an Ably client", async function () {
-    const createClientStub =
-      command.createAblyRealtimeClient as sinon.SinonStub;
+    const createClientStub = command.createAblyRealtimeClient as ReturnType<
+      typeof vi.fn
+    >;
     await runCommandAndSimulateLifecycle();
-    expect(createClientStub.calledOnce).to.be.true;
+    expect(createClientStub).toHaveBeenCalledOnce();
   });
 
   it("should attempt to get and subscribe to a single channel", async function () {
     const channelMock = command.mockClient.channels.get();
     await runCommandAndSimulateLifecycle();
-    expect(command.mockClient.channels.get.calledOnceWith("test-channel")).to.be
-      .true;
+    expect(command.mockClient.channels.get).toHaveBeenCalledWith(
+      "test-channel",
+      {},
+    );
     // Check subscribe was called *at least* once after attach simulation
-    expect(channelMock.subscribe.called).to.be.true; // Changed from calledOnce
+    expect(channelMock.subscribe).toHaveBeenCalled();
   });
 
   it("should attempt to get and subscribe to multiple channels", async function () {
@@ -294,28 +292,28 @@ describe("ChannelsSubscribe (Simplified)", function () {
     channelsToTest.forEach((name) => {
       channelMocks[name] = {
         name: name,
-        subscribe: sandbox.stub(),
-        attach: sandbox.stub().resolves(),
-        on: sandbox.stub(),
-        unsubscribe: sandbox.stub(),
-        detach: sandbox.stub().resolves(),
+        subscribe: vi.fn(),
+        attach: vi.fn().mockImplementation(async () => {}),
+        on: vi.fn(),
+        unsubscribe: vi.fn(),
+        detach: vi.fn().mockImplementation(async () => {}),
       };
     });
 
     // Use the original mock client's get stub setup in beforeEach, but make it return our specific mocks
-    (command.mockClient.channels.get as sinon.SinonStub).callsFake(
-      (name: string) => channelMocks[name],
-    );
+    (
+      command.mockClient.channels.get as ReturnType<typeof vi.fn>
+    ).mockImplementation((name: string) => channelMocks[name]);
 
     await runCommandAndSimulateLifecycle(200);
 
     // Verify get was called for each channel
-    expect(command.mockClient.channels.get.callCount).to.equal(
+    expect(command.mockClient.channels.get).toHaveBeenCalledTimes(
       channelsToTest.length,
     );
     channelsToTest.forEach((name) => {
-      expect(command.mockClient.channels.get.calledWith(name)).to.be.true;
-      expect(channelMocks[name].subscribe.called).to.be.true; // Changed from calledOnce
+      expect(command.mockClient.channels.get).toHaveBeenCalledWith(name, {});
+      expect(channelMocks[name].subscribe).toHaveBeenCalled();
     });
   });
 
@@ -329,21 +327,23 @@ describe("ChannelsSubscribe (Simplified)", function () {
 
     const channelMock = {
       name: channelName,
-      subscribe: sandbox.stub(),
-      attach: sandbox.stub().resolves(),
-      on: sandbox.stub(),
-      unsubscribe: sandbox.stub(),
-      detach: sandbox.stub().resolves(),
+      subscribe: vi.fn(),
+      attach: vi.fn().mockImplementation(async () => {}),
+      on: vi.fn(),
+      unsubscribe: vi.fn(),
+      detach: vi.fn().mockImplementation(async () => {}),
     };
-    (command.mockClient.channels.get as sinon.SinonStub).returns(channelMock);
+    (
+      command.mockClient.channels.get as ReturnType<typeof vi.fn>
+    ).mockReturnValue(channelMock);
 
     await runCommandAndSimulateLifecycle();
 
-    expect(command.mockClient.channels.get.calledOnce).to.be.true;
-    const getCall = command.mockClient.channels.get.getCall(0);
-    expect(getCall.args[0]).to.equal(channelName);
-    expect(getCall.args[1]).to.deep.include({ params: { rewind: "5" } });
-    expect(channelMock.subscribe.called).to.be.true; // Changed from calledOnce
+    expect(command.mockClient.channels.get).toHaveBeenCalledOnce();
+    const getCall = command.mockClient.channels.get.mock.calls[0];
+    expect(getCall[0]).toBe(channelName);
+    expect(getCall[1]).toMatchObject({ params: { rewind: "5" } });
+    expect(channelMock.subscribe).toHaveBeenCalled();
   });
 
   it("should throw error if no channel names provided", async function () {
@@ -358,10 +358,11 @@ describe("ChannelsSubscribe (Simplified)", function () {
       await command.run();
       expect.fail("Command should have thrown an error for missing channels");
     } catch {
-      // Check the error message stored by the overridden error method
-      expect(command.errorOutput).to.contain(
-        "At least one channel name is required",
-      );
+      // Catch block intentionally empty - error is expected
     }
+    // Check the error message stored by the overridden error method
+    expect(command.errorOutput).toContain(
+      "At least one channel name is required",
+    );
   });
 });

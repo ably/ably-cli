@@ -1,5 +1,4 @@
-import { expect } from "chai";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -8,12 +7,10 @@ import _AccountsLogin from "../../../src/commands/accounts/login.js";
 import _AccountsLogout from "../../../src/commands/accounts/logout.js";
 
 describe("Authentication Flow Integration", function () {
-  let sandbox: sinon.SinonSandbox;
   let originalEnv: NodeJS.ProcessEnv;
   let tempConfigDir: string;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
     originalEnv = { ...process.env };
 
     // Create a unique temporary directory for each test
@@ -31,7 +28,6 @@ describe("Authentication Flow Integration", function () {
   });
 
   afterEach(function () {
-    sandbox.restore();
     process.env = originalEnv;
 
     // Clean up temporary directory
@@ -47,7 +43,7 @@ describe("Authentication Flow Integration", function () {
 
       // Test initial state - no accounts
       const initialAccounts = configManager.listAccounts();
-      expect(initialAccounts).to.have.length(0);
+      expect(initialAccounts).toHaveLength(0);
 
       // Simulate login by storing account directly
       configManager.storeAccount("test-access-token", "test-account", {
@@ -59,20 +55,20 @@ describe("Authentication Flow Integration", function () {
 
       // Verify account was stored
       const accountsAfterLogin = configManager.listAccounts();
-      expect(accountsAfterLogin).to.have.length(1);
-      expect(accountsAfterLogin[0].alias).to.equal("test-account");
+      expect(accountsAfterLogin).toHaveLength(1);
+      expect(accountsAfterLogin[0].alias).toBe("test-account");
 
       // Verify current account is set
-      expect(configManager.getCurrentAccountAlias()).to.equal("test-account");
+      expect(configManager.getCurrentAccountAlias()).toBe("test-account");
 
       // Simulate logout by removing account
       const logoutSuccess = configManager.removeAccount("test-account");
-      expect(logoutSuccess).to.be.true;
+      expect(logoutSuccess).toBe(true);
 
       // Verify account was removed
       const accountsAfterLogout = configManager.listAccounts();
-      expect(accountsAfterLogout).to.have.length(0);
-      expect(configManager.getCurrentAccountAlias()).to.be.undefined;
+      expect(accountsAfterLogout).toHaveLength(0);
+      expect(configManager.getCurrentAccountAlias()).toBeUndefined();
     });
 
     it("should handle multiple accounts", function () {
@@ -91,39 +87,39 @@ describe("Authentication Flow Integration", function () {
 
       // Verify both accounts exist
       const accounts = configManager.listAccounts();
-      expect(accounts).to.have.length(2);
+      expect(accounts).toHaveLength(2);
 
       // Verify both accounts are present by alias
       const aliases = accounts.map((a) => a.alias);
-      expect(aliases).to.include("account1");
-      expect(aliases).to.include("account2");
+      expect(aliases).toContain("account1");
+      expect(aliases).toContain("account2");
 
       // Current should be set (could be either one based on implementation)
       const currentBeforeSwitch = configManager.getCurrentAccountAlias();
-      expect(currentBeforeSwitch).to.be.oneOf(["account1", "account2"]);
+      expect(["account1", "account2"]).toContain(currentBeforeSwitch);
 
       // Switch to account1 specifically
       const switchSuccess = configManager.switchAccount("account1");
-      expect(switchSuccess).to.be.true;
-      expect(configManager.getCurrentAccountAlias()).to.equal("account1");
+      expect(switchSuccess).toBe(true);
+      expect(configManager.getCurrentAccountAlias()).toBe("account1");
 
       // Remove account1
       const removeSuccess = configManager.removeAccount("account1");
-      expect(removeSuccess).to.be.true;
+      expect(removeSuccess).toBe(true);
 
       // Should still have one account left
       const remainingAccounts = configManager.listAccounts();
-      expect(remainingAccounts).to.have.length(1);
+      expect(remainingAccounts).toHaveLength(1);
 
       // The remaining account should be account2
       const remainingAccount = remainingAccounts[0];
-      expect(remainingAccount.alias).to.equal("account2");
-      expect(remainingAccount.account.accountId).to.equal("acc_2");
+      expect(remainingAccount.alias).toBe("account2");
+      expect(remainingAccount.account.accountId).toBe("acc_2");
 
       // After removing the current account, current should be cleared
       // (this is the expected behavior based on ConfigManager implementation)
       const currentAfterRemoval = configManager.getCurrentAccountAlias();
-      expect(currentAfterRemoval).to.be.undefined;
+      expect(currentAfterRemoval).toBeUndefined();
     });
   });
 
@@ -150,17 +146,15 @@ describe("Authentication Flow Integration", function () {
 
       // Verify data persisted
       const accounts = configManager2.listAccounts();
-      expect(accounts).to.have.length(1);
-      expect(accounts[0].alias).to.equal("persistent-account");
+      expect(accounts).toHaveLength(1);
+      expect(accounts[0].alias).toBe("persistent-account");
 
-      expect(configManager2.getCurrentAccountAlias()).to.equal(
+      expect(configManager2.getCurrentAccountAlias()).toBe(
         "persistent-account",
       );
-      expect(configManager2.getCurrentAppId()).to.equal("test-app");
-      expect(configManager2.getApiKey("test-app")).to.equal(
-        "test-app.key:secret",
-      );
-      expect(configManager2.getAppName("test-app")).to.equal("Test App");
+      expect(configManager2.getCurrentAppId()).toBe("test-app");
+      expect(configManager2.getApiKey("test-app")).toBe("test-app.key:secret");
+      expect(configManager2.getAppName("test-app")).toBe("Test App");
     });
 
     it("should handle config file corruption gracefully", function () {
@@ -174,7 +168,7 @@ describe("Authentication Flow Integration", function () {
 
       // Verify config file exists
       const configPath = path.join(tempConfigDir, "config");
-      expect(fs.existsSync(configPath)).to.be.true;
+      expect(fs.existsSync(configPath)).toBe(true);
 
       // Corrupt the config file
       fs.writeFileSync(configPath, "invalid toml content [[[");
@@ -183,7 +177,7 @@ describe("Authentication Flow Integration", function () {
       // This is the actual behavior - it doesn't silently handle corruption
       expect(() => {
         new ConfigManager();
-      }).to.throw(/Failed to load Ably config/);
+      }).toThrow(/Failed to load Ably config/);
     });
   });
 
@@ -207,12 +201,12 @@ describe("Authentication Flow Integration", function () {
 
       // Environment variables should take precedence
       // Note: This tests the expected behavior when BaseCommand uses these
-      expect(process.env.ABLY_API_KEY).to.equal("env-app.env-key:env-secret");
-      expect(process.env.ABLY_ACCESS_TOKEN).to.equal("env-access-token");
+      expect(process.env.ABLY_API_KEY).toBe("env-app.env-key:env-secret");
+      expect(process.env.ABLY_ACCESS_TOKEN).toBe("env-access-token");
 
       // Config values should still be accessible
-      expect(configManager.getCurrentAccountAlias()).to.equal("config-account");
-      expect(configManager.getApiKey("config-app")).to.equal(
+      expect(configManager.getCurrentAccountAlias()).toBe("config-account");
+      expect(configManager.getApiKey("config-app")).toBe(
         "config-app.key:config-secret",
       );
     });
@@ -222,12 +216,12 @@ describe("Authentication Flow Integration", function () {
     it("should create config directory if it doesn't exist", function () {
       // Remove the temp directory to simulate first run
       fs.rmSync(tempConfigDir, { recursive: true, force: true });
-      expect(fs.existsSync(tempConfigDir)).to.be.false;
+      expect(fs.existsSync(tempConfigDir)).toBe(false);
 
       // Creating ConfigManager should recreate directory
       const configManager = new ConfigManager();
 
-      expect(fs.existsSync(tempConfigDir)).to.be.true;
+      expect(fs.existsSync(tempConfigDir)).toBe(true);
 
       // Should be able to store config
       configManager.storeAccount("test-token", "test-account", {
@@ -236,7 +230,7 @@ describe("Authentication Flow Integration", function () {
       });
 
       const accounts = configManager.listAccounts();
-      expect(accounts).to.have.length(1);
+      expect(accounts).toHaveLength(1);
     });
 
     it("should handle permissions issues gracefully", function () {
@@ -247,7 +241,7 @@ describe("Authentication Flow Integration", function () {
       // Should be able to create and use config
       expect(() => {
         configManager.storeAccount("test", "test", { accountId: "test" });
-      }).to.not.throw();
+      }).not.toThrow();
     });
   });
 
@@ -262,10 +256,10 @@ describe("Authentication Flow Integration", function () {
 
       // Try to switch to non-existent account
       const switchResult = configManager.switchAccount("non-existent");
-      expect(switchResult).to.be.false;
+      expect(switchResult).toBe(false);
 
       // Current account should remain unchanged
-      expect(configManager.getCurrentAccountAlias()).to.equal("existing");
+      expect(configManager.getCurrentAccountAlias()).toBe("existing");
     });
 
     it("should handle removing non-existent account", function () {
@@ -273,7 +267,7 @@ describe("Authentication Flow Integration", function () {
 
       // Try to remove account that doesn't exist
       const removeResult = configManager.removeAccount("non-existent");
-      expect(removeResult).to.be.false;
+      expect(removeResult).toBe(false);
     });
 
     it("should handle duplicate account aliases", function () {
@@ -291,8 +285,8 @@ describe("Authentication Flow Integration", function () {
       });
 
       const accounts = configManager.listAccounts();
-      expect(accounts).to.have.length(1);
-      expect(accounts[0].account.accountId).to.equal("acc_2");
+      expect(accounts).toHaveLength(1);
+      expect(accounts[0].account.accountId).toBe("acc_2");
     });
   });
 
@@ -318,14 +312,14 @@ describe("Authentication Flow Integration", function () {
       });
 
       // Verify keys are stored
-      expect(configManager.getApiKey("app1")).to.equal("app1.key1:secret1");
-      expect(configManager.getApiKey("app2")).to.equal("app2.key2:secret2");
-      expect(configManager.getAppName("app1")).to.equal("App 1");
-      expect(configManager.getAppName("app2")).to.equal("App 2");
+      expect(configManager.getApiKey("app1")).toBe("app1.key1:secret1");
+      expect(configManager.getApiKey("app2")).toBe("app2.key2:secret2");
+      expect(configManager.getAppName("app1")).toBe("App 1");
+      expect(configManager.getAppName("app2")).toBe("App 2");
 
       // Set current app
       configManager.setCurrentApp("app1");
-      expect(configManager.getCurrentAppId()).to.equal("app1");
+      expect(configManager.getCurrentAppId()).toBe("app1");
     });
 
     it("should isolate app keys between accounts", function () {
@@ -358,18 +352,18 @@ describe("Authentication Flow Integration", function () {
 
       // Switch between accounts and verify isolation
       configManager.switchAccount("account1");
-      expect(configManager.getApiKey("shared-app")).to.equal(
+      expect(configManager.getApiKey("shared-app")).toBe(
         "shared-app.key1:secret1",
       );
-      expect(configManager.getAppName("shared-app")).to.equal(
+      expect(configManager.getAppName("shared-app")).toBe(
         "Shared App Account 1",
       );
 
       configManager.switchAccount("account2");
-      expect(configManager.getApiKey("shared-app")).to.equal(
+      expect(configManager.getApiKey("shared-app")).toBe(
         "shared-app.key2:secret2",
       );
-      expect(configManager.getAppName("shared-app")).to.equal(
+      expect(configManager.getAppName("shared-app")).toBe(
         "Shared App Account 2",
       );
     });

@@ -1,5 +1,5 @@
-import { expect } from "chai";
-import { execa } from "execa";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { runCommand } from "@oclif/test";
 import fs from "fs-extra";
 import os from "node:os";
 import path from "node:path";
@@ -8,48 +8,42 @@ import path from "node:path";
 const getTestConfigDir = () =>
   path.join(os.tmpdir(), `ably-cli-test-${Date.now()}`);
 
-// Options for execa to prevent Node debugger attachment/output and manage config dir
-const createExecaOptions = (configDir: string) => ({
-  env: {
-    NODE_OPTIONS: "", // Clear NODE_OPTIONS to prevent debugger attachment
-    ABLY_CLI_CONFIG_DIR: configDir, // Use a temporary directory for config
-  },
-  reject: false, // Don't reject promise on non-zero exit code
-});
-
 describe("Help commands integration", function () {
   let configDir: string;
-  let execaOptions: ReturnType<typeof createExecaOptions>;
+  let originalConfigDir: string;
 
   beforeEach(function () {
     // Create a temporary directory for config for each test
     configDir = getTestConfigDir();
     fs.ensureDirSync(configDir);
-    execaOptions = createExecaOptions(configDir);
+
+    // Store and set config directory
+    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
+    process.env.ABLY_CLI_CONFIG_DIR = configDir;
   });
 
   afterEach(function () {
+    // Restore original config directory
+    if (originalConfigDir) {
+      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
+    } else {
+      delete process.env.ABLY_CLI_CONFIG_DIR;
+    }
+
     // Clean up the temporary config directory
     fs.removeSync(configDir);
   });
 
   describe("root help command", function () {
     it("should show all high-level topics", async function () {
-      const result = await execa(
-        "node",
-        ["bin/run.js", "--help"],
-        execaOptions,
-      );
-      expect(result.failed, `Help command stderr: ${result.stderr}`).to.be
-        .false;
-      // Allow warnings in stderr (e.g., version mismatch warnings)
-      if (result.stderr && !result.stderr.includes("Warning:")) {
-        expect(result.stderr).to.be.empty;
-      }
-      expect(result.stdout).to.include("USAGE");
+      const { stdout, stderr } = await runCommand(["--help"], import.meta.url);
+
+      // Allow warnings in stderr (e.g., version mismatch warnings), otherwise should be empty
+      expect(!stderr || stderr.includes("Warning:")).toBe(true);
+      expect(stdout).toContain("USAGE");
       // Check for some core topics
-      expect(result.stdout).to.include("ably.com CLI for Pub/Sub");
-      expect(result.stdout).to.include("COMMANDS");
+      expect(stdout).toContain("ably.com CLI for Pub/Sub");
+      expect(stdout).toContain("COMMANDS");
     });
   });
 });

@@ -1,4 +1,12 @@
-import { expect } from "chai";
+import {
+  describe,
+  it,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+  expect,
+} from "vitest";
 import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
@@ -7,40 +15,46 @@ import {
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
-  displayTestFailureDebugOutput,
+  setupTestFailureHandler,
+  resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
 
-describe("Channel History E2E Tests", function () {
+describe("Channel History E2E Tests", () => {
   // Skip all tests if API key not available
-  before(function () {
+  beforeAll(() => {
     if (SHOULD_SKIP_E2E) {
-      this.skip();
+      return;
     }
     process.on("SIGINT", forceExit);
   });
 
-  after(function () {
+  afterAll(() => {
     process.removeListener("SIGINT", forceExit);
   });
 
-  beforeEach(function () {
-    this.timeout(120000); // 2 minutes per individual test
+  beforeEach(() => {
+    resetTestTracking();
     // Clear tracked commands and output files before each test
     testOutputFiles.clear();
     testCommands.length = 0;
   });
 
-  afterEach(async function () {
-    // Display debug output if test failed
-    if (this.currentTest?.state === "failed") {
-      await displayTestFailureDebugOutput(this.currentTest?.title);
-    }
+  afterEach(async () => {
     await cleanupTrackedResources();
   });
 
   // Test history functionality - publish messages with CLI then retrieve history
-  it("should publish messages and retrieve history with CLI", async function () {
+  it("should publish messages and retrieve history with CLI", async () => {
+    setupTestFailureHandler(
+      "should publish messages and retrieve history with CLI",
+    );
+
+    // Skip if E2E tests should be skipped
+    if (SHOULD_SKIP_E2E) {
+      return;
+    }
+
     // Verify API key is available
     if (!E2E_API_KEY) {
       throw new Error("E2E_API_KEY is not available for testing");
@@ -72,10 +86,7 @@ describe("Channel History E2E Tests", function () {
         },
       );
 
-      expect(publishResult.exitCode).to.equal(
-        0,
-        `Publish command failed. Exit code: ${publishResult.exitCode}, stderr: ${publishResult.stderr}, stdout: ${publishResult.stdout}`,
-      );
+      expect(publishResult.exitCode).toBe(0);
 
       // Check if publish stdout is empty and provide diagnostic info
       if (!publishResult.stdout || publishResult.stdout.trim() === "") {
@@ -84,9 +95,8 @@ describe("Channel History E2E Tests", function () {
         );
       }
 
-      expect(publishResult.stdout).to.contain(
+      expect(publishResult.stdout).toContain(
         `Message published successfully to channel "${historyChannel}"`,
-        `Expected success message in publish output: "${publishResult.stdout}"`,
       );
     }
 
@@ -102,10 +112,7 @@ describe("Channel History E2E Tests", function () {
       },
     );
 
-    expect(historyResult.exitCode).to.equal(
-      0,
-      `History command failed. Exit code: ${historyResult.exitCode}, stderr: ${historyResult.stderr}, stdout: ${historyResult.stdout}`,
-    );
+    expect(historyResult.exitCode).toBe(0);
 
     // Check if stdout is empty and provide diagnostic info
     if (!historyResult.stdout || historyResult.stdout.trim() === "") {
@@ -116,10 +123,7 @@ describe("Channel History E2E Tests", function () {
 
     // Verify all messages are in the history
     for (const message of testMessages) {
-      expect(historyResult.stdout).to.contain(
-        message,
-        `Expected to find "${message}" in history output: "${historyResult.stdout}"`,
-      );
+      expect(historyResult.stdout).toContain(message);
     }
   });
 });

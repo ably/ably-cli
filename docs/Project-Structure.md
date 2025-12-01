@@ -22,10 +22,8 @@ This document outlines the directory structure of the Ably CLI project.
 ├── packages/               # Internal packages used by the project.
 │   └── react-web-cli/      # React component for the web-based CLI.
 ├── scripts/                # Utility scripts for development and deployment.
-│   ├── lint-test-paths.sh  # Script to validate test file paths.
 │   ├── postinstall-welcome.ts # Post-installation welcome message.
-│   ├── pre-push-validation.sh # Pre-push validation checks.
-│   └── run-tests.sh        # Test runner script.
+│   └── pre-push-validation.sh # Pre-push validation checks.
 ├── src/                    # Source code for the CLI.
 │   ├── base-command.ts     # Base class for all CLI commands, containing common logic.
 │   ├── chat-base-command.ts # Base class specific to Ably Chat commands.
@@ -88,7 +86,6 @@ This document outlines the directory structure of the Ably CLI project.
 ├── .eslintignore           # Files/patterns ignored by ESLint.
 ├── .eslintrc.js            # ESLint configuration file.
 ├── .gitignore              # Files/patterns ignored by Git.
-├── .mocharc.json           # Mocha test runner configuration.
 ├── .prettierrc.json        # Prettier code formatter configuration.
 ├── CHANGELOG.md            # Log of changes across versions.
 ├── README.md               # Main project README file.
@@ -97,3 +94,4 @@ This document outlines the directory structure of the Ably CLI project.
 ├── pnpm-lock.yaml          # pnpm lock file for deterministic installs.
 ├── pnpm-workspace.yaml     # Defines the pnpm workspace configuration.
 └── tsconfig.json           # Main TypeScript configuration file.
+└── vitest.config.ts        # Config for vitest

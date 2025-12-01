@@ -1,18 +1,6 @@
-import { expect } from "chai";
-import { describe, it } from "mocha";
-import sinon from "sinon";
+import { describe, it, expect, vi } from "vitest";
 
 describe("Status Command Tests", function () {
-  let sandbox: sinon.SinonSandbox;
-
-  beforeEach(function () {
-    sandbox = sinon.createSandbox();
-  });
-
-  afterEach(function () {
-    sandbox.restore();
-  });
-
   describe("Status Command Structure", function () {
     it("should be a root-level command", function () {
       // Mock config to verify status is at root
@@ -29,10 +17,10 @@ describe("Status Command Tests", function () {
       } as any;
 
       // Status should exist at root
-      expect(mockConfig.findCommand("status")).to.not.be.null;
+      expect(mockConfig.findCommand("status")).not.toBeNull();
 
       // help:status should not exist
-      expect(mockConfig.findCommand("help:status")).to.be.null;
+      expect(mockConfig.findCommand("help:status")).toBeNull();
     });
 
     it("should have --open flag", function () {
@@ -48,8 +36,8 @@ describe("Status Command Tests", function () {
         },
       };
 
-      expect(mockStatusCommand.flags).to.have.property("open");
-      expect(mockStatusCommand.flags.open.type).to.equal("boolean");
+      expect(mockStatusCommand.flags).toHaveProperty("open");
+      expect(mockStatusCommand.flags.open.type).toBe("boolean");
     });
 
     it("should have correct description", function () {
@@ -58,57 +46,47 @@ describe("Status Command Tests", function () {
         description: "Check the status of Ably services",
       };
 
-      expect(mockCommand.description).to.include("status");
-      expect(mockCommand.description).to.include("Ably services");
+      expect(mockCommand.description).toContain("status");
+      expect(mockCommand.description).toContain("Ably services");
     });
   });
 
   describe("Interactive Mode Compatibility", function () {
     it("should not use ora spinner in interactive mode", function () {
       // This test verifies the fix for the UI clearing issue
-      const isInteractive = true; // Simulating interactive mode
+      // Simulating interactive mode
 
       // Mock ora usage
-      const mockOra = sandbox.stub();
+      const mockOra = vi.fn();
 
-      if (isInteractive) {
-        // In interactive mode, ora should not be used
-        expect(mockOra.called).to.be.false;
-      } else {
-        // In non-interactive mode, ora can be used
-        mockOra("Checking status...");
-        expect(mockOra.called).to.be.true;
-      }
+      // In interactive mode, ora should not be used
+      expect(mockOra).not.toHaveBeenCalled();
     });
 
     it("should use console.log for status messages in interactive mode", function () {
-      const consoleLogStub = sandbox.stub(console, "log");
-      const isInteractive = true;
+      const consoleLogStub = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => {});
 
-      if (isInteractive) {
-        console.log("Checking Ably service status...");
-        expect(consoleLogStub.calledWith("Checking Ably service status...")).to
-          .be.true;
-      }
+      console.log("Checking Ably service status...");
+      expect(consoleLogStub).toHaveBeenCalledWith(
+        "Checking Ably service status...",
+      );
     });
   });
 
   describe("Status Page URL", function () {
     it("should have correct status page URL", function () {
       const STATUS_PAGE_URL = "https://status.ably.com";
-      expect(STATUS_PAGE_URL).to.equal("https://status.ably.com");
+      expect(STATUS_PAGE_URL).toBe("https://status.ably.com");
     });
 
     it("should open browser when --open flag is used", async function () {
-      const openStub = sandbox.stub();
+      const openStub = vi.fn();
 
       // Simulate command with --open flag
-      const flags = { open: true };
-
-      if (flags.open) {
-        await openStub("https://status.ably.com");
-        expect(openStub.calledWith("https://status.ably.com")).to.be.true;
-      }
+      await openStub("https://status.ably.com");
+      expect(openStub).toHaveBeenCalledWith("https://status.ably.com");
     });
   });
 });

@@ -4,6 +4,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
+import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class SpacesLocksAcquire extends SpacesBaseCommand {
   static override args = {
@@ -238,137 +239,8 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
         "holding",
         `Holding lock ${lockId}. Press Ctrl+C to release.`,
       );
-      // Keep the process running until interrupted
-      await new Promise<void>((resolve, _reject) => {
-        const cleanup = async () => {
-          if (this.cleanupInProgress) return;
-          this.cleanupInProgress = true;
-          this.logCliEvent(
-            flags,
-            "lock",
-            "cleanupInitiated",
-            "Cleanup initiated (Ctrl+C pressed)",
-          );
-
-          if (!this.shouldOutputJson(flags)) {
-            this.log(
-              `\n${chalk.yellow("Releasing lock and closing connection...")}`,
-            );
-          }
-
-          // Set a force exit timeout
-          const forceExitTimeout = setTimeout(() => {
-            const errorMsg = "Force exiting after timeout during cleanup";
-            this.logCliEvent(flags, "lock", "forceExit", errorMsg, {
-              lockId,
-              spaceName,
-            });
-            if (!this.shouldOutputJson(flags)) {
-              this.log(chalk.red("Force exiting after timeout..."));
-            }
-
-            this.exit(1); // Use oclif's exit method instead of process.exit
-          }, 5000);
-
-          try {
-            if (this.space) {
-              try {
-                // Release the lock
-                this.logCliEvent(
-                  flags,
-                  "lock",
-                  "releasing",
-                  `Releasing lock ${lockId}`,
-                );
-                await this.space.locks.release(lockId!);
-                this.logCliEvent(
-                  flags,
-                  "lock",
-                  "released",
-                  `Successfully released lock ${lockId}`,
-                );
-                if (!this.shouldOutputJson(flags)) {
-                  this.log(chalk.green("Successfully released lock."));
-                }
-
-                // Leave the space
-                this.logCliEvent(
-                  flags,
-                  "spaces",
-                  "leaving",
-                  "Leaving space...",
-                );
-                await this.space.leave();
-                this.logCliEvent(
-                  flags,
-                  "spaces",
-                  "left",
-                  "Successfully left space",
-                );
-                if (!this.shouldOutputJson(flags)) {
-                  this.log(chalk.green("Successfully left the space."));
-                }
-              } catch (error) {
-                const errorMsg = `Error during lock release/leave: ${error instanceof Error ? error.message : String(error)}`;
-                this.logCliEvent(
-                  flags,
-                  "lock",
-                  "cleanupReleaseError",
-                  errorMsg,
-                  { error: errorMsg },
-                );
-                if (!this.shouldOutputJson(flags)) {
-                  this.log(`Error during cleanup: ${errorMsg}`);
-                }
-              }
-            }
-
-            if (
-              this.realtimeClient &&
-              this.realtimeClient.connection.state !== "closed"
-            ) {
-              this.logCliEvent(
-                flags,
-                "connection",
-                "closing",
-                "Closing Realtime connection",
-              );
-              this.realtimeClient.close();
-              this.logCliEvent(
-                flags,
-                "connection",
-                "closed",
-                "Realtime connection closed",
-              );
-            }
-
-            this.logCliEvent(
-              flags,
-              "lock",
-              "cleanupComplete",
-              "Cleanup complete",
-            );
-            if (!this.shouldOutputJson(flags)) {
-              this.log(chalk.green("Successfully disconnected."));
-            }
-
-            clearTimeout(forceExitTimeout);
-            resolve();
-            // The command will naturally end after the promise resolves
-          } catch (error) {
-            const errorMsg = `Error during cleanup: ${error instanceof Error ? error.message : String(error)}`;
-            this.logCliEvent(flags, "lock", "cleanupError", errorMsg, {
-              error: errorMsg,
-            });
-            if (!this.shouldOutputJson(flags)) {
-              this.log(`Error during cleanup: ${errorMsg}`);
-            }
-          }
-        };
-
-        process.on("SIGINT", cleanup);
-        process.on("SIGTERM", cleanup);
-      });
+      // Decide how long to remain connected
+      await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error) {
       this.error(error instanceof Error ? error.message : String(error));
     }

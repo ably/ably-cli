@@ -10,6 +10,8 @@ import { ControlApi } from "./services/control-api.js";
 import { InteractiveHelper } from "./services/interactive-helper.js";
 import { BaseFlags, CommandConfig, ErrorDetails } from "./types/cli.js";
 import { getCliVersion } from "./utils/version.js";
+import Spaces from "@ably/spaces";
+import { ChatClient } from "@ably/chat";
 
 // Export BaseFlags for potential use in other modules like MCP
 
@@ -230,6 +232,43 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   }
 
   /**
+   * Get test mocks if in test mode
+   * @returns Test mocks object or undefined if not in test mode
+   */
+  protected getMockAblyRealtime(): Ably.Realtime | undefined {
+    if (!this.isTestMode()) return undefined;
+
+    // Access global mock if running in test mode
+    return (
+      globalThis as { __TEST_MOCKS__?: { ablyRealtimeMock: Ably.Realtime } }
+    ).__TEST_MOCKS__?.ablyRealtimeMock;
+  }
+
+  /**
+   * Get test mocks if in test mode
+   * @returns Test mocks object or undefined if not in test mode
+   */
+  protected getMockAblySpaces(): Spaces | undefined {
+    if (!this.isTestMode()) return undefined;
+
+    // Access global mock if running in test mode
+    return (globalThis as { __TEST_MOCKS__?: { ablySpacesMock: Spaces } })
+      .__TEST_MOCKS__?.ablySpacesMock;
+  }
+
+  /**
+   * Get test mocks if in test mode
+   * @returns Test mocks object or undefined if not in test mode
+   */
+  protected getMockAblyChat(): ChatClient | undefined {
+    if (!this.isTestMode()) return undefined;
+
+    // Access global mock if running in test mode
+    return (globalThis as { __TEST_MOCKS__?: { ablyChatMock: ChatClient } })
+      .__TEST_MOCKS__?.ablyChatMock;
+  }
+
+  /**
    * Check if this is a web CLI version and return a consistent error message
    * for commands that are not allowed in web CLI mode
    */
@@ -381,11 +420,14 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     // If in test mode, skip connection and use mock
     if (this.isTestMode()) {
       this.debug(`Running in test mode, using mock Ably ${clientType} client`);
-      const mockAblyRest = this.getMockAblyRest();
+      const mock =
+        options?.type === "rest"
+          ? this.getMockAblyRest()
+          : this.getMockAblyRealtime();
 
-      if (mockAblyRest) {
+      if (mock) {
         // Return mock as appropriate type
-        return mockAblyRest as unknown as Ably.Rest | Ably.Realtime;
+        return mock as unknown as Ably.Rest | Ably.Realtime;
       }
 
       this.error(`No mock Ably ${clientType} client available in test mode`);

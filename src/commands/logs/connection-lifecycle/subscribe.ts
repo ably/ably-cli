@@ -158,14 +158,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
       }
 
       // Wait until the user interrupts or the optional duration elapses
-      const effectiveDuration =
-        typeof flags.duration === "number" && flags.duration > 0
-          ? flags.duration
-          : process.env.ABLY_CLI_DEFAULT_DURATION
-            ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-            : undefined;
-
-      const exitReason = await waitUntilInterruptedOrTimeout(effectiveDuration);
+      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
       this.logCliEvent(flags, "logs", "runComplete", "Exiting wait loop", {
         exitReason,
       });

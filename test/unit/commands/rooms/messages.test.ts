@@ -1,5 +1,4 @@
-import { expect } from "chai";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import * as Ably from "ably";
 
@@ -36,9 +35,9 @@ class TestableRoomsMessagesSend extends RoomsMessagesSend {
   }
 
   protected override interactiveHelper = {
-    confirm: sinon.stub().resolves(true),
-    promptForText: sinon.stub().resolves("fake-input"),
-    promptToSelect: sinon.stub().resolves("fake-selection"),
+    confirm: vi.fn().mockResolvedValue(true),
+    promptForText: vi.fn().mockResolvedValue("fake-input"),
+    promptToSelect: vi.fn().mockResolvedValue("fake-selection"),
   } as any;
 }
 
@@ -71,9 +70,9 @@ class TestableRoomsMessagesSubscribe extends RoomsMessagesSubscribe {
   }
 
   protected override interactiveHelper = {
-    confirm: sinon.stub().resolves(true),
-    promptForText: sinon.stub().resolves("fake-input"),
-    promptToSelect: sinon.stub().resolves("fake-selection"),
+    confirm: vi.fn().mockResolvedValue(true),
+    promptForText: vi.fn().mockResolvedValue("fake-input"),
+    promptToSelect: vi.fn().mockResolvedValue("fake-selection"),
   } as any;
 }
 
@@ -106,62 +105,56 @@ class TestableRoomsMessagesHistory extends RoomsMessagesHistory {
   }
 
   protected override interactiveHelper = {
-    confirm: sinon.stub().resolves(true),
-    promptForText: sinon.stub().resolves("fake-input"),
-    promptToSelect: sinon.stub().resolves("fake-selection"),
+    confirm: vi.fn().mockResolvedValue(true),
+    promptForText: vi.fn().mockResolvedValue("fake-input"),
+    promptToSelect: vi.fn().mockResolvedValue("fake-selection"),
   } as any;
 }
 
 describe("rooms messages commands", function () {
-  let sandbox: sinon.SinonSandbox;
   let mockConfig: Config;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    mockConfig = { runHook: sinon.stub() } as unknown as Config;
-  });
-
-  afterEach(function () {
-    sandbox.restore();
+    mockConfig = { runHook: vi.fn() } as unknown as Config;
   });
 
   describe("rooms messages send", function () {
     let command: TestableRoomsMessagesSend;
     let mockRoom: any;
     let mockMessages: any;
-    let sendStub: sinon.SinonStub;
+    let sendStub: ReturnType<typeof vi.fn>;
 
     beforeEach(function () {
       command = new TestableRoomsMessagesSend([], mockConfig);
 
-      sendStub = sandbox.stub().resolves();
+      sendStub = vi.fn().mockImplementation(async () => {});
       mockMessages = {
         send: sendStub,
       };
 
       mockRoom = {
-        attach: sandbox.stub().resolves(),
+        attach: vi.fn().mockImplementation(async () => {}),
         messages: mockMessages,
-        onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+        onStatusChange: vi.fn().mockReturnValue({ off: vi.fn() }),
       };
 
       command.mockRealtimeClient = {
         connection: {
-          on: sandbox.stub(),
-          once: sandbox.stub(),
-          off: sandbox.stub(),
+          on: vi.fn(),
+          once: vi.fn(),
+          off: vi.fn(),
           state: "connected",
         },
-        close: sandbox.stub(),
+        close: vi.fn(),
       };
 
       command.mockChatClient = {
         rooms: {
-          get: sandbox.stub().resolves(mockRoom),
-          release: sandbox.stub().resolves(),
+          get: vi.fn().mockResolvedValue(mockRoom),
+          release: vi.fn().mockImplementation(async () => {}),
         },
         connection: {
-          onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+          onStatusChange: vi.fn().mockReturnValue({ off: vi.fn() }),
         },
         realtime: command.mockRealtimeClient,
       };
@@ -177,13 +170,14 @@ describe("rooms messages commands", function () {
     it("should send a single message successfully", async function () {
       await command.run();
 
-      expect(sendStub.calledOnce).to.be.true;
-      expect(sendStub.getCall(0).args[0]).to.deep.include({
+      expect(sendStub).toHaveBeenCalledOnce();
+      expect(sendStub.mock.calls[0][0]).toEqual({
         text: "Hello World",
       });
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
-        .true;
-      expect(mockRoom.attach.calledOnce).to.be.true;
+      expect(command.mockChatClient.rooms.get).toHaveBeenCalledWith(
+        "test-room",
+      );
+      expect(mockRoom.attach).toHaveBeenCalledOnce();
     });
 
     it("should send multiple messages with interpolation", async function () {
@@ -197,14 +191,14 @@ describe("rooms messages commands", function () {
       await command.run();
 
       // Should eventually send 3 messages
-      expect(sendStub.callCount).to.equal(3);
+      expect(sendStub).toHaveBeenCalledTimes(3);
 
       // Check first and last calls for interpolation
-      const firstCall = sendStub.getCall(0);
-      const lastCall = sendStub.getCall(2);
+      const firstCallArgs = sendStub.mock.calls[0];
+      const lastCallArgs = sendStub.mock.calls[2];
 
-      expect(firstCall.args[0].text).to.equal("Message 1");
-      expect(lastCall.args[0].text).to.equal("Message 3");
+      expect(firstCallArgs[0].text).toBe("Message 1");
+      expect(lastCallArgs[0].text).toBe("Message 3");
     });
 
     it("should handle metadata in messages", async function () {
@@ -217,8 +211,8 @@ describe("rooms messages commands", function () {
 
       await command.run();
 
-      expect(sendStub.calledOnce).to.be.true;
-      expect(sendStub.getCall(0).args[0]).to.deep.include({
+      expect(sendStub).toHaveBeenCalledOnce();
+      expect(sendStub.mock.calls[0][0]).toEqual({
         text: "Important message",
         metadata: { isImportant: true },
       });
@@ -232,12 +226,7 @@ describe("rooms messages commands", function () {
         raw: [],
       });
 
-      try {
-        await command.run();
-        expect.fail("Should have thrown an error");
-      } catch (error) {
-        expect((error as Error).message).to.include("Invalid metadata JSON");
-      }
+      await expect(command.run()).rejects.toThrow("Invalid metadata JSON");
     });
   });
 
@@ -245,40 +234,40 @@ describe("rooms messages commands", function () {
     let command: TestableRoomsMessagesSubscribe;
     let mockRoom: any;
     let mockMessages: any;
-    let subscribeStub: sinon.SinonStub;
+    let subscribeStub: ReturnType<typeof vi.fn>;
 
     beforeEach(function () {
       command = new TestableRoomsMessagesSubscribe([], mockConfig);
 
-      subscribeStub = sandbox.stub();
+      subscribeStub = vi.fn();
       mockMessages = {
         subscribe: subscribeStub,
-        unsubscribe: sandbox.stub().resolves(),
+        unsubscribe: vi.fn().mockImplementation(async () => {}),
       };
 
       mockRoom = {
-        attach: sandbox.stub().resolves(),
+        attach: vi.fn().mockImplementation(async () => {}),
         messages: mockMessages,
-        onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+        onStatusChange: vi.fn().mockReturnValue({ off: vi.fn() }),
       };
 
       command.mockRealtimeClient = {
         connection: {
-          on: sandbox.stub(),
-          once: sandbox.stub(),
-          off: sandbox.stub(),
+          on: vi.fn(),
+          once: vi.fn(),
+          off: vi.fn(),
           state: "connected",
         },
-        close: sandbox.stub(),
+        close: vi.fn(),
       };
 
       command.mockChatClient = {
         rooms: {
-          get: sandbox.stub().resolves(mockRoom),
-          release: sandbox.stub().resolves(),
+          get: vi.fn().mockResolvedValue(mockRoom),
+          release: vi.fn().mockImplementation(async () => {}),
         },
         connection: {
-          onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+          onStatusChange: vi.fn().mockReturnValue({ off: vi.fn() }),
         },
         realtime: command.mockRealtimeClient,
       };
@@ -293,7 +282,7 @@ describe("rooms messages commands", function () {
 
     it("should subscribe to room messages", async function () {
       // Mock the subscription to resolve immediately
-      subscribeStub.callsFake((callback) => {
+      subscribeStub.mockImplementation((callback) => {
         // Simulate receiving a message
         setTimeout(() => {
           callback({
@@ -308,15 +297,16 @@ describe("rooms messages commands", function () {
       });
 
       // Since subscribe runs indefinitely, we'll test the setup
-      const runPromise = command.run();
+      command.run();
 
       // Give it a moment to set up
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
-        .true;
-      expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(subscribeStub.calledOnce).to.be.true;
+      expect(command.mockChatClient.rooms.get).toHaveBeenCalledWith(
+        "test-room",
+      );
+      expect(mockRoom.attach).toHaveBeenCalledOnce();
+      expect(subscribeStub).toHaveBeenCalledOnce();
 
       // Cleanup - this would normally be done by SIGINT
       command.mockRealtimeClient.close();
@@ -327,12 +317,12 @@ describe("rooms messages commands", function () {
     let command: TestableRoomsMessagesHistory;
     let mockRoom: any;
     let mockMessages: any;
-    let historyStub: sinon.SinonStub;
+    let historyStub: ReturnType<typeof vi.fn>;
 
     beforeEach(function () {
       command = new TestableRoomsMessagesHistory([], mockConfig);
 
-      historyStub = sandbox.stub().resolves({
+      historyStub = vi.fn().mockResolvedValue({
         items: [
           {
             text: "Historical message 1",
@@ -352,28 +342,28 @@ describe("rooms messages commands", function () {
       };
 
       mockRoom = {
-        attach: sandbox.stub().resolves(),
+        attach: vi.fn().mockImplementation(async () => {}),
         messages: mockMessages,
-        onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+        onStatusChange: vi.fn().mockReturnValue({ off: vi.fn() }),
       };
 
       command.mockRealtimeClient = {
         connection: {
-          on: sandbox.stub(),
-          once: sandbox.stub(),
-          off: sandbox.stub(),
+          on: vi.fn(),
+          once: vi.fn(),
+          off: vi.fn(),
           state: "connected",
         },
-        close: sandbox.stub(),
+        close: vi.fn(),
       };
 
       command.mockChatClient = {
         rooms: {
-          get: sandbox.stub().resolves(mockRoom),
-          release: sandbox.stub().resolves(),
+          get: vi.fn().mockResolvedValue(mockRoom),
+          release: vi.fn().mockImplementation(async () => {}),
         },
         connection: {
-          onStatusChange: sandbox.stub().returns({ off: sandbox.stub() }),
+          onStatusChange: vi.fn().mockReturnValue({ off: vi.fn() }),
         },
         realtime: command.mockRealtimeClient,
       };
@@ -389,10 +379,9 @@ describe("rooms messages commands", function () {
     it("should retrieve room message history", async function () {
       await command.run();
 
-      expect(command.mockChatClient.rooms.get.calledWith("test-room")).to.be
-        .true;
-      expect(mockRoom.attach.calledOnce).to.be.true;
-      expect(historyStub.calledOnce).to.be.true;
+      expect(command.mockChatClient.rooms.get).toBeCalledWith("test-room");
+      expect(mockRoom.attach).toHaveBeenCalledOnce();
+      expect(historyStub).toHaveBeenCalledOnce();
     });
 
     it("should handle query options for history", async function () {
@@ -405,9 +394,9 @@ describe("rooms messages commands", function () {
 
       await command.run();
 
-      expect(historyStub.calledOnce).to.be.true;
-      const queryOptions = historyStub.getCall(0).args[0];
-      expect(queryOptions).to.deep.equal({ limit: 50 });
+      expect(historyStub).toHaveBeenCalledOnce();
+      const queryOptions = historyStub.mock.calls[0][0];
+      expect(queryOptions).toEqual({ limit: 50 });
     });
   });
 });

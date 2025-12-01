@@ -440,7 +440,7 @@ describe('auth:keys:list command', () => {
         expect(ctx.stdout).to.include('Created:');
         expect(ctx.stdout).to.include('Modified:');
         // Should contain readable date format
-        expect(ctx.stdout).to.match(/Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/);
+        expect(ctx.stdout).toMatch(/Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/);
       });
   });
 });

@@ -1,4 +1,12 @@
-import { expect } from "chai";
+import {
+  describe,
+  it,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+  expect,
+} from "vitest";
 import { randomUUID } from "node:crypto";
 import {
   E2E_API_KEY,
@@ -8,40 +16,44 @@ import {
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
-  displayTestFailureDebugOutput,
+  setupTestFailureHandler,
+  resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
 
-describe("Channel Presence E2E Tests", function () {
+describe("Channel Presence E2E Tests", () => {
   // Skip all tests if API key not available
-  before(function () {
+  beforeAll(() => {
     if (SHOULD_SKIP_E2E) {
-      this.skip();
+      return;
     }
     process.on("SIGINT", forceExit);
   });
 
-  after(function () {
+  afterAll(() => {
     process.removeListener("SIGINT", forceExit);
   });
 
-  beforeEach(function () {
-    this.timeout(120000); // 2 minutes per individual test
+  beforeEach(() => {
+    resetTestTracking();
     // Clear tracked commands and output files before each test
     testOutputFiles.clear();
     testCommands.length = 0;
   });
 
-  afterEach(async function () {
-    // Display debug output if test failed
-    if (this.currentTest?.state === "failed") {
-      await displayTestFailureDebugOutput(this.currentTest?.title);
-    }
+  afterEach(async () => {
     await cleanupTrackedResources();
   });
 
   // Test presence functionality - simplified to enter/exit only since list command doesn't exist
-  it("should enter and exit presence on a channel", async function () {
+  it("should enter and exit presence on a channel", async () => {
+    setupTestFailureHandler("should enter and exit presence on a channel");
+
+    // Skip if E2E tests should be skipped
+    if (SHOULD_SKIP_E2E) {
+      return;
+    }
+
     const presenceChannel = getUniqueChannelName("presence");
     const clientId = `cli-e2e-test-${randomUUID()}`;
     const clientData = { name: "E2E Test Client" };
@@ -71,9 +83,9 @@ describe("Channel Presence E2E Tests", function () {
     );
 
     console.log(`Presence enter output: ${enterResult.stdout}`);
-    expect(enterResult.exitCode).to.equal(0);
-    expect(enterResult.stdout).to.contain("Entered channel");
-    expect(enterResult.stdout).to.contain(
+    expect(enterResult.exitCode).toBe(0);
+    expect(enterResult.stdout).toContain("Entered channel");
+    expect(enterResult.stdout).toContain(
       "Duration elapsed – command finished cleanly",
     );
   });

@@ -1,5 +1,7 @@
 import * as Ably from "ably";
-import { type Space } from "@ably/spaces";
+import Spaces, { type Space, type SpaceOptions } from "@ably/spaces";
+import { AblyBaseCommand } from "./base-command.js";
+import { BaseFlags } from "./types/cli.js";
 
 // Dynamic import to handle module structure issues
 let SpacesConstructor: (new (client: Ably.Realtime) => unknown) | null = null;
@@ -20,9 +22,6 @@ async function getSpacesConstructor(): Promise<
   return SpacesConstructor;
 }
 
-import { AblyBaseCommand } from "./base-command.js";
-import { BaseFlags } from "./types/cli.js";
-
 export abstract class SpacesBaseCommand extends AblyBaseCommand {
   // Ensure we have the spaces client and its related authentication resources
   protected async setupSpacesClient(
@@ -40,13 +39,15 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     }
 
     // Create a Spaces client using the Ably client
-    const Spaces = await getSpacesConstructor();
-    const spacesClient = new Spaces(realtimeClient);
+    const spacesClient = await this.createSpacesClient(realtimeClient);
+
+    // We set the offline timeout to 2s otherwise Spaces will hang on to left members for 2 minutes.
+    const options: Partial<SpaceOptions> = {
+      offlineTimeout: 2000,
+    };
 
     // Get a space instance with the provided name
-    const space = await (
-      spacesClient as { get: (name: string) => Promise<Space> }
-    ).get(spaceName);
+    const space = await spacesClient.get(spaceName, options);
 
     return {
       realtimeClient,
@@ -57,8 +58,21 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
 
   protected async createSpacesClient(
     realtimeClient: Ably.Realtime,
-  ): Promise<unknown> {
+  ): Promise<Spaces> {
+    // If in test mode, skip connection and use mock
+    if (this.isTestMode()) {
+      this.debug(`Running in test mode, using mock Ably Spaces client`);
+      const mockAblySpaces = this.getMockAblySpaces();
+
+      if (mockAblySpaces) {
+        // Return mock as appropriate type
+        return mockAblySpaces;
+      }
+
+      this.error(`No mock Ably Spaces client available in test mode`);
+    }
+
     const Spaces = await getSpacesConstructor();
-    return new Spaces(realtimeClient);
+    return new Spaces(realtimeClient) as Spaces;
   }
 }

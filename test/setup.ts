@@ -28,7 +28,6 @@ process.env.ABLY_CLI_TEST_MODE = "true";
 
 // Track active resources for cleanup
 const activeClients: (Ably.Rest | Ably.Realtime)[] = [];
-const activeTimers: NodeJS.Timeout[] = [];
 const globalProcessRegistry = new Set<number>();
 
 // Global process tracking function
@@ -105,84 +104,6 @@ export async function cleanupGlobalProcesses(): Promise<void> {
   }
 }
 
-// Set Ably log level to only show errors
-if (process.env.ABLY_CLI_TEST_SHOW_OUTPUT) {
-  (Ably.Realtime as unknown as { logLevel: number }).logLevel = 3;
-} else {
-  // Set Ably log level to suppress non-error messages
-  (Ably.Realtime as unknown as { logLevel: number }).logLevel = 3; // 3 corresponds to Ably.LogLevel.Error
-}
-
-// Suppress console output unless ABLY_CLI_TEST_SHOW_OUTPUT is set
-if (!process.env.ABLY_CLI_TEST_SHOW_OUTPUT) {
-  // Store original console methods
-  const originalConsole = {
-    log: console.log,
-    info: console.info,
-    warn: console.warn,
-    error: console.error,
-    debug: console.debug,
-  };
-
-  // Override console methods to filter output
-  console.log = (..._args) => {
-    // Only show output for test failures or if the message contains critical keywords
-    if (
-      _args.some(
-        (arg) =>
-          typeof arg === "string" &&
-          (arg.includes("failing") ||
-            arg.includes("Error:") ||
-            arg.includes("FAIL")),
-      )
-    ) {
-      originalConsole.log(..._args);
-    }
-  };
-
-  console.info = (..._args) => {
-    // Suppress info messages completely during tests
-    if (
-      _args.some(
-        (arg) =>
-          typeof arg === "string" &&
-          (arg.includes("Error:") || arg.includes("FAIL")),
-      )
-    ) {
-      originalConsole.info(..._args);
-    }
-  };
-
-  console.warn = (..._args) => {
-    // Show warnings only if they're critical
-    if (
-      _args.some(
-        (arg) =>
-          typeof arg === "string" &&
-          (arg.includes("Error:") ||
-            arg.includes("Warning:") ||
-            arg.includes("FAIL")),
-      )
-    ) {
-      originalConsole.warn(..._args);
-    }
-  };
-
-  console.error = (..._args) => {
-    // Always show errors
-    originalConsole.error(..._args);
-  };
-
-  console.debug = (..._args) => {
-    // Suppress debug messages completely
-  };
-
-  // Store original methods for potential restoration
-  (
-    globalThis as unknown as { __originalConsole: typeof originalConsole }
-  ).__originalConsole = originalConsole;
-}
-
 /**
  * Utility to track an Ably client for cleanup
  */
@@ -192,8 +113,8 @@ export function trackAblyClient(client: Ably.Rest | Ably.Realtime): void {
   }
 }
 
-// Simplified global cleanup function
-async function globalCleanup() {
+// Global cleanup function
+export async function globalCleanup(): Promise<void> {
   const clientCount = activeClients.length;
   if (
     clientCount > 0 &&
@@ -255,117 +176,31 @@ async function globalCleanup() {
   // Clear arrays
   activeClients.length = 0;
 
-  // Clear all active timers
-  for (const timer of activeTimers) {
-    clearTimeout(timer);
-  }
-  activeTimers.length = 0;
-
   // Force garbage collection if available
   if (globalThis.gc) {
     globalThis.gc();
   }
 }
 
-try {
-  // Force exit after maximum runtime to prevent hanging
-  const MAX_TEST_RUNTIME = 600 * 1000; // 600 seconds (10 minutes) - sufficient for full test suite
-  const exitTimer = setTimeout(() => {
-    console.error("Tests exceeded maximum runtime. Force exiting.");
-    process.exit(1);
-  }, MAX_TEST_RUNTIME);
+// Load environment variables from .env
+const envPath = resolve(process.cwd(), ".env");
 
-  // Track timer for cleanup
-  activeTimers.push(exitTimer);
+if (existsSync(envPath)) {
+  const result = config({ path: envPath });
 
-  // Ensure timer doesn't keep the process alive
-  exitTimer.unref();
-
-  // Handle termination signals for clean exit
-  ["SIGINT", "SIGTERM"].forEach((signal) => {
-    process.on(signal, () => {
-      console.log(`\nReceived ${signal}, cleaning up and exiting tests...`);
-      globalCleanup().finally(() => {
-        process.exit(0);
-      });
-    });
-  });
-
-  // Handle uncaught exceptions to ensure cleanup
-  process.on("uncaughtException", (error) => {
-    console.error("Uncaught exception:", error);
-    globalCleanup().finally(() => {
-      process.exit(1);
-    });
-  });
-
-  // Handle unhandled promise rejections
-  process.on("unhandledRejection", (reason, promise) => {
-    console.error(
-      "Unhandled promise rejection at:",
-      promise,
-      "reason:",
-      reason,
-    );
-    globalCleanup().finally(() => {
-      process.exit(1);
-    });
-  });
-
-  // Add cleanup on process exit
-  process.on("exit", () => {
-    // Note: Can't use async here, so do synchronous cleanup
-    if (process.env.E2E_DEBUG === "true" || process.env.TEST_DEBUG === "true") {
-      console.log("Process exiting, attempting final cleanup...");
-    }
-    try {
-      for (const pid of globalProcessRegistry) {
-        try {
-          process.kill(pid, "SIGKILL");
-        } catch {
-          // Ignore errors
-        }
-      }
-    } catch {
-      // Ignore errors
-    }
-  });
-
-  // Register a global cleanup function that can be used in tests
-  (globalThis as { forceTestExit?: (code?: number) => void }).forceTestExit = (
-    code = 0,
-  ) => {
-    globalCleanup().finally(() => {
-      process.exit(code);
-    });
-  };
-
-  // Load environment variables from .env
-  const envPath = resolve(process.cwd(), ".env");
-
-  // Only load .env file if it exists
-  if (existsSync(envPath)) {
-    const result = config({ path: envPath });
-
-    if (result.error) {
-      console.warn(`Warning: Error loading .env file: ${result.error.message}`);
-    } else if (
-      result.parsed &&
-      (process.env.E2E_DEBUG === "true" || process.env.TEST_DEBUG === "true")
-    ) {
-      console.log(`Loaded environment variables from .env file for tests`);
-    }
-  } else {
-    if (process.env.E2E_DEBUG === "true" || process.env.TEST_DEBUG === "true") {
-      console.log(
-        "No .env file found. Using environment variables from current environment.",
-      );
-    }
+  if (result.error) {
+    console.warn(`Warning: Error loading .env file: ${result.error.message}`);
+  } else if (
+    result.parsed &&
+    (process.env.E2E_DEBUG === "true" || process.env.TEST_DEBUG === "true")
+  ) {
+    console.log(`Loaded environment variables from .env file for tests`);
   }
-} catch (error) {
-  console.error("Error in test setup:", error);
-  // Don't exit here, let the tests run anyway
+} else if (
+  process.env.E2E_DEBUG === "true" ||
+  process.env.TEST_DEBUG === "true"
+) {
+  console.log(
+    "No .env file found. Using environment variables from current environment.",
+  );
 }
-
-// Expose the cleanup function for use in tests
-export { globalCleanup };

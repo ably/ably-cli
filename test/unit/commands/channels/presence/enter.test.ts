@@ -1,5 +1,4 @@
-import { expect } from "chai";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import ChannelsPresenceEnter from "../../../../../src/commands/channels/presence/enter.js";
 import * as Ably from "ably";
@@ -30,10 +29,6 @@ class TestableChannelsPresenceEnter extends ChannelsPresenceEnter {
 
   public setParseResult(result: any) {
     this._parseResult = result;
-    // Ensure argv reflects args.channel for run() method logic
-    if (result.args?.channel) {
-      this._parseResult.argv = [result.args.channel];
-    }
   }
 
   // Correct override signature for the error method
@@ -97,69 +92,75 @@ class TestableChannelsPresenceEnter extends ChannelsPresenceEnter {
 }
 
 describe("ChannelsPresenceEnter", function () {
-  let sandbox: sinon.SinonSandbox;
   let command: TestableChannelsPresenceEnter;
   let mockConfig: Config;
-  let _logStub: sinon.SinonStub;
+  let _logStub: ReturnType<typeof vi.fn>;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    mockConfig = { runHook: sandbox.stub() } as unknown as Config;
+    mockConfig = { runHook: vi.fn() } as unknown as Config;
     command = new TestableChannelsPresenceEnter([], mockConfig);
-    _logStub = sandbox.stub(command, "log");
+    _logStub = vi.spyOn(command, "log");
+  });
+
+  afterEach(function () {
+    vi.restoreAllMocks();
 
     // No need to stub the ES module - we override the method in run() below
 
     // Set up a more complete mock client structure for beforeEach
     const mockPresenceInstance = {
-      get: sandbox.stub().resolves([]), // Default to empty members
-      subscribe: sandbox.stub(),
-      unsubscribe: sandbox.stub(),
-      enter: sandbox.stub().resolves(),
-      leave: sandbox.stub().resolves(),
+      get: vi.fn().mockResolvedValue([]), // Default to empty members
+      subscribe: vi.fn(),
+      unsubscribe: vi.fn(),
+      enter: vi.fn().mockImplementation(async () => {}),
+      leave: vi.fn().mockImplementation(async () => {}),
     };
     const mockChannelInstance = {
       name: "test-presence-channel", // Add default name
       presence: mockPresenceInstance,
-      subscribe: sandbox.stub(),
-      unsubscribe: sandbox.stub(),
+      subscribe: vi.fn(),
+      unsubscribe: vi.fn(),
       // Make attach resolve quickly
-      attach: sandbox.stub().resolves(),
-      detach: sandbox.stub().resolves(),
+      attach: vi.fn().mockImplementation(async () => {}),
+      detach: vi.fn().mockImplementation(async () => {}),
       // Simulate channel attached event shortly after attach is called
-      on: sandbox
-        .stub()
-        .callsFake((event: string, handler: (stateChange: any) => void) => {
-          if (event === "attached" && typeof handler === "function") {
-            // Simulate async event
-            setTimeout(() => handler({ current: "attached" }), 0);
-          }
-        }),
+      on: vi
+        .fn()
+        .mockImplementation(
+          (event: string, handler: (stateChange: any) => void) => {
+            if (event === "attached" && typeof handler === "function") {
+              // Simulate async event
+              setTimeout(() => handler({ current: "attached" }), 0);
+            }
+          },
+        ),
     };
 
     command.mockClient = {
       channels: {
-        get: sandbox.stub().returns(mockChannelInstance),
-        release: sandbox.stub(),
+        get: vi.fn().mockReturnValue(mockChannelInstance),
+        release: vi.fn(),
       },
       connection: {
-        once: sandbox.stub(),
+        once: vi.fn(),
         // Simulate connection connected event quickly
-        on: sandbox
-          .stub()
-          .callsFake((event: string, handler: (stateChange: any) => void) => {
-            if (event === "connected" && typeof handler === "function") {
-              // Simulate async event
-              setTimeout(() => handler({ current: "connected" }), 0);
-            }
-          }),
-        close: sandbox.stub(),
+        on: vi
+          .fn()
+          .mockImplementation(
+            (event: string, handler: (stateChange: any) => void) => {
+              if (event === "connected" && typeof handler === "function") {
+                // Simulate async event
+                setTimeout(() => handler({ current: "connected" }), 0);
+              }
+            },
+          ),
+        close: vi.fn(),
         state: "connected", // Start in connected state for simplicity
       },
       auth: {
         clientId: "test-client-id",
       },
-      close: sandbox.stub(),
+      close: vi.fn(),
     };
 
     // Ensure the overridden createAblyRealtimeClient uses this mock
@@ -173,15 +174,11 @@ describe("ChannelsPresenceEnter", function () {
     });
   });
 
-  afterEach(function () {
-    sandbox.restore();
-  });
-
   it("should create an Ably client when run", async function () {
-    const createClientSpy = sinon.spy(command, "createAblyRealtimeClient");
+    const createClientSpy = vi.spyOn(command, "createAblyRealtimeClient");
 
     // Stub the actual functionality to avoid long-running operations
-    const runStub = sinon.stub(command, "run").callsFake(async function (
+    vi.spyOn(command, "run").mockImplementation(async function (
       this: TestableChannelsPresenceEnter,
     ) {
       await this.createAblyRealtimeClient({});
@@ -190,10 +187,7 @@ describe("ChannelsPresenceEnter", function () {
 
     await command.run();
 
-    expect(createClientSpy.calledOnce).to.be.true;
-
-    createClientSpy.restore();
-    runStub.restore();
+    expect(createClientSpy).toHaveBeenCalledOnce();
   });
 
   it("should parse data correctly", async function () {
@@ -204,7 +198,7 @@ describe("ChannelsPresenceEnter", function () {
     });
 
     const parseResult = await command.parse();
-    expect(parseResult.flags.data).to.equal('{"status":"online"}');
+    expect(parseResult.flags.data).toBe('{"status":"online"}');
   });
 
   it("should handle invalid JSON in data", function () {
@@ -216,12 +210,12 @@ describe("ChannelsPresenceEnter", function () {
 
     // Test JSON parsing logic directly
     const invalidJson = "{invalid-json}";
-    expect(() => JSON.parse(invalidJson)).to.throw();
+    expect(() => JSON.parse(invalidJson)).toThrow();
   });
 
   it("should return mock client from createAblyRealtimeClient", async function () {
     const client = await command.createAblyRealtimeClient({});
-    expect(client).to.equal(command.mockClient);
+    expect(client).toBe(command.mockClient);
   });
 
   it("should format JSON output when shouldOutputJson is true", function () {
@@ -231,10 +225,10 @@ describe("ChannelsPresenceEnter", function () {
     const testData = { channel: "test", action: "enter" };
     const result = command.formatJsonOutput(testData);
 
-    expect(result).to.be.a("string");
-    expect(() => JSON.parse(result)).to.not.throw();
+    expect(result).toBeTypeOf("string");
+    expect(() => JSON.parse(result)).not.toThrow();
 
     const parsed = JSON.parse(result);
-    expect(parsed).to.deep.equal(testData);
+    expect(parsed).toEqual(testData);
   });
 });
