@@ -1,6 +1,6 @@
 import { Command, Flags } from "@oclif/core";
 import chalk from "chalk";
-import open from "open";
+import openUrl from "../../utils/open-url.js";
 
 export default class InfoCommand extends Command {
   static description = "General support resources and documentation links";
@@ -20,10 +20,7 @@ export default class InfoCommand extends Command {
     if (isWebCliMode) {
       this.log(`${chalk.cyan("Support resources:")} ${url}`);
     } else {
-      this.log(
-        `${chalk.cyan("Opening")} ${url} ${chalk.cyan("in your browser")}...`,
-      );
-      await open(url);
+      await openUrl(url, this);
     }
   }
 }

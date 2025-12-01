@@ -1,9 +1,9 @@
 import { Command, Flags } from "@oclif/core";
 import chalk from "chalk";
 import fetch from "node-fetch";
-import open from "open";
 import ora from "ora";
 import { getCliVersion } from "../utils/version.js";
+import openUrl from "../utils/open-url.js";
 
 interface StatusResponse {
   status: boolean;
@@ -63,10 +63,7 @@ export default class StatusCommand extends Command {
       );
 
       if (flags.open) {
-        this.log(
-          `\n${chalk.cyan("Opening")} https://status.ably.com ${chalk.cyan("in your browser")}...`,
-        );
-        await open("https://status.ably.com");
+        await openUrl("https://status.ably.com", this);
       }
     } catch (error) {
       if (spinner) {

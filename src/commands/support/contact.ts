@@ -1,6 +1,6 @@
 import { Command, Flags } from "@oclif/core";
 import chalk from "chalk";
-import open from "open";
+import openUrl from "../../utils/open-url.js";
 
 export default class ContactCommand extends Command {
   static description = "Contact Ably for assistance";
@@ -20,10 +20,8 @@ export default class ContactCommand extends Command {
     if (isWebCliMode) {
       this.log(`${chalk.cyan("Contact Ably:")} ${url}`);
     } else {
-      this.log(
-        `${chalk.cyan("Opening")} ${url} ${chalk.cyan("in your browser")}...`,
-      );
-      await open(url);
+
+      await openUrl(url, this);
     }
   }
 }
