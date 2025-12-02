@@ -304,6 +304,7 @@ describe("rooms messages commands", function () {
 
       expect(command.mockChatClient.rooms.get).toHaveBeenCalledWith(
         "test-room",
+        {},
       );
       expect(mockRoom.attach).toHaveBeenCalledOnce();
       expect(subscribeStub).toHaveBeenCalledOnce();
