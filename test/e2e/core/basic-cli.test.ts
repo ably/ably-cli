@@ -145,11 +145,14 @@ describe("Basic CLI E2E", () => {
         "should error when both --json and --pretty-json are used",
       );
 
-      // Test on a base command (`config`) that inherits global flags
-      const result = await runCommand(["config", "--json", "--pretty-json"], {
-        env: { NODE_OPTIONS: "", ABLY_CLI_NON_INTERACTIVE: "true" },
-        timeoutMs: 10000,
-      });
+      // Test on a command that inherits global flags (config show has --json support)
+      const result = await runCommand(
+        ["config", "show", "--json", "--pretty-json"],
+        {
+          env: { NODE_OPTIONS: "", ABLY_CLI_NON_INTERACTIVE: "true" },
+          timeoutMs: 10000,
+        },
+      );
 
       expect(result.exitCode).not.toBe(0); // Command should fail due to exclusive flags
       // Check stderr for the specific error message (oclif v3 style)
@@ -282,19 +285,20 @@ describe("Basic CLI E2E", () => {
         "should show command not found for topic typo with subcommand",
       );
 
-      // Example: `ably config doesnotexist` -> input is `config:doesnotexist` internally
+      // Example: `ably configs list` -> 'configs' is a typo for 'config'
+      // The CLI will suggest the closest match and show its help
       const result = await runCommand(
-        ["config", "doesnotexist", "--non-interactive"],
+        ["configs", "list", "--non-interactive"],
         {
           env: { NODE_OPTIONS: "", ABLY_CLI_NON_INTERACTIVE: "true" },
           timeoutMs: 5000,
         },
       );
 
-      expect(result.exitCode).not.toBe(0);
-      // With our updated implementation, it will try to find a close match for "config"
-      // and if found, will warn with "config is not an ably command"
-      expect(result.stderr).toContain("config is not an ably command");
+      // The CLI shows a warning about the typo but still shows help for the suggested command
+      expect(result.stderr).toContain("configs is not an ably command");
+      // Should show the config topic help as the suggested match
+      expect(result.stdout).toContain("config");
     });
   });
 });

@@ -1,7 +1,7 @@
 import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
-import { execSync } from "node:child_process";
 import * as readline from "node:readline";
+import open from "open";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { ControlApi } from "../../services/control-api.js";
@@ -95,7 +95,7 @@ export default class AccountsLogin extends ControlBaseCommand {
           this.log("Opening browser to get an access token...");
         }
 
-        this.openBrowser(obtainTokenPath);
+        await this.openBrowser(obtainTokenPath);
       } else if (!this.shouldOutputJson(flags)) {
         this.log(`Please visit ${obtainTokenPath} to create an access token`);
       }
@@ -380,16 +380,11 @@ export default class AccountsLogin extends ControlBaseCommand {
     }
   }
 
-  private openBrowser(url: string): void {
+  private async openBrowser(url: string): Promise<void> {
     try {
-      const command =
-        process.platform === "darwin"
-          ? "open"
-          : process.platform === "win32"
-            ? "start"
-            : "xdg-open";
-
-      execSync(`${command} ${url}`);
+      // Use the 'open' package for cross-platform browser opening
+      // This handles platform differences safely and avoids shell injection
+      await open(url);
     } catch (error) {
       this.warn(`Failed to open browser: ${error}`);
       this.log(`Please visit ${url} manually to create an access token`);
