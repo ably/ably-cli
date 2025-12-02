@@ -62,9 +62,6 @@ export default class QueuesListCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(QueuesListCommand);
 
-    // Display authentication information
-    this.showAuthInfoIfNeeded(flags);
-
     const controlApi = this.createControlApi(flags);
     const appId = await this.resolveAppId(flags);
 

@@ -1,7 +1,6 @@
-import { expect } from "chai";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import nock from "nock";
-import { test } from "@oclif/test";
-import { afterEach, beforeEach, describe } from "mocha";
+import { runCommand } from "@oclif/test";
 import * as path from "node:path";
 import * as fs from "node:fs";
 import * as os from "node:os";
@@ -60,11 +59,11 @@ const mockQueueResponse = {
   },
 };
 
-describe("queues:create command", function () {
+describe("queues:create command", () => {
   let testConfigDir: string;
   let originalConfigDir: string;
 
-  beforeEach(function () {
+  beforeEach(() => {
     // Set environment variable for access token
     process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
 
@@ -93,7 +92,7 @@ appName = "Test App"
     fs.writeFileSync(path.join(testConfigDir, "config"), configContent);
   });
 
-  afterEach(function () {
+  afterEach(() => {
     // Clean up nock interceptors
     nock.cleanAll();
     delete process.env.ABLY_ACCESS_TOKEN;
@@ -111,72 +110,66 @@ appName = "Test App"
     }
   });
 
-  describe("successful queue creation", function () {
-    it("should create a queue successfully with default settings", function () {
-      return test
-        .stdout()
-        .do(() => {
-          // Mock the /me endpoint to get account info
-          nock("https://control.ably.net")
-            .get("/v1/me")
-            .reply(200, mockAccountResponse);
+  describe("successful queue creation", () => {
+    it("should create a queue successfully with default settings", async () => {
+      // Mock the /me endpoint to get account info
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, mockAccountResponse);
 
-          // Mock the apps listing endpoint
-          nock("https://control.ably.net")
-            .get(`/v1/accounts/${mockAccountId}/apps`)
-            .reply(200, [mockAppResponse]);
+      // Mock the apps listing endpoint
+      nock("https://control.ably.net")
+        .get(`/v1/accounts/${mockAccountId}/apps`)
+        .reply(200, [mockAppResponse]);
 
-          // Mock the queue creation endpoint
-          nock("https://control.ably.net")
-            .post(`/v1/apps/${mockAppId}/queues`, {
-              name: mockQueueName,
-              maxLength: 10000,
-              region: "us-east-1-a",
-              ttl: 60,
-            })
-            .reply(201, mockQueueResponse);
+      // Mock the queue creation endpoint
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/queues`, {
+          name: mockQueueName,
+          maxLength: 10000,
+          region: "us-east-1-a",
+          ttl: 60,
         })
-        .command(["queues:create", "--name", mockQueueName])
-        .it(
-          "should create a queue successfully with default settings",
-          (ctx) => {
-            expect(ctx.stdout).to.include("Queue created successfully");
-            expect(ctx.stdout).to.include(`Queue ID: ${mockQueueId}`);
-            expect(ctx.stdout).to.include(`Name: ${mockQueueName}`);
-            expect(ctx.stdout).to.include("Region: us-east-1-a");
-            expect(ctx.stdout).to.include("TTL: 60 seconds");
-            expect(ctx.stdout).to.include("Max Length: 10000 messages");
-            expect(ctx.stdout).to.include("AMQP Connection Details");
-            expect(ctx.stdout).to.include("STOMP Connection Details");
-          },
-        );
+        .reply(201, mockQueueResponse);
+
+      const { stdout } = await runCommand(
+        ["queues:create", "--name", mockQueueName],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Queue created successfully");
+      expect(stdout).toContain(`Queue ID: ${mockQueueId}`);
+      expect(stdout).toContain(`Name: ${mockQueueName}`);
+      expect(stdout).toContain("Region: us-east-1-a");
+      expect(stdout).toContain("TTL: 60 seconds");
+      expect(stdout).toContain("Max Length: 10000 messages");
+      expect(stdout).toContain("AMQP Connection Details");
+      expect(stdout).toContain("STOMP Connection Details");
     });
 
-    it("should create a queue with custom settings", function () {
-      return test
-        .stdout()
-        .do(() => {
-          // Mock the /me endpoint to get account info
-          nock("https://control.ably.net")
-            .get("/v1/me")
-            .reply(200, mockAccountResponse);
+    it("should create a queue with custom settings", async () => {
+      // Mock the /me endpoint to get account info
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, mockAccountResponse);
 
-          // Mock the queue creation endpoint with custom settings
-          nock("https://control.ably.net")
-            .post(`/v1/apps/${mockAppId}/queues`, {
-              name: mockQueueName,
-              maxLength: 50000,
-              region: "eu-west-1-a",
-              ttl: 3600,
-            })
-            .reply(201, {
-              ...mockQueueResponse,
-              region: "eu-west-1-a",
-              maxLength: 50000,
-              ttl: 3600,
-            });
+      // Mock the queue creation endpoint with custom settings
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/queues`, {
+          name: mockQueueName,
+          maxLength: 50000,
+          region: "eu-west-1-a",
+          ttl: 3600,
         })
-        .command([
+        .reply(201, {
+          ...mockQueueResponse,
+          region: "eu-west-1-a",
+          maxLength: 50000,
+          ttl: 3600,
+        });
+
+      const { stdout } = await runCommand(
+        [
           "queues:create",
           "--name",
           mockQueueName,
@@ -186,322 +179,340 @@ appName = "Test App"
           "eu-west-1-a",
           "--ttl",
           "3600",
-        ])
-        .it("should create a queue with custom settings", (ctx) => {
-          expect(ctx.stdout).to.include("Queue created successfully");
-          expect(ctx.stdout).to.include("Region: eu-west-1-a");
-          expect(ctx.stdout).to.include("TTL: 3600 seconds");
-          expect(ctx.stdout).to.include("Max Length: 50000 messages");
-        });
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Queue created successfully");
+      expect(stdout).toContain("Region: eu-west-1-a");
+      expect(stdout).toContain("TTL: 3600 seconds");
+      expect(stdout).toContain("Max Length: 50000 messages");
     });
 
-    it("should output JSON format when --json flag is used", function () {
-      return test
-        .stdout()
-        .do(() => {
-          // Mock the /me endpoint to get account info
-          nock("https://control.ably.net")
-            .get("/v1/me")
-            .reply(200, mockAccountResponse);
+    it("should output JSON format when --json flag is used", async () => {
+      // Mock the /me endpoint to get account info
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, mockAccountResponse);
 
-          nock("https://control.ably.net")
-            .post(`/v1/apps/${mockAppId}/queues`)
-            .reply(201, mockQueueResponse);
-        })
-        .command(["queues:create", "--name", mockQueueName, "--json"])
-        .it("should output JSON format when --json flag is used", (ctx) => {
-          const result = JSON.parse(ctx.stdout);
-          expect(result).to.have.property("id", mockQueueId);
-          expect(result).to.have.property("name", mockQueueName);
-          expect(result).to.have.property("region", "us-east-1-a");
-        });
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/queues`)
+        .reply(201, mockQueueResponse);
+
+      const { stdout } = await runCommand(
+        ["queues:create", "--name", mockQueueName, "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("id", mockQueueId);
+      expect(result).toHaveProperty("name", mockQueueName);
+      expect(result).toHaveProperty("region", "us-east-1-a");
     });
 
-    it("should use custom app ID when provided", function () {
+    it("should use custom app ID when provided", async () => {
       const customAppId = "custom-app-id";
 
-      return test
-        .stdout()
-        .do(() => {
-          // Mock the /me endpoint to get account info
-          nock("https://control.ably.net")
-            .get("/v1/me")
-            .reply(200, mockAccountResponse);
+      // Mock the /me endpoint to get account info
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, mockAccountResponse);
 
-          // Mock the apps listing endpoint to find the custom app
-          nock("https://control.ably.net")
-            .get(`/v1/accounts/${mockAccountId}/apps`)
-            .reply(200, [
-              {
-                ...mockAppResponse,
-                id: customAppId,
-                name: customAppId,
-              },
-            ]);
+      // Mock the apps listing endpoint to find the custom app
+      nock("https://control.ably.net")
+        .get(`/v1/accounts/${mockAccountId}/apps`)
+        .reply(200, [
+          {
+            ...mockAppResponse,
+            id: customAppId,
+            name: customAppId,
+          },
+        ]);
 
-          nock("https://control.ably.net")
-            .post(`/v1/apps/${customAppId}/queues`)
-            .reply(201, {
-              ...mockQueueResponse,
-              appId: customAppId,
-            });
-        })
-        .command([
-          "queues:create",
-          "--name",
-          mockQueueName,
-          "--app",
-          "custom-app-id",
-        ])
-        .it("should use custom app ID when provided", (ctx) => {
-          expect(ctx.stdout).to.include("Queue created successfully");
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${customAppId}/queues`)
+        .reply(201, {
+          ...mockQueueResponse,
+          appId: customAppId,
         });
+
+      const { stdout } = await runCommand(
+        ["queues:create", "--name", mockQueueName, "--app", "custom-app-id"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Queue created successfully");
     });
 
-    it("should use custom access token when provided", function () {
+    it("should use custom access token when provided", async () => {
       const customToken = "custom_access_token";
 
-      return test
-        .stdout()
-        .do(() => {
-          // Mock the /me endpoint to get account info
-          nock("https://control.ably.net", {
-            reqheaders: {
-              authorization: `Bearer ${customToken}`,
-            },
-          })
-            .get("/v1/me")
-            .reply(200, mockAccountResponse);
+      // Mock the /me endpoint to get account info
+      nock("https://control.ably.net", {
+        reqheaders: {
+          authorization: `Bearer ${customToken}`,
+        },
+      })
+        .get("/v1/me")
+        .reply(200, mockAccountResponse);
 
-          // Mock the apps listing endpoint
-          nock("https://control.ably.net")
-            .get(`/v1/accounts/${mockAccountId}/apps`)
-            .reply(200, [mockAppResponse]);
+      // Mock the apps listing endpoint
+      nock("https://control.ably.net")
+        .get(`/v1/accounts/${mockAccountId}/apps`)
+        .reply(200, [mockAppResponse]);
 
-          nock("https://control.ably.net", {
-            reqheaders: {
-              authorization: `Bearer ${customToken}`,
-            },
-          })
-            .post(`/v1/apps/${mockAppId}/queues`)
-            .reply(201, mockQueueResponse);
-        })
-        .command([
+      nock("https://control.ably.net", {
+        reqheaders: {
+          authorization: `Bearer ${customToken}`,
+        },
+      })
+        .post(`/v1/apps/${mockAppId}/queues`)
+        .reply(201, mockQueueResponse);
+
+      const { stdout } = await runCommand(
+        [
           "queues:create",
           "--name",
           mockQueueName,
           "--access-token",
           "custom_access_token",
-        ])
-        .it("should use custom access token when provided", (ctx) => {
-          expect(ctx.stdout).to.include("Queue created successfully");
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Queue created successfully");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle 401 authentication error", async () => {
+      // Mock the /me endpoint to get account info
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, mockAccountResponse);
+
+      // Mock authentication failure
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/queues`)
+        .reply(401, { error: "Unauthorized" });
+
+      const { error } = await runCommand(
+        ["queues:create", "--name", mockQueueName],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/401/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
+
+    it("should handle 403 forbidden error", async () => {
+      // Mock the /me endpoint to get account info
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, mockAccountResponse);
+
+      // Mock forbidden response
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/queues`)
+        .reply(403, { error: "Forbidden" });
+
+      const { error } = await runCommand(
+        ["queues:create", "--name", mockQueueName],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/403/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
+
+    it("should handle 404 app not found error", async () => {
+      // Mock the /me endpoint to get account info
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, mockAccountResponse);
+
+      // Mock not found response
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/queues`)
+        .reply(404, { error: "App not found" });
+
+      const { error } = await runCommand(
+        ["queues:create", "--name", mockQueueName],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/404/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
+
+    it("should handle 500 server error", async () => {
+      // Mock the /me endpoint to get account info
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, mockAccountResponse);
+
+      // Mock server error
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/queues`)
+        .reply(500, { error: "Internal Server Error" });
+
+      const { error } = await runCommand(
+        ["queues:create", "--name", mockQueueName],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/500/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
+
+    it("should require name parameter", async () => {
+      const { error } = await runCommand(["queues:create"], import.meta.url);
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/Missing required flag/);
+      expect(error?.message).toMatch(/name/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
+
+    it("should require app to be specified when not in environment", async () => {
+      // Mock the /me endpoint to get account info
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, mockAccountResponse);
+
+      // Mock empty apps list to trigger "no app specified" error
+      nock("https://control.ably.net")
+        .get(`/v1/accounts/${mockAccountId}/apps`)
+        .reply(200, [mockAppResponse]);
+
+      // Set up a clean config directory without current app
+      const emptyConfigDir = path.join(
+        os.tmpdir(),
+        `ably-cli-test-empty-${Date.now()}`,
+      );
+      fs.mkdirSync(emptyConfigDir, { recursive: true, mode: 0o700 });
+      const emptyConfigContent = `[current]
+account = "default"
+
+[accounts.default]
+accessToken = "${mockAccessToken}"
+accountId = "${mockAccountId}"
+accountName = "Test Account"
+userEmail = "test@example.com"
+`;
+      fs.writeFileSync(path.join(emptyConfigDir, "config"), emptyConfigContent);
+      process.env.ABLY_CLI_CONFIG_DIR = emptyConfigDir;
+
+      const { error } = await runCommand(
+        ["queues:create", "--name", mockQueueName],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/No app selected/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+
+      // Clean up empty config directory
+      fs.rmSync(emptyConfigDir, { recursive: true, force: true });
+      process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
+    });
+
+    it("should handle network errors", async () => {
+      // Mock the /me endpoint to get account info
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, mockAccountResponse);
+
+      // Mock network error
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/queues`)
+        .replyWithError("Network error");
+
+      const { error } = await runCommand(
+        ["queues:create", "--name", mockQueueName],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/Network error/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
+
+    it("should handle validation errors from API", async () => {
+      // Mock the /me endpoint to get account info
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, mockAccountResponse);
+
+      // Mock validation error
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/queues`)
+        .reply(400, {
+          error: "Validation failed",
+          details: "Queue name already exists",
         });
+
+      const { error } = await runCommand(
+        ["queues:create", "--name", mockQueueName],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/400/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
+
+    it("should handle 429 rate limit error", async () => {
+      // Mock the /me endpoint to get account info
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, mockAccountResponse);
+
+      // Mock quota exceeded error
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/queues`)
+        .reply(429, {
+          error: "Rate limit exceeded",
+          details: "Too many requests",
+        });
+
+      const { error } = await runCommand(
+        ["queues:create", "--name", mockQueueName],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/429/);
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
   });
 
-  describe("error handling", function () {
-    it("should handle 401 authentication error", function () {
-      return test
-        .do(() => {
-          // Mock the /me endpoint to get account info
-          nock("https://control.ably.net")
-            .get("/v1/me")
-            .reply(200, mockAccountResponse);
+  describe("parameter validation", () => {
+    it("should accept minimum valid parameter values", async () => {
+      // Mock the /me endpoint to get account info
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, mockAccountResponse);
 
-          // Mock authentication failure
-          nock("https://control.ably.net")
-            .post(`/v1/apps/${mockAppId}/queues`)
-            .reply(401, { error: "Unauthorized" });
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/queues`, {
+          name: mockQueueName,
+          maxLength: 1,
+          region: "us-east-1-a",
+          ttl: 1,
         })
-        .command(["queues:create", "--name", mockQueueName])
-        .catch((error) => {
-          expect(error.message).to.include("401");
-        })
-        .it("should handle 401 authentication error");
-    });
+        .reply(201, {
+          ...mockQueueResponse,
+          maxLength: 1,
+          ttl: 1,
+        });
 
-    it("should handle 403 forbidden error", function () {
-      return test
-        .do(() => {
-          // Mock the /me endpoint to get account info
-          nock("https://control.ably.net")
-            .get("/v1/me")
-            .reply(200, mockAccountResponse);
-
-          // Mock forbidden response
-          nock("https://control.ably.net")
-            .post(`/v1/apps/${mockAppId}/queues`)
-            .reply(403, { error: "Forbidden" });
-        })
-        .command(["queues:create", "--name", mockQueueName])
-        .catch((error) => {
-          expect(error.message).to.include("403");
-        })
-        .it("should handle 403 forbidden error");
-    });
-
-    it("should handle 404 app not found error", function () {
-      return test
-        .do(() => {
-          // Mock the /me endpoint to get account info
-          nock("https://control.ably.net")
-            .get("/v1/me")
-            .reply(200, mockAccountResponse);
-
-          // Mock not found response
-          nock("https://control.ably.net")
-            .post(`/v1/apps/${mockAppId}/queues`)
-            .reply(404, { error: "App not found" });
-        })
-        .command(["queues:create", "--name", mockQueueName])
-        .catch((error) => {
-          expect(error.message).to.include("404");
-        })
-        .it("should handle 404 app not found error");
-    });
-
-    it("should handle 500 server error", function () {
-      return test
-        .do(() => {
-          // Mock the /me endpoint to get account info
-          nock("https://control.ably.net")
-            .get("/v1/me")
-            .reply(200, mockAccountResponse);
-
-          // Mock server error
-          nock("https://control.ably.net")
-            .post(`/v1/apps/${mockAppId}/queues`)
-            .reply(500, { error: "Internal Server Error" });
-        })
-        .command(["queues:create", "--name", mockQueueName])
-        .catch((error) => {
-          expect(error.message).to.include("500");
-        })
-        .it("should handle 500 server error");
-    });
-
-    it("should require name parameter", function () {
-      return test
-        .command(["queues:create"])
-        .catch((error) => {
-          expect(error.message).to.include("Missing required flag");
-          expect(error.message).to.include("name");
-        })
-        .it("should require name parameter");
-    });
-
-    it("should require app to be specified when not in environment", function () {
-      return test
-        .env({ ABLY_CLI_CONFIG_DIR: "/tmp" })
-        .do(() => {
-          // Mock the /me endpoint to get account info
-          nock("https://control.ably.net")
-            .get("/v1/me")
-            .reply(200, mockAccountResponse);
-
-          // Mock empty apps list to trigger "no app specified" error
-          nock("https://control.ably.net")
-            .get(`/v1/accounts/${mockAccountId}/apps`)
-            .reply(200, [mockAppResponse]);
-        })
-        .command(["queues:create", "--name", mockQueueName])
-        .catch((error) => {
-          expect(error.message).to.include("No app selected.");
-        })
-        .it("should require app to be specified when not in environment");
-    });
-
-    it("should handle network errors", function () {
-      return test
-        .do(() => {
-          // Mock the /me endpoint to get account info
-          nock("https://control.ably.net")
-            .get("/v1/me")
-            .reply(200, mockAccountResponse);
-
-          // Mock network error
-          nock("https://control.ably.net")
-            .post(`/v1/apps/${mockAppId}/queues`)
-            .replyWithError("Network error");
-        })
-        .command(["queues:create", "--name", mockQueueName])
-        .catch((error) => {
-          expect(error.message).to.include("Network error");
-        })
-        .it("should handle network errors");
-    });
-
-    it("should handle validation errors from API", function () {
-      return test
-        .do(() => {
-          // Mock the /me endpoint to get account info
-          nock("https://control.ably.net")
-            .get("/v1/me")
-            .reply(200, mockAccountResponse);
-
-          // Mock validation error
-          nock("https://control.ably.net")
-            .post(`/v1/apps/${mockAppId}/queues`)
-            .reply(400, {
-              error: "Validation failed",
-              details: "Queue name already exists",
-            });
-        })
-        .command(["queues:create", "--name", mockQueueName])
-        .catch((error) => {
-          expect(error.message).to.include("400");
-        })
-        .it("should handle validation errors from API");
-    });
-
-    it("should handle 429 rate limit error", function () {
-      return test
-        .do(() => {
-          // Mock the /me endpoint to get account info
-          nock("https://control.ably.net")
-            .get("/v1/me")
-            .reply(200, mockAccountResponse);
-
-          // Mock quota exceeded error
-          nock("https://control.ably.net")
-            .post(`/v1/apps/${mockAppId}/queues`)
-            .reply(429, {
-              error: "Rate limit exceeded",
-              details: "Too many requests",
-            });
-        })
-        .command(["queues:create", "--name", mockQueueName])
-        .catch((error) => {
-          expect(error.message).to.include("429");
-        })
-        .it("should handle 429 rate limit error");
-    });
-  });
-
-  describe("parameter validation", function () {
-    it("should accept minimum valid parameter values", function () {
-      return test
-        .stdout()
-        .do(() => {
-          // Mock the /me endpoint to get account info
-          nock("https://control.ably.net")
-            .get("/v1/me")
-            .reply(200, mockAccountResponse);
-
-          nock("https://control.ably.net")
-            .post(`/v1/apps/${mockAppId}/queues`, {
-              name: mockQueueName,
-              maxLength: 1,
-              region: "us-east-1-a",
-              ttl: 1,
-            })
-            .reply(201, {
-              ...mockQueueResponse,
-              maxLength: 1,
-              ttl: 1,
-            });
-        })
-        .command([
+      const { stdout } = await runCommand(
+        [
           "queues:create",
           "--name",
           mockQueueName,
@@ -509,38 +520,37 @@ appName = "Test App"
           "1",
           "--ttl",
           "1",
-        ])
-        .it("should accept minimum valid parameter values", (ctx) => {
-          expect(ctx.stdout).to.include("Queue created successfully");
-          expect(ctx.stdout).to.include("TTL: 1 seconds");
-          expect(ctx.stdout).to.include("Max Length: 1 messages");
-        });
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Queue created successfully");
+      expect(stdout).toContain("TTL: 1 seconds");
+      expect(stdout).toContain("Max Length: 1 messages");
     });
 
-    it("should accept large parameter values and different regions", function () {
-      return test
-        .stdout()
-        .do(() => {
-          // Mock the /me endpoint to get account info
-          nock("https://control.ably.net")
-            .get("/v1/me")
-            .reply(200, mockAccountResponse);
+    it("should accept large parameter values and different regions", async () => {
+      // Mock the /me endpoint to get account info
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, mockAccountResponse);
 
-          nock("https://control.ably.net")
-            .post(`/v1/apps/${mockAppId}/queues`, {
-              name: mockQueueName,
-              maxLength: 1000000,
-              region: "ap-southeast-2-a",
-              ttl: 86400,
-            })
-            .reply(201, {
-              ...mockQueueResponse,
-              region: "ap-southeast-2-a",
-              maxLength: 1000000,
-              ttl: 86400,
-            });
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${mockAppId}/queues`, {
+          name: mockQueueName,
+          maxLength: 1000000,
+          region: "ap-southeast-2-a",
+          ttl: 86400,
         })
-        .command([
+        .reply(201, {
+          ...mockQueueResponse,
+          region: "ap-southeast-2-a",
+          maxLength: 1000000,
+          ttl: 86400,
+        });
+
+      const { stdout } = await runCommand(
+        [
           "queues:create",
           "--name",
           mockQueueName,
@@ -550,16 +560,14 @@ appName = "Test App"
           "ap-southeast-2-a",
           "--ttl",
           "86400",
-        ])
-        .it(
-          "should accept large parameter values and different regions",
-          (ctx) => {
-            expect(ctx.stdout).to.include("Queue created successfully");
-            expect(ctx.stdout).to.include("Region: ap-southeast-2-a");
-            expect(ctx.stdout).to.include("TTL: 86400 seconds");
-            expect(ctx.stdout).to.include("Max Length: 1000000 messages");
-          },
-        );
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Queue created successfully");
+      expect(stdout).toContain("Region: ap-southeast-2-a");
+      expect(stdout).toContain("TTL: 86400 seconds");
+      expect(stdout).toContain("Max Length: 1000000 messages");
     });
   });
 });
