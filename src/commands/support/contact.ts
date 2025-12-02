@@ -15,10 +15,10 @@ export default class ContactCommand extends Command {
   async run(): Promise<void> {
     await this.parse(ContactCommand);
 
-    const url = "https://ably.com/contact";
+    const url = "https://ably.com/support";
 
     if (isWebCliMode()) {
-      this.log(`${chalk.cyan("Contact Ably:")} ${url}`);
+      this.log(`${chalk.cyan("Visit")} ${url}`);
     } else {
       await openUrl(url, this);
     }

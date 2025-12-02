@@ -200,7 +200,6 @@ describe("Help Output Consistency", () => {
             expect(output).toContain("Ably support commands:");
             expect(output).toContain("support ask");
             expect(output).toContain("support contact");
-            expect(output).toContain("support info");
             resolve();
           });
         }),

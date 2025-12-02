@@ -24,10 +24,10 @@ describe("support:contact command", () => {
       const { stdout } = await runCommand(["support:contact"], import.meta.url);
 
       expect(stdout).toContain("Opening");
-      expect(stdout).toContain("https://ably.com/contact");
+      expect(stdout).toContain("https://ably.com/support");
       expect(stdout).toContain("in your browser");
       expect(stdout).toContain(
-        "would open URL in browser: https://ably.com/contact",
+        "would open URL in browser: https://ably.com/support",
       );
     });
 
@@ -60,12 +60,11 @@ describe("support:contact command", () => {
     it("should display URL without opening browser in web CLI mode", async () => {
       const { stdout } = await runCommand(["support:contact"], import.meta.url);
 
-      expect(stdout).toContain("Contact Ably:");
-      expect(stdout).toContain("https://ably.com/contact");
+      expect(stdout).toContain("Visit https://ably.com/support");
       expect(stdout).not.toContain("Opening");
       expect(stdout).not.toContain("in your browser");
       expect(stdout).not.toContain(
-        "would open URL in browser: https://ably.com/contact",
+        "would open URL in browser: https://ably.com/support",
       );
     });
 
@@ -88,10 +87,10 @@ describe("support:contact command", () => {
 
       // Should behave like normal mode (not web CLI mode)
       expect(stdout).toContain("Opening");
-      expect(stdout).toContain("https://ably.com/contact");
+      expect(stdout).toContain("https://ably.com/support");
       expect(stdout).toContain("in your browser");
       expect(stdout).toContain(
-        "would open URL in browser: https://ably.com/contact",
+        "would open URL in browser: https://ably.com/support",
       );
     });
 
@@ -102,10 +101,10 @@ describe("support:contact command", () => {
 
       // Should behave like normal mode (not web CLI mode)
       expect(stdout).toContain("Opening");
-      expect(stdout).toContain("https://ably.com/contact");
+      expect(stdout).toContain("https://ably.com/support");
       expect(stdout).toContain("in your browser");
       expect(stdout).toContain(
-        "would open URL in browser: https://ably.com/contact",
+        "would open URL in browser: https://ably.com/support",
       );
     });
   });
