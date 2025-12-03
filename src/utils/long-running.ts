@@ -6,6 +6,8 @@
 // The logic is intentionally tiny so that commands can just
 // `await waitUntilInterruptedOrTimeout(durationSeconds)`.
 
+import isTestMode from "./test-mode.js";
+
 export type ExitReason = "signal" | "timeout";
 
 export async function waitUntilInterruptedOrTimeout(
@@ -13,7 +15,7 @@ export async function waitUntilInterruptedOrTimeout(
 ): Promise<ExitReason> {
   // In test mode, we may have many instances running concurrently
   // Increase the max listeners to avoid warnings
-  if (process.env.ABLY_CLI_TEST_MODE === "true") {
+  if (isTestMode()) {
     const currentMax = process.getMaxListeners();
     if (currentMax < 50) {
       process.setMaxListeners(50);
@@ -39,7 +41,7 @@ export async function waitUntilInterruptedOrTimeout(
 
       // For timeout cases in CLI commands, exit immediately to prevent hanging
       // This is especially important for E2E tests and automated scenarios
-      if (reason === "timeout" && process.env.ABLY_CLI_TEST_MODE !== "true") {
+      if (reason === "timeout" && !isTestMode()) {
         console.log("Duration elapsed – command finished cleanly.");
         // Small delay to ensure output is written to files/streams
         setTimeout(() => process.exit(0), 200);

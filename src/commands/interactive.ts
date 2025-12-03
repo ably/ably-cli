@@ -14,6 +14,7 @@ import {
 } from "../base-command.js";
 import { TerminalDiagnostics } from "../utils/terminal-diagnostics.js";
 import "../utils/sigint-exit.js";
+import isWebCliMode from "../utils/web-mode.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1098,7 +1099,7 @@ export default class Interactive extends Command {
    * Check if we're running in web CLI mode
    */
   private isWebCliMode(): boolean {
-    return process.env.ABLY_WEB_CLI_MODE === "true";
+    return isWebCliMode();
   }
 
   /**

@@ -12,6 +12,8 @@ import { BaseFlags, CommandConfig, ErrorDetails } from "./types/cli.js";
 import { getCliVersion } from "./utils/version.js";
 import Spaces from "@ably/spaces";
 import { ChatClient } from "@ably/chat";
+import isTestMode from "./utils/test-mode.js";
+import isWebCliMode from "./utils/web-mode.js";
 
 // Export BaseFlags for potential use in other modules like MCP
 
@@ -169,15 +171,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     this.configManager = new ConfigManager();
     this.interactiveHelper = new InteractiveHelper(this.configManager);
     // Check if we're running in web CLI mode
-    this.isWebCliMode = process.env.ABLY_WEB_CLI_MODE === "true";
-  }
-
-  /**
-   * Check if we're running in test mode
-   * @returns true if running in test mode
-   */
-  protected isTestMode(): boolean {
-    return process.env.ABLY_CLI_TEST_MODE === "true";
+    this.isWebCliMode = isWebCliMode();
   }
 
   protected isAnonymousWebMode(): boolean {
@@ -216,7 +210,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * - Not in CI environment
    */
   protected shouldUseTerminalUpdates(): boolean {
-    return process.stdout.isTTY && !this.isTestMode() && !process.env.CI;
+    return process.stdout.isTTY && !isTestMode() && !process.env.CI;
   }
 
   /**
@@ -224,7 +218,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * @returns Test mocks object or undefined if not in test mode
    */
   protected getMockAblyRest(): Ably.Rest | undefined {
-    if (!this.isTestMode()) return undefined;
+    if (!isTestMode()) return undefined;
 
     // Access global mock if running in test mode
     return (globalThis as { __TEST_MOCKS__?: { ablyRestMock: Ably.Rest } })
@@ -236,7 +230,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * @returns Test mocks object or undefined if not in test mode
    */
   protected getMockAblyRealtime(): Ably.Realtime | undefined {
-    if (!this.isTestMode()) return undefined;
+    if (!isTestMode()) return undefined;
 
     // Access global mock if running in test mode
     return (
@@ -249,7 +243,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * @returns Test mocks object or undefined if not in test mode
    */
   protected getMockAblySpaces(): Spaces | undefined {
-    if (!this.isTestMode()) return undefined;
+    if (!isTestMode()) return undefined;
 
     // Access global mock if running in test mode
     return (globalThis as { __TEST_MOCKS__?: { ablySpacesMock: Spaces } })
@@ -261,7 +255,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * @returns Test mocks object or undefined if not in test mode
    */
   protected getMockAblyChat(): ChatClient | undefined {
-    if (!this.isTestMode()) return undefined;
+    if (!isTestMode()) return undefined;
 
     // Access global mock if running in test mode
     return (globalThis as { __TEST_MOCKS__?: { ablyChatMock: ChatClient } })
@@ -418,7 +412,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     const clientType = options?.type || "realtime";
 
     // If in test mode, skip connection and use mock
-    if (this.isTestMode()) {
+    if (isTestMode()) {
       this.debug(`Running in test mode, using mock Ably ${clientType} client`);
       const mock =
         options?.type === "rest"

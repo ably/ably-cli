@@ -2,6 +2,7 @@ import * as Ably from "ably";
 import Spaces, { type Space, type SpaceOptions } from "@ably/spaces";
 import { AblyBaseCommand } from "./base-command.js";
 import { BaseFlags } from "./types/cli.js";
+import isTestMode from "./utils/test-mode.js";
 
 // Dynamic import to handle module structure issues
 let SpacesConstructor: (new (client: Ably.Realtime) => unknown) | null = null;
@@ -60,7 +61,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     realtimeClient: Ably.Realtime,
   ): Promise<Spaces> {
     // If in test mode, skip connection and use mock
-    if (this.isTestMode()) {
+    if (isTestMode()) {
       this.debug(`Running in test mode, using mock Ably Spaces client`);
       const mockAblySpaces = this.getMockAblySpaces();
 

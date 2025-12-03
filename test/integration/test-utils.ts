@@ -4,12 +4,7 @@
  * This file provides utilities to help with integration testing of the CLI
  */
 
-/**
- * Returns true if we're running in test mode
- */
-export function isTestMode(): boolean {
-  return process.env.ABLY_CLI_TEST_MODE === "true";
-}
+import isTestMode from "../../src/utils/test-mode.js";
 
 /**
  * Gets the mock Ably Rest client from the global test mocks
