@@ -60,6 +60,7 @@ This allows testing CLI changes against local server modifications before deploy
     - Review the generated README.md changes to ensure they're correct.
     - Stage all changes: `git add package.json README.md CHANGELOG.md`
     - Commit all changes with a message like `chore: prepare release <version>`.
+    - Update the `package.json` for `packages/react-web-cli`.
 3. Once the release branch is approved, merge it into main.
 4. Create a new tag on the merged commit in main, which will run the release workflow:
     ```bash

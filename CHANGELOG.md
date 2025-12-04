@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2025-12-03
+
+### Added
+
+- Public Preview version notice displayed across all CLI modes
+- Release status information to version command
+
+### Changed
+
+- Improved support commands for web CLI mode with proper link display
+- Consolidated terminal connection logic to prevent duplicate WebSocket connections
+- Refactored exit handling for more consistent behavior across commands
+
+### Fixed
+
+- Fixed spaces cursors `get-all` command hanging issue
+- Fixed chat occupancy `get` command hanging issue
+- Fixed initial command execution in split terminal mode
+- Fixed initial command being sent when resuming sessions
+- Prevented duplicate WebSocket connections in terminal server
+- Improved command cleanup and exit code handling
+
+### Development
+
+- Added `.env` to `.gitignore` to prevent committing secrets
+- Applied Prettier formatting across entire codebase and enforced in CI
+- Centralized chat command cleanup logic
+- Removed obsolete test scripts and dependencies on Sinon
+- Improved test mode detection using `isTestMode()` helper
+- Fixed various flaky e2e and integration tests
+
 ## [0.14.0] - 2025-10-23
 
 ### Changed
