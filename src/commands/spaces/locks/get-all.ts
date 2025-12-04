@@ -180,16 +180,14 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
         }
       } catch (error) {
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                error: error instanceof Error ? error.message : String(error),
-                spaceName: spaceName,
-                status: "error",
-                success: false,
-              },
-              flags,
-            ),
+          this.jsonError(
+            {
+              error: error instanceof Error ? error.message : String(error),
+              spaceName: spaceName,
+              status: "error",
+              success: false,
+            },
+            flags,
           );
         } else {
           this.error(
@@ -216,16 +214,14 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
         }
       } catch (error) {
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                error: error instanceof Error ? error.message : String(error),
-                spaceName: spaceName,
-                status: "error",
-                success: false,
-              },
-              flags,
-            ),
+          this.jsonError(
+            {
+              error: error instanceof Error ? error.message : String(error),
+              spaceName: spaceName,
+              status: "error",
+              success: false,
+            },
+            flags,
           );
         } else {
           this.log(
@@ -237,16 +233,14 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: error instanceof Error ? error.message : String(error),
-              spaceName: spaceName,
-              status: "error",
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            spaceName: spaceName,
+            status: "error",
+            success: false,
+          },
+          flags,
         );
       } else {
         this.error(

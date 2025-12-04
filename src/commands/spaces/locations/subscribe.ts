@@ -347,11 +347,9 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
           spaceName,
         });
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              { error: errorMsg, spaceName, status: "error", success: false },
-              flags,
-            ),
+          this.jsonError(
+            { error: errorMsg, spaceName, status: "error", success: false },
+            flags,
           );
         } else {
           this.log(chalk.yellow(errorMsg));
@@ -432,16 +430,14 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
               { error: errorMsg, spaceName },
             );
             if (this.shouldOutputJson(flags)) {
-              this.log(
-                this.formatJsonOutput(
-                  {
-                    error: errorMsg,
-                    spaceName,
-                    status: "error",
-                    success: false,
-                  },
-                  flags,
-                ),
+              this.jsonError(
+                {
+                  error: errorMsg,
+                  spaceName,
+                  status: "error",
+                  success: false,
+                },
+                flags,
               );
             } else {
               this.log(chalk.red(errorMsg));
@@ -475,11 +471,9 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
           spaceName,
         });
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              { error: errorMsg, spaceName, status: "error", success: false },
-              flags,
-            ),
+          this.jsonError(
+            { error: errorMsg, spaceName, status: "error", success: false },
+            flags,
           );
         } else {
           this.log(chalk.red(errorMsg));
@@ -509,11 +503,9 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
         { error: errorMsg, spaceName },
       );
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { error: errorMsg, spaceName, status: "error", success: false },
-            flags,
-          ),
+        this.jsonError(
+          { error: errorMsg, spaceName, status: "error", success: false },
+          flags,
         );
       } else {
         this.error(`Failed to subscribe to location updates: ${errorMsg}`);

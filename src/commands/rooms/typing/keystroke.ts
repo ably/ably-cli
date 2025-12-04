@@ -220,11 +220,9 @@ export default class TypingKeystroke extends ChatBaseCommand {
       );
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { error: errorMsg, room: args.room, success: false },
-            flags,
-          ),
+        this.jsonError(
+          { error: errorMsg, room: args.room, success: false },
+          flags,
         );
       } else {
         this.error(`Failed to start typing: ${errorMsg}`);

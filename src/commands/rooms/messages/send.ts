@@ -57,7 +57,7 @@ export default class MessagesSend extends ChatBaseCommand {
     count: Flags.integer({
       char: "c",
       default: 1,
-      description: "Number of messages to send",
+      description: "Number of messages to send (default: 1)",
     }),
     delay: Flags.integer({
       char: "d",
@@ -130,9 +130,7 @@ export default class MessagesSend extends ChatBaseCommand {
             error: errorMsg,
           });
           if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput({ error: errorMsg, success: false }, flags),
-            );
+            this.jsonError({ error: errorMsg, success: false }, flags);
           } else {
             this.error(errorMsg);
           }
@@ -287,6 +285,7 @@ export default class MessagesSend extends ChatBaseCommand {
                 `Error sending message ${i + 1}: ${errorMsg}`,
                 { error: errorMsg, index: i + 1 },
               );
+              process.exitCode = 1;
 
               if (
                 !this.shouldSuppressOutput(flags) &&
@@ -407,7 +406,8 @@ export default class MessagesSend extends ChatBaseCommand {
             { error: errorMsg },
           );
           if (this.shouldOutputJson(flags)) {
-            this.log(this.formatJsonOutput(result, flags));
+            this.jsonError(result, flags);
+            return;
           } else {
             this.error(`Failed to send message: ${errorMsg}`);
           }
@@ -423,9 +423,7 @@ export default class MessagesSend extends ChatBaseCommand {
         { error: errorMsg },
       );
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput({ error: errorMsg, success: false }, flags),
-        );
+        this.jsonError({ error: errorMsg, success: false }, flags);
       } else {
         this.error(`Failed to send message: ${errorMsg}`);
       }

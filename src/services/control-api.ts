@@ -275,8 +275,8 @@ export class ControlApi {
     );
   }
 
-  async deleteQueue(appId: string, queueName: string): Promise<void> {
-    return this.request<void>(`/apps/${appId}/queues/${queueName}`, "DELETE");
+  async deleteQueue(appId: string, queueId: string): Promise<void> {
+    return this.request<void>(`/apps/${appId}/queues/${queueId}`, "DELETE");
   }
 
   async deleteRule(appId: string, ruleId: string): Promise<void> {

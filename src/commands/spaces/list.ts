@@ -38,7 +38,7 @@ export default class SpacesList extends SpacesBaseCommand {
     ...SpacesBaseCommand.globalFlags,
     limit: Flags.integer({
       default: 100,
-      description: "Maximum number of spaces to return",
+      description: "Maximum number of spaces to return (default: 100)",
     }),
     prefix: Flags.string({
       char: "p",
@@ -188,16 +188,15 @@ export default class SpacesList extends SpacesBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: error instanceof Error ? error.message : String(error),
-              status: "error",
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            status: "error",
+            success: false,
+          },
+          flags,
         );
+        return;
       } else {
         this.error(
           `Error listing spaces: ${error instanceof Error ? error.message : String(error)}`,
