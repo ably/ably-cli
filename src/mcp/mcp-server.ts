@@ -541,11 +541,11 @@ export class AblyMcpServer {
       const Ably = AblyModule.default;
 
       // Get API key from config
-      const apiKey = this.configManager.getApiKey() || process.env.ABLY_API_KEY;
+      const apiKey = this.configManager.getApiKey();
 
       if (!apiKey) {
         throw new Error(
-          'No API key configured. Please run "ably login" or set ABLY_API_KEY environment variable',
+          'No API key configured. Please run "ably accounts login" and configure an app, or use "ably keys add" to add an API key.',
         );
       }
 

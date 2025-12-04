@@ -325,8 +325,8 @@ export default class CustomHelp extends Help {
     if (!this.webCliMode) {
       const accessToken =
         process.env.ABLY_ACCESS_TOKEN || this.configManager.getAccessToken();
-      const apiKey = process.env.ABLY_API_KEY;
-      if (!accessToken && !apiKey) {
+      // Removed apiKey check - we're not in web mode, so env var shouldn't be used
+      if (!accessToken) {
         const cmdPrefix = this.interactiveMode ? "" : "ably ";
         lines.push(
           "",

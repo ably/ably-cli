@@ -579,7 +579,9 @@ describe("AblyBaseCommand", function () {
       expect(result).not.toBeNull();
       expect(result?.appId).toBe("configAppId");
       expect(result?.apiKey).toBe("configApiKey");
-      expect(configManagerStub.getApiKey).toHaveBeenCalledWith("configAppId");
+      expect(configManagerStub.getApiKey).toHaveBeenCalledWith("configAppId", {
+        allowEnvFallback: false,
+      });
     });
 
     it("should use ABLY_API_KEY environment variable if available", async function () {

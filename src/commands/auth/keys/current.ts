@@ -40,7 +40,9 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
     }
 
     // Get the current key for this app
-    const apiKey = this.configManager.getApiKey(appId);
+    const apiKey = this.configManager.getApiKey(appId, {
+      allowEnvFallback: this.isWebCliMode,
+    });
 
     if (!apiKey) {
       this.error(

@@ -76,21 +76,27 @@ export class ConfigManager {
   }
 
   // Get API key for current app or specific app ID
-  public getApiKey(appId?: string): string | undefined {
+  public getApiKey(
+    appId?: string,
+    options?: { allowEnvFallback?: boolean },
+  ): string | undefined {
     const currentAccount = this.getCurrentAccount();
     if (!currentAccount || !currentAccount.apps) {
-      // Fallback to environment variable if no config available
-      return process.env.ABLY_API_KEY;
+      // Fallback to environment variable only if explicitly allowed (web CLI mode)
+      return options?.allowEnvFallback ? process.env.ABLY_API_KEY : undefined;
     }
 
     const targetAppId = appId || this.getCurrentAppId();
     if (!targetAppId) {
-      // Fallback to environment variable if no current app
-      return process.env.ABLY_API_KEY;
+      // Fallback to environment variable only if explicitly allowed (web CLI mode)
+      return options?.allowEnvFallback ? process.env.ABLY_API_KEY : undefined;
     }
 
-    // Return configured API key or fallback to environment variable
-    return currentAccount.apps[targetAppId]?.apiKey || process.env.ABLY_API_KEY;
+    // Return configured API key or fallback to environment variable if allowed
+    return (
+      currentAccount.apps[targetAppId]?.apiKey ||
+      (options?.allowEnvFallback ? process.env.ABLY_API_KEY : undefined)
+    );
   }
 
   // Get app name for specific app ID

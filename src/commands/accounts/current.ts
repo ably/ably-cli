@@ -69,7 +69,9 @@ export default class AccountsCurrent extends ControlBaseCommand {
         );
 
         // Show current key if one is selected
-        const apiKey = this.configManager.getApiKey(currentAppId);
+        const apiKey = this.configManager.getApiKey(currentAppId, {
+          allowEnvFallback: this.isWebCliMode,
+        });
         if (apiKey) {
           const keyId =
             this.configManager.getKeyId(currentAppId) || apiKey.split(":")[0];
@@ -146,8 +148,8 @@ export default class AccountsCurrent extends ControlBaseCommand {
           ),
         );
       } else {
-        // Extract app ID from ABLY_API_KEY
-        const apiKey = process.env.ABLY_API_KEY;
+        // In web CLI mode, extract app ID from ABLY_API_KEY
+        const apiKey = this.isWebCliMode ? process.env.ABLY_API_KEY : undefined;
         let appId = "";
         let keyId = "";
 

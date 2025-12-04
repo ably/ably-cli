@@ -86,10 +86,14 @@ export default class ConnectionsStats extends AblyBaseCommand {
     }
 
     // Get API key from flags or config
-    const apiKey = flags["api-key"] || (await this.configManager.getApiKey());
+    const apiKey =
+      flags["api-key"] ||
+      (await this.configManager.getApiKey(undefined, {
+        allowEnvFallback: this.isWebCliMode,
+      }));
     if (!apiKey) {
       this.error(
-        'No API key found. Please set an API key using "ably keys add" or set the ABLY_API_KEY environment variable.',
+        'No API key found. Please set an API key using "ably keys add" or provide one with the --api-key flag.',
       );
       return;
     }

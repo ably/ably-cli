@@ -390,4 +390,72 @@ accessToken = "testaccesstoken"
       expect(configManager.switchAccount("nonexistentaccount")).toBe(false);
     });
   });
+
+  describe("getApiKey with allowEnvFallback option", () => {
+    let cleanConfigManager: ConfigManager;
+
+    beforeEach(() => {
+      delete process.env.ABLY_API_KEY;
+      // Mock readFileSync to return empty config (no accounts)
+      vi.spyOn(fs, "readFileSync").mockReturnValue("");
+      // Create a fresh ConfigManager without any stored accounts/apps
+      cleanConfigManager = new ConfigManager();
+    });
+
+    afterEach(() => {
+      delete process.env.ABLY_API_KEY;
+    });
+
+    it("should return env var when allowEnvFallback is true and no config", () => {
+      // Use clean config manager with no stored API key
+      process.env.ABLY_API_KEY = "web-app.key:secret";
+      const key = cleanConfigManager.getApiKey(undefined, {
+        allowEnvFallback: true,
+      });
+      expect(key).toBe("web-app.key:secret");
+    });
+
+    it("should NOT return env var when allowEnvFallback is false", () => {
+      // Use clean config manager with no stored API key
+      process.env.ABLY_API_KEY = "web-app.key:secret";
+      const key = cleanConfigManager.getApiKey(undefined, {
+        allowEnvFallback: false,
+      });
+      expect(key).toBeUndefined();
+    });
+
+    it("should NOT return env var by default (allowEnvFallback omitted)", () => {
+      // Use clean config manager with no stored API key
+      process.env.ABLY_API_KEY = "web-app.key:secret";
+      const key = cleanConfigManager.getApiKey();
+      expect(key).toBeUndefined();
+    });
+
+    it("should prioritize config API key over env var", () => {
+      process.env.ABLY_API_KEY = "web-app.key:secret";
+      // Config already loaded with testappid API key
+      const key = configManager.getApiKey("testappid", {
+        allowEnvFallback: true,
+      });
+      expect(key).toBe("testappid.keyid:keysecret");
+    });
+
+    it("should use env var as fallback when no config key exists but allowEnvFallback is true", () => {
+      process.env.ABLY_API_KEY = "web-app.key:secret";
+      // Request API key for non-existent app
+      const key = configManager.getApiKey("nonexistentapp", {
+        allowEnvFallback: true,
+      });
+      expect(key).toBe("web-app.key:secret");
+    });
+
+    it("should return undefined when no config key exists and allowEnvFallback is false", () => {
+      process.env.ABLY_API_KEY = "web-app.key:secret";
+      // Request API key for non-existent app
+      const key = configManager.getApiKey("nonexistentapp", {
+        allowEnvFallback: false,
+      });
+      expect(key).toBeUndefined();
+    });
+  });
 });

@@ -432,11 +432,15 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     const hasExplicitAuth = !!(
       flags.token ||
       flags["api-key"] ||
-      process.env.ABLY_API_KEY
+      (this.isWebCliMode && process.env.ABLY_API_KEY)
     );
 
     // If token is provided or API key is in environment, we can skip the ensureAppAndKey step
-    if (!flags.token && !flags["api-key"] && !process.env.ABLY_API_KEY) {
+    if (
+      !flags.token &&
+      !flags["api-key"] &&
+      (!process.env.ABLY_API_KEY || !this.isWebCliMode)
+    ) {
       const appAndKey = await this.ensureAppAndKey(flags);
       if (!appAndKey) {
         this.error(
@@ -651,7 +655,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
         } else {
           // For API key auth
           const apiKey =
-            flags["api-key"] || this.configManager.getApiKey(appId);
+            flags["api-key"] ||
+            this.configManager.getApiKey(appId, {
+              allowEnvFallback: this.isWebCliMode,
+            });
           if (apiKey) {
             const keyId = apiKey.split(":")[0]; // Extract key ID (part before colon)
             const keyName =
@@ -747,7 +754,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
 
     // Check if we have an app and key from flags or config
     let appId = flags.app || this.configManager.getCurrentAppId();
-    let apiKey = flags["api-key"] || this.configManager.getApiKey(appId);
+    let apiKey =
+      flags["api-key"] ||
+      this.configManager.getApiKey(appId, {
+        allowEnvFallback: this.isWebCliMode,
+      });
 
     // If we have both, return them
     if (appId && apiKey) {
@@ -885,33 +896,30 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
 
       // Handle client ID for API key auth
       this.setClientId(options, flags);
-    } else if (process.env.ABLY_API_KEY) {
+    } else if (this.isWebCliMode && process.env.ABLY_API_KEY) {
       const apiKey = process.env.ABLY_API_KEY;
       options.key = apiKey;
 
-      // In web CLI mode, validate the API key format
-      if (this.isWebCliMode) {
-        const parsedKey = this.parseApiKey(apiKey);
-        if (parsedKey) {
-          this.debug(
-            `Using API key with appId=${parsedKey.appId}, keyId=${parsedKey.keyId}`,
-          );
-
-          // Ensure API key is properly formatted for Node.js SDK
-          options.key = apiKey;
-        } else {
-          this.log(
-            chalk.yellow(
-              `Warning: API key format appears to be invalid. Expected format: APP_ID.KEY_ID:KEY_SECRET`,
-            ),
-          );
-        }
+      // Validate the API key format in web CLI mode
+      const parsedKey = this.parseApiKey(apiKey);
+      if (parsedKey) {
+        this.debug(
+          `Using API key with appId=${parsedKey.appId}, keyId=${parsedKey.keyId}`,
+        );
+      } else {
+        this.log(
+          chalk.yellow(
+            `Warning: API key format appears to be invalid. Expected format: APP_ID.KEY_ID:KEY_SECRET`,
+          ),
+        );
       }
 
       // Handle client ID for API key auth
       this.setClientId(options, flags);
     } else {
-      const apiKey = this.configManager.getApiKey();
+      const apiKey = this.configManager.getApiKey(undefined, {
+        allowEnvFallback: this.isWebCliMode,
+      });
       if (apiKey) {
         options.key = apiKey;
 

@@ -154,7 +154,9 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
       }
 
       // Check if the revoked key is the current key for this app
-      const currentKey = this.configManager.getApiKey(appId);
+      const currentKey = this.configManager.getApiKey(appId, {
+        allowEnvFallback: this.isWebCliMode,
+      });
       if (currentKey === key.key) {
         // Ask to delete the key from the config
         const shouldRemove = await this.interactiveHelper.confirm(

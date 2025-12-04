@@ -44,7 +44,9 @@ export default class AppsCurrent extends ControlBaseCommand {
     try {
       if (this.shouldOutputJson(flags)) {
         // Get key information for JSON output
-        const apiKey = this.configManager.getApiKey(currentAppId);
+        const apiKey = this.configManager.getApiKey(currentAppId, {
+          allowEnvFallback: this.isWebCliMode,
+        });
         let keyInfo = null;
 
         if (apiKey) {
@@ -87,7 +89,9 @@ export default class AppsCurrent extends ControlBaseCommand {
         );
 
         // Show the currently selected API key if one is set
-        const apiKey = this.configManager.getApiKey(currentAppId);
+        const apiKey = this.configManager.getApiKey(currentAppId, {
+          allowEnvFallback: this.isWebCliMode,
+        });
         if (apiKey) {
           // Extract the key ID and format the full key name (app_id.key_id)
           const keyId =
