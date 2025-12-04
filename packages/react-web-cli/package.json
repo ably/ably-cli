@@ -24,6 +24,13 @@
     "terminal",
     "xterm"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ably/ably-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ably/ably-cli/issues"
+  },
   "author": "Ably <support@ably.com>",
   "license": "Apache-2.0",
   "files": [
