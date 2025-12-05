@@ -1,6 +1,4 @@
-import { type Space } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
 import chalk from "chalk";
 
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
@@ -62,10 +60,6 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
     }),
   };
 
-  private realtimeClient: Ably.Realtime | null = null;
-  private spacesClient: unknown | null = null;
-  private space: Space | null = null;
-
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsGetAll);
 
@@ -74,9 +68,8 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
     try {
       const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
-      this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
-      if (!this.realtimeClient || !this.spacesClient || !this.space) {
+      if (!this.realtimeClient || !this.space) {
         this.error("Failed to initialize clients or space");
         return;
       }
@@ -314,17 +307,6 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
           );
         }
       }
-
-      try {
-        await this.space.leave();
-        this.log(chalk.green("\nSuccessfully disconnected."));
-      } catch (error) {
-        this.log(
-          chalk.yellow(
-            `Error leaving space: ${error instanceof Error ? error.message : String(error)}`,
-          ),
-        );
-      }
     } catch (error) {
       if (error === undefined || error === null) {
         this.log(
@@ -338,18 +320,6 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
             ? error.message
             : String(error || "Unknown error");
         this.log(chalk.red(`Error: ${errorMessage}`));
-      }
-    } finally {
-      try {
-        if (this.realtimeClient) {
-          this.realtimeClient.close();
-        }
-      } catch (closeError) {
-        this.log(
-          chalk.yellow(
-            `Error closing client: ${closeError instanceof Error ? closeError.message : String(closeError)}`,
-          ),
-        );
       }
     }
   }
