@@ -29,17 +29,6 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
   private client: Ably.Realtime | null = null;
 
   // Override finally to ensure resources are cleaned up
-  async finally(err: Error | undefined): Promise<void> {
-    if (
-      this.client &&
-      this.client.connection.state !== "closed" && // Check state before closing to avoid errors if already closed
-      this.client.connection.state !== "failed"
-    ) {
-      this.client.close();
-    }
-
-    return super.finally(err);
-  }
 
   async run(): Promise<void> {
     const { flags } = await this.parse(LogsPushSubscribe);
@@ -185,19 +174,13 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
           "cleanupInitiated",
           "Cleanup initiated (Ctrl+C pressed)",
         );
+        // Client cleanup is handled by command finally() method
         if (client) {
           this.logCliEvent(
             flags,
             "connection",
-            "closing",
-            "Closing Ably connection.",
-          );
-          client.close();
-          this.logCliEvent(
-            flags,
-            "connection",
-            "closed",
-            "Ably connection closed.",
+            "cleanup",
+            "Client cleanup will be handled by base class.",
           );
         }
       };
@@ -231,17 +214,7 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
         { error: err.message },
       );
       this.error(err.message);
-    } finally {
-      // Ensure client is closed
-      if (this.client && this.client.connection.state !== "closed") {
-        this.logCliEvent(
-          flags || {},
-          "connection",
-          "finalCloseAttempt",
-          "Ensuring connection is closed in finally block.",
-        );
-        this.client.close();
-      }
     }
+    // Client cleanup is handled by command finally() method
   }
 }

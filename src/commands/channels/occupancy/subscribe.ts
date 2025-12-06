@@ -38,37 +38,6 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
   private cleanupInProgress = false;
   private client: Ably.Realtime | null = null;
 
-  private async properlyCloseAblyClient(): Promise<void> {
-    if (
-      !this.client ||
-      this.client.connection.state === "closed" ||
-      this.client.connection.state === "failed"
-    ) {
-      return;
-    }
-
-    return new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => {
-        resolve();
-      }, 2000);
-
-      const onClosedOrFailed = () => {
-        clearTimeout(timeout);
-        resolve();
-      };
-
-      this.client!.connection.once("closed", onClosedOrFailed);
-      this.client!.connection.once("failed", onClosedOrFailed);
-      this.client!.close();
-    });
-  }
-
-  // Override finally to ensure resources are cleaned up
-  async finally(err: Error | undefined): Promise<void> {
-    await this.properlyCloseAblyClient();
-    return super.finally(err);
-  }
-
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsOccupancySubscribe);
     let channel: Ably.RealtimeChannel | null = null;
@@ -236,19 +205,12 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
       }
     }
 
-    // Close Ably client (already has internal timeout)
+    // Client cleanup is now handled by base class finally() method
     this.logCliEvent(
       flags,
       "connection",
-      "closingClientFinally",
-      "Closing Ably client.",
-    );
-    await this.properlyCloseAblyClient();
-    this.logCliEvent(
-      flags,
-      "connection",
-      "clientClosedFinally",
-      "Ably client close attempt finished.",
+      "clientCleanup",
+      "Client cleanup will be handled by base class.",
     );
   }
 }

@@ -167,12 +167,8 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
       }
 
       this.error(`Error revoking token: ${errorMessage}`);
-    } finally {
-      // Close the client if it exists
-      if (this.ablyClient) {
-        this.ablyClient.close();
-      }
     }
+    // Client cleanup is handled by base class finally() method
   }
 
   // Helper method to make a direct HTTP request to the Ably REST API

@@ -97,11 +97,9 @@ export default class LogsChannelLifecycle extends AblyBaseCommand {
         this.log("");
       });
 
-      // Set up cleanup for when the process is terminated
+      // Client cleanup is handled by command finally() method
       const cleanup = () => {
-        if (client) {
-          client.close();
-        }
+        // Cleanup handled by base class
       };
 
       // Handle process termination
@@ -125,10 +123,7 @@ export default class LogsChannelLifecycle extends AblyBaseCommand {
     } catch (error: unknown) {
       const err = error as Error;
       this.error(err.message);
-    } finally {
-      if (client) {
-        client.close();
-      }
     }
+    // Client cleanup is handled by command finally() method
   }
 }

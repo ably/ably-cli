@@ -313,12 +313,8 @@ export default class ConnectionsTest extends AblyBaseCommand {
           `${chalk.red("✗")} WebSocket connection failed: ${errorResult.message}`,
         );
       }
-    } finally {
-      // Close client if it exists and isn't already closed
-      if (this.wsClient && this.wsClient.connection.state !== "closed") {
-        this.wsClient.close();
-      }
     }
+    // Client cleanup is handled by command finally() method
 
     return { error: errorResult, success };
   }
@@ -426,11 +422,8 @@ export default class ConnectionsTest extends AblyBaseCommand {
           `${chalk.red("✗")} HTTP connection failed: ${errorResult.message}`,
         );
       }
-    } finally {
-      if (this.xhrClient && this.xhrClient.connection.state !== "closed") {
-        this.xhrClient.close();
-      }
     }
+    // Client cleanup is handled by command finally() method
 
     return { error: errorResult, success };
   }
