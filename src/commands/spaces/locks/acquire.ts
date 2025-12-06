@@ -37,9 +37,9 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
   // Override finally to ensure resources are cleaned up
   async finally(err: Error | undefined): Promise<void> {
     // Attempt to release lock if not already done
-    if (this.lockId) {
+    if (this.lockId && this.space) {
       try {
-        await this.space!.locks.release(this.lockId);
+        await this.space.locks.release(this.lockId);
       } catch (error) {
         this.logCliEvent(
           {},
@@ -59,6 +59,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksAcquire);
+    this.parsedFlags = flags;
     const { space: spaceName } = args;
     this.lockId = args.lockId;
     const { lockId } = this;

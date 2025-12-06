@@ -62,7 +62,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsGetAll);
-
+    this.parsedFlags = flags;
     const { space: spaceName } = args;
 
     try {

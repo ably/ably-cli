@@ -34,6 +34,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksGetAll);
+    this.parsedFlags = flags;
 
     const { space: spaceName } = args;
 

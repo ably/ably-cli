@@ -3,7 +3,6 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
-import { BaseFlags } from "../../types/cli.js";
 import { formatJson, isJsonData } from "../../utils/json-formatter.js";
 import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
 
@@ -304,60 +303,6 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       } else {
         this.error(`Error: ${errorMsg}`);
       }
-    } finally {
-      // Wrap all cleanup in a timeout to prevent hanging
-      await Promise.race([
-        this.performCleanup(flags || {}, channels),
-        new Promise<void>((resolve) => {
-          setTimeout(() => {
-            this.logCliEvent(
-              flags || {},
-              "subscribe",
-              "cleanupTimeout",
-              "Cleanup timed out after 5s, forcing completion",
-            );
-            resolve();
-          }, 5000);
-        }),
-      ]);
-
-      // Don't show cleanup messages for minimal output
     }
-  }
-
-  private async performCleanup(
-    flags: BaseFlags,
-    channels: Ably.RealtimeChannel[],
-  ): Promise<void> {
-    // Unsubscribe from all channels with timeout
-    for (const channel of channels) {
-      try {
-        await Promise.race([
-          Promise.resolve(channel.unsubscribe()),
-          new Promise<void>((resolve) => setTimeout(resolve, 1000)),
-        ]);
-        this.logCliEvent(
-          flags,
-          "subscribe",
-          "unsubscribedChannel",
-          `Unsubscribed from ${channel.name}`,
-        );
-      } catch (error) {
-        this.logCliEvent(
-          flags,
-          "subscribe",
-          "unsubscribeError",
-          `Error unsubscribing from ${channel.name}: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    }
-
-    // Client cleanup is now handled by base class finally() method
-    this.logCliEvent(
-      flags,
-      "connection",
-      "clientCleanup",
-      "Client cleanup will be handled by base class.",
-    );
   }
 }

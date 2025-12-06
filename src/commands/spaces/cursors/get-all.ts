@@ -38,6 +38,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsGetAll);
+    this.parsedFlags = flags;
     const { space: spaceName } = args;
 
     try {

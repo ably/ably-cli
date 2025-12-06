@@ -32,7 +32,7 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
     ]);
 
     clearTimeout(this._cleanupTimeout);
-    super.finally(error);
+    await super.finally(error);
   }
 
   private async _cleanup() {

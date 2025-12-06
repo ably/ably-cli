@@ -65,7 +65,6 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
     }),
   };
 
-  private cleanupInProgress = false;
   private simulationIntervalId: NodeJS.Timeout | null = null;
 
   // Override finally to ensure resources are cleaned up
@@ -80,6 +79,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsSet);
+    this.parsedFlags = flags;
     const { space: spaceName } = args;
 
     try {
@@ -457,7 +457,6 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         { exitReason },
       );
 
-      this.cleanupInProgress = true;
       // After cleanup (handled in finally), ensure the process exits so user doesn't need multiple Ctrl-C
       this.exit(0);
     } catch (error) {

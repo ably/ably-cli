@@ -27,7 +27,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
   protected space: Space | null = null;
   protected spaces: Spaces | null = null;
   protected realtimeClient: Ably.Realtime | null = null;
-  private parsedFlags: BaseFlags = {};
+  protected parsedFlags: BaseFlags = {};
 
   async finally(error: Error | undefined): Promise<void> {
     // Always clean up connections
@@ -90,7 +90,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
       }
     }
 
-    super.finally(error);
+    await super.finally(error);
   }
 
   // Ensure we have the spaces client and its related authentication resources

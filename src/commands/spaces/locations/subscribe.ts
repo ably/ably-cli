@@ -56,6 +56,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsSubscribe);
+    this.parsedFlags = flags;
     const { space: spaceName } = args;
     this.logCliEvent(
       flags,

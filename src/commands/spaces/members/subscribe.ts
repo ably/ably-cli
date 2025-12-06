@@ -37,6 +37,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesMembersSubscribe);
+    this.parsedFlags = flags;
     const { space: spaceName } = args;
 
     // Keep track of the last event we've seen for each client to avoid duplicates

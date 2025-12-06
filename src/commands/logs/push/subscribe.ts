@@ -175,14 +175,12 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
           "Cleanup initiated (Ctrl+C pressed)",
         );
         // Client cleanup is handled by command finally() method
-        if (client) {
-          this.logCliEvent(
-            flags,
-            "connection",
-            "cleanup",
-            "Client cleanup will be handled by base class.",
-          );
-        }
+        this.logCliEvent(
+          flags,
+          "connection",
+          "cleanup",
+          "Client cleanup will be handled by base class.",
+        );
       };
 
       // Handle process termination

@@ -3,7 +3,6 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
-import { BaseFlags } from "../../../types/cli.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
@@ -154,66 +153,6 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
       } else {
         this.error(`Error: ${errorMsg}`);
       }
-    } finally {
-      // Wrap all cleanup in a timeout to prevent hanging
-      await Promise.race([
-        this.performCleanup(flags || {}, channel),
-        new Promise<void>((resolve) => {
-          setTimeout(() => {
-            this.logCliEvent(
-              flags || {},
-              "presence",
-              "cleanupTimeout",
-              "Cleanup timed out after 5s, forcing completion",
-            );
-            resolve();
-          }, 5000);
-        }),
-      ]);
-
-      if (!this.shouldOutputJson(flags || {})) {
-        if (this.cleanupInProgress) {
-          this.log(chalk.green("Graceful shutdown complete (user interrupt)."));
-        } else {
-          this.log(chalk.green("Duration elapsed – command finished cleanly."));
-        }
-      }
     }
-  }
-
-  private async performCleanup(
-    flags: BaseFlags,
-    channel: Ably.RealtimeChannel | null,
-  ): Promise<void> {
-    // Unsubscribe from presence events with timeout
-    if (channel) {
-      try {
-        await Promise.race([
-          Promise.resolve(channel.presence.unsubscribe()),
-          new Promise<void>((resolve) => setTimeout(resolve, 1000)),
-        ]);
-        this.logCliEvent(
-          flags,
-          "presence",
-          "unsubscribedPresence",
-          "Unsubscribed from presence events",
-        );
-      } catch (error) {
-        this.logCliEvent(
-          flags,
-          "presence",
-          "unsubscribeError",
-          `Error unsubscribing from presence: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    }
-
-    // Client cleanup is now handled by base class finally() method
-    this.logCliEvent(
-      flags,
-      "connection",
-      "clientCleanup",
-      "Client cleanup will be handled by base class.",
-    );
   }
 }

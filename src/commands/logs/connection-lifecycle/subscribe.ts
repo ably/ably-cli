@@ -3,7 +3,6 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
-import { BaseFlags } from "../../../types/cli.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
@@ -146,72 +145,16 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
       } else {
         this.error(`Error: ${errorMsg}`);
       }
-    } finally {
-      // Wrap all cleanup in a timeout to prevent hanging
-      await Promise.race([
-        this.performCleanup(flags || {}, channel),
-        new Promise<void>((resolve) => {
-          setTimeout(() => {
-            this.logCliEvent(
-              flags || {},
-              "logs",
-              "cleanupTimeout",
-              "Cleanup timed out after 5s, forcing completion",
-            );
-            resolve();
-          }, 5000);
-        }),
-      ]);
-
-      if (!this.shouldOutputJson(flags || {})) {
-        if (this.cleanupInProgress) {
-          this.log(chalk.green("Graceful shutdown complete (user interrupt)."));
-        } else {
-          this.log(chalk.green("Duration elapsed – command finished cleanly."));
-        }
-      }
     }
   }
 
-  private async performCleanup(
-    flags: BaseFlags,
-    channel: Ably.RealtimeChannel | null,
-  ): Promise<void> {
-    // Clean up channel state logging
+  async finally(err: Error | undefined): Promise<void> {
+    // Clean up channel state logging event listeners
     if (this.cleanupChannelStateLogging) {
       this.cleanupChannelStateLogging();
       this.cleanupChannelStateLogging = null;
     }
 
-    // Unsubscribe from connection lifecycle logs with timeout
-    if (channel) {
-      try {
-        await Promise.race([
-          Promise.resolve(channel.unsubscribe()),
-          new Promise<void>((resolve) => setTimeout(resolve, 1000)),
-        ]);
-        this.logCliEvent(
-          flags,
-          "logs",
-          "unsubscribedLogs",
-          "Unsubscribed from connection lifecycle logs",
-        );
-      } catch (error) {
-        this.logCliEvent(
-          flags,
-          "logs",
-          "unsubscribeError",
-          `Error unsubscribing from connection lifecycle logs: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    }
-
-    // Client cleanup is now handled by base class finally() method
-    this.logCliEvent(
-      flags,
-      "connection",
-      "clientCleanup",
-      "Client cleanup will be handled by base class.",
-    );
+    await super.finally(err);
   }
 }
