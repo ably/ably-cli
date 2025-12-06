@@ -29,32 +29,6 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
   protected realtimeClient: Ably.Realtime | null = null;
   private parsedFlags: BaseFlags = {};
 
-  protected async properlyCloseAblyClient(): Promise<void> {
-    if (
-      !this.realtimeClient ||
-      this.realtimeClient.connection.state === "closed" ||
-      this.realtimeClient.connection.state === "failed"
-    ) {
-      return;
-    }
-
-    return new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => {
-        resolve();
-      }, 2000);
-
-      const onClosedOrFailed = () => {
-        clearTimeout(timeout);
-        resolve();
-      };
-
-      this.realtimeClient!.connection.once("closed", onClosedOrFailed);
-      this.realtimeClient!.connection.once("failed", onClosedOrFailed);
-
-      this.realtimeClient!.close();
-    });
-  }
-
   async finally(error: Error | undefined): Promise<void> {
     // Always clean up connections
     try {
@@ -113,17 +87,6 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
       // Log but don't throw cleanup errors
       if (!this.shouldOutputJson(this.parsedFlags)) {
         this.debug(`Space leave error: ${error}`);
-      }
-    }
-
-    try {
-      if (this.realtimeClient) {
-        await this.properlyCloseAblyClient();
-      }
-    } catch (error) {
-      // Log but don't throw cleanup errors
-      if (!this.shouldOutputJson(this.parsedFlags)) {
-        this.debug(`Realtime close error: ${error}`);
       }
     }
 

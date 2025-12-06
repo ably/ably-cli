@@ -110,10 +110,7 @@ export default class BenchPublisher extends AblyBaseCommand {
       this.intervalId = null;
     }
 
-    if (this.realtime && this.realtime.connection.state !== "closed") {
-      this.realtime.close();
-    }
-
+    // Client cleanup is handled by base class
     return super.finally(err);
   }
 
