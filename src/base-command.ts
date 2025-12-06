@@ -93,6 +93,8 @@ const SKIP_AUTH_INFO_COMMANDS = [
 
 export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   protected _authInfoShown = false;
+  private _cachedRestClient: Ably.Rest | null = null;
+  private _cachedRealtimeClient: Ably.Realtime | null = null;
 
   // Add static flags that will be available to all commands
   static globalFlags = {
@@ -362,10 +364,21 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       skipAuthInfo?: boolean;
     },
   ): Promise<Ably.Rest | null> {
+    // Return cached client if it exists
+    if (this._cachedRestClient) {
+      return this._cachedRestClient;
+    }
+
     const client = await this.createAblyClientInternal(flags, {
       type: "rest",
       skipAuthInfo: options?.skipAuthInfo,
     });
+
+    // Cache the client for reuse
+    if (client) {
+      this._cachedRestClient = client as Ably.Rest;
+    }
+
     return client as Ably.Rest | null;
   }
 
@@ -378,24 +391,22 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       skipAuthInfo?: boolean;
     },
   ): Promise<Ably.Realtime | null> {
+    // Return cached client if it exists
+    if (this._cachedRealtimeClient) {
+      return this._cachedRealtimeClient;
+    }
+
     const client = await this.createAblyClientInternal(flags, {
       type: "realtime",
       skipAuthInfo: options?.skipAuthInfo,
     });
-    return client as Ably.Realtime | null;
-  }
 
-  /**
-   * @deprecated Use createAblyRestClient or createAblyRealtimeClient instead
-   */
-  protected async createAblyClient(
-    flags: BaseFlags,
-    options?: {
-      type?: "rest" | "realtime";
-      skipAuthInfo?: boolean;
-    },
-  ): Promise<Ably.Rest | Ably.Realtime | null> {
-    return this.createAblyClientInternal(flags, options);
+    // Cache the client for reuse
+    if (client) {
+      this._cachedRealtimeClient = client as Ably.Realtime;
+    }
+
+    return client as Ably.Realtime | null;
   }
 
   /**
@@ -821,6 +832,37 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * It's the oclif standard hook that runs before the run() method
    */
   async finally(err: Error | undefined): Promise<void> {
+    // Clean up cached clients
+    try {
+      if (this._cachedRealtimeClient) {
+        const client = this._cachedRealtimeClient;
+
+        if (
+          client.connection.state !== "closed" &&
+          client.connection.state !== "failed"
+        ) {
+          await new Promise<void>((resolve) => {
+            const timeout = setTimeout(() => {
+              resolve();
+            }, 2000);
+
+            const onClosedOrFailed = () => {
+              clearTimeout(timeout);
+              resolve();
+            };
+
+            client.connection.once("closed", onClosedOrFailed);
+            client.connection.once("failed", onClosedOrFailed);
+
+            client.close();
+          });
+        }
+      }
+    } catch (error) {
+      // Log but don't throw cleanup errors
+      this.debug(`Realtime client cleanup error: ${error}`);
+    }
+
     // Call super to maintain the parent class functionality
     await super.finally(err);
   }

@@ -1,8 +1,5 @@
-import { type Space } from "@ably/spaces";
 import { Args } from "@oclif/core";
-import * as Ably from "ably";
 import chalk from "chalk";
-import { BaseFlags } from "../../../types/cli.js";
 
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import isTestMode from "../../../utils/test-mode.js";
@@ -39,122 +36,16 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
     ...SpacesBaseCommand.globalFlags,
   };
 
-  // Declare class properties for clients and space
-  private realtimeClient: Ably.Realtime | null = null;
-  private spacesClient: unknown | null = null;
-  private space: Space | null = null;
-  private parsedFlags: BaseFlags = {};
-
-  async finally(error: Error | undefined): Promise<void> {
-    // Always clean up connections
-    try {
-      if (this.space !== null) {
-        await this.space!.leave();
-        // Wait a bit after leaving space
-        await new Promise((resolve) => setTimeout(resolve, 200));
-
-        // Spaces maintains an internal map of members which have timeouts. This keeps node alive.
-        // This is a workaround to hold off until those timeouts are cleared by the client, as otherwise
-        // we'll get unhandled presence rejections as the connection closes.
-        await new Promise<void>((resolve) => {
-          let intervalId: ReturnType<typeof setInterval>;
-          const maxWaitMs = 10000; // 10 second timeout
-          const startTime = Date.now();
-          const getAll = async () => {
-            // Avoid waiting forever
-            if (Date.now() - startTime > maxWaitMs) {
-              clearInterval(intervalId);
-              this.debug("Timed out waiting for space members to clear");
-              resolve();
-              return;
-            }
-
-            const members = await this.space!.members.getAll();
-            if (members.filter((member) => !member.isConnected).length === 0) {
-              clearInterval(intervalId);
-              this.debug("space members cleared");
-              resolve();
-            } else {
-              this.debug(
-                `waiting for spaces members to clear, ${members.length} remaining`,
-              );
-            }
-          };
-
-          intervalId = setInterval(() => {
-            getAll();
-          }, 1000);
-        });
-      }
-    } catch (error) {
-      // Log but don't throw cleanup errors
-      if (!this.shouldOutputJson(this.parsedFlags)) {
-        this.debug(`Space leave error: ${error}`);
-      }
-    }
-
-    try {
-      if (
-        this.realtimeClient &&
-        this.realtimeClient!.connection.state !== "closed"
-      ) {
-        // Ensure we're not in the middle of any operations
-        if (
-          this.realtimeClient!.connection.state === "connecting" ||
-          this.realtimeClient!.connection.state === "disconnected"
-        ) {
-          // Wait for connection to stabilize before closing
-          await new Promise((resolve) => setTimeout(resolve, 500));
-        }
-
-        this.realtimeClient!.close();
-        // Give the connection a moment to close
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
-    } catch (error) {
-      // Log but don't throw cleanup errors
-      if (!this.shouldOutputJson(this.parsedFlags)) {
-        this.debug(`Realtime close error: ${error}`);
-      }
-    }
-
-    super.finally(error);
-  }
-
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsGetAll);
-    this.parsedFlags = flags;
-
-    let cleanupInProgress = false;
     const { space: spaceName } = args;
-
-    // Handle process termination gracefully
-    const cleanup = async () => {
-      if (!cleanupInProgress) {
-        cleanupInProgress = true;
-        try {
-          if (this.space) {
-            await this.space.leave();
-          }
-          if (this.realtimeClient) {
-            this.realtimeClient.close();
-          }
-        } catch {
-          // Ignore cleanup errors during signal handling
-        }
-      }
-    };
-
-    process.on("SIGINT", cleanup);
-    process.on("SIGTERM", cleanup);
 
     try {
       // Create Spaces client using setupSpacesClient
       const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
-      this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
-      if (!this.realtimeClient || !this.spacesClient || !this.space) {
+      if (!this.realtimeClient || !this.space) {
         this.error("Failed to initialize clients or space");
         return;
       }
@@ -389,14 +280,12 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
               "No cursor updates are being sent in this space. Make sure other clients are actively setting cursor positions.",
             ),
           );
-          cleanupInProgress = true;
           return;
         }
 
         if (cursors.length === 0) {
           this.log(chalk.dim("─".repeat(60)));
           this.log(chalk.yellow("No active cursors found in space."));
-          cleanupInProgress = true;
           return;
         }
 
@@ -499,9 +388,6 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
           });
         }
       }
-
-      // Mark that we're done
-      cleanupInProgress = true;
     } catch (error) {
       // Check if this is a connection closed error
       const errorMessage =
