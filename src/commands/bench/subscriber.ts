@@ -1,9 +1,10 @@
-import { Args } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 import Table from "cli-table3";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
 
 interface TestMetrics {
   endToEndLatencies: number[]; // Publisher -> Subscriber
@@ -30,6 +31,11 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
   static override flags = {
     ...AblyBaseCommand.globalFlags,
+    duration: Flags.integer({
+      char: "d",
+      description:
+        "Duration to subscribe for in seconds (default: indefinite until Ctrl+C)",
+    }),
   };
 
   private receivedEchoCount = 0;
@@ -787,11 +793,14 @@ export default class BenchSubscriber extends AblyBaseCommand {
   }
 
   private async waitForTermination(
-    _flags: Record<string, unknown>,
+    flags: Record<string, unknown>,
   ): Promise<void> {
-    // Keep the connection open indefinitely until Ctrl+C
-    await new Promise(() => {
-      /* Never resolves */
+    // Wait until the user interrupts or the optional duration elapses
+    const exitReason = await waitUntilInterruptedOrTimeout(
+      flags.duration as number | undefined,
+    );
+    this.logCliEvent(flags, "benchmark", "runComplete", "Exiting wait loop", {
+      exitReason,
     });
   }
 }
