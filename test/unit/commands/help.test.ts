@@ -1,196 +1,93 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { Config } from "@oclif/core";
-import HelpCommand from "../../../src/commands/help.js";
-import CustomHelp from "../../../src/help.js";
+import { describe, it, expect } from "vitest";
+import { runCommand } from "@oclif/test";
 
-class TestableHelpCommand extends HelpCommand {
-  private _parseResult: any = {
-    flags: {},
-    args: {},
-    argv: [],
-    raw: [],
-  };
+describe("help command", () => {
+  describe("root help", () => {
+    it("should display root help with available commands", async () => {
+      const { stdout } = await runCommand(["help"], import.meta.url);
 
-  private _customHelp: any;
-
-  // Override parse to return our controlled parse result
-  public override async parse() {
-    return this._parseResult;
-  }
-
-  // Method to set parse result for testing
-  public setParseResult(result: any) {
-    this._parseResult = result;
-  }
-
-  getCustomHelp(): CustomHelp {
-    return this._customHelp;
-  }
-
-  setCustomHelp(showCommandHelpStub: any, formatWebCliRootStub: any) {
-    this._customHelp = {
-      showCommandHelp: showCommandHelpStub,
-      formatWebCliRoot: formatWebCliRootStub,
-    };
-  }
-}
-
-describe("Help Command Tests", function () {
-  beforeEach(function () {
-    vi.spyOn(console, "log").mockImplementation(() => {});
-    vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
-  });
-
-  afterEach(function () {
-    vi.restoreAllMocks();
-  });
-
-  describe("Help Command Structure", function () {
-    it("should be a simple command, not a topic", function () {
-      // Help should not have any subcommands
-      expect((HelpCommand as any).topic).toBeUndefined();
-      expect(HelpCommand.description).toContain("help");
+      expect(stdout).toContain("ably");
+      expect(stdout).toContain("COMMANDS");
     });
 
-    it("should have --web-cli-help flag", function () {
-      const flags = HelpCommand.flags;
-      expect(flags).toHaveProperty("web-cli-help");
-      expect(flags["web-cli-help"].type).toBe("boolean");
-      expect(flags["web-cli-help"].hidden).toBe(true);
+    it("should display version information", async () => {
+      const { stdout } = await runCommand(["help"], import.meta.url);
+
+      // The help output includes version in the header
+      expect(stdout).toMatch(/version|Version/i);
     });
+  });
 
-    it("should have correct usage examples", function () {
-      const examples = HelpCommand.examples;
-      expect(examples).toBeInstanceOf(Array);
-      expect(examples.length).toBeGreaterThan(0);
-
-      // Check for standard help examples
-      const exampleStrings = examples.map((e: any) =>
-        typeof e === "string" ? e : e.command,
+  describe("command-specific help", () => {
+    it("should display help for channels command", async () => {
+      const { stdout } = await runCommand(
+        ["help", "channels"],
+        import.meta.url,
       );
-      expect(exampleStrings.some((e: string) => e.includes("help"))).toBe(true);
-      expect(exampleStrings.some((e: string) => e.includes("channels"))).toBe(
-        true,
+
+      expect(stdout).toContain("channels");
+      expect(stdout).toMatch(/publish|subscribe|list/i);
+    });
+
+    it("should display help for nested command (channels publish)", async () => {
+      const { stdout } = await runCommand(
+        ["help", "channels", "publish"],
+        import.meta.url,
       );
+
+      expect(stdout).toContain("publish");
+      expect(stdout).toContain("USAGE");
+    });
+
+    it("should display help for accounts command", async () => {
+      const { stdout } = await runCommand(
+        ["help", "accounts"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("accounts");
+      expect(stdout).toMatch(/login|logout|list/i);
+    });
+
+    it("should display help for status command", async () => {
+      const { stdout } = await runCommand(["help", "status"], import.meta.url);
+
+      expect(stdout).toContain("status");
+      expect(stdout).toContain("Ably");
     });
   });
 
-  describe("Help Command Behavior", function () {
-    let showCommandStub: ReturnType<typeof vi.fn>;
-    let formatWebCliRootStub: ReturnType<typeof vi.fn>;
+  describe("error handling", () => {
+    it("should show error for unknown command", async () => {
+      const { error } = await runCommand(
+        ["help", "unknowncommand"],
+        import.meta.url,
+      );
 
-    beforeEach(function () {
-      showCommandStub = vi.fn();
-      formatWebCliRootStub = vi.fn();
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("not found");
     });
 
-    it("should accept command names as arguments", async function () {
-      const help = new TestableHelpCommand([], {} as Config);
-      help.setCustomHelp(showCommandStub, formatWebCliRootStub);
+    it("should show error for unknown nested command", async () => {
+      const { error } = await runCommand(
+        ["help", "channels", "unknownsubcommand"],
+        import.meta.url,
+      );
 
-      // Mock config.runCommand
-      const findCommandStub = vi.fn().mockReturnValue("abc");
-      help.config = {
-        findCommand: findCommandStub,
-        commands: ["publish", "subscribe"],
-        topics: [],
-      } as any;
-
-      help.setParseResult({
-        flags: {},
-        args: {},
-        argv: ["channels"],
-        raw: [],
-      });
-
-      await help.run();
-
-      expect(findCommandStub).toHaveBeenCalledWith("channels");
-
-      expect(showCommandStub).toHaveBeenCalledWith("abc");
-    });
-
-    it("should handle --web-cli-help flag", async function () {
-      const help = new TestableHelpCommand([], {} as Config);
-      help.setCustomHelp(showCommandStub, formatWebCliRootStub);
-
-      // Mock config.runCommand
-      help.config = {
-        commands: [],
-        topics: [],
-      } as any;
-
-      help.setParseResult({
-        flags: { "web-cli-help": true },
-        args: {},
-        argv: [],
-        raw: [],
-      });
-
-      await help.run();
-
-      expect(formatWebCliRootStub).toHaveBeenCalledOnce();
-    });
-
-    it("should pass through multiple arguments", async function () {
-      const help = new TestableHelpCommand([], {} as Config);
-      help.setCustomHelp(showCommandStub, formatWebCliRootStub);
-
-      // Mock config.runCommand
-      const findCommandStub = vi.fn().mockReturnValue("abc");
-      help.config = {
-        findCommand: findCommandStub,
-        commands: ["publish", "subscribe"],
-        topics: [],
-      } as any;
-
-      help.setParseResult({
-        flags: {},
-        args: {},
-        argv: ["channels", "publish"],
-        raw: [],
-      });
-
-      await help.run();
-
-      expect(findCommandStub).toHaveBeenCalledWith("channels:publish");
-
-      expect(showCommandStub).toHaveBeenCalledWith("abc");
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("not found");
     });
   });
 
-  describe("No Help Subcommands", function () {
-    it("should not have help:ask command", function () {
-      // This test verifies that help subcommands have been removed
-      // In the new structure, these should be under 'support' topic
-      const mockConfig = {
-        findCommand: (id: string) => {
-          // help:ask should not exist
-          if (id === "help:ask") return null;
-          // support:ask should exist
-          if (id === "support:ask") return { id: "support:ask" };
-          return null;
-        },
-      } as any;
+  describe("help flag on commands", () => {
+    it("should display help when --help is passed to any command", async () => {
+      const { stdout } = await runCommand(
+        ["channels:publish", "--help"],
+        import.meta.url,
+      );
 
-      expect(mockConfig.findCommand("help:ask")).toBeNull();
-      expect(mockConfig.findCommand("support:ask")).not.toBeNull();
-    });
-
-    it("should not have help:status command", function () {
-      // status should be a root command now
-      const mockConfig = {
-        findCommand: (id: string) => {
-          // help:status should not exist
-          if (id === "help:status") return null;
-          // status should exist at root
-          if (id === "status") return { id: "status" };
-          return null;
-        },
-      } as any;
-
-      expect(mockConfig.findCommand("help:status")).toBeNull();
-      expect(mockConfig.findCommand("status")).not.toBeNull();
+      expect(stdout).toContain("USAGE");
+      expect(stdout).toContain("publish");
     });
   });
 });
