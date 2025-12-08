@@ -1,92 +1,102 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { runCommand } from "@oclif/test";
+import nock from "nock";
 
-describe("Status Command Tests", function () {
-  describe("Status Command Structure", function () {
-    it("should be a root-level command", function () {
-      // Mock config to verify status is at root
-      const mockConfig = {
-        findCommand: (id: string) => {
-          if (id === "status")
-            return {
-              id: "status",
-              description: "Check the status of Ably services",
-            };
-          if (id === "help:status") return null; // Old location should not exist
-          return null;
-        },
-      } as any;
+describe("status command", () => {
+  beforeEach(() => {
+    nock.cleanAll();
+  });
 
-      // Status should exist at root
-      expect(mockConfig.findCommand("status")).not.toBeNull();
+  afterEach(() => {
+    nock.cleanAll();
+  });
 
-      // help:status should not exist
-      expect(mockConfig.findCommand("help:status")).toBeNull();
-    });
+  describe("when Ably services are operational", () => {
+    it("should display operational status", async () => {
+      nock("https://ably.com")
+        .get("/status/up.json")
+        .reply(200, { status: true });
 
-    it("should have --open flag", function () {
-      // Mock status command with flags
-      const mockStatusCommand = {
-        id: "status",
-        flags: {
-          open: {
-            type: "boolean",
-            description: "Open the status page in your browser",
-            default: false,
-          },
-        },
-      };
+      const { stdout } = await runCommand(["status"], import.meta.url);
 
-      expect(mockStatusCommand.flags).toHaveProperty("open");
-      expect(mockStatusCommand.flags.open.type).toBe("boolean");
-    });
-
-    it("should have correct description", function () {
-      const mockCommand = {
-        id: "status",
-        description: "Check the status of Ably services",
-      };
-
-      expect(mockCommand.description).toContain("status");
-      expect(mockCommand.description).toContain("Ably services");
+      expect(stdout).toContain("operational");
+      expect(stdout).toContain("No incidents currently reported");
+      expect(stdout).toContain("https://status.ably.com");
     });
   });
 
-  describe("Interactive Mode Compatibility", function () {
-    it("should not use ora spinner in interactive mode", function () {
-      // This test verifies the fix for the UI clearing issue
-      // Simulating interactive mode
+  describe("when there are incidents", () => {
+    it("should display incident detected status", async () => {
+      nock("https://ably.com")
+        .get("/status/up.json")
+        .reply(200, { status: false });
 
-      // Mock ora usage
-      const mockOra = vi.fn();
+      const { stdout } = await runCommand(["status"], import.meta.url);
 
-      // In interactive mode, ora should not be used
-      expect(mockOra).not.toHaveBeenCalled();
+      expect(stdout).toContain("Incident detected");
+      expect(stdout).toContain("open incidents");
+      expect(stdout).toContain("https://status.ably.com");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle invalid response from status endpoint", async () => {
+      nock("https://ably.com").get("/status/up.json").reply(200, {});
+
+      const { error } = await runCommand(["status"], import.meta.url);
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("status attribute is missing");
     });
 
-    it("should use console.log for status messages in interactive mode", function () {
-      const consoleLogStub = vi
-        .spyOn(console, "log")
-        .mockImplementation(() => {});
+    it("should handle network errors", async () => {
+      nock("https://ably.com")
+        .get("/status/up.json")
+        .replyWithError("Network error");
 
-      console.log("Checking Ably service status...");
-      expect(consoleLogStub).toHaveBeenCalledWith(
-        "Checking Ably service status...",
+      const { error } = await runCommand(["status"], import.meta.url);
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Network error");
+    });
+
+    it("should handle HTTP 500 errors", async () => {
+      nock("https://ably.com")
+        .get("/status/up.json")
+        .reply(500, { error: "Internal Server Error" });
+
+      const { error } = await runCommand(["status"], import.meta.url);
+
+      expect(error).toBeDefined();
+    });
+  });
+
+  describe("--open flag", () => {
+    it("should indicate browser would be opened when --open flag is used", async () => {
+      nock("https://ably.com")
+        .get("/status/up.json")
+        .reply(200, { status: true });
+
+      const { stdout } = await runCommand(
+        ["status", "--open"],
+        import.meta.url,
       );
+
+      // In test mode, browser opening is simulated
+      expect(stdout).toContain("https://status.ably.com");
     });
   });
 
-  describe("Status Page URL", function () {
-    it("should have correct status page URL", function () {
-      const STATUS_PAGE_URL = "https://status.ably.com";
-      expect(STATUS_PAGE_URL).toBe("https://status.ably.com");
-    });
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["status", "--help"],
+        import.meta.url,
+      );
 
-    it("should open browser when --open flag is used", async function () {
-      const openStub = vi.fn();
-
-      // Simulate command with --open flag
-      await openStub("https://status.ably.com");
-      expect(openStub).toHaveBeenCalledWith("https://status.ably.com");
+      expect(stdout).toContain("Check the status of the Ably service");
+      expect(stdout).toContain("--open");
+      expect(stdout).toContain("USAGE");
     });
   });
 });
