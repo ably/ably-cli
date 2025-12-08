@@ -1,234 +1,258 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { Config } from "@oclif/core";
-import ChannelsPresenceEnter from "../../../../../src/commands/channels/presence/enter.js";
-import * as Ably from "ably";
+import { runCommand } from "@oclif/test";
 
-// Create a testable version of ChannelsPresenceEnter
-class TestableChannelsPresenceEnter extends ChannelsPresenceEnter {
-  public errorOutput: string = "";
-  private _parseResult: any;
-  public mockClient: any = {}; // Initialize mockClient
-  private _shouldOutputJson = false;
-  private _formatJsonOutputFn:
-    | ((data: Record<string, unknown>) => string)
-    | null = null;
-
-  // Override parse to simulate parse output
-  public override async parse(..._args: any[]) {
-    if (!this._parseResult) {
-      // Default parse result if not set
-      this._parseResult = {
-        flags: { data: "{}", "show-others": true },
-        args: { channel: "default-presence-channel" },
-        argv: ["default-presence-channel"],
-        raw: [],
-      };
-    }
-    return this._parseResult;
-  }
-
-  public setParseResult(result: any) {
-    this._parseResult = result;
-  }
-
-  // Correct override signature for the error method
-  public override error(
-    message: string | Error,
-    _options?: { code?: string; exit?: number | false },
-  ): never {
-    this.errorOutput = typeof message === "string" ? message : message.message;
-    // Prevent actual exit during tests by throwing instead
-    throw new Error(this.errorOutput);
-  }
-
-  // Override JSON output methods
-  public override shouldOutputJson(_flags?: any): boolean {
-    return this._shouldOutputJson;
-  }
-
-  public setShouldOutputJson(value: boolean) {
-    this._shouldOutputJson = value;
-  }
-
-  public override formatJsonOutput(
-    data: Record<string, unknown>,
-    _flags?: Record<string, unknown>,
-  ): string {
-    return this._formatJsonOutputFn
-      ? this._formatJsonOutputFn(data)
-      : JSON.stringify(data);
-  }
-
-  public setFormatJsonOutput(fn: (data: Record<string, unknown>) => string) {
-    this._formatJsonOutputFn = fn;
-  }
-
-  // Helper for blocking promises - MODIFIED to resolve immediately for unit tests
-  public override setupCleanupHandler(
-    _cleanupFn: () => Promise<void>,
-  ): Promise<void> {
-    this.debug("Skipping indefinite wait in setupCleanupHandler for test.");
-    return Promise.resolve();
-  }
-
-  // Override ensureAppAndKey to prevent real auth checks in unit tests
-  protected override async ensureAppAndKey(
-    _flags: any,
-  ): Promise<{ apiKey: string; appId: string } | null> {
-    this.debug("Skipping ensureAppAndKey in test mode");
-    return { apiKey: "dummy-key-value:secret", appId: "dummy-app" };
-  }
-
-  // Override the createAblyRealtimeClient method to ensure it returns a value
-  public override async createAblyRealtimeClient(
-    _flags?: any,
-  ): Promise<Ably.Realtime | null> {
-    this.debug(
-      "Overriding createAblyRealtimeClient in test mode, returning mockClient.",
-    );
-    // Return the mock client that was set up for testing
-    return this.mockClient as unknown as Ably.Realtime;
-  }
+// Define the type for global test mocks
+declare global {
+  var __TEST_MOCKS__: {
+    ablyRealtimeMock?: unknown;
+  };
 }
 
-describe("ChannelsPresenceEnter", function () {
-  let command: TestableChannelsPresenceEnter;
-  let mockConfig: Config;
-  let _logStub: ReturnType<typeof vi.fn>;
+describe("channels:presence:enter command", () => {
+  let mockPresenceEnter: ReturnType<typeof vi.fn>;
+  let mockPresenceGet: ReturnType<typeof vi.fn>;
+  let mockPresenceLeave: ReturnType<typeof vi.fn>;
+  let mockPresenceSubscribe: ReturnType<typeof vi.fn>;
 
-  beforeEach(function () {
-    mockConfig = { runHook: vi.fn() } as unknown as Config;
-    command = new TestableChannelsPresenceEnter([], mockConfig);
-    _logStub = vi.spyOn(command, "log");
-  });
+  beforeEach(() => {
+    mockPresenceEnter = vi.fn().mockResolvedValue(null);
+    mockPresenceGet = vi
+      .fn()
+      .mockResolvedValue([
+        { clientId: "other-client", data: { status: "online" } },
+      ]);
+    mockPresenceLeave = vi.fn().mockResolvedValue(null);
+    mockPresenceSubscribe = vi.fn();
 
-  afterEach(function () {
-    vi.restoreAllMocks();
-
-    // No need to stub the ES module - we override the method in run() below
-
-    // Set up a more complete mock client structure for beforeEach
-    const mockPresenceInstance = {
-      get: vi.fn().mockResolvedValue([]), // Default to empty members
-      subscribe: vi.fn(),
-      unsubscribe: vi.fn(),
-      enter: vi.fn().mockImplementation(async () => {}),
-      leave: vi.fn().mockImplementation(async () => {}),
+    const mockChannel = {
+      name: "test-channel",
+      state: "attached",
+      presence: {
+        enter: mockPresenceEnter,
+        get: mockPresenceGet,
+        leave: mockPresenceLeave,
+        subscribe: mockPresenceSubscribe,
+        unsubscribe: vi.fn(),
+      },
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
     };
-    const mockChannelInstance = {
-      name: "test-presence-channel", // Add default name
-      presence: mockPresenceInstance,
-      subscribe: vi.fn(),
-      unsubscribe: vi.fn(),
-      // Make attach resolve quickly
-      attach: vi.fn().mockImplementation(async () => {}),
-      detach: vi.fn().mockImplementation(async () => {}),
-      // Simulate channel attached event shortly after attach is called
-      on: vi
-        .fn()
-        .mockImplementation(
-          (event: string, handler: (stateChange: any) => void) => {
-            if (event === "attached" && typeof handler === "function") {
-              // Simulate async event
-              setTimeout(() => handler({ current: "attached" }), 0);
+
+    globalThis.__TEST_MOCKS__ = {
+      ablyRealtimeMock: {
+        channels: {
+          get: vi.fn().mockReturnValue(mockChannel),
+        },
+        connection: {
+          state: "connected",
+          on: vi.fn(),
+          once: vi.fn((event: string, callback: () => void) => {
+            if (event === "connected") {
+              setTimeout(() => callback(), 5);
             }
-          },
-        ),
-    };
-
-    command.mockClient = {
-      channels: {
-        get: vi.fn().mockReturnValue(mockChannelInstance),
-        release: vi.fn(),
-      },
-      connection: {
-        once: vi.fn(),
-        // Simulate connection connected event quickly
-        on: vi
-          .fn()
-          .mockImplementation(
-            (event: string, handler: (stateChange: any) => void) => {
-              if (event === "connected" && typeof handler === "function") {
-                // Simulate async event
-                setTimeout(() => handler({ current: "connected" }), 0);
-              }
-            },
-          ),
+          }),
+        },
         close: vi.fn(),
-        state: "connected", // Start in connected state for simplicity
+        auth: {
+          clientId: "test-client-id",
+        },
       },
-      auth: {
-        clientId: "test-client-id",
-      },
-      close: vi.fn(),
     };
+  });
 
-    // Ensure the overridden createAblyRealtimeClient uses this mock
-    // (Already handled by the class override, no need to stub it again here)
+  afterEach(() => {
+    delete globalThis.__TEST_MOCKS__;
+  });
 
-    // Set default parse result (can be overridden by specific tests)
-    command.setParseResult({
-      flags: { "profile-data": "{}", "show-others": true },
-      args: { channel: "test-presence-channel" },
-      raw: [],
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:presence:enter", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Enter presence on a channel");
+      expect(stdout).toContain("USAGE");
+      expect(stdout).toContain("CHANNEL");
+    });
+
+    it("should display examples in help", async () => {
+      const { stdout } = await runCommand(
+        ["channels:presence:enter", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("EXAMPLES");
+      expect(stdout).toContain("presence enter");
+    });
+
+    it("should show channel argument is required", async () => {
+      const { stdout } = await runCommand(
+        ["channels:presence:enter", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("CHANNEL");
     });
   });
 
-  it("should create an Ably client when run", async function () {
-    const createClientSpy = vi.spyOn(command, "createAblyRealtimeClient");
+  describe("presence enter functionality", () => {
+    it("should enter presence on a channel", async () => {
+      const { stdout } = await runCommand(
+        [
+          "channels:presence:enter",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+        ],
+        import.meta.url,
+      );
 
-    // Stub the actual functionality to avoid long-running operations
-    vi.spyOn(command, "run").mockImplementation(async function (
-      this: TestableChannelsPresenceEnter,
-    ) {
-      await this.createAblyRealtimeClient({});
-      return;
+      // Should show successful entry
+      expect(stdout).toContain("test-channel");
+      expect(stdout).toContain("Entered");
+      // Verify presence.enter was called
+      expect(mockPresenceEnter).toHaveBeenCalled();
     });
 
-    await command.run();
+    it("should enter presence with data", async () => {
+      const { stdout } = await runCommand(
+        [
+          "channels:presence:enter",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+          "--data",
+          '{"status":"online","name":"TestUser"}',
+        ],
+        import.meta.url,
+      );
 
-    expect(createClientSpy).toHaveBeenCalledOnce();
-  });
-
-  it("should parse data correctly", async function () {
-    command.setParseResult({
-      flags: { data: '{"status":"online"}' },
-      args: { channel: "test-channel" },
-      raw: [],
+      expect(stdout).toContain("Entered");
+      // Verify presence.enter was called with the data
+      expect(mockPresenceEnter).toHaveBeenCalledWith({
+        status: "online",
+        name: "TestUser",
+      });
     });
 
-    const parseResult = await command.parse();
-    expect(parseResult.flags.data).toBe('{"status":"online"}');
-  });
+    it("should list current presence members after entering", async () => {
+      const { stdout } = await runCommand(
+        [
+          "channels:presence:enter",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+        ],
+        import.meta.url,
+      );
 
-  it("should handle invalid JSON in data", function () {
-    command.setParseResult({
-      flags: { data: "{invalid-json}" },
-      args: { channel: "test-channel" },
-      raw: [],
+      // Should show presence members
+      expect(stdout).toContain("other-client");
+      expect(mockPresenceGet).toHaveBeenCalled();
     });
 
-    // Test JSON parsing logic directly
-    const invalidJson = "{invalid-json}";
-    expect(() => JSON.parse(invalidJson)).toThrow();
+    it("should run with --json flag without errors", async () => {
+      const { error } = await runCommand(
+        [
+          "channels:presence:enter",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      // Should not have errors - command runs successfully in JSON mode
+      expect(error).toBeUndefined();
+      // Verify presence.enter was still called
+      expect(mockPresenceEnter).toHaveBeenCalled();
+    });
+
+    it("should handle invalid JSON data gracefully", async () => {
+      const { error } = await runCommand(
+        [
+          "channels:presence:enter",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+          "--data",
+          "not-valid-json",
+        ],
+        import.meta.url,
+      );
+
+      // Should throw an error for invalid JSON
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/invalid|json/i);
+    });
+
+    it("should subscribe to presence events and display them", async () => {
+      // Set up the mock to capture the callback and trigger a presence event
+      let presenceCallback: ((message: unknown) => void) | undefined;
+      mockPresenceSubscribe.mockImplementation(
+        (callback: (message: unknown) => void) => {
+          presenceCallback = callback;
+          // Trigger a presence event after a short delay
+          setTimeout(() => {
+            callback({
+              action: "enter",
+              clientId: "another-client",
+              data: { status: "active" },
+              timestamp: Date.now(),
+            });
+          }, 50);
+        },
+      );
+
+      const { stdout } = await runCommand(
+        [
+          "channels:presence:enter",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+        ],
+        import.meta.url,
+      );
+
+      // Should have subscribed to presence events
+      expect(mockPresenceSubscribe).toHaveBeenCalled();
+      expect(presenceCallback).toBeDefined();
+
+      // Verify the presence event was displayed
+      expect(stdout).toContain("another-client");
+      expect(stdout).toContain("enter");
+    });
   });
 
-  it("should return mock client from createAblyRealtimeClient", async function () {
-    const client = await command.createAblyRealtimeClient({});
-    expect(client).toBe(command.mockClient);
-  });
+  describe("flags", () => {
+    it("should accept --data flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:presence:enter", "--help"],
+        import.meta.url,
+      );
 
-  it("should format JSON output when shouldOutputJson is true", function () {
-    command.setShouldOutputJson(true);
-    command.setFormatJsonOutput((data) => JSON.stringify(data, null, 2));
+      expect(stdout).toContain("--data");
+    });
 
-    const testData = { channel: "test", action: "enter" };
-    const result = command.formatJsonOutput(testData);
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:presence:enter", "--help"],
+        import.meta.url,
+      );
 
-    expect(result).toBeTypeOf("string");
-    expect(() => JSON.parse(result)).not.toThrow();
+      expect(stdout).toContain("--json");
+    });
 
-    const parsed = JSON.parse(result);
-    expect(parsed).toEqual(testData);
+    it("should accept --duration flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:presence:enter", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("--duration");
+    });
   });
 });
