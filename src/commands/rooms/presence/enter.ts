@@ -25,14 +25,15 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
   static override examples = [
     "$ ably rooms presence enter my-room",
     `$ ably rooms presence enter my-room --data '{"name":"User","status":"active"}'`,
+    "$ ably rooms presence enter my-room --show-others",
     "$ ably rooms presence enter my-room --duration 30",
   ];
   static override flags = {
     ...ChatBaseCommand.globalFlags,
 
     "show-others": Flags.boolean({
-      default: true,
-      description: "Show other presence events while present (default: true)",
+      default: false,
+      description: "Show other presence events while present (default: false)",
     }),
     duration: Flags.integer({
       description:

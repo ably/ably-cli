@@ -23,7 +23,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
     '$ ably channels presence enter my-channel --client-id "client123" --data \'{"name":"John","status":"online"}\'',
     '$ ably channels presence enter my-channel --api-key "YOUR_API_KEY"',
     '$ ably channels presence enter my-channel --token "YOUR_ABLY_TOKEN"',
-    "$ ably channels presence enter my-channel --show-others=false",
+    "$ ably channels presence enter my-channel --show-others",
     "$ ably channels presence enter my-channel --json",
     "$ ably channels presence enter my-channel --pretty-json",
     "$ ably channels presence enter my-channel --duration 30",
@@ -41,8 +41,8 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
       required: false,
     }),
     "show-others": Flags.boolean({
-      default: true,
-      description: "Show other presence events while present (default: true)",
+      default: false,
+      description: "Show other presence events while present (default: false)",
     }),
     "sequence-numbers": Flags.boolean({
       default: false,
