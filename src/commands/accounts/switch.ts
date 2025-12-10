@@ -35,14 +35,12 @@ export default class AccountsSwitch extends ControlBaseCommand {
       if (this.shouldOutputJson(flags)) {
         const error =
           'No accounts configured. Use "ably accounts login" to add an account.';
-        this.log(
-          this.formatJsonOutput(
-            {
-              error,
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error,
+            success: false,
+          },
+          flags,
         );
         return;
       }
@@ -63,19 +61,17 @@ export default class AccountsSwitch extends ControlBaseCommand {
     if (this.shouldOutputJson(flags)) {
       const error =
         "No account alias provided. Please specify an account alias to switch to.";
-      this.log(
-        this.formatJsonOutput(
-          {
-            availableAccounts: accounts.map(({ account, alias }) => ({
-              alias,
-              id: account.accountId || "Unknown",
-              name: account.accountName || "Unknown",
-            })),
-            error,
-            success: false,
-          },
-          flags,
-        ),
+      this.jsonError(
+        {
+          availableAccounts: accounts.map(({ account, alias }) => ({
+            alias,
+            id: account.accountId || "Unknown",
+            name: account.accountName || "Unknown",
+          })),
+          error,
+          success: false,
+        },
+        flags,
       );
       return;
     }
@@ -104,20 +100,19 @@ export default class AccountsSwitch extends ControlBaseCommand {
     if (!accountExists) {
       const error = `Account with alias "${alias}" not found. Use "ably accounts list" to see available accounts.`;
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              availableAccounts: accounts.map(({ account, alias }) => ({
-                alias,
-                id: account.accountId || "Unknown",
-                name: account.accountName || "Unknown",
-              })),
-              error,
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            availableAccounts: accounts.map(({ account, alias }) => ({
+              alias,
+              id: account.accountId || "Unknown",
+              name: account.accountName || "Unknown",
+            })),
+            error,
+            success: false,
+          },
+          flags,
         );
+        return;
       } else {
         this.error(error);
       }
@@ -135,15 +130,14 @@ export default class AccountsSwitch extends ControlBaseCommand {
         const error =
           "No access token found for this account. Please log in again.";
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                error,
-                success: false,
-              },
-              flags,
-            ),
+          this.jsonError(
+            {
+              error,
+              success: false,
+            },
+            flags,
           );
+          return;
         } else {
           this.error(error);
         }
@@ -181,16 +175,15 @@ export default class AccountsSwitch extends ControlBaseCommand {
       }
     } catch {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              account: { alias },
-              error: "Access token may have expired or is invalid.",
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            account: { alias },
+            error: "Access token may have expired or is invalid.",
+            success: false,
+          },
+          flags,
         );
+        return;
       } else {
         this.warn(
           "Switched to account, but the access token may have expired or is invalid.",

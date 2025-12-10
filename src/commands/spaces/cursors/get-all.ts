@@ -512,19 +512,17 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
         (error as Error & { code?: number })?.code === 80017;
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: isConnectionError
-                ? "Connection was closed before operation completed. Please try again."
-                : `Error getting cursors: ${errorMessage}`,
-              spaceName,
-              status: "error",
-              success: false,
-              connectionError: isConnectionError,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: isConnectionError
+              ? "Connection was closed before operation completed. Please try again."
+              : `Error getting cursors: ${errorMessage}`,
+            spaceName,
+            status: "error",
+            success: false,
+            connectionError: isConnectionError,
+          },
+          flags,
         );
       } else {
         const message = isConnectionError

@@ -35,15 +35,13 @@ export default class KeysListCommand extends ControlBaseCommand {
 
     if (!appId) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error:
-                'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error:
+              'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
+            success: false,
+          },
+          flags,
         );
       } else {
         this.error(
@@ -134,15 +132,13 @@ export default class KeysListCommand extends ControlBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              error: error instanceof Error ? error.message : String(error),
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            appId,
+            error: error instanceof Error ? error.message : String(error),
+            success: false,
+          },
+          flags,
         );
       } else {
         this.error(

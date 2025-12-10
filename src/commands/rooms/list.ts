@@ -44,7 +44,7 @@ export default class RoomsList extends ChatBaseCommand {
     ...ChatBaseCommand.globalFlags,
     limit: Flags.integer({
       default: 100,
-      description: "Maximum number of rooms to return",
+      description: "Maximum number of rooms to return (default: 100)",
     }),
     prefix: Flags.string({
       char: "p",
@@ -176,6 +176,17 @@ export default class RoomsList extends ChatBaseCommand {
         }
       }
     } catch (error) {
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            status: "error",
+            success: false,
+          },
+          flags,
+        );
+        return;
+      }
       this.error(
         `Error listing rooms: ${error instanceof Error ? error.message : String(error)}`,
       );

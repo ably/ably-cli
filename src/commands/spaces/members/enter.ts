@@ -142,11 +142,9 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
             spaceName,
           });
           if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput(
-                { error: errorMsg, spaceName, success: false },
-                flags,
-              ),
+            this.jsonError(
+              { error: errorMsg, spaceName, success: false },
+              flags,
             );
           } else {
             this.error(errorMsg);
@@ -397,9 +395,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         error: errorMsg,
       });
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput({ error: errorMsg, success: false }, flags),
-        );
+        this.jsonError({ error: errorMsg, success: false }, flags);
       } else {
         this.error(errorMsg);
       }

@@ -62,9 +62,6 @@ export default class QueuesListCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(QueuesListCommand);
 
-    // Display authentication information
-    this.showAuthInfoIfNeeded(flags);
-
     const controlApi = this.createControlApi(flags);
     const appId = await this.resolveAppId(flags);
 
@@ -164,17 +161,16 @@ export default class QueuesListCommand extends ControlBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              error: error instanceof Error ? error.message : String(error),
-              status: "error",
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            appId,
+            error: error instanceof Error ? error.message : String(error),
+            status: "error",
+            success: false,
+          },
+          flags,
         );
+        return;
       } else {
         this.error(
           `Error listing queues: ${error instanceof Error ? error.message : String(error)}`,

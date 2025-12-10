@@ -36,18 +36,18 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
     ...AblyBaseCommand.globalFlags,
     "cipher-algorithm": Flags.string({
       default: "aes",
-      description: "Encryption algorithm to use",
+      description: "Encryption algorithm to use (default: aes)",
     }),
     "cipher-key": Flags.string({
       description: "Encryption key for decrypting messages (hex-encoded)",
     }),
     "cipher-key-length": Flags.integer({
       default: 256,
-      description: "Length of encryption key in bits",
+      description: "Length of encryption key in bits (default: 256)",
     }),
     "cipher-mode": Flags.string({
       default: "cbc",
-      description: "Cipher mode to use",
+      description: "Cipher mode to use (default: cbc)",
     }),
     delta: Flags.boolean({
       default: false,
@@ -61,7 +61,11 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
     }),
     rewind: Flags.integer({
       default: 0,
-      description: "Number of messages to rewind when subscribing",
+      description: "Number of messages to rewind when subscribing (default: 0)",
+    }),
+    "sequence-numbers": Flags.boolean({
+      default: false,
+      description: "Include sequence numbers in output",
     }),
   };
 
@@ -69,6 +73,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
   private cleanupInProgress = false;
   private client: Ably.Realtime | null = null;
+  private sequenceCounter = 0;
 
   private async properlyCloseAblyClient(): Promise<void> {
     if (
@@ -122,9 +127,8 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           error: errorMsg,
         });
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput({ error: errorMsg, success: false }, flags),
-          );
+          this.jsonError({ error: errorMsg, success: false }, flags);
+          return;
         } else {
           this.error(errorMsg);
         }
@@ -224,6 +228,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
         attachPromises.push(attachPromise);
 
         channel.subscribe((message: Ably.Message) => {
+          this.sequenceCounter++;
           const timestamp = message.timestamp
             ? new Date(message.timestamp).toISOString()
             : new Date().toISOString();
@@ -236,6 +241,9 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
             event: message.name || "(none)",
             id: message.id,
             timestamp,
+            ...(flags["sequence-numbers"]
+              ? { sequence: this.sequenceCounter }
+              : {}),
           };
           this.logCliEvent(
             flags,
@@ -249,10 +257,13 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
             this.log(this.formatJsonOutput(messageEvent, flags));
           } else {
             const name = message.name || "(none)";
+            const sequencePrefix = flags["sequence-numbers"]
+              ? `${chalk.dim(`[${this.sequenceCounter}]`)}`
+              : "";
 
             // Message header with timestamp and channel info
             this.log(
-              `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`Channel: ${channel.name}`)} | ${chalk.yellow(`Event: ${name}`)}`,
+              `${chalk.gray(`[${timestamp}]`)}${sequencePrefix} ${chalk.cyan(`Channel: ${channel.name}`)} | ${chalk.yellow(`Event: ${name}`)}`,
             );
 
             // Message data with consistent formatting
@@ -316,12 +327,11 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
         { channels: channelNames, error: errorMsg },
       );
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { channels: channelNames, error: errorMsg, success: false },
-            flags,
-          ),
+        this.jsonError(
+          { channels: channelNames, error: errorMsg, success: false },
+          flags,
         );
+        return;
       } else {
         this.error(`Error: ${errorMsg}`);
       }

@@ -2,11 +2,12 @@ import { Args, Flags } from "@oclif/core";
 import * as readline from "node:readline";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 import AppsSwitch from "./switch.js";
 
 export default class AppsDeleteCommand extends ControlBaseCommand {
   static args = {
-    id: Args.string({
+    appId: Args.string({
       description: "App ID to delete (uses current app if not specified)",
       required: false,
     }),
@@ -43,23 +44,22 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
     const controlApi = this.createControlApi(flags);
 
     // Use app ID from flag, argument, or current app (in that order)
-    let appIdToDelete = flags.app || args.id;
+    let appIdToDelete = flags.app || args.appId;
     if (!appIdToDelete) {
       appIdToDelete = this.configManager.getCurrentAppId();
       if (!appIdToDelete) {
         const error =
           'No app ID provided and no current app selected. Please provide an app ID or select a default app with "ably apps switch".';
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                error,
-                status: "error",
-                success: false,
-              },
-              flags,
-            ),
+          this.jsonError(
+            {
+              error,
+              status: "error",
+              success: false,
+            },
+            flags,
           );
+          return;
         } else {
           this.error(error);
         }
@@ -89,17 +89,16 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
         const nameConfirmed = await this.promptForAppName(app.name);
         if (!nameConfirmed) {
           if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput(
-                {
-                  appId: app.id,
-                  error: "Deletion cancelled - app name did not match",
-                  status: "cancelled",
-                  success: false,
-                },
-                flags,
-              ),
+            this.jsonError(
+              {
+                appId: app.id,
+                error: "Deletion cancelled - app name did not match",
+                status: "cancelled",
+                success: false,
+              },
+              flags,
             );
+            return;
           } else {
             this.log("Deletion cancelled - app name did not match");
           }
@@ -107,23 +106,22 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
           return;
         }
 
-        const confirmed = await this.promptForConfirmation(
-          `\nAre you sure you want to delete app "${app.name}" (${app.id})? This action cannot be undone. [y/N]`,
+        const confirmed = await promptForConfirmation(
+          `\nAre you sure you want to delete app "${app.name}" (${app.id})? This action cannot be undone.`,
         );
 
         if (!confirmed) {
           if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput(
-                {
-                  appId: app.id,
-                  error: "Deletion cancelled by user",
-                  status: "cancelled",
-                  success: false,
-                },
-                flags,
-              ),
+            this.jsonError(
+              {
+                appId: app.id,
+                error: "Deletion cancelled by user",
+                status: "cancelled",
+                success: false,
+              },
+              flags,
             );
+            return;
           } else {
             this.log("Deletion cancelled");
           }
@@ -166,17 +164,16 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId: appIdToDelete,
-              error: error instanceof Error ? error.message : String(error),
-              status: "error",
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            appId: appIdToDelete,
+            error: error instanceof Error ? error.message : String(error),
+            status: "error",
+            success: false,
+          },
+          flags,
         );
+        return;
       } else {
         this.error(
           `Error deleting app: ${error instanceof Error ? error.message : String(error)}`,
@@ -199,20 +196,6 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
           resolve(answer === appName);
         },
       );
-    });
-  }
-
-  private promptForConfirmation(message: string): Promise<boolean> {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    return new Promise<boolean>((resolve) => {
-      rl.question(message + " ", (answer) => {
-        rl.close();
-        resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes");
-      });
     });
   }
 }

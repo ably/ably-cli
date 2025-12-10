@@ -274,8 +274,8 @@ describe("rooms messages commands", function () {
 
       command.setParseResult({
         flags: {},
-        args: { room: "test-room" },
-        argv: [],
+        args: { rooms: "test-room" },
+        argv: ["test-room"],
         raw: [],
       });
     });
@@ -304,6 +304,7 @@ describe("rooms messages commands", function () {
 
       expect(command.mockChatClient.rooms.get).toHaveBeenCalledWith(
         "test-room",
+        {},
       );
       expect(mockRoom.attach).toHaveBeenCalledOnce();
       expect(subscribeStub).toHaveBeenCalledOnce();
@@ -369,9 +370,9 @@ describe("rooms messages commands", function () {
       };
 
       command.setParseResult({
-        flags: { limit: 20 },
+        flags: { limit: 50, order: "newestFirst", "show-metadata": false },
         args: { room: "test-room" },
-        argv: [],
+        argv: ["test-room"],
         raw: [],
       });
     });
@@ -386,9 +387,9 @@ describe("rooms messages commands", function () {
 
     it("should handle query options for history", async function () {
       command.setParseResult({
-        flags: { limit: 50 },
+        flags: { limit: 50, order: "oldestFirst" },
         args: { room: "test-room" },
-        argv: [],
+        argv: ["test-room"],
         raw: [],
       });
 
@@ -396,7 +397,7 @@ describe("rooms messages commands", function () {
 
       expect(historyStub).toHaveBeenCalledOnce();
       const queryOptions = historyStub.mock.calls[0][0];
-      expect(queryOptions).toEqual({ limit: 50 });
+      expect(queryOptions).toEqual({ limit: 50, orderBy: "oldestFirst" });
     });
   });
 });

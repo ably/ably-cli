@@ -42,7 +42,7 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
 
     ttl: Flags.integer({
       default: 3600, // 1 hour
-      description: "Time to live in seconds",
+      description: "Time to live in seconds (default: 3600, 1 hour)",
     }),
   };
 

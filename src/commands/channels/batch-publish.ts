@@ -66,26 +66,29 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
   static override flags = {
     ...AblyBaseCommand.globalFlags,
     channels: Flags.string({
-      description: "Comma-separated list of channel names to publish to",
+      description:
+        "Comma-separated list of channel names to publish to (mutually exclusive with --channels-json and --spec)",
       exclusive: ["channels-json", "spec"],
     }),
     "channels-json": Flags.string({
-      description: "JSON array of channel names to publish to",
+      description:
+        "JSON array of channel names to publish to (mutually exclusive with --channels and --spec)",
       exclusive: ["channels", "spec"],
     }),
     encoding: Flags.string({
       char: "e",
-      description: "The encoding for the message",
+      description: "The encoding for the message (not used with --spec)",
       exclusive: ["spec"],
     }),
     name: Flags.string({
       char: "n",
-      description: "The event name (if not specified in the message JSON)",
+      description:
+        "The event name (if not specified in the message JSON, not used with --spec)",
       exclusive: ["spec"],
     }),
     spec: Flags.string({
       description:
-        "Complete batch spec JSON (either a single BatchSpec object or an array of BatchSpec objects)",
+        "Complete batch spec JSON (either a single BatchSpec object or an array of BatchSpec objects). When used, --channels, --channels-json, --name, and --encoding are ignored",
       exclusive: ["channels", "channels-json", "name", "encoding"],
     }),
   };
@@ -109,21 +112,19 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
           batchContent = JSON.parse(flags.spec);
         } catch (error) {
           if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput(
-                {
-                  error: `Failed to parse spec JSON: ${error instanceof Error ? error.message : String(error)}`,
-                  success: false,
-                },
-                flags,
-              ),
+            this.jsonError(
+              {
+                error: `Failed to parse spec JSON: ${error instanceof Error ? error.message : String(error)}`,
+                success: false,
+              },
+              flags,
             );
             return;
+          } else {
+            this.error(
+              `Failed to parse spec JSON: ${error instanceof Error ? error.message : String(error)}`,
+            );
           }
-
-          this.error(
-            `Failed to parse spec JSON: ${error instanceof Error ? error.message : String(error)}`,
-          );
         }
       } else {
         // Build the batch content from flags and args
@@ -136,78 +137,70 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
             const parsedChannels = JSON.parse(flags["channels-json"]);
             if (!Array.isArray(parsedChannels)) {
               if (this.shouldOutputJson(flags)) {
-                this.log(
-                  this.formatJsonOutput(
-                    {
-                      error:
-                        "channels-json must be a valid JSON array of channel names",
-                      success: false,
-                    },
-                    flags,
-                  ),
+                this.jsonError(
+                  {
+                    error:
+                      "channels-json must be a valid JSON array of channel names",
+                    success: false,
+                  },
+                  flags,
                 );
                 return;
+              } else {
+                this.error(
+                  "channels-json must be a valid JSON array of channel names",
+                );
               }
-
-              this.error(
-                "channels-json must be a valid JSON array of channel names",
-              );
             }
 
             channels = parsedChannels;
           } catch (error) {
             if (this.shouldOutputJson(flags)) {
-              this.log(
-                this.formatJsonOutput(
-                  {
-                    error: `Failed to parse channels-json: ${error instanceof Error ? error.message : String(error)}`,
-                    success: false,
-                  },
-                  flags,
-                ),
-              );
-              return;
-            }
-
-            this.error(
-              `Failed to parse channels-json: ${error instanceof Error ? error.message : String(error)}`,
-            );
-          }
-        } else {
-          if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput(
+              this.jsonError(
                 {
-                  error:
-                    "You must specify either --channels, --channels-json, or --spec",
+                  error: `Failed to parse channels-json: ${error instanceof Error ? error.message : String(error)}`,
                   success: false,
                 },
                 flags,
-              ),
+              );
+              return;
+            } else {
+              this.error(
+                `Failed to parse channels-json: ${error instanceof Error ? error.message : String(error)}`,
+              );
+            }
+          }
+        } else {
+          if (this.shouldOutputJson(flags)) {
+            this.jsonError(
+              {
+                error:
+                  "You must specify either --channels, --channels-json, or --spec",
+                success: false,
+              },
+              flags,
             );
             return;
+          } else {
+            this.error(
+              "You must specify either --channels, --channels-json, or --spec",
+            );
           }
-
-          this.error(
-            "You must specify either --channels, --channels-json, or --spec",
-          );
         }
 
         if (!args.message) {
           if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput(
-                {
-                  error: "Message is required when not using --spec",
-                  success: false,
-                },
-                flags,
-              ),
+            this.jsonError(
+              {
+                error: "Message is required when not using --spec",
+                success: false,
+              },
+              flags,
             );
             return;
+          } else {
+            this.error("Message is required when not using --spec");
           }
-
-          this.error("Message is required when not using --spec");
         }
 
         // Parse the message
@@ -312,21 +305,20 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
             // This is a partial success with batchResponse field
             if (!this.shouldSuppressOutput(flags)) {
               if (this.shouldOutputJson(flags)) {
-                this.log(
-                  this.formatJsonOutput(
-                    {
-                      channels: Array.isArray(batchContentObj.channels)
-                        ? batchContentObj.channels
-                        : [batchContentObj.channels],
-                      error: errorInfo.error,
-                      message: batchContentObj.messages,
-                      partial: true,
-                      response: errorInfo.batchResponse,
-                      success: false,
-                    },
-                    flags,
-                  ),
+                this.jsonError(
+                  {
+                    channels: Array.isArray(batchContentObj.channels)
+                      ? batchContentObj.channels
+                      : [batchContentObj.channels],
+                    error: errorInfo.error,
+                    message: batchContentObj.messages,
+                    partial: true,
+                    response: errorInfo.batchResponse,
+                    success: false,
+                  },
+                  flags,
                 );
+                return;
               } else {
                 this.log(
                   "Batch publish partially successful (some messages failed).",
@@ -355,18 +347,17 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
               ? errorInfo.error.code
               : response.statusCode;
             if (this.shouldOutputJson(flags)) {
-              this.log(
-                this.formatJsonOutput(
-                  {
-                    error: {
-                      code: errorCode,
-                      message: errorMessage,
-                    },
-                    success: false,
+              this.jsonError(
+                {
+                  error: {
+                    code: errorCode,
+                    message: errorMessage,
                   },
-                  flags,
-                ),
+                  success: false,
+                },
+                flags,
               );
+              return;
             } else {
               this.error(
                 `Batch publish failed: ${errorMessage} (${errorCode})`,
@@ -374,18 +365,17 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
             }
           }
         } else if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                error: {
-                  code: response.statusCode,
-                  message: `Batch publish failed with status code ${response.statusCode}`,
-                },
-                success: false,
+          this.jsonError(
+            {
+              error: {
+                code: response.statusCode,
+                message: `Batch publish failed with status code ${response.statusCode}`,
               },
-              flags,
-            ),
+              success: false,
+            },
+            flags,
           );
+          return;
         } else {
           this.error(
             `Batch publish failed with status code ${response.statusCode}`,
@@ -410,33 +400,31 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
         }
 
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                error: {
-                  code: errorCode,
-                  message: errorMessage,
-                },
-                success: false,
+          this.jsonError(
+            {
+              error: {
+                code: errorCode,
+                message: errorMessage,
               },
-              flags,
-            ),
+              success: false,
+            },
+            flags,
           );
+          return;
         } else {
           this.error(`Batch publish failed: ${errorMessage} (${errorCode})`);
         }
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: error instanceof Error ? error.message : String(error),
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            success: false,
+          },
+          flags,
         );
+        return;
       } else {
         this.error(
           `Failed to execute batch publish: ${error instanceof Error ? error.message : String(error)}`,

@@ -178,11 +178,9 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
         { channel: args.channel, error: errorMsg },
       );
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { channel: args.channel, error: errorMsg, success: false },
-            flags,
-          ),
+        this.jsonError(
+          { channel: args.channel, error: errorMsg, success: false },
+          flags,
         );
       } else {
         this.error(`Error: ${errorMsg}`);

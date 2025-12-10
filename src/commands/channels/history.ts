@@ -31,7 +31,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
     }),
     direction: Flags.string({
       default: "backwards",
-      description: "Direction of message retrieval",
+      description: "Direction of message retrieval (default: backwards)",
       options: ["backwards", "forwards"],
     }),
 
@@ -40,7 +40,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
     }),
     limit: Flags.integer({
       default: 50,
-      description: "Maximum number of messages to retrieve",
+      description: "Maximum number of messages to retrieve (default: 50)",
     }),
     start: Flags.string({
       description: "Start time for the history query (ISO 8601 format)",

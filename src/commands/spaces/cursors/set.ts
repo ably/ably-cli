@@ -181,12 +181,8 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           spaceName,
         });
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              { error: errorMsg, spaceName, success: false },
-              flags,
-            ),
-          );
+          this.jsonError({ error: errorMsg, spaceName, success: false }, flags);
+          return;
         } // Error already logged by createSpacesClient
 
         return;
@@ -486,12 +482,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         spaceName,
       });
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { error: errorMsg, spaceName, success: false },
-            flags,
-          ),
-        );
+        this.jsonError({ error: errorMsg, spaceName, success: false }, flags);
       } else {
         this.error(`Failed to set cursor: ${errorMsg}`);
       }

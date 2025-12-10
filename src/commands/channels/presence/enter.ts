@@ -23,6 +23,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
     '$ ably channels presence enter my-channel --client-id "client123" --data \'{"name":"John","status":"online"}\'',
     '$ ably channels presence enter my-channel --api-key "YOUR_API_KEY"',
     '$ ably channels presence enter my-channel --token "YOUR_ABLY_TOKEN"',
+    "$ ably channels presence enter my-channel --show-others",
     "$ ably channels presence enter my-channel --json",
     "$ ably channels presence enter my-channel --pretty-json",
     "$ ably channels presence enter my-channel --duration 30",
@@ -30,19 +31,28 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
 
   static override flags = {
     ...AblyBaseCommand.globalFlags,
+    data: Flags.string({
+      description: "Optional JSON data to associate with the presence",
+    }),
     duration: Flags.integer({
       description:
         "Automatically exit after the given number of seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
-    data: Flags.string({
-      description: "Optional JSON data to associate with the presence",
+    "show-others": Flags.boolean({
+      default: false,
+      description: "Show other presence events while present (default: false)",
+    }),
+    "sequence-numbers": Flags.boolean({
+      default: false,
+      description: "Include sequence numbers in output",
     }),
   };
 
   private cleanupInProgress = false;
   private client: Ably.Realtime | null = null;
+  private sequenceCounter = 0;
 
   private async properlyCloseAblyClient(): Promise<void> {
     if (
@@ -105,9 +115,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
             error: errorMsg,
           });
           if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput({ error: errorMsg, success: false }, flags),
-            );
+            this.jsonError({ error: errorMsg, success: false }, flags);
           } else {
             this.error(errorMsg);
           }
@@ -128,50 +136,64 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
         includeUserFriendlyMessages: true,
       });
 
-      // Subscribe to presence events before entering
-      channel.presence.subscribe((presenceMessage) => {
-        const timestamp = presenceMessage.timestamp
-          ? new Date(presenceMessage.timestamp).toISOString()
-          : new Date().toISOString();
-        const event = {
-          action: presenceMessage.action,
-          channel: channelName,
-          clientId: presenceMessage.clientId,
-          connectionId: presenceMessage.connectionId,
-          data: presenceMessage.data,
-          id: presenceMessage.id,
-          timestamp,
-        };
-        this.logCliEvent(
-          flags,
-          "presence",
-          presenceMessage.action!,
-          `Presence event: ${presenceMessage.action} by ${presenceMessage.clientId}`,
-          event,
-        );
-
-        if (this.shouldOutputJson(flags)) {
-          this.log(this.formatJsonOutput(event, flags));
-        } else {
-          this.log(
-            `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`Channel: ${channelName}`)} | ${chalk.yellow(`Action: ${presenceMessage.action}`)} | ${chalk.blue(`Client: ${presenceMessage.clientId || "N/A"}`)}`,
-          );
-
-          if (
-            presenceMessage.data !== null &&
-            presenceMessage.data !== undefined
-          ) {
-            if (isJsonData(presenceMessage.data)) {
-              this.log(chalk.green("Data:"));
-              this.log(JSON.stringify(presenceMessage.data, null, 2));
-            } else {
-              this.log(`${chalk.green("Data:")} ${presenceMessage.data}`);
-            }
+      // Subscribe to presence events before entering (if show-others is enabled)
+      if (flags["show-others"]) {
+        channel.presence.subscribe((presenceMessage) => {
+          // Filter out own presence events
+          if (presenceMessage.clientId === client.auth.clientId) {
+            return;
           }
 
-          this.log(""); // Empty line for better readability
-        }
-      });
+          this.sequenceCounter++;
+          const timestamp = presenceMessage.timestamp
+            ? new Date(presenceMessage.timestamp).toISOString()
+            : new Date().toISOString();
+          const event = {
+            action: presenceMessage.action,
+            channel: channelName,
+            clientId: presenceMessage.clientId,
+            connectionId: presenceMessage.connectionId,
+            data: presenceMessage.data,
+            id: presenceMessage.id,
+            timestamp,
+            ...(flags["sequence-numbers"]
+              ? { sequence: this.sequenceCounter }
+              : {}),
+          };
+          this.logCliEvent(
+            flags,
+            "presence",
+            presenceMessage.action!,
+            `Presence event: ${presenceMessage.action} by ${presenceMessage.clientId}`,
+            event,
+          );
+
+          if (this.shouldOutputJson(flags)) {
+            this.log(this.formatJsonOutput(event, flags));
+          } else {
+            const sequencePrefix = flags["sequence-numbers"]
+              ? `${chalk.dim(`[${this.sequenceCounter}]`)}`
+              : "";
+            this.log(
+              `${chalk.gray(`[${timestamp}]`)}${sequencePrefix} ${chalk.cyan(`Channel: ${channelName}`)} | ${chalk.yellow(`Action: ${presenceMessage.action}`)} | ${chalk.blue(`Client: ${presenceMessage.clientId || "N/A"}`)}`,
+            );
+
+            if (
+              presenceMessage.data !== null &&
+              presenceMessage.data !== undefined
+            ) {
+              if (isJsonData(presenceMessage.data)) {
+                this.log(chalk.green("Data:"));
+                this.log(JSON.stringify(presenceMessage.data, null, 2));
+              } else {
+                this.log(`${chalk.green("Data:")} ${presenceMessage.data}`);
+              }
+            }
+
+            this.log(""); // Empty line for better readability
+          }
+        });
+      }
 
       // Enter presence
       this.logCliEvent(
@@ -207,31 +229,14 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
         );
       }
 
-      // Get current presence members
-      const presenceMembers = await channel.presence.get();
-      this.logCliEvent(
-        flags,
-        "presence",
-        "membersRetrieved",
-        `Retrieved ${presenceMembers.length} presence members`,
-        { channel: channelName, count: presenceMembers.length },
-      );
-
       if (!this.shouldOutputJson(flags)) {
-        if (presenceMembers.length > 0) {
-          this.log(`\nCurrent presence members (${presenceMembers.length}):`);
-          for (const member of presenceMembers) {
-            this.log(
-              `  ${chalk.blue(`Client: ${member.clientId || "N/A"}`)} ${member.data ? `| Data: ${JSON.stringify(member.data)}` : ""}`,
-            );
-          }
+        if (flags["show-others"]) {
+          this.log(
+            "\nListening for presence events until terminated. Press Ctrl+C to exit.",
+          );
         } else {
-          this.log("\nNo other users are present in this channel");
+          this.log("\nStaying present. Press Ctrl+C to exit.");
         }
-
-        this.log(
-          "\nListening for presence events until terminated. Press Ctrl+C to exit.",
-        );
       }
 
       this.logCliEvent(
@@ -257,11 +262,9 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
         { channel: args.channel, error: errorMsg },
       );
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { channel: args.channel, error: errorMsg, success: false },
-            flags,
-          ),
+        this.jsonError(
+          { channel: args.channel, error: errorMsg, success: false },
+          flags,
         );
       } else {
         this.error(`Error: ${errorMsg}`);

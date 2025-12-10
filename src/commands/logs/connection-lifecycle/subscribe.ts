@@ -173,9 +173,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
         { error: errorMsg },
       );
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput({ error: errorMsg, success: false }, flags),
-        );
+        this.jsonError({ error: errorMsg, success: false }, flags);
       } else {
         this.error(`Error: ${errorMsg}`);
       }

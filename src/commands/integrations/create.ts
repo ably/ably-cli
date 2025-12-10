@@ -3,10 +3,10 @@ import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 
-// Interface for basic rule data structure
-interface RuleData {
+// Interface for basic integration data structure
+interface IntegrationData {
   requestMode: string;
-  ruleType: string;
+  ruleType: string; // API property name
   source: {
     channelFilter: string;
     type: string;
@@ -16,7 +16,7 @@ interface RuleData {
 }
 
 export default class IntegrationsCreateCommand extends ControlBaseCommand {
-  static description = "Create an integration rule";
+  static description = "Create an integration";
 
   static examples = [
     '$ ably integrations create --rule-type "http" --source-type "channel.message" --target-url "https://example.com/webhook"',
@@ -26,7 +26,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
   static flags = {
     ...ControlBaseCommand.globalFlags,
     app: Flags.string({
-      description: "App ID or name to create the integration rule in",
+      description: "App ID or name to create the integration in",
       required: false,
     }),
     "channel-filter": Flags.string({
@@ -35,12 +35,12 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
     }),
     "request-mode": Flags.string({
       default: "single",
-      description: "Request mode for the rule",
+      description: "Request mode for the integration (default: single)",
       options: ["single", "batch"],
       required: false,
     }),
     "rule-type": Flags.string({
-      description: "Type of integration rule (http, amqp, etc.)",
+      description: "Type of integration (http, amqp, etc.)",
       options: [
         "http",
         "amqp",
@@ -67,12 +67,12 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
     }),
     status: Flags.string({
       default: "enabled",
-      description: "Initial status of the rule",
+      description: "Initial status of the integration (default: enabled)",
       options: ["enabled", "disabled"],
       required: false,
     }),
     "target-url": Flags.string({
-      description: "Target URL for HTTP rules",
+      description: "Target URL for HTTP integrations",
       required: false,
     }),
   };
@@ -93,10 +93,10 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
         return;
       }
 
-      // Prepare rule data
-      const ruleData: RuleData = {
+      // Prepare integration data
+      const integrationData: IntegrationData = {
         requestMode: flags["request-mode"] as string,
-        ruleType: flags["rule-type"] as string,
+        ruleType: flags["rule-type"] as string, // API property name
         source: {
           channelFilter: flags["channel-filter"] || "",
           type: flags["source-type"],
@@ -105,15 +105,15 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
         target: {},
       };
 
-      // Add target data based on rule type
+      // Add target data based on integration type
       switch (flags["rule-type"]) {
         case "http": {
           if (!flags["target-url"]) {
-            this.error("--target-url is required for HTTP integration rules");
+            this.error("--target-url is required for HTTP integrations");
             return;
           }
 
-          ruleData.target = {
+          integrationData.target = {
             enveloped: true,
             format: "json",
             url: flags["target-url"],
@@ -123,7 +123,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
 
         case "amqp": {
           // Simplified AMQP config for demo purposes
-          ruleData.target = {
+          integrationData.target = {
             enveloped: true,
             exchangeName: "ably",
             format: "json",
@@ -141,29 +141,36 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
           this.log(
             `Note: Using default target for ${flags["rule-type"]}. In a real implementation, more target options would be required.`,
           );
-          ruleData.target = { enveloped: true, format: "json" };
+          integrationData.target = { enveloped: true, format: "json" };
         }
       }
 
-      const createdRule = await controlApi.createRule(appId, ruleData);
+      const createdIntegration = await controlApi.createRule(
+        appId,
+        integrationData,
+      );
 
       if (this.shouldOutputJson(flags)) {
-        this.log(this.formatJsonOutput({ rule: createdRule }, flags));
-      } else {
-        this.log(chalk.green("Integration Rule Created Successfully:"));
-        this.log(`ID: ${createdRule.id}`);
-        this.log(`App ID: ${createdRule.appId}`);
-        this.log(`Rule Type: ${createdRule.ruleType}`);
-        this.log(`Request Mode: ${createdRule.requestMode}`);
-        this.log(`Source Channel Filter: ${createdRule.source.channelFilter}`);
-        this.log(`Source Type: ${createdRule.source.type}`);
         this.log(
-          `Target: ${this.formatJsonOutput(createdRule.target as Record<string, unknown>, flags)}`,
+          this.formatJsonOutput({ integration: createdIntegration }, flags),
+        );
+      } else {
+        this.log(chalk.green("✓ Integration created successfully!"));
+        this.log(`ID: ${createdIntegration.id}`);
+        this.log(`App ID: ${createdIntegration.appId}`);
+        this.log(`Type: ${createdIntegration.ruleType}`);
+        this.log(`Request Mode: ${createdIntegration.requestMode}`);
+        this.log(
+          `Source Channel Filter: ${createdIntegration.source.channelFilter}`,
+        );
+        this.log(`Source Type: ${createdIntegration.source.type}`);
+        this.log(
+          `Target: ${this.formatJsonOutput(createdIntegration.target as Record<string, unknown>, flags)}`,
         );
       }
     } catch (error) {
       this.error(
-        `Error creating integration rule: ${error instanceof Error ? error.message : String(error)}`,
+        `Error creating integration: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }

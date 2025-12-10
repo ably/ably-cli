@@ -99,16 +99,14 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
 
       if (!appId) {
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                error:
-                  'No app specified. Use --app flag or select an app with "ably apps switch"',
-                status: "error",
-                success: false,
-              },
-              flags,
-            ),
+          this.jsonError(
+            {
+              error:
+                'No app specified. Use --app flag or select an app with "ably apps switch"',
+              status: "error",
+              success: false,
+            },
+            flags,
           );
         } else {
           this.error(
@@ -170,7 +168,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
           ),
         );
       } else {
-        this.log("Channel rule created successfully:");
+        this.log(chalk.green("✓ Channel rule created successfully!"));
         this.log(`ID: ${createdNamespace.id}`);
         this.log(
           `Persisted: ${createdNamespace.persisted ? chalk.green("Yes") : "No"}`,
@@ -243,16 +241,14 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              error: error instanceof Error ? error.message : String(error),
-              status: "error",
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            appId,
+            error: error instanceof Error ? error.message : String(error),
+            status: "error",
+            success: false,
+          },
+          flags,
         );
       } else {
         this.error(

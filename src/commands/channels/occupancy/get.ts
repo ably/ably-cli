@@ -100,15 +100,13 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              channel: args.channel,
-              error: error instanceof Error ? error.message : String(error),
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            channel: args.channel,
+            error: error instanceof Error ? error.message : String(error),
+            success: false,
+          },
+          flags,
         );
       } else {
         this.error(
