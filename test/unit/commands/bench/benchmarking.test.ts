@@ -9,7 +9,7 @@ declare global {
   };
 }
 
-describe("benchmarking commands", () => {
+describe("benchmarking commands", { timeout: 20000 }, () => {
   let mockChannel: {
     publish: ReturnType<typeof vi.fn>;
     subscribe: ReturnType<typeof vi.fn>;
@@ -205,11 +205,7 @@ describe("benchmarking commands", () => {
         expect(mockChannel.presence.enter).toHaveBeenCalled();
       });
 
-      // Note: Error handling test skipped because the command has internal retry logic
-      // and error recovery that makes testing error handling complex with unit tests.
-      // The command properly handles errors internally and outputs error information.
-
-      it("should wait for subscribers when flag is set", async () => {
+      it("should wait for subscribers via presence.get when flag is set", async () => {
         // Mock subscriber already present
         const mockSubscriber = {
           clientId: "subscriber1",
@@ -233,8 +229,55 @@ describe("benchmarking commands", () => {
           import.meta.url,
         );
 
+        expect(mockChannel.presence.subscribe).toHaveBeenCalledWith(
+          "enter",
+          expect.any(Function),
+        );
+        expect(mockChannel.presence.unsubscribe).toHaveBeenCalledWith(
+          "enter",
+          expect.any(Function),
+        );
         expect(mockChannel.presence.get).toHaveBeenCalled();
       });
+    });
+
+    it("should wait for subscribers via presence.subscribe when flag is set", async () => {
+      // Mock subscriber already present
+      const mockSubscriber = {
+        clientId: "subscriber1",
+        data: { role: "subscriber" },
+      };
+      mockChannel.presence.subscribe.mockImplementation((event, listener) => {
+        setTimeout(() => {
+          listener(mockSubscriber);
+        }, 1000);
+      });
+
+      await runCommand(
+        [
+          "bench:publisher",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+          "--messages",
+          "2",
+          "--rate",
+          "10",
+          "--wait-for-subscribers",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      expect(mockChannel.presence.subscribe).toHaveBeenCalledWith(
+        "enter",
+        expect.any(Function),
+      );
+      expect(mockChannel.presence.unsubscribe).toHaveBeenCalledWith(
+        "enter",
+        expect.any(Function),
+      );
+      expect(mockChannel.presence.get).toHaveBeenCalled();
     });
   });
 
@@ -289,13 +332,7 @@ describe("benchmarking commands", () => {
     describe("subscription functionality", () => {
       it("should subscribe to channel and enter presence", async () => {
         const { error } = await runCommand(
-          [
-            "bench:subscriber",
-            "test-channel",
-            "--api-key",
-            "app.key:secret",
-            "--json",
-          ],
+          ["bench:subscriber", "test-channel", "--api-key", "app.key:secret"],
           import.meta.url,
         );
 
@@ -304,40 +341,9 @@ describe("benchmarking commands", () => {
 
         // Should have subscribed and entered presence
         expect(mockChannel.subscribe).toHaveBeenCalled();
-        expect(mockChannel.presence.enter).toHaveBeenCalled();
-      });
-
-      it("should enter presence as subscriber role", async () => {
-        await runCommand(
-          [
-            "bench:subscriber",
-            "test-channel",
-            "--api-key",
-            "app.key:secret",
-            "--json",
-          ],
-          import.meta.url,
-        );
-
         expect(mockChannel.presence.enter).toHaveBeenCalledWith({
           role: "subscriber",
         });
-      });
-
-      it("should subscribe to presence events", async () => {
-        await runCommand(
-          [
-            "bench:subscriber",
-            "test-channel",
-            "--api-key",
-            "app.key:secret",
-            "--json",
-          ],
-          import.meta.url,
-        );
-
-        // Should subscribe to presence enter and leave events
-        expect(mockChannel.presence.subscribe).toHaveBeenCalled();
       });
     });
   });

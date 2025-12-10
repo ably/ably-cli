@@ -137,20 +137,36 @@ describe("channels:presence:enter command", () => {
       });
     });
 
-    it("should list current presence members after entering", async () => {
+    it("should show presence events when --show-others flag is passed", async () => {
+      // Set up the mock to capture the callback and trigger a presence event
+      mockPresenceSubscribe.mockImplementation(
+        (callback: (message: unknown) => void) => {
+          // Trigger a presence event after a short delay
+          setTimeout(() => {
+            callback({
+              action: "enter",
+              clientId: "other-client",
+              data: { status: "online" },
+              timestamp: Date.now(),
+            });
+          }, 50);
+        },
+      );
+
       const { stdout } = await runCommand(
         [
           "channels:presence:enter",
           "test-channel",
           "--api-key",
           "app.key:secret",
+          "--show-others",
         ],
         import.meta.url,
       );
 
-      // Should show presence members
+      // Should show presence event from other client
       expect(stdout).toContain("other-client");
-      expect(mockPresenceGet).toHaveBeenCalled();
+      expect(mockPresenceSubscribe).toHaveBeenCalled();
     });
 
     it("should run with --json flag without errors", async () => {
@@ -189,24 +205,7 @@ describe("channels:presence:enter command", () => {
       expect(error?.message).toMatch(/invalid|json/i);
     });
 
-    it("should subscribe to presence events and display them", async () => {
-      // Set up the mock to capture the callback and trigger a presence event
-      let presenceCallback: ((message: unknown) => void) | undefined;
-      mockPresenceSubscribe.mockImplementation(
-        (callback: (message: unknown) => void) => {
-          presenceCallback = callback;
-          // Trigger a presence event after a short delay
-          setTimeout(() => {
-            callback({
-              action: "enter",
-              clientId: "another-client",
-              data: { status: "active" },
-              timestamp: Date.now(),
-            });
-          }, 50);
-        },
-      );
-
+    it("should not subscribe to presence events without --show-others flag", async () => {
       const { stdout } = await runCommand(
         [
           "channels:presence:enter",
@@ -217,13 +216,11 @@ describe("channels:presence:enter command", () => {
         import.meta.url,
       );
 
-      // Should have subscribed to presence events
-      expect(mockPresenceSubscribe).toHaveBeenCalled();
-      expect(presenceCallback).toBeDefined();
-
-      // Verify the presence event was displayed
-      expect(stdout).toContain("another-client");
-      expect(stdout).toContain("enter");
+      // Without --show-others, the command should not subscribe to presence events
+      expect(mockPresenceSubscribe).not.toHaveBeenCalled();
+      // But should still show entry confirmation
+      expect(stdout).toContain("Entered");
+      expect(stdout).toContain("test-channel");
     });
   });
 
