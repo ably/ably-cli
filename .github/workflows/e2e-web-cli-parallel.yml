@@ -2,27 +2,9 @@ name: Web CLI E2E Tests (Parallel)
 
 on:
   push:
-    branches: [ main ]
-    paths:
-      - 'src/**'
-      - 'test/e2e/web-cli/**'
-      - 'examples/web-cli/**'
-      - 'packages/react-web-cli/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'tsconfig.json'
-      - '.github/workflows/e2e-web-cli-parallel.yml'
+    branches: [main]
   pull_request:
-    branches: [ main ]
-    paths:
-      - 'src/**'
-      - 'test/e2e/web-cli/**'
-      - 'examples/web-cli/**'
-      - 'packages/react-web-cli/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'tsconfig.json'
-      - '.github/workflows/e2e-web-cli-parallel.yml'
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -91,7 +73,7 @@ jobs:
       E2E_TESTS: true
       HEADLESS: true
       TEST_GROUP: auth
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -149,7 +131,7 @@ jobs:
       E2E_TESTS: true
       HEADLESS: true
       TEST_GROUP: session
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -208,7 +190,7 @@ jobs:
       E2E_TESTS: true
       HEADLESS: true
       TEST_GROUP: ui
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -268,7 +250,7 @@ jobs:
       E2E_TESTS: true
       HEADLESS: true
       TEST_GROUP: rate-limit
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -335,7 +317,7 @@ jobs:
           echo "- Session Tests: ${{ needs.session-tests.result }}"
           echo "- UI Tests: ${{ needs.ui-tests.result }}"
           echo "- Rate Limit Test: ${{ needs.rate-limit-test.result }}"
-          
+
           # Check if all tests passed
           if [[ "${{ needs.auth-tests.result }}" == "success" && \
                 "${{ needs.session-tests.result }}" == "success" && \
