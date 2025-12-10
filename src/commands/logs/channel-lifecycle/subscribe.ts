@@ -4,6 +4,7 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
+import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
   static override description =
@@ -144,42 +145,8 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
         `Successfully subscribed to ${channelName}`,
       );
 
-      // Set up cleanup for when the process is terminated
-      const cleanup = () => {
-        this.logCliEvent(
-          flags,
-          "logs",
-          "cleanupInitiated",
-          "Cleanup initiated (Ctrl+C pressed)",
-        );
-        // Client cleanup is handled by command finally() method
-        this.logCliEvent(
-          flags,
-          "connection",
-          "cleanup",
-          "Client cleanup will be handled by base class.",
-        );
-      };
-
-      // Handle process termination
-      process.on("SIGINT", () => {
-        if (!this.shouldOutputJson(flags)) {
-          this.log("\nSubscription ended");
-        }
-
-        cleanup();
-
-        process.exit(0); // Reinstated: Explicit exit on signal
-      });
-      process.on("SIGTERM", () => {
-        cleanup();
-
-        process.exit(0); // Reinstated: Explicit exit on signal
-      });
-
       this.logCliEvent(flags, "logs", "listening", "Listening for logs...");
-      // Wait indefinitely
-      await new Promise(() => {});
+      await waitUntilInterruptedOrTimeout();
     } catch (error: unknown) {
       const err = error as Error;
       this.logCliEvent(

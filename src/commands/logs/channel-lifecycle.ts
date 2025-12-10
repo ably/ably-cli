@@ -3,6 +3,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
 
 export default class LogsChannelLifecycle extends AblyBaseCommand {
   static override description =
@@ -97,29 +98,7 @@ export default class LogsChannelLifecycle extends AblyBaseCommand {
         this.log("");
       });
 
-      // Client cleanup is handled by command finally() method
-      const cleanup = () => {
-        // Cleanup handled by base class
-      };
-
-      // Handle process termination
-      if (process.env.ABLY_INTERACTIVE_MODE === "true") {
-        // In interactive mode, just ensure cleanup happens on exit
-        // Don't interfere with signal handling
-        process.on("exit", () => {
-          cleanup();
-        });
-      } else {
-        // Normal mode - handle SIGINT ourselves
-        process.on("SIGINT", () => {
-          this.log("\nSubscription ended");
-          cleanup();
-          process.exit(0);
-        });
-      }
-
-      // Wait indefinitely
-      await new Promise(() => {});
+      await waitUntilInterruptedOrTimeout();
     } catch (error: unknown) {
       const err = error as Error;
       this.error(err.message);
