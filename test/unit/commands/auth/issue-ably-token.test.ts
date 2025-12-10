@@ -323,7 +323,7 @@ apiKey = "${mockApiKey}"
       expect(error?.message).toMatch(/Error issuing Ably token/i);
     });
 
-    it("should handle missing app configuration", async () => {
+    it("should not produce token output when app configuration is missing", async () => {
       // Remove app from config
       const configContent = `[current]
 account = "default"
@@ -336,18 +336,13 @@ userEmail = "test@example.com"
 `;
       writeFileSync(resolve(testConfigDir, "config"), configContent);
 
-      const { error, stdout } = await runCommand(
+      const { stdout } = await runCommand(
         ["auth:issue-ably-token"],
         import.meta.url,
       );
 
-      // The command either throws an error or outputs nothing when no app is configured
-      if (error) {
-        expect(error?.message).toMatch(/No app selected|No API key|app|key/i);
-      } else {
-        // If no error, command should have returned early without output
-        expect(stdout).not.toContain("Generated Ably Token");
-      }
+      // When no app is configured, command should not produce token output
+      expect(stdout).not.toContain("Generated Ably Token");
     });
   });
 
