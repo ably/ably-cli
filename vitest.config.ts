@@ -36,6 +36,7 @@ export default defineConfig({
           env: {
             ABLY_CLI_DEFAULT_DURATION: "0.25",
             ABLY_CLI_TEST_MODE: "true",
+            ABLY_API_KEY: undefined,
           },
         },
       },
@@ -48,6 +49,7 @@ export default defineConfig({
           env: {
             ABLY_CLI_DEFAULT_DURATION: "0.25",
             ABLY_CLI_TEST_MODE: "true",
+            ABLY_API_KEY: undefined,
           },
           testTimeout: 20000, // Allow 20s per test for plenty of time on actions
         },
@@ -63,6 +65,9 @@ export default defineConfig({
             "**/dist/**",
             "test/e2e/web-cli/**/*.test.ts",
           ],
+          env: {
+            ABLY_API_KEY: undefined,
+          },
           testTimeout: 20000, // Allow 20s per test for plenty of time on actions
           hookTimeout: 60000, // 60 seconds for hooks
           // Run e2e tests sequentially to avoid API rate limits
@@ -77,6 +82,9 @@ export default defineConfig({
           include: ["test/hooks/**/*.test.ts"],
           // Exclude web-cli tests (use Playwright separately)
           exclude: ["**/node_modules/**", "**/dist/**"],
+          env: {
+            ABLY_API_KEY: undefined,
+          },
         },
       },
     ],
