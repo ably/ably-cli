@@ -1,368 +1,275 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { Config } from "@oclif/core";
-import ChannelsSubscribe from "../../../../src/commands/channels/subscribe.js";
-import * as Ably from "ably";
+import { runCommand } from "@oclif/test";
 
-// Create a testable version of ChannelsSubscribe
-class TestableChannelsSubscribe extends ChannelsSubscribe {
-  public logOutput: string[] = [];
-  public errorOutput: string = "";
-  private _parseResult: any;
-  public mockClient: any = {}; // Initialize mockClient
-  private _shouldOutputJson = false;
-  private _formatJsonOutputFn:
-    | ((data: Record<string, unknown>) => string)
-    | null = null;
-
-  // Spy on client creation attempt
-  public createAblyClientSpy = vi.fn(super.createAblyRealtimeClient);
-
-  // Override parse to simulate parse output
-  public override async parse() {
-    if (!this._parseResult) {
-      // Default parse result if not set
-      this._parseResult = {
-        flags: { delta: false, rewind: undefined, "cipher-key": undefined },
-        args: { channels: ["default-test-channel"] }, // Use args.channels directly
-        argv: ["default-test-channel"], // argv should contain the channel names
-        raw: [],
-      };
-    }
-    return this._parseResult;
-  }
-
-  public setParseResult(result: any) {
-    this._parseResult = result;
-    // Ensure argv reflects args.channels for run() method logic
-    if (result.args?.channels && Array.isArray(result.args.channels)) {
-      this._parseResult.argv = [...result.args.channels];
-    }
-  }
-
-  // Override client creation to return a controlled mock
-  public override async createAblyRealtimeClient(
-    flags: any,
-  ): Promise<Ably.Realtime | null> {
-    this.debug("Overridden createAblyRealtimeClient called");
-    this.createAblyClientSpy(flags);
-
-    // Initialize the mock client with basic structure
-    const mockChannelInstance = {
-      name: "mock-channel-from-create", // Add name for safety
-      subscribe: vi.fn(),
-      attach: vi.fn().mockImplementation(async () => {}),
-      on: vi.fn(),
-      unsubscribe: vi.fn(),
-      detach: vi.fn().mockImplementation(async () => {}),
-    };
-    this.mockClient = {
-      channels: {
-        get: vi.fn().mockReturnValue(mockChannelInstance),
-        release: vi.fn(),
-      },
-      connection: {
-        once: vi.fn(),
-        on: vi.fn(),
-        close: vi.fn(),
-        state: "initialized",
-      },
-      close: vi.fn(),
-    };
-
-    return this.mockClient as unknown as Ably.Realtime;
-  }
-
-  // Helper to connect the mock client
-  public simulateConnection() {
-    // Simulate a connected state
-    this.mockClient.connection.state = "connected";
-
-    // Find the connection.on handler and call it with connected state
-    if (this.mockClient.connection.on.called) {
-      const onConnectionArgs = this.mockClient.connection.on.args[0];
-      if (onConnectionArgs && typeof onConnectionArgs[0] === "function") {
-        onConnectionArgs[0]({ current: "connected" });
-      }
-    }
-  }
-
-  // Override logging methods
-  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-  public override log(message?: string | undefined, ...args: any[]): void {
-    // Attempt to capture chalk output or force to string
-    const plainMessage =
-      typeof message === "string" ? message : String(message);
-    this.logOutput.push(plainMessage);
-  }
-
-  // Correct override signature for the error method
-  public override error(
-    message: string | Error,
-    _options?: { code?: string; exit?: number | false },
-  ): never {
-    this.errorOutput = typeof message === "string" ? message : message.message;
-    // Prevent actual exit during tests by throwing instead
-    throw new Error(this.errorOutput);
-  }
-
-  // Override JSON output methods
-  public override shouldOutputJson(_flags?: any): boolean {
-    return this._shouldOutputJson;
-  }
-
-  public setShouldOutputJson(value: boolean) {
-    this._shouldOutputJson = value;
-  }
-
-  public override formatJsonOutput(
-    data: Record<string, unknown>,
-    _flags?: Record<string, unknown>,
-  ): string {
-    return this._formatJsonOutputFn
-      ? this._formatJsonOutputFn(data)
-      : JSON.stringify(data);
-  }
-
-  public setFormatJsonOutput(fn: (data: Record<string, unknown>) => string) {
-    this._formatJsonOutputFn = fn;
-  }
-
-  // Override ensureAppAndKey to prevent real auth checks in unit tests
-  protected override async ensureAppAndKey(
-    _flags: any,
-  ): Promise<{ apiKey: string; appId: string } | null> {
-    this.debug("Skipping ensureAppAndKey in test mode");
-    return { apiKey: "dummy-key-value:secret", appId: "dummy-app" };
-  }
+// Define the type for global test mocks
+declare global {
+  var __TEST_MOCKS__: {
+    ablyRealtimeMock?: unknown;
+  };
 }
 
-describe("ChannelsSubscribe (Simplified)", function () {
-  let command: TestableChannelsSubscribe;
-  let mockConfig: Config;
+describe("channels:subscribe command", () => {
+  let mockSubscribeCallback: ((message: unknown) => void) | null = null;
+  let mockChannelState = "initialized";
 
-  beforeEach(function () {
-    mockConfig = { runHook: vi.fn() } as unknown as Config;
-    command = new TestableChannelsSubscribe([], mockConfig);
+  beforeEach(() => {
+    mockSubscribeCallback = null;
+    mockChannelState = "initialized";
 
-    // Setup mock client within beforeEach to ensure fresh state
-    const mockChannelInstance = {
+    // Set up a mock Ably realtime client
+    const mockChannel = {
       name: "test-channel",
-      subscribe: vi.fn(),
-      attach: vi.fn().mockImplementation(async () => {}),
-      on: vi.fn(), // Handles channel state changes ('attached', 'failed', etc.)
+      state: mockChannelState,
+      subscribe: vi.fn((callback: (message: unknown) => void) => {
+        mockSubscribeCallback = callback;
+      }),
       unsubscribe: vi.fn(),
-      detach: vi.fn().mockImplementation(async () => {}),
-    };
-    command.mockClient = {
-      channels: {
-        get: vi.fn().mockReturnValue(mockChannelInstance),
-        release: vi.fn(),
-      },
-      connection: {
-        once: vi.fn(), // Used for initial connection check
-        on: vi.fn(), // Used for continuous state monitoring
-        close: vi.fn(),
-        state: "initialized",
-      },
-      close: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn((event: string, callback: () => void) => {
+        if (event === "attached") {
+          // Simulate immediate attachment
+          mockChannelState = "attached";
+          setTimeout(() => callback(), 10);
+        }
+      }),
     };
 
-    // Set default parse result
-    command.setParseResult({
-      flags: { delta: false, rewind: undefined, "cipher-key": undefined },
-      args: { channels: ["test-channel"] },
-      raw: [],
+    // Make state getter dynamic
+    Object.defineProperty(mockChannel, "state", {
+      get: () => mockChannelState,
     });
 
-    // IMPORTANT: Stub createAblyRealtimeClient directly on the instance IN beforeEach
-    // This ensures the command uses OUR mockClient setup here.
-    vi.spyOn(command, "createAblyRealtimeClient").mockResolvedValue(
-      command.mockClient as unknown as Ably.Realtime,
-    );
+    globalThis.__TEST_MOCKS__ = {
+      ablyRealtimeMock: {
+        channels: {
+          get: vi.fn().mockReturnValue(mockChannel),
+        },
+        connection: {
+          state: "connected",
+          on: vi.fn(),
+          once: vi.fn((event: string, callback: () => void) => {
+            if (event === "connected") {
+              setTimeout(() => callback(), 5);
+            }
+          }),
+        },
+        close: vi.fn(),
+        auth: {
+          clientId: "test-client-id",
+        },
+      },
+    };
   });
 
-  afterEach(function () {
+  afterEach(() => {
+    // Call close on mock client if it exists
+    const mock = globalThis.__TEST_MOCKS__?.ablyRealtimeMock as
+      | { close?: () => void }
+      | undefined;
+    mock?.close?.();
+    delete globalThis.__TEST_MOCKS__;
     vi.restoreAllMocks();
   });
 
-  // Helper function to manage test run with timeout/abort
-  async function runCommandAndSimulateLifecycle(timeoutMs = 100) {
-    // Store original listeners to restore them later
-    const originalListeners = process.listeners("SIGINT");
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:subscribe", "--help"],
+        import.meta.url,
+      );
 
-    // Set up connection simulation
-    command.mockClient.connection.once.mockImplementation(
-      (event: string, callback: () => void) => {
-        if (event === "connected") {
-          setTimeout(() => {
-            command.mockClient.connection.state = "connected";
-            if (command.mockClient.connection.on.mock.calls.length > 0) {
-              const onConnectionArgs =
-                command.mockClient.connection.on.mock.calls[0];
-              if (
-                onConnectionArgs &&
-                typeof onConnectionArgs[0] === "function"
-              ) {
-                onConnectionArgs[0]({ current: "connected" });
-              }
-            }
-            callback();
-          }, 10);
-        } else if (event === "closed") {
-          // Simulate connection close after a short delay
-          setTimeout(() => {
-            command.mockClient.connection.state = "closed";
-            callback();
-          }, 30);
-        }
-      },
-    );
+      expect(stdout).toContain("Subscribe to");
+      expect(stdout).toContain("USAGE");
+      expect(stdout).toContain("--rewind");
+      expect(stdout).toContain("--delta");
+    });
 
-    // Simulate channel attach after connection
-    const originalGet = command.mockClient.channels.get;
-    command.mockClient.channels.get = vi
-      .fn()
-      .mockImplementation((name, options) => {
-        const channelMock = originalGet(name, options);
-        if (channelMock && channelMock.on) {
-          setTimeout(() => {
-            const onAttachArgs = channelMock.on.mock.calls.find(
-              (args: any[]) => args[0] === "attached",
-            );
-            if (onAttachArgs && typeof onAttachArgs[1] === "function") {
-              onAttachArgs[1]({ current: "attached" });
-            }
-          }, 20);
-        }
-        return channelMock;
+    it("should display examples in help", async () => {
+      const { stdout } = await runCommand(
+        ["channels:subscribe", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("EXAMPLES");
+      expect(stdout).toContain("subscribe");
+    });
+
+    it("should show channel argument is required", async () => {
+      const { stdout } = await runCommand(
+        ["channels:subscribe", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("CHANNELS");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require at least one channel name", async () => {
+      const { error } = await runCommand(
+        ["channels:subscribe"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      // The error message may vary - just check an error is thrown for missing args
+      expect(error?.message).toMatch(/channel|required|argument/i);
+    });
+  });
+
+  describe("subscription functionality", () => {
+    it("should subscribe to a channel and attach", async () => {
+      const { stdout } = await runCommand(
+        ["channels:subscribe", "test-channel", "--api-key", "app.key:secret"],
+        import.meta.url,
+      );
+
+      // Should show successful attachment
+      expect(stdout).toContain("test-channel");
+      // Check we got the channel
+      const mock = globalThis.__TEST_MOCKS__?.ablyRealtimeMock as {
+        channels: { get: ReturnType<typeof vi.fn> };
+      };
+      expect(mock.channels.get).toHaveBeenCalledWith(
+        "test-channel",
+        expect.any(Object),
+      );
+    });
+
+    it("should receive and display messages with event name and data", async () => {
+      // Run command in background-like manner
+      const commandPromise = runCommand(
+        ["channels:subscribe", "test-channel", "--api-key", "app.key:secret"],
+        import.meta.url,
+      );
+
+      // Wait for subscription to be set up
+      await vi.waitFor(() => {
+        expect(mockSubscribeCallback).not.toBeNull();
       });
 
-    // Start the command
-    const runPromise = command.run();
+      // Simulate receiving a message
+      mockSubscribeCallback!({
+        name: "test-event",
+        data: "hello world",
+        timestamp: Date.now(),
+        id: "msg-123",
+        clientId: "publisher-client",
+        connectionId: "conn-456",
+      });
 
-    // Send SIGINT after a short delay to trigger proper cleanup
-    const cleanup = setTimeout(() => {
-      process.emit("SIGINT", "SIGINT");
-    }, timeoutMs);
+      const { stdout } = await commandPromise;
 
-    try {
-      await runPromise;
-    } catch {
-      // Expected for some tests
-    } finally {
-      clearTimeout(cleanup);
-      // Clean up any SIGINT listeners that weren't properly removed
-      const newListeners = process.listeners("SIGINT");
-      for (const listener of newListeners) {
-        if (!originalListeners.includes(listener)) {
-          process.removeListener("SIGINT", listener);
-        }
-      }
-    }
-  }
-
-  it("should attempt to create an Ably client", async function () {
-    const createClientStub = command.createAblyRealtimeClient as ReturnType<
-      typeof vi.fn
-    >;
-    await runCommandAndSimulateLifecycle();
-    expect(createClientStub).toHaveBeenCalledOnce();
-  });
-
-  it("should attempt to get and subscribe to a single channel", async function () {
-    const channelMock = command.mockClient.channels.get();
-    await runCommandAndSimulateLifecycle();
-    expect(command.mockClient.channels.get).toHaveBeenCalledWith(
-      "test-channel",
-      {},
-    );
-    // Check subscribe was called *at least* once after attach simulation
-    expect(channelMock.subscribe).toHaveBeenCalled();
-  });
-
-  it("should attempt to get and subscribe to multiple channels", async function () {
-    const channelsToTest = ["channel1", "channel2", "channel3"];
-    command.setParseResult({
-      flags: {},
-      args: { channels: channelsToTest },
-      raw: [],
+      // Should have received and displayed the message with channel, event, and data
+      expect(stdout).toContain("test-channel");
+      expect(stdout).toContain("Event: test-event");
+      expect(stdout).toContain("hello world");
     });
 
-    const channelMocks: Record<string, any> = {};
-    channelsToTest.forEach((name) => {
-      channelMocks[name] = {
-        name: name,
-        subscribe: vi.fn(),
-        attach: vi.fn().mockImplementation(async () => {}),
-        on: vi.fn(),
-        unsubscribe: vi.fn(),
-        detach: vi.fn().mockImplementation(async () => {}),
+    it("should run with --json flag without errors", async () => {
+      const { stdout, error } = await runCommand(
+        [
+          "channels:subscribe",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      // Should not have thrown an error
+      expect(error).toBeUndefined();
+      // In JSON mode, the command should still work (no user-friendly messages)
+      // Output may be minimal since duration elapses quickly
+      expect(stdout).toBeDefined();
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --rewind flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:subscribe", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("--rewind");
+      expect(stdout).toMatch(/rewind.*messages/i);
+    });
+
+    it("should accept --delta flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:subscribe", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("--delta");
+    });
+
+    it("should accept --cipher-key flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:subscribe", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("--cipher-key");
+    });
+
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:subscribe", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("--json");
+    });
+
+    it("should configure channel with rewind option", async () => {
+      await runCommand(
+        [
+          "channels:subscribe",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+          "--rewind",
+          "5",
+        ],
+        import.meta.url,
+      );
+
+      const mock = globalThis.__TEST_MOCKS__?.ablyRealtimeMock as {
+        channels: { get: ReturnType<typeof vi.fn> };
       };
+      expect(mock.channels.get).toHaveBeenCalledWith(
+        "test-channel",
+        expect.objectContaining({
+          params: expect.objectContaining({ rewind: "5" }),
+        }),
+      );
     });
 
-    // Use the original mock client's get stub setup in beforeEach, but make it return our specific mocks
-    (
-      command.mockClient.channels.get as ReturnType<typeof vi.fn>
-    ).mockImplementation((name: string) => channelMocks[name]);
+    it("should configure channel with delta option", async () => {
+      await runCommand(
+        [
+          "channels:subscribe",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+          "--delta",
+        ],
+        import.meta.url,
+      );
 
-    await runCommandAndSimulateLifecycle(200);
-
-    // Verify get was called for each channel
-    expect(command.mockClient.channels.get).toHaveBeenCalledTimes(
-      channelsToTest.length,
-    );
-    channelsToTest.forEach((name) => {
-      expect(command.mockClient.channels.get).toHaveBeenCalledWith(name, {});
-      expect(channelMocks[name].subscribe).toHaveBeenCalled();
+      const mock = globalThis.__TEST_MOCKS__?.ablyRealtimeMock as {
+        channels: { get: ReturnType<typeof vi.fn> };
+      };
+      expect(mock.channels.get).toHaveBeenCalledWith(
+        "test-channel",
+        expect.objectContaining({
+          params: expect.objectContaining({ delta: "vcdiff" }),
+        }),
+      );
     });
-  });
-
-  it("should pass channel options when flags are provided (rewind example)", async function () {
-    const channelName = "rewind-channel";
-    command.setParseResult({
-      flags: { rewind: 5 },
-      args: { channels: [channelName] },
-      raw: [],
-    });
-
-    const channelMock = {
-      name: channelName,
-      subscribe: vi.fn(),
-      attach: vi.fn().mockImplementation(async () => {}),
-      on: vi.fn(),
-      unsubscribe: vi.fn(),
-      detach: vi.fn().mockImplementation(async () => {}),
-    };
-    (
-      command.mockClient.channels.get as ReturnType<typeof vi.fn>
-    ).mockReturnValue(channelMock);
-
-    await runCommandAndSimulateLifecycle();
-
-    expect(command.mockClient.channels.get).toHaveBeenCalledOnce();
-    const getCall = command.mockClient.channels.get.mock.calls[0];
-    expect(getCall[0]).toBe(channelName);
-    expect(getCall[1]).toMatchObject({ params: { rewind: "5" } });
-    expect(channelMock.subscribe).toHaveBeenCalled();
-  });
-
-  it("should throw error if no channel names provided", async function () {
-    command.setParseResult({
-      flags: {},
-      args: { channels: [] },
-      argv: [], // Ensure argv is empty too
-      raw: [],
-    });
-    try {
-      // No need to abort here, it should exit quickly
-      await command.run();
-      expect.fail("Command should have thrown an error for missing channels");
-    } catch {
-      // Catch block intentionally empty - error is expected
-    }
-    // Check the error message stored by the overridden error method
-    expect(command.errorOutput).toContain(
-      "At least one channel name is required",
-    );
   });
 });

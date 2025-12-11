@@ -1778,6 +1778,7 @@ ARGUMENTS
   CHANNEL  The channel name to subscribe to
 
 FLAGS
+  -d, --duration=<value>      Duration to subscribe for in seconds (default: indefinite until Ctrl+C)
   -v, --verbose               Output verbose logs
       --access-token=<value>  Overrides any configured access token used for the Control API
       --api-key=<value>       Overrides any configured API key used for the product APIs

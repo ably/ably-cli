@@ -2,27 +2,9 @@ name: E2E Tests
 
 on:
   push:
-    branches: [ main ]
-    paths:
-      - 'src/**'
-      - 'test/**'
-      - 'examples/**'
-      - 'packages/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'tsconfig.json'
-      - '.github/workflows/e2e-tests.yml'
+    branches: [main]
   pull_request:
-    branches: [ main ]
-    paths:
-      - 'src/**'
-      - 'test/**'
-      - 'examples/**'
-      - 'packages/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'tsconfig.json'
-      - '.github/workflows/e2e-tests.yml'
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -32,12 +14,12 @@ jobs:
   e2e-cli:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    
+
     env:
       E2E_ABLY_API_KEY: ${{ secrets.E2E_ABLY_API_KEY }}
       E2E_ABLY_ACCESS_TOKEN: ${{ secrets.E2E_ABLY_ACCESS_TOKEN }}
       E2E_TESTS: true
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -71,27 +53,10 @@ jobs:
           echo "E2E_ABLY_API_KEY=${{ secrets.E2E_ABLY_API_KEY }}" >> .env.test
           echo "E2E_ABLY_ACCESS_TOKEN=${{ secrets.E2E_ABLY_ACCESS_TOKEN }}" >> .env.test
 
-      - name: Run All E2E CLI Tests  
+      - name: Run All E2E CLI Tests
         run: |
           echo "Running All E2E CLI Tests..."
           timeout 1800s pnpm test:e2e || {
             echo "E2E CLI tests failed or timed out"
             exit 1
           }
-
-  # Web CLI E2E tests are now handled by the parallel workflow
-  # See .github/workflows/e2e-web-cli-parallel.yml
-  # This job is kept as a placeholder and will trigger the parallel workflow
-  e2e-web-cli-trigger:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    
-    steps:
-      - name: Trigger Parallel Web CLI E2E Tests
-        run: |
-          echo "Web CLI E2E tests now run in parallel via e2e-web-cli-parallel.yml workflow"
-          echo "This provides:"
-          echo "- 4x faster execution through parallel job groups"
-          echo "- Better isolation between test types"
-          echo "- Reduced rate limiting conflicts"
-          echo "- More granular test failure reporting"

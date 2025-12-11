@@ -2,27 +2,9 @@ name: Web CLI E2E Tests (Parallel)
 
 on:
   push:
-    branches: [ main ]
-    paths:
-      - 'src/**'
-      - 'test/e2e/web-cli/**'
-      - 'examples/web-cli/**'
-      - 'packages/react-web-cli/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'tsconfig.json'
-      - '.github/workflows/e2e-web-cli-parallel.yml'
+    branches: [main]
   pull_request:
-    branches: [ main ]
-    paths:
-      - 'src/**'
-      - 'test/e2e/web-cli/**'
-      - 'examples/web-cli/**'
-      - 'packages/react-web-cli/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'tsconfig.json'
-      - '.github/workflows/e2e-web-cli-parallel.yml'
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -91,7 +73,7 @@ jobs:
       E2E_TESTS: true
       HEADLESS: true
       TEST_GROUP: auth
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -127,16 +109,6 @@ jobs:
             test/e2e/web-cli/domain-scoped-auth.test.ts \
             --reporter=json,html
 
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results-auth
-          path: |
-            playwright-report/
-            test-results/
-          retention-days: 7
-
   # Group 2: Session & Reconnection Tests (10 tests)
   session-tests:
     needs: setup
@@ -149,7 +121,7 @@ jobs:
       E2E_TESTS: true
       HEADLESS: true
       TEST_GROUP: session
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -186,16 +158,6 @@ jobs:
             test/e2e/web-cli/reconnection-diagnostic.test.ts \
             --reporter=json,html
 
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results-session
-          path: |
-            playwright-report/
-            test-results/
-          retention-days: 7
-
   # Group 3: UI & Core Features Tests (8 tests)
   ui-tests:
     needs: setup
@@ -208,7 +170,7 @@ jobs:
       E2E_TESTS: true
       HEADLESS: true
       TEST_GROUP: ui
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -245,16 +207,6 @@ jobs:
             test/e2e/web-cli/prompt-integrity.test.ts \
             --reporter=json,html
 
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results-ui
-          path: |
-            playwright-report/
-            test-results/
-          retention-days: 7
-
   # Group 4: Rate Limit Test (1 test - must run last)
   rate-limit-test:
     needs: [auth-tests, session-tests, ui-tests]
@@ -268,7 +220,7 @@ jobs:
       E2E_TESTS: true
       HEADLESS: true
       TEST_GROUP: rate-limit
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -302,50 +254,3 @@ jobs:
             --config test/e2e/web-cli/playwright.config.ts \
             test/e2e/web-cli/z-rate-limit-trigger.test.ts \
             --reporter=json,html
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results-rate-limit
-          path: |
-            playwright-report/
-            test-results/
-          retention-days: 7
-
-  # Aggregate results
-  test-summary:
-    needs: [auth-tests, session-tests, ui-tests, rate-limit-test]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Download all test results
-        uses: actions/download-artifact@v4
-        with:
-          pattern: test-results-*
-          merge-multiple: true
-
-      - name: Display test summary
-        run: |
-          echo "## Web CLI E2E Test Summary"
-          echo "All test groups have completed."
-          echo ""
-          echo "### Test Groups:"
-          echo "- Auth Tests: ${{ needs.auth-tests.result }}"
-          echo "- Session Tests: ${{ needs.session-tests.result }}"
-          echo "- UI Tests: ${{ needs.ui-tests.result }}"
-          echo "- Rate Limit Test: ${{ needs.rate-limit-test.result }}"
-          
-          # Check if all tests passed
-          if [[ "${{ needs.auth-tests.result }}" == "success" && \
-                "${{ needs.session-tests.result }}" == "success" && \
-                "${{ needs.ui-tests.result }}" == "success" && \
-                "${{ needs.rate-limit-test.result }}" == "success" ]]; then
-            echo ""
-            echo "✅ All tests passed!"
-            exit 0
-          else
-            echo ""
-            echo "❌ Some tests failed. Check individual job logs for details."
-            exit 1
-          fi

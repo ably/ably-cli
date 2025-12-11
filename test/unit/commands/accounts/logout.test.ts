@@ -1,227 +1,238 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import fs from "node:fs";
-import AccountsLogout from "../../../../src/commands/accounts/logout.js";
-import { ConfigManager } from "../../../../src/services/config-manager.js";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { runCommand } from "@oclif/test";
+import { resolve } from "node:path";
+import {
+  mkdirSync,
+  writeFileSync,
+  existsSync,
+  rmSync,
+  readFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 
-describe("AccountsLogout", function () {
-  let originalEnv: NodeJS.ProcessEnv;
+describe("accounts:logout command", () => {
+  let testConfigDir: string;
+  let originalConfigDir: string;
 
-  beforeEach(function () {
-    originalEnv = { ...process.env };
+  beforeEach(() => {
+    // Create a temporary config directory for testing
+    testConfigDir = resolve(tmpdir(), `ably-cli-test-logout-${Date.now()}`);
+    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
 
-    // Reset env before each test
-    process.env = { ...originalEnv };
-
-    // Stub fs operations to prevent actual file access
-    vi.spyOn(fs, "existsSync").mockReturnValue(true);
-    vi.spyOn(fs, "readFileSync").mockReturnValue("");
-    vi.spyOn(fs, "mkdirSync").mockImplementation(() => {
-      return "";
-    });
-    vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+    // Store original config dir and set test config dir
+    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
+    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
   });
 
-  afterEach(function () {
-    process.env = originalEnv;
-    vi.restoreAllMocks();
+  afterEach(() => {
+    // Restore original config directory
+    if (originalConfigDir) {
+      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
+    } else {
+      delete process.env.ABLY_CLI_CONFIG_DIR;
+    }
+
+    // Clean up test config directory
+    if (existsSync(testConfigDir)) {
+      rmSync(testConfigDir, { recursive: true, force: true });
+    }
   });
 
-  describe("command properties", function () {
-    it("should have correct static properties", function () {
-      expect(AccountsLogout.description).toBe("Log out from an Ably account");
-      expect(AccountsLogout.examples).toBeInstanceOf(Array);
-      expect(AccountsLogout.flags).toHaveProperty("force");
-      expect(AccountsLogout.args).toHaveProperty("alias");
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:logout", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Log out from an Ably account");
+      expect(stdout).toContain("USAGE");
+      expect(stdout).toContain("--force");
     });
 
-    it("should have correct flag configuration", function () {
-      expect(AccountsLogout.flags.force).toHaveProperty("char", "f");
-      expect(AccountsLogout.flags.force).toHaveProperty("default", false);
-    });
+    it("should display examples in help", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:logout", "--help"],
+        import.meta.url,
+      );
 
-    it("should have correct argument configuration", function () {
-      expect(AccountsLogout.args.alias).toHaveProperty("required", false);
-      expect(AccountsLogout.args.alias).toHaveProperty("description");
-    });
-  });
-
-  describe("command instantiation", function () {
-    it("should create command instance", function () {
-      const command = new AccountsLogout([], {} as any);
-      expect(command).toBeInstanceOf(AccountsLogout);
-      expect(command.run).toBeTypeOf("function");
-    });
-
-    it("should have correct command structure", function () {
-      const command = new AccountsLogout([], {} as any);
-      expect(command.constructor.name).toBe("AccountsLogout");
-    });
-  });
-
-  describe("account selection logic", function () {
-    it("should handle account selection validation", function () {
-      // Test the expected account format
-      const mockAccount = {
-        alias: "test-account",
-        accountId: "123456",
-        accountName: "Test Account",
-        tokenId: "token123",
-        userEmail: "test@example.com",
-      };
-
-      expect(mockAccount.alias).toBeTypeOf("string");
-      expect(mockAccount.accountId).toBeTypeOf("string");
-      expect(mockAccount.accountName).toBeTypeOf("string");
-    });
-
-    it("should validate account alias format", function () {
-      const validAliases = ["default", "test-account", "prod_account"];
-      const invalidAliases = [null, undefined, ""];
-
-      validAliases.forEach((alias) => {
-        expect(alias).toBeTypeOf("string");
-        expect(alias.length).toBeGreaterThan(0);
-      });
-
-      invalidAliases.forEach((alias) => {
-        // Test that these are indeed invalid (null, undefined, or empty string)
-        const isInvalid =
-          alias === null ||
-          alias === undefined ||
-          (typeof alias === "string" && alias.length === 0);
-        expect(isInvalid).toBe(true);
-      });
+      expect(stdout).toContain("EXAMPLES");
     });
   });
 
-  describe("output formatting", function () {
-    it("should format successful logout JSON output", function () {
-      const successData = {
-        message: "Successfully logged out of account: test-account",
-        success: true,
-      };
-
-      const jsonOutput = JSON.stringify(successData);
-      expect(jsonOutput).toContain('"success":true');
-      expect(jsonOutput).toContain('"message"');
+  describe("with no logged in accounts", () => {
+    beforeEach(() => {
+      // Create empty config
+      const configContent = `[current]
+`;
+      writeFileSync(resolve(testConfigDir, "config"), configContent);
     });
 
-    it("should format all accounts logout JSON output", function () {
-      const allAccountsData = {
-        message: "Successfully logged out of all accounts",
-        success: true,
-        removedAccounts: ["account1", "account2"],
-      };
+    it("should output error in JSON format when no account is selected", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:logout", "--json"],
+        import.meta.url,
+      );
 
-      const jsonOutput = JSON.stringify(allAccountsData);
-      expect(jsonOutput).toContain('"success":true');
-      expect(jsonOutput).toContain('"removedAccounts"');
-    });
-
-    it("should format error JSON output", function () {
-      const errorData = {
-        error: "Account not found",
-        success: false,
-      };
-
-      const jsonOutput = JSON.stringify(errorData);
-      expect(jsonOutput).toContain('"success":false');
-      expect(jsonOutput).toContain('"error"');
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", false);
+      expect(result).toHaveProperty("error");
+      expect(result.error).toContain("No account");
     });
   });
 
-  describe("account removal scenarios", function () {
-    it("should handle single account removal", function () {
-      const accountToRemove = "test-account";
-      const remainingAccounts = ["other-account"];
+  describe("with logged in account", () => {
+    beforeEach(() => {
+      // Create config with a logged in account
+      const configContent = `[current]
+account = "testaccount"
 
-      expect(accountToRemove).toBeTypeOf("string");
-      expect(remainingAccounts).toBeInstanceOf(Array);
-      expect(remainingAccounts).not.toContain(accountToRemove);
+[accounts.testaccount]
+accessToken = "test_token_12345"
+accountId = "acc-123"
+accountName = "Test Account"
+userEmail = "test@example.com"
+`;
+      writeFileSync(resolve(testConfigDir, "config"), configContent);
     });
 
-    it("should handle all accounts removal", function () {
-      const allAccounts = ["account1", "account2", "account3"];
-      const afterRemoval: string[] = [];
+    it("should successfully logout with --force and --json flags", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:logout", "--force", "--json"],
+        import.meta.url,
+      );
 
-      expect(allAccounts.length).toBeGreaterThan(0);
-      expect(afterRemoval.length).toBe(0);
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", true);
+      expect(result).toHaveProperty("account");
+      expect(result.account).toHaveProperty("alias", "testaccount");
+      expect(result).toHaveProperty("remainingAccounts");
+
+      // Verify config file was updated - account should be removed
+      const configContent = readFileSync(
+        resolve(testConfigDir, "config"),
+        "utf8",
+      );
+      expect(configContent).not.toContain("[accounts.testaccount]");
+      expect(configContent).not.toContain("test_token_12345");
+      expect(configContent).not.toContain("acc-123");
     });
 
-    it("should handle current account switching logic", function () {
-      const _currentAccount = "account-to-remove";
-      const availableAccounts = ["other-account1", "other-account2"];
+    it("should logout specific account by alias with --force and --json", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:logout", "testaccount", "--force", "--json"],
+        import.meta.url,
+      );
 
-      // Test logic for determining next current account
-      const nextAccount =
-        availableAccounts.length > 0 ? availableAccounts[0] : null;
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", true);
+      expect(result.account).toHaveProperty("alias", "testaccount");
 
-      expect(nextAccount).toBe("other-account1");
-    });
-  });
-
-  describe("configuration integration", function () {
-    it("should work with ConfigManager", function () {
-      // Test basic instantiation without complex mocking
-      expect(() => new ConfigManager()).not.toThrow();
-    });
-
-    it("should handle account listing operations", function () {
-      // Test expected account list format
-      const mockAccounts = [
-        { alias: "default", account: {} },
-        { alias: "test", account: {} },
-      ];
-
-      expect(mockAccounts).toBeInstanceOf(Array);
-      expect(mockAccounts.length).toBe(2);
-      mockAccounts.forEach((acc) => {
-        expect(acc).toHaveProperty("alias");
-        expect(acc).toHaveProperty("account");
-      });
-    });
-  });
-
-  describe("validation edge cases", function () {
-    it("should handle empty account list", function () {
-      const emptyList: any[] = [];
-      expect(emptyList.length).toBe(0);
-    });
-
-    it("should handle non-existent account", function () {
-      const accounts = ["existing1", "existing2"];
-      const requestedAccount = "non-existent";
-
-      const accountExists = accounts.includes(requestedAccount);
-      expect(accountExists).toBe(false);
-    });
-
-    it("should handle default account special case", function () {
-      const defaultAlias = "default";
-      const isDefault = defaultAlias === "default";
-
-      expect(isDefault).toBe(true);
+      // Verify config file was updated - account should be removed
+      const configContent = readFileSync(
+        resolve(testConfigDir, "config"),
+        "utf8",
+      );
+      expect(configContent).not.toContain("[accounts.testaccount]");
+      expect(configContent).not.toContain("test_token_12345");
     });
   });
 
-  describe("command examples validation", function () {
-    it("should have valid examples", function () {
-      const examples = AccountsLogout.examples;
+  describe("with multiple logged in accounts", () => {
+    beforeEach(() => {
+      // Create config with multiple accounts
+      const configContent = `[current]
+account = "primary"
 
-      expect(examples).toBeInstanceOf(Array);
-      expect(examples.length).toBeGreaterThan(0);
+[accounts.primary]
+accessToken = "primary_token"
+accountId = "acc-primary"
+accountName = "Primary Account"
+userEmail = "primary@example.com"
 
-      examples.forEach((example) => {
-        expect(example).toBeTypeOf("string");
-        expect(example.length).toBeGreaterThan(0);
-      });
+[accounts.secondary]
+accessToken = "secondary_token"
+accountId = "acc-secondary"
+accountName = "Secondary Account"
+userEmail = "secondary@example.com"
+`;
+      writeFileSync(resolve(testConfigDir, "config"), configContent);
     });
 
-    it("should include force flag example", function () {
-      const examples = AccountsLogout.examples;
-      const hasJsonExample = examples.some((ex) => ex.includes("--json"));
+    it("should logout current account and show remaining accounts", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:logout", "--force", "--json"],
+        import.meta.url,
+      );
 
-      expect(hasJsonExample).toBe(true);
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", true);
+      expect(result.account).toHaveProperty("alias", "primary");
+      expect(result.remainingAccounts).toContain("secondary");
+
+      // Verify config file was updated - primary removed, secondary remains
+      const configContent = readFileSync(
+        resolve(testConfigDir, "config"),
+        "utf8",
+      );
+      expect(configContent).not.toContain("[accounts.primary]");
+      expect(configContent).not.toContain("primary_token");
+      expect(configContent).toContain("[accounts.secondary]");
+      expect(configContent).toContain("secondary_token");
+      expect(configContent).toContain('accountName = "Secondary Account"');
+    });
+
+    it("should logout specific account when alias is provided", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:logout", "secondary", "--force", "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", true);
+      expect(result.account).toHaveProperty("alias", "secondary");
+      expect(result.remainingAccounts).toContain("primary");
+
+      // Verify config file was updated - secondary removed, primary remains
+      const configContent = readFileSync(
+        resolve(testConfigDir, "config"),
+        "utf8",
+      );
+      expect(configContent).not.toContain("[accounts.secondary]");
+      expect(configContent).not.toContain("secondary_token");
+      expect(configContent).toContain("[accounts.primary]");
+      expect(configContent).toContain("primary_token");
+      expect(configContent).toContain('accountName = "Primary Account"');
+      // Current account should still be primary
+      expect(configContent).toContain('account = "primary"');
+    });
+  });
+
+  describe("error handling", () => {
+    beforeEach(() => {
+      // Create config with a logged in account
+      const configContent = `[current]
+account = "existingaccount"
+
+[accounts.existingaccount]
+accessToken = "test_token"
+accountId = "acc-123"
+accountName = "Test Account"
+userEmail = "test@example.com"
+`;
+      writeFileSync(resolve(testConfigDir, "config"), configContent);
+    });
+
+    it("should output error in JSON format when account alias does not exist", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:logout", "nonexistent", "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", false);
+      expect(result).toHaveProperty("error");
+      expect(result.error).toContain("not found");
     });
   });
 });

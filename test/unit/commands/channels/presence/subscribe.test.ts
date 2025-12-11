@@ -1,237 +1,222 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { Config } from "@oclif/core";
-import ChannelsPresenceSubscribe from "../../../../../src/commands/channels/presence/subscribe.js";
-import * as Ably from "ably";
+import { runCommand } from "@oclif/test";
 
-// Create a testable version of ChannelsPresenceSubscribe
-class TestableChannelsPresenceSubscribe extends ChannelsPresenceSubscribe {
-  public logOutput: string[] = [];
-  public errorOutput: string = "";
-  private _parseResult: any;
-  public mockClient: any = {}; // Initialize mockClient
-  private _shouldOutputJson = false;
-  private _formatJsonOutputFn:
-    | ((data: Record<string, unknown>) => string)
-    | null = null;
-
-  // Override parse to simulate parse output
-  public override async parse(..._args: any[]) {
-    if (!this._parseResult) {
-      // Default parse result if not set
-      this._parseResult = {
-        flags: {},
-        args: { channel: "default-presence-channel" },
-        argv: ["default-presence-channel"],
-        raw: [],
-      };
-    }
-    return this._parseResult;
-  }
-
-  public setParseResult(result: any) {
-    this._parseResult = result;
-  }
-
-  // Override client creation to return a controlled mock
-  public override async createAblyRealtimeClient(
-    _flags: any,
-  ): Promise<Ably.Realtime | null> {
-    this.debug("Overridden createAblyRealtimeClient called");
-
-    // Ensure mockClient is initialized if not already done (e.g., in beforeEach)
-    if (!this.mockClient || !this.mockClient.channels) {
-      this.debug("Initializing mockClient inside createAblyRealtimeClient");
-      const mockPresenceInstance = {
-        get: vi.fn().mockResolvedValue([]),
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        enter: vi.fn().mockImplementation(async () => {}),
-        leave: vi.fn().mockImplementation(async () => {}),
-      };
-      const mockChannelInstance = {
-        presence: mockPresenceInstance,
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        attach: vi.fn().mockImplementation(async () => {}),
-        detach: vi.fn().mockImplementation(async () => {}),
-        on: vi.fn(),
-      };
-      this.mockClient = {
-        channels: {
-          get: vi.fn().mockReturnValue(mockChannelInstance),
-          release: vi.fn(),
-        },
-        connection: {
-          once: vi.fn().mockImplementation((event, callback) => {
-            if (event === "connected") {
-              setTimeout(callback, 5);
-            }
-          }),
-          on: vi.fn(),
-          close: vi.fn(),
-          state: "connected",
-        },
-        close: vi.fn(),
-      };
-    }
-
-    this.debug("Returning pre-configured mockClient");
-    return this.mockClient as Ably.Realtime; // Return the existing mock
-  }
-
-  // Override logging methods
-  public override log(message?: string | undefined, ..._args: any[]): void {
-    // Attempt to capture chalk output or force to string
-    const plainMessage =
-      typeof message === "string" ? message : String(message);
-    this.logOutput.push(plainMessage);
-  }
-
-  // Correct override signature for the error method
-  public override error(
-    message: string | Error,
-    _options?: { code?: string; exit?: number | false },
-  ): never {
-    this.errorOutput = typeof message === "string" ? message : message.message;
-    // Prevent actual exit during tests by throwing instead
-    throw new Error(this.errorOutput);
-  }
-
-  // Override JSON output methods
-  public override shouldOutputJson(_flags?: any): boolean {
-    return this._shouldOutputJson;
-  }
-
-  public setShouldOutputJson(value: boolean) {
-    this._shouldOutputJson = value;
-  }
-
-  public override formatJsonOutput(
-    data: Record<string, unknown>,
-    _flags?: Record<string, unknown>,
-  ): string {
-    return this._formatJsonOutputFn
-      ? this._formatJsonOutputFn(data)
-      : JSON.stringify(data);
-  }
-
-  public setFormatJsonOutput(fn: (data: Record<string, unknown>) => string) {
-    this._formatJsonOutputFn = fn;
-  }
-
-  // Override ensureAppAndKey to prevent real auth checks in unit tests
-  protected override async ensureAppAndKey(
-    _flags: any,
-  ): Promise<{ apiKey: string; appId: string } | null> {
-    this.debug("Overridden ensureAppAndKey called");
-    // Return dummy auth details required by some base class logic potentially
-    return { apiKey: "dummy.key:secret", appId: "dummy-app" };
-  }
+// Define the type for global test mocks
+declare global {
+  var __TEST_MOCKS__: {
+    ablyRealtimeMock?: unknown;
+  };
 }
 
-// TODO: This test needs a re-write. It's not actually testing anything of value.
-describe("ChannelsPresenceSubscribe", function () {
-  let command: TestableChannelsPresenceSubscribe;
-  let mockConfig: Config;
+describe("channels:presence:subscribe command", () => {
+  let mockPresenceSubscribe: ReturnType<typeof vi.fn>;
+  let mockPresenceUnsubscribe: ReturnType<typeof vi.fn>;
+  let presenceCallback: ((msg: unknown) => void) | null = null;
 
-  beforeEach(function () {
-    mockConfig = { runHook: vi.fn() } as unknown as Config;
-    command = new TestableChannelsPresenceSubscribe([], mockConfig);
-  });
+  beforeEach(() => {
+    presenceCallback = null;
+    mockPresenceSubscribe = vi.fn((callback: (msg: unknown) => void) => {
+      presenceCallback = callback;
+    });
+    mockPresenceUnsubscribe = vi.fn();
 
-  afterEach(function () {
-    vi.restoreAllMocks();
-
-    // Initialize mock client
-    const mockPresenceInstance = {
-      get: vi.fn().mockResolvedValue([]),
-      subscribe: vi.fn(),
-      unsubscribe: vi.fn(),
-      enter: vi.fn().mockImplementation(async () => {}),
-      leave: vi.fn().mockImplementation(async () => {}),
-    };
-    const mockChannelInstance = {
-      presence: mockPresenceInstance,
-      subscribe: vi.fn(),
-      unsubscribe: vi.fn(),
-      attach: vi.fn().mockImplementation(async () => {}),
-      detach: vi.fn().mockImplementation(async () => {}),
+    const mockChannel = {
+      name: "test-channel",
+      state: "attached",
+      presence: {
+        subscribe: mockPresenceSubscribe,
+        unsubscribe: mockPresenceUnsubscribe,
+      },
       on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
     };
-    command.mockClient = {
-      channels: {
-        get: vi.fn().mockReturnValue(mockChannelInstance),
-        release: vi.fn(),
-      },
-      connection: {
-        once: vi.fn(),
-        on: vi.fn(),
+
+    globalThis.__TEST_MOCKS__ = {
+      ablyRealtimeMock: {
+        channels: {
+          get: vi.fn().mockReturnValue(mockChannel),
+        },
+        connection: {
+          state: "connected",
+          on: vi.fn(),
+          once: vi.fn((event: string, callback: () => void) => {
+            if (event === "connected") {
+              setTimeout(() => callback(), 5);
+            }
+          }),
+        },
         close: vi.fn(),
-        state: "initialized",
+        auth: {
+          clientId: "test-client-id",
+        },
       },
-      close: vi.fn(),
     };
+  });
 
-    // No need to stub createAblyClient in beforeEach since we're testing individual methods
+  afterEach(() => {
+    delete globalThis.__TEST_MOCKS__;
+  });
 
-    // Set default parse result
-    command.setParseResult({
-      flags: {},
-      args: { channel: "test-presence-channel" },
-      raw: [],
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:presence:subscribe", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Subscribe to presence events");
+      expect(stdout).toContain("USAGE");
+      expect(stdout).toContain("CHANNEL");
+    });
+
+    it("should display examples in help", async () => {
+      const { stdout } = await runCommand(
+        ["channels:presence:subscribe", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("EXAMPLES");
+      expect(stdout).toContain("presence subscribe");
+    });
+
+    it("should show channel argument is required", async () => {
+      const { stdout } = await runCommand(
+        ["channels:presence:subscribe", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("CHANNEL");
     });
   });
 
-  it("should create an Ably client when run", async function () {
-    const createClientSpy = vi.spyOn(command, "createAblyRealtimeClient");
+  describe("presence subscription functionality", () => {
+    it("should subscribe to presence events on a channel", async () => {
+      const { stdout } = await runCommand(
+        [
+          "channels:presence:subscribe",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+        ],
+        import.meta.url,
+      );
 
-    // Stub the actual functionality to avoid long-running operations
-    vi.spyOn(command, "run").mockImplementation(async function (
-      this: TestableChannelsPresenceSubscribe,
-    ) {
-      await this.createAblyRealtimeClient({});
-      return;
+      // Should show subscription message
+      expect(stdout).toContain("test-channel");
+      expect(stdout).toContain("presence");
+      // Verify presence.subscribe was called
+      expect(mockPresenceSubscribe).toHaveBeenCalled();
     });
 
-    await command.run();
+    it("should receive and display presence events with action, client and data", async () => {
+      // Run command
+      const commandPromise = runCommand(
+        [
+          "channels:presence:subscribe",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+        ],
+        import.meta.url,
+      );
 
-    expect(createClientSpy).toHaveBeenCalledOnce();
-  });
+      // Wait for subscription setup using vi.waitFor
+      await vi.waitFor(() => {
+        expect(presenceCallback).not.toBeNull();
+      });
 
-  it("should return mock client from createAblyRealtimeClient", async function () {
-    const client = await command.createAblyRealtimeClient({});
-    expect(client).toBe(command.mockClient);
-  });
+      // Simulate receiving a presence event
+      presenceCallback!({
+        action: "enter",
+        clientId: "other-client",
+        data: { status: "online" },
+        timestamp: Date.now(),
+        connectionId: "conn-123",
+        id: "presence-msg-123",
+      });
 
-  it("should format JSON output when shouldOutputJson is true", function () {
-    command.setShouldOutputJson(true);
-    command.setFormatJsonOutput((data) => JSON.stringify(data, null, 2));
+      const { stdout } = await commandPromise;
 
-    const testData = { channel: "test", action: "subscribe" };
-    const result = command.formatJsonOutput(testData);
-
-    expect(result).toBeTypeOf("string");
-    expect(() => JSON.parse(result)).not.toThrow();
-
-    const parsed = JSON.parse(result);
-    expect(parsed).toEqual(testData);
-  });
-
-  it("should log presence member information", function () {
-    const members = [
-      { clientId: "user1", data: { status: "online" } },
-      { clientId: "user2", data: null },
-    ];
-
-    // Test the logging logic directly
-    members.forEach((member) => {
-      const logMessage = `- Client: ${member.clientId || "N/A"} ${member.data ? `| Data: ${JSON.stringify(member.data)}` : ""}`;
-      command.log(logMessage);
+      // Should show presence event output with action, client, and data
+      expect(stdout).toContain("test-channel");
+      expect(stdout).toContain("Action: enter");
+      expect(stdout).toContain("Client: other-client");
+      expect(stdout).toContain("online");
     });
 
-    expect(command.logOutput).toHaveLength(2);
-    expect(command.logOutput[0]).toContain("user1");
-    expect(command.logOutput[0]).toContain("online");
-    expect(command.logOutput[1]).toContain("user2");
+    it("should run with --json flag without errors", async () => {
+      const { error } = await runCommand(
+        [
+          "channels:presence:subscribe",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      // Should not have errors - command runs successfully in JSON mode
+      expect(error).toBeUndefined();
+      // Verify presence.subscribe was still called
+      expect(mockPresenceSubscribe).toHaveBeenCalled();
+    });
+
+    it("should handle multiple presence events", async () => {
+      const commandPromise = runCommand(
+        [
+          "channels:presence:subscribe",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+        ],
+        import.meta.url,
+      );
+
+      // Wait for subscription setup using vi.waitFor
+      await vi.waitFor(() => {
+        expect(presenceCallback).not.toBeNull();
+      });
+
+      // Simulate multiple presence events
+      presenceCallback!({
+        action: "enter",
+        clientId: "user1",
+        timestamp: Date.now(),
+        id: "msg-1",
+      });
+      presenceCallback!({
+        action: "leave",
+        clientId: "user2",
+        timestamp: Date.now(),
+        id: "msg-2",
+      });
+
+      const { stdout } = await commandPromise;
+
+      // Should have processed multiple events
+      expect(stdout).toContain("test-channel");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:presence:subscribe", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("--json");
+    });
+
+    it("should accept --duration flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:presence:subscribe", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("--duration");
+    });
   });
 });

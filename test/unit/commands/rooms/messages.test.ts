@@ -46,6 +46,7 @@ class TestableRoomsMessagesSubscribe extends RoomsMessagesSubscribe {
   private _parseResult: any;
   public mockChatClient: any;
   public mockRealtimeClient: any;
+  public logOutput: string[] = [];
 
   public setParseResult(result: any) {
     this._parseResult = result;
@@ -53,6 +54,12 @@ class TestableRoomsMessagesSubscribe extends RoomsMessagesSubscribe {
 
   public override async parse() {
     return this._parseResult;
+  }
+
+  public override log(message?: string | undefined): void {
+    const plainMessage =
+      typeof message === "string" ? message : String(message);
+    this.logOutput.push(plainMessage);
   }
 
   protected override async createChatClient(_flags: any) {
@@ -280,23 +287,15 @@ describe("rooms messages commands", function () {
       });
     });
 
-    it("should subscribe to room messages", async function () {
-      // Mock the subscription to resolve immediately
+    it("should subscribe to room messages and display received message content", async function () {
+      // Mock the subscription to capture callback and simulate receiving a message
+      let messageCallback: ((event: unknown) => void) | null = null;
       subscribeStub.mockImplementation((callback) => {
-        // Simulate receiving a message
-        setTimeout(() => {
-          callback({
-            message: {
-              text: "Test message",
-              clientId: "test-client",
-              timestamp: new Date(),
-            },
-          });
-        }, 10);
+        messageCallback = callback;
         return Promise.resolve();
       });
 
-      // Since subscribe runs indefinitely, we'll test the setup
+      // Start the command
       command.run();
 
       // Give it a moment to set up
@@ -308,6 +307,24 @@ describe("rooms messages commands", function () {
       );
       expect(mockRoom.attach).toHaveBeenCalledOnce();
       expect(subscribeStub).toHaveBeenCalledOnce();
+
+      // Simulate receiving a message
+      expect(messageCallback).not.toBeNull();
+      messageCallback!({
+        message: {
+          text: "Hello from chat",
+          clientId: "sender-client",
+          timestamp: new Date(),
+        },
+      });
+
+      // Give time for the message to be processed
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
+      // Verify the message content was logged
+      const allOutput = command.logOutput.join("\n");
+      expect(allOutput).toContain("sender-client");
+      expect(allOutput).toContain("Hello from chat");
 
       // Cleanup - this would normally be done by SIGINT
       command.mockRealtimeClient.close();
