@@ -1,4 +1,3 @@
-import { type Space } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
@@ -66,13 +65,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
     }),
   };
 
-  private cleanupInProgress = false;
-  private realtimeClient: Ably.Realtime | null = null;
-  private spacesClient: unknown | null = null;
-  private space: Space | null = null;
   private simulationIntervalId: NodeJS.Timeout | null = null;
-  private cursorData: Record<string, unknown> | null = null;
-  private unsubscribeStatusFn?: () => void;
 
   // Override finally to ensure resources are cleaned up
   async finally(err: Error | undefined): Promise<void> {
@@ -81,19 +74,12 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       this.simulationIntervalId = null;
     }
 
-    if (
-      this.realtimeClient &&
-      this.realtimeClient.connection.state !== "closed" &&
-      this.realtimeClient.connection.state !== "failed"
-    ) {
-      this.realtimeClient.close();
-    }
-
     return super.finally(err);
   }
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsSet);
+    this.parsedFlags = flags;
     const { space: spaceName } = args;
 
     try {
@@ -171,10 +157,9 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       // Create Spaces client using setupSpacesClient
       const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
-      this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
 
-      if (!this.realtimeClient || !this.spacesClient || !this.space) {
+      if (!this.realtimeClient || !this.space) {
         const errorMsg = "Failed to create Spaces client";
         this.logCliEvent(flags, "spaces", "clientCreationFailed", errorMsg, {
           error: errorMsg,
@@ -472,7 +457,6 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         { exitReason },
       );
 
-      this.cleanupInProgress = true;
       // After cleanup (handled in finally), ensure the process exits so user doesn't need multiple Ctrl-C
       this.exit(0);
     } catch (error) {
@@ -485,29 +469,6 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         this.jsonError({ error: errorMsg, spaceName, success: false }, flags);
       } else {
         this.error(`Failed to set cursor: ${errorMsg}`);
-      }
-    } finally {
-      // Leave space and close connection
-      if (!this.cleanupInProgress) {
-        if (this.space) {
-          try {
-            await this.space.leave();
-            if (flags && !this.shouldOutputJson(flags)) {
-              this.log(
-                `${chalk.green("Left space:")} ${chalk.cyan(spaceName)}`,
-              );
-            }
-          } catch {
-            // ignore
-          }
-        }
-        if (this.realtimeClient) {
-          try {
-            this.realtimeClient.close();
-          } catch {
-            // ignore
-          }
-        }
       }
     }
   }

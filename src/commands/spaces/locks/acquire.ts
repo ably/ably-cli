@@ -1,6 +1,5 @@
-import { type Space, type LockOptions } from "@ably/spaces";
+import { type LockOptions } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
 import chalk from "chalk";
 
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
@@ -33,25 +32,13 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
     }),
   };
 
-  private cleanupInProgress = false;
-  private realtimeClient: Ably.Realtime | null = null;
-  private spacesClient: unknown | null = null;
   private lockId: null | string = null;
-  private space: Space | null = null;
 
   // Override finally to ensure resources are cleaned up
   async finally(err: Error | undefined): Promise<void> {
-    // Attempt to release lock and leave space if not already done
-    if (!this.cleanupInProgress && this.space && this.lockId) {
-      // Check if space and lockId are available
+    // Attempt to release lock if not already done
+    if (this.lockId && this.space) {
       try {
-        this.logCliEvent(
-          {},
-          "lock",
-          "finalReleaseAttempt",
-          "Attempting final lock release",
-          { lockId: this.lockId },
-        );
         await this.space.locks.release(this.lockId);
       } catch (error) {
         this.logCliEvent(
@@ -65,32 +52,6 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
           },
         );
       }
-
-      try {
-        this.logCliEvent(
-          {},
-          "spaces",
-          "finalLeaveAttempt",
-          "Attempting final space leave",
-        );
-        await this.space.leave();
-      } catch (error) {
-        this.logCliEvent(
-          {},
-          "spaces",
-          "finalLeaveError",
-          "Error in final space leave",
-          { error: error instanceof Error ? error.message : String(error) },
-        );
-      }
-    }
-
-    if (
-      this.realtimeClient &&
-      this.realtimeClient.connection.state !== "closed" &&
-      this.realtimeClient.connection.state !== "failed"
-    ) {
-      this.realtimeClient.close();
     }
 
     return super.finally(err);
@@ -98,6 +59,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksAcquire);
+    this.parsedFlags = flags;
     const { space: spaceName } = args;
     this.lockId = args.lockId;
     const { lockId } = this;
@@ -106,9 +68,8 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
       // Create Spaces client using setupSpacesClient
       const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
-      this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
-      if (!this.realtimeClient || !this.spacesClient || !this.space) {
+      if (!this.realtimeClient || !this.space) {
         this.error("Failed to initialize clients or space");
         return;
       }

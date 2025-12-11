@@ -4,6 +4,7 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
+import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
   static override description =
@@ -29,17 +30,6 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
   private client: Ably.Realtime | null = null;
 
   // Override finally to ensure resources are cleaned up
-  async finally(err: Error | undefined): Promise<void> {
-    if (
-      this.client &&
-      this.client.connection.state !== "closed" && // Check state before closing to avoid errors if already closed
-      this.client.connection.state !== "failed"
-    ) {
-      this.client.close();
-    }
-
-    return super.finally(err);
-  }
 
   async run(): Promise<void> {
     const { flags } = await this.parse(LogsChannelLifecycleSubscribe);
@@ -155,50 +145,8 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
         `Successfully subscribed to ${channelName}`,
       );
 
-      // Set up cleanup for when the process is terminated
-      const cleanup = () => {
-        this.logCliEvent(
-          flags,
-          "logs",
-          "cleanupInitiated",
-          "Cleanup initiated (Ctrl+C pressed)",
-        );
-        if (client) {
-          this.logCliEvent(
-            flags,
-            "connection",
-            "closing",
-            "Closing Ably connection.",
-          );
-          client.close();
-          this.logCliEvent(
-            flags,
-            "connection",
-            "closed",
-            "Ably connection closed.",
-          );
-        }
-      };
-
-      // Handle process termination
-      process.on("SIGINT", () => {
-        if (!this.shouldOutputJson(flags)) {
-          this.log("\nSubscription ended");
-        }
-
-        cleanup();
-
-        process.exit(0); // Reinstated: Explicit exit on signal
-      });
-      process.on("SIGTERM", () => {
-        cleanup();
-
-        process.exit(0); // Reinstated: Explicit exit on signal
-      });
-
       this.logCliEvent(flags, "logs", "listening", "Listening for logs...");
-      // Wait indefinitely
-      await new Promise(() => {});
+      await waitUntilInterruptedOrTimeout();
     } catch (error: unknown) {
       const err = error as Error;
       this.logCliEvent(
@@ -209,17 +157,7 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
         { channel: channelName, error: err.message },
       );
       this.error(err.message);
-    } finally {
-      // Ensure client is closed
-      if (this.client && this.client.connection.state !== "closed") {
-        this.logCliEvent(
-          flags || {},
-          "connection",
-          "finalCloseAttempt",
-          "Ensuring connection is closed in finally block.",
-        );
-        this.client.close();
-      }
     }
+    // Client cleanup is handled by command finally() method
   }
 }

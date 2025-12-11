@@ -1,6 +1,4 @@
-import { type Space } from "@ably/spaces";
 import { Args } from "@oclif/core";
-import * as Ably from "ably";
 import chalk from "chalk";
 
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
@@ -34,13 +32,9 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
     ...SpacesBaseCommand.globalFlags,
   };
 
-  // Declare class properties
-  private realtimeClient: Ably.Realtime | null = null;
-  private spacesClient: unknown | null = null;
-  private space: Space | null = null;
-
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksGetAll);
+    this.parsedFlags = flags;
 
     const { space: spaceName } = args;
 
@@ -48,9 +42,8 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
       // Create Spaces client using setupSpacesClient
       const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
-      this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
-      if (!this.realtimeClient || !this.spacesClient || !this.space) {
+      if (!this.realtimeClient || !this.space) {
         this.error("Failed to initialize clients or space");
         return;
       }
@@ -122,114 +115,58 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
       }
 
       let locks: LockItem[] = [];
-      try {
-        const result = await this.space.locks.getAll();
-        locks = Array.isArray(result) ? result : [];
+      const result = await this.space.locks.getAll();
+      locks = Array.isArray(result) ? result : [];
 
-        const validLocks = locks.filter((lock: LockItem) => {
-          if (!lock || !lock.id) return false;
-          return true;
-        });
+      const validLocks = locks.filter((lock: LockItem) => {
+        if (!lock || !lock.id) return false;
+        return true;
+      });
 
-        if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                locks: validLocks.map((lock) => ({
-                  attributes: lock.attributes || {},
-                  holder: lock.member?.clientId || null,
-                  id: lock.id,
-                  status: lock.status || "unknown",
-                })),
-                spaceName,
-                success: true,
-                timestamp: new Date().toISOString(),
-              },
-              flags,
-            ),
-          );
-        } else if (!validLocks || validLocks.length === 0) {
-          this.log(
-            chalk.yellow("No locks are currently active in this space."),
-          );
-        } else {
-          const lockCount = validLocks.length;
-          this.log(
-            `\n${chalk.cyan("Current locks")} (${chalk.bold(String(lockCount))}):\n`,
-          );
+      if (this.shouldOutputJson(flags)) {
+        this.log(
+          this.formatJsonOutput(
+            {
+              locks: validLocks.map((lock) => ({
+                attributes: lock.attributes || {},
+                holder: lock.member?.clientId || null,
+                id: lock.id,
+                status: lock.status || "unknown",
+              })),
+              spaceName,
+              success: true,
+              timestamp: new Date().toISOString(),
+            },
+            flags,
+          ),
+        );
+      } else if (!validLocks || validLocks.length === 0) {
+        this.log(chalk.yellow("No locks are currently active in this space."));
+      } else {
+        const lockCount = validLocks.length;
+        this.log(
+          `\n${chalk.cyan("Current locks")} (${chalk.bold(String(lockCount))}):\n`,
+        );
 
-          validLocks.forEach((lock: LockItem) => {
-            try {
-              this.log(`- ${chalk.blue(lock.id)}:`);
-              this.log(`  ${chalk.dim("Status:")} ${lock.status || "unknown"}`);
+        validLocks.forEach((lock: LockItem) => {
+          try {
+            this.log(`- ${chalk.blue(lock.id)}:`);
+            this.log(`  ${chalk.dim("Status:")} ${lock.status || "unknown"}`);
+            this.log(
+              `  ${chalk.dim("Holder:")} ${lock.member?.clientId || "None"}`,
+            );
+
+            if (lock.attributes && Object.keys(lock.attributes).length > 0) {
               this.log(
-                `  ${chalk.dim("Holder:")} ${lock.member?.clientId || "None"}`,
-              );
-
-              if (lock.attributes && Object.keys(lock.attributes).length > 0) {
-                this.log(
-                  `  ${chalk.dim("Attributes:")} ${JSON.stringify(lock.attributes, null, 2)}`,
-                );
-              }
-            } catch (error) {
-              this.log(
-                `- ${chalk.red("Error displaying lock item")}: ${error instanceof Error ? error.message : String(error)}`,
+                `  ${chalk.dim("Attributes:")} ${JSON.stringify(lock.attributes, null, 2)}`,
               );
             }
-          });
-        }
-      } catch (error) {
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            {
-              error: error instanceof Error ? error.message : String(error),
-              spaceName: spaceName,
-              status: "error",
-              success: false,
-            },
-            flags,
-          );
-        } else {
-          this.error(
-            `Error: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        }
-      }
-
-      try {
-        await this.space.leave();
-        if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                spaceName,
-                status: "left",
-                success: true,
-              },
-              flags,
-            ),
-          );
-        } else {
-          this.log(chalk.green("\nSuccessfully disconnected."));
-        }
-      } catch (error) {
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            {
-              error: error instanceof Error ? error.message : String(error),
-              spaceName: spaceName,
-              status: "error",
-              success: false,
-            },
-            flags,
-          );
-        } else {
-          this.log(
-            chalk.yellow(
-              `Error leaving space: ${error instanceof Error ? error.message : String(error)}`,
-            ),
-          );
-        }
+          } catch (error) {
+            this.log(
+              `- ${chalk.red("Error displaying lock item")}: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          }
+        });
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
@@ -245,18 +182,6 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
       } else {
         this.error(
           `Error: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    } finally {
-      try {
-        if (this.realtimeClient) {
-          this.realtimeClient.close();
-        }
-      } catch (closeError) {
-        this.log(
-          chalk.yellow(
-            `Error closing client: ${closeError instanceof Error ? closeError.message : String(closeError)}`,
-          ),
         );
       }
     }

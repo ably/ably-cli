@@ -1,8 +1,5 @@
 import type { LocationsEvents } from "@ably/spaces";
-
-import { type Space } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
 import chalk from "chalk";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
@@ -42,10 +39,6 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
     }),
   };
 
-  private cleanupInProgress = false;
-  private realtimeClient: Ably.Realtime | null = null;
-  private spacesClient: unknown | null = null;
-  private space: Space | null = null;
   private subscription: LocationSubscription | null = null;
   private locationHandler:
     | ((locationUpdate: LocationsEvents.UpdateEvent) => void)
@@ -59,46 +52,24 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       return;
     }
 
-    this.unsubscribeFromLocation();
-
-    // Attempt to clear location and leave space if not already done and space exists
-    if (!this.cleanupInProgress && this.space) {
+    // Clear location before leaving space
+    if (this.space) {
       try {
-        await this.space.locations.set(null);
+        await Promise.race([
+          this.space.locations.set(null),
+          new Promise<void>((resolve) => setTimeout(resolve, 1000)),
+        ]);
       } catch {
-        /* ignore */
-      } // Best effort
-      try {
-        await this.space.leave();
-      } catch {
-        /* ignore */
-      } // Best effort
-    }
-
-    if (
-      this.realtimeClient &&
-      this.realtimeClient.connection.state !== "closed" &&
-      this.realtimeClient.connection.state !== "failed"
-    ) {
-      this.realtimeClient.close();
+        // Ignore cleanup errors
+      }
     }
 
     return super.finally(err);
   }
 
-  private unsubscribeFromLocation(): void {
-    if (this.locationHandler && this.space) {
-      try {
-        this.space.locations.unsubscribe("update", this.locationHandler);
-        this.locationHandler = null;
-      } catch {
-        // Ignore unsubscribe errors during cleanup
-      }
-    }
-  }
-
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsSet);
+    this.parsedFlags = flags;
     const { space: spaceName } = args;
 
     // Parse location data first
@@ -159,7 +130,6 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       try {
         const setupResult = await this.setupSpacesClient(flags, spaceName);
         this.realtimeClient = setupResult.realtimeClient;
-        this.spacesClient = setupResult.spacesClient;
         this.space = setupResult.space;
 
         // Enter the space and set location
@@ -215,9 +185,8 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       // Create Spaces client using setupSpacesClient
       const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
-      this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
-      if (!this.realtimeClient || !this.spacesClient || !this.space) {
+      if (!this.realtimeClient || !this.space) {
         this.error("Failed to initialize clients or space");
         return;
       }
@@ -357,11 +326,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-      this.logCliEvent(flags, "location", "runComplete", "Exiting wait loop", {
-        exitReason,
-      });
-      this.cleanupInProgress = exitReason === "signal";
+      await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error) {
       const errorMsg = `Error: ${error instanceof Error ? error.message : String(error)}`;
       this.logCliEvent(flags, "location", "fatalError", errorMsg, {
@@ -373,149 +338,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
         this.error(errorMsg);
       }
     } finally {
-      // Only do complex cleanup for interactive mode (not E2E tests with duration=0)
-      const isE2EMode =
-        typeof flags.duration === "number" && flags.duration === 0;
-      if (!isE2EMode) {
-        // Wrap all cleanup in a timeout to prevent hanging
-        await Promise.race([
-          this.performCleanup(flags || {}),
-          new Promise<void>((resolve) => {
-            setTimeout(() => {
-              this.logCliEvent(
-                flags || {},
-                "location",
-                "cleanupTimeout",
-                "Cleanup timed out after 5s, forcing completion",
-              );
-              resolve();
-            }, 5000);
-          }),
-        ]);
-
-        if (!this.shouldOutputJson(flags || {})) {
-          if (this.cleanupInProgress) {
-            this.log(
-              chalk.green("Graceful shutdown complete (user interrupt)."),
-            );
-          } else {
-            // Normal completion without user interrupt
-            this.logCliEvent(
-              flags || {},
-              "location",
-              "completedNormally",
-              "Command completed normally",
-            );
-          }
-        }
-      }
-    }
-  }
-
-  private async performCleanup(flags: Record<string, unknown>): Promise<void> {
-    // Unsubscribe from location events with timeout
-    if (this.subscription) {
-      try {
-        await Promise.race([
-          Promise.resolve(this.subscription.unsubscribe()),
-          new Promise<void>((resolve) => setTimeout(resolve, 1000)),
-        ]);
-        this.logCliEvent(
-          flags,
-          "location",
-          "unsubscribedFinally",
-          "Unsubscribed location listener.",
-        );
-      } catch (error) {
-        this.logCliEvent(
-          flags,
-          "location",
-          "unsubscribeErrorFinally",
-          `Error unsubscribing: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    }
-
-    // Clear location and leave space with timeout
-    if (this.space) {
-      try {
-        this.logCliEvent(
-          flags,
-          "location",
-          "clearingFinally",
-          "Clearing location.",
-        );
-        await Promise.race([
-          this.space.locations.set(null),
-          new Promise<void>((resolve) => setTimeout(resolve, 1000)),
-        ]);
-        this.logCliEvent(
-          flags,
-          "location",
-          "clearedFinally",
-          "Successfully cleared location.",
-        );
-
-        this.logCliEvent(flags, "spaces", "leavingFinally", "Leaving space.");
-        await Promise.race([
-          this.space.leave(),
-          new Promise<void>((resolve) => setTimeout(resolve, 2000)),
-        ]);
-        this.logCliEvent(
-          flags,
-          "spaces",
-          "leftFinally",
-          "Successfully left space.",
-        );
-      } catch (error) {
-        this.logCliEvent(
-          flags,
-          "location",
-          "cleanupLeaveErrorFinally",
-          `Error during cleanup: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    }
-
-    // Close Ably client with timeout
-    if (
-      this.realtimeClient &&
-      this.realtimeClient.connection.state !== "closed"
-    ) {
-      this.logCliEvent(
-        flags,
-        "connection",
-        "closingClientFinally",
-        "Closing Ably client.",
-      );
-      try {
-        await Promise.race([
-          new Promise<void>((resolve) => {
-            const timeout = setTimeout(() => resolve(), 2000);
-            const onClosedOrFailed = () => {
-              clearTimeout(timeout);
-              resolve();
-            };
-            this.realtimeClient!.connection.once("closed", onClosedOrFailed);
-            this.realtimeClient!.connection.once("failed", onClosedOrFailed);
-            this.realtimeClient!.close();
-          }),
-          new Promise<void>((resolve) => setTimeout(resolve, 3000)),
-        ]);
-        this.logCliEvent(
-          flags,
-          "connection",
-          "clientClosedFinally",
-          "Ably client close attempt finished.",
-        );
-      } catch (error) {
-        this.logCliEvent(
-          flags,
-          "connection",
-          "clientCloseErrorFinally",
-          `Error closing client: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
+      // Cleanup is now handled by base class finally() method
     }
   }
 }

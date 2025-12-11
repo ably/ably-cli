@@ -1,6 +1,4 @@
-import { type Space } from "@ably/spaces"; // Import Space type
 import { Args } from "@oclif/core";
-import * as Ably from "ably";
 import chalk from "chalk";
 
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
@@ -34,13 +32,9 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
     ...SpacesBaseCommand.globalFlags,
   };
 
-  // Declare class properties
-  private realtimeClient: Ably.Realtime | null = null;
-  private spacesClient: unknown | null = null;
-  private space: Space | null = null;
-
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksGet);
+    this.parsedFlags = flags;
 
     // let clients: SpacesClients | null = null // Remove local variable
     const { space: spaceName } = args; // Get spaceName earlier
@@ -51,10 +45,9 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
       // clients = await this.createSpacesClient(flags) // Replace with setupSpacesClient
       const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
-      this.spacesClient = setupResult.spacesClient;
       this.space = setupResult.space;
       // if (!clients) return // Check properties
-      if (!this.realtimeClient || !this.spacesClient || !this.space) {
+      if (!this.realtimeClient || !this.space) {
         this.error("Failed to initialize clients or space");
         return;
       }
@@ -112,12 +105,6 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
       this.error(
         `Error: ${error instanceof Error ? error.message : String(error)}`,
       );
-    } finally {
-      // if (clients?.realtimeClient) { // Use this.realtimeClient
-      if (this.realtimeClient) {
-        // clients.realtimeClient.close() // Use this.realtimeClient
-        this.realtimeClient.close();
-      }
     }
   }
 }

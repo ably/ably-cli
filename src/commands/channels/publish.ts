@@ -70,14 +70,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
       this.progressIntervalId = null;
     }
 
-    if (
-      this.realtime &&
-      this.realtime.connection.state !== "closed" && // Check state before closing to avoid errors if already closed
-      this.realtime.connection.state !== "failed"
-    ) {
-      this.realtime.close();
-    }
-
+    // Client cleanup is handled by base class
     return super.finally(err);
   }
 
@@ -382,18 +375,8 @@ export default class ChannelsPublish extends AblyBaseCommand {
       await this.publishMessages(args, flags, (msg) => channel.publish(msg));
     } catch (error) {
       this.handlePublishError(error, flags);
-    } finally {
-      // Ensure connection is closed if it was opened
-      if (this.realtime) {
-        this.realtime.close();
-        this.logCliEvent(
-          flags,
-          "connection",
-          "closed",
-          "Realtime connection closed.",
-        );
-      }
     }
+    // Client cleanup is handled by command finally() method
   }
 
   private async publishWithRest(

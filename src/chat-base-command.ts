@@ -32,7 +32,7 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
     ]);
 
     clearTimeout(this._cleanupTimeout);
-    super.finally(error);
+    await super.finally(error);
   }
 
   private async _cleanup() {
@@ -44,30 +44,6 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
         // no-op
       }
     }
-
-    const realtime = this._chatRealtimeClient;
-    if (
-      !realtime ||
-      realtime.connection.state === "closed" ||
-      realtime.connection.state === "failed"
-    ) {
-      return;
-    }
-
-    await new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => {
-        resolve();
-      }, 2000);
-
-      const onClosedOrFailed = () => {
-        clearTimeout(timeout);
-        resolve();
-      };
-
-      realtime.connection.once("closed", onClosedOrFailed);
-      realtime.connection.once("failed", onClosedOrFailed);
-      realtime.close();
-    });
   }
 
   /**
