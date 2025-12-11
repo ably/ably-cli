@@ -38,6 +38,9 @@ export default defineConfig({
             ABLY_CLI_TEST_MODE: "true",
             ABLY_API_KEY: undefined,
           },
+          // This is a temporary workaround whilst a bug / race with test config setup is fixed
+          // fixed as it causes races
+          fileParallelism: false,
         },
       },
       {
