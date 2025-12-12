@@ -109,9 +109,9 @@ describe("channels:list command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Connections:");
-      expect(stdout).toContain("Publishers:");
-      expect(stdout).toContain("Subscribers:");
+      expect(stdout).toContain("Connections: 5");
+      expect(stdout).toContain("Publishers: 2");
+      expect(stdout).toContain("Subscribers: 3");
     });
 
     it("should handle empty channels response", async () => {
