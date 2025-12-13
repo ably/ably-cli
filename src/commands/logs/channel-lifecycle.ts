@@ -98,6 +98,7 @@ export default class LogsChannelLifecycle extends AblyBaseCommand {
         this.log("");
       });
 
+      // Wait until interrupted
       await waitUntilInterruptedOrTimeout();
     } catch (error: unknown) {
       const err = error as Error;

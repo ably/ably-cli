@@ -3,7 +3,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { ControlApi } from "../../src/services/control-api.js";
 
 describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
-  "Control API Integration Tests",
+  "Control API E2E Tests",
   () => {
     let controlApi: ControlApi;
     let testAppId: string;

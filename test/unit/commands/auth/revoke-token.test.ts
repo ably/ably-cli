@@ -269,8 +269,7 @@ apiKey = "${mockApiKey}"
         import.meta.url,
       );
 
-      expect(stdout).toContain("Debug:");
-      expect(stdout).toContain("Using API key:");
+      expect(stdout).toContain("Debug: Using API key:");
     });
 
     it("should mask the API key secret in debug output", async () => {

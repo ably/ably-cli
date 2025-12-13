@@ -235,6 +235,111 @@ describe("rooms messages commands", function () {
 
       await expect(command.run()).rejects.toThrow("Invalid metadata JSON");
     });
+
+    describe("message delay and ordering", function () {
+      it("should send messages with default 40ms delay", async function () {
+        command.setParseResult({
+          flags: { count: 3, delay: 40 },
+          args: { room: "test-room", text: "Message {{.Count}}" },
+          argv: [],
+          raw: [],
+        });
+
+        const startTime = Date.now();
+        await command.run();
+        const totalTime = Date.now() - startTime;
+
+        expect(sendStub).toHaveBeenCalledTimes(3);
+        // Should take at least 80ms (2 delays of 40ms between 3 messages)
+        expect(totalTime).toBeGreaterThanOrEqual(80);
+      });
+
+      it("should respect custom delay value", async function () {
+        command.setParseResult({
+          flags: { count: 3, delay: 100 },
+          args: { room: "test-room", text: "Message {{.Count}}" },
+          argv: [],
+          raw: [],
+        });
+
+        const startTime = Date.now();
+        await command.run();
+        const totalTime = Date.now() - startTime;
+
+        expect(sendStub).toHaveBeenCalledTimes(3);
+        // Should take at least 200ms (2 delays of 100ms between 3 messages)
+        expect(totalTime).toBeGreaterThanOrEqual(200);
+      });
+
+      it("should enforce minimum 40ms delay even if lower value specified", async function () {
+        command.setParseResult({
+          flags: { count: 3, delay: 10 }, // Below minimum
+          args: { room: "test-room", text: "Message {{.Count}}" },
+          argv: [],
+          raw: [],
+        });
+
+        const startTime = Date.now();
+        await command.run();
+        const totalTime = Date.now() - startTime;
+
+        expect(sendStub).toHaveBeenCalledTimes(3);
+        // Should take at least 80ms (minimum 40ms delay enforced)
+        expect(totalTime).toBeGreaterThanOrEqual(80);
+      });
+
+      it("should send messages in sequential order", async function () {
+        const sentTexts: string[] = [];
+        sendStub.mockImplementation(async (message: any) => {
+          sentTexts.push(message.text);
+        });
+
+        command.setParseResult({
+          flags: { count: 5, delay: 10 },
+          args: { room: "test-room", text: "Message {{.Count}}" },
+          argv: [],
+          raw: [],
+        });
+
+        await command.run();
+
+        expect(sentTexts).toEqual([
+          "Message 1",
+          "Message 2",
+          "Message 3",
+          "Message 4",
+          "Message 5",
+        ]);
+      });
+    });
+
+    describe("error handling with multiple messages", function () {
+      it("should continue sending remaining messages on error", async function () {
+        let callCount = 0;
+        const sentTexts: string[] = [];
+
+        sendStub.mockImplementation(async (message: any) => {
+          callCount++;
+          if (callCount === 3) {
+            throw new Error("Network error");
+          }
+          sentTexts.push(message.text);
+        });
+
+        command.setParseResult({
+          flags: { count: 5, delay: 10 },
+          args: { room: "test-room", text: "Message {{.Count}}" },
+          argv: [],
+          raw: [],
+        });
+
+        await command.run();
+
+        // Should have attempted all 5, but only 4 succeeded
+        expect(sendStub).toHaveBeenCalledTimes(5);
+        expect(sentTexts).toHaveLength(4);
+      });
+    });
   });
 
   describe("rooms messages subscribe", function () {

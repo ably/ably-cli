@@ -335,4 +335,230 @@ describe("ChannelsPublish", function () {
 
     await expect(command.run()).rejects.toThrow("Invalid JSON");
   });
+
+  describe("transport selection", function () {
+    it("should use realtime transport by default when publishing multiple messages", async function () {
+      command.setParseResult({
+        flags: {
+          transport: undefined, // No explicit transport
+          name: undefined,
+          encoding: undefined,
+          count: 3,
+          delay: 40,
+        },
+        args: {
+          channel: "test-channel",
+          message: '{"data":"Message {{.Count}}"}',
+        },
+        argv: [],
+        raw: [],
+      });
+
+      await command.run();
+
+      // With count > 1 and no explicit transport, should use realtime
+      expect(mockRealtimePublish).toHaveBeenCalledTimes(3);
+      expect(mockRestPublish).not.toHaveBeenCalled();
+    });
+
+    it("should respect explicit rest transport flag for multiple messages", async function () {
+      command.setParseResult({
+        flags: {
+          transport: "rest",
+          name: undefined,
+          encoding: undefined,
+          count: 3,
+          delay: 0,
+        },
+        args: {
+          channel: "test-channel",
+          message: '{"data":"Message {{.Count}}"}',
+        },
+        argv: [],
+        raw: [],
+      });
+
+      await command.run();
+
+      expect(mockRestPublish).toHaveBeenCalledTimes(3);
+      expect(mockRealtimePublish).not.toHaveBeenCalled();
+    });
+
+    it("should use rest transport for single message by default", async function () {
+      command.setParseResult({
+        flags: {
+          transport: undefined, // No explicit transport
+          name: undefined,
+          encoding: undefined,
+          count: 1,
+          delay: 0,
+        },
+        args: { channel: "test-channel", message: '{"data":"Single message"}' },
+        argv: [],
+        raw: [],
+      });
+
+      await command.run();
+
+      expect(mockRestPublish).toHaveBeenCalledOnce();
+      expect(mockRealtimePublish).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("message delay and ordering", function () {
+    it("should publish messages with default 40ms delay", async function () {
+      const timestamps: number[] = [];
+      mockRealtimePublish.mockImplementation(async () => {
+        timestamps.push(Date.now());
+      });
+
+      command.setParseResult({
+        flags: {
+          transport: "realtime",
+          name: undefined,
+          encoding: undefined,
+          count: 3,
+          delay: 40,
+        },
+        args: {
+          channel: "test-channel",
+          message: '{"data":"Message {{.Count}}"}',
+        },
+        argv: [],
+        raw: [],
+      });
+
+      const startTime = Date.now();
+      await command.run();
+      const totalTime = Date.now() - startTime;
+
+      expect(mockRealtimePublish).toHaveBeenCalledTimes(3);
+      // Should take at least 80ms (2 delays of 40ms between 3 messages)
+      expect(totalTime).toBeGreaterThanOrEqual(80);
+    });
+
+    it("should respect custom delay value", async function () {
+      command.setParseResult({
+        flags: {
+          transport: "realtime",
+          name: undefined,
+          encoding: undefined,
+          count: 3,
+          delay: 100,
+        },
+        args: {
+          channel: "test-channel",
+          message: '{"data":"Message {{.Count}}"}',
+        },
+        argv: [],
+        raw: [],
+      });
+
+      const startTime = Date.now();
+      await command.run();
+      const totalTime = Date.now() - startTime;
+
+      expect(mockRealtimePublish).toHaveBeenCalledTimes(3);
+      // Should take at least 200ms (2 delays of 100ms between 3 messages)
+      expect(totalTime).toBeGreaterThanOrEqual(200);
+    });
+
+    it("should allow zero delay when explicitly set", async function () {
+      command.setParseResult({
+        flags: {
+          transport: "realtime",
+          name: undefined,
+          encoding: undefined,
+          count: 3,
+          delay: 0,
+        },
+        args: {
+          channel: "test-channel",
+          message: '{"data":"Message {{.Count}}"}',
+        },
+        argv: [],
+        raw: [],
+      });
+
+      const startTime = Date.now();
+      await command.run();
+      const totalTime = Date.now() - startTime;
+
+      expect(mockRealtimePublish).toHaveBeenCalledTimes(3);
+      // With zero delay, should complete quickly (under 50ms accounting for overhead)
+      expect(totalTime).toBeLessThan(50);
+    });
+
+    it("should publish messages in sequential order", async function () {
+      const publishedData: string[] = [];
+      mockRealtimePublish.mockImplementation(async (message: any) => {
+        publishedData.push(message.data);
+      });
+
+      command.setParseResult({
+        flags: {
+          transport: "realtime",
+          name: undefined,
+          encoding: undefined,
+          count: 5,
+          delay: 0,
+        },
+        args: {
+          channel: "test-channel",
+          message: '{"data":"Message {{.Count}}"}',
+        },
+        argv: [],
+        raw: [],
+      });
+
+      await command.run();
+
+      expect(publishedData).toEqual([
+        "Message 1",
+        "Message 2",
+        "Message 3",
+        "Message 4",
+        "Message 5",
+      ]);
+    });
+  });
+
+  describe("error handling with multiple messages", function () {
+    it("should continue publishing remaining messages on error", async function () {
+      let callCount = 0;
+      const publishedData: string[] = [];
+
+      mockRealtimePublish.mockImplementation(async (message: any) => {
+        callCount++;
+        if (callCount === 3) {
+          throw new Error("Network error");
+        }
+        publishedData.push(message.data);
+      });
+
+      command.setParseResult({
+        flags: {
+          transport: "realtime",
+          name: undefined,
+          encoding: undefined,
+          count: 5,
+          delay: 0,
+        },
+        args: {
+          channel: "test-channel",
+          message: '{"data":"Message {{.Count}}"}',
+        },
+        argv: [],
+        raw: [],
+      });
+
+      await command.run();
+
+      // Should have attempted all 5, but only 4 succeeded
+      expect(mockRealtimePublish).toHaveBeenCalledTimes(5);
+      expect(publishedData).toHaveLength(4);
+      expect(command.logOutput.join("\n")).toContain("4/5");
+      expect(command.logOutput.join("\n")).toContain("1 errors");
+    });
+  });
 });
