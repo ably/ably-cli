@@ -15,7 +15,7 @@ class TestCommand extends AblyBaseCommand {
   }
 }
 
-describe("Agent Header Integration Tests", function () {
+describe("Agent Header Unit Tests", function () {
   beforeEach(function () {});
 
   describe("Ably SDK Agent Header", function () {
