@@ -9,7 +9,10 @@ import {
 } from "vitest";
 import fs from "node:fs";
 import { AblyBaseCommand } from "../../../src/base-command.js";
-import { ConfigManager } from "../../../src/services/config-manager.js";
+import {
+  ConfigManager,
+  TomlConfigManager,
+} from "../../../src/services/config-manager.js";
 import { InteractiveHelper } from "../../../src/services/interactive-helper.js";
 import { BaseFlags } from "../../../src/types/cli.js";
 import { Config } from "@oclif/core";
@@ -139,12 +142,13 @@ describe("AblyBaseCommand", function () {
 
     // Instead of stubbing loadConfig which is private, we'll stub methods that might access the file system
     vi.spyOn(
-      ConfigManager.prototype as any,
+      TomlConfigManager.prototype as any,
       "ensureConfigDirExists",
     ).mockImplementation(() => {});
-    vi.spyOn(ConfigManager.prototype as any, "saveConfig").mockImplementation(
-      () => {},
-    );
+    vi.spyOn(
+      TomlConfigManager.prototype as any,
+      "saveConfig",
+    ).mockImplementation(() => {});
 
     // Note: createStubInstance doesn't need sandbox explicitly.
     interactiveHelperStub = {

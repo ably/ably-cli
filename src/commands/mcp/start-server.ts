@@ -1,6 +1,6 @@
 import { AblyBaseCommand } from "../../base-command.js";
 import { AblyMcpServer } from "../../mcp/index.js";
-import { ConfigManager } from "../../services/config-manager.js";
+import { TomlConfigManager } from "../../services/config-manager.js";
 
 export default class StartMcpServer extends AblyBaseCommand {
   static description =
@@ -20,7 +20,7 @@ export default class StartMcpServer extends AblyBaseCommand {
     const { flags } = await this.parse(StartMcpServer);
 
     // Initialize Config Manager
-    const configManager = new ConfigManager();
+    const configManager = new TomlConfigManager();
 
     try {
       // Start the server, write to stderr only

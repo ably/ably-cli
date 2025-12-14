@@ -38,7 +38,66 @@ export interface AblyConfig {
   };
 }
 
-export class ConfigManager {
+export interface ConfigManager {
+  // Account management
+  getAccessToken(alias?: string): string | undefined;
+  getCurrentAccount(): AccountConfig | undefined;
+  getCurrentAccountAlias(): string | undefined;
+  listAccounts(): { account: AccountConfig; alias: string }[];
+  storeAccount(
+    accessToken: string,
+    alias?: string,
+    accountInfo?: {
+      accountId?: string;
+      accountName?: string;
+      tokenId?: string;
+      userEmail?: string;
+    },
+  ): void;
+  switchAccount(alias: string): boolean;
+  removeAccount(alias: string): boolean;
+
+  // App management
+  getApiKey(appId?: string): string | undefined;
+  getAppName(appId: string): string | undefined;
+  getAppConfig(appId: string): AppConfig | undefined;
+  getCurrentAppId(): string | undefined;
+  getKeyId(appId?: string): string | undefined;
+  getKeyName(appId?: string): string | undefined;
+  setCurrentApp(appId: string): void;
+  storeAppInfo(
+    appId: string,
+    appInfo: { appName: string },
+    accountAlias?: string,
+  ): void;
+  storeAppKey(
+    appId: string,
+    apiKey: string,
+    metadata?: { appName?: string; keyId?: string; keyName?: string },
+    accountAlias?: string,
+  ): void;
+  removeApiKey(appId: string): boolean;
+
+  // Help context (AI conversation)
+  getHelpContext():
+    | {
+        conversation: {
+          messages: {
+            content: string;
+            role: "assistant" | "user";
+          }[];
+        };
+      }
+    | undefined;
+  storeHelpContext(question: string, answer: string): void;
+  clearHelpContext(): void;
+
+  // Config file
+  getConfigPath(): string;
+  saveConfig(): void;
+}
+
+export class TomlConfigManager implements ConfigManager {
   private config: AblyConfig = {
     accounts: {},
   };
