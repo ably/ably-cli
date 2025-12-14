@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import toml from "toml";
+import { parse, stringify } from "smol-toml";
 
 // Updated to include key and app metadata
 export interface AppConfig {
@@ -225,8 +225,8 @@ export class ConfigManager {
 
   public saveConfig(): void {
     try {
-      // Format the config as TOML
-      const tomlContent = this.formatToToml(this.config);
+      // Format the config as TOML using smol-toml stringify
+      const tomlContent = stringify(this.config);
 
       // Write the config to disk
       fs.writeFileSync(this.configPath, tomlContent, { mode: 0o600 }); // Secure file permissions
@@ -382,100 +382,11 @@ export class ConfigManager {
     }
   }
 
-  // Updated formatToToml method to include app and key metadata
-  private formatToToml(config: AblyConfig): string {
-    let result = "";
-
-    // Write current section
-    if (config.current) {
-      result += "[current]\n";
-      if (config.current.account) {
-        result += `account = "${config.current.account}"\n`;
-      }
-
-      result += "\n";
-    }
-
-    // Write help context if it exists
-    if (config.helpContext) {
-      result += "[helpContext]\n";
-
-      // Format the conversation as TOML array of tables
-      if (config.helpContext.conversation.messages.length > 0) {
-        result += "\n[[helpContext.conversation.messages]]\n";
-        const { messages } = config.helpContext.conversation;
-
-        for (const [i, message] of messages.entries()) {
-          if (i > 0) result += "\n[[helpContext.conversation.messages]]\n";
-          result += `role = "${message.role}"\n`;
-          result += `content = """${message.content}"""\n`;
-        }
-
-        result += "\n";
-      }
-    }
-
-    // Write accounts section
-    for (const [alias, account] of Object.entries(config.accounts)) {
-      result += `[accounts.${alias}]\n`;
-      result += `accessToken = "${account.accessToken}"\n`;
-
-      if (account.tokenId) {
-        result += `tokenId = "${account.tokenId}"\n`;
-      }
-
-      if (account.userEmail) {
-        result += `userEmail = "${account.userEmail}"\n`;
-      }
-
-      if (account.accountId) {
-        result += `accountId = "${account.accountId}"\n`;
-      }
-
-      if (account.accountName) {
-        result += `accountName = "${account.accountName}"\n`;
-      }
-
-      if (account.currentAppId) {
-        result += `currentAppId = "${account.currentAppId}"\n`;
-      }
-
-      // Write apps section for this account
-      if (account.apps && Object.keys(account.apps).length > 0) {
-        for (const [appId, appConfig] of Object.entries(account.apps)) {
-          result += `[accounts.${alias}.apps.${appId}]\n`;
-
-          if (appConfig.apiKey) {
-            result += `apiKey = "${appConfig.apiKey}"\n`;
-          }
-
-          if (appConfig.keyId) {
-            result += `keyId = "${appConfig.keyId}"\n`;
-          }
-
-          if (appConfig.keyName) {
-            result += `keyName = "${appConfig.keyName}"\n`;
-          }
-
-          if (appConfig.appName) {
-            result += `appName = "${appConfig.appName}"\n`;
-          }
-
-          result += "\n";
-        }
-      } else {
-        result += "\n";
-      }
-    }
-
-    return result;
-  }
-
   private loadConfig(): void {
     if (fs.existsSync(this.configPath)) {
       try {
         const configContent = fs.readFileSync(this.configPath, "utf8");
-        this.config = toml.parse(configContent) as AblyConfig;
+        this.config = parse(configContent) as unknown as AblyConfig;
 
         // Ensure config has the expected structure
         if (!this.config.accounts) {
