@@ -1,64 +1,22 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import nock from "nock";
 import { runCommand } from "@oclif/test";
-import * as path from "node:path";
-import * as fs from "node:fs";
-import * as os from "node:os";
+import {
+  DEFAULT_TEST_CONFIG,
+  getMockConfigManager,
+} from "../../../helpers/mock-config-manager.js";
 
 describe("queues:list command", () => {
-  const mockAccessToken = "fake_access_token";
-  const mockAccountId = "test-account-id";
-  const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
-  let testConfigDir: string;
-  let originalConfigDir: string;
+  const mockAppId = DEFAULT_TEST_CONFIG.appId;
+  const mockAccountId = DEFAULT_TEST_CONFIG.accountId;
 
   const mockAccountResponse = {
     account: { id: mockAccountId, name: "Test Account" },
     user: { email: "test@example.com" },
   };
 
-  beforeEach(() => {
-    // Set environment variable for access token
-    process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
-
-    // Create a temporary config directory for testing
-    testConfigDir = path.join(os.tmpdir(), `ably-cli-test-${Date.now()}`);
-    fs.mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    // Store original config dir and set test config dir
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    // Create a minimal config file with a default account
-    const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-currentAppId = "${mockAppId}"
-`;
-    fs.writeFileSync(path.join(testConfigDir, "config"), configContent);
-  });
-
   afterEach(() => {
-    // Clean up nock interceptors
     nock.cleanAll();
-    delete process.env.ABLY_ACCESS_TOKEN;
-
-    // Restore original config directory
-    if (originalConfigDir) {
-      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
-    } else {
-      delete process.env.ABLY_CLI_CONFIG_DIR;
-    }
-
-    // Clean up test config directory
-    if (fs.existsSync(testConfigDir)) {
-      fs.rmSync(testConfigDir, { recursive: true, force: true });
-    }
   });
 
   describe("successful queue listing", () => {
@@ -240,10 +198,6 @@ currentAppId = "${mockAppId}"
         .get("/v1/me")
         .reply(200, mockAccountResponse);
 
-      // nock("https://control.ably.net")
-      //   .get("/v1/me")
-      //   .reply(200, mockAccountResponse);
-
       nock("https://control.ably.net")
         .get(`/v1/accounts/${mockAccountId}/apps`)
         .reply(200, [mockAppResponse]);
@@ -416,12 +370,13 @@ currentAppId = "${mockAppId}"
     });
 
     it("should require app to be specified when not in environment", async () => {
-      process.env.ABLY_CLI_CONFIG_DIR = "/tmp";
+      // Clear all accounts from the mock config to simulate no config
+      getMockConfigManager().clearAccounts();
 
       const { error } = await runCommand(["queues:list"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error?.message).toMatch(/No app|Failed to get apps/);
+      expect(error?.message).toMatch(/No access token|No app|not logged in/i);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 

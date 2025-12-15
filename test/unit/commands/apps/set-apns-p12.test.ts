@@ -4,52 +4,28 @@ import nock from "nock";
 import { resolve } from "node:path";
 import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { DEFAULT_TEST_CONFIG } from "../../../helpers/mock-config-manager.js";
 
 describe("apps:set-apns-p12 command", () => {
-  const mockAccessToken = "fake_access_token";
-  const mockAccountId = "test-account-id";
-  const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
-  let testConfigDir: string;
-  let originalConfigDir: string;
+  const mockAppId = DEFAULT_TEST_CONFIG.appId;
+  let testTempDir: string;
   let testCertFile: string;
 
   beforeEach(() => {
-    process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
-
-    testConfigDir = resolve(tmpdir(), `ably-cli-test-${Date.now()}`);
-    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-`;
-    writeFileSync(resolve(testConfigDir, "config"), configContent);
+    // Create temp directory for test certificate file
+    testTempDir = resolve(tmpdir(), `ably-cli-test-apns-p12-${Date.now()}`);
+    mkdirSync(testTempDir, { recursive: true, mode: 0o700 });
 
     // Create a fake certificate file
-    testCertFile = resolve(testConfigDir, "test-cert.p12");
+    testCertFile = resolve(testTempDir, "test-cert.p12");
     writeFileSync(testCertFile, "fake-certificate-data");
   });
 
   afterEach(() => {
     nock.cleanAll();
-    delete process.env.ABLY_ACCESS_TOKEN;
 
-    if (originalConfigDir) {
-      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
-    } else {
-      delete process.env.ABLY_CLI_CONFIG_DIR;
-    }
-
-    if (existsSync(testConfigDir)) {
-      rmSync(testConfigDir, { recursive: true, force: true });
+    if (existsSync(testTempDir)) {
+      rmSync(testTempDir, { recursive: true, force: true });
     }
   });
 

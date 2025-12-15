@@ -39,7 +39,9 @@ describe("channels:presence:enter command", () => {
       once: vi.fn(),
     };
 
+    // Merge with existing mocks (don't overwrite configManager)
     globalThis.__TEST_MOCKS__ = {
+      ...globalThis.__TEST_MOCKS__,
       ablyRealtimeMock: {
         channels: {
           get: vi.fn().mockReturnValue(mockChannel),
@@ -62,7 +64,10 @@ describe("channels:presence:enter command", () => {
   });
 
   afterEach(() => {
-    delete globalThis.__TEST_MOCKS__;
+    // Only delete the mock we added, not the whole object
+    if (globalThis.__TEST_MOCKS__) {
+      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
+    }
   });
 
   describe("help", () => {

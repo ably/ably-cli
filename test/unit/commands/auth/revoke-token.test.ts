@@ -1,68 +1,29 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { mkdirSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { tmpdir } from "node:os";
-
-// Define the type for global test mocks
-declare global {
-  var __TEST_MOCKS__: {
-    ablyRealtimeMock?: {
-      close: () => void;
-    };
-  };
-}
+import { DEFAULT_TEST_CONFIG } from "../../../helpers/mock-config-manager.js";
 
 describe("auth:revoke-token command", () => {
-  const mockApiKey = "appid.keyid:secret";
-  const mockAppId = "appid";
-  const mockKeyName = "appid.keyid";
   const mockToken = "test-token-12345";
   const mockClientId = "test-client-id";
-  let testConfigDir: string;
-  let originalConfigDir: string;
 
   beforeEach(() => {
     nock.cleanAll();
 
-    // Create a temporary config directory with current app set
-    testConfigDir = resolve(tmpdir(), `ably-cli-test-${Date.now()}`);
-    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    // Store original config dir and set test config dir
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    // Create a minimal config file with the current app set
-    const configContent = `[current]
-account = "default"
-app = "${mockAppId}"
-
-[accounts.default]
-accountId = "test-account"
-accountName = "Test Account"
-userEmail = "test@example.com"
-
-[accounts.default.apps.${mockAppId}]
-appName = "Test App"
-apiKey = "${mockApiKey}"
-`;
-    writeFileSync(resolve(testConfigDir, "config"), configContent);
-
     // Set up a minimal mock Ably realtime client
     // The revoke-token command creates one but doesn't actually use it for the HTTP request
-    globalThis.__TEST_MOCKS__ = {
-      ablyRealtimeMock: {
+    if (globalThis.__TEST_MOCKS__) {
+      globalThis.__TEST_MOCKS__.ablyRealtimeMock = {
         close: () => {},
-      },
-    };
+      };
+    }
   });
 
   afterEach(() => {
     nock.cleanAll();
-    delete globalThis.__TEST_MOCKS__;
-    process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
+    if (globalThis.__TEST_MOCKS__) {
+      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
+    }
   });
 
   describe("help", () => {
@@ -115,7 +76,7 @@ apiKey = "${mockApiKey}"
     it("should successfully revoke a token with client-id", async () => {
       // Mock the token revocation endpoint
       nock("https://rest.ably.io")
-        .post(`/keys/${mockKeyName}/revokeTokens`, {
+        .post(`/keys/${DEFAULT_TEST_CONFIG.keyId}/revokeTokens`, {
           targets: [`clientId:${mockClientId}`],
         })
         .reply(200, {});
@@ -127,7 +88,7 @@ apiKey = "${mockApiKey}"
           "--client-id",
           mockClientId,
           "--api-key",
-          mockApiKey,
+          DEFAULT_TEST_CONFIG.apiKey,
         ],
         import.meta.url,
       );
@@ -138,13 +99,18 @@ apiKey = "${mockApiKey}"
     it("should use token as client-id when --client-id not provided", async () => {
       // When no client-id is provided, the token is used as the client-id
       nock("https://rest.ably.io")
-        .post(`/keys/${mockKeyName}/revokeTokens`, {
+        .post(`/keys/${DEFAULT_TEST_CONFIG.keyId}/revokeTokens`, {
           targets: [`clientId:${mockToken}`],
         })
         .reply(200, {});
 
       const { stdout, stderr } = await runCommand(
-        ["auth:revoke-token", mockToken, "--api-key", mockApiKey],
+        [
+          "auth:revoke-token",
+          mockToken,
+          "--api-key",
+          DEFAULT_TEST_CONFIG.apiKey,
+        ],
         import.meta.url,
       );
 
@@ -158,7 +124,7 @@ apiKey = "${mockApiKey}"
 
     it("should output JSON format when --json flag is used", async () => {
       nock("https://rest.ably.io")
-        .post(`/keys/${mockKeyName}/revokeTokens`, {
+        .post(`/keys/${DEFAULT_TEST_CONFIG.keyId}/revokeTokens`, {
           targets: [`clientId:${mockClientId}`],
         })
         .reply(200, { issuedBefore: 1234567890 });
@@ -170,7 +136,7 @@ apiKey = "${mockApiKey}"
           "--client-id",
           mockClientId,
           "--api-key",
-          mockApiKey,
+          DEFAULT_TEST_CONFIG.apiKey,
           "--json",
         ],
         import.meta.url,
@@ -188,7 +154,7 @@ apiKey = "${mockApiKey}"
     it("should handle token not found error with special message", async () => {
       // The command handles token_not_found specifically in the response body
       nock("https://rest.ably.io")
-        .post(`/keys/${mockKeyName}/revokeTokens`)
+        .post(`/keys/${DEFAULT_TEST_CONFIG.keyId}/revokeTokens`)
         .reply(404, "token_not_found");
 
       const { stdout } = await runCommand(
@@ -198,7 +164,7 @@ apiKey = "${mockApiKey}"
           "--client-id",
           mockClientId,
           "--api-key",
-          mockApiKey,
+          DEFAULT_TEST_CONFIG.apiKey,
         ],
         import.meta.url,
       );
@@ -209,7 +175,7 @@ apiKey = "${mockApiKey}"
 
     it("should handle authentication error (invalid API key)", async () => {
       nock("https://rest.ably.io")
-        .post(`/keys/${mockKeyName}/revokeTokens`)
+        .post(`/keys/${DEFAULT_TEST_CONFIG.keyId}/revokeTokens`)
         .reply(401, { error: { message: "Unauthorized" } });
 
       const { error } = await runCommand(
@@ -219,7 +185,7 @@ apiKey = "${mockApiKey}"
           "--client-id",
           mockClientId,
           "--api-key",
-          mockApiKey,
+          DEFAULT_TEST_CONFIG.apiKey,
         ],
         import.meta.url,
       );
@@ -230,7 +196,7 @@ apiKey = "${mockApiKey}"
 
     it("should handle server error", async () => {
       nock("https://rest.ably.io")
-        .post(`/keys/${mockKeyName}/revokeTokens`)
+        .post(`/keys/${DEFAULT_TEST_CONFIG.keyId}/revokeTokens`)
         .reply(500, { error: "Internal Server Error" });
 
       const { error } = await runCommand(
@@ -240,7 +206,7 @@ apiKey = "${mockApiKey}"
           "--client-id",
           mockClientId,
           "--api-key",
-          mockApiKey,
+          DEFAULT_TEST_CONFIG.apiKey,
         ],
         import.meta.url,
       );
@@ -253,7 +219,7 @@ apiKey = "${mockApiKey}"
   describe("debug mode", () => {
     it("should show debug information when --debug flag is used", async () => {
       nock("https://rest.ably.io")
-        .post(`/keys/${mockKeyName}/revokeTokens`)
+        .post(`/keys/${DEFAULT_TEST_CONFIG.keyId}/revokeTokens`)
         .reply(200, {});
 
       const { stdout } = await runCommand(
@@ -263,7 +229,7 @@ apiKey = "${mockApiKey}"
           "--client-id",
           mockClientId,
           "--api-key",
-          mockApiKey,
+          DEFAULT_TEST_CONFIG.apiKey,
           "--debug",
         ],
         import.meta.url,
@@ -274,7 +240,7 @@ apiKey = "${mockApiKey}"
 
     it("should mask the API key secret in debug output", async () => {
       nock("https://rest.ably.io")
-        .post(`/keys/${mockKeyName}/revokeTokens`)
+        .post(`/keys/${DEFAULT_TEST_CONFIG.keyId}/revokeTokens`)
         .reply(200, {});
 
       const { stdout } = await runCommand(
@@ -284,14 +250,14 @@ apiKey = "${mockApiKey}"
           "--client-id",
           mockClientId,
           "--api-key",
-          mockApiKey,
+          DEFAULT_TEST_CONFIG.apiKey,
           "--debug",
         ],
         import.meta.url,
       );
 
       // Verify the secret part of the API key is masked
-      expect(stdout).not.toContain("secret");
+      expect(stdout).not.toContain("testsecret");
       expect(stdout).toContain("***");
     });
   });

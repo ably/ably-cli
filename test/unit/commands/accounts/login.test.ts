@@ -1,54 +1,21 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { resolve } from "node:path";
-import {
-  mkdirSync,
-  writeFileSync,
-  existsSync,
-  rmSync,
-  readFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("accounts:login command", () => {
   const mockAccessToken = "test_access_token_12345";
   const mockAccountId = "test-account-id";
-  let testConfigDir: string;
-  let originalConfigDir: string;
 
   beforeEach(() => {
     nock.cleanAll();
-
-    // Create a temporary config directory for testing
-    testConfigDir = resolve(tmpdir(), `ably-cli-test-login-${Date.now()}`);
-    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    // Store original config dir and set test config dir
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    // Create a minimal config file
-    const configContent = `[current]
-account = "default"
-`;
-    writeFileSync(resolve(testConfigDir, "config"), configContent);
+    // Clear accounts so login tests start fresh
+    const mock = getMockConfigManager();
+    mock.clearAccounts();
   });
 
   afterEach(() => {
     nock.cleanAll();
-
-    // Restore original config directory
-    if (originalConfigDir) {
-      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
-    } else {
-      delete process.env.ABLY_CLI_CONFIG_DIR;
-    }
-
-    // Clean up test config directory
-    if (existsSync(testConfigDir)) {
-      rmSync(testConfigDir, { recursive: true, force: true });
-    }
   });
 
   describe("help", () => {
@@ -102,18 +69,15 @@ account = "default"
       expect(result.account).toHaveProperty("name", "Test Account");
       expect(result.account.user).toHaveProperty("email", "test@example.com");
 
-      // Verify config file was written correctly
-      const configContent = readFileSync(
-        resolve(testConfigDir, "config"),
-        "utf8",
-      );
-      expect(configContent).toContain("[current]");
-      expect(configContent).toContain('account = "default"');
-      expect(configContent).toContain("[accounts.default]");
-      expect(configContent).toContain(`accessToken = "${mockAccessToken}"`);
-      expect(configContent).toContain(`accountId = "${mockAccountId}"`);
-      expect(configContent).toContain('accountName = "Test Account"');
-      expect(configContent).toContain('userEmail = "test@example.com"');
+      // Verify config was updated correctly via mock
+      const mock = getMockConfigManager();
+      const config = mock.getConfig();
+      expect(config.current?.account).toBe("default");
+      expect(config.accounts["default"]).toBeDefined();
+      expect(config.accounts["default"].accessToken).toBe(mockAccessToken);
+      expect(config.accounts["default"].accountId).toBe(mockAccountId);
+      expect(config.accounts["default"].accountName).toBe("Test Account");
+      expect(config.accounts["default"].userEmail).toBe("test@example.com");
     });
 
     it("should include alias in JSON response when --alias flag is provided", async () => {
@@ -141,18 +105,15 @@ account = "default"
       expect(result).toHaveProperty("success", true);
       expect(result.account).toHaveProperty("alias", customAlias);
 
-      // Verify config file was written with custom alias
-      const configContent = readFileSync(
-        resolve(testConfigDir, "config"),
-        "utf8",
-      );
-      expect(configContent).toContain("[current]");
-      expect(configContent).toContain(`account = "${customAlias}"`);
-      expect(configContent).toContain(`[accounts.${customAlias}]`);
-      expect(configContent).toContain(`accessToken = "${mockAccessToken}"`);
-      expect(configContent).toContain(`accountId = "${mockAccountId}"`);
-      expect(configContent).toContain('accountName = "Test Account"');
-      expect(configContent).toContain('userEmail = "test@example.com"');
+      // Verify config was written with custom alias via mock
+      const mock = getMockConfigManager();
+      const config = mock.getConfig();
+      expect(config.current?.account).toBe(customAlias);
+      expect(config.accounts[customAlias]).toBeDefined();
+      expect(config.accounts[customAlias].accessToken).toBe(mockAccessToken);
+      expect(config.accounts[customAlias].accountId).toBe(mockAccountId);
+      expect(config.accounts[customAlias].accountName).toBe("Test Account");
+      expect(config.accounts[customAlias].userEmail).toBe("test@example.com");
     });
 
     it("should include app info when single app is auto-selected", async () => {
@@ -187,19 +148,18 @@ account = "default"
       expect(result.app).toHaveProperty("name", mockAppName);
       expect(result.app).toHaveProperty("autoSelected", true);
 
-      // Verify config file was written with app info
-      const configContent = readFileSync(
-        resolve(testConfigDir, "config"),
-        "utf8",
+      // Verify config was written with app info via mock
+      const mock = getMockConfigManager();
+      const config = mock.getConfig();
+      expect(config.current?.account).toBe("default");
+      expect(config.accounts["default"]).toBeDefined();
+      expect(config.accounts["default"].accessToken).toBe(mockAccessToken);
+      expect(config.accounts["default"].accountId).toBe(mockAccountId);
+      expect(config.accounts["default"].currentAppId).toBe(mockAppId);
+      expect(config.accounts["default"].apps?.[mockAppId]).toBeDefined();
+      expect(config.accounts["default"].apps?.[mockAppId]?.appName).toBe(
+        mockAppName,
       );
-      expect(configContent).toContain("[current]");
-      expect(configContent).toContain('account = "default"');
-      expect(configContent).toContain("[accounts.default]");
-      expect(configContent).toContain(`accessToken = "${mockAccessToken}"`);
-      expect(configContent).toContain(`accountId = "${mockAccountId}"`);
-      expect(configContent).toContain(`currentAppId = "${mockAppId}"`);
-      expect(configContent).toContain(`[accounts.default.apps.${mockAppId}]`);
-      expect(configContent).toContain(`appName = "${mockAppName}"`);
     });
 
     it("should not include app info when multiple apps exist (no interactive selection in JSON mode)", async () => {
@@ -229,18 +189,15 @@ account = "default"
       expect(result).toHaveProperty("success", true);
       expect(result).not.toHaveProperty("app");
 
-      // Verify config file was written without app selection
-      const configContent = readFileSync(
-        resolve(testConfigDir, "config"),
-        "utf8",
-      );
-      expect(configContent).toContain("[current]");
-      expect(configContent).toContain('account = "default"');
-      expect(configContent).toContain("[accounts.default]");
-      expect(configContent).toContain(`accessToken = "${mockAccessToken}"`);
-      expect(configContent).toContain(`accountId = "${mockAccountId}"`);
-      // Should NOT contain currentAppId when multiple apps exist
-      expect(configContent).not.toContain("currentAppId");
+      // Verify config was written without app selection via mock
+      const mock = getMockConfigManager();
+      const config = mock.getConfig();
+      expect(config.current?.account).toBe("default");
+      expect(config.accounts["default"]).toBeDefined();
+      expect(config.accounts["default"].accessToken).toBe(mockAccessToken);
+      expect(config.accounts["default"].accountId).toBe(mockAccountId);
+      // Should NOT have currentAppId when multiple apps exist
+      expect(config.accounts["default"].currentAppId).toBeUndefined();
     });
   });
 
@@ -327,19 +284,15 @@ account = "default"
       expect(result).toHaveProperty("success", true);
       expect(result.account).toHaveProperty("id", mockAccountId);
 
-      // Verify config file was written with custom control host in mind
-      // (the account should still be stored correctly)
-      const configContent = readFileSync(
-        resolve(testConfigDir, "config"),
-        "utf8",
-      );
-      expect(configContent).toContain("[current]");
-      expect(configContent).toContain('account = "default"');
-      expect(configContent).toContain("[accounts.default]");
-      expect(configContent).toContain(`accessToken = "${mockAccessToken}"`);
-      expect(configContent).toContain(`accountId = "${mockAccountId}"`);
-      expect(configContent).toContain('accountName = "Test Account"');
-      expect(configContent).toContain('userEmail = "test@example.com"');
+      // Verify config was written correctly via mock
+      const mock = getMockConfigManager();
+      const config = mock.getConfig();
+      expect(config.current?.account).toBe("default");
+      expect(config.accounts["default"]).toBeDefined();
+      expect(config.accounts["default"].accessToken).toBe(mockAccessToken);
+      expect(config.accounts["default"].accountId).toBe(mockAccountId);
+      expect(config.accounts["default"].accountName).toBe("Test Account");
+      expect(config.accounts["default"].userEmail).toBe("test@example.com");
     });
   });
 });

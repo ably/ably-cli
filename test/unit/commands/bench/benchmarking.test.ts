@@ -39,7 +39,9 @@ describe("benchmarking commands", { timeout: 20000 }, () => {
       on: vi.fn(),
     };
 
+    // Merge with existing mocks (don't overwrite configManager)
     globalThis.__TEST_MOCKS__ = {
+      ...globalThis.__TEST_MOCKS__,
       ablyRealtimeMock: {
         channels: { get: vi.fn().mockReturnValue(mockChannel) },
         connection: {
@@ -64,7 +66,11 @@ describe("benchmarking commands", { timeout: 20000 }, () => {
   });
 
   afterEach(() => {
-    delete globalThis.__TEST_MOCKS__;
+    // Only delete the mocks we added, not the whole object
+    if (globalThis.__TEST_MOCKS__) {
+      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
+      delete globalThis.__TEST_MOCKS__.ablyRestMock;
+    }
     vi.restoreAllMocks();
   });
 

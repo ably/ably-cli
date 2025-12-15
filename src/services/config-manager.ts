@@ -100,9 +100,8 @@ export interface ConfigManager {
 
 // Type declaration for test mocks available on globalThis
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   var __TEST_MOCKS__:
-    | { configManager?: ConfigManager; [key: string]: any }
+    | { configManager?: ConfigManager; [key: string]: unknown }
     | undefined;
 }
 

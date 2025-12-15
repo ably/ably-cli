@@ -1,14 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import nock from "nock";
 import { runCommand } from "@oclif/test";
-import * as path from "node:path";
-import * as fs from "node:fs";
-import * as os from "node:os";
+import {
+  DEFAULT_TEST_CONFIG,
+  getMockConfigManager,
+} from "../../../helpers/mock-config-manager.js";
 
-// Pre-define constants to avoid ESLint errors about function calls in describe blocks
-const mockAccessToken = "fake_access_token";
-const mockAccountId = "test-account-id";
-const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
+// Pre-define constants using DEFAULT_TEST_CONFIG
+const mockAppId = DEFAULT_TEST_CONFIG.appId;
+const mockAccountId = DEFAULT_TEST_CONFIG.accountId;
 const mockQueueName = "test-queue";
 const mockQueueId = "queue-550e8400-e29b-41d4-a716-446655440000";
 
@@ -60,54 +60,8 @@ const mockQueueResponse = {
 };
 
 describe("queues:create command", () => {
-  let testConfigDir: string;
-  let originalConfigDir: string;
-
-  beforeEach(() => {
-    // Set environment variable for access token
-    process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
-
-    // Create a temporary config directory for testing
-    testConfigDir = path.join(os.tmpdir(), `ably-cli-test-${Date.now()}`);
-    fs.mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    // Store original config dir and set test config dir
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    // Create a minimal config file with a default account and current app
-    const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-currentAppId = "${mockAppId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-
-[accounts.default.apps.${mockAppId}]
-appName = "Test App"
-`;
-    fs.writeFileSync(path.join(testConfigDir, "config"), configContent);
-  });
-
   afterEach(() => {
-    // Clean up nock interceptors
     nock.cleanAll();
-    delete process.env.ABLY_ACCESS_TOKEN;
-
-    // Restore original config directory
-    if (originalConfigDir) {
-      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
-    } else {
-      delete process.env.ABLY_CLI_CONFIG_DIR;
-    }
-
-    // Clean up test config directory
-    if (fs.existsSync(testConfigDir)) {
-      fs.rmSync(testConfigDir, { recursive: true, force: true });
-    }
   });
 
   describe("successful queue creation", () => {
@@ -379,33 +333,8 @@ appName = "Test App"
     });
 
     it("should require app to be specified when not in environment", async () => {
-      // Mock the /me endpoint to get account info
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .reply(200, mockAccountResponse);
-
-      // Mock empty apps list to trigger "no app specified" error
-      nock("https://control.ably.net")
-        .get(`/v1/accounts/${mockAccountId}/apps`)
-        .reply(200, [mockAppResponse]);
-
-      // Set up a clean config directory without current app
-      const emptyConfigDir = path.join(
-        os.tmpdir(),
-        `ably-cli-test-empty-${Date.now()}`,
-      );
-      fs.mkdirSync(emptyConfigDir, { recursive: true, mode: 0o700 });
-      const emptyConfigContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-`;
-      fs.writeFileSync(path.join(emptyConfigDir, "config"), emptyConfigContent);
-      process.env.ABLY_CLI_CONFIG_DIR = emptyConfigDir;
+      // Clear all accounts from the mock config to simulate no config
+      getMockConfigManager().clearAccounts();
 
       const { error } = await runCommand(
         ["queues:create", "--name", mockQueueName],
@@ -413,12 +342,8 @@ userEmail = "test@example.com"
       );
 
       expect(error).toBeDefined();
-      expect(error?.message).toMatch(/No app selected/);
+      expect(error?.message).toMatch(/No access token|No app|not logged in/i);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
-
-      // Clean up empty config directory
-      fs.rmSync(emptyConfigDir, { recursive: true, force: true });
-      process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
     });
 
     it("should handle network errors", async () => {

@@ -1,57 +1,22 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
-import { resolve } from "node:path";
-import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import {
+  getMockConfigManager,
+  DEFAULT_TEST_CONFIG,
+} from "../../../helpers/mock-config-manager.js";
 
 describe("auth:issue-ably-token command", () => {
-  const mockAccessToken = "fake_access_token";
-  const mockAccountId = "test-account-id";
-  const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
-  const mockApiKey = `${mockAppId}.testkey:testsecret`;
-  let testConfigDir: string;
-  let originalConfigDir: string;
-
   beforeEach(() => {
-    process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
-
-    testConfigDir = resolve(tmpdir(), `ably-cli-test-${Date.now()}`);
-    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-currentAppId = "${mockAppId}"
-
-[accounts.default.apps."${mockAppId}"]
-appName = "Test App"
-apiKey = "${mockApiKey}"
-`;
-    writeFileSync(resolve(testConfigDir, "config"), configContent);
+    // Clean up any test mocks from previous tests
+    if (globalThis.__TEST_MOCKS__) {
+      delete globalThis.__TEST_MOCKS__.ablyRestMock;
+    }
   });
 
   afterEach(() => {
-    delete process.env.ABLY_ACCESS_TOKEN;
-
-    if (originalConfigDir) {
-      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
-    } else {
-      delete process.env.ABLY_CLI_CONFIG_DIR;
+    if (globalThis.__TEST_MOCKS__) {
+      delete globalThis.__TEST_MOCKS__.ablyRestMock;
     }
-
-    if (existsSync(testConfigDir)) {
-      rmSync(testConfigDir, { recursive: true, force: true });
-    }
-
-    globalThis.__TEST_MOCKS__ = undefined;
   });
 
   describe("successful token issuance", () => {
@@ -65,7 +30,7 @@ apiKey = "${mockApiKey}"
       };
 
       const mockTokenRequest = {
-        keyName: `${mockAppId}.testkey`,
+        keyName: DEFAULT_TEST_CONFIG.keyId,
         ttl: 3600000,
         capability: '{"*":["*"]}',
       };
@@ -75,12 +40,12 @@ apiKey = "${mockApiKey}"
         requestToken: vi.fn().mockResolvedValue(mockTokenDetails),
       };
 
-      globalThis.__TEST_MOCKS__ = {
-        ablyRestMock: {
+      if (globalThis.__TEST_MOCKS__) {
+        globalThis.__TEST_MOCKS__.ablyRestMock = {
           auth: mockAuth,
           close: vi.fn(),
-        },
-      };
+        };
+      }
 
       const { stdout } = await runCommand(
         ["auth:issue-ably-token"],
@@ -109,12 +74,12 @@ apiKey = "${mockApiKey}"
         requestToken: vi.fn().mockResolvedValue(mockTokenDetails),
       };
 
-      globalThis.__TEST_MOCKS__ = {
-        ablyRestMock: {
+      if (globalThis.__TEST_MOCKS__) {
+        globalThis.__TEST_MOCKS__.ablyRestMock = {
           auth: mockAuth,
           close: vi.fn(),
-        },
-      };
+        };
+      }
 
       const { stdout } = await runCommand(
         ["auth:issue-ably-token", "--capability", customCapability],
@@ -141,12 +106,12 @@ apiKey = "${mockApiKey}"
         requestToken: vi.fn().mockResolvedValue(mockTokenDetails),
       };
 
-      globalThis.__TEST_MOCKS__ = {
-        ablyRestMock: {
+      if (globalThis.__TEST_MOCKS__) {
+        globalThis.__TEST_MOCKS__.ablyRestMock = {
           auth: mockAuth,
           close: vi.fn(),
-        },
-      };
+        };
+      }
 
       const { stdout } = await runCommand(
         ["auth:issue-ably-token", "--ttl", "7200"],
@@ -175,12 +140,12 @@ apiKey = "${mockApiKey}"
         requestToken: vi.fn().mockResolvedValue(mockTokenDetails),
       };
 
-      globalThis.__TEST_MOCKS__ = {
-        ablyRestMock: {
+      if (globalThis.__TEST_MOCKS__) {
+        globalThis.__TEST_MOCKS__.ablyRestMock = {
           auth: mockAuth,
           close: vi.fn(),
-        },
-      };
+        };
+      }
 
       const { stdout } = await runCommand(
         ["auth:issue-ably-token", "--client-id", customClientId],
@@ -208,12 +173,12 @@ apiKey = "${mockApiKey}"
         requestToken: vi.fn().mockResolvedValue(mockTokenDetails),
       };
 
-      globalThis.__TEST_MOCKS__ = {
-        ablyRestMock: {
+      if (globalThis.__TEST_MOCKS__) {
+        globalThis.__TEST_MOCKS__.ablyRestMock = {
           auth: mockAuth,
           close: vi.fn(),
-        },
-      };
+        };
+      }
 
       const { stdout } = await runCommand(
         ["auth:issue-ably-token", "--client-id", "none"],
@@ -242,12 +207,12 @@ apiKey = "${mockApiKey}"
         requestToken: vi.fn().mockResolvedValue(mockTokenDetails),
       };
 
-      globalThis.__TEST_MOCKS__ = {
-        ablyRestMock: {
+      if (globalThis.__TEST_MOCKS__) {
+        globalThis.__TEST_MOCKS__.ablyRestMock = {
           auth: mockAuth,
           close: vi.fn(),
-        },
-      };
+        };
+      }
 
       const { stdout } = await runCommand(
         ["auth:issue-ably-token", "--token-only"],
@@ -273,12 +238,12 @@ apiKey = "${mockApiKey}"
         requestToken: vi.fn().mockResolvedValue(mockTokenDetails),
       };
 
-      globalThis.__TEST_MOCKS__ = {
-        ablyRestMock: {
+      if (globalThis.__TEST_MOCKS__) {
+        globalThis.__TEST_MOCKS__.ablyRestMock = {
           auth: mockAuth,
           close: vi.fn(),
-        },
-      };
+        };
+      }
 
       const { stdout } = await runCommand(
         ["auth:issue-ably-token", "--json"],
@@ -307,12 +272,12 @@ apiKey = "${mockApiKey}"
         requestToken: vi.fn(),
       };
 
-      globalThis.__TEST_MOCKS__ = {
-        ablyRestMock: {
+      if (globalThis.__TEST_MOCKS__) {
+        globalThis.__TEST_MOCKS__.ablyRestMock = {
           auth: mockAuth,
           close: vi.fn(),
-        },
-      };
+        };
+      }
 
       const { error } = await runCommand(
         ["auth:issue-ably-token"],
@@ -324,17 +289,9 @@ apiKey = "${mockApiKey}"
     });
 
     it("should not produce token output when app configuration is missing", async () => {
-      // Remove app from config
-      const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-`;
-      writeFileSync(resolve(testConfigDir, "config"), configContent);
+      // Use mock config manager to clear app configuration
+      const mock = getMockConfigManager();
+      mock.setCurrentAppIdForAccount(undefined);
 
       const { stdout } = await runCommand(
         ["auth:issue-ably-token"],
@@ -361,15 +318,15 @@ userEmail = "test@example.com"
         requestToken: vi.fn().mockResolvedValue(mockTokenDetails),
       };
 
-      globalThis.__TEST_MOCKS__ = {
-        ablyRestMock: {
+      if (globalThis.__TEST_MOCKS__) {
+        globalThis.__TEST_MOCKS__.ablyRestMock = {
           auth: mockAuth,
           close: vi.fn(),
-        },
-      };
+        };
+      }
 
       const { stdout } = await runCommand(
-        ["auth:issue-ably-token", "--app", mockAppId],
+        ["auth:issue-ably-token", "--app", DEFAULT_TEST_CONFIG.appId],
         import.meta.url,
       );
 

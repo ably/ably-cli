@@ -1,53 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { resolve } from "node:path";
-import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { DEFAULT_TEST_CONFIG } from "../../../helpers/mock-config-manager.js";
 
 describe("integrations:delete command", () => {
-  const mockAccessToken = "fake_access_token";
-  const mockAccountId = "test-account-id";
-  const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
+  const mockAppId = DEFAULT_TEST_CONFIG.appId;
+  const mockAccountId = DEFAULT_TEST_CONFIG.accountId;
   const mockRuleId = "rule-123456";
-  let testConfigDir: string;
-  let originalConfigDir: string;
-
-  beforeEach(() => {
-    process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
-
-    testConfigDir = resolve(tmpdir(), `ably-cli-test-${Date.now()}`);
-    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-currentAppId = "${mockAppId}"
-`;
-    writeFileSync(resolve(testConfigDir, "config"), configContent);
-  });
 
   afterEach(() => {
     nock.cleanAll();
-    delete process.env.ABLY_ACCESS_TOKEN;
-
-    if (originalConfigDir) {
-      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
-    } else {
-      delete process.env.ABLY_CLI_CONFIG_DIR;
-    }
-
-    if (existsSync(testConfigDir)) {
-      rmSync(testConfigDir, { recursive: true, force: true });
-    }
   });
 
   const mockIntegration = {
@@ -65,6 +27,7 @@ currentAppId = "${mockAppId}"
       enveloped: true,
     },
     status: "enabled",
+    version: "1.0",
     created: Date.now(),
     modified: Date.now(),
   };
@@ -76,7 +39,7 @@ currentAppId = "${mockAppId}"
         .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
-      // Mock DELETE
+      // Mock DELETE endpoint
       nock("https://control.ably.net")
         .delete(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
         .reply(204);
@@ -110,7 +73,7 @@ currentAppId = "${mockAppId}"
   });
 
   describe("error handling", () => {
-    it("should require integrationId argument", async () => {
+    it("should require ruleId argument", async () => {
       const { error } = await runCommand(
         ["integrations:delete", "--force"],
         import.meta.url,
@@ -150,6 +113,20 @@ currentAppId = "${mockAppId}"
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/Error deleting integration|500/i);
+    });
+
+    it("should handle 401 authentication error", async () => {
+      nock("https://control.ably.net")
+        .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .reply(401, { error: "Unauthorized" });
+
+      const { error } = await runCommand(
+        ["integrations:delete", mockRuleId, "--force"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/401/);
     });
 
     it("should reject unknown flags", async () => {

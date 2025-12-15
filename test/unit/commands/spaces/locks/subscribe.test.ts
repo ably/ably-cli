@@ -1,57 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
-import { resolve } from "node:path";
-import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
 
 describe("spaces:locks:subscribe command", () => {
-  const mockAccessToken = "fake_access_token";
-  const mockAccountId = "test-account-id";
-  const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
-  const mockApiKey = `${mockAppId}.testkey:testsecret`;
-  let testConfigDir: string;
-  let originalConfigDir: string;
-
   beforeEach(() => {
-    process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
-
-    testConfigDir = resolve(tmpdir(), `ably-cli-test-${Date.now()}`);
-    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-currentAppId = "${mockAppId}"
-
-[accounts.default.apps."${mockAppId}"]
-appName = "Test App"
-apiKey = "${mockApiKey}"
-`;
-    writeFileSync(resolve(testConfigDir, "config"), configContent);
+    if (globalThis.__TEST_MOCKS__) {
+      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
+      delete globalThis.__TEST_MOCKS__.ablySpacesMock;
+    }
   });
 
   afterEach(() => {
-    delete process.env.ABLY_ACCESS_TOKEN;
-
-    if (originalConfigDir) {
-      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
-    } else {
-      delete process.env.ABLY_CLI_CONFIG_DIR;
+    if (globalThis.__TEST_MOCKS__) {
+      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
+      delete globalThis.__TEST_MOCKS__.ablySpacesMock;
     }
-
-    if (existsSync(testConfigDir)) {
-      rmSync(testConfigDir, { recursive: true, force: true });
-    }
-
-    globalThis.__TEST_MOCKS__ = undefined;
   });
 
   describe("command arguments and flags", () => {
@@ -129,6 +91,7 @@ apiKey = "${mockApiKey}"
       };
 
       globalThis.__TEST_MOCKS__ = {
+        ...globalThis.__TEST_MOCKS__,
         ablyRealtimeMock: mockRealtimeClient,
         ablySpacesMock: mockSpacesClient,
       };
@@ -221,6 +184,7 @@ apiKey = "${mockApiKey}"
       };
 
       globalThis.__TEST_MOCKS__ = {
+        ...globalThis.__TEST_MOCKS__,
         ablyRealtimeMock: mockRealtimeClient,
         ablySpacesMock: mockSpacesClient,
       };
@@ -290,6 +254,7 @@ apiKey = "${mockApiKey}"
       };
 
       globalThis.__TEST_MOCKS__ = {
+        ...globalThis.__TEST_MOCKS__,
         ablyRealtimeMock: mockRealtimeClient,
         ablySpacesMock: mockSpacesClient,
       };
@@ -372,6 +337,7 @@ apiKey = "${mockApiKey}"
       };
 
       globalThis.__TEST_MOCKS__ = {
+        ...globalThis.__TEST_MOCKS__,
         ablyRealtimeMock: mockRealtimeClient,
         ablySpacesMock: mockSpacesClient,
       };
@@ -442,6 +408,7 @@ apiKey = "${mockApiKey}"
       };
 
       globalThis.__TEST_MOCKS__ = {
+        ...globalThis.__TEST_MOCKS__,
         ablyRealtimeMock: mockRealtimeClient,
         ablySpacesMock: mockSpacesClient,
       };
@@ -513,6 +480,7 @@ apiKey = "${mockApiKey}"
       };
 
       globalThis.__TEST_MOCKS__ = {
+        ...globalThis.__TEST_MOCKS__,
         ablyRealtimeMock: mockRealtimeClient,
         ablySpacesMock: mockSpacesClient,
       };
@@ -585,6 +553,7 @@ apiKey = "${mockApiKey}"
       };
 
       globalThis.__TEST_MOCKS__ = {
+        ...globalThis.__TEST_MOCKS__,
         ablyRealtimeMock: mockRealtimeClient,
         ablySpacesMock: mockSpacesClient,
       };

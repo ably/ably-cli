@@ -1,73 +1,39 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { resolve } from "node:path";
-import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import {
+  getMockConfigManager,
+  DEFAULT_TEST_CONFIG,
+} from "../../../../helpers/mock-config-manager.js";
 
 describe("auth:keys:list command", () => {
-  const mockAccessToken = "fake_access_token";
-  const mockAccountId = "test-account-id";
-  const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
-  let testConfigDir: string;
-  let originalConfigDir: string;
-
   beforeEach(() => {
-    process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
-
-    testConfigDir = resolve(tmpdir(), `ably-cli-test-${Date.now()}`);
-    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-currentAppId = "${mockAppId}"
-`;
-    writeFileSync(resolve(testConfigDir, "config"), configContent);
+    nock.cleanAll();
   });
 
   afterEach(() => {
     nock.cleanAll();
-    delete process.env.ABLY_ACCESS_TOKEN;
-
-    if (originalConfigDir) {
-      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
-    } else {
-      delete process.env.ABLY_CLI_CONFIG_DIR;
-    }
-
-    if (existsSync(testConfigDir)) {
-      rmSync(testConfigDir, { recursive: true, force: true });
-    }
   });
 
   describe("successful key listing", () => {
     it("should list all keys for the current app", async () => {
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/keys`)
+        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys`)
         .reply(200, [
           {
             id: "key1",
-            appId: mockAppId,
+            appId: DEFAULT_TEST_CONFIG.appId,
             name: "Key One",
-            key: `${mockAppId}.key1:secret1`,
+            key: `${DEFAULT_TEST_CONFIG.appId}.key1:secret1`,
             capability: { "*": ["publish", "subscribe"] },
             created: Date.now(),
             modified: Date.now(),
           },
           {
             id: "key2",
-            appId: mockAppId,
+            appId: DEFAULT_TEST_CONFIG.appId,
             name: "Key Two",
-            key: `${mockAppId}.key2:secret2`,
+            key: `${DEFAULT_TEST_CONFIG.appId}.key2:secret2`,
             capability: { "*": ["subscribe"] },
             created: Date.now(),
             modified: Date.now(),
@@ -76,21 +42,21 @@ currentAppId = "${mockAppId}"
 
       const { stdout } = await runCommand(["auth:keys:list"], import.meta.url);
 
-      expect(stdout).toContain(`Key Name: ${mockAppId}.key1`);
+      expect(stdout).toContain(`Key Name: ${DEFAULT_TEST_CONFIG.appId}.key1`);
       expect(stdout).toContain("Key Label: Key One");
-      expect(stdout).toContain(`Key Name: ${mockAppId}.key2`);
+      expect(stdout).toContain(`Key Name: ${DEFAULT_TEST_CONFIG.appId}.key2`);
       expect(stdout).toContain("Key Label: Key Two");
     });
 
     it("should list keys with --app flag", async () => {
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/keys`)
+        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys`)
         .reply(200, [
           {
             id: "key1",
-            appId: mockAppId,
+            appId: DEFAULT_TEST_CONFIG.appId,
             name: "Test Key",
-            key: `${mockAppId}.key1:secret`,
+            key: `${DEFAULT_TEST_CONFIG.appId}.key1:secret`,
             capability: { "*": ["publish"] },
             created: Date.now(),
             modified: Date.now(),
@@ -98,17 +64,17 @@ currentAppId = "${mockAppId}"
         ]);
 
       const { stdout } = await runCommand(
-        ["auth:keys:list", "--app", mockAppId],
+        ["auth:keys:list", "--app", DEFAULT_TEST_CONFIG.appId],
         import.meta.url,
       );
 
-      expect(stdout).toContain(`Key Name: ${mockAppId}.key1`);
+      expect(stdout).toContain(`Key Name: ${DEFAULT_TEST_CONFIG.appId}.key1`);
       expect(stdout).toContain("Key Label: Test Key");
     });
 
     it("should show message when no keys found", async () => {
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/keys`)
+        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys`)
         .reply(200, []);
 
       const { stdout } = await runCommand(["auth:keys:list"], import.meta.url);
@@ -118,13 +84,13 @@ currentAppId = "${mockAppId}"
 
     it("should output JSON format when --json flag is used", async () => {
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/keys`)
+        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys`)
         .reply(200, [
           {
             id: "key1",
-            appId: mockAppId,
+            appId: DEFAULT_TEST_CONFIG.appId,
             name: "Test Key",
-            key: `${mockAppId}.key1:secret`,
+            key: `${DEFAULT_TEST_CONFIG.appId}.key1:secret`,
             capability: { "*": ["publish", "subscribe"] },
             created: Date.now(),
             modified: Date.now(),
@@ -145,16 +111,8 @@ currentAppId = "${mockAppId}"
 
   describe("error handling", () => {
     it("should error when no app is selected", async () => {
-      const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-`;
-      writeFileSync(resolve(testConfigDir, "config"), configContent);
+      const mock = getMockConfigManager();
+      mock.setCurrentAppIdForAccount(undefined);
 
       const { error } = await runCommand(["auth:keys:list"], import.meta.url);
 
@@ -164,7 +122,7 @@ userEmail = "test@example.com"
 
     it("should handle 401 authentication error", async () => {
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/keys`)
+        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys`)
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(["auth:keys:list"], import.meta.url);
@@ -175,7 +133,7 @@ userEmail = "test@example.com"
 
     it("should handle network errors", async () => {
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/keys`)
+        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys`)
         .replyWithError("Network error");
 
       const { error } = await runCommand(["auth:keys:list"], import.meta.url);
