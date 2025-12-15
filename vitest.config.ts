@@ -33,6 +33,7 @@ export default defineConfig({
         test: {
           name: "unit",
           include: ["test/unit/**/*.test.ts"],
+          setupFiles: ["./test/setup.ts", "./test/unit/setup.ts"],
           env: {
             ABLY_CLI_DEFAULT_DURATION: "0.25",
             ABLY_CLI_TEST_MODE: "true",

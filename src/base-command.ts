@@ -5,7 +5,10 @@ import chalk from "chalk";
 import colorJson from "color-json";
 import { randomUUID } from "node:crypto";
 
-import { ConfigManager, TomlConfigManager } from "./services/config-manager.js";
+import {
+  ConfigManager,
+  createConfigManager,
+} from "./services/config-manager.js";
 import { ControlApi } from "./services/control-api.js";
 import { InteractiveHelper } from "./services/interactive-helper.js";
 import { BaseFlags, CommandConfig, ErrorDetails } from "./types/cli.js";
@@ -170,7 +173,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
 
   constructor(argv: string[], config: CommandConfig) {
     super(argv, config);
-    this.configManager = new TomlConfigManager();
+    this.configManager = createConfigManager();
     this.interactiveHelper = new InteractiveHelper(this.configManager);
     // Check if we're running in web CLI mode
     this.isWebCliMode = isWebCliMode();

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { parse, stringify } from "smol-toml";
+import isTestMode from "../utils/test-mode.js";
 
 // Updated to include key and app metadata
 export interface AppConfig {
@@ -95,6 +96,30 @@ export interface ConfigManager {
   // Config file
   getConfigPath(): string;
   saveConfig(): void;
+}
+
+// Type declaration for test mocks available on globalThis
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  var __TEST_MOCKS__:
+    | { configManager?: ConfigManager; [key: string]: any }
+    | undefined;
+}
+
+/**
+ * Factory function to create a ConfigManager instance.
+ * In test mode (when ABLY_CLI_TEST_MODE is set and mock is available),
+ * returns the MockConfigManager from globals.
+ * Otherwise returns a new TomlConfigManager.
+ */
+export function createConfigManager(): ConfigManager {
+  // Check if we're in test mode and have a mock available
+  if (isTestMode() && globalThis.__TEST_MOCKS__?.configManager) {
+    return globalThis.__TEST_MOCKS__.configManager;
+  }
+
+  // Default to TomlConfigManager for production use
+  return new TomlConfigManager();
 }
 
 export class TomlConfigManager implements ConfigManager {

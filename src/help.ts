@@ -2,7 +2,10 @@ import { Command, Help, Config, Interfaces } from "@oclif/core";
 import chalk from "chalk";
 import stripAnsi from "strip-ansi";
 
-import { ConfigManager, TomlConfigManager } from "./services/config-manager.js";
+import {
+  ConfigManager,
+  createConfigManager,
+} from "./services/config-manager.js";
 import { displayLogo } from "./utils/logo.js";
 import { formatReleaseStatus } from "./utils/version.js";
 
@@ -27,7 +30,7 @@ export default class CustomHelp extends Help {
     this.webCliMode = isWebCliMode();
     this.interactiveMode = process.env.ABLY_INTERACTIVE_MODE === "true";
     this.anonymousMode = process.env.ABLY_ANONYMOUS_USER_MODE === "true";
-    this.configManager = new TomlConfigManager();
+    this.configManager = createConfigManager();
   }
 
   // Override formatHelpOutput to apply stripAnsi when necessary
