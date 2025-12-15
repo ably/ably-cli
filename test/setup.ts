@@ -6,7 +6,7 @@ import { exec } from "node:child_process";
 import * as Ably from "ably";
 
 // Import types for test mocks
-import type { MockConfigManager } from "../src/services/mock-config-manager.js";
+import type { MockConfigManager } from "./helpers/mock-config-manager.js";
 
 // Global type declarations for test mocks
 declare global {
