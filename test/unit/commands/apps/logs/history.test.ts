@@ -1,48 +1,23 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
+import { getMockAblyRest } from "../../../../helpers/mock-ably-rest.js";
 
 describe("apps:logs:history command", () => {
-  let mockHistory: ReturnType<typeof vi.fn>;
-  let mockChannelGet: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRestMock;
-    }
-
-    // Setup global mock for Ably REST client
-    mockHistory = vi.fn().mockResolvedValue({
-      items: [],
-    });
-
-    mockChannelGet = vi.fn().mockReturnValue({
-      history: mockHistory,
-    });
-
-    globalThis.__TEST_MOCKS__ = {
-      ...globalThis.__TEST_MOCKS__,
-      ablyRestMock: {
-        channels: {
-          get: mockChannelGet,
-        },
-      } as any,
-    };
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRestMock;
-    }
+    const mock = getMockAblyRest();
+    const channel = mock.channels._getChannel("[meta]log");
+    channel.history.mockResolvedValue({ items: [] });
   });
 
   describe("successful log history retrieval", () => {
     it("should retrieve application log history", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("[meta]log");
       const mockTimestamp = 1234567890000;
       const mockLogMessage = "User login successful";
       const mockLogLevel = "info";
 
-      mockHistory.mockResolvedValue({
+      channel.history.mockResolvedValue({
         items: [
           {
             name: "log.info",
@@ -62,10 +37,10 @@ describe("apps:logs:history command", () => {
       );
 
       // Verify the correct channel was requested
-      expect(mockChannelGet).toHaveBeenCalledWith("[meta]log");
+      expect(mock.channels.get).toHaveBeenCalledWith("[meta]log");
 
       // Verify history was called with default parameters
-      expect(mockHistory).toHaveBeenCalledWith({
+      expect(channel.history).toHaveBeenCalledWith({
         direction: "backwards",
         limit: 100,
       });
@@ -83,9 +58,9 @@ describe("apps:logs:history command", () => {
     });
 
     it("should handle empty log history", async () => {
-      mockHistory.mockResolvedValue({
-        items: [],
-      });
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("[meta]log");
+      channel.history.mockResolvedValue({ items: [] });
 
       const { stdout } = await runCommand(
         ["apps:logs:history"],
@@ -96,23 +71,23 @@ describe("apps:logs:history command", () => {
     });
 
     it("should accept limit flag", async () => {
-      mockHistory.mockResolvedValue({
-        items: [],
-      });
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("[meta]log");
+      channel.history.mockResolvedValue({ items: [] });
 
       await runCommand(["apps:logs:history", "--limit", "50"], import.meta.url);
 
       // Verify history was called with custom limit
-      expect(mockHistory).toHaveBeenCalledWith({
+      expect(channel.history).toHaveBeenCalledWith({
         direction: "backwards",
         limit: 50,
       });
     });
 
     it("should accept direction flag", async () => {
-      mockHistory.mockResolvedValue({
-        items: [],
-      });
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("[meta]log");
+      channel.history.mockResolvedValue({ items: [] });
 
       await runCommand(
         ["apps:logs:history", "--direction", "forwards"],
@@ -120,17 +95,19 @@ describe("apps:logs:history command", () => {
       );
 
       // Verify history was called with forwards direction
-      expect(mockHistory).toHaveBeenCalledWith({
+      expect(channel.history).toHaveBeenCalledWith({
         direction: "forwards",
         limit: 100,
       });
     });
 
     it("should display multiple log messages with their content", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("[meta]log");
       const timestamp1 = 1234567890000;
       const timestamp2 = 1234567891000;
 
-      mockHistory.mockResolvedValue({
+      channel.history.mockResolvedValue({
         items: [
           {
             name: "log.info",
@@ -162,7 +139,9 @@ describe("apps:logs:history command", () => {
     });
 
     it("should handle string data in messages", async () => {
-      mockHistory.mockResolvedValue({
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("[meta]log");
+      channel.history.mockResolvedValue({
         items: [
           {
             name: "log.warning",
@@ -181,13 +160,15 @@ describe("apps:logs:history command", () => {
     });
 
     it("should show limit warning when max messages reached", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("[meta]log");
       const messages = Array.from({ length: 50 }, (_, i) => ({
         name: "log.info",
         data: `Message ${i}`,
         timestamp: Date.now() + i,
       }));
 
-      mockHistory.mockResolvedValue({
+      channel.history.mockResolvedValue({
         items: messages,
       });
 
@@ -200,13 +181,15 @@ describe("apps:logs:history command", () => {
     });
 
     it("should output JSON format when --json flag is used", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("[meta]log");
       const mockMessage = {
         name: "log.info",
         data: { message: "Test message", severity: "info" },
         timestamp: Date.now(),
       };
 
-      mockHistory.mockResolvedValue({
+      channel.history.mockResolvedValue({
         items: [mockMessage],
       });
 
