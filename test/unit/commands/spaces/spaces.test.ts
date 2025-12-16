@@ -70,7 +70,9 @@ describe("spaces commands", () => {
       },
     };
 
+    // Merge with existing mocks (don't overwrite configManager)
     globalThis.__TEST_MOCKS__ = {
+      ...globalThis.__TEST_MOCKS__,
       ablyRealtimeMock: {
         channels: {
           get: vi.fn().mockReturnValue({
@@ -103,7 +105,11 @@ describe("spaces commands", () => {
   });
 
   afterEach(() => {
-    delete globalThis.__TEST_MOCKS__;
+    // Only delete the mocks we added, not the whole object
+    if (globalThis.__TEST_MOCKS__) {
+      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
+      delete globalThis.__TEST_MOCKS__.ablySpacesMock;
+    }
   });
 
   describe("spaces topic", () => {

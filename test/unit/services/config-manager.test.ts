@@ -21,7 +21,10 @@ import {
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { ConfigManager } from "../../../src/services/config-manager.js";
+import {
+  ConfigManager,
+  TomlConfigManager,
+} from "../../../src/services/config-manager.js";
 
 // Simple mock config content
 const DEFAULT_CONFIG = `
@@ -85,7 +88,7 @@ describe("ConfigManager", () => {
 
     // Create new ConfigManager instance for each test
     // It will now use the uniqueTestConfigDir via the env var
-    configManager = new ConfigManager();
+    configManager = new TomlConfigManager();
   });
 
   // Clean up after each test
@@ -136,7 +139,7 @@ describe("ConfigManager", () => {
       existsStub.mockReturnValue(false);
 
       // Create instance which should trigger directory creation attempt
-      const _manager = new ConfigManager();
+      const _manager = new TomlConfigManager();
 
       // ConfigManager constructor now uses getConfigDirPath() which relies on ABLY_CLI_CONFIG_DIR
       // We expect mkdirSync to be called with the uniqueTestConfigDir
@@ -173,7 +176,7 @@ describe("ConfigManager", () => {
       vi.spyOn(fs, "readFileSync").mockReturnValue("[accounts]\n"); // Empty accounts section
       vi.spyOn(fs, "writeFileSync"); // Stub writeFileSync if needed
 
-      const manager = new ConfigManager(); // Create new instance with empty config
+      const manager = new TomlConfigManager(); // Create new instance with empty config
 
       expect(manager.getCurrentAccountAlias()).toBeUndefined();
     });
@@ -199,7 +202,7 @@ accessToken = "testaccesstoken"
 `); // No [current] section
       vi.spyOn(fs, "writeFileSync");
 
-      const manager = new ConfigManager();
+      const manager = new TomlConfigManager();
 
       expect(manager.getCurrentAccount()).toBeUndefined();
     });
@@ -217,7 +220,7 @@ accessToken = "testaccesstoken"
       vi.spyOn(fs, "readFileSync").mockReturnValue(`[accounts]`); // No [current] section or account details
       vi.spyOn(fs, "writeFileSync");
 
-      const manager = new ConfigManager();
+      const manager = new TomlConfigManager();
       expect(manager.getCurrentAppId()).toBeUndefined();
     });
   });
@@ -277,7 +280,7 @@ accessToken = "testaccesstoken"
       vi.spyOn(fs, "readFileSync").mockReturnValue(""); // Empty config
       const writeFileStub = vi.spyOn(fs, "writeFileSync");
 
-      const manager = new ConfigManager();
+      const manager = new TomlConfigManager();
       manager.storeAccount("firstaccesstoken", "firstaccount");
 
       expect(writeFileStub).toHaveBeenCalledOnce();

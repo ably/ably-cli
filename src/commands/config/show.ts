@@ -1,5 +1,5 @@
 import * as fs from "node:fs";
-import * as toml from "toml";
+import { parse } from "smol-toml";
 
 import { AblyBaseCommand } from "../../base-command.js";
 
@@ -43,7 +43,7 @@ export default class ConfigShow extends AblyBaseCommand {
     if (this.shouldOutputJson(flags)) {
       // Parse the TOML and output as JSON
       try {
-        const config = toml.parse(contents);
+        const config = parse(contents);
         this.log(
           this.formatJsonOutput(
             { exists: true, path: configPath, config },

@@ -33,14 +33,12 @@ export default defineConfig({
         test: {
           name: "unit",
           include: ["test/unit/**/*.test.ts"],
+          setupFiles: ["./test/setup.ts", "./test/unit/setup.ts"],
           env: {
             ABLY_CLI_DEFAULT_DURATION: "0.25",
             ABLY_CLI_TEST_MODE: "true",
             ABLY_API_KEY: undefined,
           },
-          // This is a temporary workaround whilst a bug / race with test config setup is fixed
-          // fixed as it causes races
-          fileParallelism: false,
         },
       },
       {

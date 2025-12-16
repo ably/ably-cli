@@ -38,7 +38,9 @@ describe("channels:history command", () => {
       history: mockHistory,
     };
 
+    // Merge with existing mocks (don't overwrite configManager)
     globalThis.__TEST_MOCKS__ = {
+      ...globalThis.__TEST_MOCKS__,
       ablyRestMock: {
         channels: {
           get: vi.fn().mockReturnValue(mockChannel),
@@ -49,7 +51,10 @@ describe("channels:history command", () => {
   });
 
   afterEach(() => {
-    delete globalThis.__TEST_MOCKS__;
+    // Only delete the mock we added, not the whole object
+    if (globalThis.__TEST_MOCKS__) {
+      delete globalThis.__TEST_MOCKS__.ablyRestMock;
+    }
     vi.clearAllMocks();
   });
 

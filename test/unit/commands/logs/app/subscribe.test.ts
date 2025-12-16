@@ -1,53 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
-import { resolve } from "node:path";
-import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
 
 describe("logs:app:subscribe command", () => {
-  const mockAccessToken = "fake_access_token";
-  const mockAccountId = "test-account-id";
-  const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
-  const mockApiKey = `${mockAppId}.testkey:testsecret`;
-  let testConfigDir: string;
-  let originalConfigDir: string;
-
   beforeEach(() => {
-    process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
-
-    testConfigDir = resolve(tmpdir(), `ably-cli-test-${Date.now()}`);
-    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-currentAppId = "${mockAppId}"
-
-[accounts.defaults.apps."${mockAppId}"]
-apiKey = "${mockApiKey}"
-`;
-    writeFileSync(resolve(testConfigDir, "config"), configContent);
+    if (globalThis.__TEST_MOCKS__) {
+      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
+    }
   });
 
   afterEach(() => {
-    delete process.env.ABLY_ACCESS_TOKEN;
-
-    if (originalConfigDir) {
-      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
-    } else {
-      delete process.env.ABLY_CLI_CONFIG_DIR;
-    }
-
-    if (existsSync(testConfigDir)) {
-      rmSync(testConfigDir, { recursive: true, force: true });
+    if (globalThis.__TEST_MOCKS__) {
+      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
     }
   });
 
@@ -90,10 +53,6 @@ apiKey = "${mockApiKey}"
   });
 
   describe("subscription behavior", () => {
-    afterEach(() => {
-      globalThis.__TEST_MOCKS__ = undefined;
-    });
-
     it("should subscribe to log channel and show initial message", async () => {
       const mockChannel = {
         name: "[meta]log",
@@ -115,6 +74,7 @@ apiKey = "${mockApiKey}"
       };
 
       globalThis.__TEST_MOCKS__ = {
+        ...globalThis.__TEST_MOCKS__,
         ablyRealtimeMock: {
           channels: mockChannels,
           connection: mockConnection,
@@ -154,6 +114,7 @@ apiKey = "${mockApiKey}"
       };
 
       globalThis.__TEST_MOCKS__ = {
+        ...globalThis.__TEST_MOCKS__,
         ablyRealtimeMock: {
           channels: mockChannels,
           connection: mockConnection,
@@ -196,6 +157,7 @@ apiKey = "${mockApiKey}"
       };
 
       globalThis.__TEST_MOCKS__ = {
+        ...globalThis.__TEST_MOCKS__,
         ablyRealtimeMock: {
           channels: mockChannels,
           connection: mockConnection,
@@ -218,12 +180,11 @@ apiKey = "${mockApiKey}"
   });
 
   describe("error handling", () => {
-    afterEach(() => {
-      globalThis.__TEST_MOCKS__ = undefined;
-    });
-
     it("should handle missing mock client in test mode", async () => {
-      globalThis.__TEST_MOCKS__ = undefined;
+      // Clear the realtime mock
+      if (globalThis.__TEST_MOCKS__) {
+        delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
+      }
 
       const { error } = await runCommand(
         ["logs:app:subscribe"],

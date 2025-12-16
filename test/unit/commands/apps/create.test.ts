@@ -1,86 +1,44 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { resolve } from "node:path";
-import {
-  mkdirSync,
-  writeFileSync,
-  readFileSync,
-  existsSync,
-  rmSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("apps:create command", () => {
-  const mockAccessToken = "fake_access_token";
-  const mockAccountId = "test-account-id";
-  const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
   const mockAppName = "TesttApp";
-  let testConfigDir: string;
-  let originalConfigDir: string;
+  const newAppId = "new-app-id-12345";
 
   beforeEach(() => {
-    // Set environment variable for access token
-    process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
-
-    // Create a temporary config directory for testing
-    testConfigDir = resolve(tmpdir(), `ably-cli-test-${Date.now()}`);
-    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    // Store original config dir and set test config dir
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    // Create a minimal config file with a default account
-    const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-`;
-    writeFileSync(resolve(testConfigDir, "config"), configContent);
+    nock.cleanAll();
   });
 
   afterEach(() => {
-    // Clean up nock interceptors
     nock.cleanAll();
-    delete process.env.ABLY_ACCESS_TOKEN;
-
-    // Restore original config directory
-    if (originalConfigDir) {
-      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
-    } else {
-      delete process.env.ABLY_CLI_CONFIG_DIR;
-    }
-
-    // Clean up test config directory
-    if (existsSync(testConfigDir)) {
-      rmSync(testConfigDir, { recursive: true, force: true });
-    }
   });
 
   describe("successful app creation", () => {
     it("should create an app successfully", async () => {
+      const mock = getMockConfigManager();
+      const accountId = mock.getCurrentAccount()!.accountId!;
+      const accountName = mock.getCurrentAccount()!.accountName!;
+      const userEmail = mock.getCurrentAccount()!.userEmail!;
+
       // Mock the /me endpoint to get account ID
       nock("https://control.ably.net")
         .get("/v1/me")
         .reply(200, {
-          account: { id: mockAccountId, name: "Test Account" },
-          user: { email: "test@example.com" },
+          account: { id: accountId, name: accountName },
+          user: { email: userEmail },
         });
 
       // Mock the app creation endpoint
       nock("https://control.ably.net")
-        .post(`/v1/accounts/${mockAccountId}/apps`, {
+        .post(`/v1/accounts/${accountId}/apps`, {
           name: mockAppName,
           tlsOnly: false,
         })
         .reply(201, {
-          id: mockAppId,
-          accountId: mockAccountId,
+          id: newAppId,
+          accountId: accountId,
           name: mockAppName,
           status: "active",
           created: Date.now(),
@@ -95,29 +53,34 @@ userEmail = "test@example.com"
       ]);
 
       expect(stdout).toContain("App created successfully");
-      expect(stdout).toContain(mockAppId);
+      expect(stdout).toContain(newAppId);
       expect(stdout).toContain(mockAppName);
       expect(stdout).toContain("Automatically switched to app");
     });
 
     it("should create an app with TLS only flag", async () => {
+      const mock = getMockConfigManager();
+      const accountId = mock.getCurrentAccount()!.accountId!;
+      const accountName = mock.getCurrentAccount()!.accountName!;
+      const userEmail = mock.getCurrentAccount()!.userEmail!;
+
       // Mock the /me endpoint
       nock("https://control.ably.net")
         .get("/v1/me")
         .reply(200, {
-          account: { id: mockAccountId, name: "Test Account" },
-          user: { email: "test@example.com" },
+          account: { id: accountId, name: accountName },
+          user: { email: userEmail },
         });
 
       // Mock the app creation endpoint with TLS only
       nock("https://control.ably.net")
-        .post(`/v1/accounts/${mockAccountId}/apps`, {
+        .post(`/v1/accounts/${accountId}/apps`, {
           name: mockAppName,
           tlsOnly: true,
         })
         .reply(201, {
-          id: mockAppId,
-          accountId: mockAccountId,
+          id: newAppId,
+          accountId: accountId,
           name: mockAppName,
           status: "active",
           created: Date.now(),
@@ -136,9 +99,14 @@ userEmail = "test@example.com"
     });
 
     it("should output JSON format when --json flag is used", async () => {
+      const mock = getMockConfigManager();
+      const accountId = mock.getCurrentAccount()!.accountId!;
+      const accountName = mock.getCurrentAccount()!.accountName!;
+      const userEmail = mock.getCurrentAccount()!.userEmail!;
+
       const mockApp = {
-        id: mockAppId,
-        accountId: mockAccountId,
+        id: newAppId,
+        accountId: accountId,
         name: mockAppName,
         status: "active",
         created: Date.now(),
@@ -150,13 +118,13 @@ userEmail = "test@example.com"
       nock("https://control.ably.net")
         .get("/v1/me")
         .reply(200, {
-          account: { id: mockAccountId, name: "Test Account" },
-          user: { email: "test@example.com" },
+          account: { id: accountId, name: accountName },
+          user: { email: userEmail },
         });
 
       // Mock the app creation endpoint
       nock("https://control.ably.net")
-        .post(`/v1/accounts/${mockAccountId}/apps`)
+        .post(`/v1/accounts/${accountId}/apps`)
         .reply(201, mockApp);
 
       const { stdout } = await runCommand(
@@ -166,12 +134,16 @@ userEmail = "test@example.com"
 
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("app");
-      expect(result.app).toHaveProperty("id", mockAppId);
+      expect(result.app).toHaveProperty("id", newAppId);
       expect(result.app).toHaveProperty("name", mockAppName);
       expect(result).toHaveProperty("success", true);
     });
 
     it("should use custom access token when provided", async () => {
+      const mock = getMockConfigManager();
+      const accountId = mock.getCurrentAccount()!.accountId!;
+      const accountName = mock.getCurrentAccount()!.accountName!;
+      const userEmail = mock.getCurrentAccount()!.userEmail!;
       const customToken = "custom_access_token";
 
       // Mock the /me endpoint with custom token
@@ -182,8 +154,8 @@ userEmail = "test@example.com"
       })
         .get("/v1/me")
         .reply(200, {
-          account: { id: mockAccountId, name: "Test Account" },
-          user: { email: "test@example.com" },
+          account: { id: accountId, name: accountName },
+          user: { email: userEmail },
         });
 
       // Mock the app creation endpoint
@@ -192,10 +164,10 @@ userEmail = "test@example.com"
           authorization: `Bearer ${customToken}`,
         },
       })
-        .post(`/v1/accounts/${mockAccountId}/apps`)
+        .post(`/v1/accounts/${accountId}/apps`)
         .reply(201, {
-          id: mockAppId,
-          accountId: mockAccountId,
+          id: newAppId,
+          accountId: accountId,
           name: mockAppName,
           status: "active",
           created: Date.now(),
@@ -219,20 +191,25 @@ userEmail = "test@example.com"
     });
 
     it("should automatically switch to the newly created app", async () => {
+      const mock = getMockConfigManager();
+      const accountId = mock.getCurrentAccount()!.accountId!;
+      const accountName = mock.getCurrentAccount()!.accountName!;
+      const userEmail = mock.getCurrentAccount()!.userEmail!;
+
       // Mock the /me endpoint
       nock("https://control.ably.net")
         .get("/v1/me")
         .reply(200, {
-          account: { id: mockAccountId, name: "Test Account" },
-          user: { email: "test@example.com" },
+          account: { id: accountId, name: accountName },
+          user: { email: userEmail },
         });
 
       // Mock the app creation endpoint
       nock("https://control.ably.net")
-        .post(`/v1/accounts/${mockAccountId}/apps`)
+        .post(`/v1/accounts/${accountId}/apps`)
         .reply(201, {
-          id: mockAppId,
-          accountId: mockAccountId,
+          id: newAppId,
+          accountId: accountId,
           name: mockAppName,
           status: "active",
           created: Date.now(),
@@ -247,14 +224,12 @@ userEmail = "test@example.com"
 
       expect(stdout).toContain("App created successfully");
       expect(stdout).toContain(
-        `Automatically switched to app: ${mockAppName} (${mockAppId})`,
+        `Automatically switched to app: ${mockAppName} (${newAppId})`,
       );
 
-      // Verify the config file was updated with the new app
-      const configPath = resolve(testConfigDir, "config");
-      const configContent = readFileSync(configPath, "utf8");
-      expect(configContent).toContain(`currentAppId = "${mockAppId}"`);
-      expect(configContent).toContain(`appName = "${mockAppName}"`);
+      // Verify the mock config was updated with the new app
+      expect(mock.getCurrentAppId()).toBe(newAppId);
+      expect(mock.getAppName(newAppId)).toBe(mockAppName);
     });
   });
 
@@ -275,17 +250,22 @@ userEmail = "test@example.com"
     });
 
     it("should handle 403 forbidden error", async () => {
+      const mock = getMockConfigManager();
+      const accountId = mock.getCurrentAccount()!.accountId!;
+      const accountName = mock.getCurrentAccount()!.accountName!;
+      const userEmail = mock.getCurrentAccount()!.userEmail!;
+
       // Mock the /me endpoint
       nock("https://control.ably.net")
         .get("/v1/me")
         .reply(200, {
-          account: { id: mockAccountId, name: "Test Account" },
-          user: { email: "test@example.com" },
+          account: { id: accountId, name: accountName },
+          user: { email: userEmail },
         });
 
       // Mock forbidden response
       nock("https://control.ably.net")
-        .post(`/v1/accounts/${mockAccountId}/apps`)
+        .post(`/v1/accounts/${accountId}/apps`)
         .reply(403, { error: "Forbidden" });
 
       const { error } = await runCommand(
@@ -298,17 +278,22 @@ userEmail = "test@example.com"
     });
 
     it("should handle 404 not found error", async () => {
+      const mock = getMockConfigManager();
+      const accountId = mock.getCurrentAccount()!.accountId!;
+      const accountName = mock.getCurrentAccount()!.accountName!;
+      const userEmail = mock.getCurrentAccount()!.userEmail!;
+
       // Mock the /me endpoint
       nock("https://control.ably.net")
         .get("/v1/me")
         .reply(200, {
-          account: { id: mockAccountId, name: "Test Account" },
-          user: { email: "test@example.com" },
+          account: { id: accountId, name: accountName },
+          user: { email: userEmail },
         });
 
       // Mock not found response
       nock("https://control.ably.net")
-        .post(`/v1/accounts/${mockAccountId}/apps`)
+        .post(`/v1/accounts/${accountId}/apps`)
         .reply(404, { error: "Not Found" });
 
       const { error } = await runCommand(
@@ -321,17 +306,22 @@ userEmail = "test@example.com"
     });
 
     it("should handle 500 server error", async () => {
+      const mock = getMockConfigManager();
+      const accountId = mock.getCurrentAccount()!.accountId!;
+      const accountName = mock.getCurrentAccount()!.accountName!;
+      const userEmail = mock.getCurrentAccount()!.userEmail!;
+
       // Mock the /me endpoint
       nock("https://control.ably.net")
         .get("/v1/me")
         .reply(200, {
-          account: { id: mockAccountId, name: "Test Account" },
-          user: { email: "test@example.com" },
+          account: { id: accountId, name: accountName },
+          user: { email: userEmail },
         });
 
       // Mock server error
       nock("https://control.ably.net")
-        .post(`/v1/accounts/${mockAccountId}/apps`)
+        .post(`/v1/accounts/${accountId}/apps`)
         .reply(500, { error: "Internal Server Error" });
 
       const { error } = await runCommand(
@@ -366,17 +356,22 @@ userEmail = "test@example.com"
     });
 
     it("should handle validation errors from API", async () => {
+      const mock = getMockConfigManager();
+      const accountId = mock.getCurrentAccount()!.accountId!;
+      const accountName = mock.getCurrentAccount()!.accountName!;
+      const userEmail = mock.getCurrentAccount()!.userEmail!;
+
       // Mock the /me endpoint
       nock("https://control.ably.net")
         .get("/v1/me")
         .reply(200, {
-          account: { id: mockAccountId, name: "Test Account" },
-          user: { email: "test@example.com" },
+          account: { id: accountId, name: accountName },
+          user: { email: userEmail },
         });
 
       // Mock validation error
       nock("https://control.ably.net")
-        .post(`/v1/accounts/${mockAccountId}/apps`)
+        .post(`/v1/accounts/${accountId}/apps`)
         .reply(400, {
           error: "Validation failed",
           details: "App name already exists",

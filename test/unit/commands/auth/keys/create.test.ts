@@ -1,65 +1,38 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { resolve } from "node:path";
-import { mkdirSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 
 describe("auth:keys:create command", () => {
-  const mockAccessToken = "fake_access_token";
-  const mockAccountId = "MockAccount";
-  const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
   const mockKeyName = "TestKey";
   const mockKeyId = "test-key-id";
   const mockKeySecret = "test-key-secret";
-  let testConfigDir: string;
-  let originalConfigDir: string;
 
   beforeEach(() => {
-    // Set environment variable for access token
-    process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
-
-    // Create a temporary config directory for testing
-    testConfigDir = resolve(tmpdir(), `ably-cli-test-${Date.now()}`);
-    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    // Store original config dir and set test config dir
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    // Create a minimal config file with a default account
-    const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-`;
-    writeFileSync(resolve(testConfigDir, "config"), configContent);
+    nock.cleanAll();
+    // Set up config without currentAppId to test "no app" error
+    const mock = getMockConfigManager();
+    mock.setCurrentAppIdForAccount(undefined);
   });
 
   afterEach(() => {
-    // Clean up nock interceptors
     nock.cleanAll();
-    delete process.env.ABLY_ACCESS_TOKEN;
-    process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
   });
 
   describe("successful key creation", () => {
     it("should create a key successfully", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
       // Mock the key creation endpoint
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/keys`, {
+        .post(`/v1/apps/${appId}/keys`, {
           name: mockKeyName,
           capability: { "*": ["*"] },
         })
         .reply(201, {
           id: mockKeyId,
-          appId: mockAppId,
+          appId,
           name: mockKeyName,
-          key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
+          key: `${appId}.${mockKeyId}:${mockKeySecret}`,
           capability: { "*": ["*"] },
           created: Date.now(),
           modified: Date.now(),
@@ -68,7 +41,7 @@ userEmail = "test@example.com"
         });
 
       const { stdout } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", mockAppId],
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
 
@@ -78,9 +51,10 @@ userEmail = "test@example.com"
     });
 
     it("should create a key with custom capabilities", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
       // Mock the key creation endpoint with custom capabilities
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/keys`, {
+        .post(`/v1/apps/${appId}/keys`, {
           name: mockKeyName,
           capability: {
             channel1: ["publish", "subscribe"],
@@ -89,9 +63,9 @@ userEmail = "test@example.com"
         })
         .reply(201, {
           id: mockKeyId,
-          appId: mockAppId,
+          appId,
           name: mockKeyName,
-          key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
+          key: `${appId}.${mockKeyId}:${mockKeySecret}`,
           capability: {
             channel1: ["publish", "subscribe"],
             channel2: ["history"],
@@ -108,7 +82,7 @@ userEmail = "test@example.com"
           "--name",
           `"${mockKeyName}"`,
           "--app",
-          mockAppId,
+          appId,
           "--capabilities",
           '{"channel1":["publish","subscribe"],"channel2":["history"]}',
         ],
@@ -122,11 +96,12 @@ userEmail = "test@example.com"
     });
 
     it("should output JSON format when --json flag is used", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
       const mockKey = {
         id: mockKeyId,
-        appId: mockAppId,
+        appId,
         name: mockKeyName,
-        key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
+        key: `${appId}.${mockKeyId}:${mockKeySecret}`,
         capability: { "*": ["*"] },
         created: Date.now(),
         modified: Date.now(),
@@ -136,7 +111,7 @@ userEmail = "test@example.com"
 
       // Mock the key creation endpoint
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/keys`)
+        .post(`/v1/apps/${appId}/keys`)
         .reply(201, mockKey);
 
       const { stdout } = await runCommand(
@@ -145,7 +120,7 @@ userEmail = "test@example.com"
           "--name",
           `"${mockKeyName}"`,
           "--app",
-          mockAppId,
+          appId,
           "--json",
         ],
         import.meta.url,
@@ -160,6 +135,7 @@ userEmail = "test@example.com"
     });
 
     it("should use custom access token when provided", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
       const customToken = "custom_access_token";
 
       // Mock the key creation endpoint with custom token
@@ -168,12 +144,12 @@ userEmail = "test@example.com"
           authorization: `Bearer ${customToken}`,
         },
       })
-        .post(`/v1/apps/${mockAppId}/keys`)
+        .post(`/v1/apps/${appId}/keys`)
         .reply(201, {
           id: mockKeyId,
-          appId: mockAppId,
+          appId,
           name: mockKeyName,
-          key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
+          key: `${appId}.${mockKeyId}:${mockKeySecret}`,
           capability: { "*": ["*"] },
           created: Date.now(),
           modified: Date.now(),
@@ -187,7 +163,7 @@ userEmail = "test@example.com"
           "--name",
           `"${mockKeyName}"`,
           "--app",
-          mockAppId,
+          appId,
           "--access-token",
           "custom_access_token",
         ],
@@ -200,8 +176,9 @@ userEmail = "test@example.com"
 
   describe("parameter validation", () => {
     it("should require name parameter", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
       const { error } = await runCommand(
-        ["auth:keys:create", "--app", mockAppId],
+        ["auth:keys:create", "--app", appId],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -220,9 +197,10 @@ userEmail = "test@example.com"
     });
 
     it("should handle invalid capabilities JSON", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
       // Mock the key creation endpoint with invalid capabilities
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/keys`)
+        .post(`/v1/apps/${appId}/keys`)
         .reply(400, {
           error: "Invalid capabilities format",
         });
@@ -233,7 +211,7 @@ userEmail = "test@example.com"
           "--name",
           `"${mockKeyName}"`,
           "--app",
-          mockAppId,
+          appId,
           "--capabilities",
           "invalid-json",
         ],
@@ -247,13 +225,14 @@ userEmail = "test@example.com"
 
   describe("error handling", () => {
     it("should handle 401 authentication error", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
       // Mock authentication failure
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/keys`)
+        .post(`/v1/apps/${appId}/keys`)
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", mockAppId],
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -262,13 +241,14 @@ userEmail = "test@example.com"
     });
 
     it("should handle 403 forbidden error", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
       // Mock forbidden response
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/keys`)
+        .post(`/v1/apps/${appId}/keys`)
         .reply(403, { error: "Forbidden" });
 
       const { error } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", mockAppId],
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -277,13 +257,14 @@ userEmail = "test@example.com"
     });
 
     it("should handle 404 not found error", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
       // Mock not found response (app doesn't exist)
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/keys`)
+        .post(`/v1/apps/${appId}/keys`)
         .reply(404, { error: "App not found" });
 
       const { error } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", mockAppId],
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -292,13 +273,14 @@ userEmail = "test@example.com"
     });
 
     it("should handle 500 server error", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
       // Mock server error
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/keys`)
+        .post(`/v1/apps/${appId}/keys`)
         .reply(500, { error: "Internal Server Error" });
 
       const { error } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", mockAppId],
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -307,13 +289,14 @@ userEmail = "test@example.com"
     });
 
     it("should handle network errors", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
       // Mock network error
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/keys`)
+        .post(`/v1/apps/${appId}/keys`)
         .replyWithError("Network error");
 
       const { error } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", mockAppId],
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -322,16 +305,17 @@ userEmail = "test@example.com"
     });
 
     it("should handle validation errors from API", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
       // Mock validation error
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/keys`)
+        .post(`/v1/apps/${appId}/keys`)
         .reply(400, {
           error: "Validation failed",
           details: "Key name already exists",
         });
 
       const { error } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", mockAppId],
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -340,13 +324,14 @@ userEmail = "test@example.com"
     });
 
     it("should handle rate limit errors", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
       // Mock rate limit error
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/keys`)
+        .post(`/v1/apps/${appId}/keys`)
         .reply(429, { error: "Rate limit exceeded" });
 
       const { error } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", mockAppId],
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -357,17 +342,18 @@ userEmail = "test@example.com"
 
   describe("capability configurations", () => {
     it("should create a publish-only key", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
       // Mock the key creation endpoint with publish-only capabilities
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/keys`, {
+        .post(`/v1/apps/${appId}/keys`, {
           name: mockKeyName,
           capability: { "channel:*": ["publish"] },
         })
         .reply(201, {
           id: mockKeyId,
-          appId: mockAppId,
+          appId,
           name: mockKeyName,
-          key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
+          key: `${appId}.${mockKeyId}:${mockKeySecret}`,
           capability: { "channel:*": ["publish"] },
           created: Date.now(),
           modified: Date.now(),
@@ -381,7 +367,7 @@ userEmail = "test@example.com"
           "--name",
           `"${mockKeyName}"`,
           "--app",
-          mockAppId,
+          appId,
           "--capabilities",
           '{"channel:*":["publish"]}',
         ],
@@ -393,9 +379,10 @@ userEmail = "test@example.com"
     });
 
     it("should create a key with mixed capabilities", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
       // Mock the key creation endpoint with subscribe-only capabilities
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/keys`, {
+        .post(`/v1/apps/${appId}/keys`, {
           name: mockKeyName,
           capability: {
             "channel:chat-*": ["subscribe"],
@@ -404,9 +391,9 @@ userEmail = "test@example.com"
         })
         .reply(201, {
           id: mockKeyId,
-          appId: mockAppId,
+          appId,
           name: mockKeyName,
-          key: `${mockAppId}.${mockKeyId}:${mockKeySecret}`,
+          key: `${appId}.${mockKeyId}:${mockKeySecret}`,
           capability: {
             "channel:chat-*": ["subscribe"],
             "channel:updates": ["publish"],
@@ -423,7 +410,7 @@ userEmail = "test@example.com"
           "--name",
           `"${mockKeyName}"`,
           "--app",
-          mockAppId,
+          appId,
           "--capabilities",
           '{"channel:chat-*":["subscribe"],"channel:updates":["publish"]}',
         ],

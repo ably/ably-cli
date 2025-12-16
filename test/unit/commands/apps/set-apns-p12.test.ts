@@ -4,66 +4,42 @@ import nock from "nock";
 import { resolve } from "node:path";
 import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("apps:set-apns-p12 command", () => {
-  const mockAccessToken = "fake_access_token";
-  const mockAccountId = "test-account-id";
-  const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
-  let testConfigDir: string;
-  let originalConfigDir: string;
+  let testTempDir: string;
   let testCertFile: string;
 
   beforeEach(() => {
-    process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
-
-    testConfigDir = resolve(tmpdir(), `ably-cli-test-${Date.now()}`);
-    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-`;
-    writeFileSync(resolve(testConfigDir, "config"), configContent);
+    // Create temp directory for test certificate file
+    testTempDir = resolve(tmpdir(), `ably-cli-test-apns-p12-${Date.now()}`);
+    mkdirSync(testTempDir, { recursive: true, mode: 0o700 });
 
     // Create a fake certificate file
-    testCertFile = resolve(testConfigDir, "test-cert.p12");
+    testCertFile = resolve(testTempDir, "test-cert.p12");
     writeFileSync(testCertFile, "fake-certificate-data");
   });
 
   afterEach(() => {
     nock.cleanAll();
-    delete process.env.ABLY_ACCESS_TOKEN;
 
-    if (originalConfigDir) {
-      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
-    } else {
-      delete process.env.ABLY_CLI_CONFIG_DIR;
-    }
-
-    if (existsSync(testConfigDir)) {
-      rmSync(testConfigDir, { recursive: true, force: true });
+    if (existsSync(testTempDir)) {
+      rmSync(testTempDir, { recursive: true, force: true });
     }
   });
 
   describe("successful certificate upload", () => {
     it("should upload APNS P12 certificate successfully", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/push/certificate`)
+        .post(`/v1/apps/${appId}/push/certificate`)
         .reply(200, {
           id: "cert-123",
-          appId: mockAppId,
+          appId,
         });
 
       const { stdout } = await runCommand(
-        ["apps:set-apns-p12", mockAppId, "--certificate", testCertFile],
+        ["apps:set-apns-p12", appId, "--certificate", testCertFile],
         import.meta.url,
       );
 
@@ -71,17 +47,18 @@ userEmail = "test@example.com"
     });
 
     it("should upload certificate with password", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/push/certificate`)
+        .post(`/v1/apps/${appId}/push/certificate`)
         .reply(200, {
           id: "cert-123",
-          appId: mockAppId,
+          appId,
         });
 
       const { stdout } = await runCommand(
         [
           "apps:set-apns-p12",
-          mockAppId,
+          appId,
           "--certificate",
           testCertFile,
           "--password",
@@ -94,17 +71,18 @@ userEmail = "test@example.com"
     });
 
     it("should upload certificate for sandbox environment", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/push/certificate`)
+        .post(`/v1/apps/${appId}/push/certificate`)
         .reply(200, {
           id: "cert-123",
-          appId: mockAppId,
+          appId,
         });
 
       const { stdout } = await runCommand(
         [
           "apps:set-apns-p12",
-          mockAppId,
+          appId,
           "--certificate",
           testCertFile,
           "--use-for-sandbox",
@@ -129,8 +107,9 @@ userEmail = "test@example.com"
     });
 
     it("should require certificate flag", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
-        ["apps:set-apns-p12", mockAppId],
+        ["apps:set-apns-p12", appId],
         import.meta.url,
       );
 
@@ -139,10 +118,11 @@ userEmail = "test@example.com"
     });
 
     it("should error when certificate file does not exist", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
         [
           "apps:set-apns-p12",
-          mockAppId,
+          appId,
           "--certificate",
           "/nonexistent/path/cert.p12",
         ],
@@ -154,12 +134,13 @@ userEmail = "test@example.com"
     });
 
     it("should handle API errors", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/push/certificate`)
+        .post(`/v1/apps/${appId}/push/certificate`)
         .reply(400, { error: "Invalid certificate" });
 
       const { error } = await runCommand(
-        ["apps:set-apns-p12", mockAppId, "--certificate", testCertFile],
+        ["apps:set-apns-p12", appId, "--certificate", testCertFile],
         import.meta.url,
       );
 
@@ -168,12 +149,13 @@ userEmail = "test@example.com"
     });
 
     it("should handle 401 authentication error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/push/certificate`)
+        .post(`/v1/apps/${appId}/push/certificate`)
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
-        ["apps:set-apns-p12", mockAppId, "--certificate", testCertFile],
+        ["apps:set-apns-p12", appId, "--certificate", testCertFile],
         import.meta.url,
       );
 

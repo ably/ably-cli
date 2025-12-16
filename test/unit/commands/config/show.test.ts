@@ -11,8 +11,16 @@ describe("config:show command", () => {
   const mockApiKey = `${mockAppId}.testkey:testsecret`;
   let testConfigDir: string;
   let originalConfigDir: string;
+  let savedConfigManager: unknown;
 
   beforeEach(() => {
+    // Disable MockConfigManager so this test uses real file I/O
+    // Save the mock so we can restore it later
+    savedConfigManager = globalThis.__TEST_MOCKS__?.configManager;
+    if (globalThis.__TEST_MOCKS__) {
+      globalThis.__TEST_MOCKS__.configManager = undefined;
+    }
+
     process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
 
     testConfigDir = resolve(tmpdir(), `ably-cli-test-${Date.now()}`);
@@ -33,6 +41,11 @@ describe("config:show command", () => {
 
     if (existsSync(testConfigDir)) {
       rmSync(testConfigDir, { recursive: true, force: true });
+    }
+
+    // Restore MockConfigManager for other tests
+    if (globalThis.__TEST_MOCKS__ && savedConfigManager) {
+      globalThis.__TEST_MOCKS__.configManager = savedConfigManager;
     }
   });
 

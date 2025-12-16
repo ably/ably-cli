@@ -1,79 +1,40 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { resolve } from "node:path";
-import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("integrations:get command", () => {
-  const mockAccessToken = "fake_access_token";
-  const mockAccountId = "test-account-id";
-  const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
   const mockRuleId = "rule-123456";
-  let testConfigDir: string;
-  let originalConfigDir: string;
-
-  beforeEach(() => {
-    process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
-
-    testConfigDir = resolve(tmpdir(), `ably-cli-test-${Date.now()}`);
-    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-currentAppId = "${mockAppId}"
-`;
-    writeFileSync(resolve(testConfigDir, "config"), configContent);
-  });
 
   afterEach(() => {
     nock.cleanAll();
-    delete process.env.ABLY_ACCESS_TOKEN;
-
-    if (originalConfigDir) {
-      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
-    } else {
-      delete process.env.ABLY_CLI_CONFIG_DIR;
-    }
-
-    if (existsSync(testConfigDir)) {
-      rmSync(testConfigDir, { recursive: true, force: true });
-    }
   });
 
-  const mockIntegration = {
-    id: mockRuleId,
-    appId: mockAppId,
-    ruleType: "http",
-    requestMode: "single",
-    source: {
-      channelFilter: "chat:*",
-      type: "channel.message",
-    },
-    target: {
-      url: "https://example.com/webhook",
-      format: "json",
-      enveloped: true,
-    },
-    status: "enabled",
-    version: "1.0",
-    created: Date.now(),
-    modified: Date.now(),
-  };
-
   describe("successful integration retrieval", () => {
-    it("should display integration details", async () => {
+    it("should get an integration by ID", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http",
+        requestMode: "single",
+        source: {
+          channelFilter: "chat:*",
+          type: "channel.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+          format: "json",
+          enveloped: true,
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
       const { stdout } = await runCommand(
@@ -83,14 +44,35 @@ currentAppId = "${mockAppId}"
 
       expect(stdout).toContain("Integration Rule Details");
       expect(stdout).toContain(mockRuleId);
-      expect(stdout).toContain(mockAppId);
+      expect(stdout).toContain(appId);
       expect(stdout).toContain("http");
       expect(stdout).toContain("channel.message");
     });
 
     it("should output JSON format when --json flag is used", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http",
+        requestMode: "single",
+        source: {
+          channelFilter: "chat:*",
+          type: "channel.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+          format: "json",
+          enveloped: true,
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
       const { stdout } = await runCommand(
@@ -100,15 +82,36 @@ currentAppId = "${mockAppId}"
 
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("id", mockRuleId);
-      expect(result).toHaveProperty("appId", mockAppId);
+      expect(result).toHaveProperty("appId", appId);
       expect(result).toHaveProperty("ruleType", "http");
       expect(result).toHaveProperty("source");
       expect(result.source).toHaveProperty("type", "channel.message");
     });
 
     it("should output pretty JSON when --pretty-json flag is used", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http",
+        requestMode: "single",
+        source: {
+          channelFilter: "chat:*",
+          type: "channel.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+          format: "json",
+          enveloped: true,
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
       const { stdout } = await runCommand(
@@ -123,8 +126,29 @@ currentAppId = "${mockAppId}"
     });
 
     it("should display channel filter", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http",
+        requestMode: "single",
+        source: {
+          channelFilter: "chat:*",
+          type: "channel.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+          format: "json",
+          enveloped: true,
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
       const { stdout } = await runCommand(
@@ -136,8 +160,29 @@ currentAppId = "${mockAppId}"
     });
 
     it("should display target information", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http",
+        requestMode: "single",
+        source: {
+          channelFilter: "chat:*",
+          type: "channel.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+          format: "json",
+          enveloped: true,
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
       const { stdout } = await runCommand(
@@ -159,8 +204,9 @@ currentAppId = "${mockAppId}"
     });
 
     it("should handle integration not found", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(404, { error: "Not found" });
 
       const { error } = await runCommand(
@@ -173,8 +219,9 @@ currentAppId = "${mockAppId}"
     });
 
     it("should handle API errors", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(500, { error: "Internal server error" });
 
       const { error } = await runCommand(
@@ -184,6 +231,21 @@ currentAppId = "${mockAppId}"
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/Error getting integration|500/i);
+    });
+
+    it("should handle 401 authentication error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nock("https://control.ably.net")
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
+        .reply(401, { error: "Unauthorized" });
+
+      const { error } = await runCommand(
+        ["integrations:get", mockRuleId],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/401/);
     });
 
     it("should reject unknown flags", async () => {
@@ -199,27 +261,48 @@ currentAppId = "${mockAppId}"
 
   describe("flag options", () => {
     it("should accept --app flag", async () => {
+      const mockConfig = getMockConfigManager();
+      const appId = mockConfig.getCurrentAppId()!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http",
+        requestMode: "single",
+        source: {
+          channelFilter: "chat:*",
+          type: "channel.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+          format: "json",
+          enveloped: true,
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+
       // Mock the /me endpoint (needed by listApps in resolveAppIdFromNameOrId)
       nock("https://control.ably.net")
         .get("/v1/me")
         .reply(200, {
-          account: { id: mockAccountId, name: "Test Account" },
+          account: { id: accountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
       // Mock the apps list API call for resolveAppIdFromNameOrId
       nock("https://control.ably.net")
-        .get(`/v1/accounts/${mockAccountId}/apps`)
-        .reply(200, [
-          { id: mockAppId, name: "Test App", accountId: mockAccountId },
-        ]);
+        .get(`/v1/accounts/${accountId}/apps`)
+        .reply(200, [{ id: appId, name: "Test App", accountId }]);
 
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
       const { stdout } = await runCommand(
-        ["integrations:get", mockRuleId, "--app", mockAppId],
+        ["integrations:get", mockRuleId, "--app", appId],
         import.meta.url,
       );
 

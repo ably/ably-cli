@@ -1,62 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { runCommand } from "@oclif/test";
-import { resolve } from "node:path";
-import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
 import jwt from "jsonwebtoken";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("auth:issue-jwt-token command", () => {
-  const mockAccessToken = "fake_access_token";
-  const mockAccountId = "test-account-id";
-  const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
-  const mockKeyId = `${mockAppId}.testkey`;
-  const mockKeySecret = "testsecret";
-  const mockApiKey = `${mockKeyId}:${mockKeySecret}`;
-  let testConfigDir: string;
-  let originalConfigDir: string;
-
-  beforeEach(() => {
-    process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
-
-    testConfigDir = resolve(tmpdir(), `ably-cli-test-${Date.now()}`);
-    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-currentAppId = "${mockAppId}"
-
-[accounts.default.apps."${mockAppId}"]
-appName = "Test App"
-apiKey = "${mockApiKey}"
-`;
-    writeFileSync(resolve(testConfigDir, "config"), configContent);
-  });
-
-  afterEach(() => {
-    delete process.env.ABLY_ACCESS_TOKEN;
-
-    if (originalConfigDir) {
-      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
-    } else {
-      delete process.env.ABLY_CLI_CONFIG_DIR;
-    }
-
-    if (existsSync(testConfigDir)) {
-      rmSync(testConfigDir, { recursive: true, force: true });
-    }
-  });
-
   describe("successful JWT token issuance", () => {
     it("should issue a JWT token successfully", async () => {
+      const mockConfig = getMockConfigManager();
+      const appId = mockConfig.getCurrentAppId()!;
+      const keyId = mockConfig.getKeyId()!;
       const { stdout } = await runCommand(
         ["auth:issue-jwt-token"],
         import.meta.url,
@@ -65,13 +17,17 @@ apiKey = "${mockApiKey}"
       expect(stdout).toContain("Generated Ably JWT Token");
       expect(stdout).toContain("Token:");
       expect(stdout).toContain("Type: JWT");
-      expect(stdout).toContain(`App ID: ${mockAppId}`);
-      expect(stdout).toContain(`Key ID: ${mockKeyId}`);
+      expect(stdout).toContain(`App ID: ${appId}`);
+      expect(stdout).toContain(`Key ID: ${keyId}`);
       expect(stdout).toContain("Issued:");
       expect(stdout).toContain("Expires:");
     });
 
     it("should generate a valid JWT token", async () => {
+      const mockConfig = getMockConfigManager();
+      const appId = mockConfig.getCurrentAppId()!;
+      const apiKey = mockConfig.getApiKey()!;
+      const mockKeySecret = apiKey.split(":")[1];
       const { stdout } = await runCommand(
         ["auth:issue-jwt-token", "--token-only"],
         import.meta.url,
@@ -84,11 +40,13 @@ apiKey = "${mockApiKey}"
       const decoded = jwt.verify(token, mockKeySecret, {
         algorithms: ["HS256"],
       });
-      expect(decoded).toHaveProperty("x-ably-appId", mockAppId);
+      expect(decoded).toHaveProperty("x-ably-appId", appId);
       expect(decoded).toHaveProperty("x-ably-capability");
     });
 
     it("should issue a token with custom capability", async () => {
+      const apiKey = getMockConfigManager().getApiKey()!;
+      const mockKeySecret = apiKey.split(":")[1];
       const customCapability = '{"chat:*":["publish","subscribe"]}';
 
       const { stdout } = await runCommand(
@@ -112,6 +70,8 @@ apiKey = "${mockApiKey}"
     });
 
     it("should issue a token with custom TTL", async () => {
+      const apiKey = getMockConfigManager().getApiKey()!;
+      const mockKeySecret = apiKey.split(":")[1];
       const ttl = 7200; // 2 hours
 
       const { stdout } = await runCommand(
@@ -129,6 +89,8 @@ apiKey = "${mockApiKey}"
     });
 
     it("should issue a token with custom client ID", async () => {
+      const apiKey = getMockConfigManager().getApiKey()!;
+      const mockKeySecret = apiKey.split(":")[1];
       const customClientId = "my-custom-client";
 
       const { stdout } = await runCommand(
@@ -145,6 +107,8 @@ apiKey = "${mockApiKey}"
     });
 
     it("should issue a token with no client ID when 'none' is specified", async () => {
+      const apiKey = getMockConfigManager().getApiKey()!;
+      const mockKeySecret = apiKey.split(":")[1];
       const { stdout } = await runCommand(
         ["auth:issue-jwt-token", "--client-id", "none", "--token-only"],
         import.meta.url,
@@ -170,6 +134,9 @@ apiKey = "${mockApiKey}"
     });
 
     it("should output JSON format when --json flag is used", async () => {
+      const mockConfig = getMockConfigManager();
+      const appId = mockConfig.getCurrentAppId()!;
+      const keyId = mockConfig.getKeyId()!;
       const { stdout } = await runCommand(
         ["auth:issue-jwt-token", "--json"],
         import.meta.url,
@@ -177,14 +144,16 @@ apiKey = "${mockApiKey}"
 
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("token");
-      expect(result).toHaveProperty("appId", mockAppId);
-      expect(result).toHaveProperty("keyId", mockKeyId);
+      expect(result).toHaveProperty("appId", appId);
+      expect(result).toHaveProperty("keyId", keyId);
       expect(result).toHaveProperty("type", "jwt");
       expect(result).toHaveProperty("capability");
       expect(result).toHaveProperty("ttl");
     });
 
     it("should generate token with default capability of all permissions", async () => {
+      const apiKey = getMockConfigManager().getApiKey()!;
+      const mockKeySecret = apiKey.split(":")[1];
       const { stdout } = await runCommand(
         ["auth:issue-jwt-token", "--token-only"],
         import.meta.url,
@@ -200,6 +169,8 @@ apiKey = "${mockApiKey}"
     });
 
     it("should generate token with default TTL of 1 hour", async () => {
+      const apiKey = getMockConfigManager().getApiKey()!;
+      const mockKeySecret = apiKey.split(":")[1];
       const { stdout } = await runCommand(
         ["auth:issue-jwt-token", "--token-only"],
         import.meta.url,
@@ -227,17 +198,9 @@ apiKey = "${mockApiKey}"
     });
 
     it("should not produce token output when app configuration is missing", async () => {
-      // Remove app from config
-      const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-`;
-      writeFileSync(resolve(testConfigDir, "config"), configContent);
+      // Use mock config manager to clear app configuration
+      const mock = getMockConfigManager();
+      mock.setCurrentAppIdForAccount(undefined);
 
       const { stdout } = await runCommand(
         ["auth:issue-jwt-token"],
@@ -251,8 +214,9 @@ userEmail = "test@example.com"
 
   describe("command arguments and flags", () => {
     it("should accept --app flag to specify app", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       const { stdout } = await runCommand(
-        ["auth:issue-jwt-token", "--app", mockAppId],
+        ["auth:issue-jwt-token", "--app", appId],
         import.meta.url,
       );
 

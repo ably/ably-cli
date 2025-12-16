@@ -1,75 +1,23 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import nock from "nock";
 import { runCommand } from "@oclif/test";
-import * as path from "node:path";
-import * as fs from "node:fs";
-import * as os from "node:os";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("queues:list command", () => {
-  const mockAccessToken = "fake_access_token";
-  const mockAccountId = "test-account-id";
-  const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
-  let testConfigDir: string;
-  let originalConfigDir: string;
-
-  const mockAccountResponse = {
-    account: { id: mockAccountId, name: "Test Account" },
-    user: { email: "test@example.com" },
-  };
-
-  beforeEach(() => {
-    // Set environment variable for access token
-    process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
-
-    // Create a temporary config directory for testing
-    testConfigDir = path.join(os.tmpdir(), `ably-cli-test-${Date.now()}`);
-    fs.mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    // Store original config dir and set test config dir
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    // Create a minimal config file with a default account
-    const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-currentAppId = "${mockAppId}"
-`;
-    fs.writeFileSync(path.join(testConfigDir, "config"), configContent);
-  });
-
   afterEach(() => {
-    // Clean up nock interceptors
     nock.cleanAll();
-    delete process.env.ABLY_ACCESS_TOKEN;
-
-    // Restore original config directory
-    if (originalConfigDir) {
-      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
-    } else {
-      delete process.env.ABLY_CLI_CONFIG_DIR;
-    }
-
-    // Clean up test config directory
-    if (fs.existsSync(testConfigDir)) {
-      fs.rmSync(testConfigDir, { recursive: true, force: true });
-    }
   });
 
   describe("successful queue listing", () => {
     it("should list multiple queues successfully", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock the queue listing endpoint with multiple queues
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/queues`)
+        .get(`/v1/apps/${appId}/queues`)
         .reply(200, [
           {
             id: "queue-1",
-            appId: mockAppId,
+            appId,
             name: "test-queue-1",
             region: "us-east-1-a",
             state: "active",
@@ -99,7 +47,7 @@ currentAppId = "${mockAppId}"
           },
           {
             id: "queue-2",
-            appId: mockAppId,
+            appId,
             name: "test-queue-2",
             region: "eu-west-1-a",
             state: "active",
@@ -159,9 +107,10 @@ currentAppId = "${mockAppId}"
     });
 
     it("should handle empty queue list", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock empty queue list
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/queues`)
+        .get(`/v1/apps/${appId}/queues`)
         .reply(200, []);
 
       const { stdout } = await runCommand(["queues:list"], import.meta.url);
@@ -170,10 +119,11 @@ currentAppId = "${mockAppId}"
     });
 
     it("should output JSON format when --json flag is used", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueues = [
         {
           id: "queue-1",
-          appId: mockAppId,
+          appId,
           name: "test-queue-1",
           region: "us-east-1-a",
           state: "active",
@@ -204,7 +154,7 @@ currentAppId = "${mockAppId}"
       ];
 
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/queues`)
+        .get(`/v1/apps/${appId}/queues`)
         .reply(200, mockQueues);
 
       const { stdout } = await runCommand(
@@ -213,7 +163,7 @@ currentAppId = "${mockAppId}"
       );
 
       const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("appId", mockAppId);
+      expect(result).toHaveProperty("appId", appId);
       expect(result).toHaveProperty("queues");
       expect(result.queues).toBeInstanceOf(Array);
       expect(result.queues).toHaveLength(1);
@@ -224,11 +174,12 @@ currentAppId = "${mockAppId}"
     });
 
     it("should use custom app ID when provided", async () => {
+      const accountId = getMockConfigManager().getCurrentAccount()!.accountId!;
       const customAppId = "custom-app-id";
 
       const mockAppResponse = {
         id: customAppId,
-        accountId: mockAccountId,
+        accountId,
         name: "Test App",
         status: "active",
         created: Date.now(),
@@ -238,18 +189,17 @@ currentAppId = "${mockAppId}"
 
       nock("https://control.ably.net")
         .get("/v1/me")
-        .reply(200, mockAccountResponse);
-
-      // nock("https://control.ably.net")
-      //   .get("/v1/me")
-      //   .reply(200, mockAccountResponse);
+        .reply(200, {
+          account: { id: accountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
 
       nock("https://control.ably.net")
-        .get(`/v1/accounts/${mockAccountId}/apps`)
+        .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [mockAppResponse]);
 
       nock("https://control.ably.net")
-        .get(`/v1/accounts/${mockAccountId}/apps`)
+        .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [mockAppResponse]);
 
       nock("https://control.ably.net")
@@ -298,6 +248,7 @@ currentAppId = "${mockAppId}"
     });
 
     it("should use custom access token when provided", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       const customToken = "custom_access_token";
 
       nock("https://control.ably.net", {
@@ -305,7 +256,7 @@ currentAppId = "${mockAppId}"
           authorization: `Bearer ${customToken}`,
         },
       })
-        .get(`/v1/apps/${mockAppId}/queues`)
+        .get(`/v1/apps/${appId}/queues`)
         .reply(200, []);
 
       const { stdout } = await runCommand(
@@ -317,13 +268,14 @@ currentAppId = "${mockAppId}"
     });
 
     it("should handle queues with no stats gracefully", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock queue with no stats
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/queues`)
+        .get(`/v1/apps/${appId}/queues`)
         .reply(200, [
           {
             id: "queue-1",
-            appId: mockAppId,
+            appId,
             name: "test-queue-1",
             region: "us-east-1-a",
             state: "active",
@@ -364,9 +316,10 @@ currentAppId = "${mockAppId}"
 
   describe("error handling", () => {
     it("should handle 401 authentication error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock authentication failure
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/queues`)
+        .get(`/v1/apps/${appId}/queues`)
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(["queues:list"], import.meta.url);
@@ -377,9 +330,10 @@ currentAppId = "${mockAppId}"
     });
 
     it("should handle 403 forbidden error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock forbidden response
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/queues`)
+        .get(`/v1/apps/${appId}/queues`)
         .reply(403, { error: "Forbidden" });
 
       const { error } = await runCommand(["queues:list"], import.meta.url);
@@ -390,9 +344,10 @@ currentAppId = "${mockAppId}"
     });
 
     it("should handle 404 app not found error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock not found response
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/queues`)
+        .get(`/v1/apps/${appId}/queues`)
         .reply(404, { error: "App not found" });
 
       const { error } = await runCommand(["queues:list"], import.meta.url);
@@ -403,9 +358,10 @@ currentAppId = "${mockAppId}"
     });
 
     it("should handle 500 server error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock server error
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/queues`)
+        .get(`/v1/apps/${appId}/queues`)
         .reply(500, { error: "Internal Server Error" });
 
       const { error } = await runCommand(["queues:list"], import.meta.url);
@@ -416,19 +372,21 @@ currentAppId = "${mockAppId}"
     });
 
     it("should require app to be specified when not in environment", async () => {
-      process.env.ABLY_CLI_CONFIG_DIR = "/tmp";
+      // Clear all accounts from the mock config to simulate no config
+      getMockConfigManager().clearAccounts();
 
       const { error } = await runCommand(["queues:list"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error?.message).toMatch(/No app|Failed to get apps/);
+      expect(error?.message).toMatch(/No access token|No app|not logged in/i);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle network errors", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock network error
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/queues`)
+        .get(`/v1/apps/${appId}/queues`)
         .replyWithError("Network error");
 
       const { error } = await runCommand(["queues:list"], import.meta.url);
@@ -439,9 +397,10 @@ currentAppId = "${mockAppId}"
     });
 
     it("should handle errors in JSON format when --json flag is used", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock server error for JSON output
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/queues`)
+        .get(`/v1/apps/${appId}/queues`)
         .reply(500, { error: "Internal Server Error" });
 
       const { stdout } = await runCommand(
@@ -452,13 +411,14 @@ currentAppId = "${mockAppId}"
       expect(stdout).toContain('"success": false');
       expect(stdout).toContain('"status": "error"');
       expect(stdout).toContain('"error":');
-      expect(stdout).toContain(`"appId": "${mockAppId}"`);
+      expect(stdout).toContain(`"appId": "${appId}"`);
     });
 
     it("should handle 429 rate limit error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock rate limit error
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/queues`)
+        .get(`/v1/apps/${appId}/queues`)
         .reply(429, {
           error: "Rate limit exceeded",
           details: "Too many requests",
@@ -474,12 +434,13 @@ currentAppId = "${mockAppId}"
 
   describe("large datasets and pagination", () => {
     it("should handle large datasets correctly", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock a large number of queues to test performance
       const queues: any[] = [];
       for (let i = 1; i <= 50; i++) {
         queues.push({
           id: `queue-${i}`,
-          appId: mockAppId,
+          appId,
           name: `test-queue-${i}`,
           region: "us-east-1-a",
           state: "active",
@@ -510,7 +471,7 @@ currentAppId = "${mockAppId}"
       }
 
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/queues`)
+        .get(`/v1/apps/${appId}/queues`)
         .reply(200, queues);
 
       const { stdout } = await runCommand(["queues:list"], import.meta.url);
@@ -521,9 +482,10 @@ currentAppId = "${mockAppId}"
     });
 
     it("should handle empty list in JSON format", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock empty queue list for JSON output
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/queues`)
+        .get(`/v1/apps/${appId}/queues`)
         .reply(200, []);
 
       const { stdout } = await runCommand(
@@ -532,7 +494,7 @@ currentAppId = "${mockAppId}"
       );
 
       const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("appId", mockAppId);
+      expect(result).toHaveProperty("appId", appId);
       expect(result).toHaveProperty("queues");
       expect(result.queues).toBeInstanceOf(Array);
       expect(result.queues).toHaveLength(0);

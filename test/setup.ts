@@ -5,6 +5,9 @@ import { existsSync } from "node:fs";
 import { exec } from "node:child_process";
 import * as Ably from "ably";
 
+// Import types for test mocks
+import type { MockConfigManager } from "./helpers/mock-config-manager.js";
+
 // Global type declarations for test mocks
 declare global {
   var __TEST_MOCKS__:
@@ -17,6 +20,7 @@ declare global {
         ablySpacesMock?: any;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ablyRealtimeMock?: any;
+        configManager?: MockConfigManager;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         [key: string]: any;
       }

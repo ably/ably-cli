@@ -47,7 +47,9 @@ describe("channels:list command", () => {
   beforeEach(() => {
     mockRequest = vi.fn().mockResolvedValue(mockChannelsResponse);
 
+    // Merge with existing mocks (don't overwrite configManager)
     globalThis.__TEST_MOCKS__ = {
+      ...globalThis.__TEST_MOCKS__,
       ablyRestMock: {
         request: mockRequest,
         close: vi.fn(),
@@ -56,7 +58,10 @@ describe("channels:list command", () => {
   });
 
   afterEach(() => {
-    delete globalThis.__TEST_MOCKS__;
+    // Only delete the mock we added, not the whole object
+    if (globalThis.__TEST_MOCKS__) {
+      delete globalThis.__TEST_MOCKS__.ablyRestMock;
+    }
   });
 
   describe("help", () => {

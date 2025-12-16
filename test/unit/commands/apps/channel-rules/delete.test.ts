@@ -1,60 +1,21 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { resolve } from "node:path";
-import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 
 describe("apps:channel-rules:delete command", () => {
-  const mockAccessToken = "fake_access_token";
-  const mockAccountId = "test-account-id";
-  const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
   const mockRuleId = "chat";
-  let testConfigDir: string;
-  let originalConfigDir: string;
-
-  beforeEach(() => {
-    process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
-
-    testConfigDir = resolve(tmpdir(), `ably-cli-test-${Date.now()}`);
-    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-
-    const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-currentAppId = "${mockAppId}"
-`;
-    writeFileSync(resolve(testConfigDir, "config"), configContent);
-  });
 
   afterEach(() => {
     nock.cleanAll();
-    delete process.env.ABLY_ACCESS_TOKEN;
-
-    if (originalConfigDir) {
-      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
-    } else {
-      delete process.env.ABLY_CLI_CONFIG_DIR;
-    }
-
-    if (existsSync(testConfigDir)) {
-      rmSync(testConfigDir, { recursive: true, force: true });
-    }
   });
 
   describe("successful channel rule deletion", () => {
     it("should delete a channel rule with force flag", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock listing namespaces to find the rule
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/namespaces`)
+        .get(`/v1/apps/${appId}/namespaces`)
         .reply(200, [
           {
             id: mockRuleId,
@@ -67,17 +28,11 @@ currentAppId = "${mockAppId}"
 
       // Mock delete endpoint
       nock("https://control.ably.net")
-        .delete(`/v1/apps/${mockAppId}/namespaces/${mockRuleId}`)
+        .delete(`/v1/apps/${appId}/namespaces/${mockRuleId}`)
         .reply(204);
 
       const { stdout } = await runCommand(
-        [
-          "apps:channel-rules:delete",
-          mockRuleId,
-          "--app",
-          mockAppId,
-          "--force",
-        ],
+        ["apps:channel-rules:delete", mockRuleId, "--app", appId, "--force"],
         import.meta.url,
       );
 
@@ -85,8 +40,9 @@ currentAppId = "${mockAppId}"
     });
 
     it("should output JSON format when --json flag is used", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/namespaces`)
+        .get(`/v1/apps/${appId}/namespaces`)
         .reply(200, [
           {
             id: mockRuleId,
@@ -98,7 +54,7 @@ currentAppId = "${mockAppId}"
         ]);
 
       nock("https://control.ably.net")
-        .delete(`/v1/apps/${mockAppId}/namespaces/${mockRuleId}`)
+        .delete(`/v1/apps/${appId}/namespaces/${mockRuleId}`)
         .reply(204);
 
       const { stdout } = await runCommand(
@@ -106,7 +62,7 @@ currentAppId = "${mockAppId}"
           "apps:channel-rules:delete",
           mockRuleId,
           "--app",
-          mockAppId,
+          appId,
           "--force",
           "--json",
         ],
@@ -122,8 +78,9 @@ currentAppId = "${mockAppId}"
 
   describe("error handling", () => {
     it("should require nameOrId argument", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
-        ["apps:channel-rules:delete", "--app", mockAppId],
+        ["apps:channel-rules:delete", "--app", appId],
         import.meta.url,
       );
 
@@ -132,18 +89,13 @@ currentAppId = "${mockAppId}"
     });
 
     it("should handle channel rule not found", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/namespaces`)
+        .get(`/v1/apps/${appId}/namespaces`)
         .reply(200, []);
 
       const { error } = await runCommand(
-        [
-          "apps:channel-rules:delete",
-          "nonexistent",
-          "--app",
-          mockAppId,
-          "--force",
-        ],
+        ["apps:channel-rules:delete", "nonexistent", "--app", appId, "--force"],
         import.meta.url,
       );
 
@@ -152,18 +104,13 @@ currentAppId = "${mockAppId}"
     });
 
     it("should handle 401 authentication error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/namespaces`)
+        .get(`/v1/apps/${appId}/namespaces`)
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
-        [
-          "apps:channel-rules:delete",
-          mockRuleId,
-          "--app",
-          mockAppId,
-          "--force",
-        ],
+        ["apps:channel-rules:delete", mockRuleId, "--app", appId, "--force"],
         import.meta.url,
       );
 
@@ -172,18 +119,13 @@ currentAppId = "${mockAppId}"
     });
 
     it("should handle network errors", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/namespaces`)
+        .get(`/v1/apps/${appId}/namespaces`)
         .replyWithError("Network error");
 
       const { error } = await runCommand(
-        [
-          "apps:channel-rules:delete",
-          mockRuleId,
-          "--app",
-          mockAppId,
-          "--force",
-        ],
+        ["apps:channel-rules:delete", mockRuleId, "--app", appId, "--force"],
         import.meta.url,
       );
 

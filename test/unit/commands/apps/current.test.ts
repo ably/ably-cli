@@ -1,107 +1,42 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { runCommand } from "@oclif/test";
-import { resolve } from "node:path";
-import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("apps:current command", () => {
-  const mockAccessToken = "fake_access_token";
-  const mockAccountId = "test-account-id";
-  const mockAppId = "550e8400-e29b-41d4-a716-446655440000";
-  let testConfigDir: string;
-  let originalConfigDir: string;
-
-  beforeEach(() => {
-    process.env.ABLY_ACCESS_TOKEN = mockAccessToken;
-
-    testConfigDir = resolve(tmpdir(), `ably-cli-test-${Date.now()}`);
-    mkdirSync(testConfigDir, { recursive: true, mode: 0o700 });
-
-    originalConfigDir = process.env.ABLY_CLI_CONFIG_DIR || "";
-    process.env.ABLY_CLI_CONFIG_DIR = testConfigDir;
-  });
-
-  afterEach(() => {
-    delete process.env.ABLY_ACCESS_TOKEN;
-
-    if (originalConfigDir) {
-      process.env.ABLY_CLI_CONFIG_DIR = originalConfigDir;
-    } else {
-      delete process.env.ABLY_CLI_CONFIG_DIR;
-    }
-
-    if (existsSync(testConfigDir)) {
-      rmSync(testConfigDir, { recursive: true, force: true });
-    }
-  });
-
   describe("successful current app display", () => {
     it("should display the current app", async () => {
-      const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-currentAppId = "${mockAppId}"
-`;
-      writeFileSync(resolve(testConfigDir, "config"), configContent);
-
+      const mockConfig = getMockConfigManager();
+      const appId = mockConfig.getCurrentAppId()!;
+      const appName = mockConfig.getAppName(appId)!;
       const { stdout } = await runCommand(["apps:current"], import.meta.url);
 
-      expect(stdout).toContain(`App: ${mockAppId}`);
+      expect(stdout).toContain(`App: ${appName}`);
+      expect(stdout).toContain(`(${appId})`);
     });
 
     it("should display account information", async () => {
-      const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-currentAppId = "${mockAppId}"
-`;
-      writeFileSync(resolve(testConfigDir, "config"), configContent);
-
+      const accountName =
+        getMockConfigManager().getCurrentAccount()!.accountName!;
       const { stdout } = await runCommand(["apps:current"], import.meta.url);
 
-      expect(stdout).toContain("Account: Test Account");
+      expect(stdout).toContain(`Account: ${accountName}`);
     });
 
     it("should display API key info when set", async () => {
-      const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-currentAppId = "${mockAppId}"
-
-[accounts.default.apps."${mockAppId}"]
-apiKey = "testkey:secret"
-keyId = "${mockAppId}.testkey"
-keyName = "Test Key"
-`;
-      writeFileSync(resolve(testConfigDir, "config"), configContent);
-
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const keyName = mockConfig.getKeyName()!;
       const { stdout } = await runCommand(["apps:current"], import.meta.url);
 
-      expect(stdout).toContain(`API Key: ${mockAppId}.testkey`);
-      expect(stdout).toContain("Key Label: Test Key");
+      expect(stdout).toContain(`API Key: ${keyId}`);
+      expect(stdout).toContain(`Key Label: ${keyName}`);
     });
   });
 
   describe("error handling", () => {
     it("should error when no account is selected", async () => {
-      const configContent = `[current]
-`;
-      writeFileSync(resolve(testConfigDir, "config"), configContent);
+      const mock = getMockConfigManager();
+      mock.setCurrentAccountAlias(undefined);
 
       const { error } = await runCommand(["apps:current"], import.meta.url);
 
@@ -110,16 +45,8 @@ keyName = "Test Key"
     });
 
     it("should error when no app is selected", async () => {
-      const configContent = `[current]
-account = "default"
-
-[accounts.default]
-accessToken = "${mockAccessToken}"
-accountId = "${mockAccountId}"
-accountName = "Test Account"
-userEmail = "test@example.com"
-`;
-      writeFileSync(resolve(testConfigDir, "config"), configContent);
+      const mock = getMockConfigManager();
+      mock.setCurrentAppIdForAccount(undefined);
 
       const { error } = await runCommand(["apps:current"], import.meta.url);
 
