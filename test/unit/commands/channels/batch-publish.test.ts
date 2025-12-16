@@ -1,40 +1,19 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
-
-// Define the type for global test mocks
-declare global {
-  var __TEST_MOCKS__: {
-    ablyRestMock?: unknown;
-  };
-}
+import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
 
 describe("channels:batch-publish command", () => {
-  let mockRequest: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
-    mockRequest = vi.fn().mockResolvedValue({
+    const mock = getMockAblyRest();
+
+    // Configure default successful response
+    mock.request.mockResolvedValue({
       statusCode: 201,
       items: [
         { channel: "channel1", messageId: "msg-1" },
         { channel: "channel2", messageId: "msg-2" },
       ],
     });
-
-    // Merge with existing mocks (don't overwrite configManager)
-    globalThis.__TEST_MOCKS__ = {
-      ...globalThis.__TEST_MOCKS__,
-      ablyRestMock: {
-        request: mockRequest,
-        close: vi.fn(),
-      },
-    };
-  });
-
-  afterEach(() => {
-    // Only delete the mock we added, not the whole object
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRestMock;
-    }
   });
 
   describe("help", () => {
@@ -98,6 +77,8 @@ describe("channels:batch-publish command", () => {
 
   describe("batch publish functionality", () => {
     it("should publish to multiple channels using --channels flag", async () => {
+      const mock = getMockAblyRest();
+
       const { stdout } = await runCommand(
         [
           "channels:batch-publish",
@@ -112,7 +93,7 @@ describe("channels:batch-publish command", () => {
 
       expect(stdout).toContain("Sending batch publish request");
       expect(stdout).toContain("Batch publish successful");
-      expect(mockRequest).toHaveBeenCalledWith(
+      expect(mock.request).toHaveBeenCalledWith(
         "post",
         "/messages",
         2,
@@ -125,6 +106,8 @@ describe("channels:batch-publish command", () => {
     });
 
     it("should publish using --channels-json flag", async () => {
+      const mock = getMockAblyRest();
+
       const { stdout, error } = await runCommand(
         [
           "channels:batch-publish",
@@ -140,7 +123,7 @@ describe("channels:batch-publish command", () => {
       expect(error).toBeUndefined();
       expect(stdout).toContain("Sending batch publish request");
       expect(stdout).toContain("Batch publish successful");
-      expect(mockRequest).toHaveBeenCalledWith(
+      expect(mock.request).toHaveBeenCalledWith(
         "post",
         "/messages",
         2,
@@ -152,6 +135,8 @@ describe("channels:batch-publish command", () => {
     });
 
     it("should publish using --spec flag", async () => {
+      const mock = getMockAblyRest();
+
       const spec = JSON.stringify({
         channels: ["channel1", "channel2"],
         messages: { data: "spec message" },
@@ -168,7 +153,7 @@ describe("channels:batch-publish command", () => {
         import.meta.url,
       );
 
-      expect(mockRequest).toHaveBeenCalledWith(
+      expect(mock.request).toHaveBeenCalledWith(
         "post",
         "/messages",
         2,
@@ -181,6 +166,8 @@ describe("channels:batch-publish command", () => {
     });
 
     it("should include event name when --name flag is provided", async () => {
+      const mock = getMockAblyRest();
+
       await runCommand(
         [
           "channels:batch-publish",
@@ -195,7 +182,7 @@ describe("channels:batch-publish command", () => {
         import.meta.url,
       );
 
-      expect(mockRequest).toHaveBeenCalledWith(
+      expect(mock.request).toHaveBeenCalledWith(
         "post",
         "/messages",
         2,
@@ -207,6 +194,8 @@ describe("channels:batch-publish command", () => {
     });
 
     it("should include encoding when --encoding flag is provided", async () => {
+      const mock = getMockAblyRest();
+
       await runCommand(
         [
           "channels:batch-publish",
@@ -221,7 +210,7 @@ describe("channels:batch-publish command", () => {
         import.meta.url,
       );
 
-      expect(mockRequest).toHaveBeenCalledWith(
+      expect(mock.request).toHaveBeenCalledWith(
         "post",
         "/messages",
         2,
@@ -264,7 +253,8 @@ describe("channels:batch-publish command", () => {
     });
 
     it("should handle API errors gracefully", async () => {
-      mockRequest.mockRejectedValue(new Error("Publish failed"));
+      const mock = getMockAblyRest();
+      mock.request.mockRejectedValue(new Error("Publish failed"));
 
       const { error } = await runCommand(
         [
@@ -283,7 +273,8 @@ describe("channels:batch-publish command", () => {
     });
 
     it("should handle partial success response", async () => {
-      mockRequest.mockResolvedValue({
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({
         statusCode: 400,
         items: {
           error: { code: 40020, message: "Partial failure" },
@@ -321,7 +312,8 @@ describe("channels:batch-publish command", () => {
     });
 
     it("should handle API errors in JSON mode", async () => {
-      mockRequest.mockRejectedValue(new Error("Network error"));
+      const mock = getMockAblyRest();
+      mock.request.mockRejectedValue(new Error("Network error"));
 
       const { stdout, error } = await runCommand(
         [

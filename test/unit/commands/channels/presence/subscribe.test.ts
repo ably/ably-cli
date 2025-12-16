@@ -1,66 +1,39 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
-
-// Define the type for global test mocks
-declare global {
-  var __TEST_MOCKS__: {
-    ablyRealtimeMock?: unknown;
-  };
-}
+import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 
 describe("channels:presence:subscribe command", () => {
-  let mockPresenceSubscribe: ReturnType<typeof vi.fn>;
-  let mockPresenceUnsubscribe: ReturnType<typeof vi.fn>;
   let presenceCallback: ((msg: unknown) => void) | null = null;
 
   beforeEach(() => {
     presenceCallback = null;
-    mockPresenceSubscribe = vi.fn((callback: (msg: unknown) => void) => {
-      presenceCallback = callback;
+
+    const mock = getMockAblyRealtime();
+    const channel = mock.channels._getChannel("test-channel");
+
+    // Configure presence.subscribe to capture the callback
+    channel.presence.subscribe.mockImplementation(
+      (callback: (msg: unknown) => void) => {
+        presenceCallback = callback;
+      },
+    );
+
+    // Configure connection.once to immediately call callback for 'connected'
+    mock.connection.once.mockImplementation(
+      (event: string, callback: () => void) => {
+        if (event === "connected") {
+          callback();
+        }
+      },
+    );
+
+    // Configure channel.once to immediately call callback for 'attached'
+    channel.once.mockImplementation((event: string, callback: () => void) => {
+      if (event === "attached") {
+        channel.state = "attached";
+        callback();
+      }
     });
-    mockPresenceUnsubscribe = vi.fn();
-
-    const mockChannel = {
-      name: "test-channel",
-      state: "attached",
-      presence: {
-        subscribe: mockPresenceSubscribe,
-        unsubscribe: mockPresenceUnsubscribe,
-      },
-      on: vi.fn(),
-      off: vi.fn(),
-      once: vi.fn(),
-    };
-
-    // Merge with existing mocks (don't overwrite configManager)
-    globalThis.__TEST_MOCKS__ = {
-      ...globalThis.__TEST_MOCKS__,
-      ablyRealtimeMock: {
-        channels: {
-          get: vi.fn().mockReturnValue(mockChannel),
-        },
-        connection: {
-          state: "connected",
-          on: vi.fn(),
-          once: vi.fn((event: string, callback: () => void) => {
-            if (event === "connected") {
-              setTimeout(() => callback(), 5);
-            }
-          }),
-        },
-        close: vi.fn(),
-        auth: {
-          clientId: "test-client-id",
-        },
-      },
-    };
-  });
-
-  afterEach(() => {
-    // Only delete the mock we added, not the whole object
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-    }
   });
 
   describe("help", () => {
@@ -97,6 +70,9 @@ describe("channels:presence:subscribe command", () => {
 
   describe("presence subscription functionality", () => {
     it("should subscribe to presence events on a channel", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("test-channel");
+
       const { stdout } = await runCommand(
         [
           "channels:presence:subscribe",
@@ -111,7 +87,7 @@ describe("channels:presence:subscribe command", () => {
       expect(stdout).toContain("test-channel");
       expect(stdout).toContain("presence");
       // Verify presence.subscribe was called
-      expect(mockPresenceSubscribe).toHaveBeenCalled();
+      expect(channel.presence.subscribe).toHaveBeenCalled();
     });
 
     it("should receive and display presence events with action, client and data", async () => {
@@ -151,6 +127,9 @@ describe("channels:presence:subscribe command", () => {
     });
 
     it("should run with --json flag without errors", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("test-channel");
+
       const { error } = await runCommand(
         [
           "channels:presence:subscribe",
@@ -165,7 +144,7 @@ describe("channels:presence:subscribe command", () => {
       // Should not have errors - command runs successfully in JSON mode
       expect(error).toBeUndefined();
       // Verify presence.subscribe was still called
-      expect(mockPresenceSubscribe).toHaveBeenCalled();
+      expect(channel.presence.subscribe).toHaveBeenCalled();
     });
 
     it("should handle multiple presence events", async () => {

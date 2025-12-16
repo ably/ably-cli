@@ -1,17 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
-
-// Define the type for global test mocks
-declare global {
-  var __TEST_MOCKS__: {
-    ablyRestMock?: unknown;
-  };
-}
+import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
 
 describe("channels:list command", () => {
-  let mockRequest: ReturnType<typeof vi.fn>;
-
-  // Mock channel response data - preserving original test data structure
+  // Mock channel response data
   const mockChannelsResponse = {
     statusCode: 200,
     items: [
@@ -45,23 +37,8 @@ describe("channels:list command", () => {
   };
 
   beforeEach(() => {
-    mockRequest = vi.fn().mockResolvedValue(mockChannelsResponse);
-
-    // Merge with existing mocks (don't overwrite configManager)
-    globalThis.__TEST_MOCKS__ = {
-      ...globalThis.__TEST_MOCKS__,
-      ablyRestMock: {
-        request: mockRequest,
-        close: vi.fn(),
-      },
-    };
-  });
-
-  afterEach(() => {
-    // Only delete the mock we added, not the whole object
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRestMock;
-    }
+    const mock = getMockAblyRest();
+    mock.request.mockResolvedValue(mockChannelsResponse);
   });
 
   describe("help", () => {
@@ -88,17 +65,19 @@ describe("channels:list command", () => {
 
   describe("channel listing", () => {
     it("should list channels successfully", async () => {
+      const mock = getMockAblyRest();
+
       const { stdout } = await runCommand(
         ["channels:list", "--api-key", "app.key:secret"],
         import.meta.url,
       );
 
       // Verify the REST client request was called with correct parameters
-      expect(mockRequest).toHaveBeenCalledOnce();
-      expect(mockRequest.mock.calls[0][0]).toBe("get");
-      expect(mockRequest.mock.calls[0][1]).toBe("/channels");
-      expect(mockRequest.mock.calls[0][2]).toBe(2);
-      expect(mockRequest.mock.calls[0][3]).toEqual({ limit: 100 });
+      expect(mock.request).toHaveBeenCalledOnce();
+      expect(mock.request.mock.calls[0][0]).toBe("get");
+      expect(mock.request.mock.calls[0][1]).toBe("/channels");
+      expect(mock.request.mock.calls[0][2]).toBe(2);
+      expect(mock.request.mock.calls[0][3]).toEqual({ limit: 100 });
 
       // Verify output contains channel info
       expect(stdout).toContain("Found");
@@ -120,7 +99,8 @@ describe("channels:list command", () => {
     });
 
     it("should handle empty channels response", async () => {
-      mockRequest.mockResolvedValue({ statusCode: 200, items: [] });
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({ statusCode: 200, items: [] });
 
       const { stdout } = await runCommand(
         ["channels:list", "--api-key", "app.key:secret"],
@@ -131,7 +111,8 @@ describe("channels:list command", () => {
     });
 
     it("should handle API errors", async () => {
-      mockRequest.mockResolvedValue({ statusCode: 400, error: "Bad Request" });
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({ statusCode: 400, error: "Bad Request" });
 
       const { error } = await runCommand(
         ["channels:list", "--api-key", "app.key:secret"],
@@ -143,23 +124,27 @@ describe("channels:list command", () => {
     });
 
     it("should respect limit flag", async () => {
+      const mock = getMockAblyRest();
+
       await runCommand(
         ["channels:list", "--api-key", "app.key:secret", "--limit", "50"],
         import.meta.url,
       );
 
-      expect(mockRequest).toHaveBeenCalledOnce();
-      expect(mockRequest.mock.calls[0][3]).toEqual({ limit: 50 });
+      expect(mock.request).toHaveBeenCalledOnce();
+      expect(mock.request.mock.calls[0][3]).toEqual({ limit: 50 });
     });
 
     it("should respect prefix flag", async () => {
+      const mock = getMockAblyRest();
+
       await runCommand(
         ["channels:list", "--api-key", "app.key:secret", "--prefix", "test-"],
         import.meta.url,
       );
 
-      expect(mockRequest).toHaveBeenCalledOnce();
-      expect(mockRequest.mock.calls[0][3]).toEqual({
+      expect(mock.request).toHaveBeenCalledOnce();
+      expect(mock.request.mock.calls[0][3]).toEqual({
         limit: 100,
         prefix: "test-",
       });
@@ -176,7 +161,7 @@ describe("channels:list command", () => {
       // Parse the JSON that was output
       const jsonOutput = JSON.parse(stdout);
 
-      // Verify the structure of the JSON output (preserving original assertions)
+      // Verify the structure of the JSON output
       expect(jsonOutput).toHaveProperty("channels");
       expect(jsonOutput.channels).toBeInstanceOf(Array);
       expect(jsonOutput.channels).toHaveLength(2);
@@ -210,7 +195,8 @@ describe("channels:list command", () => {
     });
 
     it("should handle API errors in JSON mode", async () => {
-      mockRequest.mockRejectedValue(new Error("Network error"));
+      const mock = getMockAblyRest();
+      mock.request.mockRejectedValue(new Error("Network error"));
 
       const { stdout } = await runCommand(
         ["channels:list", "--api-key", "app.key:secret", "--json"],
