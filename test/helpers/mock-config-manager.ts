@@ -1,18 +1,22 @@
 /**
  * Mock ConfigManager for unit tests.
  *
- * Usage in tests:
- *   import { getMockConfigManager } from "../../helpers/mock-config-manager.js";
+ * NOTE: Initialization and reset are handled automatically by test/unit/setup.ts.
+ * You do NOT need to call initializeMockConfigManager() or resetMockConfig()
+ * in your tests - just use getMockConfigManager() to access and configure the mock.
  *
- *   // Get values through ConfigManager interface methods
- *   const mockConfig = getMockConfigManager();
- *   const appId = mockConfig.getCurrentAppId()!;
- *   const apiKey = mockConfig.getApiKey()!;
- *   const accountId = mockConfig.getCurrentAccount()!.accountId!;
+ * @example
+ * import { getMockConfigManager } from "../../helpers/mock-config-manager.js";
  *
- *   // Manipulate config for error scenarios
- *   mockConfig.setCurrentAccountAlias(undefined); // Test "no account" error
- *   mockConfig.clearAccounts(); // Test "no config" scenario
+ * // Get values through ConfigManager interface methods
+ * const mockConfig = getMockConfigManager();
+ * const appId = mockConfig.getCurrentAppId()!;
+ * const apiKey = mockConfig.getApiKey()!;
+ * const accountId = mockConfig.getCurrentAccount()!.accountId!;
+ *
+ * // Manipulate config for error scenarios
+ * mockConfig.setCurrentAccountAlias(undefined); // Test "no account" error
+ * mockConfig.clearAccounts(); // Test "no config" scenario
  */
 
 import type {
@@ -492,12 +496,10 @@ export function resetMockConfig(): void {
  * This is called by the unit test setup file.
  */
 export function initializeMockConfigManager(): void {
-  if (!globalThis.__TEST_MOCKS__) {
-    globalThis.__TEST_MOCKS__ = {
-      ablyRestMock: {},
-    };
-  }
-  globalThis.__TEST_MOCKS__.configManager = new MockConfigManager();
+  globalThis.__TEST_MOCKS__ = {
+    ...globalThis.__TEST_MOCKS__,
+    configManager: new MockConfigManager(),
+  };
 }
 
 /**

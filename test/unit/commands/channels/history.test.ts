@@ -1,18 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
-
-// Define the type for global test mocks
-declare global {
-  var __TEST_MOCKS__: {
-    ablyRestMock?: unknown;
-  };
-}
+import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
 
 describe("channels:history command", () => {
-  let mockHistory: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
-    mockHistory = vi.fn().mockResolvedValue({
+    // Configure the centralized mock with test data
+    const mock = getMockAblyRest();
+    const channel = mock.channels._getChannel("test-channel");
+    channel.history.mockResolvedValue({
       items: [
         {
           id: "msg-1",
@@ -32,30 +27,6 @@ describe("channels:history command", () => {
         },
       ],
     });
-
-    const mockChannel = {
-      name: "test-channel",
-      history: mockHistory,
-    };
-
-    // Merge with existing mocks (don't overwrite configManager)
-    globalThis.__TEST_MOCKS__ = {
-      ...globalThis.__TEST_MOCKS__,
-      ablyRestMock: {
-        channels: {
-          get: vi.fn().mockReturnValue(mockChannel),
-        },
-        close: vi.fn(),
-      },
-    };
-  });
-
-  afterEach(() => {
-    // Only delete the mock we added, not the whole object
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRestMock;
-    }
-    vi.clearAllMocks();
   });
 
   describe("help", () => {
@@ -92,6 +63,9 @@ describe("channels:history command", () => {
 
   describe("history retrieval", () => {
     it("should retrieve channel history successfully", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+
       const { stdout } = await runCommand(
         ["channels:history", "test-channel", "--api-key", "app.key:secret"],
         import.meta.url,
@@ -100,7 +74,7 @@ describe("channels:history command", () => {
       expect(stdout).toContain("Found");
       expect(stdout).toContain("2");
       expect(stdout).toContain("messages");
-      expect(mockHistory).toHaveBeenCalled();
+      expect(channel.history).toHaveBeenCalled();
     });
 
     it("should display message details", async () => {
@@ -115,7 +89,9 @@ describe("channels:history command", () => {
     });
 
     it("should handle empty history", async () => {
-      mockHistory.mockResolvedValue({ items: [] });
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+      channel.history.mockResolvedValue({ items: [] });
 
       const { stdout } = await runCommand(
         ["channels:history", "test-channel", "--api-key", "app.key:secret"],
@@ -147,6 +123,9 @@ describe("channels:history command", () => {
     });
 
     it("should respect --limit flag", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+
       await runCommand(
         [
           "channels:history",
@@ -159,12 +138,15 @@ describe("channels:history command", () => {
         import.meta.url,
       );
 
-      expect(mockHistory).toHaveBeenCalledWith(
+      expect(channel.history).toHaveBeenCalledWith(
         expect.objectContaining({ limit: 10 }),
       );
     });
 
     it("should respect --direction flag", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+
       await runCommand(
         [
           "channels:history",
@@ -177,12 +159,14 @@ describe("channels:history command", () => {
         import.meta.url,
       );
 
-      expect(mockHistory).toHaveBeenCalledWith(
+      expect(channel.history).toHaveBeenCalledWith(
         expect.objectContaining({ direction: "forwards" }),
       );
     });
 
     it("should respect --start and --end flags", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
       const start = "2023-01-01T00:00:00Z";
       const end = "2023-01-02T00:00:00Z";
 
@@ -200,7 +184,7 @@ describe("channels:history command", () => {
         import.meta.url,
       );
 
-      expect(mockHistory).toHaveBeenCalledWith(
+      expect(channel.history).toHaveBeenCalledWith(
         expect.objectContaining({
           start: new Date(start).getTime(),
           end: new Date(end).getTime(),
@@ -209,7 +193,9 @@ describe("channels:history command", () => {
     });
 
     it("should handle API errors gracefully", async () => {
-      mockHistory.mockRejectedValue(new Error("API error"));
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+      channel.history.mockRejectedValue(new Error("API error"));
 
       const { error } = await runCommand(
         ["channels:history", "test-channel", "--api-key", "app.key:secret"],
@@ -223,11 +209,7 @@ describe("channels:history command", () => {
 
   describe("flags", () => {
     it("should pass cipher option to channel when --cipher flag is used", async () => {
-      const mockChannelsGet = (
-        globalThis.__TEST_MOCKS__?.ablyRestMock as {
-          channels: { get: ReturnType<typeof vi.fn> };
-        }
-      )?.channels.get;
+      const mock = getMockAblyRest();
 
       await runCommand(
         [
@@ -242,7 +224,7 @@ describe("channels:history command", () => {
       );
 
       // Verify channel.get was called with cipher option
-      expect(mockChannelsGet).toHaveBeenCalledWith(
+      expect(mock.channels.get).toHaveBeenCalledWith(
         "test-channel",
         expect.objectContaining({
           cipher: { key: "my-encryption-key" },
