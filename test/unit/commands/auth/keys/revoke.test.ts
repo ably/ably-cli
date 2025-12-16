@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { DEFAULT_TEST_CONFIG } from "../../../../helpers/mock-config-manager.js";
+import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 
 describe("auth:keys:revoke command", () => {
   const mockKeyId = "testkey";
@@ -16,14 +16,15 @@ describe("auth:keys:revoke command", () => {
 
   describe("successful key revocation", () => {
     it("should display key info before revocation", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock get key details
       nock("https://control.ably.net")
-        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}`)
+        .get(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {
           id: mockKeyId,
-          appId: DEFAULT_TEST_CONFIG.appId,
+          appId,
           name: "Test Key",
-          key: `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}:secret`,
+          key: `${appId}.${mockKeyId}:secret`,
           capability: { "*": ["publish", "subscribe"] },
           created: Date.now(),
           modified: Date.now(),
@@ -31,82 +32,65 @@ describe("auth:keys:revoke command", () => {
 
       // Mock revoke key
       nock("https://control.ably.net")
-        .post(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}/revoke`)
+        .post(`/v1/apps/${appId}/keys/${mockKeyId}/revoke`)
         .reply(200, {});
 
       const { stdout } = await runCommand(
-        [
-          "auth:keys:revoke",
-          `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`,
-          "--force",
-        ],
+        ["auth:keys:revoke", `${appId}.${mockKeyId}`, "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain(
-        `Key Name: ${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`,
-      );
+      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
       expect(stdout).toContain("Key Label: Test Key");
     });
 
     it("should revoke key with --app flag", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}`)
+        .get(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {
           id: mockKeyId,
-          appId: DEFAULT_TEST_CONFIG.appId,
+          appId,
           name: "Test Key",
-          key: `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}:secret`,
+          key: `${appId}.${mockKeyId}:secret`,
           capability: { "*": ["publish"] },
           created: Date.now(),
           modified: Date.now(),
         });
 
       nock("https://control.ably.net")
-        .post(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}/revoke`)
+        .post(`/v1/apps/${appId}/keys/${mockKeyId}/revoke`)
         .reply(200, {});
 
       const { stdout } = await runCommand(
-        [
-          "auth:keys:revoke",
-          mockKeyId,
-          "--app",
-          DEFAULT_TEST_CONFIG.appId,
-          "--force",
-        ],
+        ["auth:keys:revoke", mockKeyId, "--app", appId, "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain(
-        `Key Name: ${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`,
-      );
+      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
       expect(stdout).toContain("Key Label: Test Key");
     });
 
     it("should output JSON format when --json flag is used", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}`)
+        .get(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {
           id: mockKeyId,
-          appId: DEFAULT_TEST_CONFIG.appId,
+          appId,
           name: "Test Key",
-          key: `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}:secret`,
+          key: `${appId}.${mockKeyId}:secret`,
           capability: { "*": ["publish", "subscribe"] },
           created: Date.now(),
           modified: Date.now(),
         });
 
       nock("https://control.ably.net")
-        .post(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}/revoke`)
+        .post(`/v1/apps/${appId}/keys/${mockKeyId}/revoke`)
         .reply(200, {});
 
       const { stdout } = await runCommand(
-        [
-          "auth:keys:revoke",
-          `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`,
-          "--force",
-          "--json",
-        ],
+        ["auth:keys:revoke", `${appId}.${mockKeyId}`, "--force", "--json"],
         import.meta.url,
       );
 
@@ -129,16 +113,13 @@ describe("auth:keys:revoke command", () => {
     });
 
     it("should handle 404 key not found", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/nonexistent`)
+        .get(`/v1/apps/${appId}/keys/nonexistent`)
         .reply(404, { error: "Key not found" });
 
       const { error } = await runCommand(
-        [
-          "auth:keys:revoke",
-          `${DEFAULT_TEST_CONFIG.appId}.nonexistent`,
-          "--force",
-        ],
+        ["auth:keys:revoke", `${appId}.nonexistent`, "--force"],
         import.meta.url,
       );
 
@@ -147,16 +128,13 @@ describe("auth:keys:revoke command", () => {
     });
 
     it("should handle 401 authentication error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}`)
+        .get(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
-        [
-          "auth:keys:revoke",
-          `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`,
-          "--force",
-        ],
+        ["auth:keys:revoke", `${appId}.${mockKeyId}`, "--force"],
         import.meta.url,
       );
 

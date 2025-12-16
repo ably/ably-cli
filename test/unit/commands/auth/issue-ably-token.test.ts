@@ -1,9 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
-import {
-  getMockConfigManager,
-  DEFAULT_TEST_CONFIG,
-} from "../../../helpers/mock-config-manager.js";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("auth:issue-ably-token command", () => {
   beforeEach(() => {
@@ -21,6 +18,7 @@ describe("auth:issue-ably-token command", () => {
 
   describe("successful token issuance", () => {
     it("should issue an Ably token successfully", async () => {
+      const keyId = getMockConfigManager().getKeyId()!;
       const mockTokenDetails = {
         token: "mock-ably-token-12345",
         issued: Date.now(),
@@ -30,7 +28,7 @@ describe("auth:issue-ably-token command", () => {
       };
 
       const mockTokenRequest = {
-        keyName: DEFAULT_TEST_CONFIG.keyId,
+        keyName: keyId,
         ttl: 3600000,
         capability: '{"*":["*"]}',
       };
@@ -305,6 +303,7 @@ describe("auth:issue-ably-token command", () => {
 
   describe("command arguments and flags", () => {
     it("should accept --app flag to specify app", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       const mockTokenDetails = {
         token: "mock-ably-token-app",
         issued: Date.now(),
@@ -326,7 +325,7 @@ describe("auth:issue-ably-token command", () => {
       }
 
       const { stdout } = await runCommand(
-        ["auth:issue-ably-token", "--app", DEFAULT_TEST_CONFIG.appId],
+        ["auth:issue-ably-token", "--app", appId],
         import.meta.url,
       );
 

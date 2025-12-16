@@ -1,19 +1,18 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { DEFAULT_TEST_CONFIG } from "../../../helpers/mock-config-manager.js";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("channel-rule:create command (alias)", () => {
-  const mockAppId = DEFAULT_TEST_CONFIG.appId;
-
   afterEach(() => {
     nock.cleanAll();
   });
 
   describe("alias behavior", () => {
     it("should execute the same as apps:channel-rules:create", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/namespaces`)
+        .post(`/v1/apps/${appId}/namespaces`)
         .reply(200, {
           id: "test-rule",
           persisted: true,
@@ -27,7 +26,7 @@ describe("channel-rule:create command (alias)", () => {
           "channel-rule:create",
           "--name=test-rule",
           "--app",
-          mockAppId,
+          appId,
           "--persisted",
         ],
         import.meta.url,
@@ -37,8 +36,9 @@ describe("channel-rule:create command (alias)", () => {
     });
 
     it("should require name flag", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
-        ["channel-rule:create", "--app", mockAppId],
+        ["channel-rule:create", "--app", appId],
         import.meta.url,
       );
 

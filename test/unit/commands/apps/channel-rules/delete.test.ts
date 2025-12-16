@@ -1,10 +1,9 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { DEFAULT_TEST_CONFIG } from "../../../../helpers/mock-config-manager.js";
+import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 
 describe("apps:channel-rules:delete command", () => {
-  const mockAppId = DEFAULT_TEST_CONFIG.appId;
   const mockRuleId = "chat";
 
   afterEach(() => {
@@ -13,9 +12,10 @@ describe("apps:channel-rules:delete command", () => {
 
   describe("successful channel rule deletion", () => {
     it("should delete a channel rule with force flag", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock listing namespaces to find the rule
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/namespaces`)
+        .get(`/v1/apps/${appId}/namespaces`)
         .reply(200, [
           {
             id: mockRuleId,
@@ -28,17 +28,11 @@ describe("apps:channel-rules:delete command", () => {
 
       // Mock delete endpoint
       nock("https://control.ably.net")
-        .delete(`/v1/apps/${mockAppId}/namespaces/${mockRuleId}`)
+        .delete(`/v1/apps/${appId}/namespaces/${mockRuleId}`)
         .reply(204);
 
       const { stdout } = await runCommand(
-        [
-          "apps:channel-rules:delete",
-          mockRuleId,
-          "--app",
-          mockAppId,
-          "--force",
-        ],
+        ["apps:channel-rules:delete", mockRuleId, "--app", appId, "--force"],
         import.meta.url,
       );
 
@@ -46,8 +40,9 @@ describe("apps:channel-rules:delete command", () => {
     });
 
     it("should output JSON format when --json flag is used", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/namespaces`)
+        .get(`/v1/apps/${appId}/namespaces`)
         .reply(200, [
           {
             id: mockRuleId,
@@ -59,7 +54,7 @@ describe("apps:channel-rules:delete command", () => {
         ]);
 
       nock("https://control.ably.net")
-        .delete(`/v1/apps/${mockAppId}/namespaces/${mockRuleId}`)
+        .delete(`/v1/apps/${appId}/namespaces/${mockRuleId}`)
         .reply(204);
 
       const { stdout } = await runCommand(
@@ -67,7 +62,7 @@ describe("apps:channel-rules:delete command", () => {
           "apps:channel-rules:delete",
           mockRuleId,
           "--app",
-          mockAppId,
+          appId,
           "--force",
           "--json",
         ],
@@ -83,8 +78,9 @@ describe("apps:channel-rules:delete command", () => {
 
   describe("error handling", () => {
     it("should require nameOrId argument", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
-        ["apps:channel-rules:delete", "--app", mockAppId],
+        ["apps:channel-rules:delete", "--app", appId],
         import.meta.url,
       );
 
@@ -93,18 +89,13 @@ describe("apps:channel-rules:delete command", () => {
     });
 
     it("should handle channel rule not found", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/namespaces`)
+        .get(`/v1/apps/${appId}/namespaces`)
         .reply(200, []);
 
       const { error } = await runCommand(
-        [
-          "apps:channel-rules:delete",
-          "nonexistent",
-          "--app",
-          mockAppId,
-          "--force",
-        ],
+        ["apps:channel-rules:delete", "nonexistent", "--app", appId, "--force"],
         import.meta.url,
       );
 
@@ -113,18 +104,13 @@ describe("apps:channel-rules:delete command", () => {
     });
 
     it("should handle 401 authentication error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/namespaces`)
+        .get(`/v1/apps/${appId}/namespaces`)
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
-        [
-          "apps:channel-rules:delete",
-          mockRuleId,
-          "--app",
-          mockAppId,
-          "--force",
-        ],
+        ["apps:channel-rules:delete", mockRuleId, "--app", appId, "--force"],
         import.meta.url,
       );
 
@@ -133,18 +119,13 @@ describe("apps:channel-rules:delete command", () => {
     });
 
     it("should handle network errors", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/namespaces`)
+        .get(`/v1/apps/${appId}/namespaces`)
         .replyWithError("Network error");
 
       const { error } = await runCommand(
-        [
-          "apps:channel-rules:delete",
-          mockRuleId,
-          "--app",
-          mockAppId,
-          "--force",
-        ],
+        ["apps:channel-rules:delete", mockRuleId, "--app", appId, "--force"],
         import.meta.url,
       );
 

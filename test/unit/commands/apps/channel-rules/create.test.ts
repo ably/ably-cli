@@ -1,10 +1,9 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { DEFAULT_TEST_CONFIG } from "../../../../helpers/mock-config-manager.js";
+import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 
 describe("apps:channel-rules:create command", () => {
-  const mockAppId = DEFAULT_TEST_CONFIG.appId;
   const mockRuleName = "chat";
   const mockRuleId = "chat";
 
@@ -14,8 +13,9 @@ describe("apps:channel-rules:create command", () => {
 
   describe("successful channel rule creation", () => {
     it("should create a channel rule successfully", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/namespaces`)
+        .post(`/v1/apps/${appId}/namespaces`)
         .reply(201, {
           id: mockRuleId,
           persisted: false,
@@ -25,13 +25,7 @@ describe("apps:channel-rules:create command", () => {
         });
 
       const { stdout } = await runCommand(
-        [
-          "apps:channel-rules:create",
-          "--name",
-          mockRuleName,
-          "--app",
-          mockAppId,
-        ],
+        ["apps:channel-rules:create", "--name", mockRuleName, "--app", appId],
         import.meta.url,
       );
 
@@ -40,8 +34,9 @@ describe("apps:channel-rules:create command", () => {
     });
 
     it("should create a channel rule with persisted flag", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/namespaces`, (body) => {
+        .post(`/v1/apps/${appId}/namespaces`, (body) => {
           return body.persisted === true;
         })
         .reply(201, {
@@ -58,7 +53,7 @@ describe("apps:channel-rules:create command", () => {
           "--name",
           mockRuleName,
           "--app",
-          mockAppId,
+          appId,
           "--persisted",
         ],
         import.meta.url,
@@ -69,8 +64,9 @@ describe("apps:channel-rules:create command", () => {
     });
 
     it("should create a channel rule with push-enabled flag", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/namespaces`, (body) => {
+        .post(`/v1/apps/${appId}/namespaces`, (body) => {
           return body.pushEnabled === true;
         })
         .reply(201, {
@@ -87,7 +83,7 @@ describe("apps:channel-rules:create command", () => {
           "--name",
           mockRuleName,
           "--app",
-          mockAppId,
+          appId,
           "--push-enabled",
         ],
         import.meta.url,
@@ -98,6 +94,7 @@ describe("apps:channel-rules:create command", () => {
     });
 
     it("should output JSON format when --json flag is used", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       const mockRule = {
         id: mockRuleId,
         persisted: false,
@@ -107,7 +104,7 @@ describe("apps:channel-rules:create command", () => {
       };
 
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/namespaces`)
+        .post(`/v1/apps/${appId}/namespaces`)
         .reply(201, mockRule);
 
       const { stdout } = await runCommand(
@@ -116,7 +113,7 @@ describe("apps:channel-rules:create command", () => {
           "--name",
           mockRuleName,
           "--app",
-          mockAppId,
+          appId,
           "--json",
         ],
         import.meta.url,
@@ -131,8 +128,9 @@ describe("apps:channel-rules:create command", () => {
 
   describe("error handling", () => {
     it("should require name parameter", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
-        ["apps:channel-rules:create", "--app", mockAppId],
+        ["apps:channel-rules:create", "--app", appId],
         import.meta.url,
       );
 
@@ -141,18 +139,13 @@ describe("apps:channel-rules:create command", () => {
     });
 
     it("should handle 401 authentication error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/namespaces`)
+        .post(`/v1/apps/${appId}/namespaces`)
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
-        [
-          "apps:channel-rules:create",
-          "--name",
-          mockRuleName,
-          "--app",
-          mockAppId,
-        ],
+        ["apps:channel-rules:create", "--name", mockRuleName, "--app", appId],
         import.meta.url,
       );
 
@@ -161,18 +154,13 @@ describe("apps:channel-rules:create command", () => {
     });
 
     it("should handle 400 validation error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/namespaces`)
+        .post(`/v1/apps/${appId}/namespaces`)
         .reply(400, { error: "Validation failed" });
 
       const { error } = await runCommand(
-        [
-          "apps:channel-rules:create",
-          "--name",
-          mockRuleName,
-          "--app",
-          mockAppId,
-        ],
+        ["apps:channel-rules:create", "--name", mockRuleName, "--app", appId],
         import.meta.url,
       );
 
@@ -181,18 +169,13 @@ describe("apps:channel-rules:create command", () => {
     });
 
     it("should handle network errors", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/namespaces`)
+        .post(`/v1/apps/${appId}/namespaces`)
         .replyWithError("Network error");
 
       const { error } = await runCommand(
-        [
-          "apps:channel-rules:create",
-          "--name",
-          mockRuleName,
-          "--app",
-          mockAppId,
-        ],
+        ["apps:channel-rules:create", "--name", mockRuleName, "--app", appId],
         import.meta.url,
       );
 

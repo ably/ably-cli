@@ -1,10 +1,9 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { DEFAULT_TEST_CONFIG } from "../../../helpers/mock-config-manager.js";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("integrations:create command", () => {
-  const mockAppId = DEFAULT_TEST_CONFIG.appId;
   const mockRuleId = "rule-123456";
 
   afterEach(() => {
@@ -13,11 +12,12 @@ describe("integrations:create command", () => {
 
   describe("successful integration creation", () => {
     it("should create an HTTP integration successfully", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/rules`)
+        .post(`/v1/apps/${appId}/rules`)
         .reply(201, {
           id: mockRuleId,
-          appId: mockAppId,
+          appId,
           ruleType: "http",
           requestMode: "single",
           source: {
@@ -52,11 +52,12 @@ describe("integrations:create command", () => {
     });
 
     it("should create an AMQP integration successfully", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/rules`)
+        .post(`/v1/apps/${appId}/rules`)
         .reply(201, {
           id: mockRuleId,
-          appId: mockAppId,
+          appId,
           ruleType: "amqp",
           requestMode: "single",
           source: {
@@ -87,16 +88,14 @@ describe("integrations:create command", () => {
     });
 
     it("should create a disabled integration when status is disabled", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(
-          `/v1/apps/${mockAppId}/rules`,
-          (body: Record<string, unknown>) => {
-            return body.status === "disabled";
-          },
-        )
+        .post(`/v1/apps/${appId}/rules`, (body: Record<string, unknown>) => {
+          return body.status === "disabled";
+        })
         .reply(201, {
           id: mockRuleId,
-          appId: mockAppId,
+          appId,
           ruleType: "http",
           requestMode: "single",
           source: {
@@ -130,16 +129,14 @@ describe("integrations:create command", () => {
     });
 
     it("should create integration with batch request mode", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(
-          `/v1/apps/${mockAppId}/rules`,
-          (body: Record<string, unknown>) => {
-            return body.requestMode === "batch";
-          },
-        )
+        .post(`/v1/apps/${appId}/rules`, (body: Record<string, unknown>) => {
+          return body.requestMode === "batch";
+        })
         .reply(201, {
           id: mockRuleId,
-          appId: mockAppId,
+          appId,
           ruleType: "http",
           requestMode: "batch",
           source: {
@@ -173,11 +170,12 @@ describe("integrations:create command", () => {
     });
 
     it("should output JSON format when --json flag is used", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/rules`)
+        .post(`/v1/apps/${appId}/rules`)
         .reply(201, {
           id: mockRuleId,
-          appId: mockAppId,
+          appId,
           ruleType: "http",
           requestMode: "single",
           source: {
@@ -260,8 +258,9 @@ describe("integrations:create command", () => {
     });
 
     it("should handle API errors", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/rules`)
+        .post(`/v1/apps/${appId}/rules`)
         .reply(400, { error: "Invalid configuration" });
 
       const { error } = await runCommand(
@@ -284,8 +283,9 @@ describe("integrations:create command", () => {
     });
 
     it("should handle 401 authentication error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/rules`)
+        .post(`/v1/apps/${appId}/rules`)
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
@@ -320,11 +320,12 @@ describe("integrations:create command", () => {
 
   describe("source type options", () => {
     it("should accept channel.presence source type", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/rules`)
+        .post(`/v1/apps/${appId}/rules`)
         .reply(201, {
           id: mockRuleId,
-          appId: mockAppId,
+          appId,
           ruleType: "http",
           requestMode: "single",
           source: {
@@ -356,11 +357,12 @@ describe("integrations:create command", () => {
     });
 
     it("should accept channel.lifecycle source type", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/rules`)
+        .post(`/v1/apps/${appId}/rules`)
         .reply(201, {
           id: mockRuleId,
-          appId: mockAppId,
+          appId,
           ruleType: "http",
           requestMode: "single",
           source: {

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { DEFAULT_TEST_CONFIG } from "../../../helpers/mock-config-manager.js";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("auth:revoke-token command", () => {
   const mockToken = "test-token-12345";
@@ -74,9 +74,12 @@ describe("auth:revoke-token command", () => {
 
   describe("token revocation", () => {
     it("should successfully revoke a token with client-id", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const apiKey = mockConfig.getApiKey()!;
       // Mock the token revocation endpoint
       nock("https://rest.ably.io")
-        .post(`/keys/${DEFAULT_TEST_CONFIG.keyId}/revokeTokens`, {
+        .post(`/keys/${keyId}/revokeTokens`, {
           targets: [`clientId:${mockClientId}`],
         })
         .reply(200, {});
@@ -88,7 +91,7 @@ describe("auth:revoke-token command", () => {
           "--client-id",
           mockClientId,
           "--api-key",
-          DEFAULT_TEST_CONFIG.apiKey,
+          apiKey,
         ],
         import.meta.url,
       );
@@ -97,20 +100,18 @@ describe("auth:revoke-token command", () => {
     });
 
     it("should use token as client-id when --client-id not provided", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const apiKey = mockConfig.getApiKey()!;
       // When no client-id is provided, the token is used as the client-id
       nock("https://rest.ably.io")
-        .post(`/keys/${DEFAULT_TEST_CONFIG.keyId}/revokeTokens`, {
+        .post(`/keys/${keyId}/revokeTokens`, {
           targets: [`clientId:${mockToken}`],
         })
         .reply(200, {});
 
       const { stdout, stderr } = await runCommand(
-        [
-          "auth:revoke-token",
-          mockToken,
-          "--api-key",
-          DEFAULT_TEST_CONFIG.apiKey,
-        ],
+        ["auth:revoke-token", mockToken, "--api-key", apiKey],
         import.meta.url,
       );
 
@@ -123,8 +124,11 @@ describe("auth:revoke-token command", () => {
     });
 
     it("should output JSON format when --json flag is used", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const apiKey = mockConfig.getApiKey()!;
       nock("https://rest.ably.io")
-        .post(`/keys/${DEFAULT_TEST_CONFIG.keyId}/revokeTokens`, {
+        .post(`/keys/${keyId}/revokeTokens`, {
           targets: [`clientId:${mockClientId}`],
         })
         .reply(200, { issuedBefore: 1234567890 });
@@ -136,7 +140,7 @@ describe("auth:revoke-token command", () => {
           "--client-id",
           mockClientId,
           "--api-key",
-          DEFAULT_TEST_CONFIG.apiKey,
+          apiKey,
           "--json",
         ],
         import.meta.url,
@@ -152,9 +156,12 @@ describe("auth:revoke-token command", () => {
     });
 
     it("should handle token not found error with special message", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const apiKey = mockConfig.getApiKey()!;
       // The command handles token_not_found specifically in the response body
       nock("https://rest.ably.io")
-        .post(`/keys/${DEFAULT_TEST_CONFIG.keyId}/revokeTokens`)
+        .post(`/keys/${keyId}/revokeTokens`)
         .reply(404, "token_not_found");
 
       const { stdout } = await runCommand(
@@ -164,7 +171,7 @@ describe("auth:revoke-token command", () => {
           "--client-id",
           mockClientId,
           "--api-key",
-          DEFAULT_TEST_CONFIG.apiKey,
+          apiKey,
         ],
         import.meta.url,
       );
@@ -174,8 +181,11 @@ describe("auth:revoke-token command", () => {
     });
 
     it("should handle authentication error (invalid API key)", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const apiKey = mockConfig.getApiKey()!;
       nock("https://rest.ably.io")
-        .post(`/keys/${DEFAULT_TEST_CONFIG.keyId}/revokeTokens`)
+        .post(`/keys/${keyId}/revokeTokens`)
         .reply(401, { error: { message: "Unauthorized" } });
 
       const { error } = await runCommand(
@@ -185,7 +195,7 @@ describe("auth:revoke-token command", () => {
           "--client-id",
           mockClientId,
           "--api-key",
-          DEFAULT_TEST_CONFIG.apiKey,
+          apiKey,
         ],
         import.meta.url,
       );
@@ -195,8 +205,11 @@ describe("auth:revoke-token command", () => {
     });
 
     it("should handle server error", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const apiKey = mockConfig.getApiKey()!;
       nock("https://rest.ably.io")
-        .post(`/keys/${DEFAULT_TEST_CONFIG.keyId}/revokeTokens`)
+        .post(`/keys/${keyId}/revokeTokens`)
         .reply(500, { error: "Internal Server Error" });
 
       const { error } = await runCommand(
@@ -206,7 +219,7 @@ describe("auth:revoke-token command", () => {
           "--client-id",
           mockClientId,
           "--api-key",
-          DEFAULT_TEST_CONFIG.apiKey,
+          apiKey,
         ],
         import.meta.url,
       );
@@ -218,8 +231,11 @@ describe("auth:revoke-token command", () => {
 
   describe("debug mode", () => {
     it("should show debug information when --debug flag is used", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const apiKey = mockConfig.getApiKey()!;
       nock("https://rest.ably.io")
-        .post(`/keys/${DEFAULT_TEST_CONFIG.keyId}/revokeTokens`)
+        .post(`/keys/${keyId}/revokeTokens`)
         .reply(200, {});
 
       const { stdout } = await runCommand(
@@ -229,7 +245,7 @@ describe("auth:revoke-token command", () => {
           "--client-id",
           mockClientId,
           "--api-key",
-          DEFAULT_TEST_CONFIG.apiKey,
+          apiKey,
           "--debug",
         ],
         import.meta.url,
@@ -239,8 +255,12 @@ describe("auth:revoke-token command", () => {
     });
 
     it("should mask the API key secret in debug output", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const apiKey = mockConfig.getApiKey()!;
+      const keySecret = apiKey.split(":")[1];
       nock("https://rest.ably.io")
-        .post(`/keys/${DEFAULT_TEST_CONFIG.keyId}/revokeTokens`)
+        .post(`/keys/${keyId}/revokeTokens`)
         .reply(200, {});
 
       const { stdout } = await runCommand(
@@ -250,14 +270,14 @@ describe("auth:revoke-token command", () => {
           "--client-id",
           mockClientId,
           "--api-key",
-          DEFAULT_TEST_CONFIG.apiKey,
+          apiKey,
           "--debug",
         ],
         import.meta.url,
       );
 
       // Verify the secret part of the API key is masked
-      expect(stdout).not.toContain("testsecret");
+      expect(stdout).not.toContain(keySecret);
       expect(stdout).toContain("***");
     });
   });

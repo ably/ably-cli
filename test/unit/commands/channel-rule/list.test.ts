@@ -1,19 +1,18 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { DEFAULT_TEST_CONFIG } from "../../../helpers/mock-config-manager.js";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("channel-rule:list command (alias)", () => {
-  const mockAppId = DEFAULT_TEST_CONFIG.appId;
-
   afterEach(() => {
     nock.cleanAll();
   });
 
   describe("alias behavior", () => {
     it("should execute the same as apps:channel-rules:list", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/namespaces`)
+        .get(`/v1/apps/${appId}/namespaces`)
         .reply(200, [
           {
             id: "rule1",
@@ -41,8 +40,9 @@ describe("channel-rule:list command (alias)", () => {
     });
 
     it("should show message when no rules found", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/namespaces`)
+        .get(`/v1/apps/${appId}/namespaces`)
         .reply(200, []);
 
       const { stdout } = await runCommand(

@@ -1,10 +1,9 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { DEFAULT_TEST_CONFIG } from "../../../helpers/mock-config-manager.js";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("channel-rule:update command (alias)", () => {
-  const mockAppId = DEFAULT_TEST_CONFIG.appId;
   const mockRuleId = "test-rule";
 
   afterEach(() => {
@@ -13,8 +12,9 @@ describe("channel-rule:update command (alias)", () => {
 
   describe("alias behavior", () => {
     it("should execute the same as apps:channel-rules:update", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/namespaces`)
+        .get(`/v1/apps/${appId}/namespaces`)
         .reply(200, [
           {
             id: mockRuleId,
@@ -26,7 +26,7 @@ describe("channel-rule:update command (alias)", () => {
         ]);
 
       nock("https://control.ably.net")
-        .patch(`/v1/apps/${mockAppId}/namespaces/${mockRuleId}`)
+        .patch(`/v1/apps/${appId}/namespaces/${mockRuleId}`)
         .reply(200, {
           id: mockRuleId,
           persisted: true,
@@ -36,7 +36,7 @@ describe("channel-rule:update command (alias)", () => {
         });
 
       const { stdout } = await runCommand(
-        ["channel-rule:update", mockRuleId, "--app", mockAppId, "--persisted"],
+        ["channel-rule:update", mockRuleId, "--app", appId, "--persisted"],
         import.meta.url,
       );
 
@@ -44,8 +44,9 @@ describe("channel-rule:update command (alias)", () => {
     });
 
     it("should require nameOrId argument", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
-        ["channel-rule:update", "--app", mockAppId, "--persisted"],
+        ["channel-rule:update", "--app", appId, "--persisted"],
         import.meta.url,
       );
 

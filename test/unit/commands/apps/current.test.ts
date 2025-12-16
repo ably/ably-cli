@@ -1,30 +1,35 @@
 import { describe, it, expect } from "vitest";
 import { runCommand } from "@oclif/test";
-import {
-  getMockConfigManager,
-  DEFAULT_TEST_CONFIG,
-} from "../../../helpers/mock-config-manager.js";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("apps:current command", () => {
   describe("successful current app display", () => {
     it("should display the current app", async () => {
+      const mockConfig = getMockConfigManager();
+      const appId = mockConfig.getCurrentAppId()!;
+      const appName = mockConfig.getAppName(appId)!;
       const { stdout } = await runCommand(["apps:current"], import.meta.url);
 
-      expect(stdout).toContain(`App: ${DEFAULT_TEST_CONFIG.appName}`);
-      expect(stdout).toContain(`(${DEFAULT_TEST_CONFIG.appId})`);
+      expect(stdout).toContain(`App: ${appName}`);
+      expect(stdout).toContain(`(${appId})`);
     });
 
     it("should display account information", async () => {
+      const accountName =
+        getMockConfigManager().getCurrentAccount()!.accountName!;
       const { stdout } = await runCommand(["apps:current"], import.meta.url);
 
-      expect(stdout).toContain(`Account: ${DEFAULT_TEST_CONFIG.accountName}`);
+      expect(stdout).toContain(`Account: ${accountName}`);
     });
 
     it("should display API key info when set", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const keyName = mockConfig.getKeyName()!;
       const { stdout } = await runCommand(["apps:current"], import.meta.url);
 
-      expect(stdout).toContain(`API Key: ${DEFAULT_TEST_CONFIG.keyId}`);
-      expect(stdout).toContain(`Key Label: ${DEFAULT_TEST_CONFIG.keyName}`);
+      expect(stdout).toContain(`API Key: ${keyId}`);
+      expect(stdout).toContain(`Key Label: ${keyName}`);
     });
   });
 

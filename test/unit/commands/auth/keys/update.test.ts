@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { DEFAULT_TEST_CONFIG } from "../../../../helpers/mock-config-manager.js";
+import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 
 describe("auth:keys:update command", () => {
   const mockKeyId = "testkey";
@@ -16,14 +16,15 @@ describe("auth:keys:update command", () => {
 
   describe("successful key update", () => {
     it("should update key name", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock get key details
       nock("https://control.ably.net")
-        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}`)
+        .get(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {
           id: mockKeyId,
-          appId: DEFAULT_TEST_CONFIG.appId,
+          appId,
           name: "OldName",
-          key: `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}:secret`,
+          key: `${appId}.${mockKeyId}:secret`,
           capability: { "*": ["publish", "subscribe"] },
           created: Date.now(),
           modified: Date.now(),
@@ -31,52 +32,47 @@ describe("auth:keys:update command", () => {
 
       // Mock update key
       nock("https://control.ably.net")
-        .patch(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}`)
+        .patch(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {
           id: mockKeyId,
-          appId: DEFAULT_TEST_CONFIG.appId,
+          appId,
           name: "NewName",
-          key: `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}:secret`,
+          key: `${appId}.${mockKeyId}:secret`,
           capability: { "*": ["publish", "subscribe"] },
           created: Date.now(),
           modified: Date.now(),
         });
 
       const { stdout } = await runCommand(
-        [
-          "auth:keys:update",
-          `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`,
-          "--name=NewName",
-        ],
+        ["auth:keys:update", `${appId}.${mockKeyId}`, "--name=NewName"],
         import.meta.url,
       );
 
-      expect(stdout).toContain(
-        `Key Name: ${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`,
-      );
+      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
       expect(stdout).toContain(`Key Label: "OldName" → "NewName"`);
     });
 
     it("should update key capabilities", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}`)
+        .get(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {
           id: mockKeyId,
-          appId: DEFAULT_TEST_CONFIG.appId,
+          appId,
           name: "Test Key",
-          key: `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}:secret`,
+          key: `${appId}.${mockKeyId}:secret`,
           capability: { "*": ["publish", "subscribe"] },
           created: Date.now(),
           modified: Date.now(),
         });
 
       nock("https://control.ably.net")
-        .patch(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}`)
+        .patch(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {
           id: mockKeyId,
-          appId: DEFAULT_TEST_CONFIG.appId,
+          appId,
           name: "Test Key",
-          key: `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}:secret`,
+          key: `${appId}.${mockKeyId}:secret`,
           capability: { "*": ["subscribe"] },
           created: Date.now(),
           modified: Date.now(),
@@ -85,58 +81,49 @@ describe("auth:keys:update command", () => {
       const { stdout } = await runCommand(
         [
           "auth:keys:update",
-          `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`,
+          `${appId}.${mockKeyId}`,
           "--capabilities",
           "subscribe",
         ],
         import.meta.url,
       );
 
-      expect(stdout).toContain(
-        `Key Name: ${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`,
-      );
+      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
       expect(stdout).toContain("After:  * → subscribe");
     });
 
     it("should update key with --app flag", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}`)
+        .get(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {
           id: mockKeyId,
-          appId: DEFAULT_TEST_CONFIG.appId,
+          appId,
           name: "OldName",
-          key: `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}:secret`,
+          key: `${appId}.${mockKeyId}:secret`,
           capability: { "*": ["publish"] },
           created: Date.now(),
           modified: Date.now(),
         });
 
       nock("https://control.ably.net")
-        .patch(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}`)
+        .patch(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {
           id: mockKeyId,
-          appId: DEFAULT_TEST_CONFIG.appId,
+          appId,
           name: "UpdatedName",
-          key: `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}:secret`,
+          key: `${appId}.${mockKeyId}:secret`,
           capability: { "*": ["publish"] },
           created: Date.now(),
           modified: Date.now(),
         });
 
       const { stdout } = await runCommand(
-        [
-          "auth:keys:update",
-          mockKeyId,
-          "--app",
-          DEFAULT_TEST_CONFIG.appId,
-          "--name=UpdatedName",
-        ],
+        ["auth:keys:update", mockKeyId, "--app", appId, "--name=UpdatedName"],
         import.meta.url,
       );
 
-      expect(stdout).toContain(
-        `Key Name: ${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`,
-      );
+      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
       expect(stdout).toContain(`Key Label: "OldName" → "UpdatedName"`);
     });
   });
@@ -153,8 +140,9 @@ describe("auth:keys:update command", () => {
     });
 
     it("should require at least one update parameter", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
-        ["auth:keys:update", `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`],
+        ["auth:keys:update", `${appId}.${mockKeyId}`],
         import.meta.url,
       );
 
@@ -163,16 +151,13 @@ describe("auth:keys:update command", () => {
     });
 
     it("should handle 404 key not found", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/nonexistent`)
+        .get(`/v1/apps/${appId}/keys/nonexistent`)
         .reply(404, { error: "Key not found" });
 
       const { error } = await runCommand(
-        [
-          "auth:keys:update",
-          `${DEFAULT_TEST_CONFIG.appId}.nonexistent`,
-          "--name=NewName",
-        ],
+        ["auth:keys:update", `${appId}.nonexistent`, "--name=NewName"],
         import.meta.url,
       );
 
@@ -181,16 +166,13 @@ describe("auth:keys:update command", () => {
     });
 
     it("should handle 401 authentication error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}`)
+        .get(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
-        [
-          "auth:keys:update",
-          `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`,
-          "--name=NewName",
-        ],
+        ["auth:keys:update", `${appId}.${mockKeyId}`, "--name=NewName"],
         import.meta.url,
       );
 

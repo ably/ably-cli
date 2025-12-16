@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { DEFAULT_TEST_CONFIG } from "../../../../helpers/mock-config-manager.js";
+import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 
 describe("auth:keys:get command", () => {
   const mockKeyId = "testkey";
@@ -16,72 +16,67 @@ describe("auth:keys:get command", () => {
 
   describe("successful key retrieval", () => {
     it("should get key details by full key name (APP_ID.KEY_ID)", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}`)
+        .get(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {
           id: mockKeyId,
-          appId: DEFAULT_TEST_CONFIG.appId,
+          appId,
           name: "Test Key",
-          key: `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}:secret`,
+          key: `${appId}.${mockKeyId}:secret`,
           capability: { "*": ["publish", "subscribe"] },
           created: Date.now(),
           modified: Date.now(),
         });
 
       const { stdout } = await runCommand(
-        ["auth:keys:get", `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`],
+        ["auth:keys:get", `${appId}.${mockKeyId}`],
         import.meta.url,
       );
 
-      expect(stdout).toContain(
-        `Key Name: ${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`,
-      );
+      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
       expect(stdout).toContain("Key Label: Test Key");
     });
 
     it("should get key details with --app flag", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}`)
+        .get(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {
           id: mockKeyId,
-          appId: DEFAULT_TEST_CONFIG.appId,
+          appId,
           name: "Test Key",
-          key: `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}:secret`,
+          key: `${appId}.${mockKeyId}:secret`,
           capability: { "*": ["publish", "subscribe"] },
           created: Date.now(),
           modified: Date.now(),
         });
 
       const { stdout } = await runCommand(
-        ["auth:keys:get", mockKeyId, "--app", DEFAULT_TEST_CONFIG.appId],
+        ["auth:keys:get", mockKeyId, "--app", appId],
         import.meta.url,
       );
 
-      expect(stdout).toContain(
-        `Key Name: ${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`,
-      );
+      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
       expect(stdout).toContain("Key Label: Test Key");
     });
 
     it("should output JSON format when --json flag is used", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}`)
+        .get(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {
           id: mockKeyId,
-          appId: DEFAULT_TEST_CONFIG.appId,
+          appId,
           name: "Test Key",
-          key: `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}:secret`,
+          key: `${appId}.${mockKeyId}:secret`,
           capability: { "*": ["publish", "subscribe"] },
           created: Date.now(),
           modified: Date.now(),
         });
 
       const { stdout } = await runCommand(
-        [
-          "auth:keys:get",
-          `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`,
-          "--json",
-        ],
+        ["auth:keys:get", `${appId}.${mockKeyId}`, "--json"],
         import.meta.url,
       );
 
@@ -101,12 +96,13 @@ describe("auth:keys:get command", () => {
     });
 
     it("should handle 404 key not found", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/nonexistent`)
+        .get(`/v1/apps/${appId}/keys/nonexistent`)
         .reply(404, { error: "Key not found" });
 
       const { error } = await runCommand(
-        ["auth:keys:get", `${DEFAULT_TEST_CONFIG.appId}.nonexistent`],
+        ["auth:keys:get", `${appId}.nonexistent`],
         import.meta.url,
       );
 
@@ -115,12 +111,13 @@ describe("auth:keys:get command", () => {
     });
 
     it("should handle 401 authentication error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${DEFAULT_TEST_CONFIG.appId}/keys/${mockKeyId}`)
+        .get(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
-        ["auth:keys:get", `${DEFAULT_TEST_CONFIG.appId}.${mockKeyId}`],
+        ["auth:keys:get", `${appId}.${mockKeyId}`],
         import.meta.url,
       );
 

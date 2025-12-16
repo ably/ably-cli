@@ -4,10 +4,9 @@ import nock from "nock";
 import { resolve } from "node:path";
 import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { DEFAULT_TEST_CONFIG } from "../../../helpers/mock-config-manager.js";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("apps:set-apns-p12 command", () => {
-  const mockAppId = DEFAULT_TEST_CONFIG.appId;
   let testTempDir: string;
   let testCertFile: string;
 
@@ -31,15 +30,16 @@ describe("apps:set-apns-p12 command", () => {
 
   describe("successful certificate upload", () => {
     it("should upload APNS P12 certificate successfully", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/push/certificate`)
+        .post(`/v1/apps/${appId}/push/certificate`)
         .reply(200, {
           id: "cert-123",
-          appId: mockAppId,
+          appId,
         });
 
       const { stdout } = await runCommand(
-        ["apps:set-apns-p12", mockAppId, "--certificate", testCertFile],
+        ["apps:set-apns-p12", appId, "--certificate", testCertFile],
         import.meta.url,
       );
 
@@ -47,17 +47,18 @@ describe("apps:set-apns-p12 command", () => {
     });
 
     it("should upload certificate with password", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/push/certificate`)
+        .post(`/v1/apps/${appId}/push/certificate`)
         .reply(200, {
           id: "cert-123",
-          appId: mockAppId,
+          appId,
         });
 
       const { stdout } = await runCommand(
         [
           "apps:set-apns-p12",
-          mockAppId,
+          appId,
           "--certificate",
           testCertFile,
           "--password",
@@ -70,17 +71,18 @@ describe("apps:set-apns-p12 command", () => {
     });
 
     it("should upload certificate for sandbox environment", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/push/certificate`)
+        .post(`/v1/apps/${appId}/push/certificate`)
         .reply(200, {
           id: "cert-123",
-          appId: mockAppId,
+          appId,
         });
 
       const { stdout } = await runCommand(
         [
           "apps:set-apns-p12",
-          mockAppId,
+          appId,
           "--certificate",
           testCertFile,
           "--use-for-sandbox",
@@ -105,8 +107,9 @@ describe("apps:set-apns-p12 command", () => {
     });
 
     it("should require certificate flag", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
-        ["apps:set-apns-p12", mockAppId],
+        ["apps:set-apns-p12", appId],
         import.meta.url,
       );
 
@@ -115,10 +118,11 @@ describe("apps:set-apns-p12 command", () => {
     });
 
     it("should error when certificate file does not exist", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
         [
           "apps:set-apns-p12",
-          mockAppId,
+          appId,
           "--certificate",
           "/nonexistent/path/cert.p12",
         ],
@@ -130,12 +134,13 @@ describe("apps:set-apns-p12 command", () => {
     });
 
     it("should handle API errors", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/push/certificate`)
+        .post(`/v1/apps/${appId}/push/certificate`)
         .reply(400, { error: "Invalid certificate" });
 
       const { error } = await runCommand(
-        ["apps:set-apns-p12", mockAppId, "--certificate", testCertFile],
+        ["apps:set-apns-p12", appId, "--certificate", testCertFile],
         import.meta.url,
       );
 
@@ -144,12 +149,13 @@ describe("apps:set-apns-p12 command", () => {
     });
 
     it("should handle 401 authentication error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .post(`/v1/apps/${mockAppId}/push/certificate`)
+        .post(`/v1/apps/${appId}/push/certificate`)
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
-        ["apps:set-apns-p12", mockAppId, "--certificate", testCertFile],
+        ["apps:set-apns-p12", appId, "--certificate", testCertFile],
         import.meta.url,
       );
 

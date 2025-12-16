@@ -1,47 +1,46 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
-import { DEFAULT_TEST_CONFIG } from "../../../helpers/mock-config-manager.js";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("integrations:delete command", () => {
-  const mockAppId = DEFAULT_TEST_CONFIG.appId;
-  const mockAccountId = DEFAULT_TEST_CONFIG.accountId;
   const mockRuleId = "rule-123456";
 
   afterEach(() => {
     nock.cleanAll();
   });
 
-  const mockIntegration = {
-    id: mockRuleId,
-    appId: mockAppId,
-    ruleType: "http",
-    requestMode: "single",
-    source: {
-      channelFilter: "chat:*",
-      type: "channel.message",
-    },
-    target: {
-      url: "https://example.com/webhook",
-      format: "json",
-      enveloped: true,
-    },
-    status: "enabled",
-    version: "1.0",
-    created: Date.now(),
-    modified: Date.now(),
-  };
-
   describe("successful integration deletion", () => {
     it("should delete an integration with --force flag", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http",
+        requestMode: "single",
+        source: {
+          channelFilter: "chat:*",
+          type: "channel.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+          format: "json",
+          enveloped: true,
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+
       // Mock GET to fetch integration details
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
       // Mock DELETE endpoint
       nock("https://control.ably.net")
-        .delete(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .delete(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(204);
 
       const { stdout } = await runCommand(
@@ -54,12 +53,33 @@ describe("integrations:delete command", () => {
     });
 
     it("should display integration details before deletion with --force", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http",
+        requestMode: "single",
+        source: {
+          channelFilter: "chat:*",
+          type: "channel.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+          format: "json",
+          enveloped: true,
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
       nock("https://control.ably.net")
-        .delete(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .delete(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(204);
 
       const { stdout } = await runCommand(
@@ -68,7 +88,7 @@ describe("integrations:delete command", () => {
       );
 
       expect(stdout).toContain("http");
-      expect(stdout).toContain(mockAppId);
+      expect(stdout).toContain(appId);
     });
   });
 
@@ -84,8 +104,9 @@ describe("integrations:delete command", () => {
     });
 
     it("should handle integration not found", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(404, { error: "Not found" });
 
       const { error } = await runCommand(
@@ -98,12 +119,33 @@ describe("integrations:delete command", () => {
     });
 
     it("should handle API errors during deletion", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http",
+        requestMode: "single",
+        source: {
+          channelFilter: "chat:*",
+          type: "channel.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+          format: "json",
+          enveloped: true,
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
       nock("https://control.ably.net")
-        .delete(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .delete(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(500, { error: "Internal server error" });
 
       const { error } = await runCommand(
@@ -116,8 +158,9 @@ describe("integrations:delete command", () => {
     });
 
     it("should handle 401 authentication error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
@@ -142,12 +185,33 @@ describe("integrations:delete command", () => {
 
   describe("flag options", () => {
     it("should accept -f as shorthand for --force", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http",
+        requestMode: "single",
+        source: {
+          channelFilter: "chat:*",
+          type: "channel.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+          format: "json",
+          enveloped: true,
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
       nock("https://control.ably.net")
-        .delete(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .delete(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(204);
 
       const { stdout } = await runCommand(
@@ -159,31 +223,52 @@ describe("integrations:delete command", () => {
     });
 
     it("should accept --app flag", async () => {
+      const mockConfig = getMockConfigManager();
+      const appId = mockConfig.getCurrentAppId()!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http",
+        requestMode: "single",
+        source: {
+          channelFilter: "chat:*",
+          type: "channel.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+          format: "json",
+          enveloped: true,
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+
       // Mock the /me endpoint (needed by listApps in resolveAppIdFromNameOrId)
       nock("https://control.ably.net")
         .get("/v1/me")
         .reply(200, {
-          account: { id: mockAccountId, name: "Test Account" },
+          account: { id: accountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
       // Mock the apps list API call for resolveAppIdFromNameOrId
       nock("https://control.ably.net")
-        .get(`/v1/accounts/${mockAccountId}/apps`)
-        .reply(200, [
-          { id: mockAppId, name: "Test App", accountId: mockAccountId },
-        ]);
+        .get(`/v1/accounts/${accountId}/apps`)
+        .reply(200, [{ id: appId, name: "Test App", accountId }]);
 
       nock("https://control.ably.net")
-        .get(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
       nock("https://control.ably.net")
-        .delete(`/v1/apps/${mockAppId}/rules/${mockRuleId}`)
+        .delete(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(204);
 
       const { stdout } = await runCommand(
-        ["integrations:delete", mockRuleId, "--app", mockAppId, "--force"],
+        ["integrations:delete", mockRuleId, "--app", appId, "--force"],
         import.meta.url,
       );
 

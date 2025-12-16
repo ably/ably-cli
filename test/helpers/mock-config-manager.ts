@@ -2,10 +2,15 @@
  * Mock ConfigManager for unit tests.
  *
  * Usage in tests:
- *   import { getMockConfigManager, DEFAULT_TEST_CONFIG } from "../../helpers/mock-config-manager.js";
+ *   import { getMockConfigManager } from "../../helpers/mock-config-manager.js";
  *
- *   // Get the mock to manipulate it
+ *   // Get values through ConfigManager interface methods
  *   const mockConfig = getMockConfigManager();
+ *   const appId = mockConfig.getCurrentAppId()!;
+ *   const apiKey = mockConfig.getApiKey()!;
+ *   const accountId = mockConfig.getCurrentAccount()!.accountId!;
+ *
+ *   // Manipulate config for error scenarios
  *   mockConfig.setCurrentAccountAlias(undefined); // Test "no account" error
  *   mockConfig.clearAccounts(); // Test "no config" scenario
  */
@@ -18,21 +23,52 @@ import type {
 } from "../../src/services/config-manager.js";
 
 /**
- * Default test values that match common test patterns across the codebase.
- * These values are used when no specific config is set.
+ * Type for test configuration values.
  */
-export const DEFAULT_TEST_CONFIG = {
-  accessToken: "fake_access_token",
-  accountId: "test-account-id",
-  accountName: "Test Account",
-  userEmail: "test@example.com",
-  appId: "550e8400-e29b-41d4-a716-446655440000",
-  appName: "Test App",
-  apiKey: "550e8400-e29b-41d4-a716-446655440000.testkey:testsecret",
-  keyId: "550e8400-e29b-41d4-a716-446655440000.testkey",
-  keyName: "Test Key",
-  accountAlias: "default",
-} as const;
+export interface TestConfigValues {
+  accessToken: string;
+  accountId: string;
+  accountName: string;
+  userEmail: string;
+  appId: string;
+  appName: string;
+  apiKey: string;
+  keyId: string;
+  keyName: string;
+  accountAlias: string;
+}
+
+/**
+ * Generate a random string of specified length for test isolation.
+ */
+function randomString(length: number): string {
+  return Math.random()
+    .toString(36)
+    .slice(2, 2 + length);
+}
+
+/**
+ * Generate random test config values.
+ * Each call produces unique values to ensure test isolation.
+ */
+function generateTestConfig(): TestConfigValues {
+  const appId = randomString(6);
+  const keyId = `${appId}.key${randomString(6)}`;
+  const keySecret = `secret${randomString(12)}`;
+
+  return {
+    accessToken: `token_${randomString(16)}`,
+    accountId: `acc_${randomString(12)}`,
+    accountName: `Test Account ${randomString(4)}`,
+    userEmail: `test_${randomString(6)}@example.com`,
+    appId,
+    appName: `Test App ${randomString(4)}`,
+    apiKey: `${keyId}:${keySecret}`,
+    keyId,
+    keyName: `Test Key ${randomString(4)}`,
+    accountAlias: "default",
+  };
+}
 
 /**
  * In-memory mock implementation of ConfigManager for testing.
@@ -40,9 +76,37 @@ export const DEFAULT_TEST_CONFIG = {
  */
 export class MockConfigManager implements ConfigManager {
   private config: AblyConfig;
+  private testValues: TestConfigValues;
 
   constructor(initialConfig?: AblyConfig) {
+    this.testValues = generateTestConfig();
     this.config = initialConfig ?? this.createDefaultConfig();
+  }
+
+  /**
+   * Get the current test configuration values (internal use only).
+   * Tests should use ConfigManager interface methods instead.
+   */
+  private getTestValues(): TestConfigValues {
+    return { ...this.testValues };
+  }
+
+  /**
+   * Get a registered app ID from the mock config.
+   * This returns an appId that exists in the config's apps list,
+   * even if currentAppId has been set to undefined.
+   * Useful for tests that need to set up nock mocks after modifying config state.
+   */
+  public getRegisteredAppId(): string {
+    const currentAccount = this.getCurrentAccount();
+    if (currentAccount?.apps) {
+      const appIds = Object.keys(currentAccount.apps);
+      if (appIds.length > 0) {
+        return appIds[0];
+      }
+    }
+    // Fallback to testValues appId
+    return this.testValues.appId;
   }
 
   /**
@@ -60,7 +124,7 @@ export class MockConfigManager implements ConfigManager {
       keyId,
       keyName,
       accountAlias,
-    } = DEFAULT_TEST_CONFIG;
+    } = this.testValues;
 
     return {
       current: {
@@ -87,10 +151,11 @@ export class MockConfigManager implements ConfigManager {
   }
 
   /**
-   * Reset the config to default values.
+   * Reset the config to default values with new randomized test values.
    * Useful for test cleanup or starting fresh.
    */
   public reset(): void {
+    this.testValues = generateTestConfig();
     this.config = this.createDefaultConfig();
   }
 
