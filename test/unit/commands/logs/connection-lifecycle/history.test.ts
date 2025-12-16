@@ -1,16 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
+import { getMockAblyRest } from "../../../../helpers/mock-ably-rest.js";
 
 describe("logs:connection-lifecycle:history command", () => {
-  let mockHistory: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRestMock;
-    }
-
-    // Set up mock for REST client
-    mockHistory = vi.fn().mockResolvedValue({
+    const mock = getMockAblyRest();
+    const channel = mock.channels._getChannel("[meta]connection.lifecycle");
+    channel.history.mockResolvedValue({
       items: [
         {
           id: "msg-1",
@@ -22,28 +18,6 @@ describe("logs:connection-lifecycle:history command", () => {
         },
       ],
     });
-
-    const mockChannel = {
-      name: "[meta]connection.lifecycle",
-      history: mockHistory,
-    };
-
-    globalThis.__TEST_MOCKS__ = {
-      ...globalThis.__TEST_MOCKS__,
-      ablyRestMock: {
-        channels: {
-          get: vi.fn().mockReturnValue(mockChannel),
-        },
-        close: vi.fn(),
-      },
-    };
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRestMock;
-    }
   });
 
   describe("command flags", () => {
@@ -88,6 +62,9 @@ describe("logs:connection-lifecycle:history command", () => {
 
   describe("history retrieval", () => {
     it("should retrieve connection lifecycle history and display results", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("[meta]connection.lifecycle");
+
       const { stdout } = await runCommand(
         ["logs:connection-lifecycle:history"],
         import.meta.url,
@@ -97,7 +74,7 @@ describe("logs:connection-lifecycle:history command", () => {
       expect(stdout).toContain("1");
       expect(stdout).toContain("connection lifecycle logs");
       expect(stdout).toContain("connection.opened");
-      expect(mockHistory).toHaveBeenCalled();
+      expect(channel.history).toHaveBeenCalled();
     });
 
     it("should include messages array in JSON output", async () => {
@@ -115,7 +92,9 @@ describe("logs:connection-lifecycle:history command", () => {
     });
 
     it("should handle empty history", async () => {
-      mockHistory.mockResolvedValue({ items: [] });
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("[meta]connection.lifecycle");
+      channel.history.mockResolvedValue({ items: [] });
 
       const { stdout } = await runCommand(
         ["logs:connection-lifecycle:history"],
@@ -126,23 +105,29 @@ describe("logs:connection-lifecycle:history command", () => {
     });
 
     it("should respect --limit flag", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("[meta]connection.lifecycle");
+
       await runCommand(
         ["logs:connection-lifecycle:history", "--limit", "50"],
         import.meta.url,
       );
 
-      expect(mockHistory).toHaveBeenCalledWith(
+      expect(channel.history).toHaveBeenCalledWith(
         expect.objectContaining({ limit: 50 }),
       );
     });
 
     it("should respect --direction flag", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("[meta]connection.lifecycle");
+
       await runCommand(
         ["logs:connection-lifecycle:history", "--direction", "forwards"],
         import.meta.url,
       );
 
-      expect(mockHistory).toHaveBeenCalledWith(
+      expect(channel.history).toHaveBeenCalledWith(
         expect.objectContaining({ direction: "forwards" }),
       );
     });

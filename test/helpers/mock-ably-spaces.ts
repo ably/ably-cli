@@ -79,6 +79,15 @@ export interface MockSpaceLocks {
 }
 
 /**
+ * Mock cursor channel type.
+ */
+export interface MockCursorChannel {
+  state: string;
+  on: Mock;
+  off: Mock;
+}
+
+/**
  * Mock space cursors type.
  */
 export interface MockSpaceCursors {
@@ -86,6 +95,7 @@ export interface MockSpaceCursors {
   getAll: Mock;
   subscribe: Mock;
   unsubscribe: Mock;
+  channel: MockCursorChannel;
   // Internal emitter for simulating events
   _emitter: AblyEventEmitter;
   // Helper to emit cursor events
@@ -242,6 +252,11 @@ function createMockSpaceCursors(): MockSpaceCursors {
         emitter.off(eventOrCallback, callback);
       }
     }),
+    channel: {
+      state: "attached",
+      on: vi.fn(),
+      off: vi.fn(),
+    },
     _emitter: emitter,
     _emit: (cursor: CursorUpdate) => {
       emitter.emit("update", cursor);

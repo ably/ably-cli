@@ -1,17 +1,28 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
+import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 
 describe("apps:logs:subscribe command", () => {
   beforeEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-    }
-  });
+    const mock = getMockAblyRealtime();
+    const channel = mock.channels._getChannel("[meta]log");
 
-  afterEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-    }
+    // Configure connection.once to immediately call callback for 'connected'
+    mock.connection.once.mockImplementation(
+      (event: string, callback: () => void) => {
+        if (event === "connected") {
+          callback();
+        }
+      },
+    );
+
+    // Configure channel.once to immediately call callback for 'attached'
+    channel.once.mockImplementation((event: string, callback: () => void) => {
+      if (event === "attached") {
+        channel.state = "attached";
+        callback();
+      }
+    });
   });
 
   describe("command flags", () => {
@@ -29,35 +40,7 @@ describe("apps:logs:subscribe command", () => {
 
   describe("alias behavior", () => {
     it("should delegate to logs:app:subscribe with --rewind flag", async () => {
-      const mockChannel = {
-        name: "[meta]log",
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        on: vi.fn(),
-        detach: vi.fn(),
-      };
-
-      const mockChannels = {
-        get: vi.fn().mockReturnValue(mockChannel),
-        release: vi.fn(),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: {
-          channels: mockChannels,
-          connection: mockConnection,
-          close: vi.fn(),
-        },
-      };
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
+      const mock = getMockAblyRealtime();
 
       const { stdout } = await runCommand(
         ["apps:logs:subscribe", "--rewind", "5"],
@@ -67,42 +50,12 @@ describe("apps:logs:subscribe command", () => {
       // Should delegate to logs:app:subscribe and show subscription message
       expect(stdout).toContain("Subscribing to app logs");
       // Verify rewind was passed through
-      expect(mockChannels.get).toHaveBeenCalledWith("[meta]log", {
+      expect(mock.channels.get).toHaveBeenCalledWith("[meta]log", {
         params: { rewind: "5" },
       });
     });
 
     it("should accept --json flag", async () => {
-      const mockChannel = {
-        name: "[meta]log",
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        on: vi.fn(),
-        detach: vi.fn(),
-      };
-
-      const mockChannels = {
-        get: vi.fn().mockReturnValue(mockChannel),
-        release: vi.fn(),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: {
-          channels: mockChannels,
-          connection: mockConnection,
-          close: vi.fn(),
-        },
-      };
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
-
       const { error } = await runCommand(
         ["apps:logs:subscribe", "--json"],
         import.meta.url,
