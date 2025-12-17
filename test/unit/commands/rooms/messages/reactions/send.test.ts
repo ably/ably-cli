@@ -1,19 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
+import { getMockAblyChat } from "../../../../../helpers/mock-ably-chat.js";
 
 describe("rooms:messages:reactions:send command", () => {
   beforeEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-      delete globalThis.__TEST_MOCKS__.ablyChatMock;
-    }
-  });
-
-  afterEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-      delete globalThis.__TEST_MOCKS__.ablyChatMock;
-    }
+    getMockAblyChat();
   });
 
   describe("command arguments and flags", () => {
@@ -65,66 +56,25 @@ describe("rooms:messages:reactions:send command", () => {
   });
 
   describe("sending reactions", () => {
-    let mockReactionsSend: ReturnType<typeof vi.fn>;
-    let mockRoom: {
-      attach: ReturnType<typeof vi.fn>;
-      messages: { reactions: { send: ReturnType<typeof vi.fn> } };
-      onStatusChange: ReturnType<typeof vi.fn>;
-    };
-
-    beforeEach(() => {
-      mockReactionsSend = vi.fn().mockResolvedValue();
-
-      mockRoom = {
-        attach: vi.fn().mockResolvedValue(),
-        messages: {
-          reactions: {
-            send: mockReactionsSend,
-          },
-        },
-        onStatusChange: vi.fn().mockReturnValue({ off: vi.fn() }),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-      };
-
-      const mockRealtimeClient = {
-        connection: mockConnection,
-        close: vi.fn(),
-      };
-
-      const mockChatClient = {
-        rooms: {
-          get: vi.fn().mockResolvedValue(mockRoom),
-          release: vi.fn().mockResolvedValue(),
-        },
-        connection: {
-          onStatusChange: vi.fn().mockReturnValue({ off: vi.fn() }),
-        },
-        realtime: mockRealtimeClient,
-        dispose: vi.fn().mockResolvedValue(),
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: mockRealtimeClient,
-        ablyChatMock: mockChatClient,
-      };
-    });
-
     it("should send a reaction to a message", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      // Configure message reactions send mock
+      room.messages.reactions.send.mockImplementation(async () => {});
+
       const { stdout } = await runCommand(
         ["rooms:messages:reactions:send", "test-room", "msg-serial-123", "👍"],
         import.meta.url,
       );
 
-      expect(mockRoom.attach).toHaveBeenCalled();
-      expect(mockReactionsSend).toHaveBeenCalledWith("msg-serial-123", {
-        name: "👍",
-      });
+      expect(room.attach).toHaveBeenCalled();
+      expect(room.messages.reactions.send).toHaveBeenCalledWith(
+        "msg-serial-123",
+        {
+          name: "👍",
+        },
+      );
       expect(stdout).toContain("Sent reaction");
       expect(stdout).toContain("👍");
       expect(stdout).toContain("msg-serial-123");
@@ -132,6 +82,11 @@ describe("rooms:messages:reactions:send command", () => {
     });
 
     it("should send a reaction with type flag", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.messages.reactions.send.mockImplementation(async () => {});
+
       const { stdout } = await runCommand(
         [
           "rooms:messages:reactions:send",
@@ -144,15 +99,23 @@ describe("rooms:messages:reactions:send command", () => {
         import.meta.url,
       );
 
-      expect(mockReactionsSend).toHaveBeenCalledWith("msg-serial-123", {
-        name: "❤️",
-        type: expect.any(String),
-      });
+      expect(room.messages.reactions.send).toHaveBeenCalledWith(
+        "msg-serial-123",
+        {
+          name: "❤️",
+          type: expect.any(String),
+        },
+      );
       expect(stdout).toContain("Sent reaction");
       expect(stdout).toContain("❤️");
     });
 
     it("should output JSON when --json flag is used", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.messages.reactions.send.mockImplementation(async () => {});
+
       const { stdout } = await runCommand(
         [
           "rooms:messages:reactions:send",
@@ -172,7 +135,12 @@ describe("rooms:messages:reactions:send command", () => {
     });
 
     it("should handle reaction send failure", async () => {
-      mockReactionsSend.mockRejectedValue(new Error("Failed to send reaction"));
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.messages.reactions.send.mockRejectedValue(
+        new Error("Failed to send reaction"),
+      );
 
       const { error } = await runCommand(
         ["rooms:messages:reactions:send", "test-room", "msg-serial-123", "👍"],

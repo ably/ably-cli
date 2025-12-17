@@ -323,6 +323,7 @@ export function getMockAblySpaces(): MockAblySpaces {
 /**
  * Reset the mock to default state.
  * Call this in beforeEach to ensure clean state between tests.
+ * Also restores the mock to globalThis if it was deleted.
  */
 export function resetMockAblySpaces(): void {
   if (mockInstance) {
@@ -330,6 +331,11 @@ export function resetMockAblySpaces(): void {
   } else {
     mockInstance = createMockAblySpaces();
   }
+  // Ensure globalThis mock is restored (in case a test deleted it)
+  globalThis.__TEST_MOCKS__ = {
+    ...globalThis.__TEST_MOCKS__,
+    ablySpacesMock: mockInstance,
+  };
 }
 
 /**

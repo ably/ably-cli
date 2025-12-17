@@ -1,24 +1,17 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
 
 describe("auth:issue-ably-token command", () => {
   beforeEach(() => {
-    // Clean up any test mocks from previous tests
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRestMock;
-    }
-  });
-
-  afterEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRestMock;
-    }
+    getMockAblyRest();
   });
 
   describe("successful token issuance", () => {
     it("should issue an Ably token successfully", async () => {
       const keyId = getMockConfigManager().getKeyId()!;
+      const restMock = getMockAblyRest();
       const mockTokenDetails = {
         token: "mock-ably-token-12345",
         issued: Date.now(),
@@ -33,17 +26,8 @@ describe("auth:issue-ably-token command", () => {
         capability: '{"*":["*"]}',
       };
 
-      const mockAuth = {
-        createTokenRequest: vi.fn().mockResolvedValue(mockTokenRequest),
-        requestToken: vi.fn().mockResolvedValue(mockTokenDetails),
-      };
-
-      if (globalThis.__TEST_MOCKS__) {
-        globalThis.__TEST_MOCKS__.ablyRestMock = {
-          auth: mockAuth,
-          close: vi.fn(),
-        };
-      }
+      restMock.auth.createTokenRequest.mockResolvedValue(mockTokenRequest);
+      restMock.auth.requestToken.mockResolvedValue(mockTokenDetails);
 
       const { stdout } = await runCommand(
         ["auth:issue-ably-token"],
@@ -53,11 +37,12 @@ describe("auth:issue-ably-token command", () => {
       expect(stdout).toContain("Generated Ably Token");
       expect(stdout).toContain(`Token: ${mockTokenDetails.token}`);
       expect(stdout).toContain("Type: Ably");
-      expect(mockAuth.createTokenRequest).toHaveBeenCalled();
-      expect(mockAuth.requestToken).toHaveBeenCalled();
+      expect(restMock.auth.createTokenRequest).toHaveBeenCalled();
+      expect(restMock.auth.requestToken).toHaveBeenCalled();
     });
 
     it("should issue a token with custom capability", async () => {
+      const restMock = getMockAblyRest();
       const customCapability = '{"chat:*":["publish","subscribe"]}';
       const mockTokenDetails = {
         token: "mock-ably-token-custom",
@@ -67,17 +52,8 @@ describe("auth:issue-ably-token command", () => {
         clientId: "ably-cli-test1234",
       };
 
-      const mockAuth = {
-        createTokenRequest: vi.fn().mockResolvedValue({}),
-        requestToken: vi.fn().mockResolvedValue(mockTokenDetails),
-      };
-
-      if (globalThis.__TEST_MOCKS__) {
-        globalThis.__TEST_MOCKS__.ablyRestMock = {
-          auth: mockAuth,
-          close: vi.fn(),
-        };
-      }
+      restMock.auth.createTokenRequest.mockResolvedValue({});
+      restMock.auth.requestToken.mockResolvedValue(mockTokenDetails);
 
       const { stdout } = await runCommand(
         ["auth:issue-ably-token", "--capability", customCapability],
@@ -85,12 +61,13 @@ describe("auth:issue-ably-token command", () => {
       );
 
       expect(stdout).toContain("Generated Ably Token");
-      expect(mockAuth.createTokenRequest).toHaveBeenCalled();
-      const tokenParams = mockAuth.createTokenRequest.mock.calls[0][0];
+      expect(restMock.auth.createTokenRequest).toHaveBeenCalled();
+      const tokenParams = restMock.auth.createTokenRequest.mock.calls[0][0];
       expect(tokenParams.capability).toHaveProperty("chat:*");
     });
 
     it("should issue a token with custom TTL", async () => {
+      const restMock = getMockAblyRest();
       const mockTokenDetails = {
         token: "mock-ably-token-ttl",
         issued: Date.now(),
@@ -99,17 +76,8 @@ describe("auth:issue-ably-token command", () => {
         clientId: "ably-cli-test1234",
       };
 
-      const mockAuth = {
-        createTokenRequest: vi.fn().mockResolvedValue({}),
-        requestToken: vi.fn().mockResolvedValue(mockTokenDetails),
-      };
-
-      if (globalThis.__TEST_MOCKS__) {
-        globalThis.__TEST_MOCKS__.ablyRestMock = {
-          auth: mockAuth,
-          close: vi.fn(),
-        };
-      }
+      restMock.auth.createTokenRequest.mockResolvedValue({});
+      restMock.auth.requestToken.mockResolvedValue(mockTokenDetails);
 
       const { stdout } = await runCommand(
         ["auth:issue-ably-token", "--ttl", "7200"],
@@ -118,12 +86,13 @@ describe("auth:issue-ably-token command", () => {
 
       expect(stdout).toContain("Generated Ably Token");
       expect(stdout).toContain("TTL: 7200 seconds");
-      expect(mockAuth.createTokenRequest).toHaveBeenCalled();
-      const tokenParams = mockAuth.createTokenRequest.mock.calls[0][0];
+      expect(restMock.auth.createTokenRequest).toHaveBeenCalled();
+      const tokenParams = restMock.auth.createTokenRequest.mock.calls[0][0];
       expect(tokenParams.ttl).toBe(7200000); // TTL in milliseconds
     });
 
     it("should issue a token with custom client ID", async () => {
+      const restMock = getMockAblyRest();
       const customClientId = "my-custom-client";
       const mockTokenDetails = {
         token: "mock-ably-token-clientid",
@@ -133,17 +102,8 @@ describe("auth:issue-ably-token command", () => {
         clientId: customClientId,
       };
 
-      const mockAuth = {
-        createTokenRequest: vi.fn().mockResolvedValue({}),
-        requestToken: vi.fn().mockResolvedValue(mockTokenDetails),
-      };
-
-      if (globalThis.__TEST_MOCKS__) {
-        globalThis.__TEST_MOCKS__.ablyRestMock = {
-          auth: mockAuth,
-          close: vi.fn(),
-        };
-      }
+      restMock.auth.createTokenRequest.mockResolvedValue({});
+      restMock.auth.requestToken.mockResolvedValue(mockTokenDetails);
 
       const { stdout } = await runCommand(
         ["auth:issue-ably-token", "--client-id", customClientId],
@@ -152,12 +112,13 @@ describe("auth:issue-ably-token command", () => {
 
       expect(stdout).toContain("Generated Ably Token");
       expect(stdout).toContain(`Client ID: ${customClientId}`);
-      expect(mockAuth.createTokenRequest).toHaveBeenCalled();
-      const tokenParams = mockAuth.createTokenRequest.mock.calls[0][0];
+      expect(restMock.auth.createTokenRequest).toHaveBeenCalled();
+      const tokenParams = restMock.auth.createTokenRequest.mock.calls[0][0];
       expect(tokenParams.clientId).toBe(customClientId);
     });
 
     it("should issue a token with no client ID when 'none' is specified", async () => {
+      const restMock = getMockAblyRest();
       const mockTokenDetails = {
         token: "mock-ably-token-no-client",
         issued: Date.now(),
@@ -166,17 +127,8 @@ describe("auth:issue-ably-token command", () => {
         clientId: undefined,
       };
 
-      const mockAuth = {
-        createTokenRequest: vi.fn().mockResolvedValue({}),
-        requestToken: vi.fn().mockResolvedValue(mockTokenDetails),
-      };
-
-      if (globalThis.__TEST_MOCKS__) {
-        globalThis.__TEST_MOCKS__.ablyRestMock = {
-          auth: mockAuth,
-          close: vi.fn(),
-        };
-      }
+      restMock.auth.createTokenRequest.mockResolvedValue({});
+      restMock.auth.requestToken.mockResolvedValue(mockTokenDetails);
 
       const { stdout } = await runCommand(
         ["auth:issue-ably-token", "--client-id", "none"],
@@ -185,12 +137,13 @@ describe("auth:issue-ably-token command", () => {
 
       expect(stdout).toContain("Generated Ably Token");
       expect(stdout).toContain("Client ID: None");
-      expect(mockAuth.createTokenRequest).toHaveBeenCalled();
-      const tokenParams = mockAuth.createTokenRequest.mock.calls[0][0];
+      expect(restMock.auth.createTokenRequest).toHaveBeenCalled();
+      const tokenParams = restMock.auth.createTokenRequest.mock.calls[0][0];
       expect(tokenParams.clientId).toBeUndefined();
     });
 
     it("should output only token string with --token-only flag", async () => {
+      const restMock = getMockAblyRest();
       const mockTokenString = "mock-ably-token-only";
       const mockTokenDetails = {
         token: mockTokenString,
@@ -200,17 +153,8 @@ describe("auth:issue-ably-token command", () => {
         clientId: "test",
       };
 
-      const mockAuth = {
-        createTokenRequest: vi.fn().mockResolvedValue({}),
-        requestToken: vi.fn().mockResolvedValue(mockTokenDetails),
-      };
-
-      if (globalThis.__TEST_MOCKS__) {
-        globalThis.__TEST_MOCKS__.ablyRestMock = {
-          auth: mockAuth,
-          close: vi.fn(),
-        };
-      }
+      restMock.auth.createTokenRequest.mockResolvedValue({});
+      restMock.auth.requestToken.mockResolvedValue(mockTokenDetails);
 
       const { stdout } = await runCommand(
         ["auth:issue-ably-token", "--token-only"],
@@ -223,6 +167,7 @@ describe("auth:issue-ably-token command", () => {
     });
 
     it("should output JSON format when --json flag is used", async () => {
+      const restMock = getMockAblyRest();
       const mockTokenDetails = {
         token: "mock-ably-token-json",
         issued: Date.now(),
@@ -231,17 +176,8 @@ describe("auth:issue-ably-token command", () => {
         clientId: "ably-cli-test1234",
       };
 
-      const mockAuth = {
-        createTokenRequest: vi.fn().mockResolvedValue({}),
-        requestToken: vi.fn().mockResolvedValue(mockTokenDetails),
-      };
-
-      if (globalThis.__TEST_MOCKS__) {
-        globalThis.__TEST_MOCKS__.ablyRestMock = {
-          auth: mockAuth,
-          close: vi.fn(),
-        };
-      }
+      restMock.auth.createTokenRequest.mockResolvedValue({});
+      restMock.auth.requestToken.mockResolvedValue(mockTokenDetails);
 
       const { stdout } = await runCommand(
         ["auth:issue-ably-token", "--json"],
@@ -265,17 +201,10 @@ describe("auth:issue-ably-token command", () => {
     });
 
     it("should handle token creation failure", async () => {
-      const mockAuth = {
-        createTokenRequest: vi.fn().mockRejectedValue(new Error("Auth failed")),
-        requestToken: vi.fn(),
-      };
-
-      if (globalThis.__TEST_MOCKS__) {
-        globalThis.__TEST_MOCKS__.ablyRestMock = {
-          auth: mockAuth,
-          close: vi.fn(),
-        };
-      }
+      const restMock = getMockAblyRest();
+      restMock.auth.createTokenRequest.mockRejectedValue(
+        new Error("Auth failed"),
+      );
 
       const { error } = await runCommand(
         ["auth:issue-ably-token"],
@@ -303,6 +232,7 @@ describe("auth:issue-ably-token command", () => {
 
   describe("command arguments and flags", () => {
     it("should accept --app flag to specify app", async () => {
+      const restMock = getMockAblyRest();
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockTokenDetails = {
         token: "mock-ably-token-app",
@@ -312,17 +242,8 @@ describe("auth:issue-ably-token command", () => {
         clientId: "ably-cli-test1234",
       };
 
-      const mockAuth = {
-        createTokenRequest: vi.fn().mockResolvedValue({}),
-        requestToken: vi.fn().mockResolvedValue(mockTokenDetails),
-      };
-
-      if (globalThis.__TEST_MOCKS__) {
-        globalThis.__TEST_MOCKS__.ablyRestMock = {
-          auth: mockAuth,
-          close: vi.fn(),
-        };
-      }
+      restMock.auth.createTokenRequest.mockResolvedValue({});
+      restMock.auth.requestToken.mockResolvedValue(mockTokenDetails);
 
       const { stdout } = await runCommand(
         ["auth:issue-ably-token", "--app", appId],

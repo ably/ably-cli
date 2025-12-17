@@ -67,8 +67,8 @@ export interface MockRoomMessages {
  */
 export interface MockMessageReactions {
   subscribe: Mock;
-  add: Mock;
-  remove: Mock;
+  send: Mock;
+  delete: Mock;
   // Internal emitter for simulating events
   _emitter: AblyEventEmitter;
   // Helper to emit reaction events
@@ -210,8 +210,8 @@ function createMockMessageReactions(): MockMessageReactions {
       emitter.on("reaction", callback);
       return () => emitter.off("reaction", callback);
     }),
-    add: vi.fn().mockImplementation(async () => {}),
-    remove: vi.fn().mockImplementation(async () => {}),
+    send: vi.fn().mockImplementation(async () => {}),
+    delete: vi.fn().mockImplementation(async () => {}),
     _emitter: emitter,
     _emit: (reaction: MessageReactionEvent) => {
       emitter.emit("reaction", reaction);
@@ -501,6 +501,7 @@ export function getMockAblyChat(): MockAblyChat {
 /**
  * Reset the mock to default state.
  * Call this in beforeEach to ensure clean state between tests.
+ * Also restores the mock to globalThis if it was deleted.
  */
 export function resetMockAblyChat(): void {
   if (mockInstance) {
@@ -508,6 +509,11 @@ export function resetMockAblyChat(): void {
   } else {
     mockInstance = createMockAblyChat();
   }
+  // Ensure globalThis mock is restored (in case a test deleted it)
+  globalThis.__TEST_MOCKS__ = {
+    ...globalThis.__TEST_MOCKS__,
+    ablyChatMock: mockInstance,
+  };
 }
 
 /**
