@@ -223,8 +223,6 @@ function createMockAblyRest(): MockAblyRest {
       channels._channels.clear();
       // Reset auth
       auth.clientId = "mock-client-id";
-      // Clear all mock call history
-      vi.clearAllMocks();
     },
   };
 

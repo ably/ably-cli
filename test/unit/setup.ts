@@ -8,7 +8,7 @@
  * manipulate the mocks on a per-test basis.
  */
 
-import { beforeAll, beforeEach } from "vitest";
+import { beforeAll, beforeEach, vi } from "vitest";
 import {
   initializeMockConfigManager,
   resetMockConfig,
@@ -41,6 +41,10 @@ beforeAll(() => {
 
 // Reset all mocks before each test to ensure clean state
 beforeEach(() => {
+  // Clear all mock call history once (centralized)
+  vi.clearAllMocks();
+
+  // Reset each mock's internal state
   resetMockConfig();
   resetMockAblyRealtime();
   resetMockAblyRest();

@@ -37,7 +37,6 @@ describe("spaces:cursors:subscribe command", () => {
       space.cursors.getAll.mockResolvedValue([]);
 
       // Emit SIGINT to exit the command
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       const { error } = await runCommand(
         ["spaces:cursors:subscribe", "test-space", "--json"],
@@ -75,8 +74,6 @@ describe("spaces:cursors:subscribe command", () => {
       const space = spacesMock._getSpace("test-space");
       space.cursors.getAll.mockResolvedValue([]);
 
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
-
       await runCommand(
         ["spaces:cursors:subscribe", "test-space"],
         import.meta.url,
@@ -93,8 +90,6 @@ describe("spaces:cursors:subscribe command", () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
       space.cursors.getAll.mockResolvedValue([]);
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       const { stdout } = await runCommand(
         ["spaces:cursors:subscribe", "test-space"],
@@ -114,7 +109,6 @@ describe("spaces:cursors:subscribe command", () => {
       space.cursors.getAll.mockResolvedValue([]);
 
       // Use SIGINT to exit
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       await runCommand(
         ["spaces:cursors:subscribe", "test-space"],
@@ -142,8 +136,6 @@ describe("spaces:cursors:subscribe command", () => {
           }
         },
       );
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 200);
 
       await runCommand(
         ["spaces:cursors:subscribe", "test-space"],

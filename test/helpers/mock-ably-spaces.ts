@@ -299,7 +299,6 @@ function createMockAblySpaces(): MockAblySpaces {
     _getSpace: getSpace,
     _reset: () => {
       spacesMap.clear();
-      vi.clearAllMocks();
     },
   };
 

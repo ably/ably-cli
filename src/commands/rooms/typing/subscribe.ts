@@ -1,8 +1,9 @@
 import { ChatClient, RoomStatus, RoomStatusChange } from "@ably/chat";
-import { Args } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class TypingSubscribe extends ChatBaseCommand {
   static override args = {
@@ -24,6 +25,12 @@ export default class TypingSubscribe extends ChatBaseCommand {
 
   static override flags = {
     ...ChatBaseCommand.globalFlags,
+    duration: Flags.integer({
+      description:
+        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      char: "D",
+      required: false,
+    }),
   };
 
   private chatClient: ChatClient | null = null;
@@ -187,29 +194,9 @@ export default class TypingSubscribe extends ChatBaseCommand {
         "listening",
         "Listening for typing indicators...",
       );
-      // Keep the process running until Ctrl+C
-      await new Promise<void>((resolve) => {
-        // This promise intentionally never resolves
-        process.on("SIGINT", async () => {
-          this.logCliEvent(
-            flags,
-            "typing",
-            "cleanupInitiated",
-            "Cleanup initiated (Ctrl+C pressed)",
-          );
-          if (!this.shouldOutputJson(flags)) {
-            // Move to a new line to not override typing status
-            this.log("\n");
-            this.log(`${chalk.yellow("Disconnecting from room...")}`);
-          }
 
-          if (!this.shouldOutputJson(flags)) {
-            this.log(`${chalk.green("Successfully disconnected.")}`);
-          }
-
-          resolve();
-        });
-      });
+      // Wait until the user interrupts or the optional duration elapses
+      await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(

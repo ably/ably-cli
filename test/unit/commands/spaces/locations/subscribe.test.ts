@@ -37,7 +37,6 @@ describe("spaces:locations:subscribe command", () => {
       space.locations.getAll.mockResolvedValue({});
 
       // Use SIGINT to exit the command
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       const { error } = await runCommand(
         ["spaces:locations:subscribe", "test-space", "--json"],
@@ -75,8 +74,6 @@ describe("spaces:locations:subscribe command", () => {
       const space = spacesMock._getSpace("test-space");
       space.locations.getAll.mockResolvedValue({});
 
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
-
       await runCommand(
         ["spaces:locations:subscribe", "test-space"],
         import.meta.url,
@@ -94,8 +91,6 @@ describe("spaces:locations:subscribe command", () => {
       const space = spacesMock._getSpace("test-space");
       space.locations.getAll.mockResolvedValue({});
 
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
-
       const { stdout } = await runCommand(
         ["spaces:locations:subscribe", "test-space"],
         import.meta.url,
@@ -112,8 +107,6 @@ describe("spaces:locations:subscribe command", () => {
         "conn-1": { room: "lobby", x: 100 },
         "conn-2": { room: "chat", x: 200 },
       });
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       const { stdout } = await runCommand(
         ["spaces:locations:subscribe", "test-space"],
@@ -133,7 +126,6 @@ describe("spaces:locations:subscribe command", () => {
       space.locations.getAll.mockResolvedValue({});
 
       // Use SIGINT to exit
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       await runCommand(
         ["spaces:locations:subscribe", "test-space"],
@@ -152,8 +144,6 @@ describe("spaces:locations:subscribe command", () => {
       space.locations.getAll.mockRejectedValue(
         new Error("Failed to get locations"),
       );
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       // The command catches getAll errors and continues
       const { stdout } = await runCommand(

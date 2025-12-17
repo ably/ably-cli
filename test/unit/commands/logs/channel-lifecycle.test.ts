@@ -40,7 +40,6 @@ describe("logs:channel-lifecycle command", () => {
   describe("subscription behavior", () => {
     it("should subscribe to [meta]channel.lifecycle and show initial message", async () => {
       // Emit SIGINT after a short delay to exit the command
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       const { stdout } = await runCommand(
         ["logs:channel-lifecycle"],
@@ -55,8 +54,6 @@ describe("logs:channel-lifecycle command", () => {
     it("should get channel without rewind params when --rewind is not specified", async () => {
       const mock = getMockAblyRealtime();
 
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
-
       await runCommand(["logs:channel-lifecycle"], import.meta.url);
 
       // Verify channel was gotten with empty options (no rewind)
@@ -68,8 +65,6 @@ describe("logs:channel-lifecycle command", () => {
 
     it("should configure rewind channel option when --rewind is specified", async () => {
       const mock = getMockAblyRealtime();
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       await runCommand(
         ["logs:channel-lifecycle", "--rewind", "5"],
@@ -90,8 +85,6 @@ describe("logs:channel-lifecycle command", () => {
     it("should subscribe to channel messages", async () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("[meta]channel.lifecycle");
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       await runCommand(["logs:channel-lifecycle"], import.meta.url);
 
@@ -137,8 +130,6 @@ describe("logs:channel-lifecycle command", () => {
     it("should call client.close on cleanup", async () => {
       const mock = getMockAblyRealtime();
 
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
-
       await runCommand(["logs:channel-lifecycle"], import.meta.url);
 
       // Verify close was called during cleanup
@@ -148,8 +139,6 @@ describe("logs:channel-lifecycle command", () => {
 
   describe("output formats", () => {
     it("should accept --json flag", async () => {
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
-
       const { error } = await runCommand(
         ["logs:channel-lifecycle", "--json"],
         import.meta.url,

@@ -209,7 +209,7 @@ function createMockMessageReactions(): MockMessageReactions {
   return {
     subscribe: vi.fn((callback) => {
       emitter.on("reaction", callback);
-      return () => emitter.off("reaction", callback);
+      return { unsubscribe: () => emitter.off("reaction", callback) };
     }),
     send: vi.fn().mockImplementation(async () => {}),
     delete: vi.fn().mockImplementation(async () => {}),
@@ -479,7 +479,6 @@ function createMockAblyChat(): MockAblyChat {
     _reset: () => {
       rooms._rooms.clear();
       connection.current = "connected";
-      vi.clearAllMocks();
     },
   };
 

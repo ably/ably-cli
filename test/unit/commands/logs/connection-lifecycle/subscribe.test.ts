@@ -31,7 +31,6 @@ describe("LogsConnectionLifecycleSubscribe", function () {
     const channel = mock.channels._getChannel("[meta]connection.lifecycle");
 
     // Emit SIGINT to stop the command
-    setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
     const { stdout } = await runCommand(
       ["logs:connection-lifecycle:subscribe"],
@@ -48,8 +47,6 @@ describe("LogsConnectionLifecycleSubscribe", function () {
 
   it("should handle rewind parameter", async function () {
     const mock = getMockAblyRealtime();
-
-    setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
     await runCommand(
       ["logs:connection-lifecycle:subscribe", "--rewind", "10"],
@@ -94,8 +91,6 @@ describe("LogsConnectionLifecycleSubscribe", function () {
       }
     }, 50);
 
-    setTimeout(() => process.emit("SIGINT", "SIGINT"), 150);
-
     const { stdout } = await runCommand(
       ["logs:connection-lifecycle:subscribe"],
       import.meta.url,
@@ -129,8 +124,6 @@ describe("LogsConnectionLifecycleSubscribe", function () {
         });
       }
     }, 50);
-
-    setTimeout(() => process.emit("SIGINT", "SIGINT"), 200);
 
     const { stdout } = await runCommand(
       ["logs:connection-lifecycle:subscribe", "--json"],
@@ -170,8 +163,6 @@ describe("LogsConnectionLifecycleSubscribe", function () {
       }
     }, 50);
 
-    setTimeout(() => process.emit("SIGINT", "SIGINT"), 150);
-
     const { stdout } = await runCommand(
       ["logs:connection-lifecycle:subscribe"],
       import.meta.url,
@@ -210,8 +201,6 @@ describe("LogsConnectionLifecycleSubscribe", function () {
       }
     }, 50);
 
-    setTimeout(() => process.emit("SIGINT", "SIGINT"), 150);
-
     const { stdout } = await runCommand(
       ["logs:connection-lifecycle:subscribe"],
       import.meta.url,
@@ -248,8 +237,6 @@ describe("LogsConnectionLifecycleSubscribe", function () {
         });
       }
     }, 50);
-
-    setTimeout(() => process.emit("SIGINT", "SIGINT"), 150);
 
     const { stdout } = await runCommand(
       ["logs:connection-lifecycle:subscribe"],

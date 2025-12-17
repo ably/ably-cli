@@ -1,8 +1,9 @@
 import { ChatClient, RoomReactionEvent, RoomStatus } from "@ably/chat";
-import { Args } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class RoomsReactionsSubscribe extends ChatBaseCommand {
   static override args = {
@@ -22,6 +23,12 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
 
   static override flags = {
     ...ChatBaseCommand.globalFlags,
+    duration: Flags.integer({
+      description:
+        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      char: "D",
+      required: false,
+    }),
   };
 
   // private clients: ChatClients | null = null; // Replace with chatClient and ablyClient
@@ -201,34 +208,9 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         "listening",
         "Listening for reactions...",
       );
-      // Keep the process running until interrupted
-      await new Promise<void>((resolve) => {
-        let cleanupInProgress = false;
-        const cleanup = async () => {
-          if (cleanupInProgress) return;
-          cleanupInProgress = true;
-          this.logCliEvent(
-            flags,
-            "reactions",
-            "cleanupInitiated",
-            "Cleanup initiated (Ctrl+C pressed)",
-          );
-          if (!this.shouldOutputJson(flags)) {
-            this.log(
-              `\n${chalk.yellow("Unsubscribing and closing connection...")}`,
-            );
-          }
 
-          if (!this.shouldOutputJson(flags)) {
-            this.log(chalk.green("Successfully disconnected."));
-          }
-
-          resolve();
-        };
-
-        process.on("SIGINT", () => void cleanup());
-        process.on("SIGTERM", () => void cleanup());
-      });
+      // Wait until the user interrupts or the optional duration elapses
+      await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(flags, "reactions", "fatalError", `Error: ${errorMsg}`, {

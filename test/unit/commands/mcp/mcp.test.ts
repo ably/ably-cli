@@ -175,8 +175,8 @@ describe("mcp commands", function () {
       // eslint-disable-next-line vitest/no-disabled-tests
       it.skip("should handle basic server lifecycle", async function () {
         // See: https://github.com/ably/cli/issues/70
-        // Mock process.exit to prevent actual exit
-        const _originalExit = process.exit;
+        // This test requires a different approach to test server lifecycle
+        // without emitting process signals in unit tests
         const exitSpy = vi.spyOn(process, "exit");
 
         // Start the server in the background
@@ -185,11 +185,8 @@ describe("mcp commands", function () {
         // Give it a moment to start
         await new Promise((resolve) => setTimeout(resolve, 10));
 
-        // Simulate SIGINT signal for graceful shutdown
-        process.emit("SIGINT", "SIGINT");
-
-        // Give it a moment to shutdown
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        // TODO: Implement proper server shutdown mechanism for testing
+        // that doesn't rely on process.emit("SIGINT")
 
         // Verify that process.exit was called
         expect(exitSpy).toHaveBeenCalledWith(0);

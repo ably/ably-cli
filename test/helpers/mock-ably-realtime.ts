@@ -422,8 +422,6 @@ function createMockAblyRealtime(): MockAblyRealtime {
       connection.errorReason = null;
       // Reset auth
       auth.clientId = "mock-client-id";
-      // Clear all mock call history
-      vi.clearAllMocks();
     },
   };
 

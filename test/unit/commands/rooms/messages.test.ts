@@ -278,7 +278,6 @@ describe("rooms messages commands", function () {
       );
 
       // Emit SIGINT after a delay to stop the command
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       const { stdout } = await runCommand(
         ["rooms:messages:subscribe", "test-room"],
@@ -313,7 +312,6 @@ describe("rooms messages commands", function () {
       );
 
       // Stop the command after message is received
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 150);
 
       const { stdout } = await runCommand(
         ["rooms:messages:subscribe", "test-room"],

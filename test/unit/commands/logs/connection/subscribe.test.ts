@@ -33,7 +33,6 @@ describe("LogsConnectionSubscribe", function () {
     const channel = mock.channels._getChannel("[meta]connection.lifecycle");
 
     // Emit SIGINT to stop the command
-    setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
     const { stdout } = await runCommand(
       ["logs:connection:subscribe"],
@@ -74,7 +73,6 @@ describe("LogsConnectionSubscribe", function () {
     }, 50);
 
     // Stop the command after message is received
-    setTimeout(() => process.emit("SIGINT", "SIGINT"), 150);
 
     const { stdout } = await runCommand(
       ["logs:connection:subscribe"],
@@ -109,8 +107,6 @@ describe("LogsConnectionSubscribe", function () {
         });
       }
     }, 50);
-
-    setTimeout(() => process.emit("SIGINT", "SIGINT"), 200);
 
     const { stdout } = await runCommand(
       ["logs:connection:subscribe", "--json"],
@@ -150,8 +146,6 @@ describe("LogsConnectionSubscribe", function () {
       }
     }, 50);
 
-    setTimeout(() => process.emit("SIGINT", "SIGINT"), 150);
-
     const { stdout } = await runCommand(
       ["logs:connection:subscribe"],
       import.meta.url,
@@ -189,8 +183,6 @@ describe("LogsConnectionSubscribe", function () {
         });
       }
     }, 50);
-
-    setTimeout(() => process.emit("SIGINT", "SIGINT"), 150);
 
     const { stdout } = await runCommand(
       ["logs:connection:subscribe"],

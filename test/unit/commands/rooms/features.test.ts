@@ -39,9 +39,6 @@ describe("rooms feature commands", function () {
         },
       );
 
-      // Emit SIGINT to stop the command
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
-
       const { stdout } = await runCommand(
         ["rooms:occupancy:subscribe", "test-room"],
         import.meta.url,
@@ -69,8 +66,6 @@ describe("rooms feature commands", function () {
         },
       );
 
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 250);
-
       const { stdout } = await runCommand(
         ["rooms:occupancy:subscribe", "test-room"],
         import.meta.url,
@@ -89,7 +84,6 @@ describe("rooms feature commands", function () {
       room.presence.enter.mockImplementation(async () => {});
 
       // Emit SIGINT to stop the command
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       const { stdout } = await runCommand(
         ["rooms:presence:enter", "test-room"],
@@ -106,8 +100,6 @@ describe("rooms feature commands", function () {
       const room = chatMock.rooms._getRoom("test-room");
 
       room.presence.enter.mockImplementation(async () => {});
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 150);
 
       await runCommand(
         [
@@ -178,7 +170,6 @@ describe("rooms feature commands", function () {
       room.typing.keystroke.mockImplementation(async () => {});
 
       // Emit SIGINT to stop the command
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       const { stdout } = await runCommand(
         ["rooms:typing:keystroke", "test-room"],

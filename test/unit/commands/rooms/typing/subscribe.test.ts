@@ -65,10 +65,8 @@ describe("rooms:typing:subscribe command", () => {
       }
 
       // Give time for output to be generated
-      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Simulate Ctrl+C to stop the command
-      process.emit("SIGINT", "SIGINT");
 
       const result = await commandPromise;
 
@@ -125,9 +123,6 @@ describe("rooms:typing:subscribe command", () => {
       }
 
       // Wait for output to be generated
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      process.emit("SIGINT", "SIGINT");
 
       await commandPromise;
 

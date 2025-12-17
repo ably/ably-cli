@@ -37,7 +37,6 @@ describe("spaces:locks:subscribe command", () => {
       space.locks.getAll.mockResolvedValue([]);
 
       // Emit SIGINT to exit the command
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       const { error } = await runCommand(
         ["spaces:locks:subscribe", "test-space", "--json"],
@@ -75,8 +74,6 @@ describe("spaces:locks:subscribe command", () => {
       const space = spacesMock._getSpace("test-space");
       space.locks.getAll.mockResolvedValue([]);
 
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
-
       await runCommand(
         ["spaces:locks:subscribe", "test-space"],
         import.meta.url,
@@ -90,8 +87,6 @@ describe("spaces:locks:subscribe command", () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
       space.locks.getAll.mockResolvedValue([]);
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       const { stdout } = await runCommand(
         ["spaces:locks:subscribe", "test-space"],
@@ -118,8 +113,6 @@ describe("spaces:locks:subscribe command", () => {
         },
       ]);
 
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
-
       const { stdout } = await runCommand(
         ["spaces:locks:subscribe", "test-space"],
         import.meta.url,
@@ -134,8 +127,6 @@ describe("spaces:locks:subscribe command", () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
       space.locks.getAll.mockResolvedValue([]);
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       const { stdout } = await runCommand(
         ["spaces:locks:subscribe", "test-space"],
@@ -154,7 +145,6 @@ describe("spaces:locks:subscribe command", () => {
       space.locks.getAll.mockResolvedValue([]);
 
       // Use SIGINT to exit
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       await runCommand(
         ["spaces:locks:subscribe", "test-space"],
@@ -171,8 +161,6 @@ describe("spaces:locks:subscribe command", () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
       space.locks.getAll.mockRejectedValue(new Error("Failed to get locks"));
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       // The command catches errors and continues
       const { stdout } = await runCommand(

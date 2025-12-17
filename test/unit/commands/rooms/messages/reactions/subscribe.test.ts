@@ -73,10 +73,6 @@ describe("rooms:messages:reactions:subscribe command", () => {
         });
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      process.emit("SIGINT", "SIGINT");
-
       await commandPromise;
 
       logSpy.mockRestore();
@@ -134,10 +130,6 @@ describe("rooms:messages:reactions:subscribe command", () => {
           },
         });
       }
-
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      process.emit("SIGINT", "SIGINT");
 
       await commandPromise;
 
