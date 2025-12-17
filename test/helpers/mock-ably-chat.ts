@@ -97,6 +97,7 @@ export interface MockRoomTyping {
   subscribe: Mock;
   start: Mock;
   stop: Mock;
+  keystroke: Mock;
   get: Mock;
   // Internal emitter for simulating events
   _emitter: AblyEventEmitter;
@@ -280,6 +281,7 @@ function createMockRoomTyping(): MockRoomTyping {
     }),
     start: vi.fn().mockImplementation(async () => {}),
     stop: vi.fn().mockImplementation(async () => {}),
+    keystroke: vi.fn().mockImplementation(async () => {}),
     get: vi.fn().mockResolvedValue(new Set()),
     _emitter: emitter,
     _emit: (typing: TypingEvent) => {

@@ -194,7 +194,11 @@ function createMockChannel(name: string): MockRealtimeChannel {
       // Handle both (callback) and (event, callback) signatures
       const cb = callback ?? eventOrCallback;
       const event = callback ? eventOrCallback : null;
+
       emitter.on(event, cb);
+
+      // Subscribe also implicitly attaches
+      channel.attach();
     }),
     unsubscribe: vi.fn((eventOrCallback?, callback?) => {
       if (!eventOrCallback) {

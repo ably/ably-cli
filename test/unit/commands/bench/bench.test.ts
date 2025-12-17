@@ -1,112 +1,86 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { Config } from "@oclif/core";
-import * as Ably from "ably";
-
-import BenchPublisher from "../../../../src/commands/bench/publisher.js";
-
-// Lightweight testable subclass to intercept parsing and client creation
-class TestableBenchPublisher extends BenchPublisher {
-  private _parseResult: any;
-  public mockRealtimeClient: any;
-
-  public setParseResult(result: any) {
-    this._parseResult = result;
-  }
-
-  // Override parse to return the canned args/flags
-  public override async parse() {
-    return this._parseResult;
-  }
-
-  // Override Realtime client creation to supply our stub
-  public override async createAblyRealtimeClient(_flags: any) {
-    return this.mockRealtimeClient as unknown as Ably.Realtime;
-  }
-
-  // Skip app/key validation logic
-  protected override async ensureAppAndKey(_flags: any) {
-    return { apiKey: "fake:key", appId: "fake-app" } as const;
-  }
-
-  // Mock interactive helper for non-interactive unit testing
-  protected override interactiveHelper = {
-    confirm: vi.fn().mockResolvedValue(true),
-    promptForText: vi.fn().mockResolvedValue("fake-input"),
-    promptToSelect: vi.fn().mockResolvedValue("fake-selection"),
-  } as any;
-
-  // Override to suppress console clearing escape sequences during tests
-  protected override shouldOutputJson(_flags?: any): boolean {
-    // Force JSON output mode during tests to bypass console clearing
-    return true;
-  }
-}
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { runCommand } from "@oclif/test";
+import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
 
 describe("bench publisher control envelopes", function () {
-  let command: TestableBenchPublisher;
-  let mockConfig: Config;
-  let publishStub: ReturnType<typeof vi.fn>;
-
   beforeEach(function () {
-    mockConfig = { runHook: vi.fn() } as unknown as Config;
-    command = new TestableBenchPublisher([], mockConfig);
+    const mock = getMockAblyRealtime();
+    const channel = mock.channels._getChannel("test-channel");
 
-    publishStub = vi.fn().mockImplementation(async () => {});
-
-    // Minimal mock channel
-    const mockChannel = {
-      publish: publishStub,
-      subscribe: vi.fn(),
-      presence: {
-        enter: vi.fn().mockImplementation(async () => {}),
-        get: vi.fn().mockResolvedValue([]),
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
+    // Configure connection
+    mock.connection.id = "conn-123";
+    mock.connection.state = "connected";
+    mock.connection.once.mockImplementation(
+      (event: string, callback: () => void) => {
+        if (event === "connected") {
+          setTimeout(() => callback(), 5);
+        }
       },
-      on: vi.fn(),
-    };
+    );
+    // Set clientId without overwriting other auth properties
+    mock.auth.clientId = "test-client-id";
 
-    command.mockRealtimeClient = {
-      channels: { get: vi.fn().mockReturnValue(mockChannel) },
-      connection: { on: vi.fn(), state: "connected" },
-      close: vi.fn(),
-    };
+    // Configure channel publish
+    channel.publish.mockImplementation(async () => {});
 
-    // Speed up test by stubbing out internal delay utility (3000 ms wait)
-    vi.spyOn(command as any, "delay").mockImplementation(async () => {});
-
-    command.setParseResult({
-      flags: {
-        transport: "realtime",
-        messages: 2,
-        rate: 2,
-        "message-size": 50,
-        "wait-for-subscribers": false,
+    // Configure presence - return a subscriber to satisfy checkAndWaitForSubscribers
+    channel.presence.enter.mockImplementation(async () => {});
+    channel.presence.leave.mockImplementation(async () => {});
+    channel.presence.get.mockResolvedValue([
+      {
+        clientId: "subscriber-1",
+        connectionId: "conn-subscriber-1",
+        data: { role: "subscriber" },
+        action: "present",
+        timestamp: Date.now(),
       },
-      args: { channel: "test-channel" },
-      argv: [],
-      raw: [],
-    });
+    ]);
+    channel.presence.unsubscribe.mockImplementation(() => {});
+    channel.presence.subscribe.mockImplementation(() => {});
   });
 
-  afterEach(function () {
-    vi.restoreAllMocks();
-  });
-
+  // This test has a 10s timeout because the publisher command has a built-in 3s delay
+  // for waiting on message echoes
   it("should publish start, message and end control envelopes in order", async function () {
-    await command.run();
+    const mock = getMockAblyRealtime();
+    const channel = mock.channels._getChannel("test-channel");
 
-    // Extract the data argument from publish calls
-    const publishedPayloads = publishStub.mock.calls.map((c) => c[1]);
+    const publishedPayloads: unknown[] = [];
+    channel.publish.mockImplementation(async (_name: string, data: unknown) => {
+      publishedPayloads.push(data);
+    });
 
+    await runCommand(
+      [
+        "bench:publisher",
+        "test-channel",
+        "--api-key",
+        "app.key:secret",
+        "--messages",
+        "2",
+        "--rate",
+        "10",
+        "--message-size",
+        "50",
+        "--json",
+      ],
+      import.meta.url,
+    );
+
+    // Verify publish was called - command publishes start, messages, and end
+    expect(channel.publish).toHaveBeenCalled();
+
+    // First payload should be start control
     expect(publishedPayloads[0]).toHaveProperty("type", "start");
 
     // There should be at least one message payload with type "message"
-    const messagePayload = publishedPayloads.find((p) => p.type === "message");
+    const messagePayload = publishedPayloads.find(
+      (p: unknown) => (p as { type?: string }).type === "message",
+    );
     expect(messagePayload).not.toBeUndefined();
 
     // Last payload should be end control
     const lastPayload = publishedPayloads.at(-1);
     expect(lastPayload).toHaveProperty("type", "end");
-  });
+  }, 15_000); // 15 second timeout
 });
