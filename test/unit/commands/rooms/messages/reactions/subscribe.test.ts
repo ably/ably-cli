@@ -1,20 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
-import { RoomStatus } from "@ably/chat";
+import { getMockAblyChat } from "../../../../../helpers/mock-ably-chat.js";
 
 describe("rooms:messages:reactions:subscribe command", () => {
   beforeEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-      delete globalThis.__TEST_MOCKS__.ablyChatMock;
-    }
-  });
-
-  afterEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-      delete globalThis.__TEST_MOCKS__.ablyChatMock;
-    }
+    getMockAblyChat();
   });
 
   describe("command arguments and flags", () => {
@@ -41,57 +31,20 @@ describe("rooms:messages:reactions:subscribe command", () => {
 
   describe("subscription behavior", () => {
     it("should subscribe to message reactions and display them", async () => {
-      let reactionsCallback: ((event: any) => void) | null = null;
-      let statusUnsubscribe: (() => void) | null = null;
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
       const capturedLogs: string[] = [];
 
       const logSpy = vi.spyOn(console, "log").mockImplementation((msg) => {
         capturedLogs.push(String(msg));
       });
 
-      const mockReactionsSubscribe = vi.fn((callback) => {
+      // Capture the message reactions callback
+      let reactionsCallback: ((event: unknown) => void) | null = null;
+      room.messages.reactions.subscribe.mockImplementation((callback) => {
         reactionsCallback = callback;
         return () => {}; // unsubscribe function
       });
-
-      const mockOnStatusChange = vi.fn((callback) => {
-        // Immediately call with Attached status
-        callback({ current: RoomStatus.Attached });
-        statusUnsubscribe = () => {};
-        return statusUnsubscribe;
-      });
-
-      const mockRoom = {
-        messages: {
-          reactions: {
-            subscribe: mockReactionsSubscribe,
-          },
-        },
-        onStatusChange: mockOnStatusChange,
-        attach: vi.fn(),
-      };
-
-      const mockRooms = {
-        get: vi.fn().mockResolvedValue(mockRoom),
-      };
-
-      const mockRealtimeClient = {
-        connection: {
-          on: vi.fn(),
-          once: vi.fn(),
-          state: "connected",
-        },
-        close: vi.fn(),
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyChatMock: {
-          rooms: mockRooms,
-          realtime: mockRealtimeClient,
-        } as any,
-        ablyRealtimeMock: mockRealtimeClient as any,
-      };
 
       const commandPromise = runCommand(
         ["rooms:messages:reactions:subscribe", "test-room"],
@@ -100,7 +53,7 @@ describe("rooms:messages:reactions:subscribe command", () => {
 
       await vi.waitFor(
         () => {
-          expect(mockReactionsSubscribe).toHaveBeenCalled();
+          expect(room.messages.reactions.subscribe).toHaveBeenCalled();
         },
         { timeout: 1000 },
       );
@@ -120,18 +73,14 @@ describe("rooms:messages:reactions:subscribe command", () => {
         });
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      process.emit("SIGINT", "SIGINT");
-
       await commandPromise;
 
       logSpy.mockRestore();
 
       // Verify subscription was set up
-      expect(mockRooms.get).toHaveBeenCalled();
-      expect(mockReactionsSubscribe).toHaveBeenCalled();
-      expect(mockRoom.attach).toHaveBeenCalled();
+      expect(chatMock.rooms.get).toHaveBeenCalled();
+      expect(room.messages.reactions.subscribe).toHaveBeenCalled();
+      expect(room.attach).toHaveBeenCalled();
 
       // Verify output contains reaction data
       const output = capturedLogs.join("\n");
@@ -140,54 +89,20 @@ describe("rooms:messages:reactions:subscribe command", () => {
     });
 
     it("should output JSON format when --json flag is used", async () => {
-      let reactionsCallback: ((event: any) => void) | null = null;
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
       const capturedLogs: string[] = [];
 
       const logSpy = vi.spyOn(console, "log").mockImplementation((msg) => {
         capturedLogs.push(String(msg));
       });
 
-      const mockReactionsSubscribe = vi.fn((callback) => {
+      // Capture the message reactions callback
+      let reactionsCallback: ((event: unknown) => void) | null = null;
+      room.messages.reactions.subscribe.mockImplementation((callback) => {
         reactionsCallback = callback;
         return () => {};
       });
-
-      const mockOnStatusChange = vi.fn((callback) => {
-        callback({ current: RoomStatus.Attached });
-        return () => {};
-      });
-
-      const mockRoom = {
-        messages: {
-          reactions: {
-            subscribe: mockReactionsSubscribe,
-          },
-        },
-        onStatusChange: mockOnStatusChange,
-        attach: vi.fn(),
-      };
-
-      const mockRooms = {
-        get: vi.fn().mockResolvedValue(mockRoom),
-      };
-
-      const mockRealtimeClient = {
-        connection: {
-          on: vi.fn(),
-          once: vi.fn(),
-          state: "connected",
-        },
-        close: vi.fn(),
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyChatMock: {
-          rooms: mockRooms,
-          realtime: mockRealtimeClient,
-        } as any,
-        ablyRealtimeMock: mockRealtimeClient as any,
-      };
 
       const commandPromise = runCommand(
         ["rooms:messages:reactions:subscribe", "test-room", "--json"],
@@ -196,7 +111,7 @@ describe("rooms:messages:reactions:subscribe command", () => {
 
       await vi.waitFor(
         () => {
-          expect(mockReactionsSubscribe).toHaveBeenCalled();
+          expect(room.messages.reactions.subscribe).toHaveBeenCalled();
         },
         { timeout: 1000 },
       );
@@ -216,17 +131,13 @@ describe("rooms:messages:reactions:subscribe command", () => {
         });
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      process.emit("SIGINT", "SIGINT");
-
       await commandPromise;
 
       logSpy.mockRestore();
 
       // Verify subscription was set up
-      expect(mockReactionsSubscribe).toHaveBeenCalled();
-      expect(mockRoom.attach).toHaveBeenCalled();
+      expect(room.messages.reactions.subscribe).toHaveBeenCalled();
+      expect(room.attach).toHaveBeenCalled();
 
       // Find the JSON output with reaction summary data
       const reactionOutputLines = capturedLogs.filter((line) => {

@@ -1,19 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
+import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
+import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 
 describe("spaces:cursors:subscribe command", () => {
   beforeEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-      delete globalThis.__TEST_MOCKS__.ablySpacesMock;
-    }
-  });
-
-  afterEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-      delete globalThis.__TEST_MOCKS__.ablySpacesMock;
-    }
+    // Initialize the mocks
+    getMockAblyRealtime();
+    getMockAblySpaces();
   });
 
   describe("command arguments and flags", () => {
@@ -38,73 +32,11 @@ describe("spaces:cursors:subscribe command", () => {
     });
 
     it("should accept --json flag", async () => {
-      const mockCursorsChannel = {
-        state: "attached",
-        on: vi.fn(),
-        off: vi.fn(),
-      };
-
-      const mockCursors = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue([]),
-        channel: mockCursorsChannel,
-      };
-
-      const mockMembers = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue([]),
-      };
-
-      const mockLocks = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockLocations = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockSpace = {
-        cursors: mockCursors,
-        members: mockMembers,
-        locks: mockLocks,
-        locations: mockLocations,
-        enter: vi.fn().mockResolvedValue(),
-        leave: vi.fn().mockResolvedValue(),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-        id: "test-connection-id",
-      };
-
-      const mockAuth = {
-        clientId: "test-client-id",
-      };
-
-      const mockRealtimeClient = {
-        connection: mockConnection,
-        auth: mockAuth,
-        close: vi.fn(),
-      };
-
-      const mockSpacesClient = {
-        get: vi.fn().mockReturnValue(mockSpace),
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: mockRealtimeClient,
-        ablySpacesMock: mockSpacesClient,
-      };
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.cursors.getAll.mockResolvedValue([]);
 
       // Emit SIGINT to exit the command
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       const { error } = await runCommand(
         ["spaces:cursors:subscribe", "test-space", "--json"],
@@ -138,152 +70,26 @@ describe("spaces:cursors:subscribe command", () => {
 
   describe("subscription behavior", () => {
     it("should subscribe to cursor updates in a space", async () => {
-      const mockCursorsChannel = {
-        state: "attached",
-        on: vi.fn(),
-        off: vi.fn(),
-      };
-
-      const mockCursors = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue([]),
-        channel: mockCursorsChannel,
-      };
-
-      const mockMembers = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue([]),
-      };
-
-      const mockLocks = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockLocations = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockSpace = {
-        cursors: mockCursors,
-        members: mockMembers,
-        locks: mockLocks,
-        locations: mockLocations,
-        enter: vi.fn().mockResolvedValue(),
-        leave: vi.fn().mockResolvedValue(),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-        id: "test-connection-id",
-      };
-
-      const mockAuth = {
-        clientId: "test-client-id",
-      };
-
-      const mockRealtimeClient = {
-        connection: mockConnection,
-        auth: mockAuth,
-        close: vi.fn(),
-      };
-
-      const mockSpacesClient = {
-        get: vi.fn().mockReturnValue(mockSpace),
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: mockRealtimeClient,
-        ablySpacesMock: mockSpacesClient,
-      };
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.cursors.getAll.mockResolvedValue([]);
 
       await runCommand(
         ["spaces:cursors:subscribe", "test-space"],
         import.meta.url,
       );
 
-      expect(mockSpace.enter).toHaveBeenCalled();
-      expect(mockCursors.subscribe).toHaveBeenCalledWith(
+      expect(space.enter).toHaveBeenCalled();
+      expect(space.cursors.subscribe).toHaveBeenCalledWith(
         "update",
         expect.any(Function),
       );
     });
 
     it("should display initial subscription message", async () => {
-      const mockCursorsChannel = {
-        state: "attached",
-        on: vi.fn(),
-        off: vi.fn(),
-      };
-
-      const mockCursors = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue([]),
-        channel: mockCursorsChannel,
-      };
-
-      const mockMembers = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue([]),
-      };
-
-      const mockLocks = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockLocations = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockSpace = {
-        cursors: mockCursors,
-        members: mockMembers,
-        locks: mockLocks,
-        locations: mockLocations,
-        enter: vi.fn().mockResolvedValue(),
-        leave: vi.fn().mockResolvedValue(),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-        id: "test-connection-id",
-      };
-
-      const mockAuth = {
-        clientId: "test-client-id",
-      };
-
-      const mockRealtimeClient = {
-        connection: mockConnection,
-        auth: mockAuth,
-        close: vi.fn(),
-      };
-
-      const mockSpacesClient = {
-        get: vi.fn().mockReturnValue(mockSpace),
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: mockRealtimeClient,
-        ablySpacesMock: mockSpacesClient,
-      };
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.cursors.getAll.mockResolvedValue([]);
 
       const { stdout } = await runCommand(
         ["spaces:cursors:subscribe", "test-space"],
@@ -297,74 +103,12 @@ describe("spaces:cursors:subscribe command", () => {
 
   describe("cleanup behavior", () => {
     it("should close client on completion", async () => {
-      const mockCursorsChannel = {
-        state: "attached",
-        on: vi.fn(),
-        off: vi.fn(),
-      };
-
-      const mockCursors = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue([]),
-        channel: mockCursorsChannel,
-      };
-
-      const mockMembers = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue([]),
-      };
-
-      const mockLocks = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockLocations = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockSpace = {
-        cursors: mockCursors,
-        members: mockMembers,
-        locks: mockLocks,
-        locations: mockLocations,
-        enter: vi.fn().mockResolvedValue(),
-        leave: vi.fn().mockResolvedValue(),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-        id: "test-connection-id",
-      };
-
-      const mockAuth = {
-        clientId: "test-client-id",
-      };
-
-      const mockClose = vi.fn();
-      const mockRealtimeClient = {
-        connection: mockConnection,
-        auth: mockAuth,
-        close: mockClose,
-      };
-
-      const mockSpacesClient = {
-        get: vi.fn().mockReturnValue(mockSpace),
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: mockRealtimeClient,
-        ablySpacesMock: mockSpacesClient,
-      };
+      const realtimeMock = getMockAblyRealtime();
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.cursors.getAll.mockResolvedValue([]);
 
       // Use SIGINT to exit
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       await runCommand(
         ["spaces:cursors:subscribe", "test-space"],
@@ -372,85 +116,26 @@ describe("spaces:cursors:subscribe command", () => {
       );
 
       // Verify close was called during cleanup (either by performCleanup or finally block)
-      expect(mockClose).toHaveBeenCalled();
+      expect(realtimeMock.close).toHaveBeenCalled();
     });
   });
 
   describe("channel attachment", () => {
     it("should wait for cursors channel to attach if not already attached", async () => {
-      const attachedCallback = vi.fn();
-      const mockCursorsChannel = {
-        state: "attaching",
-        on: vi.fn((event, callback) => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.cursors.getAll.mockResolvedValue([]);
+
+      // Mock channel as attaching
+      space.cursors.channel.state = "attaching";
+      space.cursors.channel.on.mockImplementation(
+        (event: string, callback: () => void) => {
           if (event === "attached") {
-            attachedCallback.mockImplementation(callback);
             // Simulate channel attaching shortly after
             setTimeout(() => callback(), 50);
           }
-        }),
-        off: vi.fn(),
-      };
-
-      const mockCursors = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue([]),
-        channel: mockCursorsChannel,
-      };
-
-      const mockMembers = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue([]),
-      };
-
-      const mockLocks = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockLocations = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockSpace = {
-        cursors: mockCursors,
-        members: mockMembers,
-        locks: mockLocks,
-        locations: mockLocations,
-        enter: vi.fn().mockResolvedValue(),
-        leave: vi.fn().mockResolvedValue(),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-        id: "test-connection-id",
-      };
-
-      const mockAuth = {
-        clientId: "test-client-id",
-      };
-
-      const mockRealtimeClient = {
-        connection: mockConnection,
-        auth: mockAuth,
-        close: vi.fn(),
-      };
-
-      const mockSpacesClient = {
-        get: vi.fn().mockReturnValue(mockSpace),
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: mockRealtimeClient,
-        ablySpacesMock: mockSpacesClient,
-      };
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 200);
+        },
+      );
 
       await runCommand(
         ["spaces:cursors:subscribe", "test-space"],
@@ -458,7 +143,7 @@ describe("spaces:cursors:subscribe command", () => {
       );
 
       // Verify the command registered for attachment events
-      expect(mockCursorsChannel.on).toHaveBeenCalledWith(
+      expect(space.cursors.channel.on).toHaveBeenCalledWith(
         "attached",
         expect.any(Function),
       );

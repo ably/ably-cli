@@ -1,77 +1,38 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
-
-// Define the type for global test mocks
-declare global {
-  var __TEST_MOCKS__: {
-    ablyRealtimeMock?: unknown;
-    ablyRestMock?: unknown;
-  };
-}
+import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
+import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
 
 describe("benchmarking commands", { timeout: 20000 }, () => {
-  let mockChannel: {
-    publish: ReturnType<typeof vi.fn>;
-    subscribe: ReturnType<typeof vi.fn>;
-    unsubscribe: ReturnType<typeof vi.fn>;
-    presence: {
-      enter: ReturnType<typeof vi.fn>;
-      leave: ReturnType<typeof vi.fn>;
-      get: ReturnType<typeof vi.fn>;
-      subscribe: ReturnType<typeof vi.fn>;
-      unsubscribe: ReturnType<typeof vi.fn>;
-    };
-    on: ReturnType<typeof vi.fn>;
-  };
-
   beforeEach(() => {
-    mockChannel = {
-      publish: vi.fn().mockImplementation(async () => {}),
-      subscribe: vi.fn(),
-      unsubscribe: vi.fn().mockImplementation(async () => {}),
-      presence: {
-        enter: vi.fn().mockImplementation(async () => {}),
-        leave: vi.fn().mockImplementation(async () => {}),
-        get: vi.fn().mockResolvedValue([]),
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      },
-      on: vi.fn(),
-    };
+    const realtimeMock = getMockAblyRealtime();
+    const restMock = getMockAblyRest();
+    const channel = realtimeMock.channels._getChannel("test-channel");
+    const restChannel = restMock.channels._getChannel("test-channel");
 
-    // Merge with existing mocks (don't overwrite configManager)
-    globalThis.__TEST_MOCKS__ = {
-      ...globalThis.__TEST_MOCKS__,
-      ablyRealtimeMock: {
-        channels: { get: vi.fn().mockReturnValue(mockChannel) },
-        connection: {
-          id: "conn-123",
-          state: "connected",
-          on: vi.fn(),
-          once: vi.fn((event: string, callback: () => void) => {
-            if (event === "connected") {
-              setTimeout(() => callback(), 5);
-            }
-          }),
-        },
-        close: vi.fn(),
-        auth: {
-          clientId: "test-client-id",
-        },
+    // Configure realtime connection
+    realtimeMock.connection.id = "conn-123";
+    realtimeMock.connection.state = "connected";
+    realtimeMock.connection.once.mockImplementation(
+      (event: string, callback: () => void) => {
+        if (event === "connected") {
+          setTimeout(() => callback(), 5);
+        }
       },
-      ablyRestMock: {
-        channels: { get: vi.fn().mockReturnValue(mockChannel) },
-      },
-    };
-  });
+    );
+    realtimeMock.auth = { clientId: "test-client-id" };
 
-  afterEach(() => {
-    // Only delete the mocks we added, not the whole object
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-      delete globalThis.__TEST_MOCKS__.ablyRestMock;
-    }
-    vi.restoreAllMocks();
+    // Configure channel publish
+    channel.publish.mockImplementation(async () => {});
+
+    // Configure presence
+    channel.presence.enter.mockImplementation(async () => {});
+    channel.presence.leave.mockImplementation(async () => {});
+    channel.presence.get.mockResolvedValue([]);
+    channel.presence.unsubscribe.mockImplementation(() => {});
+
+    // Configure REST channel to use same pattern
+    restChannel.publish.mockImplementation(async () => {});
   });
 
   describe("bench publisher", () => {
@@ -163,6 +124,9 @@ describe("benchmarking commands", { timeout: 20000 }, () => {
 
     describe("publishing functionality", () => {
       it("should publish messages at the specified rate", async () => {
+        const realtimeMock = getMockAblyRealtime();
+        const channel = realtimeMock.channels._getChannel("test-channel");
+
         const { stdout } = await runCommand(
           [
             "bench:publisher",
@@ -186,13 +150,16 @@ describe("benchmarking commands", { timeout: 20000 }, () => {
         // Wait for all messages to be published (5 test messages + 2 control envelopes = 7 calls)
         await vi.waitFor(
           () => {
-            expect(mockChannel.publish).toHaveBeenCalledTimes(7);
+            expect(channel.publish).toHaveBeenCalledTimes(7);
           },
           { timeout: 5000 },
         );
       });
 
       it("should enter presence before publishing", async () => {
+        const realtimeMock = getMockAblyRealtime();
+        const channel = realtimeMock.channels._getChannel("test-channel");
+
         await runCommand(
           [
             "bench:publisher",
@@ -208,16 +175,19 @@ describe("benchmarking commands", { timeout: 20000 }, () => {
           import.meta.url,
         );
 
-        expect(mockChannel.presence.enter).toHaveBeenCalled();
+        expect(channel.presence.enter).toHaveBeenCalled();
       });
 
       it("should wait for subscribers via presence.get when flag is set", async () => {
+        const realtimeMock = getMockAblyRealtime();
+        const channel = realtimeMock.channels._getChannel("test-channel");
+
         // Mock subscriber already present
         const mockSubscriber = {
           clientId: "subscriber1",
           data: { role: "subscriber" },
         };
-        mockChannel.presence.get.mockResolvedValue([mockSubscriber]);
+        channel.presence.get.mockResolvedValue([mockSubscriber]);
 
         await runCommand(
           [
@@ -235,29 +205,34 @@ describe("benchmarking commands", { timeout: 20000 }, () => {
           import.meta.url,
         );
 
-        expect(mockChannel.presence.subscribe).toHaveBeenCalledWith(
+        expect(channel.presence.subscribe).toHaveBeenCalledWith(
           "enter",
           expect.any(Function),
         );
-        expect(mockChannel.presence.unsubscribe).toHaveBeenCalledWith(
+        expect(channel.presence.unsubscribe).toHaveBeenCalledWith(
           "enter",
           expect.any(Function),
         );
-        expect(mockChannel.presence.get).toHaveBeenCalled();
+        expect(channel.presence.get).toHaveBeenCalled();
       });
     });
 
     it("should wait for subscribers via presence.subscribe when flag is set", async () => {
+      const realtimeMock = getMockAblyRealtime();
+      const channel = realtimeMock.channels._getChannel("test-channel");
+
       // Mock subscriber already present
       const mockSubscriber = {
         clientId: "subscriber1",
         data: { role: "subscriber" },
       };
-      mockChannel.presence.subscribe.mockImplementation((event, listener) => {
-        setTimeout(() => {
-          listener(mockSubscriber);
-        }, 1000);
-      });
+      channel.presence.subscribe.mockImplementation(
+        (event: string, listener: (member: unknown) => void) => {
+          setTimeout(() => {
+            listener(mockSubscriber);
+          }, 1000);
+        },
+      );
 
       await runCommand(
         [
@@ -275,15 +250,15 @@ describe("benchmarking commands", { timeout: 20000 }, () => {
         import.meta.url,
       );
 
-      expect(mockChannel.presence.subscribe).toHaveBeenCalledWith(
+      expect(channel.presence.subscribe).toHaveBeenCalledWith(
         "enter",
         expect.any(Function),
       );
-      expect(mockChannel.presence.unsubscribe).toHaveBeenCalledWith(
+      expect(channel.presence.unsubscribe).toHaveBeenCalledWith(
         "enter",
         expect.any(Function),
       );
-      expect(mockChannel.presence.get).toHaveBeenCalled();
+      expect(channel.presence.get).toHaveBeenCalled();
     });
   });
 
@@ -337,6 +312,9 @@ describe("benchmarking commands", { timeout: 20000 }, () => {
 
     describe("subscription functionality", () => {
       it("should subscribe to channel and enter presence", async () => {
+        const realtimeMock = getMockAblyRealtime();
+        const channel = realtimeMock.channels._getChannel("test-channel");
+
         const { error } = await runCommand(
           ["bench:subscriber", "test-channel", "--api-key", "app.key:secret"],
           import.meta.url,
@@ -346,8 +324,8 @@ describe("benchmarking commands", { timeout: 20000 }, () => {
         expect(error).toBeUndefined();
 
         // Should have subscribed and entered presence
-        expect(mockChannel.subscribe).toHaveBeenCalled();
-        expect(mockChannel.presence.enter).toHaveBeenCalledWith({
+        expect(channel.subscribe).toHaveBeenCalled();
+        expect(channel.presence.enter).toHaveBeenCalledWith({
           role: "subscriber",
         });
       });

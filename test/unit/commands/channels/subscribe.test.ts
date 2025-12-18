@@ -1,80 +1,40 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
-
-// Define the type for global test mocks
-declare global {
-  var __TEST_MOCKS__: {
-    ablyRealtimeMock?: unknown;
-  };
-}
+import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
 
 describe("channels:subscribe command", () => {
   let mockSubscribeCallback: ((message: unknown) => void) | null = null;
-  let mockChannelState = "initialized";
 
   beforeEach(() => {
     mockSubscribeCallback = null;
-    mockChannelState = "initialized";
 
-    // Set up a mock Ably realtime client
-    const mockChannel = {
-      name: "test-channel",
-      state: mockChannelState,
-      subscribe: vi.fn((callback: (message: unknown) => void) => {
+    // Get the centralized mock and configure for this test
+    const mock = getMockAblyRealtime();
+    const channel = mock.channels._getChannel("test-channel");
+
+    // Configure subscribe to capture the callback
+    channel.subscribe.mockImplementation(
+      (callback: (message: unknown) => void) => {
         mockSubscribeCallback = callback;
-      }),
-      unsubscribe: vi.fn(),
-      on: vi.fn(),
-      off: vi.fn(),
-      once: vi.fn((event: string, callback: () => void) => {
-        if (event === "attached") {
-          // Simulate immediate attachment
-          mockChannelState = "attached";
-          setTimeout(() => callback(), 10);
-        }
-      }),
-    };
-
-    // Make state getter dynamic
-    Object.defineProperty(mockChannel, "state", {
-      get: () => mockChannelState,
-    });
-
-    // Merge with existing mocks (don't overwrite configManager)
-    globalThis.__TEST_MOCKS__ = {
-      ...globalThis.__TEST_MOCKS__,
-      ablyRealtimeMock: {
-        channels: {
-          get: vi.fn().mockReturnValue(mockChannel),
-        },
-        connection: {
-          state: "connected",
-          on: vi.fn(),
-          once: vi.fn((event: string, callback: () => void) => {
-            if (event === "connected") {
-              setTimeout(() => callback(), 5);
-            }
-          }),
-        },
-        close: vi.fn(),
-        auth: {
-          clientId: "test-client-id",
-        },
       },
-    };
-  });
+    );
 
-  afterEach(() => {
-    // Call close on mock client if it exists
-    const mock = globalThis.__TEST_MOCKS__?.ablyRealtimeMock as
-      | { close?: () => void }
-      | undefined;
-    mock?.close?.();
-    // Only delete the mock we added, not the whole object
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-    }
-    vi.restoreAllMocks();
+    // Configure connection.once to immediately call callback for 'connected'
+    mock.connection.once.mockImplementation(
+      (event: string, callback: () => void) => {
+        if (event === "connected") {
+          callback();
+        }
+      },
+    );
+
+    // Configure channel.once to immediately call callback for 'attached'
+    channel.once.mockImplementation((event: string, callback: () => void) => {
+      if (event === "attached") {
+        channel.state = "attached";
+        callback();
+      }
+    });
   });
 
   describe("help", () => {
@@ -125,6 +85,8 @@ describe("channels:subscribe command", () => {
 
   describe("subscription functionality", () => {
     it("should subscribe to a channel and attach", async () => {
+      const mock = getMockAblyRealtime();
+
       const { stdout } = await runCommand(
         ["channels:subscribe", "test-channel", "--api-key", "app.key:secret"],
         import.meta.url,
@@ -133,9 +95,6 @@ describe("channels:subscribe command", () => {
       // Should show successful attachment
       expect(stdout).toContain("test-channel");
       // Check we got the channel
-      const mock = globalThis.__TEST_MOCKS__?.ablyRealtimeMock as {
-        channels: { get: ReturnType<typeof vi.fn> };
-      };
       expect(mock.channels.get).toHaveBeenCalledWith(
         "test-channel",
         expect.any(Object),
@@ -231,6 +190,8 @@ describe("channels:subscribe command", () => {
     });
 
     it("should configure channel with rewind option", async () => {
+      const mock = getMockAblyRealtime();
+
       await runCommand(
         [
           "channels:subscribe",
@@ -243,9 +204,6 @@ describe("channels:subscribe command", () => {
         import.meta.url,
       );
 
-      const mock = globalThis.__TEST_MOCKS__?.ablyRealtimeMock as {
-        channels: { get: ReturnType<typeof vi.fn> };
-      };
       expect(mock.channels.get).toHaveBeenCalledWith(
         "test-channel",
         expect.objectContaining({
@@ -255,6 +213,8 @@ describe("channels:subscribe command", () => {
     });
 
     it("should configure channel with delta option", async () => {
+      const mock = getMockAblyRealtime();
+
       await runCommand(
         [
           "channels:subscribe",
@@ -266,9 +226,6 @@ describe("channels:subscribe command", () => {
         import.meta.url,
       );
 
-      const mock = globalThis.__TEST_MOCKS__?.ablyRealtimeMock as {
-        channels: { get: ReturnType<typeof vi.fn> };
-      };
       expect(mock.channels.get).toHaveBeenCalledWith(
         "test-channel",
         expect.objectContaining({

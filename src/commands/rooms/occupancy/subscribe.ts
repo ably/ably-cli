@@ -4,10 +4,11 @@ import {
   RoomStatusChange,
   ChatClient,
 } from "@ably/chat";
-import { Args } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export interface OccupancyMetrics {
   connections?: number;
@@ -32,9 +33,14 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
 
   static flags = {
     ...ChatBaseCommand.globalFlags,
+    duration: Flags.integer({
+      description:
+        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      char: "D",
+      required: false,
+    }),
   };
 
-  private cleanupInProgress = false;
   private chatClient: ChatClient | null = null;
   private roomName: string | null = null;
 
@@ -219,33 +225,8 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         "Successfully subscribed to occupancy updates",
       );
 
-      // Keep the process running until interrupted
-      await new Promise<void>((resolve, _reject) => {
-        const cleanup = () => {
-          if (this.cleanupInProgress) {
-            return;
-          }
-          this.cleanupInProgress = true;
-          this.logCliEvent(
-            flags,
-            "occupancy",
-            "cleanupInitiated",
-            "Cleanup initiated (Ctrl+C pressed)",
-          );
-
-          const close = async () => {
-            if (!this.shouldOutputJson(flags)) {
-              this.log(chalk.green("\nClosing..."));
-            }
-            resolve();
-          };
-
-          void close();
-        };
-
-        process.on("SIGINT", cleanup);
-        process.on("SIGTERM", cleanup);
-      });
+      // Wait until the user interrupts or the optional duration elapses
+      await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error) {
       const errorMsg = `Error: ${error instanceof Error ? error.message : String(error)}`;
       this.logCliEvent(flags, "occupancy", "fatalError", errorMsg, {

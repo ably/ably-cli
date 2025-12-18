@@ -1,22 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { RoomStatus } from "@ably/chat";
+import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
 
 describe("rooms:typing:subscribe command", () => {
-  beforeEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-      delete globalThis.__TEST_MOCKS__.ablyChatMock;
-    }
-  });
-
-  afterEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-      delete globalThis.__TEST_MOCKS__.ablyChatMock;
-    }
-  });
-
   describe("command arguments and flags", () => {
     it("should reject unknown flags", async () => {
       const { error } = await runCommand(
@@ -41,51 +28,20 @@ describe("rooms:typing:subscribe command", () => {
 
   describe("subscription behavior", () => {
     it("should subscribe to typing events and display them", async () => {
-      let typingCallback: ((event: any) => void) | null = null;
-      let statusCallback: ((change: any) => void) | null = null;
+      const mock = getMockAblyChat();
+      const room = mock.rooms._getRoom("test-room");
 
-      const mockTypingSubscribe = vi.fn((callback) => {
+      // Capture the typing callback when subscribe is called
+      let typingCallback: ((event: unknown) => void) | null = null;
+      room.typing.subscribe.mockImplementation((callback) => {
         typingCallback = callback;
+        return { unsubscribe: vi.fn() };
       });
 
-      const mockOnStatusChange = vi.fn((callback) => {
-        statusCallback = callback;
+      // Configure attach to emit the status change
+      room.attach.mockImplementation(async () => {
+        room.status = RoomStatus.Attached;
       });
-
-      const mockRoom = {
-        typing: {
-          subscribe: mockTypingSubscribe,
-        },
-        onStatusChange: mockOnStatusChange,
-        attach: vi.fn().mockImplementation(async () => {
-          // Simulate room attaching
-          if (statusCallback) {
-            statusCallback({ current: RoomStatus.Attached });
-          }
-        }),
-      };
-
-      const mockRooms = {
-        get: vi.fn().mockResolvedValue(mockRoom),
-      };
-
-      const mockRealtimeClient = {
-        connection: {
-          on: vi.fn(),
-          once: vi.fn(),
-          state: "connected",
-        },
-        close: vi.fn(),
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyChatMock: {
-          rooms: mockRooms,
-          realtime: mockRealtimeClient,
-        } as any,
-        ablyRealtimeMock: mockRealtimeClient as any,
-      };
 
       // Run command in background
       const commandPromise = runCommand(
@@ -96,7 +52,7 @@ describe("rooms:typing:subscribe command", () => {
       // Wait for subscription to be set up
       await vi.waitFor(
         () => {
-          expect(mockTypingSubscribe).toHaveBeenCalled();
+          expect(room.typing.subscribe).toHaveBeenCalled();
         },
         { timeout: 1000 },
       );
@@ -109,17 +65,15 @@ describe("rooms:typing:subscribe command", () => {
       }
 
       // Give time for output to be generated
-      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Simulate Ctrl+C to stop the command
-      process.emit("SIGINT", "SIGINT");
 
       const result = await commandPromise;
 
       // Verify subscription was set up
-      expect(mockRooms.get).toHaveBeenCalledWith("test-room");
-      expect(mockTypingSubscribe).toHaveBeenCalled();
-      expect(mockRoom.attach).toHaveBeenCalled();
+      expect(mock.rooms.get).toHaveBeenCalledWith("test-room");
+      expect(room.typing.subscribe).toHaveBeenCalled();
+      expect(room.attach).toHaveBeenCalled();
 
       // Verify output contains typing notification
       expect(result.stdout).toContain("user1");
@@ -128,8 +82,8 @@ describe("rooms:typing:subscribe command", () => {
     });
 
     it("should output JSON format when --json flag is used", async () => {
-      let typingCallback: ((event: any) => void) | null = null;
-      let statusCallback: ((change: any) => void) | null = null;
+      const mock = getMockAblyChat();
+      const room = mock.rooms._getRoom("test-room");
       const capturedLogs: string[] = [];
 
       // Spy on console.log to capture output
@@ -137,47 +91,17 @@ describe("rooms:typing:subscribe command", () => {
         capturedLogs.push(String(msg));
       });
 
-      const mockTypingSubscribe = vi.fn((callback) => {
+      // Capture the typing callback when subscribe is called
+      let typingCallback: ((event: unknown) => void) | null = null;
+      room.typing.subscribe.mockImplementation((callback) => {
         typingCallback = callback;
+        return { unsubscribe: vi.fn() };
       });
 
-      const mockOnStatusChange = vi.fn((callback) => {
-        statusCallback = callback;
+      // Configure attach to emit the status change
+      room.attach.mockImplementation(async () => {
+        room.status = RoomStatus.Attached;
       });
-
-      const mockRoom = {
-        typing: {
-          subscribe: mockTypingSubscribe,
-        },
-        onStatusChange: mockOnStatusChange,
-        attach: vi.fn().mockImplementation(async () => {
-          if (statusCallback) {
-            statusCallback({ current: RoomStatus.Attached });
-          }
-        }),
-      };
-
-      const mockRooms = {
-        get: vi.fn().mockResolvedValue(mockRoom),
-      };
-
-      const mockRealtimeClient = {
-        connection: {
-          on: vi.fn(),
-          once: vi.fn(),
-          state: "connected",
-        },
-        close: vi.fn(),
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyChatMock: {
-          rooms: mockRooms,
-          realtime: mockRealtimeClient,
-        } as any,
-        ablyRealtimeMock: mockRealtimeClient as any,
-      };
 
       const commandPromise = runCommand(
         ["rooms:typing:subscribe", "test-room", "--json"],
@@ -186,7 +110,7 @@ describe("rooms:typing:subscribe command", () => {
 
       await vi.waitFor(
         () => {
-          expect(mockTypingSubscribe).toHaveBeenCalled();
+          expect(room.typing.subscribe).toHaveBeenCalled();
         },
         { timeout: 1000 },
       );
@@ -199,9 +123,6 @@ describe("rooms:typing:subscribe command", () => {
       }
 
       // Wait for output to be generated
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      process.emit("SIGINT", "SIGINT");
 
       await commandPromise;
 
@@ -209,8 +130,8 @@ describe("rooms:typing:subscribe command", () => {
       logSpy.mockRestore();
 
       // Verify subscription was set up
-      expect(mockTypingSubscribe).toHaveBeenCalled();
-      expect(mockRoom.attach).toHaveBeenCalled();
+      expect(room.typing.subscribe).toHaveBeenCalled();
+      expect(room.attach).toHaveBeenCalled();
 
       // Find the JSON output with typing data from captured logs
       const typingOutputLines = capturedLogs.filter((line) => {

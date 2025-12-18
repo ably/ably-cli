@@ -1,17 +1,28 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
+import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 
 describe("logs:channel-lifecycle:subscribe command", () => {
   beforeEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-    }
-  });
+    const mock = getMockAblyRealtime();
+    const channel = mock.channels._getChannel("[meta]channel.lifecycle");
 
-  afterEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-    }
+    // Configure connection.once to immediately call callback for 'connected'
+    mock.connection.once.mockImplementation(
+      (event: string, callback: () => void) => {
+        if (event === "connected") {
+          callback();
+        }
+      },
+    );
+
+    // Configure channel.once to immediately call callback for 'attached'
+    channel.once.mockImplementation((event: string, callback: () => void) => {
+      if (event === "attached") {
+        channel.state = "attached";
+        callback();
+      }
+    });
   });
 
   describe("command flags", () => {
@@ -32,7 +43,7 @@ describe("logs:channel-lifecycle:subscribe command", () => {
         import.meta.url,
       );
 
-      expect(error?.message).not.toMatch(/Unknown flag/);
+      expect(error?.message || "").not.toMatch(/Unknown flag/);
     });
 
     it("should accept --json flag", async () => {
@@ -41,42 +52,12 @@ describe("logs:channel-lifecycle:subscribe command", () => {
         import.meta.url,
       );
 
-      expect(error?.message).not.toMatch(/Unknown flag/);
+      expect(error?.message || "").not.toMatch(/Unknown flag/);
     });
   });
 
   describe("subscription behavior", () => {
     it("should subscribe to channel lifecycle events and show initial message", async () => {
-      const mockChannel = {
-        name: "[meta]channel.lifecycle",
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        on: vi.fn(),
-        detach: vi.fn(),
-      };
-
-      const mockChannels = {
-        get: vi.fn().mockReturnValue(mockChannel),
-        release: vi.fn(),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: {
-          channels: mockChannels,
-          connection: mockConnection,
-          close: vi.fn(),
-        },
-      };
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
-
       const { stdout } = await runCommand(
         ["logs:channel-lifecycle:subscribe"],
         import.meta.url,
@@ -88,80 +69,28 @@ describe("logs:channel-lifecycle:subscribe command", () => {
     });
 
     it("should subscribe to channel messages", async () => {
-      const mockChannel = {
-        name: "[meta]channel.lifecycle",
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        on: vi.fn(),
-        detach: vi.fn(),
-      };
-
-      const mockChannels = {
-        get: vi.fn().mockReturnValue(mockChannel),
-        release: vi.fn(),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: {
-          channels: mockChannels,
-          connection: mockConnection,
-          close: vi.fn(),
-        },
-      };
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("[meta]channel.lifecycle");
 
       await runCommand(["logs:channel-lifecycle:subscribe"], import.meta.url);
 
-      expect(mockChannel.subscribe).toHaveBeenCalledWith(expect.any(Function));
+      expect(channel.subscribe).toHaveBeenCalledWith(expect.any(Function));
     });
 
     it("should configure rewind when --rewind is specified", async () => {
-      const mockChannel = {
-        name: "[meta]channel.lifecycle",
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        on: vi.fn(),
-        detach: vi.fn(),
-      };
-
-      const mockChannels = {
-        get: vi.fn().mockReturnValue(mockChannel),
-        release: vi.fn(),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: {
-          channels: mockChannels,
-          connection: mockConnection,
-          close: vi.fn(),
-        },
-      };
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
+      const mock = getMockAblyRealtime();
 
       await runCommand(
         ["logs:channel-lifecycle:subscribe", "--rewind", "5"],
         import.meta.url,
       );
 
-      expect(mockChannels.get).toHaveBeenCalledWith("[meta]channel.lifecycle", {
-        params: { rewind: "5" },
-      });
+      expect(mock.channels.get).toHaveBeenCalledWith(
+        "[meta]channel.lifecycle",
+        {
+          params: { rewind: "5" },
+        },
+      );
     });
   });
 

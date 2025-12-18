@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
 
 describe("auth:revoke-token command", () => {
   const mockToken = "test-token-12345";
@@ -9,21 +10,12 @@ describe("auth:revoke-token command", () => {
 
   beforeEach(() => {
     nock.cleanAll();
-
-    // Set up a minimal mock Ably realtime client
-    // The revoke-token command creates one but doesn't actually use it for the HTTP request
-    if (globalThis.__TEST_MOCKS__) {
-      globalThis.__TEST_MOCKS__.ablyRealtimeMock = {
-        close: () => {},
-      };
-    }
+    // Initialize the mock (command creates one but doesn't use it for HTTP)
+    getMockAblyRealtime();
   });
 
   afterEach(() => {
     nock.cleanAll();
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-    }
   });
 
   describe("help", () => {

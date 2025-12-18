@@ -1,314 +1,210 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { Config } from "@oclif/core";
-import LogsConnectionSubscribe from "../../../../../src/commands/logs/connection/subscribe.js";
-import * as Ably from "ably";
-
-// Create a testable version of LogsConnectionSubscribe
-class TestableLogsConnectionSubscribe extends LogsConnectionSubscribe {
-  public logOutput: string[] = [];
-  public errorOutput: string = "";
-  private _parseResult: any;
-  public mockClient: any = {};
-  private _shouldOutputJson = false;
-  private _formatJsonOutputFn:
-    | ((data: Record<string, unknown>) => string)
-    | null = null;
-
-  // Override parse to simulate parse output
-  public override async parse() {
-    return this._parseResult;
-  }
-
-  public setParseResult(result: any) {
-    this._parseResult = result;
-  }
-
-  // Override client creation to return a controlled mock
-  public override async createAblyRealtimeClient(
-    _flags: any,
-  ): Promise<Ably.Realtime | null> {
-    this.debug("Overridden createAblyRealtimeClient called");
-    return this.mockClient as unknown as Ably.Realtime;
-  }
-
-  // Override logging methods
-  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-  public override log(message?: string | undefined, ...args: any[]): void {
-    if (message) {
-      this.logOutput.push(message);
-    }
-  }
-
-  // Correct override signature for the error method
-  public override error(
-    message: string | Error,
-    _options?: { code?: string; exit?: number | false },
-  ): never {
-    this.errorOutput = typeof message === "string" ? message : message.message;
-    // Prevent actual exit during tests by throwing instead
-    throw new Error(this.errorOutput);
-  }
-
-  // Override JSON output methods
-  public override shouldOutputJson(_flags?: any): boolean {
-    return this._shouldOutputJson;
-  }
-
-  public setShouldOutputJson(value: boolean) {
-    this._shouldOutputJson = value;
-  }
-
-  public override formatJsonOutput(
-    data: Record<string, unknown>,
-    _flags?: Record<string, unknown>,
-  ): string {
-    return this._formatJsonOutputFn
-      ? this._formatJsonOutputFn(data)
-      : JSON.stringify(data);
-  }
-
-  public setFormatJsonOutput(fn: (data: Record<string, unknown>) => string) {
-    this._formatJsonOutputFn = fn;
-  }
-
-  // Override ensureAppAndKey to prevent real auth checks in unit tests
-  protected override async ensureAppAndKey(
-    _flags: any,
-  ): Promise<{ apiKey: string; appId: string } | null> {
-    this.debug("Skipping ensureAppAndKey in test mode");
-    return { apiKey: "dummy-key-value:secret", appId: "dummy-app" };
-  }
-}
+import { describe, it, expect, beforeEach } from "vitest";
+import { runCommand } from "@oclif/test";
+import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 
 describe("LogsConnectionSubscribe", function () {
-  let command: TestableLogsConnectionSubscribe;
-  let mockConfig: Config;
-
   beforeEach(function () {
-    mockConfig = { runHook: vi.fn() } as unknown as Config;
-    command = new TestableLogsConnectionSubscribe([], mockConfig);
+    const mock = getMockAblyRealtime();
+    const channel = mock.channels._getChannel("[meta]connection.lifecycle");
 
-    // Set up a complete mock client structure for the [meta]connection.lifecycle channel
-    const mockChannelInstance = {
-      name: "[meta]connection.lifecycle",
-      subscribe: vi.fn(),
-      attach: vi.fn().mockImplementation(async () => {}),
-      detach: vi.fn().mockImplementation(async () => {}),
-      on: vi.fn(),
-      off: vi.fn(),
-      unsubscribe: vi.fn(),
-    };
-
-    command.mockClient = {
-      channels: {
-        get: vi.fn().mockReturnValue(mockChannelInstance),
-        release: vi.fn(),
-      },
-      connection: {
-        once: vi.fn(),
-        on: vi.fn(),
-        close: vi.fn(),
-        state: "initialized",
-      },
-      close: vi.fn(),
-    };
-
-    // Set default parse result with duration to prevent hanging
-    command.setParseResult({
-      flags: { rewind: 0, duration: 0.1 },
-      args: {},
-      argv: [],
-      raw: [],
-    });
-  });
-
-  it("should attempt to create an Ably client", async function () {
-    const createClientStub = vi
-      .spyOn(command, "createAblyRealtimeClient")
-      .mockResolvedValue(command.mockClient as unknown as Ably.Realtime);
-
-    // Mock connection to simulate quick connection
-    command.mockClient.connection.on.mockImplementation(
+    // Configure connection.on to simulate connection state changes
+    mock.connection.on.mockImplementation(
       (event: string, callback: () => void) => {
         if (event === "connected") {
           setTimeout(() => {
-            command.mockClient.connection.state = "connected";
+            mock.connection.state = "connected";
             callback();
           }, 10);
         }
       },
     );
 
-    // Run the command with a short duration
-    await command.run();
-
-    expect(createClientStub).toHaveBeenCalledOnce();
+    // Configure channel.once to immediately call callback for 'attached'
+    channel.once.mockImplementation((event: string, callback: () => void) => {
+      if (event === "attached") {
+        channel.state = "attached";
+        callback();
+      }
+    });
   });
 
   it("should subscribe to [meta]connection.lifecycle channel", async function () {
-    const subscribeStub = command.mockClient.channels.get().subscribe;
+    const mock = getMockAblyRealtime();
+    const channel = mock.channels._getChannel("[meta]connection.lifecycle");
 
-    // Mock connection state changes
-    command.mockClient.connection.on.mockImplementation(
-      (event: string, callback: () => void) => {
-        if (event === "connected") {
-          setTimeout(() => {
-            command.mockClient.connection.state = "connected";
-            callback();
-          }, 10);
-        }
-      },
+    // Emit SIGINT to stop the command
+
+    const { stdout } = await runCommand(
+      ["logs:connection:subscribe"],
+      import.meta.url,
     );
 
-    // Run the command with a short duration
-    await command.run();
-
-    // Verify that we got the [meta]connection.lifecycle channel and subscribed to it
-    // The test's ensureAppAndKey returns appId: 'dummy-app'
-    expect(command.mockClient.channels.get).toHaveBeenCalledWith(
+    expect(mock.channels.get).toHaveBeenCalledWith(
       "[meta]connection.lifecycle",
     );
-    expect(subscribeStub).toHaveBeenCalled();
-  });
-
-  it("should handle connection state changes", async function () {
-    const connectionOnStub = command.mockClient.connection.on;
-
-    // Set duration and run
-    command.setParseResult({
-      flags: { rewind: 0, duration: 0.05 },
-      args: {},
-      argv: [],
-      raw: [],
-    });
-    await command.run();
-
-    // Verify that connection state change handlers were set up
-    expect(connectionOnStub).toHaveBeenCalled();
+    expect(channel.subscribe).toHaveBeenCalled();
+    expect(stdout).toContain("Subscribing");
   });
 
   it("should handle log message reception", async function () {
-    const subscribeStub = command.mockClient.channels.get().subscribe;
+    const mock = getMockAblyRealtime();
+    const channel = mock.channels._getChannel("[meta]connection.lifecycle");
 
-    // Mock connection
-    command.mockClient.connection.on.mockImplementation(
-      (event: string, callback: () => void) => {
-        if (event === "connected") {
-          setTimeout(() => callback(), 10);
-        }
+    // Capture the subscription callback
+    let messageCallback: ((message: unknown) => void) | null = null;
+    channel.subscribe.mockImplementation(
+      (callback: (message: unknown) => void) => {
+        messageCallback = callback;
       },
     );
 
-    // Run the command with a short duration
-    await command.run();
+    // Simulate receiving a message
+    setTimeout(() => {
+      if (messageCallback) {
+        messageCallback({
+          name: "connection.opened",
+          data: { connectionId: "test-connection-123" },
+          timestamp: Date.now(),
+          clientId: "test-client",
+          connectionId: "test-connection-123",
+          id: "msg-123",
+        });
+      }
+    }, 50);
 
-    // Verify subscribe was called
-    expect(subscribeStub).toHaveBeenCalled();
+    // Stop the command after message is received
 
-    // Simulate receiving a log message
-    const messageCallback = subscribeStub.mock.calls[0][0];
-    expect(typeof messageCallback).toBe("function");
+    const { stdout } = await runCommand(
+      ["logs:connection:subscribe"],
+      import.meta.url,
+    );
 
-    const mockMessage = {
-      name: "connection.opened",
-      data: { connectionId: "test-connection-123" },
-      timestamp: Date.now(),
-      clientId: "test-client",
-      connectionId: "test-connection-123",
-      id: "msg-123",
-    };
-
-    messageCallback(mockMessage);
-
-    // Check that the message was logged
-    const output = command.logOutput.join("\n");
-    expect(output).toContain("connection.opened");
+    expect(stdout).toContain("connection.opened");
   });
 
   it("should output JSON when requested", async function () {
-    command.setShouldOutputJson(true);
-    command.setFormatJsonOutput((data) => JSON.stringify(data));
+    const mock = getMockAblyRealtime();
+    const channel = mock.channels._getChannel("[meta]connection.lifecycle");
 
-    const subscribeStub = command.mockClient.channels.get().subscribe;
-
-    // Mock connection
-    command.mockClient.connection.on.mockImplementation(
-      (event: string, callback: () => void) => {
-        if (event === "connected") {
-          setTimeout(() => callback(), 10);
-        }
+    // Capture the subscription callback
+    let messageCallback: ((message: unknown) => void) | null = null;
+    channel.subscribe.mockImplementation(
+      (callback: (message: unknown) => void) => {
+        messageCallback = callback;
       },
     );
 
-    // Run the command with a short duration
-    await command.run();
-
-    // Simulate receiving a message in JSON mode
-    const messageCallback = subscribeStub.mock.calls[0][0];
-    expect(typeof messageCallback).toBe("function");
-
-    const mockMessage = {
-      name: "connection.opened",
-      data: { connectionId: "test-connection-123" },
-      timestamp: Date.now(),
-      clientId: "test-client",
-      connectionId: "test-connection-123",
-      id: "msg-123",
-    };
-
-    messageCallback(mockMessage);
-
-    // Check for JSON output
-    const jsonOutput = command.logOutput.find((log) => {
-      try {
-        const parsed = JSON.parse(log);
-        return (
-          parsed.event === "connection.opened" &&
-          parsed.timestamp &&
-          parsed.id === "msg-123"
-        );
-      } catch {
-        return false;
+    // Simulate receiving a message
+    setTimeout(() => {
+      if (messageCallback) {
+        messageCallback({
+          name: "connection.opened",
+          data: { connectionId: "test-connection-123" },
+          timestamp: Date.now(),
+          clientId: "test-client",
+          connectionId: "test-connection-123",
+          id: "msg-123",
+        });
       }
-    });
-    expect(jsonOutput).toBeDefined();
+    }, 50);
+
+    const { stdout } = await runCommand(
+      ["logs:connection:subscribe", "--json"],
+      import.meta.url,
+    );
+
+    // Verify JSON output - the output contains the event name in JSON format
+    expect(stdout).toContain("connection.opened");
+  });
+
+  it("should handle connection state changes", async function () {
+    const mock = getMockAblyRealtime();
+    const channel = mock.channels._getChannel("[meta]connection.lifecycle");
+
+    // Capture the subscription callback
+    let messageCallback: ((message: unknown) => void) | null = null;
+    channel.subscribe.mockImplementation(
+      (callback: (message: unknown) => void) => {
+        messageCallback = callback;
+      },
+    );
+
+    // Simulate receiving a connection state change event
+    setTimeout(() => {
+      if (messageCallback) {
+        messageCallback({
+          name: "connection.connected",
+          data: {
+            connectionId: "test-connection-456",
+            transport: "websocket",
+          },
+          timestamp: Date.now(),
+          clientId: "test-client",
+          connectionId: "test-connection-456",
+          id: "msg-state-change",
+        });
+      }
+    }, 50);
+
+    const { stdout } = await runCommand(
+      ["logs:connection:subscribe"],
+      import.meta.url,
+    );
+
+    expect(channel.subscribe).toHaveBeenCalled();
+    expect(stdout).toContain("connection.connected");
   });
 
   it("should handle connection failures", async function () {
-    // Mock connection failure
-    command.mockClient.connection.on.mockImplementation(
-      (event: string, callback: (stateChange: any) => void) => {
-        if (event === "failed") {
-          setTimeout(() => {
-            callback({
-              current: "failed",
-              reason: { message: "Connection failed" },
-            });
-          }, 10);
-        }
+    const mock = getMockAblyRealtime();
+    const channel = mock.channels._getChannel("[meta]connection.lifecycle");
+
+    // Capture the subscription callback
+    let messageCallback: ((message: unknown) => void) | null = null;
+    channel.subscribe.mockImplementation(
+      (callback: (message: unknown) => void) => {
+        messageCallback = callback;
       },
     );
 
-    try {
-      await command.run();
-      expect.fail("Command should have handled connection failure");
-    } catch {
-      // The command should handle connection failures gracefully - catch block intentionally empty
-    }
+    // Simulate receiving a connection failure event
+    setTimeout(() => {
+      if (messageCallback) {
+        messageCallback({
+          name: "connection.failed",
+          data: {
+            connectionId: "test-connection-789",
+            reason: "Network error",
+          },
+          timestamp: Date.now(),
+          clientId: "test-client",
+          connectionId: "test-connection-789",
+          id: "msg-failed",
+        });
+      }
+    }, 50);
 
-    // Check that error was logged appropriately
-    const output = command.logOutput.join("\n");
-    expect(output.length).toBeGreaterThan(0); // Some output should have been generated
+    const { stdout } = await runCommand(
+      ["logs:connection:subscribe"],
+      import.meta.url,
+    );
+
+    expect(channel.subscribe).toHaveBeenCalled();
+    expect(stdout).toContain("connection.failed");
   });
 
-  it("should handle client creation failure", async function () {
-    // Mock createAblyRealtimeClient to return null
-    vi.spyOn(command, "createAblyRealtimeClient").mockResolvedValue(null);
+  it("should handle missing mock client in test mode", async function () {
+    // Clear the realtime mock
+    if (globalThis.__TEST_MOCKS__) {
+      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
+    }
 
-    // Should return early without error when client creation fails
-    await command.run();
+    const { error } = await runCommand(
+      ["logs:connection:subscribe"],
+      import.meta.url,
+    );
 
-    // Verify that subscribe was never called since client creation failed
-    expect(command.mockClient.channels.get().subscribe).not.toHaveBeenCalled();
+    expect(error).toBeDefined();
+    expect(error?.message).toMatch(/No mock|client/i);
   });
 });

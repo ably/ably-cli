@@ -1,115 +1,29 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
-
-// Define the type for global test mocks
-declare global {
-  var __TEST_MOCKS__: {
-    ablyRealtimeMock?: unknown;
-    ablySpacesMock?: unknown;
-  };
-}
+import { getMockAblySpaces } from "../../../helpers/mock-ably-spaces.js";
+import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
 
 describe("spaces commands", () => {
-  let mockMembersEnter: ReturnType<typeof vi.fn>;
-  let mockMembersSubscribe: ReturnType<typeof vi.fn>;
-  let mockMembersUnsubscribe: ReturnType<typeof vi.fn>;
-  let mockSpaceLeave: ReturnType<typeof vi.fn>;
-  let mockLocationsSet: ReturnType<typeof vi.fn>;
-  let mockLocationsGetAll: ReturnType<typeof vi.fn>;
-  let mockLocksAcquire: ReturnType<typeof vi.fn>;
-  let mockLocksGetAll: ReturnType<typeof vi.fn>;
-  let mockCursorsSet: ReturnType<typeof vi.fn>;
-  let mockCursorsGetAll: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
-    mockMembersEnter = vi.fn().mockResolvedValue(null);
-    mockMembersSubscribe = vi.fn().mockResolvedValue(null);
-    mockMembersUnsubscribe = vi.fn().mockResolvedValue(null);
-    mockSpaceLeave = vi.fn().mockResolvedValue(null);
-    mockLocationsSet = vi.fn().mockResolvedValue(null);
-    mockLocationsGetAll = vi.fn().mockResolvedValue([]);
-    mockLocksAcquire = vi.fn().mockResolvedValue({ id: "lock-1" });
-    mockLocksGetAll = vi.fn().mockResolvedValue([]);
-    mockCursorsSet = vi.fn().mockResolvedValue(null);
-    mockCursorsGetAll = vi.fn().mockResolvedValue([]);
+    // Configure the realtime mock
+    const realtimeMock = getMockAblyRealtime();
+    realtimeMock.auth.clientId = "test-client-id";
+    realtimeMock.connection.id = "conn-123";
 
-    const mockSpace = {
-      name: "test-space",
-      enter: mockMembersEnter,
-      leave: mockSpaceLeave,
-      members: {
-        subscribe: mockMembersSubscribe,
-        unsubscribe: mockMembersUnsubscribe,
-        getAll: vi.fn().mockResolvedValue([]),
-        getSelf: vi.fn().mockResolvedValue({
-          clientId: "test-client-id",
-          connectionId: "conn-123",
-          isConnected: true,
-          profileData: {},
-        }),
-      },
-      locations: {
-        set: mockLocationsSet,
-        getAll: mockLocationsGetAll,
-        getSelf: vi.fn().mockResolvedValue(null),
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      },
-      locks: {
-        acquire: mockLocksAcquire,
-        getAll: mockLocksGetAll,
-        get: vi.fn().mockResolvedValue(null),
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      },
-      cursors: {
-        set: mockCursorsSet,
-        getAll: mockCursorsGetAll,
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      },
-    };
+    // Configure the spaces mock with test data
+    const spacesMock = getMockAblySpaces();
+    const space = spacesMock._getSpace("test-space");
 
-    // Merge with existing mocks (don't overwrite configManager)
-    globalThis.__TEST_MOCKS__ = {
-      ...globalThis.__TEST_MOCKS__,
-      ablyRealtimeMock: {
-        channels: {
-          get: vi.fn().mockReturnValue({
-            name: "test-channel",
-            state: "attached",
-            on: vi.fn(),
-            off: vi.fn(),
-            once: vi.fn(),
-          }),
-        },
-        connection: {
-          id: "conn-123",
-          state: "connected",
-          on: vi.fn(),
-          once: vi.fn((event: string, callback: () => void) => {
-            if (event === "connected") {
-              setTimeout(() => callback(), 5);
-            }
-          }),
-        },
-        close: vi.fn(),
-        auth: {
-          clientId: "test-client-id",
-        },
-      },
-      ablySpacesMock: {
-        get: vi.fn().mockResolvedValue(mockSpace),
-      },
-    };
-  });
+    // Configure members
+    space.members.getSelf.mockResolvedValue({
+      clientId: "test-client-id",
+      connectionId: "conn-123",
+      isConnected: true,
+      profileData: {},
+    });
 
-  afterEach(() => {
-    // Only delete the mocks we added, not the whole object
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-      delete globalThis.__TEST_MOCKS__.ablySpacesMock;
-    }
+    // Configure locks to return a lock object
+    space.locks.acquire.mockResolvedValue({ id: "lock-1" });
   });
 
   describe("spaces topic", () => {
@@ -147,16 +61,22 @@ describe("spaces commands", () => {
     });
 
     it("should enter a space successfully", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+
       const { stdout } = await runCommand(
         ["spaces:members:enter", "test-space", "--api-key", "app.key:secret"],
         import.meta.url,
       );
 
       expect(stdout).toContain("test-space");
-      expect(mockMembersEnter).toHaveBeenCalled();
+      expect(space.enter).toHaveBeenCalled();
     });
 
     it("should enter a space with profile data", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+
       const { stdout } = await runCommand(
         [
           "spaces:members:enter",
@@ -170,7 +90,7 @@ describe("spaces commands", () => {
       );
 
       expect(stdout).toContain("test-space");
-      expect(mockMembersEnter).toHaveBeenCalledWith({
+      expect(space.enter).toHaveBeenCalledWith({
         name: "TestUser",
         status: "online",
       });
@@ -190,9 +110,12 @@ describe("spaces commands", () => {
     });
 
     it("should subscribe and display member events with action and client info", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+
       // Capture the member callback to simulate events
       let memberCallback: ((member: unknown) => void) | null = null;
-      mockMembersSubscribe.mockImplementation(
+      space.members.subscribe.mockImplementation(
         (_event: string, callback: (member: unknown) => void) => {
           memberCallback = callback;
           return Promise.resolve();
@@ -244,6 +167,9 @@ describe("spaces commands", () => {
     });
 
     it("should set location with --location flag", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+
       const { stdout } = await runCommand(
         [
           "spaces:locations:set",
@@ -257,7 +183,7 @@ describe("spaces commands", () => {
       );
 
       expect(stdout).toContain("Successfully set location");
-      expect(mockLocationsSet).toHaveBeenCalledWith({ x: 100, y: 200 });
+      expect(space.locations.set).toHaveBeenCalledWith({ x: 100, y: 200 });
     });
   });
 
@@ -275,6 +201,9 @@ describe("spaces commands", () => {
     });
 
     it("should acquire lock with --data flag", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+
       const { stdout } = await runCommand(
         [
           "spaces:locks:acquire",
@@ -289,7 +218,7 @@ describe("spaces commands", () => {
       );
 
       expect(stdout).toContain("Successfully acquired lock");
-      expect(mockLocksAcquire).toHaveBeenCalledWith("my-lock", {
+      expect(space.locks.acquire).toHaveBeenCalledWith("my-lock", {
         reason: "editing",
       });
     });
@@ -308,6 +237,9 @@ describe("spaces commands", () => {
     });
 
     it("should set cursor with x and y flags", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+
       const { stdout } = await runCommand(
         [
           "spaces:cursors:set",
@@ -323,7 +255,7 @@ describe("spaces commands", () => {
       );
 
       expect(stdout).toContain("Set cursor");
-      expect(mockCursorsSet).toHaveBeenCalledWith({
+      expect(space.cursors.set).toHaveBeenCalledWith({
         position: { x: 50, y: 75 },
       });
     });

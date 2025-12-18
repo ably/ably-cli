@@ -1,19 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
+import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
+import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 
 describe("spaces:locations:subscribe command", () => {
   beforeEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-      delete globalThis.__TEST_MOCKS__.ablySpacesMock;
-    }
-  });
-
-  afterEach(() => {
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-      delete globalThis.__TEST_MOCKS__.ablySpacesMock;
-    }
+    // Initialize the mocks
+    getMockAblyRealtime();
+    getMockAblySpaces();
   });
 
   describe("command arguments and flags", () => {
@@ -38,66 +32,11 @@ describe("spaces:locations:subscribe command", () => {
     });
 
     it("should accept --json flag", async () => {
-      const mockLocations = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue({}),
-      };
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.locations.getAll.mockResolvedValue({});
 
-      const mockMembers = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue([]),
-      };
-
-      const mockLocks = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockCursors = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockSpace = {
-        locations: mockLocations,
-        members: mockMembers,
-        locks: mockLocks,
-        cursors: mockCursors,
-        enter: vi.fn().mockResolvedValue(),
-        leave: vi.fn().mockResolvedValue(),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-        id: "test-connection-id",
-      };
-
-      const mockAuth = {
-        clientId: "test-client-id",
-      };
-
-      const mockRealtimeClient = {
-        connection: mockConnection,
-        auth: mockAuth,
-        close: vi.fn(),
-      };
-
-      const mockSpacesClient = {
-        get: vi.fn().mockReturnValue(mockSpace),
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: mockRealtimeClient,
-        ablySpacesMock: mockSpacesClient,
-      };
-
-      // Emit SIGINT to exit the command
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
+      // Use SIGINT to exit the command
 
       const { error } = await runCommand(
         ["spaces:locations:subscribe", "test-space", "--json"],
@@ -131,138 +70,26 @@ describe("spaces:locations:subscribe command", () => {
 
   describe("subscription behavior", () => {
     it("should subscribe to location updates in a space", async () => {
-      const mockLocations = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue({}),
-      };
-
-      const mockMembers = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue([]),
-      };
-
-      const mockLocks = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockCursors = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockSpace = {
-        locations: mockLocations,
-        members: mockMembers,
-        locks: mockLocks,
-        cursors: mockCursors,
-        enter: vi.fn().mockResolvedValue(),
-        leave: vi.fn().mockResolvedValue(),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-        id: "test-connection-id",
-      };
-
-      const mockAuth = {
-        clientId: "test-client-id",
-      };
-
-      const mockRealtimeClient = {
-        connection: mockConnection,
-        auth: mockAuth,
-        close: vi.fn(),
-      };
-
-      const mockSpacesClient = {
-        get: vi.fn().mockReturnValue(mockSpace),
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: mockRealtimeClient,
-        ablySpacesMock: mockSpacesClient,
-      };
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.locations.getAll.mockResolvedValue({});
 
       await runCommand(
         ["spaces:locations:subscribe", "test-space"],
         import.meta.url,
       );
 
-      expect(mockSpace.enter).toHaveBeenCalled();
-      expect(mockLocations.subscribe).toHaveBeenCalledWith(
+      expect(space.enter).toHaveBeenCalled();
+      expect(space.locations.subscribe).toHaveBeenCalledWith(
         "update",
         expect.any(Function),
       );
     });
 
     it("should display initial subscription message", async () => {
-      const mockLocations = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue({}),
-      };
-
-      const mockMembers = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue([]),
-      };
-
-      const mockLocks = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockCursors = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockSpace = {
-        locations: mockLocations,
-        members: mockMembers,
-        locks: mockLocks,
-        cursors: mockCursors,
-        enter: vi.fn().mockResolvedValue(),
-        leave: vi.fn().mockResolvedValue(),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-        id: "test-connection-id",
-      };
-
-      const mockAuth = {
-        clientId: "test-client-id",
-      };
-
-      const mockRealtimeClient = {
-        connection: mockConnection,
-        auth: mockAuth,
-        close: vi.fn(),
-      };
-
-      const mockSpacesClient = {
-        get: vi.fn().mockReturnValue(mockSpace),
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: mockRealtimeClient,
-        ablySpacesMock: mockSpacesClient,
-      };
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.locations.getAll.mockResolvedValue({});
 
       const { stdout } = await runCommand(
         ["spaces:locations:subscribe", "test-space"],
@@ -274,144 +101,31 @@ describe("spaces:locations:subscribe command", () => {
     });
 
     it("should fetch and display current locations", async () => {
-      const mockLocationsData = {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.locations.getAll.mockResolvedValue({
         "conn-1": { room: "lobby", x: 100 },
         "conn-2": { room: "chat", x: 200 },
-      };
-
-      const mockLocations = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue(mockLocationsData),
-      };
-
-      const mockMembers = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue([]),
-      };
-
-      const mockLocks = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockCursors = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockSpace = {
-        locations: mockLocations,
-        members: mockMembers,
-        locks: mockLocks,
-        cursors: mockCursors,
-        enter: vi.fn().mockResolvedValue(),
-        leave: vi.fn().mockResolvedValue(),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-        id: "test-connection-id",
-      };
-
-      const mockAuth = {
-        clientId: "test-client-id",
-      };
-
-      const mockRealtimeClient = {
-        connection: mockConnection,
-        auth: mockAuth,
-        close: vi.fn(),
-      };
-
-      const mockSpacesClient = {
-        get: vi.fn().mockReturnValue(mockSpace),
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: mockRealtimeClient,
-        ablySpacesMock: mockSpacesClient,
-      };
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
+      });
 
       const { stdout } = await runCommand(
         ["spaces:locations:subscribe", "test-space"],
         import.meta.url,
       );
 
-      expect(mockLocations.getAll).toHaveBeenCalled();
+      expect(space.locations.getAll).toHaveBeenCalled();
       expect(stdout).toContain("Current locations");
     });
   });
 
   describe("cleanup behavior", () => {
     it("should close client on completion", async () => {
-      const mockLocations = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue({}),
-      };
-
-      const mockMembers = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue([]),
-      };
-
-      const mockLocks = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockCursors = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockSpace = {
-        locations: mockLocations,
-        members: mockMembers,
-        locks: mockLocks,
-        cursors: mockCursors,
-        enter: vi.fn().mockResolvedValue(),
-        leave: vi.fn().mockResolvedValue(),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-        id: "test-connection-id",
-      };
-
-      const mockAuth = {
-        clientId: "test-client-id",
-      };
-
-      const mockClose = vi.fn();
-      const mockRealtimeClient = {
-        connection: mockConnection,
-        auth: mockAuth,
-        close: mockClose,
-      };
-
-      const mockSpacesClient = {
-        get: vi.fn().mockReturnValue(mockSpace),
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: mockRealtimeClient,
-        ablySpacesMock: mockSpacesClient,
-      };
+      const realtimeMock = getMockAblyRealtime();
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.locations.getAll.mockResolvedValue({});
 
       // Use SIGINT to exit
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
 
       await runCommand(
         ["spaces:locations:subscribe", "test-space"],
@@ -419,71 +133,17 @@ describe("spaces:locations:subscribe command", () => {
       );
 
       // Verify close was called during cleanup
-      expect(mockClose).toHaveBeenCalled();
+      expect(realtimeMock.close).toHaveBeenCalled();
     });
   });
 
   describe("error handling", () => {
     it("should handle getAll rejection gracefully", async () => {
-      const mockLocations = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockRejectedValue(new Error("Failed to get locations")),
-      };
-
-      const mockMembers = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-        getAll: vi.fn().mockResolvedValue([]),
-      };
-
-      const mockLocks = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockCursors = {
-        subscribe: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      const mockSpace = {
-        locations: mockLocations,
-        members: mockMembers,
-        locks: mockLocks,
-        cursors: mockCursors,
-        enter: vi.fn().mockResolvedValue(),
-        leave: vi.fn().mockResolvedValue(),
-      };
-
-      const mockConnection = {
-        on: vi.fn(),
-        once: vi.fn(),
-        state: "connected",
-        id: "test-connection-id",
-      };
-
-      const mockAuth = {
-        clientId: "test-client-id",
-      };
-
-      const mockRealtimeClient = {
-        connection: mockConnection,
-        auth: mockAuth,
-        close: vi.fn(),
-      };
-
-      const mockSpacesClient = {
-        get: vi.fn().mockReturnValue(mockSpace),
-      };
-
-      globalThis.__TEST_MOCKS__ = {
-        ...globalThis.__TEST_MOCKS__,
-        ablyRealtimeMock: mockRealtimeClient,
-        ablySpacesMock: mockSpacesClient,
-      };
-
-      setTimeout(() => process.emit("SIGINT", "SIGINT"), 100);
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.locations.getAll.mockRejectedValue(
+        new Error("Failed to get locations"),
+      );
 
       // The command catches getAll errors and continues
       const { stdout } = await runCommand(
@@ -492,7 +152,7 @@ describe("spaces:locations:subscribe command", () => {
       );
 
       // Command should still subscribe even if getAll fails
-      expect(mockLocations.subscribe).toHaveBeenCalled();
+      expect(space.locations.subscribe).toHaveBeenCalled();
       expect(stdout).toBeDefined();
     });
   });

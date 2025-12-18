@@ -1,73 +1,33 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
-
-// Define the type for global test mocks
-declare global {
-  var __TEST_MOCKS__: {
-    ablyRealtimeMock?: unknown;
-  };
-}
+import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 
 describe("channels:presence:enter command", () => {
-  let mockPresenceEnter: ReturnType<typeof vi.fn>;
-  let mockPresenceGet: ReturnType<typeof vi.fn>;
-  let mockPresenceLeave: ReturnType<typeof vi.fn>;
-  let mockPresenceSubscribe: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
-    mockPresenceEnter = vi.fn().mockResolvedValue(null);
-    mockPresenceGet = vi
-      .fn()
-      .mockResolvedValue([
-        { clientId: "other-client", data: { status: "online" } },
-      ]);
-    mockPresenceLeave = vi.fn().mockResolvedValue(null);
-    mockPresenceSubscribe = vi.fn();
+    const mock = getMockAblyRealtime();
+    const channel = mock.channels._getChannel("test-channel");
 
-    const mockChannel = {
-      name: "test-channel",
-      state: "attached",
-      presence: {
-        enter: mockPresenceEnter,
-        get: mockPresenceGet,
-        leave: mockPresenceLeave,
-        subscribe: mockPresenceSubscribe,
-        unsubscribe: vi.fn(),
+    // Configure presence methods
+    channel.presence.get.mockResolvedValue([
+      { clientId: "other-client", data: { status: "online" } },
+    ]);
+
+    // Configure connection.once to immediately call callback for 'connected'
+    mock.connection.once.mockImplementation(
+      (event: string, callback: () => void) => {
+        if (event === "connected") {
+          callback();
+        }
       },
-      on: vi.fn(),
-      off: vi.fn(),
-      once: vi.fn(),
-    };
+    );
 
-    // Merge with existing mocks (don't overwrite configManager)
-    globalThis.__TEST_MOCKS__ = {
-      ...globalThis.__TEST_MOCKS__,
-      ablyRealtimeMock: {
-        channels: {
-          get: vi.fn().mockReturnValue(mockChannel),
-        },
-        connection: {
-          state: "connected",
-          on: vi.fn(),
-          once: vi.fn((event: string, callback: () => void) => {
-            if (event === "connected") {
-              setTimeout(() => callback(), 5);
-            }
-          }),
-        },
-        close: vi.fn(),
-        auth: {
-          clientId: "test-client-id",
-        },
-      },
-    };
-  });
-
-  afterEach(() => {
-    // Only delete the mock we added, not the whole object
-    if (globalThis.__TEST_MOCKS__) {
-      delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
-    }
+    // Configure channel.once to immediately call callback for 'attached'
+    channel.once.mockImplementation((event: string, callback: () => void) => {
+      if (event === "attached") {
+        channel.state = "attached";
+        callback();
+      }
+    });
   });
 
   describe("help", () => {
@@ -104,6 +64,9 @@ describe("channels:presence:enter command", () => {
 
   describe("presence enter functionality", () => {
     it("should enter presence on a channel", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("test-channel");
+
       const { stdout } = await runCommand(
         [
           "channels:presence:enter",
@@ -118,10 +81,13 @@ describe("channels:presence:enter command", () => {
       expect(stdout).toContain("test-channel");
       expect(stdout).toContain("Entered");
       // Verify presence.enter was called
-      expect(mockPresenceEnter).toHaveBeenCalled();
+      expect(channel.presence.enter).toHaveBeenCalled();
     });
 
     it("should enter presence with data", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("test-channel");
+
       const { stdout } = await runCommand(
         [
           "channels:presence:enter",
@@ -136,15 +102,18 @@ describe("channels:presence:enter command", () => {
 
       expect(stdout).toContain("Entered");
       // Verify presence.enter was called with the data
-      expect(mockPresenceEnter).toHaveBeenCalledWith({
+      expect(channel.presence.enter).toHaveBeenCalledWith({
         status: "online",
         name: "TestUser",
       });
     });
 
     it("should show presence events when --show-others flag is passed", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("test-channel");
+
       // Set up the mock to capture the callback and trigger a presence event
-      mockPresenceSubscribe.mockImplementation(
+      channel.presence.subscribe.mockImplementation(
         (callback: (message: unknown) => void) => {
           // Trigger a presence event after a short delay
           setTimeout(() => {
@@ -171,10 +140,13 @@ describe("channels:presence:enter command", () => {
 
       // Should show presence event from other client
       expect(stdout).toContain("other-client");
-      expect(mockPresenceSubscribe).toHaveBeenCalled();
+      expect(channel.presence.subscribe).toHaveBeenCalled();
     });
 
     it("should run with --json flag without errors", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("test-channel");
+
       const { error } = await runCommand(
         [
           "channels:presence:enter",
@@ -189,7 +161,7 @@ describe("channels:presence:enter command", () => {
       // Should not have errors - command runs successfully in JSON mode
       expect(error).toBeUndefined();
       // Verify presence.enter was still called
-      expect(mockPresenceEnter).toHaveBeenCalled();
+      expect(channel.presence.enter).toHaveBeenCalled();
     });
 
     it("should handle invalid JSON data gracefully", async () => {
@@ -211,6 +183,9 @@ describe("channels:presence:enter command", () => {
     });
 
     it("should not subscribe to presence events without --show-others flag", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("test-channel");
+
       const { stdout } = await runCommand(
         [
           "channels:presence:enter",
@@ -222,7 +197,7 @@ describe("channels:presence:enter command", () => {
       );
 
       // Without --show-others, the command should not subscribe to presence events
-      expect(mockPresenceSubscribe).not.toHaveBeenCalled();
+      expect(channel.presence.subscribe).not.toHaveBeenCalled();
       // But should still show entry confirmation
       expect(stdout).toContain("Entered");
       expect(stdout).toContain("test-channel");
