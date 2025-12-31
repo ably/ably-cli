@@ -92,7 +92,6 @@ The CLI uses topics (space-separated) to group related commands logically.
 **Connections (`ably connections`)**
 *(Interact with Pub/Sub connections)*
 
-- `$ ably connections stats`: Shows connection stats (similar to `ably apps stats` but connection-focused). Supports `--live`.
 - `$ ably connections test`: Performs a simple connection test. Supports transport options.
 - `$ ably connections logs [TOPIC]`: Alias for `ably logs connection-lifecycle subscribe`. (Currently only supports `connection-lifecycle`).
 
