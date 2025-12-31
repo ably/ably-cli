@@ -107,9 +107,6 @@
 - [ ] **Channel Rules (Legacy):**
   - [ ] `channel-rule create/list/update/delete`: Mock Control API calls, flag handling, output formats. (Verify necessity).
 - [ ] **Connections:**
-  - [ ] `connections stats`: Mock REST API call, flag handling, output formats.
-    - [ ] Test different stat aggregation periods
-    - [ ] Test connection types filtering
   - [ ] `connections test`: Mock SDK connection attempts, flag handling, output formats.
     - [ ] Test different transport options (WebSockets, HTTP)
     - [ ] Test environment selection
