@@ -1,22 +1,26 @@
-# Ably CLI
+# Ably CLI and MCP server
 
 [![npm version](https://badge.fury.io/js/@ably%2Fcli.svg)](https://badge.fury.io/js/@ably%2Fcli)
 
-[Ably](https://ably.com) CLI for [Ably Pub/Sub](https://ably.com/pubsub), [Ably Spaces](https://ably.com/spaces), [Ably Chat](https://ably.com/chat) and the [Ably Control API](https://ably.com/docs/account/control-api).
+[Ably](https://ably.com) CLI and MCP server for [Ably Pub/Sub](https://ably.com/pubsub), [Ably Spaces](https://ably.com/spaces), [Ably Chat](https://ably.com/chat) and the [Ably Control API](https://ably.com/docs/account/control-api).
+
+> [!NOTE]
+> This project is in beta and this CLI and MCP server project is being actively developed.
+> Please [raise an issue](https://github.com/ably/ably-cli/issues) if you have feedback, feature requests or want to report a bug. We welcome [pull requests too](https://github.com/ably/ably-cli/pulls).
 
 ![Ably CLI screenshot](assets/cli-screenshot.png)
 
 <!-- toc -->
-* [Ably CLI](#ably-cli)
+* [Ably CLI and MCP server](#ably-cli-and-mcp-server)
 * [CLI Usage](#cli-usage)
+* [MCP Usage](#mcp-usage)
 * [Commands](#commands)
+* [MCP Server](#mcp-server)
 * [Contributing](#contributing)
+* [or](#or)
 <!-- tocstop -->
 
 # CLI Usage
-
-> [!NOTE]
-> The Ably CLI is currently in Public Preview status. Please [raise an issue](https://github.com/ably/ably-cli/issues) if you have feedback, feature requests or want to report a bug.
 
 <!-- usage -->
 ```sh-session
@@ -67,6 +71,20 @@ $ ably-interactive
   - Double Ctrl+C (within 500ms) force quits the shell
 - **No "ably" prefix needed**: Commands can be typed directly (e.g., just `channels list` instead of `ably channels list`)
 
+# MCP Usage
+
+> [!WARNING]
+> The MCP server is currently experimental. Please [raise an issue](https://github.com/ably/ably-cli/issues) if you have feedback or suggestions for features.
+
+1. Install the CLI following the [CLI usage](#cli-usage) steps.
+2. Follow the instructions for your tool to set up an MCP server, such as [Claude desktop](https://modelcontextprotocol.io/quickstart/user), and configure:
+   1. `command` as ably mcp start-server
+
+See [MCP Server section](#mcp-server) for more details on how to use the MCP Server.
+
+> [!NOTE]
+> If you are having trouble getting the MCP server running, use [MCP inspector](https://github.com/modelcontextprotocol/inspector)
+
 # Commands
 
 <!-- commands -->
@@ -75,6 +93,7 @@ $ ably-interactive
 * [`ably accounts list`](#ably-accounts-list)
 * [`ably accounts login [TOKEN]`](#ably-accounts-login-token)
 * [`ably accounts logout [ALIAS]`](#ably-accounts-logout-alias)
+* [`ably accounts stats`](#ably-accounts-stats)
 * [`ably accounts switch [ALIAS]`](#ably-accounts-switch-alias)
 * [`ably apps`](#ably-apps)
 * [`ably apps channel-rules`](#ably-apps-channel-rules)
@@ -86,7 +105,11 @@ $ ably-interactive
 * [`ably apps current`](#ably-apps-current)
 * [`ably apps delete [APPID]`](#ably-apps-delete-appid)
 * [`ably apps list`](#ably-apps-list)
+* [`ably apps logs`](#ably-apps-logs)
+* [`ably apps logs history`](#ably-apps-logs-history)
+* [`ably apps logs subscribe`](#ably-apps-logs-subscribe)
 * [`ably apps set-apns-p12 ID`](#ably-apps-set-apns-p12-id)
+* [`ably apps stats [ID]`](#ably-apps-stats-id)
 * [`ably apps switch [APPID]`](#ably-apps-switch-appid)
 * [`ably apps update ID`](#ably-apps-update-id)
 * [`ably auth`](#ably-auth)
@@ -109,6 +132,7 @@ $ ably-interactive
 * [`ably channels batch-publish [MESSAGE]`](#ably-channels-batch-publish-message)
 * [`ably channels history CHANNEL`](#ably-channels-history-channel)
 * [`ably channels list`](#ably-channels-list)
+* [`ably channels logs [TOPIC]`](#ably-channels-logs-topic)
 * [`ably channels occupancy`](#ably-channels-occupancy)
 * [`ably channels occupancy get CHANNEL`](#ably-channels-occupancy-get-channel)
 * [`ably channels occupancy subscribe CHANNEL`](#ably-channels-occupancy-subscribe-channel)
@@ -121,6 +145,7 @@ $ ably-interactive
 * [`ably config path`](#ably-config-path)
 * [`ably config show`](#ably-config-show)
 * [`ably connections`](#ably-connections)
+* [`ably connections logs [TOPIC]`](#ably-connections-logs-topic)
 * [`ably connections test`](#ably-connections-test)
 * [`ably help [COMMANDS]`](#ably-help-commands)
 * [`ably integrations`](#ably-integrations)
@@ -131,16 +156,18 @@ $ ably-interactive
 * [`ably integrations update RULEID`](#ably-integrations-update-ruleid)
 * [`ably login [TOKEN]`](#ably-login-token)
 * [`ably logs`](#ably-logs)
+* [`ably logs app`](#ably-logs-app)
+* [`ably logs app history`](#ably-logs-app-history)
+* [`ably logs app subscribe`](#ably-logs-app-subscribe)
 * [`ably logs channel-lifecycle`](#ably-logs-channel-lifecycle)
 * [`ably logs channel-lifecycle subscribe`](#ably-logs-channel-lifecycle-subscribe)
 * [`ably logs connection-lifecycle`](#ably-logs-connection-lifecycle)
 * [`ably logs connection-lifecycle history`](#ably-logs-connection-lifecycle-history)
 * [`ably logs connection-lifecycle subscribe`](#ably-logs-connection-lifecycle-subscribe)
-* [`ably logs history`](#ably-logs-history)
+* [`ably logs connection subscribe`](#ably-logs-connection-subscribe)
 * [`ably logs push`](#ably-logs-push)
 * [`ably logs push history`](#ably-logs-push-history)
 * [`ably logs push subscribe`](#ably-logs-push-subscribe)
-* [`ably logs subscribe`](#ably-logs-subscribe)
 * [`ably mcp`](#ably-mcp)
 * [`ably mcp start-server`](#ably-mcp-start-server)
 * [`ably queues`](#ably-queues)
@@ -187,9 +214,6 @@ $ ably-interactive
 * [`ably spaces members`](#ably-spaces-members)
 * [`ably spaces members enter SPACE`](#ably-spaces-members-enter-space)
 * [`ably spaces members subscribe SPACE`](#ably-spaces-members-subscribe-space)
-* [`ably stats`](#ably-stats)
-* [`ably stats account`](#ably-stats-account)
-* [`ably stats app [ID]`](#ably-stats-app-id)
 * [`ably status`](#ably-status)
 * [`ably support`](#ably-support)
 * [`ably support ask QUESTION`](#ably-support-ask-question)
@@ -217,11 +241,14 @@ EXAMPLES
 
   $ ably accounts switch my-account
 
+  $ ably accounts stats
+
 COMMANDS
   ably accounts current         Show the current Ably account
   ably accounts list            List locally configured Ably accounts
   ably accounts login           Log in to your Ably account
   ably accounts logout          Log out from an Ably account
+  ably accounts stats           Get account stats with optional live updates
   ably accounts switch          Switch to a different Ably account
 ```
 
@@ -380,6 +407,60 @@ EXAMPLES
 
 _See code: [src/commands/accounts/logout.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/accounts/logout.ts)_
 
+## `ably accounts stats`
+
+Get account stats with optional live updates
+
+```
+USAGE
+  $ ably accounts stats [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--debug] [--end <value>]
+    [--interval <value>] [--limit <value>] [--live] [--start <value>] [--unit minute|hour|day|month]
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --debug                 Show debug information for live stats polling
+      --end=<value>           End time in milliseconds since epoch
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --interval=<value>      [default: 6] Polling interval in seconds (only used with --live)
+      --json                  Output in JSON format
+      --limit=<value>         [default: 10] Maximum number of stats records to return
+      --live                  Subscribe to live stats updates (uses minute interval)
+      --pretty-json           Output in colorized JSON format
+      --start=<value>         Start time in milliseconds since epoch
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+      --unit=<option>         [default: minute] Time unit for stats
+                              <options: minute|hour|day|month>
+
+DESCRIPTION
+  Get account stats with optional live updates
+
+EXAMPLES
+  $ ably accounts stats
+
+  $ ably accounts stats --unit hour
+
+  $ ably accounts stats --start 1618005600000 --end 1618091999999
+
+  $ ably accounts stats --limit 10
+
+  $ ably accounts stats --json
+
+  $ ably accounts stats --pretty-json
+
+  $ ably accounts stats --live
+
+  $ ably accounts stats --live --interval 15
+```
+
+_See code: [src/commands/accounts/stats/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/accounts/stats/index.ts)_
+
 ## `ably accounts switch [ALIAS]`
 
 Switch to a different Ably account
@@ -442,6 +523,8 @@ EXAMPLES
 
   $ ably apps set-apns-p12
 
+  $ ably apps stats
+
   $ ably apps channel-rules list
 
   $ ably apps switch my-app
@@ -452,7 +535,9 @@ COMMANDS
   ably apps current             Show the currently selected app
   ably apps delete              Delete an app
   ably apps list                List all apps in the current account
+  ably apps logs                Stream or retrieve app logs
   ably apps set-apns-p12        Upload Apple Push Notification Service P12 certificate for an app
+  ably apps stats               Get app stats with optional live updates
   ably apps switch              Switch to a different Ably app
   ably apps update              Update an app
 ```
@@ -810,6 +895,104 @@ EXAMPLES
 
 _See code: [src/commands/apps/list.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/list.ts)_
 
+## `ably apps logs`
+
+Stream or retrieve app logs
+
+```
+USAGE
+  $ ably apps logs
+
+DESCRIPTION
+  Stream or retrieve app logs
+
+EXAMPLES
+  $ ably apps logs subscribe
+
+  $ ably apps logs subscribe --rewind 10
+
+  $ ably apps logs history
+```
+
+_See code: [src/commands/apps/logs/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/logs/index.ts)_
+
+## `ably apps logs history`
+
+Alias for `ably logs app history`
+
+```
+USAGE
+  $ ably apps logs history [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--pretty-json | --json] [--token <value>] [-v] [--direction
+    backwards|forwards] [--limit <value>]
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --direction=<option>    [default: backwards] Direction of message retrieval
+                              <options: backwards|forwards>
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output results in JSON format
+      --limit=<value>         [default: 100] Maximum number of messages to retrieve
+      --pretty-json           Output in colorized JSON format
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Alias for `ably logs app history`
+
+EXAMPLES
+  $ ably apps logs history
+
+  $ ably apps logs history --limit 20
+
+  $ ably apps logs history --direction forwards
+
+  $ ably apps logs history --json
+
+  $ ably apps logs history --pretty-json
+```
+
+_See code: [src/commands/apps/logs/history.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/logs/history.ts)_
+
+## `ably apps logs subscribe`
+
+Alias for ably logs app subscribe
+
+```
+USAGE
+  $ ably apps logs subscribe [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--pretty-json | --json] [--token <value>] [-v] [--rewind <value>]
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output results as JSON
+      --pretty-json           Output in colorized JSON format
+      --rewind=<value>        Number of messages to rewind when subscribing
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Alias for ably logs app subscribe
+
+EXAMPLES
+  $ ably apps logs subscribe
+
+  $ ably apps logs subscribe --rewind 10
+```
+
+_See code: [src/commands/apps/logs/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/logs/subscribe.ts)_
+
 ## `ably apps set-apns-p12 ID`
 
 Upload Apple Push Notification Service P12 certificate for an app
@@ -851,6 +1034,69 @@ EXAMPLES
 ```
 
 _See code: [src/commands/apps/set-apns-p12.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/set-apns-p12.ts)_
+
+## `ably apps stats [ID]`
+
+Get app stats with optional live updates
+
+```
+USAGE
+  $ ably apps stats [ID] [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--debug] [--end <value>]
+    [--interval <value>] [--limit <value>] [--live] [--start <value>] [--unit minute|hour|day|month]
+
+ARGUMENTS
+  ID  App ID to get stats for (uses default app if not provided)
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --debug                 Show debug information for live stats polling
+      --end=<value>           End time in milliseconds since epoch
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --interval=<value>      [default: 6] Polling interval in seconds (only used with --live)
+      --json                  Output in JSON format
+      --limit=<value>         [default: 10] Maximum number of stats records to return
+      --live                  Subscribe to live stats updates (uses minute interval)
+      --pretty-json           Output in colorized JSON format
+      --start=<value>         Start time in milliseconds since epoch
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+      --unit=<option>         [default: minute] Time unit for stats
+                              <options: minute|hour|day|month>
+
+DESCRIPTION
+  Get app stats with optional live updates
+
+EXAMPLES
+  $ ably apps stats
+
+  $ ably apps stats app-id
+
+  $ ably apps stats --unit hour
+
+  $ ably apps stats app-id --unit hour
+
+  $ ably apps stats app-id --start 1618005600000 --end 1618091999999
+
+  $ ably apps stats app-id --limit 10
+
+  $ ably apps stats app-id --json
+
+  $ ably apps stats app-id --pretty-json
+
+  $ ably apps stats --live
+
+  $ ably apps stats app-id --live
+
+  $ ably apps stats --live --interval 15
+```
+
+_See code: [src/commands/apps/stats/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/stats/index.ts)_
 
 ## `ably apps switch [APPID]`
 
@@ -1577,6 +1823,7 @@ COMMANDS
   ably channels batch-publish   Publish messages to multiple Ably channels with a single request
   ably channels history         Retrieve message history for a channel
   ably channels list            List active channels using the channel enumeration API
+  ably channels logs            Alias for ably logs channel-lifecycle subscribe
   ably channels occupancy       Get occupancy metrics for a channel
   ably channels presence        Manage presence on Ably channels
   ably channels publish         Publish a message to an Ably channel
@@ -1730,6 +1977,43 @@ EXAMPLES
 ```
 
 _See code: [src/commands/channels/list.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/channels/list.ts)_
+
+## `ably channels logs [TOPIC]`
+
+Alias for ably logs channel-lifecycle subscribe
+
+```
+USAGE
+  $ ably channels logs [TOPIC] [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--pretty-json | --json] [--token <value>] [-v] [--rewind <value>]
+
+ARGUMENTS
+  TOPIC  [default: channel-lifecycle] Log topic to subscribe to (currently only channel-lifecycle is supported)
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output results as JSON
+      --pretty-json           Output in colorized JSON format
+      --rewind=<value>        Number of messages to rewind when subscribing
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Alias for ably logs channel-lifecycle subscribe
+
+EXAMPLES
+  $ ably channels logs channel-lifecycle
+
+  $ ably channels logs channel-lifecycle --rewind 10
+```
+
+_See code: [src/commands/channels/logs.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/channels/logs.ts)_
 
 ## `ably channels occupancy`
 
@@ -2202,10 +2486,48 @@ EXAMPLES
   $ ably connections test
 
 COMMANDS
+  ably connections logs         Alias for ably logs connection-lifecycle subscribe
   ably connections test         Test connection to Ably
 ```
 
 _See code: [src/commands/connections/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/connections/index.ts)_
+
+## `ably connections logs [TOPIC]`
+
+Alias for ably logs connection-lifecycle subscribe
+
+```
+USAGE
+  $ ably connections logs [TOPIC] [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--pretty-json | --json] [--token <value>] [-v] [--rewind <value>]
+
+ARGUMENTS
+  TOPIC  [default: connections-lifecycle] Log topic to subscribe to (currently only connections-lifecycle is supported)
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output results as JSON
+      --pretty-json           Output in colorized JSON format
+      --rewind=<value>        Number of messages to rewind when subscribing
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Alias for ably logs connection-lifecycle subscribe
+
+EXAMPLES
+  $ ably connections logs connections-lifecycle
+
+  $ ably connections logs connections-lifecycle --rewind 10
+```
+
+_See code: [src/commands/connections/logs.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/connections/logs.ts)_
 
 ## `ably connections test`
 
@@ -2556,21 +2878,131 @@ DESCRIPTION
   Streaming and retrieving logs from Ably
 
 EXAMPLES
-  $ ably logs subscribe
+  $ ably logs app subscribe
 
-  $ ably logs history
+  $ ably logs app history
 
   $ ably logs channel-lifecycle subscribe
 
 COMMANDS
+  ably logs app                 Stream or retrieve logs from the app-wide meta channel [meta]log
   ably logs channel-lifecycle   Stream logs from [meta]channel.lifecycle meta channel
   ably logs connection-lifecycleStream logs from [meta]connection.lifecycle meta channel
-  ably logs history             Retrieve application log history
   ably logs push                Stream or retrieve push notification logs from [meta]log:push
-  ably logs subscribe           Subscribe to live app logs
 ```
 
 _See code: [src/commands/logs/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/index.ts)_
+
+## `ably logs app`
+
+Stream or retrieve logs from the app-wide meta channel [meta]log
+
+```
+USAGE
+  $ ably logs app
+
+DESCRIPTION
+  Stream or retrieve logs from the app-wide meta channel [meta]log
+
+EXAMPLES
+  $ ably logs app subscribe
+
+  $ ably logs app subscribe --rewind 10
+
+  $ ably logs app history
+```
+
+_See code: [src/commands/logs/app/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/app/index.ts)_
+
+## `ably logs app history`
+
+Retrieve application log history
+
+```
+USAGE
+  $ ably logs app history [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--direction
+    backwards|forwards] [--limit <value>]
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --direction=<option>    [default: backwards] Direction of log retrieval
+                              <options: backwards|forwards>
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --limit=<value>         [default: 100] Maximum number of logs to retrieve
+      --pretty-json           Output in colorized JSON format
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Retrieve application log history
+
+EXAMPLES
+  $ ably logs app history
+
+  $ ably logs app history --limit 20
+
+  $ ably logs app history --direction forwards
+
+  $ ably logs app history --json
+
+  $ ably logs app history --pretty-json
+```
+
+_See code: [src/commands/logs/app/history.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/app/history.ts)_
+
+## `ably logs app subscribe`
+
+Subscribe to live app logs
+
+```
+USAGE
+  $ ably logs app subscribe [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>] [--rewind
+    <value>] [--type channel.lifecycle|channel.occupancy|channel.presence|connection.lifecycle|push.publish]
+
+FLAGS
+  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --pretty-json           Output in colorized JSON format
+      --rewind=<value>        Number of messages to rewind when subscribing
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+      --type=<option>         Filter by log type
+                              <options:
+                              channel.lifecycle|channel.occupancy|channel.presence|connection.lifecycle|push.publish>
+
+DESCRIPTION
+  Subscribe to live app logs
+
+EXAMPLES
+  $ ably logs app subscribe
+
+  $ ably logs app subscribe --rewind 10
+
+  $ ably logs app subscribe --type channel.lifecycle
+
+  $ ably logs app subscribe --json
+
+  $ ably logs app subscribe --pretty-json
+
+  $ ably logs app subscribe --duration 30
+```
+
+_See code: [src/commands/logs/app/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/app/subscribe.ts)_
 
 ## `ably logs channel-lifecycle`
 
@@ -2578,7 +3010,22 @@ Stream logs from [meta]channel.lifecycle meta channel
 
 ```
 USAGE
-  $ ably logs channel-lifecycle
+  $ ably logs channel-lifecycle [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--pretty-json | --json] [--token <value>] [-v] [--rewind <value>]
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output results as JSON
+      --pretty-json           Output in colorized JSON format
+      --rewind=<value>        Number of messages to rewind when subscribing
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
   Stream logs from [meta]channel.lifecycle meta channel
@@ -2727,48 +3174,43 @@ EXAMPLES
 
 _See code: [src/commands/logs/connection-lifecycle/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/connection-lifecycle/subscribe.ts)_
 
-## `ably logs history`
+## `ably logs connection subscribe`
 
-Retrieve application log history
+Subscribe to live connection logs
 
 ```
 USAGE
-  $ ably logs history [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--direction
-    backwards|forwards] [--limit <value>]
+  $ ably logs connection subscribe [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>]
 
 FLAGS
+  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
   -v, --verbose               Output verbose logs
       --access-token=<value>  Overrides any configured access token used for the Control API
       --api-key=<value>       Overrides any configured API key used for the product APIs
       --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
                               set no client ID. Not applicable when using token authentication.
-      --direction=<option>    [default: backwards] Direction of log retrieval
-                              <options: backwards|forwards>
       --endpoint=<value>      Override the endpoint for all product API calls
       --env=<value>           Override the environment for all product API calls
       --host=<value>          Override the host endpoint for all product API calls
       --json                  Output in JSON format
-      --limit=<value>         [default: 100] Maximum number of logs to retrieve
       --pretty-json           Output in colorized JSON format
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
-  Retrieve application log history
+  Subscribe to live connection logs
 
 EXAMPLES
-  $ ably logs history
+  $ ably logs connection subscribe
 
-  $ ably logs history --limit 20
+  $ ably logs connection subscribe --json
 
-  $ ably logs history --direction forwards
+  $ ably logs connection subscribe --pretty-json
 
-  $ ably logs history --json
-
-  $ ably logs history --pretty-json
+  $ ably logs connection subscribe --duration 30
 ```
 
-_See code: [src/commands/logs/history.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/history.ts)_
+_See code: [src/commands/logs/connection/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/connection/subscribe.ts)_
 
 ## `ably logs push`
 
@@ -2867,53 +3309,6 @@ EXAMPLES
 ```
 
 _See code: [src/commands/logs/push/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/push/subscribe.ts)_
-
-## `ably logs subscribe`
-
-Subscribe to live app logs
-
-```
-USAGE
-  $ ably logs subscribe [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>] [--rewind
-    <value>] [--type channel.lifecycle|channel.occupancy|channel.presence|connection.lifecycle|push.publish]
-
-FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --rewind=<value>        Number of messages to rewind when subscribing
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --type=<option>         Filter by log type
-                              <options:
-                              channel.lifecycle|channel.occupancy|channel.presence|connection.lifecycle|push.publish>
-
-DESCRIPTION
-  Subscribe to live app logs
-
-EXAMPLES
-  $ ably logs subscribe
-
-  $ ably logs subscribe --rewind 10
-
-  $ ably logs subscribe --type channel.lifecycle
-
-  $ ably logs subscribe --json
-
-  $ ably logs subscribe --pretty-json
-
-  $ ably logs subscribe --duration 30
-```
-
-_See code: [src/commands/logs/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/subscribe.ts)_
 
 ## `ably mcp`
 
@@ -4563,154 +4958,6 @@ EXAMPLES
 
 _See code: [src/commands/spaces/members/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/members/subscribe.ts)_
 
-## `ably stats`
-
-View statistics for your Ably account or apps
-
-```
-USAGE
-  $ ably stats
-
-DESCRIPTION
-  View statistics for your Ably account or apps
-
-EXAMPLES
-  $ ably stats account
-
-  $ ably stats account --unit hour
-
-  $ ably stats account --live
-
-  $ ably stats app
-
-  $ ably stats app my-app-id
-
-  $ ably stats app --live
-
-COMMANDS
-  ably stats account            Get account stats with optional live updates
-  ably stats app                Get app stats with optional live updates
-```
-
-_See code: [src/commands/stats/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/stats/index.ts)_
-
-## `ably stats account`
-
-Get account stats with optional live updates
-
-```
-USAGE
-  $ ably stats account [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--debug] [--end <value>]
-    [--interval <value>] [--limit <value>] [--live] [--start <value>] [--unit minute|hour|day|month]
-
-FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --debug                 Show debug information for live stats polling
-      --end=<value>           End time in milliseconds since epoch
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --interval=<value>      [default: 6] Polling interval in seconds (only used with --live)
-      --json                  Output in JSON format
-      --limit=<value>         [default: 10] Maximum number of stats records to return
-      --live                  Subscribe to live stats updates (uses minute interval)
-      --pretty-json           Output in colorized JSON format
-      --start=<value>         Start time in milliseconds since epoch
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --unit=<option>         [default: minute] Time unit for stats
-                              <options: minute|hour|day|month>
-
-DESCRIPTION
-  Get account stats with optional live updates
-
-EXAMPLES
-  $ ably stats account
-
-  $ ably stats account --unit hour
-
-  $ ably stats account --start 1618005600000 --end 1618091999999
-
-  $ ably stats account --limit 10
-
-  $ ably stats account --json
-
-  $ ably stats account --pretty-json
-
-  $ ably stats account --live
-
-  $ ably stats account --live --interval 15
-```
-
-_See code: [src/commands/stats/account.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/stats/account.ts)_
-
-## `ably stats app [ID]`
-
-Get app stats with optional live updates
-
-```
-USAGE
-  $ ably stats app [ID] [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--debug] [--end <value>]
-    [--interval <value>] [--limit <value>] [--live] [--start <value>] [--unit minute|hour|day|month]
-
-ARGUMENTS
-  ID  App ID to get stats for (uses default app if not provided)
-
-FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --debug                 Show debug information for live stats polling
-      --end=<value>           End time in milliseconds since epoch
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --interval=<value>      [default: 6] Polling interval in seconds (only used with --live)
-      --json                  Output in JSON format
-      --limit=<value>         [default: 10] Maximum number of stats records to return
-      --live                  Subscribe to live stats updates (uses minute interval)
-      --pretty-json           Output in colorized JSON format
-      --start=<value>         Start time in milliseconds since epoch
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --unit=<option>         [default: minute] Time unit for stats
-                              <options: minute|hour|day|month>
-
-DESCRIPTION
-  Get app stats with optional live updates
-
-EXAMPLES
-  $ ably stats app
-
-  $ ably stats app app-id
-
-  $ ably stats app --unit hour
-
-  $ ably stats app app-id --unit hour
-
-  $ ably stats app app-id --start 1618005600000 --end 1618091999999
-
-  $ ably stats app app-id --limit 10
-
-  $ ably stats app app-id --json
-
-  $ ably stats app app-id --pretty-json
-
-  $ ably stats app --live
-
-  $ ably stats app app-id --live
-
-  $ ably stats app --live --interval 15
-```
-
-_See code: [src/commands/stats/app.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/stats/app.ts)_
-
 ## `ably status`
 
 Check the status of the Ably service
@@ -4818,6 +5065,62 @@ EXAMPLES
 _See code: [src/commands/support/contact.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/support/contact.ts)_
 <!-- commandsstop -->
 
+# MCP Server
+
+The Ably CLI can also act as an MCP (Model Context Protocol) server for AI use cases, specifically focussed on IDE tools and AI desktop tools like Claude that support MCP.
+
+## Using the MCP Server
+
+To start the MCP server, run:
+
+```sh
+ably-mcp
+```
+
+Or via npm/pnpm script:
+
+```sh
+pnpm mcp-server
+```
+
+The MCP server runs in file mode (stdio transport) and exposes a subset of Ably CLI commands that AI tools can use to interact with Ably channels.
+
+## Environment Variables
+
+The MCP server supports the following environment variables for authentication and configuration:
+
+- `ABLY_ACCESS_TOKEN` - Overrides the default access token used for the Control API
+- `ABLY_API_KEY` - Overrides the default API key used for the data plane
+- `ABLY_CLIENT_ID` - Overrides the default client ID assigned
+- `ABLY_CONTROL_HOST` - Overrides the default control API host
+- `ABLY_HOST` - Overrides the default data plane host
+- `ABLY_ENVIRONMENT` - Overrides the default data plane environment
+
+### Update Notification Environment Variables
+
+The CLI also supports environment variables to control update notifications:
+
+- `ABLY_SKIP_NEW_VERSION_CHECK=1` - Skip automatic version update checks
+- `ABLY_FORCE_VERSION_CACHE_UPDATE=1` - Force an immediate version check
+
+## Available MCP Commands
+
+The MCP server exposes the following subset of Ably CLI commands:
+
+- `list_channels` - List active channels using the channel enumeration API
+- `subscribe_to_channel` - Subscribe to messages on an Ably channel
+- `publish_to_channel` - Publish a message to an Ably channel
+- `get_channel_history` - Retrieve message history for a channel
+- Channel Presence - Access presence information for channels
+
+## MCP Resources
+
+The MCP server also provides the following resources:
+
+- `channels` - List of active channels on the Ably platform
+- `channel_history` - Historical messages from a specific Ably channel
+- `channel_presence` - Current presence members on a specific Ably channel
+
 # Contributing
 
 Please see the documentation in [`.cursor/rules/Workflow.mdc`](.cursor/rules/Workflow.mdc) for details on how to contribute to this project, including our mandatory development workflow, testing requirements, and code quality standards.
@@ -4825,14 +5128,16 @@ Please see the documentation in [`.cursor/rules/Workflow.mdc`](.cursor/rules/Wor
 ## For AI Assistants
 
 **IMPORTANT**: See [`.claude/CLAUDE.md`](./.claude/CLAUDE.md) for mandatory instructions before making any changes.
-If you are an AI assistant, start with [`AI-Assistance.mdc`](.cursor/rules/AI-Assistance.mdc) first.
+If you are an AI assistant, start with [`AI_START_HERE.md`](./AI_START_HERE.md) first.
 
 ## Quick Development Validation
 
 Before submitting any changes, run our automated validation script to ensure your code meets all requirements:
 
 ```bash
-pnpm validate  # or: ./scripts/pre-push-validation.sh
+pnpm validate
+# or
+./scripts/pre-push-validation.sh
 ```
 
 This script automatically runs all mandatory steps including build, linting, and testing. See [`.cursor/rules/Workflow.mdc`](.cursor/rules/Workflow.mdc) for detailed information about each step.
