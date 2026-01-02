@@ -72,7 +72,11 @@
     - [ ] Test app update with partial data
     - [ ] Test P12 certificate file upload handling
     - [ ] Test failure scenarios: duplicate app names, API error mapping
-  - [ ] `apps stats`: Mock Control API calls, flag handling, output formats.
+- [ ] **Stats:**
+  - [ ] `stats account`: Mock Control API calls, flag handling, output formats.
+    - [ ] Test stats parsing and formatting for different time ranges
+    - [ ] Test --live polling functionality with mocked responses
+  - [ ] `stats app`: Mock Control API calls, flag handling, output formats.
     - [ ] Test stats parsing and formatting for different time ranges
     - [ ] Test --live polling functionality with mocked responses
   - [ ] `apps logs history/subscribe`: Mock Control API/SDK, flag handling, output formats, SIGINT handling.
