@@ -1,32 +1,23 @@
-import { Args, Flags } from "@oclif/core";
+import { Flags } from "@oclif/core";
 import chalk from "chalk";
-import { StatsDisplay } from "../../../services/stats-display.js";
-import { ControlBaseCommand } from "../../../control-base-command.js";
-import type { BaseFlags } from "../../../types/cli.js";
-import type { ControlApi } from "../../../services/control-api.js";
 
-export default class AppsStatsCommand extends ControlBaseCommand {
-  static args = {
-    id: Args.string({
-      description: "App ID to get stats for (uses default app if not provided)",
-      required: false,
-    }),
-  };
+import { ControlBaseCommand } from "../../control-base-command.js";
+import { StatsDisplay } from "../../services/stats-display.js";
+import type { BaseFlags } from "../../types/cli.js";
+import type { ControlApi } from "../../services/control-api.js";
 
-  static description = "Get app stats with optional live updates";
+export default class StatsAccountCommand extends ControlBaseCommand {
+  static description = "Get account stats with optional live updates";
 
   static examples = [
-    "$ ably apps stats",
-    "$ ably apps stats app-id",
-    "$ ably apps stats --unit hour",
-    "$ ably apps stats app-id --unit hour",
-    "$ ably apps stats app-id --start 1618005600000 --end 1618091999999",
-    "$ ably apps stats app-id --limit 10",
-    "$ ably apps stats app-id --json",
-    "$ ably apps stats app-id --pretty-json",
-    "$ ably apps stats --live",
-    "$ ably apps stats app-id --live",
-    "$ ably apps stats --live --interval 15",
+    "$ ably stats account",
+    "$ ably stats account --unit hour",
+    "$ ably stats account --start 1618005600000 --end 1618091999999",
+    "$ ably stats account --limit 10",
+    "$ ably stats account --json",
+    "$ ably stats account --pretty-json",
+    "$ ably stats account --live",
+    "$ ably stats account --live --interval 15",
   ];
 
   static flags = {
@@ -66,17 +57,7 @@ export default class AppsStatsCommand extends ControlBaseCommand {
   private statsDisplay: StatsDisplay | null = null; // Track when we're already fetching stats
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(AppsStatsCommand);
-
-    // Use provided app ID or fall back to default app ID
-    const appId = args.id || this.configManager.getCurrentAppId();
-
-    if (!appId) {
-      this.error(
-        'No app ID provided and no default app selected. Please specify an app ID or select a default app with "ably apps switch".',
-      );
-      return;
-    }
+    const { flags } = await this.parse(StatsAccountCommand);
 
     // For live stats, enforce minute interval
     if (flags.live && flags.unit !== "minute") {
@@ -94,6 +75,7 @@ export default class AppsStatsCommand extends ControlBaseCommand {
     // Create stats display
     this.statsDisplay = new StatsDisplay({
       intervalSeconds: flags.interval as number,
+      isAccountStats: true,
       json: this.shouldOutputJson(flags),
       live: flags.live,
       startTime: flags.live ? new Date() : undefined,
@@ -101,12 +83,11 @@ export default class AppsStatsCommand extends ControlBaseCommand {
     });
 
     await (flags.live
-      ? this.runLiveStats(appId, flags, controlApi)
-      : this.runOneTimeStats(appId, flags, controlApi));
+      ? this.runLiveStats(flags, controlApi)
+      : this.runOneTimeStats(flags, controlApi));
   }
 
   private async fetchAndDisplayStats(
-    appId: string,
     flags: BaseFlags,
     controlApi: ControlApi,
   ): Promise<void> {
@@ -114,7 +95,7 @@ export default class AppsStatsCommand extends ControlBaseCommand {
       const now = new Date();
       const start = new Date(now.getTime() - 24 * 60 * 60 * 1000); // Last 24 hours
 
-      const stats = await controlApi.getAppStats(appId, {
+      const stats = await controlApi.getAccountStats({
         end: now.getTime(),
         limit: 1, // Only get the most recent stats for live updates
         start: start.getTime(),
@@ -132,7 +113,6 @@ export default class AppsStatsCommand extends ControlBaseCommand {
   }
 
   private async pollStats(
-    appId: string,
     flags: BaseFlags,
     controlApi: ControlApi,
   ): Promise<void> {
@@ -144,7 +124,7 @@ export default class AppsStatsCommand extends ControlBaseCommand {
         );
       }
 
-      await this.fetchAndDisplayStats(appId, flags, controlApi);
+      await this.fetchAndDisplayStats(flags, controlApi);
     } catch (error) {
       if (flags.debug) {
         console.error(
@@ -159,12 +139,15 @@ export default class AppsStatsCommand extends ControlBaseCommand {
   }
 
   private async runLiveStats(
-    appId: string,
     flags: BaseFlags,
     controlApi: ControlApi,
   ): Promise<void> {
     try {
-      this.log(`Subscribing to live stats for app ${appId}...`);
+      // Get account info to display the name
+      const { account } = await controlApi.getMe();
+      this.log(
+        `Subscribing to live stats for account ${account.name} (${account.id})...`,
+      );
 
       // Setup graceful shutdown
       const cleanup = () => {
@@ -180,14 +163,14 @@ export default class AppsStatsCommand extends ControlBaseCommand {
       process.on("SIGTERM", cleanup);
 
       // Show stats immediately before starting polling
-      await this.fetchAndDisplayStats(appId, flags, controlApi);
+      await this.fetchAndDisplayStats(flags, controlApi);
 
       // Poll for stats at the specified interval
       this.pollInterval = setInterval(
         () => {
           // Use non-blocking polling - don't wait for previous poll to complete
           if (!this.isPolling) {
-            this.pollStats(appId, flags, controlApi);
+            this.pollStats(flags, controlApi);
           } else if (flags.debug) {
             // Only show this message if debug flag is enabled
             console.log(
@@ -216,13 +199,10 @@ export default class AppsStatsCommand extends ControlBaseCommand {
   }
 
   private async runOneTimeStats(
-    appId: string,
     flags: BaseFlags,
     controlApi: ControlApi,
   ): Promise<void> {
     try {
-      this.log(`Fetching stats for app ${appId}...`);
-
       // If no start/end time provided, use the last 24 hours
       if (!flags.start && !flags.end) {
         const now = new Date();
@@ -230,7 +210,7 @@ export default class AppsStatsCommand extends ControlBaseCommand {
         flags.start = now.getTime() - 24 * 60 * 60 * 1000; // 24 hours ago
       }
 
-      const stats = await controlApi.getAppStats(appId, {
+      const stats = await controlApi.getAccountStats({
         end: flags.end as number,
         limit: flags.limit as number,
         start: flags.start as number,
@@ -248,7 +228,7 @@ export default class AppsStatsCommand extends ControlBaseCommand {
       }
     } catch (error) {
       this.error(
-        `Error fetching app stats: ${error instanceof Error ? error.message : String(error)}`,
+        `Error fetching account stats: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
