@@ -103,10 +103,6 @@ describe("CLI Help", function () {
         expect(output).toContain("channels subscribe [channel]");
         expect(output).toContain("Subscribe to a channel");
 
-        // Should show channels:logs command for authenticated users
-        expect(output).toContain("channels logs");
-        expect(output).toContain("View live channel events");
-
         // Check for help instructions (less brittle - just check key parts)
         expect(output).toContain("Type");
         expect(output).toContain("help");
@@ -237,7 +233,7 @@ describe("CLI Help", function () {
         expect(output).not.toContain("mcp");
       });
 
-      it("should hide channels:logs in anonymous mode", async function () {
+      it("should show common commands in anonymous mode", async function () {
         const mockConfig = createMockConfig();
         const help = new CustomHelp(mockConfig);
 
@@ -262,10 +258,6 @@ describe("CLI Help", function () {
         expect(output).toContain("Publish a message");
         expect(output).toContain("channels subscribe [channel]");
         expect(output).toContain("Subscribe to a channel");
-
-        // Should NOT show channels:logs command for anonymous users
-        expect(output).not.toContain("channels logs");
-        expect(output).not.toContain("View live channel events");
 
         // Clean up
         delete process.env.ABLY_ANONYMOUS_USER_MODE;
@@ -352,7 +344,9 @@ describe("CLI Help", function () {
         expect(help.shouldDisplay({ id: "channels:subscribe" } as any)).toBe(
           true,
         );
-        expect(help.shouldDisplay({ id: "channels:logs" } as any)).toBe(true); // Now allowed for authenticated users
+        expect(help.shouldDisplay({ id: "channels:history" } as any)).toBe(
+          true,
+        ); // Allowed for authenticated users
         expect(help.shouldDisplay({ id: "rooms:get" } as any)).toBe(true);
         expect(help.shouldDisplay({ id: "help" } as any)).toBe(true);
       });

@@ -2,19 +2,19 @@ import { Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 
-import { AblyBaseCommand } from "../../../base-command.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import { AblyBaseCommand } from "../../base-command.js";
+import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
 
-export default class LogsAppSubscribe extends AblyBaseCommand {
+export default class LogsSubscribe extends AblyBaseCommand {
   static override description = "Subscribe to live app logs";
 
   static override examples = [
-    "$ ably logs app subscribe",
-    "$ ably logs app subscribe --rewind 10",
-    "$ ably logs app subscribe --type channel.lifecycle",
-    "$ ably logs app subscribe --json",
-    "$ ably logs app subscribe --pretty-json",
-    "$ ably logs app subscribe --duration 30",
+    "$ ably logs subscribe",
+    "$ ably logs subscribe --rewind 10",
+    "$ ably logs subscribe --type channel.lifecycle",
+    "$ ably logs subscribe --json",
+    "$ ably logs subscribe --pretty-json",
+    "$ ably logs subscribe --duration 30",
   ];
 
   static override flags = {
@@ -45,7 +45,7 @@ export default class LogsAppSubscribe extends AblyBaseCommand {
   private client: Ably.Realtime | null = null;
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(LogsAppSubscribe);
+    const { flags } = await this.parse(LogsSubscribe);
     let channel: Ably.RealtimeChannel | null = null;
     let subscribedEvents: string[] = [];
 

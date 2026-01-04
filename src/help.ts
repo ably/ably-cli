@@ -363,27 +363,15 @@ export default class CustomHelp extends Help {
     const cmdPrefix = this.interactiveMode ? "" : "ably ";
     lines.push(`${chalk.bold("COMMON COMMANDS")}`);
 
-    const isAnonymousMode = process.env.ABLY_ANONYMOUS_USER_MODE === "true";
-    const commands = [];
-
-    // Basic commands always available
-    commands.push(
+    const commands = [
       [`${cmdPrefix}channels publish [channel] [message]`, "Publish a message"],
       [`${cmdPrefix}channels subscribe [channel]`, "Subscribe to a channel"],
-    );
-
-    // Commands available only for authenticated users
-    if (!isAnonymousMode) {
-      commands.push([`${cmdPrefix}channels logs`, "View live channel events"]);
-    }
-
-    commands.push(
       [`${cmdPrefix}spaces enter [space]`, "Enter a collaborative space"],
       [
         `${cmdPrefix}rooms messages send [room] [message]`,
         "Send a message to a chat room",
       ],
-    );
+    ];
 
     // Calculate padding for alignment
     const maxCmdLength = Math.max(...commands.map(([cmd]) => cmd.length));

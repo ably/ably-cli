@@ -2,18 +2,18 @@ import { Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 
-import { AblyBaseCommand } from "../../../base-command.js";
-import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
+import { AblyBaseCommand } from "../../base-command.js";
+import { formatJson, isJsonData } from "../../utils/json-formatter.js";
 
-export default class LogsAppHistory extends AblyBaseCommand {
+export default class LogsHistory extends AblyBaseCommand {
   static override description = "Retrieve application log history";
 
   static override examples = [
-    "$ ably logs app history",
-    "$ ably logs app history --limit 20",
-    "$ ably logs app history --direction forwards",
-    "$ ably logs app history --json",
-    "$ ably logs app history --pretty-json",
+    "$ ably logs history",
+    "$ ably logs history --limit 20",
+    "$ ably logs history --direction forwards",
+    "$ ably logs history --json",
+    "$ ably logs history --pretty-json",
   ];
 
   static override flags = {
@@ -30,7 +30,7 @@ export default class LogsAppHistory extends AblyBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(LogsAppHistory);
+    const { flags } = await this.parse(LogsHistory);
 
     try {
       // Create a REST client
