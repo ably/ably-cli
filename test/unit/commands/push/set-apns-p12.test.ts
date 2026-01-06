@@ -6,7 +6,7 @@ import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
-describe("apps:set-apns-p12 command", () => {
+describe("push:set-apns-p12 command", () => {
   let testTempDir: string;
   let testCertFile: string;
 
@@ -39,7 +39,7 @@ describe("apps:set-apns-p12 command", () => {
         });
 
       const { stdout } = await runCommand(
-        ["apps:set-apns-p12", appId, "--certificate", testCertFile],
+        ["push:set-apns-p12", appId, "--certificate", testCertFile],
         import.meta.url,
       );
 
@@ -57,7 +57,7 @@ describe("apps:set-apns-p12 command", () => {
 
       const { stdout } = await runCommand(
         [
-          "apps:set-apns-p12",
+          "push:set-apns-p12",
           appId,
           "--certificate",
           testCertFile,
@@ -81,7 +81,7 @@ describe("apps:set-apns-p12 command", () => {
 
       const { stdout } = await runCommand(
         [
-          "apps:set-apns-p12",
+          "push:set-apns-p12",
           appId,
           "--certificate",
           testCertFile,
@@ -98,7 +98,7 @@ describe("apps:set-apns-p12 command", () => {
   describe("error handling", () => {
     it("should require app ID argument", async () => {
       const { error } = await runCommand(
-        ["apps:set-apns-p12", "--certificate", testCertFile],
+        ["push:set-apns-p12", "--certificate", testCertFile],
         import.meta.url,
       );
 
@@ -109,7 +109,7 @@ describe("apps:set-apns-p12 command", () => {
     it("should require certificate flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
-        ["apps:set-apns-p12", appId],
+        ["push:set-apns-p12", appId],
         import.meta.url,
       );
 
@@ -121,7 +121,7 @@ describe("apps:set-apns-p12 command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
         [
-          "apps:set-apns-p12",
+          "push:set-apns-p12",
           appId,
           "--certificate",
           "/nonexistent/path/cert.p12",
@@ -140,7 +140,7 @@ describe("apps:set-apns-p12 command", () => {
         .reply(400, { error: "Invalid certificate" });
 
       const { error } = await runCommand(
-        ["apps:set-apns-p12", appId, "--certificate", testCertFile],
+        ["push:set-apns-p12", appId, "--certificate", testCertFile],
         import.meta.url,
       );
 
@@ -155,7 +155,7 @@ describe("apps:set-apns-p12 command", () => {
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
-        ["apps:set-apns-p12", appId, "--certificate", testCertFile],
+        ["push:set-apns-p12", appId, "--certificate", testCertFile],
         import.meta.url,
       );
 

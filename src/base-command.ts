@@ -69,6 +69,8 @@ export const WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS = [
   // Integrations and queues are not available to anonymous users
   "integrations*",
   "queues*",
+
+  "push*", // push commands not available to anonymous users
 ];
 
 /* Commands not suitable for interactive mode */

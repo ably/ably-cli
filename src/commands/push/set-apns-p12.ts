@@ -4,7 +4,7 @@ import * as path from "node:path";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 
-export default class AppsSetApnsP12Command extends ControlBaseCommand {
+export default class PushSetApnsP12Command extends ControlBaseCommand {
   static args = {
     id: Args.string({
       description: "App ID to set the APNS certificate for",
@@ -16,9 +16,9 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
     "Upload Apple Push Notification Service P12 certificate for an app";
 
   static examples = [
-    "$ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12",
-    '$ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --password "YOUR_CERTIFICATE_PASSWORD"',
-    "$ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --use-for-sandbox",
+    "$ ably push set-apns-p12 app-id --certificate /path/to/certificate.p12",
+    '$ ably push set-apns-p12 app-id --certificate /path/to/certificate.p12 --password "YOUR_CERTIFICATE_PASSWORD"',
+    "$ ably push set-apns-p12 app-id --certificate /path/to/certificate.p12 --use-for-sandbox",
   ];
 
   static flags = {
@@ -38,7 +38,7 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(AppsSetApnsP12Command);
+    const { args, flags } = await this.parse(PushSetApnsP12Command);
 
     // Display authentication information
     this.showAuthInfoIfNeeded(flags);
