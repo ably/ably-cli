@@ -55,15 +55,15 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
 
       this.log(`Uploading APNS P12 certificate for app ${args.id}...`);
 
-      // Read certificate file and encode as base64
-      const certificateData = fs
-        .readFileSync(certificatePath)
-        .toString("base64");
+      // Read certificate file as Buffer
+      const certificateData = fs.readFileSync(certificatePath);
 
       const result = await controlApi.uploadApnsP12(args.id, certificateData, {
         password: flags.password,
-        useForSandbox: flags["use-for-sandbox"],
       });
+
+      // Note: Sandbox vs Production is determined by the certificate type
+      // (Development vs Distribution certificate from Apple Developer Portal)
 
       if (this.shouldOutputJson(flags)) {
         this.log(this.formatJsonOutput(result, flags));
