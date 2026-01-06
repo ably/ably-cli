@@ -121,6 +121,7 @@ export default class PushChannelsList extends AblyBaseCommand {
             flags,
           ),
         );
+        this.exit(1);
       } else {
         this.error(`Error listing subscriptions: ${errorMessage}`);
       }

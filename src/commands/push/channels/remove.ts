@@ -129,6 +129,7 @@ export default class PushChannelsRemove extends AblyBaseCommand {
             flags,
           ),
         );
+        this.exit(1);
       } else {
         if (errorCode === 40400) {
           this.error(`Subscription not found`);

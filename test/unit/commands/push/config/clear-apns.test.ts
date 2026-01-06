@@ -39,8 +39,9 @@ describe("push:config:clear-apns command", () => {
   describe("when APNs is configured", () => {
     it("should clear APNs configuration with --force flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
+      // Use apnsAuthType to indicate APNs is configured (new Control API field)
       setupControlApiMocks(appId, {
-        apnsCertificate: "cert-data",
+        apnsAuthType: "certificate",
       });
 
       // Mock updateApp to clear APNs
@@ -59,8 +60,9 @@ describe("push:config:clear-apns command", () => {
 
     it("should output JSON when --json flag is used", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
+      // Use apnsAuthType to indicate APNs is configured (new Control API field)
       setupControlApiMocks(appId, {
-        apnsCertificate: "cert-data",
+        apnsAuthType: "certificate",
       });
 
       nock("https://control.ably.net").patch(`/v1/apps/${appId}`).reply(200, {
@@ -87,10 +89,8 @@ describe("push:config:clear-apns command", () => {
     it("should handle no APNs config to clear", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       setupControlApiMocks(appId, {
-        // No APNs configuration
-        apnsCertificate: null,
-        apnsPrivateKey: null,
-        applePushKeyId: null,
+        // No APNs configuration - apnsAuthType is null
+        apnsAuthType: null,
       });
 
       const { stdout } = await runCommand(
@@ -104,10 +104,8 @@ describe("push:config:clear-apns command", () => {
     it("should show message when no config exists in JSON mode", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       setupControlApiMocks(appId, {
-        // No APNs configuration
-        apnsCertificate: null,
-        apnsPrivateKey: null,
-        applePushKeyId: null,
+        // No APNs configuration - apnsAuthType is null
+        apnsAuthType: null,
       });
 
       const { stdout } = await runCommand(
@@ -151,8 +149,9 @@ describe("push:config:clear-apns command", () => {
 
     it("should handle API errors when clearing config", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
+      // Use apnsAuthType to indicate APNs is configured (new Control API field)
       setupControlApiMocks(appId, {
-        apnsCertificate: "cert-data",
+        apnsAuthType: "certificate",
       });
 
       nock("https://control.ably.net")

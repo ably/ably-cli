@@ -137,6 +137,7 @@ export default class PushDevicesGet extends AblyBaseCommand {
             flags,
           ),
         );
+        this.exit(1);
       } else {
         if (errorCode === 40400) {
           this.error(`Device not found: ${args.deviceId}`);

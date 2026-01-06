@@ -130,6 +130,7 @@ export default class PushDevicesRemoveWhere extends AblyBaseCommand {
             flags,
           ),
         );
+        this.exit(1);
       } else {
         this.error(`Error removing devices: ${errorMessage}`);
       }

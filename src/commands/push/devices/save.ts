@@ -155,6 +155,7 @@ export default class PushDevicesSave extends AblyBaseCommand {
             flags,
           ),
         );
+        this.exit(1);
       } else {
         this.error(`Error saving device: ${errorMessage}`);
       }

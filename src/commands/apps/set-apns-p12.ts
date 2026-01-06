@@ -18,7 +18,6 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
   static examples = [
     "$ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12",
     '$ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --password "YOUR_CERTIFICATE_PASSWORD"',
-    "$ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --use-for-sandbox",
   ];
 
   static flags = {
@@ -30,11 +29,8 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
     password: Flags.string({
       description: "Password for the P12 certificate",
     }),
-    "use-for-sandbox": Flags.boolean({
-      default: false,
-      description:
-        "Whether to use this certificate for the APNS sandbox environment",
-    }),
+    // Note: Sandbox vs Production is determined automatically by the certificate type
+    // (Development certificate = Sandbox, Distribution certificate = Production)
   };
 
   async run(): Promise<void> {
@@ -70,11 +66,8 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
       } else {
         this.log(`\nAPNS P12 certificate uploaded successfully!`);
         this.log(`Certificate ID: ${result.id}`);
-        if (flags["use-for-sandbox"]) {
-          this.log(`Environment: Sandbox`);
-        } else {
-          this.log(`Environment: Production`);
-        }
+        // Note: Sandbox vs Production is determined by the certificate type
+        // (Development certificate = Sandbox, Distribution certificate = Production)
       }
     } catch (error) {
       this.error(

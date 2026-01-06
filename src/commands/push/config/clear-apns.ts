@@ -34,10 +34,11 @@ export default class PushConfigClearApns extends ControlBaseCommand {
         const appId = await this.resolveAppId(flags);
 
         // Get current app to show what will be cleared
+        // Use apnsAuthType field (from new Control API) to detect if APNs is configured
+        // apnsAuthType is 'token', 'certificate', or null if not configured
         const app = await api.getApp(appId);
-        const hasApnsConfig = Boolean(
-          app.apnsCertificate || app.apnsPrivateKey || app.applePushKeyId,
-        );
+        const hasApnsConfig =
+          app.apnsAuthType !== null && app.apnsAuthType !== undefined;
 
         if (!hasApnsConfig) {
           if (this.shouldOutputJson(flags)) {
@@ -75,13 +76,23 @@ export default class PushConfigClearApns extends ControlBaseCommand {
         this.log(`Clearing APNs configuration for app ${appId}...`);
 
         // Clear APNs configuration by setting fields to null/empty
+        // Include both certificate-based and token-based auth fields
+        // New field names (per Control API updates):
+        // - apnsAuthType, apnsSigningKey, apnsSigningKeyId, apnsIssuerKey, apnsTopicHeader
+        // Legacy field names (for backwards compatibility):
+        // - apnsCertificate, apnsPrivateKey
         await api.updateApp(appId, {
+          // Token-based auth fields (new API)
+          apnsAuthType: null,
+          apnsSigningKey: null,
+          apnsSigningKeyId: null,
+          apnsIssuerKey: null,
+          apnsTopicHeader: null,
+          // Certificate-based auth fields
           apnsCertificate: null,
           apnsPrivateKey: null,
-          applePushKeyId: null,
-          applePushTeamId: null,
-          applePushBundleId: null,
-          apnsUsesSandboxCert: false,
+          // Common fields
+          apnsUseSandboxEndpoint: null,
         } as Record<string, unknown>);
 
         if (this.shouldOutputJson(flags)) {

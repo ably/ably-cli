@@ -87,6 +87,7 @@ export default class PushChannelsListChannels extends AblyBaseCommand {
             flags,
           ),
         );
+        this.exit(1);
       } else {
         this.error(`Error listing channels: ${errorMessage}`);
       }

@@ -108,6 +108,7 @@ export default class PushChannelsSave extends AblyBaseCommand {
             flags,
           ),
         );
+        this.exit(1);
       } else {
         if (errorCode === 40100) {
           this.error(

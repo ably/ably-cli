@@ -143,6 +143,7 @@ export default class PushDevicesList extends AblyBaseCommand {
             flags,
           ),
         );
+        this.exit(1);
       } else {
         this.error(`Error listing devices: ${errorMessage}`);
       }

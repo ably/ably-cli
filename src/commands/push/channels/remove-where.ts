@@ -127,6 +127,7 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
             flags,
           ),
         );
+        this.exit(1);
       } else {
         this.error(`Error removing subscriptions: ${errorMessage}`);
       }
