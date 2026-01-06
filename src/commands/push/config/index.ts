@@ -10,6 +10,8 @@ export default class PushConfig extends BaseTopicCommand {
   static override examples = [
     "<%= config.bin %> <%= command.id %> show",
     "<%= config.bin %> <%= command.id %> set-apns --certificate ./cert.p12 --password SECRET",
+    "<%= config.bin %> <%= command.id %> set-fcm --service-account ./firebase-sa.json",
     "<%= config.bin %> <%= command.id %> clear-apns --force",
+    "<%= config.bin %> <%= command.id %> clear-fcm --force",
   ];
 }
