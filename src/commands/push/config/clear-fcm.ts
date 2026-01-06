@@ -43,7 +43,7 @@ export default class PushConfigClearFcm extends ControlBaseCommand {
 
         // Confirm unless --force
         if (!flags.force) {
-          const confirmed = await this.confirm(
+          const confirmed = await this.interactiveHelper.confirm(
             `Are you sure you want to remove FCM configuration from app "${app.name}" (${appId})? ` +
               `This will disable push notifications for Android devices.`,
           );
@@ -84,21 +84,5 @@ export default class PushConfigClearFcm extends ControlBaseCommand {
       },
       "Error clearing FCM configuration",
     );
-  }
-
-  private async confirm(message: string): Promise<boolean> {
-    // Use readline for confirmation
-    const readline = await import("node:readline");
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    return new Promise((resolve) => {
-      rl.question(`${message} (y/N) `, (answer) => {
-        rl.close();
-        resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes");
-      });
-    });
   }
 }

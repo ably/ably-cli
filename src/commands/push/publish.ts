@@ -171,6 +171,7 @@ export default class PushPublish extends AblyBaseCommand {
             flags,
           ),
         );
+        this.exit(1);
       } else {
         if (errorCode === 40400) {
           this.error(

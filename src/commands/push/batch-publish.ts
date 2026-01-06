@@ -147,6 +147,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
             flags,
           ),
         );
+        this.exit(1);
       } else {
         this.error(`Error publishing batch notifications: ${errorMessage}`);
       }
