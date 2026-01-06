@@ -11,7 +11,11 @@ export interface ControlApiOptions {
 export interface App {
   accountId: string;
   apnsUsesSandboxCert?: boolean;
+  // New push config response fields (from Control API updates)
+  apnsAuthType?: "certificate" | "token" | null;
+  apnsUseSandboxEndpoint?: boolean | null;
   created: number;
+  fcmProjectId?: string | null;
   id: string;
   modified: number;
   name: string;

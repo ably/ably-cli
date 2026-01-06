@@ -145,11 +145,18 @@ export default class PushConfigSetApns extends ControlBaseCommand {
     const privateKey = fs.readFileSync(keyFilePath, "utf8");
 
     // Update app with APNs token auth configuration
+    // Field name mapping (per Control API):
+    // - apnsAuthType: "token" for token-based auth
+    // - apnsSigningKey: The .p8 private key content
+    // - apnsSigningKeyId: The Key ID from Apple
+    // - apnsIssuerKey: The Team ID from Apple
+    // - apnsTopicHeader: The bundle ID / topic
     await api.updateApp(appId, {
-      apnsPrivateKey: privateKey,
-      applePushKeyId: flags["key-id"] as string,
-      applePushTeamId: flags["team-id"] as string,
-      applePushBundleId: flags["bundle-id"] as string,
+      apnsAuthType: "token",
+      apnsSigningKey: privateKey,
+      apnsSigningKeyId: flags["key-id"] as string,
+      apnsIssuerKey: flags["team-id"] as string,
+      apnsTopicHeader: flags["bundle-id"] as string,
     } as Record<string, unknown>);
 
     if (this.shouldOutputJson(flags)) {

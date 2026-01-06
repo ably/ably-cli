@@ -37,13 +37,18 @@ describe("push:config:show command", () => {
   });
 
   describe("show configuration", () => {
-    it("should show push config with APNs and FCM configured", async () => {
+    // Tests using NEW Control API response fields:
+    // - apnsAuthType: 'token' | 'certificate' | null
+    // - fcmProjectId: string | null
+    // - apnsUseSandboxEndpoint: boolean | null
+
+    it("should show push config with APNs certificate and FCM configured", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       setupControlApiMocks(appId, {
-        apnsCertificate: "cert-data",
-        apnsUsesSandboxCert: false,
+        // New fields from Control API
+        apnsAuthType: "certificate",
+        apnsUseSandboxEndpoint: false,
         fcmProjectId: "my-project-123",
-        fcmServiceAccount: "service-account-data",
       });
 
       const { stdout } = await runCommand(
@@ -55,15 +60,15 @@ describe("push:config:show command", () => {
       expect(stdout).toContain("APNs");
       expect(stdout).toContain("Configured");
       expect(stdout).toContain("FCM");
+      expect(stdout).toContain("Certificate-based");
     });
 
-    it("should show APNs token-based auth details", async () => {
+    it("should show APNs token-based auth type", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       setupControlApiMocks(appId, {
-        applePushKeyId: "ABC123XYZ",
-        applePushTeamId: "TEAM123",
-        applePushBundleId: "com.example.app",
-        apnsUsesSandboxCert: true,
+        // New field: apnsAuthType indicates token-based auth
+        apnsAuthType: "token",
+        apnsUseSandboxEndpoint: true,
       });
 
       const { stdout } = await runCommand(
@@ -71,17 +76,16 @@ describe("push:config:show command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("ABC123XYZ");
-      expect(stdout).toContain("TEAM123");
-      expect(stdout).toContain("com.example.app");
       expect(stdout).toContain("Token-based");
+      expect(stdout).toContain("Sandbox"); // Because apnsUseSandboxEndpoint is true
     });
 
     it("should show certificate-based auth type", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       setupControlApiMocks(appId, {
-        apnsCertificate: "cert-data",
-        applePushKeyId: null,
+        // New field: apnsAuthType indicates certificate-based auth
+        apnsAuthType: "certificate",
+        apnsUseSandboxEndpoint: false,
       });
 
       const { stdout } = await runCommand(
@@ -90,12 +94,14 @@ describe("push:config:show command", () => {
       );
 
       expect(stdout).toContain("Certificate-based");
+      expect(stdout).toContain("Production"); // Because apnsUseSandboxEndpoint is false
     });
 
     it("should show not configured status when no config exists", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       setupControlApiMocks(appId, {
-        apnsCertificate: null,
+        // New fields: null values indicate not configured
+        apnsAuthType: null,
         fcmProjectId: null,
       });
 
@@ -107,16 +113,13 @@ describe("push:config:show command", () => {
       expect(stdout).toContain("Not configured");
     });
 
-    it("should output JSON when --json flag is used", async () => {
+    it("should output JSON with new response format", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       setupControlApiMocks(appId, {
-        apnsCertificate: "cert-data",
-        apnsUsesSandboxCert: false,
-        applePushKeyId: "KEY123",
-        applePushTeamId: "TEAM123",
-        applePushBundleId: "com.example.app",
+        // New Control API response fields
+        apnsAuthType: "token",
+        apnsUseSandboxEndpoint: false,
         fcmProjectId: "my-project-123",
-        fcmServiceAccount: "service-account-data",
       });
 
       const { stdout } = await runCommand(
@@ -128,19 +131,35 @@ describe("push:config:show command", () => {
       expect(output.appId).toBe(appId);
       expect(output.appName).toBe("Test App");
       expect(output.apns.configured).toBe(true);
+      expect(output.apns.authType).toBe("token");
       expect(output.apns.useSandbox).toBe(false);
-      expect(output.apns.keyId).toBe("KEY123");
-      expect(output.apns.teamId).toBe("TEAM123");
-      expect(output.apns.bundleId).toBe("com.example.app");
       expect(output.fcm.configured).toBe(true);
       expect(output.fcm.projectId).toBe("my-project-123");
+    });
+
+    it("should output JSON when not configured", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      setupControlApiMocks(appId, {
+        apnsAuthType: null,
+        fcmProjectId: null,
+      });
+
+      const { stdout } = await runCommand(
+        ["push:config:show", "--json"],
+        import.meta.url,
+      );
+
+      const output = JSON.parse(stdout);
+      expect(output.apns.configured).toBe(false);
+      expect(output.apns.authType).toBe(null);
+      expect(output.fcm.configured).toBe(false);
+      expect(output.fcm.projectId).toBe(null);
     });
 
     it("should show FCM project ID when configured", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       setupControlApiMocks(appId, {
         fcmProjectId: "firebase-project-456",
-        fcmServiceAccount: "service-account-data",
       });
 
       const { stdout } = await runCommand(
@@ -162,6 +181,23 @@ describe("push:config:show command", () => {
 
       expect(stdout).toContain("Web Push");
       expect(stdout).toContain("Available");
+    });
+
+    it("should fallback to legacy apnsUsesSandboxCert when apnsUseSandboxEndpoint is not present", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      setupControlApiMocks(appId, {
+        apnsAuthType: "certificate",
+        // Legacy field only (for backwards compatibility)
+        apnsUsesSandboxCert: true,
+        // New field is undefined
+      });
+
+      const { stdout } = await runCommand(
+        ["push:config:show"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Sandbox");
     });
   });
 

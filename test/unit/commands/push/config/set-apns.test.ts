@@ -158,6 +158,56 @@ describe("push:config:set-apns command", () => {
       );
     });
 
+    it("should send correct API field names for token auth", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      setupControlApiMocks(appId);
+
+      // Verify the correct field names are sent to the API
+      // Per Control API spec:
+      // - apnsAuthType: "token"
+      // - apnsSigningKey: The .p8 key content
+      // - apnsSigningKeyId: The Key ID
+      // - apnsIssuerKey: The Team ID
+      // - apnsTopicHeader: The Bundle ID
+      let capturedBody: Record<string, unknown> | undefined;
+      nock("https://control.ably.net")
+        .patch(`/v1/apps/${appId}`, (body: Record<string, unknown>) => {
+          capturedBody = body;
+          return true;
+        })
+        .reply(200, {
+          id: appId,
+          name: "Test App",
+        });
+
+      await runCommand(
+        [
+          "push:config:set-apns",
+          "--key-file",
+          validP8File,
+          "--key-id",
+          "ABC123XYZ",
+          "--team-id",
+          "TEAMID123",
+          "--bundle-id",
+          "com.example.app",
+        ],
+        import.meta.url,
+      );
+
+      // Verify the correct field names were sent
+      expect(capturedBody).toBeDefined();
+      expect(capturedBody!.apnsAuthType).toBe("token");
+      expect(capturedBody!.apnsSigningKeyId).toBe("ABC123XYZ");
+      expect(capturedBody!.apnsIssuerKey).toBe("TEAMID123");
+      expect(capturedBody!.apnsTopicHeader).toBe("com.example.app");
+      expect(capturedBody!.apnsSigningKey).toContain("BEGIN PRIVATE KEY");
+      // Verify old incorrect field names are NOT present
+      expect(capturedBody!.applePushKeyId).toBeUndefined();
+      expect(capturedBody!.applePushTeamId).toBeUndefined();
+      expect(capturedBody!.applePushBundleId).toBeUndefined();
+    });
+
     it("should output JSON when --json flag is used with P8", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       setupControlApiMocks(appId);

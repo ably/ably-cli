@@ -33,22 +33,23 @@ export default class PushConfigShow extends ControlBaseCommand {
         const app = await api.getApp(appId);
 
         if (this.shouldOutputJson(flags)) {
-          // Extract push-related fields
+          // Extract push-related fields using new Control API response fields
+          // - apnsAuthType: 'token', 'certificate', or null (if not configured)
+          // - fcmProjectId: project ID or null (if not configured)
+          // - apnsUseSandboxEndpoint: boolean or null
           const pushConfig = {
             appId: app.id,
             appName: app.name,
             apns: {
-              configured: Boolean(
-                app.apnsCertificate || app.apnsPrivateKey || app.applePushKeyId,
-              ),
-              useSandbox: app.apnsUsesSandboxCert || false,
-              // Token-based auth fields
-              keyId: app.applePushKeyId || null,
-              teamId: app.applePushTeamId || null,
-              bundleId: app.applePushBundleId || null,
+              configured:
+                app.apnsAuthType !== null && app.apnsAuthType !== undefined,
+              authType: app.apnsAuthType || null,
+              useSandbox:
+                app.apnsUseSandboxEndpoint ?? app.apnsUsesSandboxCert ?? false,
             },
             fcm: {
-              configured: Boolean(app.fcmServiceAccount || app.fcmProjectId),
+              configured:
+                app.fcmProjectId !== null && app.fcmProjectId !== undefined,
               projectId: app.fcmProjectId || null,
             },
           };
@@ -61,34 +62,24 @@ export default class PushConfigShow extends ControlBaseCommand {
           );
 
           // APNs Configuration
+          // Use new Control API response field: apnsAuthType ('token', 'certificate', or null)
           this.log(chalk.cyan("APNs (iOS):"));
-          const apnsConfigured = Boolean(
-            app.apnsCertificate || app.apnsPrivateKey || app.applePushKeyId,
-          );
+          const apnsConfigured =
+            app.apnsAuthType !== null && app.apnsAuthType !== undefined;
 
           if (apnsConfigured) {
             this.log(
               `  ${chalk.dim("Status:")}      ${chalk.green("Configured")}`,
             );
-            const environment = app.apnsUsesSandboxCert
-              ? "Sandbox"
-              : "Production";
+            // Use apnsUseSandboxEndpoint (new) or fallback to apnsUsesSandboxCert (legacy)
+            const useSandbox =
+              app.apnsUseSandboxEndpoint ?? app.apnsUsesSandboxCert ?? false;
+            const environment = useSandbox ? "Sandbox" : "Production";
             this.log(`  ${chalk.dim("Environment:")} ${environment}`);
 
-            // Check if using token-based or certificate-based auth
-            if (app.applePushKeyId) {
+            // Use apnsAuthType to determine auth type
+            if (app.apnsAuthType === "token") {
               this.log(`  ${chalk.dim("Auth Type:")}   Token-based (.p8)`);
-              this.log(`  ${chalk.dim("Key ID:")}      ${app.applePushKeyId}`);
-              if (app.applePushTeamId) {
-                this.log(
-                  `  ${chalk.dim("Team ID:")}     ${app.applePushTeamId}`,
-                );
-              }
-              if (app.applePushBundleId) {
-                this.log(
-                  `  ${chalk.dim("Bundle ID:")}   ${app.applePushBundleId}`,
-                );
-              }
             } else {
               this.log(
                 `  ${chalk.dim("Auth Type:")}   Certificate-based (.p12)`,
@@ -103,18 +94,16 @@ export default class PushConfigShow extends ControlBaseCommand {
           this.log("");
 
           // FCM Configuration
+          // Use new Control API response field: fcmProjectId (string or null)
           this.log(chalk.cyan("FCM (Android):"));
-          const fcmConfigured = Boolean(
-            app.fcmServiceAccount || app.fcmProjectId,
-          );
+          const fcmConfigured =
+            app.fcmProjectId !== null && app.fcmProjectId !== undefined;
 
           if (fcmConfigured) {
             this.log(
               `  ${chalk.dim("Status:")}      ${chalk.green("Configured")}`,
             );
-            if (app.fcmProjectId) {
-              this.log(`  ${chalk.dim("Project ID:")}  ${app.fcmProjectId}`);
-            }
+            this.log(`  ${chalk.dim("Project ID:")}  ${app.fcmProjectId}`);
           } else {
             this.log(
               `  ${chalk.dim("Status:")}      ${chalk.yellow("Not configured")}`,
