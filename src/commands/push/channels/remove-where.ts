@@ -10,7 +10,7 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
     // Remove all subscriptions for a device on a channel
     "$ ably push channels remove-where --channel alerts --device-id my-device-123 --force",
     // Remove all subscriptions for a client on a channel
-    "$ ably push channels remove-where --channel alerts --client-id user-456 --force",
+    "$ ably push channels remove-where --channel alerts --recipient-client-id user-456 --force",
     // JSON output
     "$ ably push channels remove-where --channel alerts --device-id my-device-123 --json --force",
   ];
@@ -24,7 +24,7 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
     "device-id": Flags.string({
       description: "Filter by device ID",
     }),
-    "client-id": Flags.string({
+    "recipient-client-id": Flags.string({
       description: "Filter by client ID",
     }),
     force: Flags.boolean({
@@ -38,9 +38,9 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
     const { flags } = await this.parse(PushChannelsRemoveWhere);
 
     // Validate that at least one filter is provided
-    if (!flags["device-id"] && !flags["client-id"]) {
+    if (!flags["device-id"] && !flags["recipient-client-id"]) {
       this.error(
-        "At least one filter criterion (--device-id or --client-id) is required to prevent accidentally removing all subscriptions",
+        "At least one filter criterion (--device-id or --recipient-client-id) is required to prevent accidentally removing all subscriptions",
       );
     }
 
@@ -53,7 +53,8 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
       // Build filter description for confirmation
       const filters: string[] = [`channel=${flags.channel}`];
       if (flags["device-id"]) filters.push(`deviceId=${flags["device-id"]}`);
-      if (flags["client-id"]) filters.push(`clientId=${flags["client-id"]}`);
+      if (flags["recipient-client-id"])
+        filters.push(`clientId=${flags["recipient-client-id"]}`);
       const filterDescription = filters.join(", ");
 
       // Confirm deletion unless --force is used
@@ -83,8 +84,8 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
         params.deviceId = flags["device-id"];
       }
 
-      if (flags["client-id"]) {
-        params.clientId = flags["client-id"];
+      if (flags["recipient-client-id"]) {
+        params.clientId = flags["recipient-client-id"];
       }
 
       // Remove matching subscriptions
@@ -96,7 +97,7 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
             {
               channel: flags.channel,
               deviceId: flags["device-id"],
-              clientId: flags["client-id"],
+              clientId: flags["recipient-client-id"],
               removed: true,
               success: true,
               timestamp: new Date().toISOString(),

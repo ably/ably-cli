@@ -42,7 +42,7 @@ describe("push:channels:remove command", () => {
           "push:channels:remove",
           "--channel",
           "alerts",
-          "--client-id",
+          "--recipient-client-id",
           "client-1",
           "--force",
         ],
@@ -96,7 +96,7 @@ describe("push:channels:remove command", () => {
       expect(error!.message).toMatch(/missing.*required.*flag.*channel/i);
     });
 
-    it("should require either --device-id or --client-id", async () => {
+    it("should require either --device-id or --recipient-client-id", async () => {
       const { error } = await runCommand(
         ["push:channels:remove", "--channel", "alerts", "--force"],
         import.meta.url,
@@ -108,7 +108,7 @@ describe("push:channels:remove command", () => {
       );
     });
 
-    it("should not allow both --device-id and --client-id", async () => {
+    it("should not allow both --device-id and --recipient-client-id", async () => {
       const { error } = await runCommand(
         [
           "push:channels:remove",
@@ -116,7 +116,7 @@ describe("push:channels:remove command", () => {
           "alerts",
           "--device-id",
           "device-1",
-          "--client-id",
+          "--recipient-client-id",
           "client-1",
           "--force",
         ],

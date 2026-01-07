@@ -12,7 +12,7 @@ export default class PushPublish extends AblyBaseCommand {
     // Simple notification to a device
     '$ ably push publish --device-id my-device --title "Hello" --body "World"',
     // Notification to all devices of a client
-    '$ ably push publish --client-id user-123 --title "Alert" --body "New message"',
+    '$ ably push publish --recipient-client-id user-123 --title "Alert" --body "New message"',
     // With custom data payload
     '$ ably push publish --device-id my-device --title "Order" --body "Shipped" --data \'{"orderId":"123"}\'',
     // iOS-specific with badge
@@ -28,7 +28,7 @@ export default class PushPublish extends AblyBaseCommand {
     "device-id": Flags.string({
       description: "Target device ID",
     }),
-    "client-id": Flags.string({
+    "recipient-client-id": Flags.string({
       description: "Target client ID (sends to all client's devices)",
     }),
     title: Flags.string({
@@ -74,13 +74,15 @@ export default class PushPublish extends AblyBaseCommand {
     const { flags } = await this.parse(PushPublish);
 
     // Validate recipient
-    if (!flags["device-id"] && !flags["client-id"]) {
-      this.error("Either --device-id or --client-id must be specified");
+    if (!flags["device-id"] && !flags["recipient-client-id"]) {
+      this.error(
+        "Either --device-id or --recipient-client-id must be specified",
+      );
     }
 
-    if (flags["device-id"] && flags["client-id"]) {
+    if (flags["device-id"] && flags["recipient-client-id"]) {
       this.error(
-        "Only one of --device-id or --client-id can be specified, not both",
+        "Only one of --device-id or --recipient-client-id can be specified, not both",
       );
     }
 
@@ -127,8 +129,8 @@ export default class PushPublish extends AblyBaseCommand {
       const recipient: Record<string, string> = {};
       if (flags["device-id"]) {
         recipient.deviceId = flags["device-id"];
-      } else if (flags["client-id"]) {
-        recipient.clientId = flags["client-id"];
+      } else if (flags["recipient-client-id"]) {
+        recipient.clientId = flags["recipient-client-id"];
       }
 
       // Build payload
@@ -149,7 +151,7 @@ export default class PushPublish extends AblyBaseCommand {
             {
               recipient: {
                 deviceId: flags["device-id"],
-                clientId: flags["client-id"],
+                clientId: flags["recipient-client-id"],
               },
               published: true,
               success: true,
@@ -161,7 +163,7 @@ export default class PushPublish extends AblyBaseCommand {
       } else {
         const target = flags["device-id"]
           ? `device ${chalk.cyan(flags["device-id"])}`
-          : `client ${chalk.cyan(flags["client-id"])}`;
+          : `client ${chalk.cyan(flags["recipient-client-id"])}`;
 
         this.log(
           chalk.green(`Push notification sent successfully to ${target}`),

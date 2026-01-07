@@ -91,7 +91,7 @@ describe("Push Channel Subscriptions E2E Tests", () => {
 
         expect(result.exitCode).not.toBe(0);
         expect(result.stderr).toContain(
-          "Either --device-id or --client-id must be specified",
+          "Either --device-id or --recipient-client-id must be specified",
         );
       },
     );
@@ -108,7 +108,7 @@ describe("Push Channel Subscriptions E2E Tests", () => {
             "test-channel",
             "--device-id",
             "device1",
-            "--client-id",
+            "--recipient-client-id",
             "client1",
           ],
           {
@@ -119,7 +119,7 @@ describe("Push Channel Subscriptions E2E Tests", () => {
 
         expect(result.exitCode).not.toBe(0);
         expect(result.stderr).toContain(
-          "Only one of --device-id or --client-id can be specified",
+          "Only one of --device-id or --recipient-client-id can be specified",
         );
       },
     );
@@ -192,7 +192,7 @@ describe("Push Channel Subscriptions E2E Tests", () => {
 
         expect(result.exitCode).not.toBe(0);
         expect(result.stderr).toContain(
-          "Either --device-id or --client-id must be specified",
+          "Either --device-id or --recipient-client-id must be specified",
         );
       },
     );

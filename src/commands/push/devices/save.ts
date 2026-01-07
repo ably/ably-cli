@@ -17,7 +17,7 @@ export default class PushDevicesSave extends AblyBaseCommand {
     // Web Push (browser)
     "$ ably push devices save --id my-device --platform browser --form-factor desktop --transport-type web --target-url https://fcm.googleapis.com/fcm/send/... --p256dh-key BASE64_P256DH_KEY --auth-secret BASE64_AUTH_SECRET",
     // With client ID
-    "$ ably push devices save --id my-device --platform android --form-factor phone --transport-type fcm --device-token TOKEN --client-id user-123",
+    "$ ably push devices save --id my-device --platform android --form-factor phone --transport-type fcm --device-token TOKEN --recipient-client-id user-123",
     // From JSON file
     "$ ably push devices save --data ./device.json",
     // From inline JSON
@@ -46,7 +46,7 @@ export default class PushDevicesSave extends AblyBaseCommand {
         "other",
       ],
     }),
-    "client-id": Flags.string({
+    "recipient-client-id": Flags.string({
       description: "Client ID to associate with the device",
     }),
     "transport-type": Flags.string({
@@ -234,8 +234,8 @@ export default class PushDevicesSave extends AblyBaseCommand {
       },
     };
 
-    if (flags["client-id"]) {
-      device.clientId = flags["client-id"] as string;
+    if (flags["recipient-client-id"]) {
+      device.clientId = flags["recipient-client-id"] as string;
     }
 
     if (flags.metadata) {

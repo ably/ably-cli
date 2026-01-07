@@ -36,7 +36,7 @@ describe("push:channels:remove-where command", () => {
       expect(stdout).toContain("removed successfully");
     });
 
-    it("should remove subscriptions by --client-id with --force", async () => {
+    it("should remove subscriptions by --recipient-client-id with --force", async () => {
       const mock = getMockAblyRest();
 
       const { stdout } = await runCommand(
@@ -44,7 +44,7 @@ describe("push:channels:remove-where command", () => {
           "push:channels:remove-where",
           "--channel",
           "alerts",
-          "--client-id",
+          "--recipient-client-id",
           "client-1",
           "--force",
         ],

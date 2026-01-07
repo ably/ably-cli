@@ -9,7 +9,7 @@ export default class PushDevicesList extends AblyBaseCommand {
 
   static override examples = [
     "$ ably push devices list",
-    "$ ably push devices list --client-id user-123",
+    "$ ably push devices list --recipient-client-id user-123",
     "$ ably push devices list --device-id device-456",
     "$ ably push devices list --state ACTIVE",
     "$ ably push devices list --limit 50",
@@ -18,7 +18,7 @@ export default class PushDevicesList extends AblyBaseCommand {
 
   static override flags = {
     ...AblyBaseCommand.globalFlags,
-    "client-id": Flags.string({
+    "recipient-client-id": Flags.string({
       description: "Filter devices by client ID",
     }),
     "device-id": Flags.string({
@@ -46,8 +46,8 @@ export default class PushDevicesList extends AblyBaseCommand {
       // Build filter params
       const params: Ably.DeviceRegistrationParams = {};
 
-      if (flags["client-id"]) {
-        params.clientId = flags["client-id"];
+      if (flags["recipient-client-id"]) {
+        params.clientId = flags["recipient-client-id"];
       }
 
       if (flags["device-id"]) {

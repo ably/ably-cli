@@ -11,7 +11,7 @@ export default class PushChannelsSave extends AblyBaseCommand {
     // Subscribe by device ID
     "$ ably push channels save --channel alerts --device-id my-device-123",
     // Subscribe by client ID (subscribes all client's devices)
-    "$ ably push channels save --channel notifications --client-id user-456",
+    "$ ably push channels save --channel notifications --recipient-client-id user-456",
     // With JSON output
     "$ ably push channels save --channel alerts --device-id my-device-123 --json",
   ];
@@ -25,7 +25,7 @@ export default class PushChannelsSave extends AblyBaseCommand {
     "device-id": Flags.string({
       description: "Device ID to subscribe",
     }),
-    "client-id": Flags.string({
+    "recipient-client-id": Flags.string({
       description:
         "Client ID to subscribe (subscribes all of the client's devices)",
     }),
@@ -34,14 +34,16 @@ export default class PushChannelsSave extends AblyBaseCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(PushChannelsSave);
 
-    // Validate that either device-id or client-id is provided
-    if (!flags["device-id"] && !flags["client-id"]) {
-      this.error("Either --device-id or --client-id must be specified");
+    // Validate that either device-id or recipient-client-id is provided
+    if (!flags["device-id"] && !flags["recipient-client-id"]) {
+      this.error(
+        "Either --device-id or --recipient-client-id must be specified",
+      );
     }
 
-    if (flags["device-id"] && flags["client-id"]) {
+    if (flags["device-id"] && flags["recipient-client-id"]) {
       this.error(
-        "Only one of --device-id or --client-id can be specified, not both",
+        "Only one of --device-id or --recipient-client-id can be specified, not both",
       );
     }
 
@@ -58,8 +60,8 @@ export default class PushChannelsSave extends AblyBaseCommand {
 
       if (flags["device-id"]) {
         subscription.deviceId = flags["device-id"];
-      } else if (flags["client-id"]) {
-        subscription.clientId = flags["client-id"];
+      } else if (flags["recipient-client-id"]) {
+        subscription.clientId = flags["recipient-client-id"];
       }
 
       // Save the subscription
@@ -84,7 +86,7 @@ export default class PushChannelsSave extends AblyBaseCommand {
       } else {
         const subscriberId = flags["device-id"]
           ? `device ${chalk.cyan(flags["device-id"])}`
-          : `client ${chalk.cyan(flags["client-id"])}`;
+          : `client ${chalk.cyan(flags["recipient-client-id"])}`;
 
         this.log(
           chalk.green(

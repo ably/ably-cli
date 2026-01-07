@@ -11,7 +11,7 @@ export default class PushChannelsRemove extends AblyBaseCommand {
     // Remove device subscription
     "$ ably push channels remove --channel alerts --device-id my-device-123",
     // Remove client subscription
-    "$ ably push channels remove --channel alerts --client-id user-456",
+    "$ ably push channels remove --channel alerts --recipient-client-id user-456",
     // With force flag
     "$ ably push channels remove --channel alerts --device-id my-device-123 --force",
     // JSON output
@@ -27,7 +27,7 @@ export default class PushChannelsRemove extends AblyBaseCommand {
     "device-id": Flags.string({
       description: "Device ID to unsubscribe",
     }),
-    "client-id": Flags.string({
+    "recipient-client-id": Flags.string({
       description: "Client ID to unsubscribe",
     }),
     force: Flags.boolean({
@@ -40,14 +40,16 @@ export default class PushChannelsRemove extends AblyBaseCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(PushChannelsRemove);
 
-    // Validate that either device-id or client-id is provided
-    if (!flags["device-id"] && !flags["client-id"]) {
-      this.error("Either --device-id or --client-id must be specified");
+    // Validate that either device-id or recipient-client-id is provided
+    if (!flags["device-id"] && !flags["recipient-client-id"]) {
+      this.error(
+        "Either --device-id or --recipient-client-id must be specified",
+      );
     }
 
-    if (flags["device-id"] && flags["client-id"]) {
+    if (flags["device-id"] && flags["recipient-client-id"]) {
       this.error(
-        "Only one of --device-id or --client-id can be specified, not both",
+        "Only one of --device-id or --recipient-client-id can be specified, not both",
       );
     }
 
@@ -57,7 +59,7 @@ export default class PushChannelsRemove extends AblyBaseCommand {
         return;
       }
 
-      const subscriberId = flags["device-id"] || flags["client-id"];
+      const subscriberId = flags["device-id"] || flags["recipient-client-id"];
       const subscriberType = flags["device-id"] ? "device" : "client";
 
       // Confirm deletion unless --force is used
@@ -85,8 +87,8 @@ export default class PushChannelsRemove extends AblyBaseCommand {
 
       if (flags["device-id"]) {
         subscription.deviceId = flags["device-id"];
-      } else if (flags["client-id"]) {
-        subscription.clientId = flags["client-id"];
+      } else if (flags["recipient-client-id"]) {
+        subscription.clientId = flags["recipient-client-id"];
       }
 
       // Remove the subscription
@@ -98,7 +100,7 @@ export default class PushChannelsRemove extends AblyBaseCommand {
             {
               channel: flags.channel,
               deviceId: flags["device-id"],
-              clientId: flags["client-id"],
+              clientId: flags["recipient-client-id"],
               removed: true,
               success: true,
               timestamp: new Date().toISOString(),

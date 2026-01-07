@@ -8,14 +8,14 @@ export default class PushDevicesRemoveWhere extends AblyBaseCommand {
     "Remove all devices matching specified criteria (maps to push.admin.deviceRegistrations.removeWhere)";
 
   static override examples = [
-    "$ ably push devices remove-where --client-id user-123",
+    "$ ably push devices remove-where --recipient-client-id user-123",
     "$ ably push devices remove-where --device-id device-prefix",
-    "$ ably push devices remove-where --client-id user-123 --force",
+    "$ ably push devices remove-where --recipient-client-id user-123 --force",
   ];
 
   static override flags = {
     ...AblyBaseCommand.globalFlags,
-    "client-id": Flags.string({
+    "recipient-client-id": Flags.string({
       description: "Remove all devices for this client ID",
     }),
     "device-id": Flags.string({
@@ -32,13 +32,13 @@ export default class PushDevicesRemoveWhere extends AblyBaseCommand {
     const { flags } = await this.parse(PushDevicesRemoveWhere);
 
     // Require at least one filter criterion
-    if (!flags["client-id"] && !flags["device-id"]) {
+    if (!flags["recipient-client-id"] && !flags["device-id"]) {
       if (this.shouldOutputJson(flags)) {
         this.log(
           this.formatJsonOutput(
             {
               error:
-                "At least one filter criterion is required: --client-id or --device-id",
+                "At least one filter criterion is required: --recipient-client-id or --device-id",
               success: false,
             },
             flags,
@@ -46,7 +46,7 @@ export default class PushDevicesRemoveWhere extends AblyBaseCommand {
         );
       } else {
         this.error(
-          "At least one filter criterion is required: --client-id or --device-id",
+          "At least one filter criterion is required: --recipient-client-id or --device-id",
         );
       }
 
@@ -62,8 +62,8 @@ export default class PushDevicesRemoveWhere extends AblyBaseCommand {
       // Build filter params
       const params: Ably.DeviceRegistrationParams = {};
 
-      if (flags["client-id"]) {
-        params.clientId = flags["client-id"];
+      if (flags["recipient-client-id"]) {
+        params.clientId = flags["recipient-client-id"];
       }
 
       if (flags["device-id"]) {
@@ -99,7 +99,7 @@ export default class PushDevicesRemoveWhere extends AblyBaseCommand {
           this.formatJsonOutput(
             {
               filter: {
-                clientId: flags["client-id"],
+                clientId: flags["recipient-client-id"],
                 deviceId: flags["device-id"],
               },
               removed: true,
@@ -140,8 +140,10 @@ export default class PushDevicesRemoveWhere extends AblyBaseCommand {
   private buildFilterDescription(flags: Record<string, unknown>): string {
     const parts: string[] = [];
 
-    if (flags["client-id"]) {
-      parts.push(`with client ID ${chalk.cyan(flags["client-id"] as string)}`);
+    if (flags["recipient-client-id"]) {
+      parts.push(
+        `with client ID ${chalk.cyan(flags["recipient-client-id"] as string)}`,
+      );
     }
 
     if (flags["device-id"]) {

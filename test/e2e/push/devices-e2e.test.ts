@@ -75,7 +75,7 @@ describe("Push Devices E2E Tests", () => {
             "fcm",
             "--device-token",
             fakeToken,
-            "--client-id",
+            "--recipient-client-id",
             "e2e-test-user",
           ],
           {
@@ -327,7 +327,13 @@ describe("Push Devices E2E Tests", () => {
 
     it.skipIf(SHOULD_SKIP_E2E)("should filter by client ID", async () => {
       const result = await runCommand(
-        ["push", "devices", "list", "--client-id", "e2e-list-test-user"],
+        [
+          "push",
+          "devices",
+          "list",
+          "--recipient-client-id",
+          "e2e-list-test-user",
+        ],
         {
           env: { ABLY_API_KEY: E2E_API_KEY || "" },
           timeoutMs: 30000,
@@ -349,7 +355,7 @@ describe("Push Devices E2E Tests", () => {
             "push",
             "devices",
             "list",
-            "--client-id",
+            "--recipient-client-id",
             "e2e-list-test-user",
             "--json",
           ],
@@ -374,7 +380,7 @@ describe("Push Devices E2E Tests", () => {
           "push",
           "devices",
           "list",
-          "--client-id",
+          "--recipient-client-id",
           "e2e-list-test-user",
           "--limit",
           "2",
@@ -497,7 +503,7 @@ describe("Push Devices E2E Tests", () => {
             "push",
             "devices",
             "remove-where",
-            "--client-id",
+            "--recipient-client-id",
             clientIdForRemoval,
             "--force",
           ],

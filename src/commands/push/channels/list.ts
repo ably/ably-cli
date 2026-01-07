@@ -12,7 +12,7 @@ export default class PushChannelsList extends AblyBaseCommand {
     // Filter by device ID
     "$ ably push channels list --channel alerts --device-id my-device-123",
     // Filter by client ID
-    "$ ably push channels list --channel alerts --client-id user-456",
+    "$ ably push channels list --channel alerts --recipient-client-id user-456",
     // With limit
     "$ ably push channels list --channel alerts --limit 50",
     // JSON output
@@ -28,7 +28,7 @@ export default class PushChannelsList extends AblyBaseCommand {
     "device-id": Flags.string({
       description: "Filter by device ID",
     }),
-    "client-id": Flags.string({
+    "recipient-client-id": Flags.string({
       description: "Filter by client ID",
     }),
     limit: Flags.integer({
@@ -56,8 +56,8 @@ export default class PushChannelsList extends AblyBaseCommand {
         params.deviceId = flags["device-id"];
       }
 
-      if (flags["client-id"]) {
-        params.clientId = flags["client-id"];
+      if (flags["recipient-client-id"]) {
+        params.clientId = flags["recipient-client-id"];
       }
 
       // List subscriptions

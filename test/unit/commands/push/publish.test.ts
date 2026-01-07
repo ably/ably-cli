@@ -45,7 +45,7 @@ describe("push:publish command", () => {
       const { stdout } = await runCommand(
         [
           "push:publish",
-          "--client-id",
+          "--recipient-client-id",
           "test-client",
           "--title",
           "Alert",
@@ -206,7 +206,7 @@ describe("push:publish command", () => {
   });
 
   describe("validation", () => {
-    it("should require either --device-id or --client-id", async () => {
+    it("should require either --device-id or --recipient-client-id", async () => {
       const { error } = await runCommand(
         ["push:publish", "--title", "Hello"],
         import.meta.url,
@@ -218,13 +218,13 @@ describe("push:publish command", () => {
       );
     });
 
-    it("should not allow both --device-id and --client-id", async () => {
+    it("should not allow both --device-id and --recipient-client-id", async () => {
       const { error } = await runCommand(
         [
           "push:publish",
           "--device-id",
           "device-1",
-          "--client-id",
+          "--recipient-client-id",
           "client-1",
           "--title",
           "Hello",

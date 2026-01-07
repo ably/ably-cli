@@ -49,7 +49,7 @@ describe("push:channels:save command", () => {
           "push:channels:save",
           "--channel",
           "test-channel",
-          "--client-id",
+          "--recipient-client-id",
           "test-client-id",
         ],
         import.meta.url,
@@ -100,7 +100,7 @@ describe("push:channels:save command", () => {
       expect(error!.message).toMatch(/missing.*required.*flag.*channel/i);
     });
 
-    it("should require either --device-id or --client-id", async () => {
+    it("should require either --device-id or --recipient-client-id", async () => {
       const { error } = await runCommand(
         ["push:channels:save", "--channel", "test-channel"],
         import.meta.url,
@@ -112,7 +112,7 @@ describe("push:channels:save command", () => {
       );
     });
 
-    it("should not allow both --device-id and --client-id", async () => {
+    it("should not allow both --device-id and --recipient-client-id", async () => {
       const { error } = await runCommand(
         [
           "push:channels:save",
@@ -120,7 +120,7 @@ describe("push:channels:save command", () => {
           "test-channel",
           "--device-id",
           "device-1",
-          "--client-id",
+          "--recipient-client-id",
           "client-1",
         ],
         import.meta.url,

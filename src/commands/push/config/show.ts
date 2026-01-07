@@ -37,12 +37,16 @@ export default class PushConfigShow extends ControlBaseCommand {
           // - apnsAuthType: 'token', 'certificate', or null (if not configured)
           // - fcmProjectId: project ID or null (if not configured)
           // - apnsUseSandboxEndpoint: boolean or null
+          // Also check legacy field apnsUsesSandboxCert for apps configured before API update
+          const apnsConfigured =
+            (app.apnsAuthType !== null && app.apnsAuthType !== undefined) ||
+            (app.apnsUsesSandboxCert !== null &&
+              app.apnsUsesSandboxCert !== undefined);
           const pushConfig = {
             appId: app.id,
             appName: app.name,
             apns: {
-              configured:
-                app.apnsAuthType !== null && app.apnsAuthType !== undefined,
+              configured: apnsConfigured,
               authType: app.apnsAuthType || null,
               useSandbox:
                 app.apnsUseSandboxEndpoint ?? app.apnsUsesSandboxCert ?? false,
@@ -62,10 +66,13 @@ export default class PushConfigShow extends ControlBaseCommand {
           );
 
           // APNs Configuration
-          // Use new Control API response field: apnsAuthType ('token', 'certificate', or null)
+          // Check both new Control API field (apnsAuthType) and legacy field (apnsUsesSandboxCert)
+          // For apps configured before the Control API update, apnsAuthType may not be set
           this.log(chalk.cyan("APNs (iOS):"));
           const apnsConfigured =
-            app.apnsAuthType !== null && app.apnsAuthType !== undefined;
+            (app.apnsAuthType !== null && app.apnsAuthType !== undefined) ||
+            (app.apnsUsesSandboxCert !== null &&
+              app.apnsUsesSandboxCert !== undefined);
 
           if (apnsConfigured) {
             this.log(

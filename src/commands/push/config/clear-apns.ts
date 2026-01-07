@@ -34,11 +34,14 @@ export default class PushConfigClearApns extends ControlBaseCommand {
         const appId = await this.resolveAppId(flags);
 
         // Get current app to show what will be cleared
-        // Use apnsAuthType field (from new Control API) to detect if APNs is configured
-        // apnsAuthType is 'token', 'certificate', or null if not configured
+        // Check both new Control API field (apnsAuthType) and legacy field (apnsUsesSandboxCert)
+        // For apps configured before the Control API update, apnsAuthType may not be set
+        // while apnsUsesSandboxCert is defined
         const app = await api.getApp(appId);
         const hasApnsConfig =
-          app.apnsAuthType !== null && app.apnsAuthType !== undefined;
+          (app.apnsAuthType !== null && app.apnsAuthType !== undefined) ||
+          (app.apnsUsesSandboxCert !== null &&
+            app.apnsUsesSandboxCert !== undefined);
 
         if (!hasApnsConfig) {
           if (this.shouldOutputJson(flags)) {

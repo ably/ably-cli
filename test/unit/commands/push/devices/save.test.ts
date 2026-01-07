@@ -185,7 +185,7 @@ describe("push:devices:save command", () => {
           "fcm",
           "--device-token",
           "fake-fcm-token",
-          "--client-id",
+          "--recipient-client-id",
           "test-client",
         ],
         import.meta.url,

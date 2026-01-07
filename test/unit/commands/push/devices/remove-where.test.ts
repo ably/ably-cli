@@ -10,11 +10,16 @@ describe("push:devices:remove-where command", () => {
   });
 
   describe("successful removal", () => {
-    it("should remove devices by --client-id with --force", async () => {
+    it("should remove devices by --recipient-client-id with --force", async () => {
       const mock = getMockAblyRest();
 
       const { stdout } = await runCommand(
-        ["push:devices:remove-where", "--client-id", "test-client", "--force"],
+        [
+          "push:devices:remove-where",
+          "--recipient-client-id",
+          "test-client",
+          "--force",
+        ],
         import.meta.url,
       );
 
@@ -48,7 +53,7 @@ describe("push:devices:remove-where command", () => {
       const { stdout } = await runCommand(
         [
           "push:devices:remove-where",
-          "--client-id",
+          "--recipient-client-id",
           "test-client",
           "--force",
           "--json",
@@ -87,7 +92,12 @@ describe("push:devices:remove-where command", () => {
       );
 
       const { error } = await runCommand(
-        ["push:devices:remove-where", "--client-id", "test-client", "--force"],
+        [
+          "push:devices:remove-where",
+          "--recipient-client-id",
+          "test-client",
+          "--force",
+        ],
         import.meta.url,
       );
 

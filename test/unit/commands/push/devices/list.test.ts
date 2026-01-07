@@ -42,7 +42,7 @@ describe("push:devices:list command", () => {
       expect(stdout).toContain("ios");
     });
 
-    it("should filter by --client-id", async () => {
+    it("should filter by --recipient-client-id", async () => {
       const mock = getMockAblyRest();
       mock.push.admin.deviceRegistrations.list.mockResolvedValue({
         items: [
@@ -58,7 +58,7 @@ describe("push:devices:list command", () => {
       });
 
       const { stdout } = await runCommand(
-        ["push:devices:list", "--client-id", "client-1"],
+        ["push:devices:list", "--recipient-client-id", "client-1"],
         import.meta.url,
       );
 

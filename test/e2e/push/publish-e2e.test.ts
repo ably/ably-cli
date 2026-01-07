@@ -184,7 +184,7 @@ describe("Push Publish E2E Tests", () => {
         [
           "push",
           "publish",
-          "--client-id",
+          "--recipient-client-id",
           "e2e-publish-test-user",
           "--title",
           "Client Test",
@@ -215,7 +215,7 @@ describe("Push Publish E2E Tests", () => {
 
         expect(result.exitCode).not.toBe(0);
         expect(result.stderr).toContain(
-          "Either --device-id or --client-id must be specified",
+          "Either --device-id or --recipient-client-id must be specified",
         );
       },
     );
@@ -229,7 +229,7 @@ describe("Push Publish E2E Tests", () => {
             "publish",
             "--device-id",
             "device1",
-            "--client-id",
+            "--recipient-client-id",
             "client1",
             "--title",
             "Test",
@@ -242,7 +242,7 @@ describe("Push Publish E2E Tests", () => {
 
         expect(result.exitCode).not.toBe(0);
         expect(result.stderr).toContain(
-          "Only one of --device-id or --client-id can be specified",
+          "Only one of --device-id or --recipient-client-id can be specified",
         );
       },
     );

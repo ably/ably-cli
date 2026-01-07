@@ -58,7 +58,7 @@ describe("push:channels:list command", () => {
       expect(stdout).toContain("device-1");
     });
 
-    it("should filter by --client-id", async () => {
+    it("should filter by --recipient-client-id", async () => {
       const mock = getMockAblyRest();
       mock.push.admin.channelSubscriptions.list.mockResolvedValue({
         items: [{ channel: "alerts", clientId: "client-1" }],
@@ -70,7 +70,7 @@ describe("push:channels:list command", () => {
           "push:channels:list",
           "--channel",
           "alerts",
-          "--client-id",
+          "--recipient-client-id",
           "client-1",
         ],
         import.meta.url,
