@@ -37,7 +37,20 @@ export default class PushConfigClearFcm extends ControlBaseCommand {
         const app = await api.getApp(appId);
 
         if (!app.fcmServiceAccount && !app.fcmProjectId) {
-          this.log(chalk.yellow("FCM is not configured for this app."));
+          if (this.shouldOutputJson(flags)) {
+            this.log(
+              this.formatJsonOutput(
+                {
+                  success: true,
+                  appId,
+                  message: "No FCM configuration to clear",
+                },
+                flags,
+              ),
+            );
+          } else {
+            this.log(chalk.yellow("FCM is not configured for this app."));
+          }
           return;
         }
 

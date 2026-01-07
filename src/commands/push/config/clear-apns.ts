@@ -73,7 +73,9 @@ export default class PushConfigClearApns extends ControlBaseCommand {
           }
         }
 
-        this.log(`Clearing APNs configuration for app ${appId}...`);
+        if (!this.shouldOutputJson(flags)) {
+          this.log(`Clearing APNs configuration for app ${appId}...`);
+        }
 
         // Clear APNs configuration by setting fields to null/empty
         // Include both certificate-based and token-based auth fields

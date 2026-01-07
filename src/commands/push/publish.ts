@@ -85,9 +85,29 @@ export default class PushPublish extends AblyBaseCommand {
     }
 
     // Validate payload options
-    if (flags.payload && (flags.title || flags.body)) {
+    // When using --payload, all other notification flags are ignored since --payload
+    // provides the complete notification structure
+    const notificationFlags = [
+      "title",
+      "body",
+      "sound",
+      "icon",
+      "badge",
+      "data",
+      "collapse-key",
+      "ttl",
+      "apns",
+      "fcm",
+      "web",
+    ];
+    const usedNotificationFlags = notificationFlags.filter(
+      (flag) => flags[flag] !== undefined,
+    );
+
+    if (flags.payload && usedNotificationFlags.length > 0) {
       this.error(
-        "Cannot use --payload with --title or --body. Use --payload for full control or individual flags for simple notifications.",
+        `Cannot use --payload with ${usedNotificationFlags.map((f) => `--${f}`).join(", ")}. ` +
+          `Use --payload for full control OR individual flags for simple notifications, not both.`,
       );
     }
 
