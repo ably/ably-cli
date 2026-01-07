@@ -108,7 +108,6 @@ See [MCP Server section](#mcp-server) for more details on how to use the MCP Ser
 * [`ably apps logs`](#ably-apps-logs)
 * [`ably apps logs history`](#ably-apps-logs-history)
 * [`ably apps logs subscribe`](#ably-apps-logs-subscribe)
-* [`ably apps set-apns-p12 ID`](#ably-apps-set-apns-p12-id)
 * [`ably apps stats [ID]`](#ably-apps-stats-id)
 * [`ably apps switch [APPID]`](#ably-apps-switch-appid)
 * [`ably apps update ID`](#ably-apps-update-id)
@@ -558,7 +557,6 @@ COMMANDS
   ably apps delete              Delete an app
   ably apps list                List all apps in the current account
   ably apps logs                Stream or retrieve app logs
-  ably apps set-apns-p12        Upload Apple Push Notification Service P12 certificate for an app
   ably apps stats               Get app stats with optional live updates
   ably apps switch              Switch to a different Ably app
   ably apps update              Update an app
@@ -1014,48 +1012,6 @@ EXAMPLES
 ```
 
 _See code: [src/commands/apps/logs/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/logs/subscribe.ts)_
-
-## `ably apps set-apns-p12 ID`
-
-Upload Apple Push Notification Service P12 certificate for an app
-
-```
-USAGE
-  $ ably apps set-apns-p12 ID --certificate <value> [--access-token <value>] [--api-key <value>] [--client-id <value>]
-    [--env <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--password
-    <value>] [--use-for-sandbox]
-
-ARGUMENTS
-  ID  App ID to set the APNS certificate for
-
-FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --certificate=<value>   (required) Path to the P12 certificate file
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --password=<value>      Password for the P12 certificate
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --use-for-sandbox       Whether to use this certificate for the APNS sandbox environment
-
-DESCRIPTION
-  Upload Apple Push Notification Service P12 certificate for an app
-
-EXAMPLES
-  $ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12
-
-  $ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --password "YOUR_CERTIFICATE_PASSWORD"
-
-  $ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --use-for-sandbox
-```
-
-_See code: [src/commands/apps/set-apns-p12.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/set-apns-p12.ts)_
 
 ## `ably apps stats [ID]`
 
@@ -3813,6 +3769,7 @@ USAGE
   $ ably push config set-apns [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
     [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>] [--certificate
     <value>] [--password <value>] [--key-file <value>] [--key-id <value>] [--team-id <value>] [--bundle-id <value>]
+    [--use-sandbox]
 
 FLAGS
   -v, --verbose               Output verbose logs
@@ -3833,6 +3790,8 @@ FLAGS
       --pretty-json           Output in colorized JSON format
       --team-id=<value>       Team ID from Apple Developer portal (token-based auth)
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+      --use-sandbox           Use the APNs sandbox endpoint instead of production. Use this with development
+                              certificates or when testing with sandbox device tokens.
 
 DESCRIPTION
   Configure Apple Push Notification service (APNs) credentials for an app. Supports both certificate-based (.p12) and
@@ -3841,9 +3800,11 @@ DESCRIPTION
 EXAMPLES
   $ ably push config set-apns --certificate ./cert.p12 --password SECRET
 
-  $ ably push config set-apns --app my-app --certificate ./push-prod.p12
+  $ ably push config set-apns --certificate ./cert.p12 --password SECRET --use-sandbox
 
   $ ably push config set-apns --key-file ./AuthKey.p8 --key-id ABC123 --team-id XYZ789 --bundle-id com.myapp
+
+  $ ably push config set-apns --key-file ./AuthKey.p8 --key-id ABC123 --team-id XYZ789 --bundle-id com.myapp --use-sandbox
 ```
 
 _See code: [src/commands/push/config/set-apns.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/config/set-apns.ts)_
