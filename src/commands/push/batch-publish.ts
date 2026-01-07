@@ -223,6 +223,10 @@ export default class PushBatchPublish extends AblyBaseCommand {
 
   private validateBatchItems(items: BatchItem[]): void {
     items.forEach((item, index) => {
+      if (!item) {
+        throw new Error(`Item ${index}: invalid entry (null or undefined)`);
+      }
+
       if (!item.recipient) {
         throw new Error(`Item ${index}: missing 'recipient' field`);
       }

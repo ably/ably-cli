@@ -41,8 +41,8 @@ export default class PushConfigClearFcm extends ControlBaseCommand {
           return;
         }
 
-        // Confirm unless --force
-        if (!flags.force) {
+        // Confirm unless --force or in JSON mode (JSON mode should not prompt)
+        if (!flags.force && !this.shouldOutputJson(flags)) {
           const confirmed = await this.interactiveHelper.confirm(
             `Are you sure you want to remove FCM configuration from app "${app.name}" (${appId})? ` +
               `This will disable push notifications for Android devices.`,

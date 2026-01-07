@@ -62,8 +62,8 @@ export default class PushConfigClearApns extends ControlBaseCommand {
           return;
         }
 
-        // Confirm unless --force is used
-        if (!flags.force) {
+        // Confirm unless --force is used or in JSON mode (JSON mode should not prompt)
+        if (!flags.force && !this.shouldOutputJson(flags)) {
           const confirmed = await this.interactiveHelper.confirm(
             `Are you sure you want to remove APNs configuration from app "${app.name}"?`,
           );
