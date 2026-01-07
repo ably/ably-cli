@@ -71,12 +71,20 @@ describe("push:config:set-apns command", () => {
           id: "cert-123",
         });
 
+      // Mock updateApp call to set apnsUseSandboxEndpoint
+      nock("https://control.ably.net").patch(`/v1/apps/${appId}`).reply(200, {
+        id: appId,
+        name: "Test App",
+      });
+
       const { stdout } = await runCommand(
         ["push:config:set-apns", "--certificate", validP12File],
         import.meta.url,
       );
 
       expect(stdout).toContain("APNs P12 certificate uploaded successfully");
+      expect(stdout).toContain("Environment:");
+      expect(stdout).toContain("Production");
     });
 
     it("should configure APNs with P12 certificate and password", async () => {
@@ -88,6 +96,12 @@ describe("push:config:set-apns command", () => {
         .reply(200, {
           id: "cert-456",
         });
+
+      // Mock updateApp call to set apnsUseSandboxEndpoint
+      nock("https://control.ably.net").patch(`/v1/apps/${appId}`).reply(200, {
+        id: appId,
+        name: "Test App",
+      });
 
       const { stdout } = await runCommand(
         [
@@ -113,6 +127,12 @@ describe("push:config:set-apns command", () => {
           id: "cert-789",
         });
 
+      // Mock updateApp call to set apnsUseSandboxEndpoint
+      nock("https://control.ably.net").patch(`/v1/apps/${appId}`).reply(200, {
+        id: appId,
+        name: "Test App",
+      });
+
       const { stdout } = await runCommand(
         ["push:config:set-apns", "--certificate", validP12File, "--json"],
         import.meta.url,
@@ -125,6 +145,46 @@ describe("push:config:set-apns command", () => {
       expect(output.success).toBe(true);
       expect(output.authType).toBe("certificate");
       expect(output.certificateId).toBe("cert-789");
+      expect(output.environment).toBe("Production");
+    });
+
+    it("should set sandbox endpoint when --use-sandbox flag is used with P12", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      setupControlApiMocks(appId);
+
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${appId}/pkcs12`)
+        .reply(200, {
+          id: "cert-sandbox",
+        });
+
+      // Verify that apnsUseSandboxEndpoint is set to true
+      let capturedBody: Record<string, unknown> | undefined;
+      nock("https://control.ably.net")
+        .patch(`/v1/apps/${appId}`, (body: Record<string, unknown>) => {
+          capturedBody = body;
+          return true;
+        })
+        .reply(200, {
+          id: appId,
+          name: "Test App",
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "push:config:set-apns",
+          "--certificate",
+          validP12File,
+          "--use-sandbox",
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("APNs P12 certificate uploaded successfully");
+      expect(stdout).toContain("Environment:");
+      expect(stdout).toContain("Sandbox");
+      expect(capturedBody).toBeDefined();
+      expect(capturedBody!.apnsUseSandboxEndpoint).toBe(true);
     });
   });
 

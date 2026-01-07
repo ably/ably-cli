@@ -10,11 +10,14 @@ export default class PushConfigSetApns extends ControlBaseCommand {
     "Configure Apple Push Notification service (APNs) credentials for an app. Supports both certificate-based (.p12) and token-based (.p8) authentication.";
 
   static override examples = [
-    // Certificate-based authentication
+    // Certificate-based authentication (production)
     "$ ably push config set-apns --certificate ./cert.p12 --password SECRET",
-    "$ ably push config set-apns --app my-app --certificate ./push-prod.p12",
-    // Token-based authentication
+    // Certificate-based authentication (sandbox - use with development certificate)
+    "$ ably push config set-apns --certificate ./cert.p12 --password SECRET --use-sandbox",
+    // Token-based authentication (production)
     "$ ably push config set-apns --key-file ./AuthKey.p8 --key-id ABC123 --team-id XYZ789 --bundle-id com.myapp",
+    // Token-based authentication (sandbox)
+    "$ ably push config set-apns --key-file ./AuthKey.p8 --key-id ABC123 --team-id XYZ789 --bundle-id com.myapp --use-sandbox",
   ];
 
   static override flags = {
@@ -41,6 +44,13 @@ export default class PushConfigSetApns extends ControlBaseCommand {
     }),
     "bundle-id": Flags.string({
       description: "App bundle identifier (token-based auth)",
+    }),
+    // Sandbox endpoint flag
+    "use-sandbox": Flags.boolean({
+      default: false,
+      description:
+        "Use the APNs sandbox endpoint instead of production. " +
+        "Use this with development certificates or when testing with sandbox device tokens.",
     }),
   };
 
@@ -107,8 +117,15 @@ export default class PushConfigSetApns extends ControlBaseCommand {
       password: flags.password as string | undefined,
     });
 
-    // Note: Sandbox vs Production is determined by the certificate type
-    // (Development vs Distribution certificate from Apple Developer Portal)
+    // Set the sandbox endpoint based on user's choice
+    // User is responsible for matching this with their certificate type
+    // (development certificate = sandbox, distribution certificate = production)
+    const useSandbox = flags["use-sandbox"] as boolean;
+    await api.updateApp(appId, {
+      apnsUseSandboxEndpoint: useSandbox,
+    } as Record<string, unknown>);
+
+    const environment = useSandbox ? "Sandbox" : "Production";
 
     if (this.shouldOutputJson(flags)) {
       this.log(
@@ -118,6 +135,7 @@ export default class PushConfigSetApns extends ControlBaseCommand {
             appId,
             authType: "certificate",
             certificateId: result.id,
+            environment,
           },
           flags,
         ),
@@ -125,6 +143,7 @@ export default class PushConfigSetApns extends ControlBaseCommand {
     } else {
       this.log(chalk.green("\nAPNs P12 certificate uploaded successfully!"));
       this.log(`${chalk.dim("Certificate ID:")} ${result.id}`);
+      this.log(`${chalk.dim("Environment:")}    ${environment}`);
     }
   }
 
@@ -151,13 +170,18 @@ export default class PushConfigSetApns extends ControlBaseCommand {
     // - apnsSigningKeyId: The Key ID from Apple
     // - apnsIssuerKey: The Team ID from Apple
     // - apnsTopicHeader: The bundle ID / topic
+    // - apnsUseSandboxEndpoint: Whether to use sandbox (required for token auth)
+    const useSandbox = flags["use-sandbox"] as boolean;
     await api.updateApp(appId, {
       apnsAuthType: "token",
       apnsSigningKey: privateKey,
       apnsSigningKeyId: flags["key-id"] as string,
       apnsIssuerKey: flags["team-id"] as string,
       apnsTopicHeader: flags["bundle-id"] as string,
+      apnsUseSandboxEndpoint: useSandbox,
     } as Record<string, unknown>);
+
+    const environment = useSandbox ? "Sandbox" : "Production";
 
     if (this.shouldOutputJson(flags)) {
       this.log(
@@ -169,6 +193,7 @@ export default class PushConfigSetApns extends ControlBaseCommand {
             keyId: flags["key-id"],
             teamId: flags["team-id"],
             bundleId: flags["bundle-id"],
+            environment,
           },
           flags,
         ),
@@ -179,9 +204,10 @@ export default class PushConfigSetApns extends ControlBaseCommand {
           "\nAPNs token-based authentication configured successfully!",
         ),
       );
-      this.log(`${chalk.dim("Key ID:")}     ${flags["key-id"]}`);
-      this.log(`${chalk.dim("Team ID:")}    ${flags["team-id"]}`);
-      this.log(`${chalk.dim("Bundle ID:")}  ${flags["bundle-id"]}`);
+      this.log(`${chalk.dim("Key ID:")}      ${flags["key-id"]}`);
+      this.log(`${chalk.dim("Team ID:")}     ${flags["team-id"]}`);
+      this.log(`${chalk.dim("Bundle ID:")}   ${flags["bundle-id"]}`);
+      this.log(`${chalk.dim("Environment:")} ${environment}`);
     }
   }
 }
