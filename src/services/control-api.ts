@@ -1,4 +1,4 @@
-import fetch, { type RequestInit } from "node-fetch";
+import fetch, { type RequestInit, FormData, Blob } from "node-fetch";
 import { getCliVersion } from "../utils/version.js";
 import isTestMode from "../utils/test-mode.js";
 
@@ -11,7 +11,11 @@ export interface ControlApiOptions {
 export interface App {
   accountId: string;
   apnsUsesSandboxCert?: boolean;
+  // New push config response fields (from Control API updates)
+  apnsAuthType?: "certificate" | "token" | null;
+  apnsUseSandboxEndpoint?: boolean | null;
   created: number;
+  fcmProjectId?: string | null;
   id: string;
   modified: number;
   name: string;
@@ -484,24 +488,58 @@ export class ControlApi {
   // Upload Apple Push Notification Service P12 certificate for an app
   async uploadApnsP12(
     appId: string,
-    certificateData: string,
+    certificateData: Buffer,
     options: {
       password?: string;
-      useForSandbox?: boolean;
     } = {},
   ): Promise<{ id: string }> {
-    const data = {
-      p12Certificate: certificateData,
-      password: options.password,
-      useForSandbox: options.useForSandbox,
-    };
+    // This endpoint requires multipart/form-data
+    const formData = new FormData();
 
-    // App ID-specific operations don't need account ID in the path
-    return this.request<{ id: string }>(
-      `/apps/${appId}/push/certificate`,
-      "POST",
-      data,
-    );
+    // Add the certificate file
+    const blob = new Blob([certificateData], {
+      type: "application/x-pkcs12",
+    });
+    formData.append("p12File", blob, "certificate.p12");
+
+    // Add the password (required by the API)
+    formData.append("p12Pass", options.password || "");
+
+    const url = this.controlHost.includes("local")
+      ? `http://${this.controlHost}/api/v1/apps/${appId}/pkcs12`
+      : `https://${this.controlHost}/v1/apps/${appId}/pkcs12`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        "Ably-Agent": `ably-cli/${getCliVersion()}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const responseBody = await response.text();
+      let responseData: unknown = responseBody;
+      try {
+        responseData = JSON.parse(responseBody);
+      } catch {
+        /* Ignore parsing errors */
+      }
+
+      let errorMessage = `API request failed (${response.status} ${response.statusText})`;
+      if (
+        typeof responseData === "object" &&
+        responseData !== null &&
+        "message" in responseData &&
+        typeof responseData.message === "string"
+      ) {
+        errorMessage += `: ${responseData.message}`;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return (await response.json()) as { id: string };
   }
 
   private async request<T>(

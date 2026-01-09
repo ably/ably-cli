@@ -1,0 +1,6 @@
+-----BEGIN PRIVATE KEY-----
+MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgTestKeyForDevelopment
+OnlyDoNotUseInProductionAbCdEfGhIjKlMnOpQrStUvWxYz0123456789abcdefg
+hijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ01234oA
+oGCCqGSM49AwEHoUQDQgAETestPublicKeyDataHereForTestingPurposesOnly
+-----END PRIVATE KEY-----
