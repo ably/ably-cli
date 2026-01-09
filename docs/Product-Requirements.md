@@ -48,8 +48,6 @@ The CLI uses topics (space-separated) to group related commands logically.
 - `$ ably apps stats [ID]`: Views app stats for the specified (or current) app. Supports `--live` polling, `--unit`, `--start`, `--end`, `--limit`.
 - `$ ably apps switch [APPID]`: Switches the active app configuration to the specified App ID or prompts for selection.
 - `$ ably apps current`: Shows the currently selected app configuration.
-- `$ ably apps logs subscribe`: Alias for `ably logs app subscribe`.
-- `$ ably apps logs history`: Alias for `ably logs app history`.
 
 **Channel Rules (`ably apps channel-rules`)**
 *(Manage Ably channel rules/namespaces via Control API)*
@@ -134,8 +132,8 @@ The CLI uses topics (space-separated) to group related commands logically.
 **Logging (`ably logs`)**
 *(Stream and retrieve logs from meta channels)*
 
-- `$ ably logs app subscribe`: Streams logs from `[meta]log`. Supports `--rewind`.
-- `$ ably logs app history`: Retrieves historical logs from `[meta]log`. Supports `--limit`, `--direction`.
+- `$ ably logs subscribe`: Streams logs from `[meta]log`. Supports `--rewind`.
+- `$ ably logs history`: Retrieves historical logs from `[meta]log`. Supports `--limit`, `--direction`.
 - `$ ably logs channel-lifecycle subscribe`: Streams logs from `[meta]channel.lifecycle`.
 - `$ ably logs connection-lifecycle subscribe`: Streams logs from `[meta]connection.lifecycle`.
 - `$ ably logs connection-lifecycle history`: Retrieves historical connection logs. Supports `--limit`, `--direction`.

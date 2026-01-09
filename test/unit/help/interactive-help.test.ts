@@ -145,7 +145,7 @@ ably> channels publish test "msg2"
             hidden: false,
           },
           {
-            id: "logs:app:history",
+            id: "logs:history",
             description: "View app logs",
             hidden: false,
           },
@@ -200,7 +200,7 @@ ably> channels publish test "msg2"
       expect(help.shouldDisplay({ id: "apps:list" } as any)).toBe(false);
       expect(help.shouldDisplay({ id: "bench:publisher" } as any)).toBe(false);
       expect(help.shouldDisplay({ id: "auth:keys:list" } as any)).toBe(false);
-      expect(help.shouldDisplay({ id: "logs:app:history" } as any)).toBe(false);
+      expect(help.shouldDisplay({ id: "logs:history" } as any)).toBe(false);
       expect(help.shouldDisplay({ id: "spaces:list" } as any)).toBe(false);
       expect(help.shouldDisplay({ id: "rooms:list" } as any)).toBe(false);
       expect(help.shouldDisplay({ id: "integrations:create" } as any)).toBe(

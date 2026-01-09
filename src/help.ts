@@ -374,7 +374,22 @@ export default class CustomHelp extends Help {
 
     // Commands available only for authenticated users
     if (!isAnonymousMode) {
-      commands.push([`${cmdPrefix}channels logs`, "View live channel events"]);
+      commands.push(
+        [`${cmdPrefix}logs history`, "Retrieve application log history"],
+        [`${cmdPrefix}logs subscribe`, "Subscribe to live app logs"],
+        [
+          `${cmdPrefix}logs channel-lifecycle subscribe`,
+          "Stream logs from [meta]channel.lifecycle meta channel",
+        ],
+        [
+          `${cmdPrefix}logs connection-lifecycle subscribe`,
+          "Stream logs from [meta]connection.lifecycle meta channel",
+        ],
+        [
+          `${cmdPrefix}logs push subscribe`,
+          "Stream logs from the push notifications meta channel [meta]log:push",
+        ],
+      );
     }
 
     commands.push(
