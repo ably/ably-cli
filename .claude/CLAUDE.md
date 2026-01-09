@@ -50,6 +50,32 @@ cat .cursor/rules/AI-Assistance.mdc
 5. **Remove tests without asking** - Always get permission first
 6. **NODE_ENV** - To check if the CLI is in test mode, use the `isTestMode()` helper function.
 7. **`process.exit`** - When creating a command, use `this.exit()` for consistent test mode handling.
+8. **Implement common functionality without searching first** - See "Discover Patterns" below.
+
+## 🔍 Discover Patterns Before Implementing (CRITICAL)
+
+This codebase has 50+ commands with established patterns. **Before implementing ANY common functionality, search for how existing code handles it.**
+
+### Before You Write Code
+
+1. **Find a similar command** - If adding `push foo`, look at `channels foo` or `apps foo` first
+2. **Search for the problem** - Before writing error handling, confirmation prompts, or any reusable logic: `grep -r "keyword" src/`
+3. **Check utilities** - Browse `src/utils/` and `src/base-command.ts` for existing helpers
+
+### Search Examples
+
+| If you need... | Search for... |
+|----------------|---------------|
+| Error handling in JSON mode | `grep -r "Error.*json\|jsonError" src/` |
+| User confirmation prompts | `grep -r "confirm\|prompt" src/utils/` |
+| Common flag patterns | Look at 2-3 similar commands |
+| Test patterns | Look at existing tests in same directory |
+
+### The Rule
+
+**If you're solving a problem that other commands probably solve, spend 2 minutes searching before implementing.** Finding an existing pattern is faster than inventing one and having it rejected in review.
+
+When in doubt: `grep -r "what-you-need" src/` → read how others did it → follow that pattern.
 
 ## ✅ Correct Practices
 
