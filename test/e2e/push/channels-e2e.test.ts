@@ -19,16 +19,12 @@ import {
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
 
-describe("Push Channel Subscriptions E2E Tests", () => {
+describe.skipIf(SHOULD_SKIP_E2E)("Push Channel Subscriptions E2E Tests", () => {
   let testDeviceIdBase: string;
   let client: Ably.Rest;
   let testDeviceId: string;
 
   beforeAll(async () => {
-    if (SHOULD_SKIP_E2E) {
-      return;
-    }
-
     process.on("SIGINT", forceExit);
 
     // Generate unique device ID base for this test run
@@ -54,10 +50,6 @@ describe("Push Channel Subscriptions E2E Tests", () => {
   });
 
   afterAll(async () => {
-    if (SHOULD_SKIP_E2E) {
-      return;
-    }
-
     // Cleanup test device
     try {
       await client.push.admin.deviceRegistrations.remove(testDeviceId);
@@ -78,55 +70,49 @@ describe("Push Channel Subscriptions E2E Tests", () => {
   });
 
   describe("push channels save - validation", () => {
-    it.skipIf(SHOULD_SKIP_E2E)(
-      "should error when neither device-id nor client-id provided",
-      async () => {
-        const result = await runCommand(
-          ["push", "channels", "save", "--channel", "test-channel"],
-          {
-            env: { ABLY_API_KEY: E2E_API_KEY || "" },
-            timeoutMs: 30000,
-          },
-        );
+    it("should error when neither device-id nor client-id provided", async () => {
+      const result = await runCommand(
+        ["push", "channels", "save", "--channel", "test-channel"],
+        {
+          env: { ABLY_API_KEY: E2E_API_KEY || "" },
+          timeoutMs: 30000,
+        },
+      );
 
-        expect(result.exitCode).not.toBe(0);
-        expect(result.stderr).toContain(
-          "Either --device-id or --recipient-client-id must be specified",
-        );
-      },
-    );
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain(
+        "Either --device-id or --recipient-client-id must be specified",
+      );
+    });
 
-    it.skipIf(SHOULD_SKIP_E2E)(
-      "should error when both device-id and client-id provided",
-      async () => {
-        const result = await runCommand(
-          [
-            "push",
-            "channels",
-            "save",
-            "--channel",
-            "test-channel",
-            "--device-id",
-            "device1",
-            "--recipient-client-id",
-            "client1",
-          ],
-          {
-            env: { ABLY_API_KEY: E2E_API_KEY || "" },
-            timeoutMs: 30000,
-          },
-        );
+    it("should error when both device-id and client-id provided", async () => {
+      const result = await runCommand(
+        [
+          "push",
+          "channels",
+          "save",
+          "--channel",
+          "test-channel",
+          "--device-id",
+          "device1",
+          "--recipient-client-id",
+          "client1",
+        ],
+        {
+          env: { ABLY_API_KEY: E2E_API_KEY || "" },
+          timeoutMs: 30000,
+        },
+      );
 
-        expect(result.exitCode).not.toBe(0);
-        expect(result.stderr).toContain(
-          "Only one of --device-id or --recipient-client-id can be specified",
-        );
-      },
-    );
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain(
+        "Only one of --device-id or --recipient-client-id can be specified",
+      );
+    });
   });
 
   describe("push channels list - validation", () => {
-    it.skipIf(SHOULD_SKIP_E2E)("should require --channel flag", async () => {
+    it("should require --channel flag", async () => {
       const result = await runCommand(["push", "channels", "list"], {
         env: { ABLY_API_KEY: E2E_API_KEY || "" },
         timeoutMs: 30000,
@@ -138,89 +124,70 @@ describe("Push Channel Subscriptions E2E Tests", () => {
   });
 
   describe("push channels list-channels", () => {
-    it.skipIf(SHOULD_SKIP_E2E)(
-      "should list channels (may be empty if no push subscriptions)",
-      async () => {
-        const result = await runCommand(["push", "channels", "list-channels"], {
+    it("should list channels (may be empty if no push subscriptions)", async () => {
+      const result = await runCommand(["push", "channels", "list-channels"], {
+        env: { ABLY_API_KEY: E2E_API_KEY || "" },
+        timeoutMs: 30000,
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Channels with Push Subscriptions");
+    });
+
+    it("should output JSON when --json flag is used", async () => {
+      const result = await runCommand(
+        ["push", "channels", "list-channels", "--json"],
+        {
           env: { ABLY_API_KEY: E2E_API_KEY || "" },
           timeoutMs: 30000,
-        });
+        },
+      );
 
-        expect(result.exitCode).toBe(0);
-        expect(result.stdout).toContain("Channels with Push Subscriptions");
-      },
-    );
+      expect(result.exitCode).toBe(0);
 
-    it.skipIf(SHOULD_SKIP_E2E)(
-      "should output JSON when --json flag is used",
-      async () => {
-        const result = await runCommand(
-          ["push", "channels", "list-channels", "--json"],
-          {
-            env: { ABLY_API_KEY: E2E_API_KEY || "" },
-            timeoutMs: 30000,
-          },
-        );
-
-        expect(result.exitCode).toBe(0);
-
-        const json = JSON.parse(result.stdout);
-        expect(json.success).toBe(true);
-        expect(json.channels).toBeInstanceOf(Array);
-      },
-    );
+      const json = JSON.parse(result.stdout);
+      expect(json.success).toBe(true);
+      expect(json.channels).toBeInstanceOf(Array);
+    });
   });
 
   describe("push channels remove - validation", () => {
-    it.skipIf(SHOULD_SKIP_E2E)(
-      "should error when neither device-id nor client-id provided",
-      async () => {
-        const result = await runCommand(
-          [
-            "push",
-            "channels",
-            "remove",
-            "--channel",
-            "test-channel",
-            "--force",
-          ],
-          {
-            env: { ABLY_API_KEY: E2E_API_KEY || "" },
-            timeoutMs: 30000,
-          },
-        );
+    it("should error when neither device-id nor client-id provided", async () => {
+      const result = await runCommand(
+        ["push", "channels", "remove", "--channel", "test-channel", "--force"],
+        {
+          env: { ABLY_API_KEY: E2E_API_KEY || "" },
+          timeoutMs: 30000,
+        },
+      );
 
-        expect(result.exitCode).not.toBe(0);
-        expect(result.stderr).toContain(
-          "Either --device-id or --recipient-client-id must be specified",
-        );
-      },
-    );
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain(
+        "Either --device-id or --recipient-client-id must be specified",
+      );
+    });
   });
 
   describe("push channels remove-where - validation", () => {
-    it.skipIf(SHOULD_SKIP_E2E)(
-      "should require at least one filter criterion",
-      async () => {
-        const result = await runCommand(
-          [
-            "push",
-            "channels",
-            "remove-where",
-            "--channel",
-            "test-channel",
-            "--force",
-          ],
-          {
-            env: { ABLY_API_KEY: E2E_API_KEY || "" },
-            timeoutMs: 30000,
-          },
-        );
+    it("should require at least one filter criterion", async () => {
+      const result = await runCommand(
+        [
+          "push",
+          "channels",
+          "remove-where",
+          "--channel",
+          "test-channel",
+          "--force",
+        ],
+        {
+          env: { ABLY_API_KEY: E2E_API_KEY || "" },
+          timeoutMs: 30000,
+        },
+      );
 
-        expect(result.exitCode).not.toBe(0);
-        expect(result.stderr).toContain("At least one filter criterion");
-      },
-    );
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain("At least one filter criterion");
+    });
   });
 
   // Note: Tests that require push-enabled channels are not included here

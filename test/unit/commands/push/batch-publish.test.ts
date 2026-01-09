@@ -4,8 +4,8 @@ import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
 
 describe("push:batch-publish command", () => {
   beforeEach(() => {
+    // Set up default mock behavior for this test suite
     const mock = getMockAblyRest();
-    mock.request.mockReset();
     mock.request.mockResolvedValue({
       items: [],
       statusCode: 200,
@@ -41,7 +41,7 @@ describe("push:batch-publish command", () => {
       expect(mock.request).toHaveBeenCalledWith(
         "POST",
         "/push/batch/publish",
-        2,
+        4,
         {},
         expect.arrayContaining([
           expect.objectContaining({
@@ -142,7 +142,7 @@ describe("push:batch-publish command", () => {
       expect(mock.request).toHaveBeenCalledWith(
         "POST",
         "/push/batch/publish",
-        2,
+        4,
         {},
         expect.arrayContaining([
           expect.objectContaining({

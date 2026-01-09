@@ -134,16 +134,13 @@ export default class PushDevicesList extends AblyBaseCommand {
         error instanceof Error ? error.message : String(error);
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: errorMessage,
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: errorMessage,
+            success: false,
+          },
+          flags,
         );
-        this.exit(1);
       } else {
         this.error(`Error listing devices: ${errorMessage}`);
       }

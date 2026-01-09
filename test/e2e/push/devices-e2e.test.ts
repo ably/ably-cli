@@ -19,16 +19,11 @@ import {
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
 
-describe("Push Devices E2E Tests", () => {
-  // Skip all tests if API key not available
+describe.skipIf(SHOULD_SKIP_E2E)("Push Devices E2E Tests", () => {
   let testDeviceIdBase: string;
   let client: Ably.Rest;
 
   beforeAll(async () => {
-    if (SHOULD_SKIP_E2E) {
-      return;
-    }
-
     process.on("SIGINT", forceExit);
 
     // Generate unique device ID base for this test run
@@ -54,141 +49,129 @@ describe("Push Devices E2E Tests", () => {
   });
 
   describe("push devices save", () => {
-    it.skipIf(SHOULD_SKIP_E2E)(
-      "should register an Android device with FCM token",
-      async () => {
-        const deviceId = `${testDeviceIdBase}-android-save`;
-        const fakeToken = `fake-fcm-token-${Date.now()}`;
+    it("should register an Android device with FCM token", async () => {
+      const deviceId = `${testDeviceIdBase}-android-save`;
+      const fakeToken = `fake-fcm-token-${Date.now()}`;
 
-        const result = await runCommand(
-          [
-            "push",
-            "devices",
-            "save",
-            "--id",
-            deviceId,
-            "--platform",
-            "android",
-            "--form-factor",
-            "phone",
-            "--transport-type",
-            "fcm",
-            "--device-token",
-            fakeToken,
-            "--recipient-client-id",
-            "e2e-test-user",
-          ],
-          {
-            env: { ABLY_API_KEY: E2E_API_KEY || "" },
-            timeoutMs: 30000,
-          },
-        );
+      const result = await runCommand(
+        [
+          "push",
+          "devices",
+          "save",
+          "--id",
+          deviceId,
+          "--platform",
+          "android",
+          "--form-factor",
+          "phone",
+          "--transport-type",
+          "fcm",
+          "--device-token",
+          fakeToken,
+          "--recipient-client-id",
+          "e2e-test-user",
+        ],
+        {
+          env: { ABLY_API_KEY: E2E_API_KEY || "" },
+          timeoutMs: 30000,
+        },
+      );
 
-        expect(result.exitCode).toBe(0);
-        expect(result.stdout).toContain("Device registered successfully");
-        expect(result.stdout).toContain(deviceId);
-        expect(result.stdout).toContain("android");
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Device registered successfully");
+      expect(result.stdout).toContain(deviceId);
+      expect(result.stdout).toContain("android");
 
-        // Verify with SDK
-        const device =
-          await client.push.admin.deviceRegistrations.get(deviceId);
-        expect(device.id).toBe(deviceId);
-        expect(device.platform).toBe("android");
-        expect(device.formFactor).toBe("phone");
-        expect(device.clientId).toBe("e2e-test-user");
+      // Verify with SDK
+      const device = await client.push.admin.deviceRegistrations.get(deviceId);
+      expect(device.id).toBe(deviceId);
+      expect(device.platform).toBe("android");
+      expect(device.formFactor).toBe("phone");
+      expect(device.clientId).toBe("e2e-test-user");
 
-        // Cleanup
-        await client.push.admin.deviceRegistrations.remove(deviceId);
-      },
-    );
+      // Cleanup
+      await client.push.admin.deviceRegistrations.remove(deviceId);
+    });
 
-    it.skipIf(SHOULD_SKIP_E2E)(
-      "should register an iOS device with APNs token",
-      async () => {
-        const deviceId = `${testDeviceIdBase}-ios-save`;
-        const fakeToken = `fake-apns-token-${Date.now()}`;
+    it("should register an iOS device with APNs token", async () => {
+      const deviceId = `${testDeviceIdBase}-ios-save`;
+      const fakeToken = `fake-apns-token-${Date.now()}`;
 
-        const result = await runCommand(
-          [
-            "push",
-            "devices",
-            "save",
-            "--id",
-            deviceId,
-            "--platform",
-            "ios",
-            "--form-factor",
-            "tablet",
-            "--transport-type",
-            "apns",
-            "--device-token",
-            fakeToken,
-          ],
-          {
-            env: { ABLY_API_KEY: E2E_API_KEY || "" },
-            timeoutMs: 30000,
-          },
-        );
+      const result = await runCommand(
+        [
+          "push",
+          "devices",
+          "save",
+          "--id",
+          deviceId,
+          "--platform",
+          "ios",
+          "--form-factor",
+          "tablet",
+          "--transport-type",
+          "apns",
+          "--device-token",
+          fakeToken,
+        ],
+        {
+          env: { ABLY_API_KEY: E2E_API_KEY || "" },
+          timeoutMs: 30000,
+        },
+      );
 
-        expect(result.exitCode).toBe(0);
-        expect(result.stdout).toContain("Device registered successfully");
-        expect(result.stdout).toContain("ios");
-        expect(result.stdout).toContain("tablet");
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Device registered successfully");
+      expect(result.stdout).toContain("ios");
+      expect(result.stdout).toContain("tablet");
 
-        // Cleanup
-        await client.push.admin.deviceRegistrations.remove(deviceId);
-      },
-    );
+      // Cleanup
+      await client.push.admin.deviceRegistrations.remove(deviceId);
+    });
 
-    it.skipIf(SHOULD_SKIP_E2E)(
-      "should output JSON when --json flag is used",
-      async () => {
-        const deviceId = `${testDeviceIdBase}-json-save`;
-        const fakeToken = `fake-fcm-token-json-${Date.now()}`;
+    it("should output JSON when --json flag is used", async () => {
+      const deviceId = `${testDeviceIdBase}-json-save`;
+      const fakeToken = `fake-fcm-token-json-${Date.now()}`;
 
-        const result = await runCommand(
-          [
-            "push",
-            "devices",
-            "save",
-            "--id",
-            deviceId,
-            "--platform",
-            "android",
-            "--form-factor",
-            "phone",
-            "--transport-type",
-            "fcm",
-            "--device-token",
-            fakeToken,
-            "--json",
-          ],
-          {
-            env: { ABLY_API_KEY: E2E_API_KEY || "" },
-            timeoutMs: 30000,
-          },
-        );
+      const result = await runCommand(
+        [
+          "push",
+          "devices",
+          "save",
+          "--id",
+          deviceId,
+          "--platform",
+          "android",
+          "--form-factor",
+          "phone",
+          "--transport-type",
+          "fcm",
+          "--device-token",
+          fakeToken,
+          "--json",
+        ],
+        {
+          env: { ABLY_API_KEY: E2E_API_KEY || "" },
+          timeoutMs: 30000,
+        },
+      );
 
-        expect(result.exitCode).toBe(0);
+      expect(result.exitCode).toBe(0);
 
-        const json = JSON.parse(result.stdout);
-        expect(json.success).toBe(true);
-        expect(json.device).toBeDefined();
-        expect(json.device.id).toBe(deviceId);
-        expect(json.device.platform).toBe("android");
+      const json = JSON.parse(result.stdout);
+      expect(json.success).toBe(true);
+      expect(json.device).toBeDefined();
+      expect(json.device.id).toBe(deviceId);
+      expect(json.device.platform).toBe("android");
 
-        // Cleanup
-        await client.push.admin.deviceRegistrations.remove(deviceId);
-      },
-    );
+      // Cleanup
+      await client.push.admin.deviceRegistrations.remove(deviceId);
+    });
   });
 
   describe("push devices get", () => {
     let testDeviceId: string;
 
     beforeAll(async () => {
-      if (SHOULD_SKIP_E2E) return;
-
       // Create a test device for get tests
       testDeviceId = `${testDeviceIdBase}-get-test`;
       await client.push.admin.deviceRegistrations.save({
@@ -206,8 +189,6 @@ describe("Push Devices E2E Tests", () => {
     });
 
     afterAll(async () => {
-      if (SHOULD_SKIP_E2E) return;
-
       // Cleanup test device
       try {
         await client.push.admin.deviceRegistrations.remove(testDeviceId);
@@ -216,7 +197,7 @@ describe("Push Devices E2E Tests", () => {
       }
     });
 
-    it.skipIf(SHOULD_SKIP_E2E)("should get device details by ID", async () => {
+    it("should get device details by ID", async () => {
       const result = await runCommand(
         ["push", "devices", "get", testDeviceId],
         {
@@ -233,52 +214,44 @@ describe("Push Devices E2E Tests", () => {
       expect(result.stdout).toContain("e2e-get-test-user");
     });
 
-    it.skipIf(SHOULD_SKIP_E2E)(
-      "should output JSON when --json flag is used",
-      async () => {
-        const result = await runCommand(
-          ["push", "devices", "get", testDeviceId, "--json"],
-          {
-            env: { ABLY_API_KEY: E2E_API_KEY || "" },
-            timeoutMs: 30000,
-          },
-        );
+    it("should output JSON when --json flag is used", async () => {
+      const result = await runCommand(
+        ["push", "devices", "get", testDeviceId, "--json"],
+        {
+          env: { ABLY_API_KEY: E2E_API_KEY || "" },
+          timeoutMs: 30000,
+        },
+      );
 
-        expect(result.exitCode).toBe(0);
+      expect(result.exitCode).toBe(0);
 
-        const json = JSON.parse(result.stdout);
-        expect(json.success).toBe(true);
-        expect(json.device).toBeDefined();
-        expect(json.device.id).toBe(testDeviceId);
-        expect(json.device.platform).toBe("android");
-        expect(json.device.clientId).toBe("e2e-get-test-user");
-      },
-    );
+      const json = JSON.parse(result.stdout);
+      expect(json.success).toBe(true);
+      expect(json.device).toBeDefined();
+      expect(json.device.id).toBe(testDeviceId);
+      expect(json.device.platform).toBe("android");
+      expect(json.device.clientId).toBe("e2e-get-test-user");
+    });
 
-    it.skipIf(SHOULD_SKIP_E2E)(
-      "should handle non-existent device",
-      async () => {
-        const result = await runCommand(
-          ["push", "devices", "get", "non-existent-device-12345"],
-          {
-            env: { ABLY_API_KEY: E2E_API_KEY || "" },
-            timeoutMs: 30000,
-          },
-        );
+    it("should handle non-existent device", async () => {
+      const result = await runCommand(
+        ["push", "devices", "get", "non-existent-device-12345"],
+        {
+          env: { ABLY_API_KEY: E2E_API_KEY || "" },
+          timeoutMs: 30000,
+        },
+      );
 
-        // Command should fail with non-zero exit code
-        expect(result.exitCode).not.toBe(0);
-        expect(result.stderr).toContain("not found");
-      },
-    );
+      // Command should fail with non-zero exit code
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain("not found");
+    });
   });
 
   describe("push devices list", () => {
     const listTestDevices: string[] = [];
 
     beforeAll(async () => {
-      if (SHOULD_SKIP_E2E) return;
-
       // Create multiple test devices for list tests
       for (let i = 0; i < 3; i++) {
         const deviceId = `${testDeviceIdBase}-list-${i}`;
@@ -302,8 +275,6 @@ describe("Push Devices E2E Tests", () => {
     });
 
     afterAll(async () => {
-      if (SHOULD_SKIP_E2E) return;
-
       // Cleanup test devices
       for (const deviceId of listTestDevices) {
         try {
@@ -314,7 +285,7 @@ describe("Push Devices E2E Tests", () => {
       }
     });
 
-    it.skipIf(SHOULD_SKIP_E2E)("should list devices", async () => {
+    it("should list devices", async () => {
       const result = await runCommand(["push", "devices", "list"], {
         env: { ABLY_API_KEY: E2E_API_KEY || "" },
         timeoutMs: 30000,
@@ -325,7 +296,7 @@ describe("Push Devices E2E Tests", () => {
       expect(result.stdout).toContain("device");
     });
 
-    it.skipIf(SHOULD_SKIP_E2E)("should filter by client ID", async () => {
+    it("should filter by client ID", async () => {
       const result = await runCommand(
         [
           "push",
@@ -347,34 +318,31 @@ describe("Push Devices E2E Tests", () => {
       }
     });
 
-    it.skipIf(SHOULD_SKIP_E2E)(
-      "should output JSON when --json flag is used",
-      async () => {
-        const result = await runCommand(
-          [
-            "push",
-            "devices",
-            "list",
-            "--recipient-client-id",
-            "e2e-list-test-user",
-            "--json",
-          ],
-          {
-            env: { ABLY_API_KEY: E2E_API_KEY || "" },
-            timeoutMs: 30000,
-          },
-        );
+    it("should output JSON when --json flag is used", async () => {
+      const result = await runCommand(
+        [
+          "push",
+          "devices",
+          "list",
+          "--recipient-client-id",
+          "e2e-list-test-user",
+          "--json",
+        ],
+        {
+          env: { ABLY_API_KEY: E2E_API_KEY || "" },
+          timeoutMs: 30000,
+        },
+      );
 
-        expect(result.exitCode).toBe(0);
+      expect(result.exitCode).toBe(0);
 
-        const json = JSON.parse(result.stdout);
-        expect(json.success).toBe(true);
-        expect(json.devices).toBeInstanceOf(Array);
-        expect(json.devices.length).toBeGreaterThanOrEqual(3);
-      },
-    );
+      const json = JSON.parse(result.stdout);
+      expect(json.success).toBe(true);
+      expect(json.devices).toBeInstanceOf(Array);
+      expect(json.devices.length).toBeGreaterThanOrEqual(3);
+    });
 
-    it.skipIf(SHOULD_SKIP_E2E)("should respect --limit flag", async () => {
+    it("should respect --limit flag", async () => {
       const result = await runCommand(
         [
           "push",
@@ -400,7 +368,7 @@ describe("Push Devices E2E Tests", () => {
   });
 
   describe("push devices remove", () => {
-    it.skipIf(SHOULD_SKIP_E2E)("should remove a device by ID", async () => {
+    it("should remove a device by ID", async () => {
       const deviceId = `${testDeviceIdBase}-remove-test`;
 
       // First create a device
@@ -435,112 +403,103 @@ describe("Push Devices E2E Tests", () => {
       ).rejects.toMatchObject({ code: 40400 });
     });
 
-    it.skipIf(SHOULD_SKIP_E2E)(
-      "should output JSON when --json flag is used",
-      async () => {
-        const deviceId = `${testDeviceIdBase}-remove-json`;
+    it("should output JSON when --json flag is used", async () => {
+      const deviceId = `${testDeviceIdBase}-remove-json`;
 
-        // First create a device
-        await client.push.admin.deviceRegistrations.save({
-          id: deviceId,
-          platform: "ios",
-          formFactor: "phone",
-          push: {
-            recipient: {
-              transportType: "apns",
-              deviceToken: `fake-remove-json-${Date.now()}`,
-            },
+      // First create a device
+      await client.push.admin.deviceRegistrations.save({
+        id: deviceId,
+        platform: "ios",
+        formFactor: "phone",
+        push: {
+          recipient: {
+            transportType: "apns",
+            deviceToken: `fake-remove-json-${Date.now()}`,
           },
-        });
+        },
+      });
 
-        const result = await runCommand(
-          ["push", "devices", "remove", deviceId, "--force", "--json"],
-          {
-            env: { ABLY_API_KEY: E2E_API_KEY || "" },
-            timeoutMs: 30000,
-          },
-        );
+      const result = await runCommand(
+        ["push", "devices", "remove", deviceId, "--force", "--json"],
+        {
+          env: { ABLY_API_KEY: E2E_API_KEY || "" },
+          timeoutMs: 30000,
+        },
+      );
 
-        expect(result.exitCode).toBe(0);
+      expect(result.exitCode).toBe(0);
 
-        const json = JSON.parse(result.stdout);
-        expect(json.success).toBe(true);
-        expect(json.removed).toBe(true);
-        expect(json.deviceId).toBe(deviceId);
-      },
-    );
+      const json = JSON.parse(result.stdout);
+      expect(json.success).toBe(true);
+      expect(json.removed).toBe(true);
+      expect(json.deviceId).toBe(deviceId);
+    });
   });
 
   describe("push devices remove-where", () => {
-    it.skipIf(SHOULD_SKIP_E2E)(
-      "should remove devices by client ID",
-      async () => {
-        const clientIdForRemoval = `e2e-remove-where-${Date.now()}`;
-        const deviceIds: string[] = [];
+    it("should remove devices by client ID", async () => {
+      const clientIdForRemoval = `e2e-remove-where-${Date.now()}`;
+      const deviceIds: string[] = [];
 
-        // Create multiple devices with same client ID
-        for (let i = 0; i < 2; i++) {
-          const deviceId = `${testDeviceIdBase}-remove-where-${i}`;
-          deviceIds.push(deviceId);
+      // Create multiple devices with same client ID
+      for (let i = 0; i < 2; i++) {
+        const deviceId = `${testDeviceIdBase}-remove-where-${i}`;
+        deviceIds.push(deviceId);
 
-          await client.push.admin.deviceRegistrations.save({
-            id: deviceId,
-            platform: "android",
-            formFactor: "phone",
-            clientId: clientIdForRemoval,
-            push: {
-              recipient: {
-                transportType: "fcm",
-                registrationToken: `fake-remove-where-${i}-${Date.now()}`,
-              },
+        await client.push.admin.deviceRegistrations.save({
+          id: deviceId,
+          platform: "android",
+          formFactor: "phone",
+          clientId: clientIdForRemoval,
+          push: {
+            recipient: {
+              transportType: "fcm",
+              registrationToken: `fake-remove-where-${i}-${Date.now()}`,
             },
-          });
-        }
-
-        // Remove using CLI
-        const result = await runCommand(
-          [
-            "push",
-            "devices",
-            "remove-where",
-            "--recipient-client-id",
-            clientIdForRemoval,
-            "--force",
-          ],
-          {
-            env: { ABLY_API_KEY: E2E_API_KEY || "" },
-            timeoutMs: 30000,
           },
-        );
+        });
+      }
 
-        expect(result.exitCode).toBe(0);
-        expect(result.stdout).toContain("removed successfully");
+      // Remove using CLI
+      const result = await runCommand(
+        [
+          "push",
+          "devices",
+          "remove-where",
+          "--recipient-client-id",
+          clientIdForRemoval,
+          "--force",
+        ],
+        {
+          env: { ABLY_API_KEY: E2E_API_KEY || "" },
+          timeoutMs: 30000,
+        },
+      );
 
-        // Verify all devices are gone
-        for (const deviceId of deviceIds) {
-          await expect(
-            client.push.admin.deviceRegistrations.get(deviceId),
-          ).rejects.toMatchObject({ code: 40400 });
-        }
-      },
-    );
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("removed successfully");
 
-    it.skipIf(SHOULD_SKIP_E2E)(
-      "should require at least one filter criterion",
-      async () => {
-        const result = await runCommand(
-          ["push", "devices", "remove-where", "--force"],
-          {
-            env: { ABLY_API_KEY: E2E_API_KEY || "" },
-            timeoutMs: 30000,
-          },
-        );
+      // Verify all devices are gone
+      for (const deviceId of deviceIds) {
+        await expect(
+          client.push.admin.deviceRegistrations.get(deviceId),
+        ).rejects.toMatchObject({ code: 40400 });
+      }
+    });
 
-        expect(result.exitCode).not.toBe(0);
-        expect(result.stderr).toContain(
-          "At least one filter criterion is required",
-        );
-      },
-    );
+    it("should require at least one filter criterion", async () => {
+      const result = await runCommand(
+        ["push", "devices", "remove-where", "--force"],
+        {
+          env: { ABLY_API_KEY: E2E_API_KEY || "" },
+          timeoutMs: 30000,
+        },
+      );
+
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain(
+        "At least one filter criterion is required",
+      );
+    });
   });
 });

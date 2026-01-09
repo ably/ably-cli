@@ -1,6 +1,7 @@
 import { Flags } from "@oclif/core";
 import { AblyBaseCommand } from "../../../base-command.js";
 import chalk from "chalk";
+import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class PushChannelsRemoveWhere extends AblyBaseCommand {
   static override description =
@@ -59,15 +60,9 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
 
       // Confirm deletion unless --force is used
       if (!flags.force && !this.shouldOutputJson(flags)) {
-        const { default: inquirer } = await import("inquirer");
-        const { confirmed } = await inquirer.prompt([
-          {
-            type: "confirm",
-            name: "confirmed",
-            message: `Are you sure you want to remove all subscriptions matching: ${chalk.cyan(filterDescription)}?`,
-            default: false,
-          },
-        ]);
+        const confirmed = await promptForConfirmation(
+          `Are you sure you want to remove all subscriptions matching: ${chalk.cyan(filterDescription)}?`,
+        );
 
         if (!confirmed) {
           this.log("Operation cancelled.");
@@ -118,17 +113,14 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
       const errorCode = (error as { code?: number }).code;
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: errorMessage,
-              code: errorCode,
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: errorMessage,
+            code: errorCode,
+            success: false,
+          },
+          flags,
         );
-        this.exit(1);
       } else {
         this.error(`Error removing subscriptions: ${errorMessage}`);
       }

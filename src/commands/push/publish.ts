@@ -183,17 +183,14 @@ export default class PushPublish extends AblyBaseCommand {
       const errorCode = (error as { code?: number }).code;
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: errorMessage,
-              code: errorCode,
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: errorMessage,
+            code: errorCode,
+            success: false,
+          },
+          flags,
         );
-        this.exit(1);
       } else {
         if (errorCode === 40400) {
           this.error(

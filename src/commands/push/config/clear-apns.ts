@@ -2,6 +2,7 @@ import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class PushConfigClearApns extends ControlBaseCommand {
   static override description =
@@ -67,7 +68,7 @@ export default class PushConfigClearApns extends ControlBaseCommand {
 
         // Confirm unless --force is used or in JSON mode (JSON mode should not prompt)
         if (!flags.force && !this.shouldOutputJson(flags)) {
-          const confirmed = await this.interactiveHelper.confirm(
+          const confirmed = await promptForConfirmation(
             `Are you sure you want to remove APNs configuration from app "${app.name}"?`,
           );
           if (!confirmed) {

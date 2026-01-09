@@ -4,8 +4,8 @@ import { getMockAblyRest } from "../../../../helpers/mock-ably-rest.js";
 
 describe("push:channels:list-channels command", () => {
   beforeEach(() => {
+    // Set up default mock behavior for this test suite
     const mock = getMockAblyRest();
-    mock.push.admin.channelSubscriptions.listChannels.mockReset();
     mock.push.admin.channelSubscriptions.listChannels.mockResolvedValue({
       items: ["alerts", "notifications", "updates"],
       hasNext: () => false,

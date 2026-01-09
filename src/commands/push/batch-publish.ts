@@ -63,7 +63,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
       const response = await rest.request(
         "POST",
         "/push/batch/publish",
-        2, // API version
+        4, // API version
         {},
         batchItems,
         {},
@@ -137,17 +137,14 @@ export default class PushBatchPublish extends AblyBaseCommand {
       const errorCode = (error as { code?: number }).code;
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: errorMessage,
-              code: errorCode,
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: errorMessage,
+            code: errorCode,
+            success: false,
+          },
+          flags,
         );
-        this.exit(1);
       } else {
         this.error(`Error publishing batch notifications: ${errorMessage}`);
       }

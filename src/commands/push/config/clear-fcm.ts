@@ -2,6 +2,7 @@ import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class PushConfigClearFcm extends ControlBaseCommand {
   static override description =
@@ -56,7 +57,7 @@ export default class PushConfigClearFcm extends ControlBaseCommand {
 
         // Confirm unless --force or in JSON mode (JSON mode should not prompt)
         if (!flags.force && !this.shouldOutputJson(flags)) {
-          const confirmed = await this.interactiveHelper.confirm(
+          const confirmed = await promptForConfirmation(
             `Are you sure you want to remove FCM configuration from app "${app.name}" (${appId})? ` +
               `This will disable push notifications for Android devices.`,
           );
