@@ -2419,9 +2419,10 @@ const AblyCliTerminalInner = (
         socketReference.current &&
         socketReference.current.readyState < WebSocket.CLOSING
       ) {
-        // close websocket
+        // close websocket with code 4001 to signal intentional close
+        // This tells the server to cleanup immediately (no grace period)
         debugLog("[AblyCLITerminal] Closing WebSocket on unmount.");
-        socketReference.current.close();
+        socketReference.current.close(4001, "user-closed-panel");
       }
       grResetState(); // Ensure global state is clean
       clearConnectionTimeout(); // Clear any pending connection timeout
@@ -3559,7 +3560,7 @@ const AblyCliTerminalInner = (
         debugLog(
           "[AblyCLITerminal] Closing secondary WebSocket on terminal cleanup.",
         );
-        secondarySocketReference.current.close();
+        secondarySocketReference.current.close(4001, "user-closed-panel");
         secondarySocketReference.current = null;
       }
 
