@@ -94,8 +94,17 @@ const CLI_INSTALL_TIP = {
 
 export interface AblyCliTerminalProperties {
   websocketUrl: string;
-  ablyAccessToken?: string;
-  ablyApiKey?: string;
+  /**
+   * JSON-encoded signed config string for HMAC authentication.
+   * Contains credentials (apiKey, accessToken) and metadata that the server validates.
+   * Required for authentication.
+   */
+  signedConfig: string;
+  /**
+   * HMAC-SHA256 signature of the signedConfig string.
+   * Required for authentication.
+   */
+  signature: string;
   initialCommand?: string;
   onConnectionStatusChange?: (status: ConnectionStatus) => void;
   onSessionEnd?: (reason: string) => void;
@@ -111,10 +120,6 @@ export interface AblyCliTerminalProperties {
   resumeOnReload?: boolean;
   maxReconnectAttempts?: number;
   /**
-   * CI authentication token for bypassing rate limits in tests
-   */
-  ciAuthToken?: string;
-  /**
    * When true, enables split-screen mode with a second independent terminal.
    * A split icon will be displayed in the top-right corner when in single-pane mode.
    */
@@ -124,29 +129,6 @@ export interface AblyCliTerminalProperties {
    * Set to false when controlling split externally to hide the internal UI affordance.
    */
   showSplitControl?: boolean;
-  /**
-   * An optional value to set as the ABLY_ENDPOINT environment variable when
-   * starting the CLI, which controls which endpoint the SDK client uses.
-   *
-   * For example, to start the CLI configured to use the sandbox cluster, set
-   * ablyEndpoint to 'nonprod:sandbox'.
-   *
-   * When unset, the CLI will use the main production endpoint.
-   *
-   * See https://sdk.ably.com/builds/ably/specification/main/features/#endpoint-configuration
-   */
-  ablyEndpoint?: string;
-  /**
-   * An optional value to set as the ABLY_CONTROL_HOST environment variable
-   * when starting the CLI, which controls which hostname the CLI uses to
-   * connect to the Control API.
-   *
-   * For example, to start the CLI configured to use the staging Control API,
-   * set ablyControlHost to 'staging-control.ably-dev.net'.
-   *
-   * When unset, the CLI uses the production Control API at control.ably.net.
-   */
-  ablyControlHost?: string;
 }
 
 export interface AblyCliTerminalHandle {
@@ -185,8 +167,8 @@ import { isHijackMetaChunk } from "./terminal-shared";
 const AblyCliTerminalInner = (
   {
     websocketUrl,
-    ablyAccessToken,
-    ablyApiKey,
+    signedConfig,
+    signature,
     initialCommand,
     onConnectionStatusChange,
     onSessionEnd,
@@ -195,8 +177,6 @@ const AblyCliTerminalInner = (
     maxReconnectAttempts,
     enableSplitScreen = false,
     showSplitControl = true,
-    ablyEndpoint,
-    ablyControlHost,
   }: AblyCliTerminalProperties,
   reference: React.Ref<AblyCliTerminalHandle>,
 ) => {
@@ -1464,18 +1444,6 @@ const AblyCliTerminalInner = (
 
   const socketReference = useRef<WebSocket | null>(null); // Ref to hold the current socket for cleanup
 
-  const additionalEnvironmentVariables: Record<string, string> = {};
-  if (ablyEndpoint) {
-    debugLog(`⚠️ DIAGNOSTIC: Setting ABLY_ENDPOINT to "${ablyEndpoint}"`);
-    additionalEnvironmentVariables["ABLY_ENDPOINT"] = ablyEndpoint;
-  }
-  if (ablyControlHost) {
-    debugLog(
-      `⚠️ DIAGNOSTIC: Setting ABLY_CONTROL_HOST to "${ablyControlHost}"`,
-    );
-    additionalEnvironmentVariables["ABLY_CONTROL_HOST"] = ablyControlHost;
-  }
-
   const handleWebSocketOpen = useCallback(() => {
     // console.log('[AblyCLITerminal] WebSocket opened');
     // Clear connection timeout since we successfully connected
@@ -1514,12 +1482,12 @@ const AblyCliTerminalInner = (
       // Don't send the initial command yet - wait for prompt detection
     }
 
-    // Send auth payload - but no additional data
+    // Send auth payload with signed config
     const payload = createAuthPayload(
-      ablyApiKey,
-      ablyAccessToken,
       sessionId,
-      additionalEnvironmentVariables,
+      undefined, // no additional env vars needed - they're in the signed config
+      signedConfig,
+      signature,
     );
 
     debugLog(
@@ -1556,8 +1524,6 @@ const AblyCliTerminalInner = (
     debugLog("WebSocket OPEN handler completed. sessionId:", sessionId);
   }, [
     clearAnimationMessages,
-    ablyAccessToken,
-    ablyApiKey,
     initialCommand,
     updateConnectionStatusAndExpose,
     clearPtyBuffer,
@@ -1565,6 +1531,8 @@ const AblyCliTerminalInner = (
     resumeOnReload,
     clearConnectionTimeout,
     credentialHash,
+    signedConfig,
+    signature,
   ]);
 
   const handleWebSocketMessage = useCallback(
@@ -2669,8 +2637,25 @@ const AblyCliTerminalInner = (
   // Initialize session and validate credentials
   useEffect(() => {
     const initializeSession = async () => {
-      // Calculate current credential hash
-      const currentHash = await hashCredentials(ablyApiKey, ablyAccessToken);
+      // Extract apiKey and accessToken from signed config for credential hashing
+      // This allows session resumption when the same credentials are used
+      let apiKeyForHash: string | undefined;
+      let accessTokenForHash: string | undefined;
+      try {
+        const parsedConfig = JSON.parse(signedConfig);
+        apiKeyForHash = parsedConfig.apiKey;
+        accessTokenForHash = parsedConfig.accessToken;
+      } catch {
+        console.warn(
+          "[AblyCLITerminal] Failed to parse signedConfig for credential hash",
+        );
+      }
+
+      // Calculate current credential hash from credentials in signed config
+      const currentHash = await hashCredentials(
+        apiKeyForHash,
+        accessTokenForHash,
+      );
       setCredentialHash(currentHash);
 
       if (!resumeOnReload || globalThis.window === undefined) {
@@ -2731,7 +2716,7 @@ const AblyCliTerminalInner = (
     };
 
     initializeSession();
-  }, [ablyApiKey, ablyAccessToken, resumeOnReload, websocketUrl]);
+  }, [signedConfig, resumeOnReload, websocketUrl]);
 
   // Store credential hash when it becomes available if we already have a sessionId
   useEffect(() => {
@@ -2947,12 +2932,12 @@ const AblyCliTerminalInner = (
         secondaryTerm.current.focus();
       }
 
-      // Send auth payload - only include necessary data
+      // Send auth payload with signed config
       const payload = createAuthPayload(
-        ablyApiKey,
-        ablyAccessToken,
         secondarySessionId,
-        additionalEnvironmentVariables,
+        undefined, // no additional env vars needed - they're in the signed config
+        signedConfig,
+        signature,
       );
 
       if (newSocket.readyState === WebSocket.OPEN) {
@@ -3264,8 +3249,8 @@ const AblyCliTerminalInner = (
     return newSocket;
   }, [
     websocketUrl,
-    ablyAccessToken,
-    ablyApiKey,
+    signedConfig,
+    signature,
     resumeOnReload,
     secondarySessionId,
   ]);
