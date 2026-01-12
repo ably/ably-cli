@@ -82,7 +82,7 @@ describe("Interactive Mode - Anonymous Restrictions", () => {
     });
 
     it("should handle logs wildcard pattern", () => {
-      expect(matchesPattern("logs:app:history", "logs*")).toBe(true);
+      expect(matchesPattern("logs:history", "logs*")).toBe(true);
       expect(matchesPattern("logs:push:subscribe", "logs*")).toBe(true);
       expect(matchesPattern("logs", "logs*")).toBe(true);
     });
