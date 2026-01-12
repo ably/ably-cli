@@ -103,12 +103,11 @@ See [MCP Server section](#mcp-server) for more details on how to use the MCP Ser
 * [`ably apps channel-rules update NAMEORID`](#ably-apps-channel-rules-update-nameorid)
 * [`ably apps create`](#ably-apps-create)
 * [`ably apps current`](#ably-apps-current)
-* [`ably apps delete [ID]`](#ably-apps-delete-id)
+* [`ably apps delete [APPID]`](#ably-apps-delete-appid)
 * [`ably apps list`](#ably-apps-list)
 * [`ably apps logs`](#ably-apps-logs)
 * [`ably apps logs history`](#ably-apps-logs-history)
 * [`ably apps logs subscribe`](#ably-apps-logs-subscribe)
-* [`ably apps set-apns-p12 ID`](#ably-apps-set-apns-p12-id)
 * [`ably apps stats [ID]`](#ably-apps-stats-id)
 * [`ably apps switch [APPID]`](#ably-apps-switch-appid)
 * [`ably apps update ID`](#ably-apps-update-id)
@@ -142,6 +141,8 @@ See [MCP Server section](#mcp-server) for more details on how to use the MCP Ser
 * [`ably channels publish CHANNEL MESSAGE`](#ably-channels-publish-channel-message)
 * [`ably channels subscribe CHANNELS`](#ably-channels-subscribe-channels)
 * [`ably config`](#ably-config)
+* [`ably config path`](#ably-config-path)
+* [`ably config show`](#ably-config-show)
 * [`ably connections`](#ably-connections)
 * [`ably connections logs [TOPIC]`](#ably-connections-logs-topic)
 * [`ably connections stats`](#ably-connections-stats)
@@ -149,7 +150,7 @@ See [MCP Server section](#mcp-server) for more details on how to use the MCP Ser
 * [`ably help [COMMANDS]`](#ably-help-commands)
 * [`ably integrations`](#ably-integrations)
 * [`ably integrations create`](#ably-integrations-create)
-* [`ably integrations delete RULEID`](#ably-integrations-delete-ruleid)
+* [`ably integrations delete INTEGRATIONID`](#ably-integrations-delete-integrationid)
 * [`ably integrations get RULEID`](#ably-integrations-get-ruleid)
 * [`ably integrations list`](#ably-integrations-list)
 * [`ably integrations update RULEID`](#ably-integrations-update-ruleid)
@@ -169,9 +170,30 @@ See [MCP Server section](#mcp-server) for more details on how to use the MCP Ser
 * [`ably logs push subscribe`](#ably-logs-push-subscribe)
 * [`ably mcp`](#ably-mcp)
 * [`ably mcp start-server`](#ably-mcp-start-server)
+* [`ably push`](#ably-push)
+* [`ably push batch-publish`](#ably-push-batch-publish)
+* [`ably push channels`](#ably-push-channels)
+* [`ably push channels list`](#ably-push-channels-list)
+* [`ably push channels list-channels`](#ably-push-channels-list-channels)
+* [`ably push channels remove`](#ably-push-channels-remove)
+* [`ably push channels remove-where`](#ably-push-channels-remove-where)
+* [`ably push channels save`](#ably-push-channels-save)
+* [`ably push config`](#ably-push-config)
+* [`ably push config clear-apns`](#ably-push-config-clear-apns)
+* [`ably push config clear-fcm`](#ably-push-config-clear-fcm)
+* [`ably push config set-apns`](#ably-push-config-set-apns)
+* [`ably push config set-fcm`](#ably-push-config-set-fcm)
+* [`ably push config show`](#ably-push-config-show)
+* [`ably push devices`](#ably-push-devices)
+* [`ably push devices get DEVICEID`](#ably-push-devices-get-deviceid)
+* [`ably push devices list`](#ably-push-devices-list)
+* [`ably push devices remove DEVICEID`](#ably-push-devices-remove-deviceid)
+* [`ably push devices remove-where`](#ably-push-devices-remove-where)
+* [`ably push devices save`](#ably-push-devices-save)
+* [`ably push publish`](#ably-push-publish)
 * [`ably queues`](#ably-queues)
 * [`ably queues create`](#ably-queues-create)
-* [`ably queues delete QUEUENAME`](#ably-queues-delete-queuename)
+* [`ably queues delete QUEUEID`](#ably-queues-delete-queueid)
 * [`ably queues list`](#ably-queues-list)
 * [`ably rooms`](#ably-rooms)
 * [`ably rooms list`](#ably-rooms-list)
@@ -182,7 +204,7 @@ See [MCP Server section](#mcp-server) for more details on how to use the MCP Ser
 * [`ably rooms messages reactions send ROOM MESSAGESERIAL REACTION`](#ably-rooms-messages-reactions-send-room-messageserial-reaction)
 * [`ably rooms messages reactions subscribe ROOM`](#ably-rooms-messages-reactions-subscribe-room)
 * [`ably rooms messages send ROOM TEXT`](#ably-rooms-messages-send-room-text)
-* [`ably rooms messages subscribe ROOM`](#ably-rooms-messages-subscribe-room)
+* [`ably rooms messages subscribe ROOMS`](#ably-rooms-messages-subscribe-rooms)
 * [`ably rooms occupancy`](#ably-rooms-occupancy)
 * [`ably rooms occupancy get ROOM`](#ably-rooms-occupancy-get-room)
 * [`ably rooms occupancy subscribe ROOM`](#ably-rooms-occupancy-subscribe-room)
@@ -535,7 +557,6 @@ COMMANDS
   ably apps delete              Delete an app
   ably apps list                List all apps in the current account
   ably apps logs                Stream or retrieve app logs
-  ably apps set-apns-p12        Upload Apple Push Notification Service P12 certificate for an app
   ably apps stats               Get app stats with optional live updates
   ably apps switch              Switch to a different Ably app
   ably apps update              Update an app
@@ -811,17 +832,17 @@ EXAMPLES
 
 _See code: [src/commands/apps/current.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/current.ts)_
 
-## `ably apps delete [ID]`
+## `ably apps delete [APPID]`
 
 Delete an app
 
 ```
 USAGE
-  $ ably apps delete [ID] [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+  $ ably apps delete [APPID] [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
     [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-f] [--app <value>]
 
 ARGUMENTS
-  ID  App ID to delete (uses current app if not specified)
+  APPID  App ID to delete (uses current app if not specified)
 
 FLAGS
   -f, --force                 Skip confirmation prompt
@@ -991,48 +1012,6 @@ EXAMPLES
 ```
 
 _See code: [src/commands/apps/logs/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/logs/subscribe.ts)_
-
-## `ably apps set-apns-p12 ID`
-
-Upload Apple Push Notification Service P12 certificate for an app
-
-```
-USAGE
-  $ ably apps set-apns-p12 ID --certificate <value> [--access-token <value>] [--api-key <value>] [--client-id <value>]
-    [--env <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--password
-    <value>] [--use-for-sandbox]
-
-ARGUMENTS
-  ID  App ID to set the APNS certificate for
-
-FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --certificate=<value>   (required) Path to the P12 certificate file
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --password=<value>      Password for the P12 certificate
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --use-for-sandbox       Whether to use this certificate for the APNS sandbox environment
-
-DESCRIPTION
-  Upload Apple Push Notification Service P12 certificate for an app
-
-EXAMPLES
-  $ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12
-
-  $ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --password "YOUR_CERTIFICATE_PASSWORD"
-
-  $ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --use-for-sandbox
-```
-
-_See code: [src/commands/apps/set-apns-p12.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/set-apns-p12.ts)_
 
 ## `ably apps stats [ID]`
 
@@ -1227,7 +1206,7 @@ FLAGS
       --pretty-json           Output in colorized JSON format
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
       --token-only            Output only the token string without any formatting or additional information
-      --ttl=<value>           [default: 3600] Time to live in seconds
+      --ttl=<value>           [default: 3600] Time to live in seconds (default: 3600, 1 hour)
 
 DESCRIPTION
   Creates an Ably Token with capabilities
@@ -1279,7 +1258,7 @@ FLAGS
       --pretty-json           Output in colorized JSON format
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
       --token-only            Output only the token string without any formatting or additional information
-      --ttl=<value>           [default: 3600] Time to live in seconds
+      --ttl=<value>           [default: 3600] Time to live in seconds (default: 3600, 1 hour)
 
 DESCRIPTION
   Creates an Ably JWT token with capabilities
@@ -1772,7 +1751,7 @@ Run a subscriber benchmark test
 ```
 USAGE
   $ ably bench subscriber CHANNEL [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-d <value>]
 
 ARGUMENTS
   CHANNEL  The channel name to subscribe to
@@ -1845,13 +1824,14 @@ ARGUMENTS
   MESSAGE  The message to publish (JSON format or plain text, not needed if using --spec)
 
 FLAGS
-  -e, --encoding=<value>       The encoding for the message
-  -n, --name=<value>           The event name (if not specified in the message JSON)
+  -e, --encoding=<value>       The encoding for the message (not used with --spec)
+  -n, --name=<value>           The event name (if not specified in the message JSON, not used with --spec)
   -v, --verbose                Output verbose logs
       --access-token=<value>   Overrides any configured access token used for the Control API
       --api-key=<value>        Overrides any configured API key used for the product APIs
-      --channels=<value>       Comma-separated list of channel names to publish to
-      --channels-json=<value>  JSON array of channel names to publish to
+      --channels=<value>       Comma-separated list of channel names to publish to (mutually exclusive with
+                               --channels-json and --spec)
+      --channels-json=<value>  JSON array of channel names to publish to (mutually exclusive with --channels and --spec)
       --client-id=<value>      Overrides any default client ID when using API authentication. Use "none" to explicitly
                                set no client ID. Not applicable when using token authentication.
       --endpoint=<value>       Override the endpoint for all product API calls
@@ -1860,7 +1840,7 @@ FLAGS
       --json                   Output in JSON format
       --pretty-json            Output in colorized JSON format
       --spec=<value>           Complete batch spec JSON (either a single BatchSpec object or an array of BatchSpec
-                               objects)
+                               objects). When used, --channels, --channels-json, --name, and --encoding are ignored
       --token=<value>          Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
@@ -1904,14 +1884,14 @@ FLAGS
       --cipher=<value>        Decryption key for encrypted messages (AES-128)
       --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
                               set no client ID. Not applicable when using token authentication.
-      --direction=<option>    [default: backwards] Direction of message retrieval
+      --direction=<option>    [default: backwards] Direction of message retrieval (default: backwards)
                               <options: backwards|forwards>
       --end=<value>           End time for the history query (ISO 8601 format)
       --endpoint=<value>      Override the endpoint for all product API calls
       --env=<value>           Override the environment for all product API calls
       --host=<value>          Override the host endpoint for all product API calls
       --json                  Output in JSON format
-      --limit=<value>         [default: 50] Maximum number of messages to retrieve
+      --limit=<value>         [default: 50] Maximum number of messages to retrieve (default: 50)
       --pretty-json           Output in colorized JSON format
       --start=<value>         Start time for the history query (ISO 8601 format)
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
@@ -1955,7 +1935,7 @@ FLAGS
       --env=<value>           Override the environment for all product API calls
       --host=<value>          Override the host endpoint for all product API calls
       --json                  Output in JSON format
-      --limit=<value>         [default: 100] Maximum number of channels to return
+      --limit=<value>         [default: 100] Maximum number of channels to return (default: 100)
       --pretty-json           Output in colorized JSON format
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
 
@@ -2143,7 +2123,8 @@ Enter presence on a channel and listen for presence events
 ```
 USAGE
   $ ably channels presence enter CHANNEL [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>] [--data <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--data <value>] [-D <value>]
+    [--show-others] [--sequence-numbers]
 
 ARGUMENTS
   CHANNEL  Channel to enter presence on
@@ -2161,6 +2142,8 @@ FLAGS
       --host=<value>          Override the host endpoint for all product API calls
       --json                  Output in JSON format
       --pretty-json           Output in colorized JSON format
+      --sequence-numbers      Include sequence numbers in output
+      --show-others           Show other presence events while present (default: false)
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
@@ -2174,6 +2157,8 @@ EXAMPLES
   $ ably channels presence enter my-channel --api-key "YOUR_API_KEY"
 
   $ ably channels presence enter my-channel --token "YOUR_ABLY_TOKEN"
+
+  $ ably channels presence enter my-channel --show-others
 
   $ ably channels presence enter my-channel --json
 
@@ -2246,7 +2231,7 @@ ARGUMENTS
   MESSAGE  The message to publish (JSON format or plain text)
 
 FLAGS
-  -c, --count=<value>         [default: 1] Number of messages to publish
+  -c, --count=<value>         [default: 1] Number of messages to publish (default: 1)
   -d, --delay=<value>         [default: 40] Delay between messages in milliseconds (default: 40ms, max 25 msgs/sec)
   -e, --encoding=<value>      The encoding for the message
   -n, --name=<value>          The event name (if not specified in the message JSON)
@@ -2302,7 +2287,7 @@ USAGE
   $ ably channels subscribe CHANNELS... [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
     <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--cipher-algorithm
     <value>] [--cipher-key <value>] [--cipher-key-length <value>] [--cipher-mode <value>] [--delta] [-D <value>]
-    [--rewind <value>]
+    [--rewind <value>] [--sequence-numbers]
 
 ARGUMENTS
   CHANNELS...  Channel name(s) to subscribe to
@@ -2312,10 +2297,10 @@ FLAGS
   -v, --verbose                    Output verbose logs
       --access-token=<value>       Overrides any configured access token used for the Control API
       --api-key=<value>            Overrides any configured API key used for the product APIs
-      --cipher-algorithm=<value>   [default: aes] Encryption algorithm to use
+      --cipher-algorithm=<value>   [default: aes] Encryption algorithm to use (default: aes)
       --cipher-key=<value>         Encryption key for decrypting messages (hex-encoded)
-      --cipher-key-length=<value>  [default: 256] Length of encryption key in bits
-      --cipher-mode=<value>        [default: cbc] Cipher mode to use
+      --cipher-key-length=<value>  [default: 256] Length of encryption key in bits (default: 256)
+      --cipher-mode=<value>        [default: cbc] Cipher mode to use (default: cbc)
       --client-id=<value>          Overrides any default client ID when using API authentication. Use "none" to
                                    explicitly set no client ID. Not applicable when using token authentication.
       --delta                      Enable delta compression for messages
@@ -2324,7 +2309,8 @@ FLAGS
       --host=<value>               Override the host endpoint for all product API calls
       --json                       Output in JSON format
       --pretty-json                Output in colorized JSON format
-      --rewind=<value>             Number of messages to rewind when subscribing
+      --rewind=<value>             Number of messages to rewind when subscribing (default: 0)
+      --sequence-numbers           Include sequence numbers in output
       --token=<value>              Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
@@ -2356,15 +2342,14 @@ _See code: [src/commands/channels/subscribe.ts](https://github.com/ably/ably-cli
 
 ## `ably config`
 
-Open the Ably config file in the default text editor
+Manage Ably CLI configuration
 
 ```
 USAGE
   $ ably config [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-e <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
 
 FLAGS
-  -e, --editor=<value>        Text editor to use (defaults to $EDITOR environment variable)
   -v, --verbose               Output verbose logs
       --access-token=<value>  Overrides any configured access token used for the Control API
       --api-key=<value>       Overrides any configured API key used for the product APIs
@@ -2378,13 +2363,89 @@ FLAGS
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
-  Open the Ably config file in the default text editor
+  Manage Ably CLI configuration
 
 EXAMPLES
-  $ ably config edit
+  $ ably config path
+
+  $ ably config show
+
+COMMANDS
+  ably config path              Print the path to the Ably CLI config file
+  ably config show              Display the contents of the Ably CLI config file
 ```
 
-_See code: [src/commands/config.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/config.ts)_
+_See code: [src/commands/config/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/config/index.ts)_
+
+## `ably config path`
+
+Print the path to the Ably CLI config file
+
+```
+USAGE
+  $ ably config path [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --pretty-json           Output in colorized JSON format
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Print the path to the Ably CLI config file
+
+EXAMPLES
+  $ ably config path
+
+  # Open in your preferred editor:
+
+  code $(ably config path)
+
+  vim $(ably config path)
+```
+
+_See code: [src/commands/config/path.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/config/path.ts)_
+
+## `ably config show`
+
+Display the contents of the Ably CLI config file
+
+```
+USAGE
+  $ ably config show [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --pretty-json           Output in colorized JSON format
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Display the contents of the Ably CLI config file
+
+EXAMPLES
+  $ ably config show
+
+  $ ably config show --json
+```
+
+_See code: [src/commands/config/show.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/config/show.ts)_
 
 ## `ably connections`
 
@@ -2581,10 +2642,10 @@ EXAMPLES
   $ ably integrations create
 
 COMMANDS
-  ably integrations create      Create an integration rule
-  ably integrations delete      Delete an integration rule
+  ably integrations create      Create an integration
+  ably integrations delete      Delete an integration
   ably integrations get         Get an integration rule by ID
-  ably integrations list        List all integration rules
+  ably integrations list        List all integrations
   ably integrations update      Update an integration rule
 ```
 
@@ -2592,7 +2653,7 @@ _See code: [src/commands/integrations/index.ts](https://github.com/ably/ably-cli
 
 ## `ably integrations create`
 
-Create an integration rule
+Create an integration
 
 ```
 USAGE
@@ -2606,7 +2667,7 @@ FLAGS
   -v, --verbose                 Output verbose logs
       --access-token=<value>    Overrides any configured access token used for the Control API
       --api-key=<value>         Overrides any configured API key used for the product APIs
-      --app=<value>             App ID or name to create the integration rule in
+      --app=<value>             App ID or name to create the integration in
       --channel-filter=<value>  Channel filter pattern
       --client-id=<value>       Overrides any default client ID when using API authentication. Use "none" to explicitly
                                 set no client ID. Not applicable when using token authentication.
@@ -2615,19 +2676,19 @@ FLAGS
       --host=<value>            Override the host endpoint for all product API calls
       --json                    Output in JSON format
       --pretty-json             Output in colorized JSON format
-      --request-mode=<option>   [default: single] Request mode for the rule
+      --request-mode=<option>   [default: single] Request mode for the integration (default: single)
                                 <options: single|batch>
-      --rule-type=<option>      (required) Type of integration rule (http, amqp, etc.)
+      --rule-type=<option>      (required) Type of integration (http, amqp, etc.)
                                 <options: http|amqp|kinesis|firehose|pulsar|kafka|azure|azure-functions|mqtt|cloudmqtt>
       --source-type=<option>    (required) The event source type
                                 <options: channel.message|channel.presence|channel.lifecycle|presence.message>
-      --status=<option>         [default: enabled] Initial status of the rule
+      --status=<option>         [default: enabled] Initial status of the integration (default: enabled)
                                 <options: enabled|disabled>
-      --target-url=<value>      Target URL for HTTP rules
+      --target-url=<value>      Target URL for HTTP integrations
       --token=<value>           Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
-  Create an integration rule
+  Create an integration
 
 EXAMPLES
   $ ably integrations create --rule-type "http" --source-type "channel.message" --target-url "https://example.com/webhook"
@@ -2637,24 +2698,24 @@ EXAMPLES
 
 _See code: [src/commands/integrations/create.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/integrations/create.ts)_
 
-## `ably integrations delete RULEID`
+## `ably integrations delete INTEGRATIONID`
 
-Delete an integration rule
+Delete an integration
 
 ```
 USAGE
-  $ ably integrations delete RULEID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>] [-f]
+  $ ably integrations delete INTEGRATIONID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
+    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>] [-f]
 
 ARGUMENTS
-  RULEID  The rule ID to delete
+  INTEGRATIONID  The integration ID to delete
 
 FLAGS
   -f, --force                 Force deletion without confirmation
   -v, --verbose               Output verbose logs
       --access-token=<value>  Overrides any configured access token used for the Control API
       --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID or name to delete the integration rule from
+      --app=<value>           App ID or name to delete the integration from
       --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
                               set no client ID. Not applicable when using token authentication.
       --endpoint=<value>      Override the endpoint for all product API calls
@@ -2665,14 +2726,14 @@ FLAGS
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
-  Delete an integration rule
+  Delete an integration
 
 EXAMPLES
-  $ ably integrations delete rule123
+  $ ably integrations delete integration123
 
-  $ ably integrations delete rule123 --app "My App"
+  $ ably integrations delete integration123 --app "My App"
 
-  $ ably integrations delete rule123 --force
+  $ ably integrations delete integration123 --force
 ```
 
 _See code: [src/commands/integrations/delete.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/integrations/delete.ts)_
@@ -2718,7 +2779,7 @@ _See code: [src/commands/integrations/get.ts](https://github.com/ably/ably-cli/b
 
 ## `ably integrations list`
 
-List all integration rules
+List all integrations
 
 ```
 USAGE
@@ -2729,7 +2790,7 @@ FLAGS
   -v, --verbose               Output verbose logs
       --access-token=<value>  Overrides any configured access token used for the Control API
       --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID or name to list integration rules for
+      --app=<value>           App ID or name to list integrations for
       --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
                               set no client ID. Not applicable when using token authentication.
       --endpoint=<value>      Override the endpoint for all product API calls
@@ -2740,7 +2801,7 @@ FLAGS
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
-  List all integration rules
+  List all integrations
 
 EXAMPLES
   $ ably integrations list
@@ -3319,6 +3380,808 @@ EXAMPLES
 
 _See code: [src/commands/mcp/start-server.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/mcp/start-server.ts)_
 
+## `ably push`
+
+Manage push notifications, device registrations, and channel subscriptions
+
+```
+USAGE
+  $ ably push
+
+DESCRIPTION
+  Manage push notifications, device registrations, and channel subscriptions
+
+EXAMPLES
+  $ ably push devices list
+
+  $ ably push devices save --id my-device --platform android --form-factor phone --transport-type fcm --device-token TOKEN
+
+  $ ably push channels save --channel alerts --device-id my-device
+
+  $ ably push publish --device-id my-device --title "Hello" --body "World"
+
+COMMANDS
+  ably push batch-publish       Publish push notifications to multiple recipients in a single request (up to 10,000 notifications)
+  ably push channels            Manage push notification channel subscriptions (maps to push.admin.channelSubscriptions)
+  ably push config              Manage push notification configuration (APNs and FCM credentials)
+  ably push devices             Manage push notification device registrations (maps to push.admin.deviceRegistrations)
+  ably push publish             Publish a push notification directly to device(s) or client(s) (maps to push.admin.publish)
+```
+
+_See code: [src/commands/push/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/index.ts)_
+
+## `ably push batch-publish`
+
+Publish push notifications to multiple recipients in a single request (up to 10,000 notifications)
+
+```
+USAGE
+  $ ably push batch-publish --payload <value> [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
+    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --payload=<value>       (required) Batch payload as JSON array, file path, or - for stdin (required)
+      --pretty-json           Output in colorized JSON format
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Publish push notifications to multiple recipients in a single request (up to 10,000 notifications)
+
+EXAMPLES
+  $ ably push batch-publish --payload ./batch-notifications.json
+
+  $ ably push batch-publish --payload '[{"recipient":{"deviceId":"abc"},"payload":{"notification":{"title":"Hi"}}}]'
+
+  $ cat batch.json | ably push batch-publish --payload -
+```
+
+_See code: [src/commands/push/batch-publish.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/batch-publish.ts)_
+
+## `ably push channels`
+
+Manage push notification channel subscriptions (maps to push.admin.channelSubscriptions)
+
+```
+USAGE
+  $ ably push channels
+
+DESCRIPTION
+  Manage push notification channel subscriptions (maps to push.admin.channelSubscriptions)
+
+EXAMPLES
+  $ ably push channels save --channel alerts --device-id my-device
+
+  $ ably push channels list --channel alerts
+
+  $ ably push channels list-channels
+
+  $ ably push channels remove --channel alerts --device-id my-device
+```
+
+_See code: [src/commands/push/channels/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/channels/index.ts)_
+
+## `ably push channels list`
+
+List push channel subscriptions (maps to push.admin.channelSubscriptions.list)
+
+```
+USAGE
+  $ ably push channels list --channel <value> [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
+    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--device-id <value>]
+    [--limit <value>]
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --channel=<value>       (required) Channel name to list subscriptions for
+      --client-id=<value>     Filter by client ID
+      --device-id=<value>     Filter by device ID
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --limit=<value>         [default: 100] Maximum number of results (default: 100, max: 1000)
+      --pretty-json           Output in colorized JSON format
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  List push channel subscriptions (maps to push.admin.channelSubscriptions.list)
+
+EXAMPLES
+  $ ably push channels list --channel alerts
+
+  $ ably push channels list --channel alerts --device-id my-device-123
+
+  $ ably push channels list --channel alerts --client-id user-456
+
+  $ ably push channels list --channel alerts --limit 50
+
+  $ ably push channels list --channel alerts --json
+```
+
+_See code: [src/commands/push/channels/list.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/channels/list.ts)_
+
+## `ably push channels list-channels`
+
+List all channels that have at least one push subscription (maps to push.admin.channelSubscriptions.listChannels)
+
+```
+USAGE
+  $ ably push channels list-channels [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--limit <value>]
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --limit=<value>         [default: 100] Maximum number of results (default: 100, max: 1000)
+      --pretty-json           Output in colorized JSON format
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  List all channels that have at least one push subscription (maps to push.admin.channelSubscriptions.listChannels)
+
+EXAMPLES
+  $ ably push channels list-channels
+
+  $ ably push channels list-channels --limit 50
+
+  $ ably push channels list-channels --json
+```
+
+_See code: [src/commands/push/channels/list-channels.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/channels/list-channels.ts)_
+
+## `ably push channels remove`
+
+Remove a push channel subscription (maps to push.admin.channelSubscriptions.remove)
+
+```
+USAGE
+  $ ably push channels remove --channel <value> [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
+    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--device-id <value>]
+    [-f]
+
+FLAGS
+  -f, --force                 Skip confirmation prompt
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --channel=<value>       (required) Channel to unsubscribe from
+      --client-id=<value>     Client ID to unsubscribe
+      --device-id=<value>     Device ID to unsubscribe
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --pretty-json           Output in colorized JSON format
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Remove a push channel subscription (maps to push.admin.channelSubscriptions.remove)
+
+EXAMPLES
+  $ ably push channels remove --channel alerts --device-id my-device-123
+
+  $ ably push channels remove --channel alerts --client-id user-456
+
+  $ ably push channels remove --channel alerts --device-id my-device-123 --force
+
+  $ ably push channels remove --channel alerts --device-id my-device-123 --json
+```
+
+_See code: [src/commands/push/channels/remove.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/channels/remove.ts)_
+
+## `ably push channels remove-where`
+
+Remove push channel subscriptions matching filter criteria (maps to push.admin.channelSubscriptions.removeWhere)
+
+```
+USAGE
+  $ ably push channels remove-where --channel <value> [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
+    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--device-id <value>]
+    [-f]
+
+FLAGS
+  -f, --force                 Skip confirmation prompt
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --channel=<value>       (required) Channel to remove subscriptions from
+      --client-id=<value>     Filter by client ID
+      --device-id=<value>     Filter by device ID
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --pretty-json           Output in colorized JSON format
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Remove push channel subscriptions matching filter criteria (maps to push.admin.channelSubscriptions.removeWhere)
+
+EXAMPLES
+  $ ably push channels remove-where --channel alerts --device-id my-device-123 --force
+
+  $ ably push channels remove-where --channel alerts --client-id user-456 --force
+
+  $ ably push channels remove-where --channel alerts --device-id my-device-123 --json --force
+```
+
+_See code: [src/commands/push/channels/remove-where.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/channels/remove-where.ts)_
+
+## `ably push channels save`
+
+Subscribe a device or client to a push-enabled channel (maps to push.admin.channelSubscriptions.save)
+
+```
+USAGE
+  $ ably push channels save --channel <value> [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
+    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--device-id <value>]
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --channel=<value>       (required) Channel name to subscribe to
+      --client-id=<value>     Client ID to subscribe (subscribes all of the client's devices)
+      --device-id=<value>     Device ID to subscribe
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --pretty-json           Output in colorized JSON format
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Subscribe a device or client to a push-enabled channel (maps to push.admin.channelSubscriptions.save)
+
+EXAMPLES
+  $ ably push channels save --channel alerts --device-id my-device-123
+
+  $ ably push channels save --channel notifications --client-id user-456
+
+  $ ably push channels save --channel alerts --device-id my-device-123 --json
+```
+
+_See code: [src/commands/push/channels/save.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/channels/save.ts)_
+
+## `ably push config`
+
+Manage push notification configuration (APNs and FCM credentials)
+
+```
+USAGE
+  $ ably push config
+
+DESCRIPTION
+  Manage push notification configuration (APNs and FCM credentials)
+
+EXAMPLES
+  $ ably push config show
+
+  $ ably push config set-apns --certificate ./cert.p12 --password SECRET
+
+  $ ably push config set-fcm --service-account ./firebase-sa.json
+
+  $ ably push config clear-apns --force
+
+  $ ably push config clear-fcm --force
+```
+
+_See code: [src/commands/push/config/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/config/index.ts)_
+
+## `ably push config clear-apns`
+
+Remove APNs (Apple Push Notification service) configuration from an app
+
+```
+USAGE
+  $ ably push config clear-apns [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>] [-f]
+
+FLAGS
+  -f, --force                 Skip confirmation prompt
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --app=<value>           App ID or name to clear APNs configuration for
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --pretty-json           Output in colorized JSON format
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Remove APNs (Apple Push Notification service) configuration from an app
+
+EXAMPLES
+  $ ably push config clear-apns
+
+  $ ably push config clear-apns --app my-app
+
+  $ ably push config clear-apns --force
+```
+
+_See code: [src/commands/push/config/clear-apns.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/config/clear-apns.ts)_
+
+## `ably push config clear-fcm`
+
+Remove Firebase Cloud Messaging (FCM) configuration from an app.
+
+```
+USAGE
+  $ ably push config clear-fcm [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>] [-f]
+
+FLAGS
+  -f, --force                 Skip confirmation prompt
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --app=<value>           App ID or name to clear FCM configuration for
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --pretty-json           Output in colorized JSON format
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Remove Firebase Cloud Messaging (FCM) configuration from an app.
+
+EXAMPLES
+  $ ably push config clear-fcm
+
+  $ ably push config clear-fcm --app my-app
+
+  $ ably push config clear-fcm --force
+```
+
+_See code: [src/commands/push/config/clear-fcm.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/config/clear-fcm.ts)_
+
+## `ably push config set-apns`
+
+Configure Apple Push Notification service (APNs) credentials for an app. Supports both certificate-based (.p12) and token-based (.p8) authentication.
+
+```
+USAGE
+  $ ably push config set-apns [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>] [--certificate
+    <value>] [--password <value>] [--key-file <value>] [--key-id <value>] [--team-id <value>] [--bundle-id <value>]
+    [--use-sandbox]
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --app=<value>           App ID or name to configure
+      --bundle-id=<value>     App bundle identifier (token-based auth)
+      --certificate=<value>   Path to .p12 certificate file
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --key-file=<value>      Path to .p8 private key file (token-based auth)
+      --key-id=<value>        Key ID from Apple Developer portal (token-based auth)
+      --password=<value>      Password for the .p12 certificate
+      --pretty-json           Output in colorized JSON format
+      --team-id=<value>       Team ID from Apple Developer portal (token-based auth)
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+      --use-sandbox           Use the APNs sandbox endpoint instead of production. Use this with development
+                              certificates or when testing with sandbox device tokens.
+
+DESCRIPTION
+  Configure Apple Push Notification service (APNs) credentials for an app. Supports both certificate-based (.p12) and
+  token-based (.p8) authentication.
+
+EXAMPLES
+  $ ably push config set-apns --certificate ./cert.p12 --password SECRET
+
+  $ ably push config set-apns --certificate ./cert.p12 --password SECRET --use-sandbox
+
+  $ ably push config set-apns --key-file ./AuthKey.p8 --key-id ABC123 --team-id XYZ789 --bundle-id com.myapp
+
+  $ ably push config set-apns --key-file ./AuthKey.p8 --key-id ABC123 --team-id XYZ789 --bundle-id com.myapp --use-sandbox
+```
+
+_See code: [src/commands/push/config/set-apns.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/config/set-apns.ts)_
+
+## `ably push config set-fcm`
+
+Configure Firebase Cloud Messaging (FCM) credentials for an app using a service account JSON file.
+
+```
+USAGE
+  $ ably push config set-fcm --service-account <value> [--access-token <value>] [--api-key <value>] [--client-id <value>]
+    [--env <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app
+    <value>]
+
+FLAGS
+  -v, --verbose                  Output verbose logs
+      --access-token=<value>     Overrides any configured access token used for the Control API
+      --api-key=<value>          Overrides any configured API key used for the product APIs
+      --app=<value>              App ID or name to configure
+      --client-id=<value>        Overrides any default client ID when using API authentication. Use "none" to explicitly
+                                 set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>         Override the endpoint for all product API calls
+      --env=<value>              Override the environment for all product API calls
+      --host=<value>             Override the host endpoint for all product API calls
+      --json                     Output in JSON format
+      --pretty-json              Output in colorized JSON format
+      --service-account=<value>  (required) Path to Firebase service account JSON file
+      --token=<value>            Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Configure Firebase Cloud Messaging (FCM) credentials for an app using a service account JSON file.
+
+EXAMPLES
+  $ ably push config set-fcm --service-account ./firebase-service-account.json
+
+  $ ably push config set-fcm --app my-app --service-account ./firebase-prod.json
+```
+
+_See code: [src/commands/push/config/set-fcm.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/config/set-fcm.ts)_
+
+## `ably push config show`
+
+Show push notification configuration status for an app
+
+```
+USAGE
+  $ ably push config show [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>]
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --app=<value>           App ID or name to show configuration for
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --pretty-json           Output in colorized JSON format
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Show push notification configuration status for an app
+
+EXAMPLES
+  $ ably push config show
+
+  $ ably push config show --app my-app
+
+  $ ably push config show --json
+```
+
+_See code: [src/commands/push/config/show.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/config/show.ts)_
+
+## `ably push devices`
+
+Manage push notification device registrations (maps to push.admin.deviceRegistrations)
+
+```
+USAGE
+  $ ably push devices
+
+DESCRIPTION
+  Manage push notification device registrations (maps to push.admin.deviceRegistrations)
+
+EXAMPLES
+  $ ably push devices list
+
+  $ ably push devices list --client-id user-123
+
+  $ ably push devices get DEVICE_ID
+
+  $ ably push devices save --id my-device --platform android --form-factor phone --transport-type fcm --device-token TOKEN
+
+  $ ably push devices remove DEVICE_ID
+
+  $ ably push devices remove-where --client-id user-123
+```
+
+_See code: [src/commands/push/devices/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/devices/index.ts)_
+
+## `ably push devices get DEVICEID`
+
+Get details of a registered push notification device (maps to push.admin.deviceRegistrations.get)
+
+```
+USAGE
+  $ ably push devices get DEVICEID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+
+ARGUMENTS
+  DEVICEID  The device ID to retrieve
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --pretty-json           Output in colorized JSON format
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Get details of a registered push notification device (maps to push.admin.deviceRegistrations.get)
+
+EXAMPLES
+  $ ably push devices get DEVICE_ID
+
+  $ ably push devices get my-device-123
+
+  $ ably push devices get my-device-123 --json
+```
+
+_See code: [src/commands/push/devices/get.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/devices/get.ts)_
+
+## `ably push devices list`
+
+List registered push notification devices (maps to push.admin.deviceRegistrations.list)
+
+```
+USAGE
+  $ ably push devices list [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--device-id <value>] [--state
+    ACTIVE|FAILING|FAILED] [--limit <value>]
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Filter devices by client ID
+      --device-id=<value>     Filter by device ID
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --limit=<value>         [default: 100] Maximum number of devices to return (max: 1000)
+      --pretty-json           Output in colorized JSON format
+      --state=<option>        Filter by device state
+                              <options: ACTIVE|FAILING|FAILED>
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  List registered push notification devices (maps to push.admin.deviceRegistrations.list)
+
+EXAMPLES
+  $ ably push devices list
+
+  $ ably push devices list --client-id user-123
+
+  $ ably push devices list --device-id device-456
+
+  $ ably push devices list --state ACTIVE
+
+  $ ably push devices list --limit 50
+
+  $ ably push devices list --json
+```
+
+_See code: [src/commands/push/devices/list.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/devices/list.ts)_
+
+## `ably push devices remove DEVICEID`
+
+Remove a registered push notification device (maps to push.admin.deviceRegistrations.remove)
+
+```
+USAGE
+  $ ably push devices remove DEVICEID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-f]
+
+ARGUMENTS
+  DEVICEID  The device ID to remove
+
+FLAGS
+  -f, --force                 Skip confirmation prompt
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
+                              set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --pretty-json           Output in colorized JSON format
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Remove a registered push notification device (maps to push.admin.deviceRegistrations.remove)
+
+EXAMPLES
+  $ ably push devices remove DEVICE_ID
+
+  $ ably push devices remove my-device-123
+
+  $ ably push devices remove my-device-123 --force
+
+  $ ably push devices remove my-device-123 --json
+```
+
+_See code: [src/commands/push/devices/remove.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/devices/remove.ts)_
+
+## `ably push devices remove-where`
+
+Remove all devices matching specified criteria (maps to push.admin.deviceRegistrations.removeWhere)
+
+```
+USAGE
+  $ ably push devices remove-where [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--device-id <value>] [-f]
+
+FLAGS
+  -f, --force                 Skip confirmation prompt
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --client-id=<value>     Remove all devices for this client ID
+      --device-id=<value>     Remove device with this ID
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --host=<value>          Override the host endpoint for all product API calls
+      --json                  Output in JSON format
+      --pretty-json           Output in colorized JSON format
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+
+DESCRIPTION
+  Remove all devices matching specified criteria (maps to push.admin.deviceRegistrations.removeWhere)
+
+EXAMPLES
+  $ ably push devices remove-where --client-id user-123
+
+  $ ably push devices remove-where --device-id device-prefix
+
+  $ ably push devices remove-where --client-id user-123 --force
+```
+
+_See code: [src/commands/push/devices/remove-where.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/devices/remove-where.ts)_
+
+## `ably push devices save`
+
+Register a new device or update an existing device registration (maps to push.admin.deviceRegistrations.save)
+
+```
+USAGE
+  $ ably push devices save [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--id <value>] [--platform
+    android|ios|browser] [--form-factor phone|tablet|desktop|tv|watch|car|embedded|other] [--transport-type
+    fcm|apns|web] [--device-token <value>] [--target-url <value>] [--p256dh-key <value>] [--auth-secret <value>]
+    [--metadata <value>] [--data <value>]
+
+FLAGS
+  -v, --verbose                  Output verbose logs
+      --access-token=<value>     Overrides any configured access token used for the Control API
+      --api-key=<value>          Overrides any configured API key used for the product APIs
+      --auth-secret=<value>      Web push auth secret (from PushSubscription.getKey('auth'), base64 encoded). Required
+                                 for web transport type.
+      --client-id=<value>        Client ID to associate with the device
+      --data=<value>             Full device details as JSON string or path to JSON file
+      --device-token=<value>     Device token for APNs (iOS) or FCM registration token (Android). Not used for web push.
+      --endpoint=<value>         Override the endpoint for all product API calls
+      --env=<value>              Override the environment for all product API calls
+      --form-factor=<option>     Device form factor
+                                 <options: phone|tablet|desktop|tv|watch|car|embedded|other>
+      --host=<value>             Override the host endpoint for all product API calls
+      --id=<value>               Unique device identifier
+      --json                     Output in JSON format
+      --metadata=<value>         Device metadata as JSON string
+      --p256dh-key=<value>       Web push p256dh public key (from PushSubscription.getKey('p256dh'), base64 encoded).
+                                 Required for web transport type.
+      --platform=<option>        Device platform
+                                 <options: android|ios|browser>
+      --pretty-json              Output in colorized JSON format
+      --target-url=<value>       Web push endpoint URL (from PushSubscription.endpoint). Required for web transport
+                                 type.
+      --token=<value>            Authenticate using an Ably Token or JWT Token instead of an API key
+      --transport-type=<option>  Push transport type (fcm for Android, apns for iOS, web for browsers)
+                                 <options: fcm|apns|web>
+
+DESCRIPTION
+  Register a new device or update an existing device registration (maps to push.admin.deviceRegistrations.save)
+
+EXAMPLES
+  $ ably push devices save --id my-device --platform android --form-factor phone --transport-type fcm --device-token FCM_REGISTRATION_TOKEN
+
+  $ ably push devices save --id my-device --platform ios --form-factor phone --transport-type apns --device-token APNS_DEVICE_TOKEN
+
+  $ ably push devices save --id my-device --platform browser --form-factor desktop --transport-type web --target-url https://fcm.googleapis.com/fcm/send/... --p256dh-key BASE64_P256DH_KEY --auth-secret BASE64_AUTH_SECRET
+
+  $ ably push devices save --id my-device --platform android --form-factor phone --transport-type fcm --device-token TOKEN --client-id user-123
+
+  $ ably push devices save --data ./device.json
+
+  $ ably push devices save --data '{"id":"device-1","platform":"android","formFactor":"phone","push":{"recipient":{"transportType":"fcm","registrationToken":"TOKEN"}}}'
+```
+
+_See code: [src/commands/push/devices/save.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/devices/save.ts)_
+
+## `ably push publish`
+
+Publish a push notification directly to device(s) or client(s) (maps to push.admin.publish)
+
+```
+USAGE
+  $ ably push publish [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--device-id <value>] [--title
+    <value>] [--body <value>] [--sound <value>] [--icon <value>] [--badge <value>] [--data <value>] [--payload <value>]
+    [--collapse-key <value>] [--ttl <value>] [--apns <value>] [--fcm <value>] [--web <value>]
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --access-token=<value>  Overrides any configured access token used for the Control API
+      --api-key=<value>       Overrides any configured API key used for the product APIs
+      --apns=<value>          APNs-specific overrides as JSON
+      --badge=<value>         Badge count (iOS)
+      --body=<value>          Notification body
+      --client-id=<value>     Target client ID (sends to all client's devices)
+      --collapse-key=<value>  Collapse key for notification grouping
+      --data=<value>          Custom data payload as JSON string
+      --device-id=<value>     Target device ID
+      --endpoint=<value>      Override the endpoint for all product API calls
+      --env=<value>           Override the environment for all product API calls
+      --fcm=<value>           FCM-specific overrides as JSON
+      --host=<value>          Override the host endpoint for all product API calls
+      --icon=<value>          Notification icon (Android/Web)
+      --json                  Output in JSON format
+      --payload=<value>       Full notification payload as JSON string or path to JSON file
+      --pretty-json           Output in colorized JSON format
+      --sound=<value>         Notification sound (default, or filename)
+      --title=<value>         Notification title
+      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+      --ttl=<value>           Time-to-live in seconds
+      --web=<value>           Web Push-specific overrides as JSON
+
+DESCRIPTION
+  Publish a push notification directly to device(s) or client(s) (maps to push.admin.publish)
+
+EXAMPLES
+  $ ably push publish --device-id my-device --title "Hello" --body "World"
+
+  $ ably push publish --client-id user-123 --title "Alert" --body "New message"
+
+  $ ably push publish --device-id my-device --title "Order" --body "Shipped" --data '{"orderId":"123"}'
+
+  $ ably push publish --device-id my-device --title "Messages" --body "3 unread" --badge 3
+
+  $ ably push publish --device-id my-device --payload ./notification.json
+
+  $ ably push publish --device-id my-device --payload '{"notification":{"title":"Hi","body":"Hello"}}'
+```
+
+_See code: [src/commands/push/publish.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/push/publish.ts)_
+
 ## `ably queues`
 
 Manage Ably Queues
@@ -3366,12 +4229,12 @@ FLAGS
       --env=<value>           Override the environment for all product API calls
       --host=<value>          Override the host endpoint for all product API calls
       --json                  Output in JSON format
-      --max-length=<value>    [default: 10000] Maximum number of messages in the queue
+      --max-length=<value>    [default: 10000] Maximum number of messages in the queue (default: 10000)
       --name=<value>          (required) Name of the queue
       --pretty-json           Output in colorized JSON format
-      --region=<value>        [default: us-east-1-a] Region for the queue
+      --region=<value>        [default: us-east-1-a] Region for the queue (default: us-east-1-a)
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --ttl=<value>           [default: 60] Time to live for messages in seconds
+      --ttl=<value>           [default: 60] Time to live for messages in seconds (default: 60)
 
 DESCRIPTION
   Create a queue
@@ -3386,17 +4249,17 @@ EXAMPLES
 
 _See code: [src/commands/queues/create.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/queues/create.ts)_
 
-## `ably queues delete QUEUENAME`
+## `ably queues delete QUEUEID`
 
 Delete a queue
 
 ```
 USAGE
-  $ ably queues delete QUEUENAME [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+  $ ably queues delete QUEUEID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
     [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>] [-f]
 
 ARGUMENTS
-  QUEUENAME  Name of the queue to delete
+  QUEUEID  ID of the queue to delete
 
 FLAGS
   -f, --force                 Force deletion without confirmation
@@ -3417,11 +4280,11 @@ DESCRIPTION
   Delete a queue
 
 EXAMPLES
-  $ ably queues delete my-queue
+  $ ably queues delete appAbc:us-east-1-a:foo
 
-  $ ably queues delete my-queue --app "My App"
+  $ ably queues delete appAbc:us-east-1-a:foo --app "My App"
 
-  $ ably queues delete my-queue --force
+  $ ably queues delete appAbc:us-east-1-a:foo --force
 ```
 
 _See code: [src/commands/queues/delete.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/queues/delete.ts)_
@@ -3511,7 +4374,7 @@ FLAGS
       --env=<value>           Override the environment for all product API calls
       --host=<value>          Override the host endpoint for all product API calls
       --json                  Output in JSON format
-      --limit=<value>         [default: 100] Maximum number of rooms to return
+      --limit=<value>         [default: 100] Maximum number of rooms to return (default: 100)
       --pretty-json           Output in colorized JSON format
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
 
@@ -3562,24 +4425,29 @@ Get historical messages from an Ably Chat room
 ```
 USAGE
   $ ably rooms messages history ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-l <value>] [--show-metadata]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--end <value>] [-l <value>]
+    [--order oldestFirst|newestFirst] [--show-metadata] [--start <value>]
 
 ARGUMENTS
   ROOM  The room to get message history from
 
 FLAGS
-  -l, --limit=<value>         [default: 20] Maximum number of messages to retrieve
+  -l, --limit=<value>         [default: 50] Maximum number of messages to retrieve (default: 50)
   -v, --verbose               Output verbose logs
       --access-token=<value>  Overrides any configured access token used for the Control API
       --api-key=<value>       Overrides any configured API key used for the product APIs
       --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
                               set no client ID. Not applicable when using token authentication.
+      --end=<value>           End time for the history query (ISO 8601 format)
       --endpoint=<value>      Override the endpoint for all product API calls
       --env=<value>           Override the environment for all product API calls
       --host=<value>          Override the host endpoint for all product API calls
       --json                  Output in JSON format
+      --order=<option>        [default: newestFirst] Query direction: oldestFirst or newestFirst (default: newestFirst)
+                              <options: oldestFirst|newestFirst>
       --pretty-json           Output in colorized JSON format
       --show-metadata         Display message metadata if available
+      --start=<value>         Start time for the history query (ISO 8601 format)
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
@@ -3593,6 +4461,12 @@ EXAMPLES
   $ ably rooms messages history --limit 50 my-room
 
   $ ably rooms messages history --show-metadata my-room
+
+  $ ably rooms messages history my-room --start "2025-01-01T00:00:00Z"
+
+  $ ably rooms messages history my-room --start "2025-01-01T00:00:00Z" --end "2025-01-02T00:00:00Z"
+
+  $ ably rooms messages history my-room --order newestFirst
 
   $ ably rooms messages history my-room --json
 
@@ -3722,12 +4596,13 @@ Subscribe to message reactions in a chat room
 ```
 USAGE
   $ ably rooms messages reactions subscribe ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--raw]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--raw] [-D <value>]
 
 ARGUMENTS
   ROOM  Room to subscribe to message reactions in
 
 FLAGS
+  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
   -v, --verbose               Output verbose logs
       --access-token=<value>  Overrides any configured access token used for the Control API
       --api-key=<value>       Overrides any configured API key used for the product APIs
@@ -3771,7 +4646,7 @@ ARGUMENTS
   TEXT  The message text to send
 
 FLAGS
-  -c, --count=<value>         [default: 1] Number of messages to send
+  -c, --count=<value>         [default: 1] Number of messages to send (default: 1)
   -d, --delay=<value>         [default: 40] Delay between messages in milliseconds (default: 40ms, max 25 msgs/sec)
   -v, --verbose               Output verbose logs
       --access-token=<value>  Overrides any configured access token used for the Control API
@@ -3807,17 +4682,18 @@ EXAMPLES
 
 _See code: [src/commands/rooms/messages/send.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/messages/send.ts)_
 
-## `ably rooms messages subscribe ROOM`
+## `ably rooms messages subscribe ROOMS`
 
-Subscribe to messages in an Ably Chat room
+Subscribe to messages in one or more Ably Chat rooms
 
 ```
 USAGE
-  $ ably rooms messages subscribe ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
+  $ ably rooms messages subscribe ROOMS... [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
     [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--show-metadata] [-D <value>]
+    [--sequence-numbers]
 
 ARGUMENTS
-  ROOM  The room to subscribe to messages from
+  ROOMS...  Room name(s) to subscribe to messages from
 
 FLAGS
   -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
@@ -3831,14 +4707,17 @@ FLAGS
       --host=<value>          Override the host endpoint for all product API calls
       --json                  Output in JSON format
       --pretty-json           Output in colorized JSON format
+      --sequence-numbers      Include sequence numbers in output
       --show-metadata         Display message metadata if available
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
-  Subscribe to messages in an Ably Chat room
+  Subscribe to messages in one or more Ably Chat rooms
 
 EXAMPLES
   $ ably rooms messages subscribe my-room
+
+  $ ably rooms messages subscribe room1 room2 room3
 
   $ ably rooms messages subscribe --api-key "YOUR_API_KEY" my-room
 
@@ -3919,12 +4798,13 @@ Subscribe to real-time occupancy metrics for a room
 ```
 USAGE
   $ ably rooms occupancy subscribe ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>]
 
 ARGUMENTS
   ROOM  Room to subscribe to occupancy for
 
 FLAGS
+  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
   -v, --verbose               Output verbose logs
       --access-token=<value>  Overrides any configured access token used for the Control API
       --api-key=<value>       Overrides any configured API key used for the product APIs
@@ -3977,7 +4857,7 @@ Enter presence in a chat room and remain present until terminated
 USAGE
   $ ably rooms presence enter ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
     [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--show-others] [-D <value>]
-    [--data <value>]
+    [--data <value>] [--sequence-numbers]
 
 ARGUMENTS
   ROOM  Room to enter presence on
@@ -3995,7 +4875,8 @@ FLAGS
       --host=<value>          Override the host endpoint for all product API calls
       --json                  Output in JSON format
       --pretty-json           Output in colorized JSON format
-      --show-others           Show other presence events while present
+      --sequence-numbers      Include sequence numbers in output
+      --show-others           Show other presence events while present (default: false)
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
@@ -4005,6 +4886,8 @@ EXAMPLES
   $ ably rooms presence enter my-room
 
   $ ably rooms presence enter my-room --data '{"name":"User","status":"active"}'
+
+  $ ably rooms presence enter my-room --show-others
 
   $ ably rooms presence enter my-room --duration 30
 ```
@@ -4118,12 +5001,13 @@ Subscribe to reactions in a chat room
 ```
 USAGE
   $ ably rooms reactions subscribe ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>]
 
 ARGUMENTS
   ROOM  Room to subscribe to reactions in
 
 FLAGS
+  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
   -v, --verbose               Output verbose logs
       --access-token=<value>  Overrides any configured access token used for the Control API
       --api-key=<value>       Overrides any configured API key used for the product APIs
@@ -4218,12 +5102,13 @@ Subscribe to typing indicators in an Ably Chat room
 ```
 USAGE
   $ ably rooms typing subscribe ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>]
 
 ARGUMENTS
   ROOM  The room to subscribe to typing indicators from
 
 FLAGS
+  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
   -v, --verbose               Output verbose logs
       --access-token=<value>  Overrides any configured access token used for the Control API
       --api-key=<value>       Overrides any configured API key used for the product APIs
@@ -4459,7 +5344,7 @@ FLAGS
       --env=<value>           Override the environment for all product API calls
       --host=<value>          Override the host endpoint for all product API calls
       --json                  Output in JSON format
-      --limit=<value>         [default: 100] Maximum number of spaces to return
+      --limit=<value>         [default: 100] Maximum number of spaces to return (default: 100)
       --pretty-json           Output in colorized JSON format
       --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
 
