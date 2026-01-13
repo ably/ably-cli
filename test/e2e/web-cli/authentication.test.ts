@@ -35,7 +35,6 @@ test.describe("Web CLI Authentication E2E Tests", () => {
       page.getByText("Enter your credentials to start a terminal session"),
     ).toBeVisible();
     await expect(page.getByLabel(/API Key/)).toBeVisible();
-    await expect(page.getByLabel(/Access Token/)).toBeVisible();
     await expect(page.getByText("Connect to Terminal")).toBeVisible();
 
     // Verify terminal is not visible
@@ -341,7 +340,11 @@ test.describe("Web CLI Authentication E2E Tests", () => {
     await expect(page.locator(`text=${keyName}:****`)).toBeVisible();
   });
 
-  test("should handle authentication with access token", async ({ page }) => {
+  test.skip("should handle authentication with access token", async ({
+    page,
+  }) => {
+    // SKIPPED: Access token field removed from form until confirmed whether signing supports it
+    // Re-enable once server confirms accessToken can be included in signed config
     // Wait for any ongoing rate limit pause
     await waitForRateLimitLock();
 
@@ -463,7 +466,9 @@ test.describe("Web CLI Authentication E2E Tests", () => {
     await expect(page.locator(".xterm")).toContainText("COMMANDS");
   });
 
-  test("should show SERVER DISCONNECT overlay for invalid credentials", async ({
+  test.skip("should show SERVER DISCONNECT overlay for invalid credentials", async ({
+    // SKIPPED: Test uses invalid access token which is not supported until confirmed
+    // Re-enable once access token support in signed configs is confirmed
     page,
   }) => {
     // Wait for any ongoing rate limit pause
