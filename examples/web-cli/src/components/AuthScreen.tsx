@@ -15,9 +15,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [apiKey, setApiKey] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Check if there are saved credentials to clear
-  const hasSavedCredentials = localStorage.getItem('ably.web-cli.apiKey') !== null;
+
+  // Check if there are saved credentials to clear (domain-scoped or old format)
+  const hasSavedCredentials = (() => {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('ably.web-cli.signedConfig.') ||
+          key?.startsWith('ably.web-cli.apiKey')) {
+        return true;
+      }
+    }
+    return false;
+  })();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,13 +55,22 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   };
   
   const handleClearSavedCredentials = () => {
-    // Clear new signed format
-    localStorage.removeItem('ably.web-cli.signedConfig');
-    localStorage.removeItem('ably.web-cli.signature');
-    localStorage.removeItem('ably.web-cli.rememberCredentials');
-    // Also clear old format (migration)
-    localStorage.removeItem('ably.web-cli.apiKey');
-    localStorage.removeItem('ably.web-cli.accessToken');
+    // Clear all domain-scoped signed config keys
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('ably.web-cli.signedConfig.') ||
+          key?.startsWith('ably.web-cli.signature.') ||
+          key?.startsWith('ably.web-cli.rememberCredentials.') ||
+          key?.startsWith('ably.web-cli.apiKey') ||
+          key?.startsWith('ably.web-cli.accessToken')) {
+        keysToRemove.push(key);
+      }
+    }
+
+    // Remove all identified keys
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+
     setError('');
     // Force a refresh to show the change
     window.location.reload();
