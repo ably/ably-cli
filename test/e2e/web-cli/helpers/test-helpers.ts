@@ -121,15 +121,26 @@ export async function reloadPageWithRateLimit(page: Page): Promise<void> {
   // ALWAYS wait for any ongoing rate limit pause before proceeding
   await waitForRateLimitLock();
 
-  // Check if the page will auto-connect after reload (has credentials or apiKey in URL)
+  // Check if the page will auto-connect after reload (has signed credentials in URL or storage)
   const currentUrl = page.url();
   const willAutoConnect =
-    currentUrl.includes("apiKey=") ||
+    (currentUrl.includes("signedConfig=") &&
+      currentUrl.includes("signature=")) ||
     (await page.evaluate(() => {
-      return !!(
-        sessionStorage.getItem("ably.web-cli.apiKey") ||
-        localStorage.getItem("ably.web-cli.apiKey")
-      );
+      // Check for domain-scoped signed config keys
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith("ably.web-cli.signedConfig.")) {
+          return true;
+        }
+      }
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key?.startsWith("ably.web-cli.signedConfig.")) {
+          return true;
+        }
+      }
+      return false;
     }));
 
   if (willAutoConnect) {
