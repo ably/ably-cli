@@ -184,10 +184,7 @@ export default class Interactive extends Command {
 
         // Commands available only for authenticated users
         if (!isAnonymousMode) {
-          commands.push(
-            ["channels logs", "View live channel events"],
-            ["channels list", "List active channels"],
-          );
+          commands.push(["channels list", "List active channels"]);
         }
 
         commands.push(
