@@ -1,4 +1,5 @@
 import { Page } from "playwright/test";
+import { createSignedConfig } from "./signing-helper";
 
 // Helper to suppress console output unless tests fail
 let consoleMessages: Array<{ type: string; text: string; time: Date }> = [];
@@ -84,9 +85,28 @@ export function buildTestUrl(params?: Record<string, string>): string {
   }
 
   if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      url.searchParams.set(key, value);
-    });
+    // Check if apiKey is provided - if so, sign it first
+    if (params.apiKey) {
+      const { signedConfig, signature } = createSignedConfig({
+        apiKey: params.apiKey,
+        timestamp: Date.now(),
+        bypassRateLimit: true,
+      });
+      url.searchParams.set("signedConfig", signedConfig);
+      url.searchParams.set("signature", signature);
+
+      // Add other params except apiKey (already handled)
+      Object.entries(params).forEach(([key, value]) => {
+        if (key !== "apiKey") {
+          url.searchParams.set(key, value);
+        }
+      });
+    } else {
+      // No apiKey, just add params as-is
+      Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
+    }
   }
   return url.toString();
 }
