@@ -774,6 +774,8 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   });
 
   test.skip("shows installation tip after 6 seconds during connection attempts", async () => {
+    // SKIPPED: This test has timing issues with fake timers in CI environments
+    // The 6-second delay doesn't advance consistently with vi.advanceTimersByTime
     vi.useFakeTimers();
 
     try {
@@ -828,6 +830,8 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   });
 
   test.skip("shows installation tip during reconnection after 6 seconds", async () => {
+    // SKIPPED: This test has timing issues with fake timers in CI environments
+    // The 6-second delay doesn't advance consistently with vi.advanceTimersByTime
     vi.useFakeTimers();
 
     try {
@@ -909,6 +913,8 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   });
 
   test.skip("manual reconnect resets attempt counter after max attempts reached - skipped due to CI timing issues", async () => {
+    // SKIPPED: This test has timing issues in CI environments
+    // Manual reconnect state transitions don't complete reliably with mocked timers
     // Set up max attempts reached state
     vi.mocked(GlobalReconnect.isMaxAttemptsReached).mockReturnValue(true);
     vi.mocked(GlobalReconnect.getMaxAttempts).mockReturnValue(5);
@@ -1205,7 +1211,8 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   });
 
   test.skip("connection timeout triggers error after 30 seconds", async () => {
-    // Skip this test for now due to timing issues with fake timers
+    // SKIPPED: This test has timing issues with fake timers
+    // The 30-second timeout doesn't trigger consistently with vi.advanceTimersByTime
     vi.useFakeTimers();
 
     renderTerminal();
@@ -1607,8 +1614,8 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   });
 
   test.skip("prompt detection correctly handles ANSI color codes", async () => {
-    // Skip this test due to React fiber internal structure changes that are not stable
-
+    // SKIPPED: This test depends on React fiber internal structure
+    // React's internal structure is not stable across versions and breaks this test
     // Create a mock component and socket
     const mockSocket = {
       readyState: WebSocket.OPEN,
@@ -1645,9 +1652,9 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   });
 
   test.skip("onConnectionStatusChange only reports status for the primary terminal in split-screen mode", async () => {
-    // Skip this test if the environment is not stable enough
-    // This test verifies implementation details that are subject to change
-    // The core functionality is tested through proper unit and integration tests
+    // SKIPPED: This test verifies implementation details that are subject to change
+    // Core functionality is covered by other unit and integration tests
+    // The environment is not stable enough for this internal implementation test
     vi.spyOn(console, "log").mockImplementation(() => {}); // Suppress console.log during test
 
     // Mark this test as skipped since it requires internal details that are not stable

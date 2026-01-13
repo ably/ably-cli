@@ -375,6 +375,7 @@ describe("queues:delete command", () => {
   describe("confirmation prompt handling", () => {
     it.skip("should cancel deletion when user responds no to confirmation", async () => {
       // SKIPPED: stdin handling in tests is problematic with runCommand
+      // The runCommand test helper doesn't properly pipe stdin to the spawned process
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
@@ -401,6 +402,7 @@ describe("queues:delete command", () => {
 
     it.skip("should proceed with deletion when user confirms", async () => {
       // SKIPPED: stdin handling in tests is problematic with runCommand
+      // The runCommand test helper doesn't properly pipe stdin to the spawned process
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
