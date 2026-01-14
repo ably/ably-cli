@@ -182,7 +182,6 @@ export interface AuthPayload {
  */
 export function createAuthPayload(
   sessionId?: string | null,
-  additionalEnvVars?: Record<string, string>,
   signedConfig?: string,
   signature?: string,
 ): AuthPayload {
@@ -190,7 +189,6 @@ export function createAuthPayload(
     environmentVariables: {
       ABLY_WEB_CLI_MODE: "true",
       PS1: "ably> ",
-      ...additionalEnvVars,
     },
   };
 

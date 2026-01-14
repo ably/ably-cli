@@ -1483,12 +1483,7 @@ const AblyCliTerminalInner = (
     }
 
     // Send auth payload with signed config
-    const payload = createAuthPayload(
-      sessionId,
-      undefined, // no additional env vars needed - they're in the signed config
-      signedConfig,
-      signature,
-    );
+    const payload = createAuthPayload(sessionId, signedConfig, signature);
 
     debugLog(
       `⚠️ DIAGNOSTIC: Preparing to send auth payload with env vars: ${JSON.stringify(payload.environmentVariables)}`,
@@ -2935,7 +2930,6 @@ const AblyCliTerminalInner = (
       // Send auth payload with signed config
       const payload = createAuthPayload(
         secondarySessionId,
-        undefined, // no additional env vars needed - they're in the signed config
         signedConfig,
         signature,
       );
