@@ -77,6 +77,49 @@ ably rooms messages subscribe room1 room2  # Multiple rooms supported
 
 The interactive CLI will continue to guide you through the correct parameter names, but programmatic usage should be updated to match the new conventions.
 
+### Migration Notes
+
+#### Breaking Changes: Standardized Command Parameter Naming
+
+To improve consistency and clarity across the CLI, we've standardized parameter names in several commands. If you have scripts or automation that use these commands, please update them accordingly:
+
+**Parameter Naming Changes:**
+- `apps delete [ID]` → `apps delete [APPID]` - Now explicitly uses `APPID` for clarity
+- `integrations delete RULEID` → `integrations delete INTEGRATIONID` - More accurately reflects that integrations are not rules
+- `queues delete QUEUENAME` → `queues delete QUEUEID` - Changed to use ID instead of name for consistency
+
+**Command Changes:**
+- `rooms messages subscribe ROOM` → `rooms messages subscribe ROOMS` - Now supports multiple rooms (space-separated)
+- Logs commands reorganized:
+  - `apps logs` commands moved to `logs` top-level
+  - Removed duplicate channel-lifecycle commands from channels namespace
+  - All log commands now consistently under `logs` namespace
+
+**What You Need to Do:**
+
+If you're using any of these commands in scripts or CI/CD pipelines:
+1. Update parameter names to match the new conventions
+2. Update command paths for reorganized logs commands
+3. Test your scripts to ensure they work with the new naming
+
+**Example Updates:**
+
+```bash
+# Before (0.15.x)
+ably apps delete my-app-123
+ably integrations delete rule-456
+ably queues delete my-queue-name
+ably rooms messages subscribe my-room
+
+# After (0.16.0)
+ably apps delete my-app-123  # APPID parameter
+ably integrations delete integration-456  # INTEGRATIONID parameter
+ably queues delete queue-id-789  # QUEUEID parameter
+ably rooms messages subscribe room1 room2  # Multiple rooms supported
+```
+
+The interactive CLI will continue to guide you through the correct parameter names, but programmatic usage should be updated to match the new conventions.
+
 ## [0.15.0] - 2025-12-03
 
 ### Added
