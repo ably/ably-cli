@@ -54,6 +54,14 @@ vi.mock("lucide-react", () => ({
   X: () => null,
 }));
 
+// Helper to create test signed config
+const createTestSignedConfig = (apiKey: string = "test-key") => {
+  return JSON.stringify({
+    apiKey,
+    timestamp: Date.now(),
+  });
+};
+
 describe("AblyCliTerminal – debounced fit", () => {
   beforeEach(() => {
     fitSpy.mockClear();
@@ -62,7 +70,11 @@ describe("AblyCliTerminal – debounced fit", () => {
 
   test("fit() is called initially and at most once during rapid resize events", async () => {
     const { unmount } = render(
-      <AblyCliTerminal websocketUrl="ws://dummy" ablyApiKey="key" />,
+      <AblyCliTerminal
+        websocketUrl="ws://dummy"
+        signedConfig={createTestSignedConfig()}
+        signature="test-signature"
+      />,
     );
 
     // Initial fit is called once

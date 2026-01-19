@@ -164,38 +164,74 @@ export interface AuthPayload {
   sessionId?: string | null;
   environmentVariables?: Record<string, string>;
   ciAuthToken?: string;
+  /**
+   * JSON-encoded signed config string for HMAC authentication.
+   * When provided with signature, the server extracts credentials from this.
+   */
+  config?: string;
+  /**
+   * HMAC-SHA256 signature of the config string.
+   * Required when using signed config authentication.
+   */
+  signature?: string;
 }
 
 /**
- * Creates authentication payload for WebSocket connection
+ * Creates authentication payload for WebSocket connection.
+ * Requires signed config authentication (HMAC-signed credentials from the dashboard).
  */
 export function createAuthPayload(
-  apiKey?: string,
-  accessToken?: string,
   sessionId?: string | null,
-  additionalEnvVars?: Record<string, string>,
+  signedConfig?: string,
+  signature?: string,
 ): AuthPayload {
   const payload: AuthPayload = {
     environmentVariables: {
       ABLY_WEB_CLI_MODE: "true",
       PS1: "ably> ",
-      ...additionalEnvVars,
     },
   };
 
-  if (apiKey) payload.apiKey = apiKey;
-  if (accessToken) payload.accessToken = accessToken;
+  // Signed config authentication is required
+  if (!signedConfig || !signature) {
+    console.error(
+      "[createAuthPayload] Missing signedConfig or signature - authentication will fail",
+    );
+  } else {
+    payload.config = signedConfig;
+    payload.signature = signature;
+
+    // Extract fields from signed config for server convenience
+    // Server uses these to set environment variables like ABLY_ANONYMOUS_USER_MODE
+    try {
+      const parsedConfig = JSON.parse(signedConfig);
+      if (parsedConfig.apiKey) {
+        payload.apiKey = parsedConfig.apiKey;
+      }
+      if (parsedConfig.accessToken) {
+        payload.accessToken = parsedConfig.accessToken;
+      }
+      console.log("[createAuthPayload] Using signed config auth", {
+        hasApiKey: !!payload.apiKey,
+        hasAccessToken: !!payload.accessToken,
+      });
+    } catch (error) {
+      console.warn("[createAuthPayload] Failed to parse signed config:", error);
+    }
+  }
+
   if (sessionId) payload.sessionId = sessionId;
 
   // Check for CI auth token in window object
   // This will be injected during test execution
   const win = globalThis as any;
   if (win.__ABLY_CLI_CI_AUTH_TOKEN__) {
-    payload.ciAuthToken = win.__ABLY_CLI_CI_AUTH_TOKEN__;
+    const ciToken: string = win.__ABLY_CLI_CI_AUTH_TOKEN__;
+    payload.ciAuthToken = ciToken;
     // Debug logging in CI
     if (win.__ABLY_CLI_CI_MODE__ === "true") {
       console.log("[CI Auth] Including CI auth token in payload", {
-        tokenLength: payload.ciAuthToken.length,
+        tokenLength: ciToken.length,
         testGroup: win.__ABLY_CLI_TEST_GROUP__ || "unknown",
         runId: win.__ABLY_CLI_RUN_ID__ || "unknown",
       });

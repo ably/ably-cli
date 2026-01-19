@@ -7,6 +7,7 @@ import {
   waitForRateLimitIfNeeded,
 } from "./test-rate-limiter";
 import { waitForRateLimitLock } from "./rate-limit-lock";
+import { createSignedConfig } from "./helpers/signing-helper";
 
 // Load environment variables from .env for Playwright tests
 const rootEnvPath = resolve(process.cwd(), ".env");
@@ -72,13 +73,26 @@ export async function authenticateWebCli(
     return;
   }
 
-  // If we should use query param, reload the page with the API key
+  // If we should use query param, sign credentials and add to URL
   if (useQueryParam) {
     if (!process.env.CI || process.env.VERBOSE_TESTS) {
-      console.log("Adding API key to URL and reloading...");
+      console.log("Signing credentials and adding to URL...");
     }
+
+    // Sign credentials using test signing helper
+    const { signedConfig, signature } = createSignedConfig({
+      apiKey: key,
+      timestamp: Date.now(),
+      bypassRateLimit: true, // Bypass rate limiting for tests
+    });
+
+    if (!process.env.CI || process.env.VERBOSE_TESTS) {
+      console.log("Generated signed config for authentication");
+    }
+
     const url = new URL(currentUrl);
-    url.searchParams.set("apiKey", key);
+    url.searchParams.set("signedConfig", signedConfig);
+    url.searchParams.set("signature", signature);
     // Always clear credentials in tests to ensure consistent state
     url.searchParams.set("clearCredentials", "true");
     incrementConnectionCount();
@@ -103,7 +117,7 @@ export async function authenticateWebCli(
   }
 
   // Otherwise, use the form-based authentication
-  // Check if auth screen is visible
+  // Form will call /api/sign endpoint (served by Vite middleware during tests)
   const authScreenVisible = await page
     .locator('input[placeholder="your_app.key_name:key_secret"]')
     .isVisible()
@@ -111,13 +125,13 @@ export async function authenticateWebCli(
 
   if (authScreenVisible) {
     if (!process.env.CI || process.env.VERBOSE_TESTS) {
-      console.log("Authentication screen detected, logging in...");
+      console.log("Authentication screen detected, logging in via form...");
     }
     await page.fill('input[placeholder="your_app.key_name:key_secret"]', key);
     incrementConnectionCount();
     await page.click('button:has-text("Connect to Terminal")');
     if (!process.env.CI || process.env.VERBOSE_TESTS) {
-      console.log("Authentication submitted.");
+      console.log("Authentication submitted (form will call /api/sign).");
     }
 
     // Wait for terminal to be visible
@@ -160,9 +174,16 @@ export async function navigateAndAuthenticate(
   // Check rate limit before attempting connection
   await waitForRateLimitIfNeeded();
 
-  // Add API key as query parameter for test environments
+  // Sign credentials and add as query parameters
+  const { signedConfig, signature } = createSignedConfig({
+    apiKey: key,
+    timestamp: Date.now(),
+    bypassRateLimit: true, // Bypass rate limiting for tests
+  });
+
   const urlWithAuth = new URL(url);
-  urlWithAuth.searchParams.set("apiKey", key);
+  urlWithAuth.searchParams.set("signedConfig", signedConfig);
+  urlWithAuth.searchParams.set("signature", signature);
   // Always clear credentials in tests to ensure consistent state
   urlWithAuth.searchParams.set("clearCredentials", "true");
 

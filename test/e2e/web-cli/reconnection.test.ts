@@ -18,6 +18,7 @@ import {
   executeCommandWithRetry,
 } from "./wait-helpers.js";
 import { waitForRateLimitLock } from "./rate-limit-lock";
+import { createSignedConfig } from "./helpers/signing-helper";
 
 // Terminal server endpoint - use environment variable or default to public server
 const TERMINAL_SERVER_URL =
@@ -137,12 +138,20 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
     );
     await page.waitForTimeout(rateDelay);
 
-    // 1. Navigate to the Web CLI app with API key included
+    // 1. Navigate to the Web CLI app with signed credentials
     log("Navigating to Web CLI app with debugging enabled...");
+
+    // Sign credentials for authentication
+    const { signedConfig, signature } = createSignedConfig({
+      apiKey,
+      timestamp: Date.now(),
+      bypassRateLimit: true,
+    });
+
     await waitForRateLimitIfNeeded();
     incrementConnectionCount();
     await page.goto(
-      `${getTestUrl()}?serverUrl=${encodeURIComponent(TERMINAL_SERVER_URL)}&cliDebug=true&apiKey=${encodeURIComponent(apiKey)}`,
+      `${getTestUrl()}?serverUrl=${encodeURIComponent(TERMINAL_SERVER_URL)}&cliDebug=true&signedConfig=${encodeURIComponent(signedConfig)}&signature=${encodeURIComponent(signature)}`,
       { waitUntil: "networkidle" },
     );
 
@@ -286,11 +295,18 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
     const apiKey = process.env.E2E_ABLY_API_KEY || process.env.ABLY_API_KEY;
     if (!apiKey) throw new Error("API key required for tests");
 
-    // Navigate with API key included
+    // Sign credentials for authentication
+    const { signedConfig, signature } = createSignedConfig({
+      apiKey,
+      timestamp: Date.now(),
+      bypassRateLimit: true,
+    });
+
+    // Navigate with signed credentials
     await waitForRateLimitIfNeeded();
     incrementConnectionCount();
     await page.goto(
-      `${getTestUrl()}?serverUrl=${encodeURIComponent(TERMINAL_SERVER_URL)}&cliDebug=true&apiKey=${encodeURIComponent(apiKey)}`,
+      `${getTestUrl()}?serverUrl=${encodeURIComponent(TERMINAL_SERVER_URL)}&cliDebug=true&signedConfig=${encodeURIComponent(signedConfig)}&signature=${encodeURIComponent(signature)}`,
       { waitUntil: "networkidle" },
     );
 
@@ -389,11 +405,18 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
     const apiKey = process.env.E2E_ABLY_API_KEY || process.env.ABLY_API_KEY;
     if (!apiKey) throw new Error("API key required for tests");
 
-    // Navigate with API key included
+    // Sign credentials for authentication
+    const { signedConfig, signature } = createSignedConfig({
+      apiKey,
+      timestamp: Date.now(),
+      bypassRateLimit: true,
+    });
+
+    // Navigate with signed credentials
     await waitForRateLimitIfNeeded();
     incrementConnectionCount();
     await page.goto(
-      `${getTestUrl()}?serverUrl=${encodeURIComponent(TERMINAL_SERVER_URL)}&cliDebug=true&apiKey=${encodeURIComponent(apiKey)}`,
+      `${getTestUrl()}?serverUrl=${encodeURIComponent(TERMINAL_SERVER_URL)}&cliDebug=true&signedConfig=${encodeURIComponent(signedConfig)}&signature=${encodeURIComponent(signature)}`,
       { waitUntil: "networkidle" },
     );
 
@@ -490,10 +513,17 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
     const apiKey = process.env.E2E_ABLY_API_KEY || process.env.ABLY_API_KEY;
     if (!apiKey) throw new Error("API key required for tests");
 
+    // Sign credentials for authentication
+    const { signedConfig, signature } = createSignedConfig({
+      apiKey,
+      timestamp: Date.now(),
+      bypassRateLimit: true,
+    });
+
     await waitForRateLimitIfNeeded();
     incrementConnectionCount();
     await page.goto(
-      `${getTestUrl()}?serverUrl=${encodeURIComponent(TERMINAL_SERVER_URL)}&cliDebug=true&apiKey=${encodeURIComponent(apiKey)}`,
+      `${getTestUrl()}?serverUrl=${encodeURIComponent(TERMINAL_SERVER_URL)}&cliDebug=true&signedConfig=${encodeURIComponent(signedConfig)}&signature=${encodeURIComponent(signature)}`,
       { waitUntil: "networkidle" },
     );
 
@@ -627,12 +657,19 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
       );
     }
 
+    // Sign credentials for authentication
+    const { signedConfig, signature } = createSignedConfig({
+      apiKey,
+      timestamp: Date.now(),
+      bypassRateLimit: true,
+    });
+
     await waitForRateLimitIfNeeded();
     incrementConnectionCount();
     const url =
       getTestUrl() +
       "&maxReconnectAttempts=3" +
-      `&apiKey=${encodeURIComponent(apiKey)}`;
+      `&signedConfig=${encodeURIComponent(signedConfig)}&signature=${encodeURIComponent(signature)}`;
     await page.goto(url);
 
     const terminalSelector = ".xterm-viewport";

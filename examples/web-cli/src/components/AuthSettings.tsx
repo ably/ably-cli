@@ -4,51 +4,59 @@ import { X, Key, Lock, AlertCircle, CheckCircle, Save } from 'lucide-react';
 interface AuthSettingsProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (apiKey: string, accessToken: string, remember: boolean) => void;
-  currentApiKey?: string;
-  currentAccessToken?: string;
+  onSave: (apiKey: string, remember: boolean) => void;
+  currentSignedConfig?: string;
   rememberCredentials: boolean;
 }
 
 // Helper function to redact sensitive credentials
 const redactCredential = (credential: string | undefined): string => {
   if (!credential) return '';
-  
+
   // For API keys in format "appId.keyId:secret"
   if (credential.includes(':')) {
-    const [keyName, secret] = credential.split(':');
+    const [keyName] = credential.split(':');
     // Show full app ID and key ID, but redact the secret
     return `${keyName}:****`;
   }
-  
+
   // For tokens, show first few and last few characters
   if (credential.length > 20) {
     return `${credential.substring(0, 6)}...${credential.substring(credential.length - 4)}`;
   }
-  
+
   return credential.substring(0, 4) + '...';
+};
+
+// Helper to extract API key from signed config
+const extractApiKey = (signedConfig: string | undefined): string => {
+  if (!signedConfig) return '';
+  try {
+    const config = JSON.parse(signedConfig);
+    return config.apiKey || '';
+  } catch {
+    return '';
+  }
 };
 
 export const AuthSettings: React.FC<AuthSettingsProps> = ({
   isOpen,
   onClose,
   onSave,
-  currentApiKey = '',
-  currentAccessToken = '',
+  currentSignedConfig = '',
   rememberCredentials
 }) => {
+  const currentApiKey = extractApiKey(currentSignedConfig);
   const [apiKey, setApiKey] = useState(currentApiKey);
-  const [accessToken, setAccessToken] = useState(currentAccessToken);
   const [remember, setRemember] = useState(rememberCredentials);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    setApiKey(currentApiKey);
-    setAccessToken(currentAccessToken);
+    setApiKey(extractApiKey(currentSignedConfig));
     setRemember(rememberCredentials);
-  }, [currentApiKey, currentAccessToken, rememberCredentials, isOpen]);
+  }, [currentSignedConfig, rememberCredentials, isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -63,7 +71,12 @@ export const AuthSettings: React.FC<AuthSettingsProps> = ({
       return;
     }
 
-    onSave(apiKey.trim(), accessToken.trim(), remember);
+    try {
+      await onSave(apiKey.trim(), remember);
+    } catch (error) {
+      console.error('[AuthSettings] Save failed:', error);
+      setError(error instanceof Error ? error.message : 'Failed to save credentials');
+    }
   };
 
   if (!isOpen) return null;
@@ -90,15 +103,10 @@ export const AuthSettings: React.FC<AuthSettingsProps> = ({
                 <p className="text-xs text-gray-500">
                   API Key: <span className="font-mono text-gray-400">{redactCredential(currentApiKey)}</span>
                 </p>
-                {currentAccessToken && (
-                  <p className="text-xs text-gray-500">
-                    Access Token: <span className="font-mono text-gray-400">{redactCredential(currentAccessToken)}</span>
-                  </p>
-                )}
               </div>
               <button
                 type="button"
-                onClick={() => onSave('', '', false)}
+                onClick={() => onSave('', false)}
                 className="mt-3 text-xs text-red-400 hover:text-red-300 transition-colors"
               >
                 Clear Credentials
@@ -106,59 +114,39 @@ export const AuthSettings: React.FC<AuthSettingsProps> = ({
             </div>
           )}
 
-          {(
-            <div className="space-y-6">
-              <div>
-                <label htmlFor="apiKey" className="flex items-center space-x-2 text-sm font-medium text-gray-300 mb-2">
-                  <Key size={16} />
-                  <span>API Key *</span>
-                </label>
-                <input
-                  id="apiKey"
-                  type="text"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="your_app.key_name:key_secret"
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Find your API key in your Ably dashboard
-                </p>
-              </div>
-
-              <div>
-                <label htmlFor="accessToken" className="flex items-center space-x-2 text-sm font-medium text-gray-300 mb-2">
-                  <Lock size={16} />
-                  <span>Access Token (Optional)</span>
-                </label>
-                <input
-                  id="accessToken"
-                  type="text"
-                  value={accessToken}
-                  onChange={(e) => setAccessToken(e.target.value)}
-                  placeholder="Your JWT access token"
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Optional: Use if you have a JWT token for authentication
-                </p>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <input
-                  id="rememberCredentialsSettings"
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-700 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="rememberCredentialsSettings" className="flex items-center space-x-2 text-sm text-gray-300 cursor-pointer">
-                  <Save size={16} />
-                  <span>Remember credentials for future sessions</span>
-                </label>
-              </div>
+          <div className="space-y-6">
+            <div>
+              <label htmlFor="apiKey" className="flex items-center space-x-2 text-sm font-medium text-gray-300 mb-2">
+                <Key size={16} />
+                <span>API Key *</span>
+              </label>
+              <input
+                id="apiKey"
+                type="text"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="your_app.key_name:key_secret"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Find your API key in your Ably dashboard
+              </p>
             </div>
-          )}
+
+            <div className="flex items-center space-x-3">
+              <input
+                id="rememberCredentialsSettings"
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-700 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="rememberCredentialsSettings" className="flex items-center space-x-2 text-sm text-gray-300 cursor-pointer">
+                <Save size={16} />
+                <span>Remember credentials for future sessions</span>
+              </label>
+            </div>
+          </div>
 
           {error && (
             <div className="bg-red-900/50 border border-red-700 rounded-lg p-3 flex items-center space-x-2 mt-6">

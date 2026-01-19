@@ -32,20 +32,25 @@ const getCIAuthToken = (): string | undefined => {
   return (window as CliWindow).__ABLY_CLI_CI_AUTH_TOKEN__;
 };
 
-// Get credentials from various sources
+// Get signed credentials from various sources
 const getInitialCredentials = () => {
   const urlParams = new URLSearchParams(window.location.search);
-  
+
   // Get the domain from the WebSocket URL for scoping
   const wsUrl = getWebSocketUrl();
   const wsDomain = new URL(wsUrl).host;
-  
+
   // Check if we should clear credentials (for testing)
   if (urlParams.get('clearCredentials') === 'true') {
+    // Clear new signed format
+    localStorage.removeItem(`ably.web-cli.signedConfig.${wsDomain}`);
+    localStorage.removeItem(`ably.web-cli.signature.${wsDomain}`);
+    localStorage.removeItem(`ably.web-cli.rememberCredentials.${wsDomain}`);
+    sessionStorage.removeItem(`ably.web-cli.signedConfig.${wsDomain}`);
+    sessionStorage.removeItem(`ably.web-cli.signature.${wsDomain}`);
+    // Also clear old format (migration)
     localStorage.removeItem(`ably.web-cli.apiKey.${wsDomain}`);
     localStorage.removeItem(`ably.web-cli.accessToken.${wsDomain}`);
-    localStorage.removeItem(`ably.web-cli.rememberCredentials.${wsDomain}`);
-    // Also clear from sessionStorage
     sessionStorage.removeItem(`ably.web-cli.apiKey.${wsDomain}`);
     sessionStorage.removeItem(`ably.web-cli.accessToken.${wsDomain}`);
     // Remove the clearCredentials param from URL
@@ -53,59 +58,77 @@ const getInitialCredentials = () => {
     cleanUrl.searchParams.delete('clearCredentials');
     window.history.replaceState(null, '', cleanUrl.toString());
   }
-  
-  // Check localStorage for persisted credentials (if user chose to remember)
-  const rememberCredentials = localStorage.getItem(`ably.web-cli.rememberCredentials.${wsDomain}`) === 'true';
-  if (rememberCredentials) {
-    const storedApiKey = localStorage.getItem(`ably.web-cli.apiKey.${wsDomain}`);
-    const storedAccessToken = localStorage.getItem(`ably.web-cli.accessToken.${wsDomain}`);
-    if (storedApiKey) {
-      return { 
-        apiKey: storedApiKey, 
-        accessToken: storedAccessToken || undefined,
-        source: 'localStorage' as const
-      };
-    }
-  }
-  
-  // Check sessionStorage for session-only credentials
-  const sessionApiKey = sessionStorage.getItem(`ably.web-cli.apiKey.${wsDomain}`);
-  const sessionAccessToken = sessionStorage.getItem(`ably.web-cli.accessToken.${wsDomain}`);
-  if (sessionApiKey) {
-    return { 
-      apiKey: sessionApiKey, 
-      accessToken: sessionAccessToken || undefined,
-      source: 'session' as const
-    };
-  }
 
-  // Then check query parameters (only in non-production environments)
-  const qsApiKey = urlParams.get('apikey') || urlParams.get('apiKey');
-  const qsAccessToken = urlParams.get('accessToken') || urlParams.get('accesstoken');
-  
-  // Security check: only allow query param auth in development/test environments
-  const isProduction = import.meta.env.PROD && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');
-  
-  if (qsApiKey) {
+  // Check query parameters (only in development/test environments)
+  const qsSignedConfig = urlParams.get('signedConfig');
+  const qsSignature = urlParams.get('signature');
+
+  if (qsSignedConfig && qsSignature) {
+    // Security check: only allow query param auth in development/test environments
+    const isProduction = import.meta.env.PROD &&
+                        !window.location.hostname.includes('localhost') &&
+                        !window.location.hostname.includes('127.0.0.1');
+
     if (isProduction) {
-      console.error('Security Warning: API keys in query parameters are not allowed in production environments.');
+      console.error('[App] Security Warning: Signed credentials in query parameters are not allowed in production.');
+      console.error('[App] Credentials contain API keys that can leak through browser history, server logs, and shared URLs.');
       // Clear the sensitive query parameters from the URL
       const cleanUrl = new URL(window.location.href);
-      cleanUrl.searchParams.delete('apikey');
-      cleanUrl.searchParams.delete('apiKey');
-      cleanUrl.searchParams.delete('accessToken');
-      cleanUrl.searchParams.delete('accesstoken');
+      cleanUrl.searchParams.delete('signedConfig');
+      cleanUrl.searchParams.delete('signature');
+      cleanUrl.searchParams.delete('clearCredentials');
       window.history.replaceState(null, '', cleanUrl.toString());
+      // Don't use these credentials - fall through to storage check
     } else {
-      return { 
-        apiKey: qsApiKey, 
-        accessToken: qsAccessToken || undefined,
+      console.log('[App] Using signed config from query parameters (dev/test mode)');
+      return {
+        signedConfig: qsSignedConfig,
+        signature: qsSignature,
         source: 'query' as const
       };
     }
   }
 
-  return { apiKey: undefined, accessToken: undefined, source: 'none' as const };
+  // Check localStorage for persisted signed credentials (if user chose to remember)
+  const rememberCredentials = localStorage.getItem(`ably.web-cli.rememberCredentials.${wsDomain}`) === 'true';
+  if (rememberCredentials) {
+    const storedSignedConfig = localStorage.getItem(`ably.web-cli.signedConfig.${wsDomain}`);
+    const storedSignature = localStorage.getItem(`ably.web-cli.signature.${wsDomain}`);
+    if (storedSignedConfig && storedSignature) {
+      console.log('[App] Using signed config from localStorage');
+      return {
+        signedConfig: storedSignedConfig,
+        signature: storedSignature,
+        source: 'localStorage' as const
+      };
+    }
+  }
+
+  // Check sessionStorage for session-only signed credentials
+  const sessionSignedConfig = sessionStorage.getItem(`ably.web-cli.signedConfig.${wsDomain}`);
+  const sessionSignature = sessionStorage.getItem(`ably.web-cli.signature.${wsDomain}`);
+  if (sessionSignedConfig && sessionSignature) {
+    console.log('[App] Using signed config from sessionStorage');
+    return {
+      signedConfig: sessionSignedConfig,
+      signature: sessionSignature,
+      source: 'session' as const
+    };
+  }
+
+  // Check for old format credentials (migration)
+  const oldApiKey = localStorage.getItem(`ably.web-cli.apiKey.${wsDomain}`) ||
+                    sessionStorage.getItem(`ably.web-cli.apiKey.${wsDomain}`);
+  if (oldApiKey) {
+    console.warn('[App] Found old credential format. Please re-authenticate with signed credentials.');
+    // Clear old format
+    localStorage.removeItem(`ably.web-cli.apiKey.${wsDomain}`);
+    localStorage.removeItem(`ably.web-cli.accessToken.${wsDomain}`);
+    sessionStorage.removeItem(`ably.web-cli.apiKey.${wsDomain}`);
+    sessionStorage.removeItem(`ably.web-cli.accessToken.${wsDomain}`);
+  }
+
+  return { signedConfig: undefined, signature: undefined, source: 'none' as const };
 };
 
 function App() {
@@ -117,11 +140,11 @@ function App() {
   const [displayMode, setDisplayMode] = useState<"fullscreen" | "drawer">(initialMode);
   const [showAuthSettings, setShowAuthSettings] = useState(false);
   
-  // Initialize credentials
+  // Initialize signed credentials
   const initialCreds = getInitialCredentials();
-  const [apiKey, setApiKey] = useState<string | undefined>(initialCreds.apiKey);
-  const [accessToken, setAccessToken] = useState<string | undefined>(initialCreds.accessToken);
-  const [isAuthenticated, setIsAuthenticated] = useState(Boolean(initialCreds.apiKey && initialCreds.apiKey.trim()));
+  const [signedConfig, setSignedConfig] = useState<string | undefined>(initialCreds.signedConfig);
+  const [signature, setSignature] = useState<string | undefined>(initialCreds.signature);
+  const [isAuthenticated, setIsAuthenticated] = useState(Boolean(initialCreds.signedConfig && initialCreds.signature));
   const [authSource, setAuthSource] = useState(initialCreds.source);
   // Get the URL and domain early for use in state initialization
   const currentWebsocketUrl = getWebSocketUrl();
@@ -144,64 +167,79 @@ function App() {
   }, []);
 
   // Handle authentication
-  const handleAuthenticate = useCallback((newApiKey: string, newAccessToken: string, remember?: boolean) => {
-    // Clear any existing session data when credentials change (domain-scoped)
-    sessionStorage.removeItem(`ably.cli.sessionId.${wsDomain}`);
-    sessionStorage.removeItem(`ably.cli.secondarySessionId.${wsDomain}`);
-    sessionStorage.removeItem(`ably.cli.isSplit.${wsDomain}`);
-    
-    setApiKey(newApiKey);
-    setAccessToken(newAccessToken);
-    setIsAuthenticated(true);
-    setShowAuthSettings(false);
-    
-    // Determine if we should remember based on parameter or current state
-    const shouldRemember = remember !== undefined ? remember : rememberCredentials;
-    
-    if (shouldRemember) {
-      // Store in localStorage for persistence (domain-scoped)
-      localStorage.setItem(`ably.web-cli.apiKey.${wsDomain}`, newApiKey);
-      localStorage.setItem(`ably.web-cli.rememberCredentials.${wsDomain}`, 'true');
-      if (newAccessToken) {
-        localStorage.setItem(`ably.web-cli.accessToken.${wsDomain}`, newAccessToken);
-      } else {
-        localStorage.removeItem(`ably.web-cli.accessToken.${wsDomain}`);
+  const handleAuthenticate = useCallback(async (newApiKey: string, remember?: boolean) => {
+    try {
+      // Call /api/sign endpoint to get signed config
+      const response = await fetch('/api/sign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: newApiKey,
+          bypassRateLimit: false
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('[App] Failed to sign credentials:', error);
+        throw new Error(error.error || 'Failed to sign credentials');
       }
-      setAuthSource('localStorage');
-    } else {
-      // Store only in sessionStorage (domain-scoped)
-      sessionStorage.setItem(`ably.web-cli.apiKey.${wsDomain}`, newApiKey);
-      if (newAccessToken) {
-        sessionStorage.setItem(`ably.web-cli.accessToken.${wsDomain}`, newAccessToken);
+
+      const { signedConfig: newSignedConfig, signature: newSignature } = await response.json();
+
+      // Clear any existing session data when credentials change (domain-scoped)
+      sessionStorage.removeItem(`ably.cli.sessionId.${wsDomain}`);
+      sessionStorage.removeItem(`ably.cli.secondarySessionId.${wsDomain}`);
+      sessionStorage.removeItem(`ably.cli.isSplit.${wsDomain}`);
+
+      setSignedConfig(newSignedConfig);
+      setSignature(newSignature);
+      setIsAuthenticated(true);
+      setShowAuthSettings(false);
+
+      // Determine if we should remember based on parameter or current state
+      const shouldRemember = remember !== undefined ? remember : rememberCredentials;
+
+      if (shouldRemember) {
+        // Store in localStorage for persistence (domain-scoped)
+        localStorage.setItem(`ably.web-cli.signedConfig.${wsDomain}`, newSignedConfig);
+        localStorage.setItem(`ably.web-cli.signature.${wsDomain}`, newSignature);
+        localStorage.setItem(`ably.web-cli.rememberCredentials.${wsDomain}`, 'true');
+        setAuthSource('localStorage');
       } else {
-        sessionStorage.removeItem(`ably.web-cli.accessToken.${wsDomain}`);
+        // Store only in sessionStorage (domain-scoped)
+        sessionStorage.setItem(`ably.web-cli.signedConfig.${wsDomain}`, newSignedConfig);
+        sessionStorage.setItem(`ably.web-cli.signature.${wsDomain}`, newSignature);
+        // Clear from localStorage if it was there (domain-scoped)
+        localStorage.removeItem(`ably.web-cli.signedConfig.${wsDomain}`);
+        localStorage.removeItem(`ably.web-cli.signature.${wsDomain}`);
+        localStorage.removeItem(`ably.web-cli.rememberCredentials.${wsDomain}`);
+        setAuthSource('session');
       }
-      // Clear from localStorage if it was there (domain-scoped)
-      localStorage.removeItem(`ably.web-cli.apiKey.${wsDomain}`);
-      localStorage.removeItem(`ably.web-cli.accessToken.${wsDomain}`);
-      localStorage.removeItem(`ably.web-cli.rememberCredentials.${wsDomain}`);
-      setAuthSource('session');
+
+      setRememberCredentials(shouldRemember);
+    } catch (error) {
+      console.error('[App] Authentication error:', error);
+      throw error;
     }
-    
-    setRememberCredentials(shouldRemember);
   }, [rememberCredentials, wsDomain]);
 
   // Handle auth settings save
-  const handleAuthSettingsSave = useCallback((newApiKey: string, newAccessToken: string, remember: boolean) => {
+  const handleAuthSettingsSave = useCallback(async (newApiKey: string, remember: boolean) => {
     if (newApiKey) {
-      handleAuthenticate(newApiKey, newAccessToken, remember);
+      await handleAuthenticate(newApiKey, remember);
     } else {
       // Clear all credentials - go back to auth screen (domain-scoped)
       sessionStorage.removeItem(`ably.cli.sessionId.${wsDomain}`);
       sessionStorage.removeItem(`ably.cli.secondarySessionId.${wsDomain}`);
       sessionStorage.removeItem(`ably.cli.isSplit.${wsDomain}`);
-      sessionStorage.removeItem(`ably.web-cli.apiKey.${wsDomain}`);
-      sessionStorage.removeItem(`ably.web-cli.accessToken.${wsDomain}`);
-      localStorage.removeItem(`ably.web-cli.apiKey.${wsDomain}`);
-      localStorage.removeItem(`ably.web-cli.accessToken.${wsDomain}`);
+      sessionStorage.removeItem(`ably.web-cli.signedConfig.${wsDomain}`);
+      sessionStorage.removeItem(`ably.web-cli.signature.${wsDomain}`);
+      localStorage.removeItem(`ably.web-cli.signedConfig.${wsDomain}`);
+      localStorage.removeItem(`ably.web-cli.signature.${wsDomain}`);
       localStorage.removeItem(`ably.web-cli.rememberCredentials.${wsDomain}`);
-      setApiKey(undefined);
-      setAccessToken(undefined);
+      setSignedConfig(undefined);
+      setSignature(undefined);
       setIsAuthenticated(false);
       setShowAuthSettings(false);
       setRememberCredentials(false);
@@ -220,11 +258,11 @@ function App() {
   // Prepare the terminal component instance to pass it down
   const termRef = useRef<AblyCliTerminalHandle>(null);
   const TerminalInstance = useCallback(() => (
-    isAuthenticated && apiKey && apiKey.trim() ? (
+    isAuthenticated && signedConfig && signature ? (
       <AblyCliTerminal
         ref={termRef}
-        ablyAccessToken={accessToken}
-        ablyApiKey={apiKey}
+        signedConfig={signedConfig}
+        signature={signature}
         onConnectionStatusChange={handleConnectionChange}
         onSessionEnd={handleSessionEnd}
         onSessionId={handleSessionId}
@@ -233,10 +271,9 @@ function App() {
         enableSplitScreen={true}
         showSplitControl={true}
         maxReconnectAttempts={5} /* In the example, limit reconnection attempts for testing, default is 15 */
-        ciAuthToken={getCIAuthToken()}
       />
     ) : null
-  ), [isAuthenticated, apiKey, accessToken, handleConnectionChange, handleSessionEnd, handleSessionId, currentWebsocketUrl]);
+  ), [isAuthenticated, signedConfig, signature, handleConnectionChange, handleSessionEnd, handleSessionId, currentWebsocketUrl]);
 
   // Show auth screen if not authenticated
   if (!isAuthenticated) {
@@ -323,8 +360,7 @@ function App() {
         isOpen={showAuthSettings}
         onClose={() => setShowAuthSettings(false)}
         onSave={handleAuthSettingsSave}
-        currentApiKey={apiKey}
-        currentAccessToken={accessToken}
+        currentSignedConfig={signedConfig}
         rememberCredentials={rememberCredentials}
       />
     </div>

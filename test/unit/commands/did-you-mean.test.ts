@@ -21,7 +21,7 @@ describe("Did You Mean Functionality", () => {
       it(
         "should show Y/N prompt for misspelled commands",
         async () =>
-          new Promise<void>((resolve) => {
+          new Promise<void>((resolve, reject) => {
             const child = spawn("node", [binPath, "interactive"], {
               stdio: ["pipe", "pipe", "pipe"],
               env: {
@@ -33,6 +33,16 @@ describe("Did You Mean Functionality", () => {
 
             let output = "";
             let foundPrompt = false;
+
+            // Safety timeout to force kill if process hangs
+            const killTimeout = setTimeout(() => {
+              child.kill("SIGTERM");
+              reject(
+                new Error(
+                  "Test timed out - process did not exit. Output: " + output,
+                ),
+              );
+            }, 10000);
 
             child.stdout.on("data", (data) => {
               output += data.toString();
@@ -56,6 +66,7 @@ describe("Did You Mean Functionality", () => {
             }, 2000);
 
             child.on("exit", () => {
+              clearTimeout(killTimeout);
               expect(foundPrompt).toBe(true);
               expect(output).toContain(
                 "account current is not an ably command",

@@ -70,7 +70,12 @@ test.describe("Domain-Scoped Authentication E2E Tests", () => {
 
     expect(
       storedKeys.some(
-        (key) => key.includes(".apiKey.") && key.includes(expectedDomain),
+        (key) => key.includes(".signedConfig.") && key.includes(expectedDomain),
+      ),
+    ).toBe(true);
+    expect(
+      storedKeys.some(
+        (key) => key.includes(".signature.") && key.includes(expectedDomain),
       ),
     ).toBe(true);
     expect(
@@ -109,12 +114,20 @@ test.describe("Domain-Scoped Authentication E2E Tests", () => {
     // Wait for terminal
     await expect(page.locator(".xterm")).toBeVisible({ timeout: 15000 });
 
-    // Store a different API key for a different domain in localStorage
+    // Store different signed config for a different domain in localStorage
     await page.evaluate(() => {
-      // Store credentials for a different domain
+      // Store signed credentials for a different domain
+      const mockSignedConfig = JSON.stringify({
+        apiKey: "different-key:secret",
+        timestamp: Date.now(),
+      });
       localStorage.setItem(
-        "ably.web-cli.apiKey.example.com",
-        "different-key:secret",
+        "ably.web-cli.signedConfig.example.com",
+        mockSignedConfig,
+      );
+      localStorage.setItem(
+        "ably.web-cli.signature.example.com",
+        "mock-signature-for-different-domain",
       );
       localStorage.setItem(
         "ably.web-cli.rememberCredentials.example.com",
@@ -127,7 +140,7 @@ test.describe("Domain-Scoped Authentication E2E Tests", () => {
       const data: Record<string, any> = {};
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.includes("ably.web-cli.apiKey.")) {
+        if (key && key.includes("ably.web-cli.signedConfig.")) {
           data[key] = localStorage.getItem(key);
         }
       }
@@ -170,15 +183,24 @@ test.describe("Domain-Scoped Authentication E2E Tests", () => {
 
     await page.goto(getTestUrl());
 
-    // Store credentials for multiple domains
+    // Store signed credentials for multiple domains
     await page.evaluate(() => {
       // Get the actual WebSocket domain from the URL or use default
       const urlParams = new URLSearchParams(window.location.search);
       const serverUrl = urlParams.get("serverUrl") || "wss://web-cli.ably.com";
       const wsDomain = new URL(serverUrl).host;
+
+      const mockSignedConfig = JSON.stringify({
+        apiKey: "current-key:secret",
+        timestamp: Date.now(),
+      });
       localStorage.setItem(
-        `ably.web-cli.apiKey.${wsDomain}`,
-        "current-key:secret",
+        `ably.web-cli.signedConfig.${wsDomain}`,
+        mockSignedConfig,
+      );
+      localStorage.setItem(
+        `ably.web-cli.signature.${wsDomain}`,
+        "mock-signature-current",
       );
       localStorage.setItem(
         `ably.web-cli.rememberCredentials.${wsDomain}`,
@@ -186,9 +208,17 @@ test.describe("Domain-Scoped Authentication E2E Tests", () => {
       );
 
       // Another domain
+      const otherMockSignedConfig = JSON.stringify({
+        apiKey: "other-key:secret",
+        timestamp: Date.now(),
+      });
       localStorage.setItem(
-        "ably.web-cli.apiKey.other-domain.com",
-        "other-key:secret",
+        "ably.web-cli.signedConfig.other-domain.com",
+        otherMockSignedConfig,
+      );
+      localStorage.setItem(
+        "ably.web-cli.signature.other-domain.com",
+        "mock-signature-other",
       );
       localStorage.setItem(
         "ably.web-cli.rememberCredentials.other-domain.com",

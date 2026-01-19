@@ -17,6 +17,7 @@ import {
   executeCommandWithRetry,
   getTerminalContent,
 } from "./wait-helpers";
+import { createSignedConfig } from "./helpers/signing-helper";
 
 // Public terminal server endpoint
 const TERMINAL_SERVER_URL =
@@ -36,8 +37,16 @@ test.describe("Web CLI Prompt Integrity E2E Tests", () => {
 
     await waitForRateLimitIfNeeded();
     incrementConnectionCount();
+
+    // Sign credentials for authentication
+    const { signedConfig, signature } = createSignedConfig({
+      apiKey,
+      timestamp: Date.now(),
+      bypassRateLimit: true,
+    });
+
     await page.goto(
-      `${getTestUrl()}?serverUrl=${encodeURIComponent(TERMINAL_SERVER_URL)}&cliDebug=true&apiKey=${encodeURIComponent(apiKey)}`,
+      `${getTestUrl()}?serverUrl=${encodeURIComponent(TERMINAL_SERVER_URL)}&cliDebug=true&signedConfig=${encodeURIComponent(signedConfig)}&signature=${encodeURIComponent(signature)}`,
       { waitUntil: "networkidle" },
     );
     const terminal = page.locator(".xterm:not(#initial-xterm-placeholder)");
@@ -138,8 +147,16 @@ test.describe("Web CLI Prompt Integrity E2E Tests", () => {
 
     await waitForRateLimitIfNeeded();
     incrementConnectionCount();
+
+    // Sign credentials for authentication
+    const { signedConfig, signature } = createSignedConfig({
+      apiKey,
+      timestamp: Date.now(),
+      bypassRateLimit: true,
+    });
+
     await page.goto(
-      `${getTestUrl()}?serverUrl=${encodeURIComponent(TERMINAL_SERVER_URL)}&cliDebug=true&apiKey=${encodeURIComponent(apiKey)}`,
+      `${getTestUrl()}?serverUrl=${encodeURIComponent(TERMINAL_SERVER_URL)}&cliDebug=true&signedConfig=${encodeURIComponent(signedConfig)}&signature=${encodeURIComponent(signature)}`,
       { waitUntil: "networkidle" },
     );
     const terminal = page.locator(".xterm:not(#initial-xterm-placeholder)");

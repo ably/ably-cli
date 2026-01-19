@@ -143,6 +143,25 @@ vi.mock("./utils/crypto", () => ({
   }),
 }));
 
+// Helper to create test signed configs
+const createTestSignedConfig = (
+  apiKey: string = "test-key",
+  accessToken?: string,
+) => {
+  const config: Record<string, unknown> = {
+    apiKey,
+    timestamp: Date.now(),
+  };
+  if (accessToken) {
+    config.accessToken = accessToken;
+  }
+  return JSON.stringify(config);
+};
+
+// Default test signed config and signature
+const DEFAULT_SIGNED_CONFIG = createTestSignedConfig("test-key", "test-token");
+const DEFAULT_SIGNATURE = "test-signature-mock";
+
 // Simple minimal test component to verify hooks work in the test environment
 const MinimalHookComponent = () => {
   const [state] = React.useState("test");
@@ -374,8 +393,8 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     return render(
       <AblyCliTerminal
         websocketUrl="wss://web-cli.ably.com"
-        ablyAccessToken="test-token"
-        ablyApiKey="test-key"
+        signedConfig={DEFAULT_SIGNED_CONFIG}
+        signature={DEFAULT_SIGNATURE}
         onConnectionStatusChange={onConnectionStatusChangeMock}
         onSessionEnd={onSessionEndMock} // Pass the mock
         {...properties}
@@ -755,6 +774,8 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   });
 
   test.skip("shows installation tip after 6 seconds during connection attempts", async () => {
+    // SKIPPED: This test has timing issues with fake timers in CI environments
+    // The 6-second delay doesn't advance consistently with vi.advanceTimersByTime
     vi.useFakeTimers();
 
     try {
@@ -809,6 +830,8 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   });
 
   test.skip("shows installation tip during reconnection after 6 seconds", async () => {
+    // SKIPPED: This test has timing issues with fake timers in CI environments
+    // The 6-second delay doesn't advance consistently with vi.advanceTimersByTime
     vi.useFakeTimers();
 
     try {
@@ -890,6 +913,8 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   });
 
   test.skip("manual reconnect resets attempt counter after max attempts reached - skipped due to CI timing issues", async () => {
+    // SKIPPED: This test has timing issues in CI environments
+    // Manual reconnect state transitions don't complete reliably with mocked timers
     // Set up max attempts reached state
     vi.mocked(GlobalReconnect.isMaxAttemptsReached).mockReturnValue(true);
     vi.mocked(GlobalReconnect.getMaxAttempts).mockReturnValue(5);
@@ -1063,8 +1088,18 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     );
   });
 
-  test("includes both apiKey and accessToken in auth payload when both provided", async () => {
-    renderTerminal({ ablyApiKey: "key123", ablyAccessToken: "tokenXYZ" });
+  test("includes signedConfig, signature, and extracted credentials in auth payload", async () => {
+    const mockConfig = JSON.stringify({
+      apiKey: "appId.keyId:keySecret",
+      timestamp: Date.now(),
+      accessToken: "dashboard-token",
+    });
+    const mockSignature = "abc123mockhmacsha256signature";
+
+    renderTerminal({
+      signedConfig: mockConfig,
+      signature: mockSignature,
+    });
 
     // Wait until the WebSocket mock fires the automatic 'open' event and the component sends auth payload
     await act(async () => {
@@ -1073,8 +1108,40 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     await waitFor(() => expect(mockSend).toHaveBeenCalled());
 
     const sentPayload = JSON.parse(mockSend.mock.calls[0][0]);
-    expect(sentPayload.apiKey).toBe("key123");
-    expect(sentPayload.accessToken).toBe("tokenXYZ");
+    // Signed config auth should be present
+    expect(sentPayload.config).toBe(mockConfig);
+    expect(sentPayload.signature).toBe(mockSignature);
+    // Credentials should be extracted from signed config for server convenience
+    expect(sentPayload.apiKey).toBe("appId.keyId:keySecret");
+    expect(sentPayload.accessToken).toBe("dashboard-token");
+  });
+
+  test("works without accessToken in signed config (anonymous mode)", async () => {
+    const mockConfig = JSON.stringify({
+      apiKey: "appId.keyId:keySecret",
+      timestamp: Date.now(),
+      // No accessToken - anonymous mode
+    });
+    const mockSignature = "abc123mockhmacsha256signature";
+
+    renderTerminal({
+      signedConfig: mockConfig,
+      signature: mockSignature,
+    });
+
+    // Wait until the WebSocket mock fires the automatic 'open' event and the component sends auth payload
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    await waitFor(() => expect(mockSend).toHaveBeenCalled());
+
+    const sentPayload = JSON.parse(mockSend.mock.calls[0][0]);
+    // Signed config should be present
+    expect(sentPayload.config).toBe(mockConfig);
+    expect(sentPayload.signature).toBe(mockSignature);
+    // Only apiKey extracted, no accessToken
+    expect(sentPayload.apiKey).toBe("appId.keyId:keySecret");
+    expect(sentPayload.accessToken).toBeUndefined();
   });
 
   test("increments only once when both error and close events fire for the same failure", async () => {
@@ -1144,7 +1211,8 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   });
 
   test.skip("connection timeout triggers error after 30 seconds", async () => {
-    // Skip this test for now due to timing issues with fake timers
+    // SKIPPED: This test has timing issues with fake timers
+    // The 30-second timeout doesn't trigger consistently with vi.advanceTimersByTime
     vi.useFakeTimers();
 
     renderTerminal();
@@ -1411,8 +1479,8 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
       <AblyCliTerminal
         ref={reference}
         websocketUrl="wss://web-cli.ably.com"
-        ablyAccessToken="test-token"
-        ablyApiKey="test-key"
+        signedConfig={DEFAULT_SIGNED_CONFIG}
+        signature={DEFAULT_SIGNATURE}
         enableSplitScreen={true}
         showSplitControl={false}
       />,
@@ -1546,8 +1614,8 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   });
 
   test.skip("prompt detection correctly handles ANSI color codes", async () => {
-    // Skip this test due to React fiber internal structure changes that are not stable
-
+    // SKIPPED: This test depends on React fiber internal structure
+    // React's internal structure is not stable across versions and breaks this test
     // Create a mock component and socket
     const mockSocket = {
       readyState: WebSocket.OPEN,
@@ -1584,9 +1652,9 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   });
 
   test.skip("onConnectionStatusChange only reports status for the primary terminal in split-screen mode", async () => {
-    // Skip this test if the environment is not stable enough
-    // This test verifies implementation details that are subject to change
-    // The core functionality is tested through proper unit and integration tests
+    // SKIPPED: This test verifies implementation details that are subject to change
+    // Core functionality is covered by other unit and integration tests
+    // The environment is not stable enough for this internal implementation test
     vi.spyOn(console, "log").mockImplementation(() => {}); // Suppress console.log during test
 
     // Mark this test as skipped since it requires internal details that are not stable
@@ -1743,8 +1811,8 @@ describe("AblyCliTerminal - Credential Validation", () => {
     return render(
       <AblyCliTerminal
         websocketUrl="wss://web-cli.ably.com"
-        ablyAccessToken="test-token"
-        ablyApiKey="test-key"
+        signedConfig={DEFAULT_SIGNED_CONFIG}
+        signature={DEFAULT_SIGNATURE}
         onConnectionStatusChange={onConnectionStatusChangeMock}
         resumeOnReload={true}
         {...properties}
@@ -1767,8 +1835,8 @@ describe("AblyCliTerminal - Credential Validation", () => {
     );
 
     // Render with different credentials (which will generate a different hash)
-    // The mock will generate 'hash-new-key:new-token' which won't match 'old-hash-value'
-    renderTerminal({ ablyApiKey: "new-key", ablyAccessToken: "new-token" });
+    const newConfig = createTestSignedConfig("new-key", "new-token");
+    renderTerminal({ signedConfig: newConfig });
 
     // Wait a bit for credential validation to complete
     await act(async () => {
@@ -1819,8 +1887,8 @@ describe("AblyCliTerminal - Credential Validation", () => {
     // Spy on console.log before rendering
     const consoleLogSpy = vi.spyOn(console, "log");
 
-    // Render with matching credentials
-    renderTerminal({ ablyApiKey: "test-key", ablyAccessToken: "test-token" });
+    // Render with matching credentials (default config has test-key:test-token)
+    renderTerminal();
 
     // Wait for the session to be restored
     await waitFor(() => {
@@ -1869,9 +1937,12 @@ describe("AblyCliTerminal - Credential Validation", () => {
   }, 10_000);
 
   test("stores credential hash when new session is created", async () => {
+    const customConfig = createTestSignedConfig(
+      "test-key-123",
+      "test-token-456",
+    );
     renderTerminal({
-      ablyApiKey: "test-key-123",
-      ablyAccessToken: "test-token-456",
+      signedConfig: customConfig,
     });
 
     // Wait for initialization
@@ -1914,7 +1985,7 @@ describe("AblyCliTerminal - Credential Validation", () => {
       "hash-to-purge",
     );
 
-    renderTerminal({ ablyApiKey: "test-key", ablyAccessToken: "test-token" });
+    renderTerminal();
 
     await act(async () => {
       await Promise.resolve();
@@ -1948,8 +2019,9 @@ describe("AblyCliTerminal - Credential Validation", () => {
     ).toBeNull();
   }, 10_000);
 
-  test("handles missing credentials (undefined apiKey)", async () => {
-    renderTerminal({ ablyApiKey: undefined, ablyAccessToken: "test-token" });
+  test("handles config without accessToken (anonymous mode)", async () => {
+    const anonymousConfig = createTestSignedConfig("test-key"); // No accessToken
+    renderTerminal({ signedConfig: anonymousConfig });
 
     // Wait for initialization
     await act(async () => {
@@ -1974,7 +2046,7 @@ describe("AblyCliTerminal - Credential Validation", () => {
       await new Promise((resolve) => setTimeout(resolve, 20));
     });
 
-    // Should store session and hash even with undefined apiKey (domain-scoped)
+    // Should store session and hash even without accessToken (anonymous mode)
     expect(
       globalThis.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
     ).toBe("session-no-key");
@@ -1982,7 +2054,7 @@ describe("AblyCliTerminal - Credential Validation", () => {
       globalThis.sessionStorage.getItem(
         "ably.cli.credentialHash.web-cli.ably.com",
       ),
-    ).toBe("hash-:test-token");
+    ).toBe("hash-test-key:"); // apiKey present, no accessToken
   }, 10_000);
 
   test("does not store session when resumeOnReload is false", async () => {
@@ -2054,8 +2126,8 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
     return render(
       <AblyCliTerminal
         websocketUrl="wss://web-cli.ably.com"
-        ablyAccessToken="test-token"
-        ablyApiKey="test-key"
+        signedConfig={DEFAULT_SIGNED_CONFIG}
+        signature={DEFAULT_SIGNATURE}
         onConnectionStatusChange={onConnectionStatusChangeMock}
         resumeOnReload={true}
         {...properties}
@@ -2065,9 +2137,12 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
 
   test("credentials are not shared between different serverUrls", async () => {
     // First, render with the default server and store credentials
+    const secureConfig = createTestSignedConfig(
+      "secure-key-123",
+      "secure-token-456",
+    );
     const { unmount } = renderTerminal({
-      ablyApiKey: "secure-key-123",
-      ablyAccessToken: "secure-token-456",
+      signedConfig: secureConfig,
     });
 
     // Wait for initialization
@@ -2103,11 +2178,10 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
     unmount();
     mockSend.mockClear();
 
-    // Now render with a different server URL
+    // Now render with a different server URL (reusing secureConfig from above)
     renderTerminal({
       websocketUrl: "wss://attacker.example.com",
-      ablyApiKey: "secure-key-123",
-      ablyAccessToken: "secure-token-456",
+      signedConfig: secureConfig,
     });
 
     // Wait for WebSocket connection and the open event to be triggered
@@ -2158,8 +2232,6 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
     // Render terminal connecting to web-cli.ably.com
     renderTerminal({
       websocketUrl: "wss://web-cli.ably.com",
-      ablyApiKey: "test-key",
-      ablyAccessToken: "test-token",
       resumeOnReload: true,
     });
 
@@ -2211,10 +2283,13 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
     );
 
     // Render terminal with a different, potentially malicious domain
+    const differentConfig = createTestSignedConfig(
+      "different-key",
+      "different-token",
+    );
     renderTerminal({
       websocketUrl: "wss://evil-attacker.com",
-      ablyApiKey: "different-key",
-      ablyAccessToken: "different-token",
+      signedConfig: differentConfig,
     });
 
     // Wait for WebSocket connection and the open event to be triggered
@@ -2294,8 +2369,8 @@ describe("AblyCliTerminal - Initial Command Execution", () => {
     return render(
       <AblyCliTerminal
         websocketUrl="wss://web-cli.ably.com"
-        ablyAccessToken="test-token"
-        ablyApiKey="test-key"
+        signedConfig={DEFAULT_SIGNED_CONFIG}
+        signature={DEFAULT_SIGNATURE}
         onConnectionStatusChange={onConnectionStatusChangeMock}
         onSessionEnd={onSessionEndMock}
         {...properties}
