@@ -2542,3 +2542,48 @@ describe("AblyCliTerminal - Initial Command Execution", () => {
     expect(hasTestCmd).toBe(true);
   }, 15_000);
 });
+
+describe("AblyCliTerminal - Unmount cleanup", () => {
+  test("sends close code 4001 (user-closed-panel) on unmount", async () => {
+    mockClose.mockClear();
+
+    const { unmount } = render(
+      <AblyCliTerminal
+        websocketUrl="wss://test.ably.com"
+        ablyApiKey="test-key"
+      />,
+    );
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    expect(mockSocketInstance).toBeTruthy();
+    expect(mockSocketInstance.readyState).toBe(WebSocket.OPEN);
+
+    unmount();
+
+    expect(mockClose).toHaveBeenCalledWith(4001, "user-closed-panel");
+  });
+
+  test("does not call close if socket already closing", async () => {
+    mockClose.mockClear();
+
+    const { unmount } = render(
+      <AblyCliTerminal
+        websocketUrl="wss://test.ably.com"
+        ablyApiKey="test-key"
+      />,
+    );
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    mockSocketInstance.readyState = WebSocket.CLOSING;
+
+    unmount();
+
+    expect(mockClose).not.toHaveBeenCalled();
+  });
+});
