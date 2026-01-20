@@ -141,14 +141,7 @@ describe("Help Output Consistency", () => {
         });
 
         // Both should list the same commands (ignoring the ably prefix)
-        const commands = [
-          "current",
-          "list",
-          "login",
-          "logout",
-          "stats",
-          "switch",
-        ];
+        const commands = ["current", "list", "login", "logout", "switch"];
 
         commands.forEach((cmd) => {
           expect(nonInteractive).toContain(`accounts ${cmd}`);

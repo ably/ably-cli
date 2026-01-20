@@ -34,7 +34,6 @@ The CLI uses topics (space-separated) to group related commands logically.
 - `$ ably accounts list`: Lists locally configured accounts (aliases, token details, user info, account details).
 - `$ ably accounts logout [ALIAS]`: Removes the access token and associated data for the specified (or default) account after warning.
 - `$ ably accounts current`: Shows the currently selected account (alias or `default`) and verifies the token against the Control API `/me` endpoint.
-- `$ ably accounts stats`: Views account stats. Supports `--live` for polling key metrics (peak connections, channels, message throughput, etc.).
 - `$ ably accounts switch [ALIAS]`: Switches the active account configuration to the specified alias or prompts for selection.
 
 **App Management (`ably apps`)**
@@ -45,7 +44,6 @@ The CLI uses topics (space-separated) to group related commands logically.
 - `$ ably apps update ID`: Updates the app specified by `ID`. Supports `--name`, `--tls-only`.
 - `$ ably apps delete [ID]`: Deletes the specified (or current) app after confirmation. Supports `--force`.
 - `$ ably apps set-apns-p12 ID`: Uploads an APNS P12 certificate for the specified app `ID`. Requires `--certificate`. Supports `--password`, `--use-for-sandbox`.
-- `$ ably apps stats [ID]`: Views app stats for the specified (or current) app. Supports `--live` polling, `--unit`, `--start`, `--end`, `--limit`.
 - `$ ably apps switch [APPID]`: Switches the active app configuration to the specified App ID or prompts for selection.
 - `$ ably apps current`: Shows the currently selected app configuration.
 
@@ -92,7 +90,6 @@ The CLI uses topics (space-separated) to group related commands logically.
 **Connections (`ably connections`)**
 *(Interact with Pub/Sub connections)*
 
-- `$ ably connections stats`: Shows connection stats (similar to `ably apps stats` but connection-focused). Supports `--live`.
 - `$ ably connections test`: Performs a simple connection test. Supports transport options.
 - `$ ably connections logs [TOPIC]`: Alias for `ably logs connection-lifecycle subscribe`. (Currently only supports `connection-lifecycle`).
 
@@ -156,6 +153,12 @@ The CLI uses topics (space-separated) to group related commands logically.
 - `$ ably queues list`: Lists all queues for the current/specified app.
 - `$ ably queues create`: Creates a queue. Requires various flags.
 - `$ ably queues delete QUEUENAME`: Deletes a queue after confirmation. Supports `--force`.
+
+**Statistics (`ably stats`)**
+*(View usage statistics for accounts and apps)*
+
+- `$ ably stats account`: Views account stats. Supports `--live` for polling key metrics (peak connections, channels, message throughput, etc.), `--unit`, `--start`, `--end`, `--limit`.
+- `$ ably stats app [ID]`: Views app stats for the specified (or current) app. Supports `--live` polling, `--unit`, `--start`, `--end`, `--limit`.
 
 **Benchmarking (`ably bench`)**
 *(Run benchmark tests)*
@@ -315,7 +318,7 @@ The `AblyCliTerminal` React component can optionally support a split-screen mode
     - Uses a distinct client ID prefix (`ably-mcp-`).
 - **Available MCP Commands (Subset of CLI)**:
     - `ably apps list`
-    - `ably apps stats`
+    - `ably stats app`
     - `ably auth keys list`
     - `ably channels history`
     - `ably channels publish`

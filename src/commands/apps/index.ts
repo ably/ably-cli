@@ -12,7 +12,6 @@ export default class AppsCommand extends BaseTopicCommand {
     "$ ably apps update",
     "$ ably apps delete",
     "$ ably apps set-apns-p12",
-    "$ ably apps stats",
     "$ ably apps channel-rules list",
     "$ ably apps switch my-app",
   ];
