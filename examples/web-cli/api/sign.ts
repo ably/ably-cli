@@ -13,6 +13,8 @@ import { signCredentials, getSigningSecret } from "../server/sign-handler.js";
  * Request Body:
  * - apiKey: string (required) - Ably API key in format "appId.keyId:secret"
  * - bypassRateLimit: boolean (optional) - Set to true for CI/testing
+ * - endpoint: string (optional) - Custom Ably endpoint URL
+ * - controlAPIHost: string (optional) - Custom control API host URL
  *
  * Response:
  * - signedConfig: string - JSON-encoded config that was signed
@@ -35,14 +37,14 @@ export default async function handler(
     return res.status(500).json({ error: "Signing secret not configured" });
   }
 
-  const { apiKey, bypassRateLimit } = req.body;
+  const { apiKey, bypassRateLimit, endpoint, controlAPIHost } = req.body;
 
   if (!apiKey) {
     return res.status(400).json({ error: "apiKey is required" });
   }
 
   // Use shared signing logic
-  const result = signCredentials({ apiKey, bypassRateLimit }, secret);
+  const result = signCredentials({ apiKey, bypassRateLimit, endpoint, controlAPIHost }, secret);
 
   res.status(200).json(result);
 }

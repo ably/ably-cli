@@ -36,7 +36,7 @@ function apiSignPlugin(): Plugin {
 
     req.on("end", () => {
       try {
-        const { apiKey, bypassRateLimit } = JSON.parse(body);
+        const { apiKey, bypassRateLimit, endpoint, controlAPIHost } = JSON.parse(body);
 
         if (!apiKey) {
           res.statusCode = 400;
@@ -46,7 +46,7 @@ function apiSignPlugin(): Plugin {
         }
 
         // Use shared signing logic
-        const result = signCredentials({ apiKey, bypassRateLimit }, secret);
+        const result = signCredentials({ apiKey, bypassRateLimit, endpoint, controlAPIHost }, secret);
 
         res.statusCode = 200;
         res.setHeader("Content-Type", "application/json");

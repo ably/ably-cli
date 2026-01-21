@@ -8,6 +8,8 @@ import crypto from "crypto";
 export interface SignRequest {
   apiKey: string;
   bypassRateLimit?: boolean;
+  endpoint?: string;
+  controlAPIHost?: string;
 }
 
 export interface SignResponse {
@@ -25,13 +27,15 @@ export function signCredentials(
   request: SignRequest,
   secret: string,
 ): SignResponse {
-  const { apiKey, bypassRateLimit } = request;
+  const { apiKey, bypassRateLimit, endpoint, controlAPIHost } = request;
 
   // Build config object (matches terminal server expectations)
   const config = {
     apiKey,
     timestamp: Date.now(),
     bypassRateLimit: bypassRateLimit || false,
+    ...(endpoint && { endpoint }),
+    ...(controlAPIHost && { controlAPIHost }),
   };
 
   // Serialize to JSON - this exact string is what gets signed
