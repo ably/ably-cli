@@ -169,13 +169,20 @@ function App() {
   // Handle authentication
   const handleAuthenticate = useCallback(async (newApiKey: string, remember?: boolean) => {
     try {
+      // Optional: Get endpoint configuration from environment variables
+      // Real implementations should determine these values based on their requirements
+      const endpoint = import.meta.env.VITE_ABLY_ENDPOINT;
+      const controlAPIHost = import.meta.env.VITE_ABLY_CONTROL_HOST;
+
       // Call /api/sign endpoint to get signed config
       const response = await fetch('/api/sign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           apiKey: newApiKey,
-          bypassRateLimit: false
+          bypassRateLimit: false,
+          ...(endpoint && { endpoint }),
+          ...(controlAPIHost && { controlAPIHost }),
         })
       });
 
