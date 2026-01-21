@@ -58,6 +58,16 @@ echo "🧪 Step 3: Running unit tests..."
 run_quiet pnpm test:unit
 echo "   ✅ Unit tests passed"
 
+# Step 3b: React Web CLI package tests
+echo "🧪 Step 3b: Running react-web-cli package tests..."
+run_quiet pnpm test:react-web-cli
+echo "   ✅ React web CLI tests passed"
+
+# Step 3c: Example tests
+echo "🧪 Step 3c: Running example tests..."
+run_quiet pnpm --filter ably-web-cli-example test
+echo "   ✅ Example tests passed"
+
 # Step 4: Basic E2E tests (critical path)
 echo "🎯 Step 4: Running basic E2E tests..."
 run_quiet pnpm test:e2e:basic
@@ -69,7 +79,7 @@ run_quiet pnpm test:integration
 echo "   ✅ Integration tests passed"
 
 # Note: Full E2E test suite should be run in CI, not pre-push
-# Pre-push only runs unit, integration, and basic E2E tests
+# Pre-push runs: unit tests, package tests (react-web-cli, examples), integration, and basic E2E tests
 
 
 echo "✅ All pre-push validation steps completed successfully!"
