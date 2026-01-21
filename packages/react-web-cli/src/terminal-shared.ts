@@ -211,9 +211,21 @@ export function createAuthPayload(
       if (parsedConfig.accessToken) {
         payload.accessToken = parsedConfig.accessToken;
       }
+
+      // Extract endpoint configuration and add to environment variables
+      if (parsedConfig.endpoint) {
+        payload.environmentVariables.ABLY_ENDPOINT = parsedConfig.endpoint;
+      }
+      if (parsedConfig.controlAPIHost) {
+        payload.environmentVariables.ABLY_CONTROL_API_HOST =
+          parsedConfig.controlAPIHost;
+      }
+
       console.log("[createAuthPayload] Using signed config auth", {
         hasApiKey: !!payload.apiKey,
         hasAccessToken: !!payload.accessToken,
+        hasEndpoint: !!parsedConfig.endpoint,
+        hasControlAPIHost: !!parsedConfig.controlAPIHost,
       });
     } catch (error) {
       console.warn("[createAuthPayload] Failed to parse signed config:", error);
