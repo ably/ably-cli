@@ -288,6 +288,9 @@ importers:
       vite-tsconfig-paths:
         specifier: ^5.1.4
         version: 5.1.4(typescript@5.7.3)(vite@6.3.4(@types/node@16.18.11)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.4))
+      vitest:
+        specifier: ^4.0.0
+        version: 4.0.14(@edge-runtime/vm@3.2.0)(@types/node@16.18.11)(@vitest/ui@4.0.14)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.29.2)(tsx@4.19.4)
 
   packages/react-web-cli:
     dependencies:
@@ -9153,6 +9156,14 @@ snapshots:
       chai: 6.2.1
       tinyrainbow: 3.0.3
 
+  '@vitest/mocker@4.0.14(vite@6.3.4(@types/node@16.18.11)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.4))':
+    dependencies:
+      '@vitest/spy': 4.0.14
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 6.3.4(@types/node@16.18.11)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.4)
+
   '@vitest/mocker@4.0.14(vite@6.3.4(@types/node@20.17.30)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.4))':
     dependencies:
       '@vitest/spy': 4.0.14
@@ -9195,7 +9206,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vitest: 4.0.14(@edge-runtime/vm@3.2.0)(@types/node@20.17.30)(@vitest/ui@4.0.14)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.29.2)(tsx@4.19.4)
+      vitest: 4.0.14(@edge-runtime/vm@3.2.0)(@types/node@16.18.11)(@vitest/ui@4.0.14)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.29.2)(tsx@4.19.4)
 
   '@vitest/utils@4.0.14':
     dependencies:
@@ -13273,6 +13284,46 @@ snapshots:
       jiti: 2.4.2
       lightningcss: 1.29.2
       tsx: 4.19.4
+
+  vitest@4.0.14(@edge-runtime/vm@3.2.0)(@types/node@16.18.11)(@vitest/ui@4.0.14)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.29.2)(tsx@4.19.4):
+    dependencies:
+      '@vitest/expect': 4.0.14
+      '@vitest/mocker': 4.0.14(vite@6.3.4(@types/node@16.18.11)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.4))
+      '@vitest/pretty-format': 4.0.14
+      '@vitest/runner': 4.0.14
+      '@vitest/snapshot': 4.0.14
+      '@vitest/spy': 4.0.14
+      '@vitest/utils': 4.0.14
+      es-module-lexer: 1.7.0
+      expect-type: 1.2.2
+      magic-string: 0.30.21
+      obug: 2.1.1
+      pathe: 2.0.3
+      picomatch: 4.0.3
+      std-env: 3.10.0
+      tinybench: 2.9.0
+      tinyexec: 0.3.2
+      tinyglobby: 0.2.15
+      tinyrainbow: 3.0.3
+      vite: 6.3.4(@types/node@16.18.11)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.4)
+      why-is-node-running: 2.3.0
+    optionalDependencies:
+      '@edge-runtime/vm': 3.2.0
+      '@types/node': 16.18.11
+      '@vitest/ui': 4.0.14(vitest@4.0.14)
+      jsdom: 26.1.0
+    transitivePeerDependencies:
+      - jiti
+      - less
+      - lightningcss
+      - msw
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - terser
+      - tsx
+      - yaml
 
   vitest@4.0.14(@edge-runtime/vm@3.2.0)(@types/node@20.17.30)(@vitest/ui@4.0.14)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.29.2)(tsx@4.19.4):
     dependencies:
