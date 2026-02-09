@@ -4,7 +4,7 @@ export default class SpacesCursorsIndex extends Command {
   static override description = "Commands for cursor management in Ably Spaces";
 
   static override examples = [
-    "$ ably spaces cursors set my-space",
+    "$ ably spaces cursors set my-space --x 100 --y 200",
     "$ ably spaces cursors subscribe my-space",
     "$ ably spaces cursors get-all my-space",
   ];

@@ -4145,7 +4145,7 @@ DESCRIPTION
   Commands for interacting with Cursors in Ably Spaces
 
 EXAMPLES
-  $ ably spaces cursors set my-space --position '{"x": 100, "y": 200}' --data '{"color": "red"}'
+  $ ably spaces cursors set my-space --x 100 --y 200 --data '{"color": "red"}'
 
   $ ably spaces cursors subscribe my-space
 
