@@ -14,7 +14,7 @@ interface CliWindow extends Window {
 }
 
 // Default WebSocket URL - use public endpoint for production, localhost for development
-const DEFAULT_WEBSOCKET_URL = "wss://web-cli.ably.com";
+const DEFAULT_WEBSOCKET_URL = "wss://web-cli-terminal.ably-dev.com";
 
 // Get WebSocket URL from query parameters only
 const getWebSocketUrl = () => {
@@ -139,7 +139,7 @@ function App() {
   const [connectionStatus, setConnectionStatus] = useState<TermStatus>('disconnected');
   const [displayMode, setDisplayMode] = useState<"fullscreen" | "drawer">(initialMode);
   const [showAuthSettings, setShowAuthSettings] = useState(false);
-  
+
   // Initialize signed credentials
   const initialCreds = getInitialCredentials();
   const [signedConfig, setSignedConfig] = useState<string | undefined>(initialCreds.signedConfig);
@@ -277,8 +277,8 @@ function App() {
 
   // Show auth screen if not authenticated
   if (!isAuthenticated) {
-    return <AuthScreen 
-      onAuthenticate={handleAuthenticate} 
+    return <AuthScreen
+      onAuthenticate={handleAuthenticate}
       rememberCredentials={rememberCredentials}
       onRememberChange={setRememberCredentials}
     />;

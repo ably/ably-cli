@@ -20,7 +20,7 @@ const DRAWER_OPEN_KEY = "ablyCliDrawerOpen";
 
 // Terminal server endpoint - use environment variable or default to public server
 const TERMINAL_SERVER_URL =
-  process.env.TERMINAL_SERVER_URL || "wss://web-cli.ably.com";
+  process.env.TERMINAL_SERVER_URL || "wss://web-cli-terminal.ably-dev.com";
 
 /**
  * Wait for the terminal prompt to appear, indicating the terminal is ready

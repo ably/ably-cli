@@ -14,7 +14,7 @@ import { waitForRateLimitLock } from "./rate-limit-lock";
 
 // Public terminal server endpoint
 const TERMINAL_SERVER_URL =
-  process.env.TERMINAL_SERVER_URL || "wss://web-cli.ably.com";
+  process.env.TERMINAL_SERVER_URL || "wss://web-cli-terminal.ably-dev.com";
 
 test.describe("Web CLI Reconnection Diagnostic E2E Tests", () => {
   // Increase timeout significantly for CI environments

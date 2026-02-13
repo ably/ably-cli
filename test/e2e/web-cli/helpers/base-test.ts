@@ -162,7 +162,7 @@ export const test = base.extend({
     // Add a small delay between tests when running against production
     const isProduction =
       !process.env.TERMINAL_SERVER_URL ||
-      process.env.TERMINAL_SERVER_URL.includes("web-cli.ably.com");
+      process.env.TERMINAL_SERVER_URL.includes("web-cli-terminal.ably-dev.com");
     if (isProduction) {
       await page.waitForTimeout(1000);
     }

@@ -18,7 +18,7 @@ import { waitForRateLimitLock } from "./rate-limit-lock";
 const TERMINAL_SERVER_URL =
   process.env.TERMINAL_SERVER_URL ||
   process.env.ABLY_CLI_WEBSOCKET_URL ||
-  "wss://web-cli.ably.com";
+  "wss://web-cli-terminal.ably-dev.com";
 
 // Removed _waitForPrompt - using wait helpers instead
 
@@ -284,7 +284,7 @@ test.describe("Session Resume E2E Tests", () => {
         // Extract server URL from location params
         const params = new URLSearchParams(win.location.search);
         const serverUrlParam = params.get("serverUrl");
-        let domain = "web-cli.ably.com";
+        let domain = "web-cli-terminal.ably-dev.com";
         if (serverUrlParam) {
           try {
             domain = new URL(decodeURIComponent(serverUrlParam)).host;
@@ -320,7 +320,7 @@ test.describe("Session Resume E2E Tests", () => {
         // Extract server URL from location params
         const params = new URLSearchParams(win.location.search);
         const serverUrlParam = params.get("serverUrl");
-        let domain = "web-cli.ably.com";
+        let domain = "web-cli-terminal.ably-dev.com";
         if (serverUrlParam) {
           try {
             domain = new URL(decodeURIComponent(serverUrlParam)).host;

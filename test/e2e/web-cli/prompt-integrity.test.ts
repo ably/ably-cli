@@ -21,7 +21,7 @@ import { createSignedConfig } from "./helpers/signing-helper";
 
 // Public terminal server endpoint
 const TERMINAL_SERVER_URL =
-  process.env.TERMINAL_SERVER_URL || "wss://web-cli.ably.com";
+  process.env.TERMINAL_SERVER_URL || "wss://web-cli-terminal.ably-dev.com";
 
 test.describe("Web CLI Prompt Integrity E2E Tests", () => {
   test.setTimeout(120_000);

@@ -392,7 +392,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   ) => {
     return render(
       <AblyCliTerminal
-        websocketUrl="wss://web-cli.ably.com"
+        websocketUrl="wss://web-cli-terminal.ably-dev.com"
         signedConfig={DEFAULT_SIGNED_CONFIG}
         signature={DEFAULT_SIGNATURE}
         onConnectionStatusChange={onConnectionStatusChangeMock}
@@ -1000,11 +1000,11 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     // Pre-populate sessionStorage with a sessionId and matching credential hash (domain-scoped)
     const expectedHash = "hash-test-key:test-token"; // Based on our mock
     globalThis.sessionStorage.setItem(
-      "ably.cli.sessionId.web-cli.ably.com",
+      "ably.cli.sessionId.web-cli-terminal.ably-dev.com",
       "resume-123",
     );
     globalThis.sessionStorage.setItem(
-      "ably.cli.credentialHash.web-cli.ably.com",
+      "ably.cli.credentialHash.web-cli-terminal.ably-dev.com",
       expectedHash,
     );
 
@@ -1018,7 +1018,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     await waitFor(() => {
       expect(consoleLogSpy).toHaveBeenCalledWith(
         "[AblyCLITerminal] Restored session with matching credentials for domain:",
-        "web-cli.ably.com",
+        "web-cli-terminal.ably-dev.com",
       );
     });
 
@@ -1079,7 +1079,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
       () =>
         expect(
           globalThis.sessionStorage.getItem(
-            "ably.cli.sessionId.web-cli.ably.com",
+            "ably.cli.sessionId.web-cli-terminal.ably-dev.com",
           ),
         ).toBe("new-session-456"),
       {
@@ -1478,7 +1478,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     render(
       <AblyCliTerminal
         ref={reference}
-        websocketUrl="wss://web-cli.ably.com"
+        websocketUrl="wss://web-cli-terminal.ably-dev.com"
         signedConfig={DEFAULT_SIGNED_CONFIG}
         signature={DEFAULT_SIGNATURE}
         enableSplitScreen={true}
@@ -1810,7 +1810,7 @@ describe("AblyCliTerminal - Credential Validation", () => {
   ) => {
     return render(
       <AblyCliTerminal
-        websocketUrl="wss://web-cli.ably.com"
+        websocketUrl="wss://web-cli-terminal.ably-dev.com"
         signedConfig={DEFAULT_SIGNED_CONFIG}
         signature={DEFAULT_SIGNATURE}
         onConnectionStatusChange={onConnectionStatusChangeMock}
@@ -1826,11 +1826,11 @@ describe("AblyCliTerminal - Credential Validation", () => {
 
     // Pre-populate sessionStorage with a sessionId and credential hash (domain-scoped)
     globalThis.sessionStorage.setItem(
-      "ably.cli.sessionId.web-cli.ably.com",
+      "ably.cli.sessionId.web-cli-terminal.ably-dev.com",
       "old-session-123",
     );
     globalThis.sessionStorage.setItem(
-      "ably.cli.credentialHash.web-cli.ably.com",
+      "ably.cli.credentialHash.web-cli-terminal.ably-dev.com",
       "old-hash-value",
     );
 
@@ -1863,11 +1863,13 @@ describe("AblyCliTerminal - Credential Validation", () => {
 
     // Verify storage was cleared due to credential mismatch
     expect(
-      globalThis.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem(
+        "ably.cli.sessionId.web-cli-terminal.ably-dev.com",
+      ),
     ).toBeNull();
     expect(
       globalThis.sessionStorage.getItem(
-        "ably.cli.credentialHash.web-cli.ably.com",
+        "ably.cli.credentialHash.web-cli-terminal.ably-dev.com",
       ),
     ).toBeNull();
   });
@@ -1876,11 +1878,11 @@ describe("AblyCliTerminal - Credential Validation", () => {
     // First setup the stored session with matching hash
     const expectedHash = "hash-test-key:test-token"; // Based on our mock
     globalThis.sessionStorage.setItem(
-      "ably.cli.sessionId.web-cli.ably.com",
+      "ably.cli.sessionId.web-cli-terminal.ably-dev.com",
       "session-456",
     );
     globalThis.sessionStorage.setItem(
-      "ably.cli.credentialHash.web-cli.ably.com",
+      "ably.cli.credentialHash.web-cli-terminal.ably-dev.com",
       expectedHash,
     );
 
@@ -1894,7 +1896,7 @@ describe("AblyCliTerminal - Credential Validation", () => {
     await waitFor(() => {
       expect(consoleLogSpy).toHaveBeenCalledWith(
         "[AblyCLITerminal] Restored session with matching credentials for domain:",
-        "web-cli.ably.com",
+        "web-cli-terminal.ably-dev.com",
       );
     });
 
@@ -1925,11 +1927,13 @@ describe("AblyCliTerminal - Credential Validation", () => {
 
     // Verify storage wasn't cleared
     expect(
-      globalThis.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem(
+        "ably.cli.sessionId.web-cli-terminal.ably-dev.com",
+      ),
     ).toBe("session-456");
     expect(
       globalThis.sessionStorage.getItem(
-        "ably.cli.credentialHash.web-cli.ably.com",
+        "ably.cli.credentialHash.web-cli-terminal.ably-dev.com",
       ),
     ).toBe(expectedHash);
 
@@ -1965,11 +1969,13 @@ describe("AblyCliTerminal - Credential Validation", () => {
 
     // Both sessionId and credential hash should be stored (domain-scoped)
     expect(
-      globalThis.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem(
+        "ably.cli.sessionId.web-cli-terminal.ably-dev.com",
+      ),
     ).toBe("new-session-789");
     expect(
       globalThis.sessionStorage.getItem(
-        "ably.cli.credentialHash.web-cli.ably.com",
+        "ably.cli.credentialHash.web-cli-terminal.ably-dev.com",
       ),
     ).toBe("hash-test-key-123:test-token-456");
   }, 10_000);
@@ -1977,11 +1983,11 @@ describe("AblyCliTerminal - Credential Validation", () => {
   test("clears credential hash when session is purged due to server disconnect", async () => {
     // Set up initial state with stored session and hash (domain-scoped)
     globalThis.sessionStorage.setItem(
-      "ably.cli.sessionId.web-cli.ably.com",
+      "ably.cli.sessionId.web-cli-terminal.ably-dev.com",
       "session-to-purge",
     );
     globalThis.sessionStorage.setItem(
-      "ably.cli.credentialHash.web-cli.ably.com",
+      "ably.cli.credentialHash.web-cli-terminal.ably-dev.com",
       "hash-to-purge",
     );
 
@@ -2010,11 +2016,13 @@ describe("AblyCliTerminal - Credential Validation", () => {
 
     // Both sessionId and credential hash should be cleared (domain-scoped)
     expect(
-      globalThis.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem(
+        "ably.cli.sessionId.web-cli-terminal.ably-dev.com",
+      ),
     ).toBeNull();
     expect(
       globalThis.sessionStorage.getItem(
-        "ably.cli.credentialHash.web-cli.ably.com",
+        "ably.cli.credentialHash.web-cli-terminal.ably-dev.com",
       ),
     ).toBeNull();
   }, 10_000);
@@ -2048,11 +2056,13 @@ describe("AblyCliTerminal - Credential Validation", () => {
 
     // Should store session and hash even without accessToken (anonymous mode)
     expect(
-      globalThis.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem(
+        "ably.cli.sessionId.web-cli-terminal.ably-dev.com",
+      ),
     ).toBe("session-no-key");
     expect(
       globalThis.sessionStorage.getItem(
-        "ably.cli.credentialHash.web-cli.ably.com",
+        "ably.cli.credentialHash.web-cli-terminal.ably-dev.com",
       ),
     ).toBe("hash-test-key:"); // apiKey present, no accessToken
   }, 10_000);
@@ -2080,11 +2090,13 @@ describe("AblyCliTerminal - Credential Validation", () => {
       globalThis.sessionStorage.getItem("ably.cli.credentialHash"),
     ).toBeNull();
     expect(
-      globalThis.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem(
+        "ably.cli.sessionId.web-cli-terminal.ably-dev.com",
+      ),
     ).toBeNull();
     expect(
       globalThis.sessionStorage.getItem(
-        "ably.cli.credentialHash.web-cli.ably.com",
+        "ably.cli.credentialHash.web-cli-terminal.ably-dev.com",
       ),
     ).toBeNull();
   }, 10_000);
@@ -2125,7 +2137,7 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
   ) => {
     return render(
       <AblyCliTerminal
-        websocketUrl="wss://web-cli.ably.com"
+        websocketUrl="wss://web-cli-terminal.ably-dev.com"
         signedConfig={DEFAULT_SIGNED_CONFIG}
         signature={DEFAULT_SIGNATURE}
         onConnectionStatusChange={onConnectionStatusChangeMock}
@@ -2166,11 +2178,13 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
 
     // Verify credentials are stored for the ably domain
     expect(
-      globalThis.sessionStorage.getItem("ably.cli.sessionId.web-cli.ably.com"),
+      globalThis.sessionStorage.getItem(
+        "ably.cli.sessionId.web-cli-terminal.ably-dev.com",
+      ),
     ).toBe("session-for-ably");
     expect(
       globalThis.sessionStorage.getItem(
-        "ably.cli.credentialHash.web-cli.ably.com",
+        "ably.cli.credentialHash.web-cli-terminal.ably-dev.com",
       ),
     ).toBe("hash-secure-key-123:secure-token-456");
 
@@ -2212,11 +2226,11 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
   test("credentials are properly scoped per domain", async () => {
     // Set up credentials for multiple domains
     globalThis.sessionStorage.setItem(
-      "ably.cli.sessionId.web-cli.ably.com",
+      "ably.cli.sessionId.web-cli-terminal.ably-dev.com",
       "ably-session-123",
     );
     globalThis.sessionStorage.setItem(
-      "ably.cli.credentialHash.web-cli.ably.com",
+      "ably.cli.credentialHash.web-cli-terminal.ably-dev.com",
       "hash-test-key:test-token",
     );
 
@@ -2229,9 +2243,9 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
       "hash-test-key:test-token",
     );
 
-    // Render terminal connecting to web-cli.ably.com
+    // Render terminal connecting to web-cli-terminal.ably-dev.com
     renderTerminal({
-      websocketUrl: "wss://web-cli.ably.com",
+      websocketUrl: "wss://web-cli-terminal.ably-dev.com",
       resumeOnReload: true,
     });
 
@@ -2368,7 +2382,7 @@ describe("AblyCliTerminal - Initial Command Execution", () => {
   ) => {
     return render(
       <AblyCliTerminal
-        websocketUrl="wss://web-cli.ably.com"
+        websocketUrl="wss://web-cli-terminal.ably-dev.com"
         signedConfig={DEFAULT_SIGNED_CONFIG}
         signature={DEFAULT_SIGNATURE}
         onConnectionStatusChange={onConnectionStatusChangeMock}
@@ -2441,11 +2455,11 @@ describe("AblyCliTerminal - Initial Command Execution", () => {
     // Pre-populate storage with existing session
     const expectedHash = "hash-test-key:test-token";
     globalThis.sessionStorage.setItem(
-      "ably.cli.sessionId.web-cli.ably.com",
+      "ably.cli.sessionId.web-cli-terminal.ably-dev.com",
       "resumed-session-456",
     );
     globalThis.sessionStorage.setItem(
-      "ably.cli.credentialHash.web-cli.ably.com",
+      "ably.cli.credentialHash.web-cli-terminal.ably-dev.com",
       expectedHash,
     );
 

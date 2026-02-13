@@ -15,7 +15,7 @@ export async function waitForTerminalReady(
   // Increase timeout for CI environments or when using production server
   const isProduction =
     !process.env.TERMINAL_SERVER_URL ||
-    process.env.TERMINAL_SERVER_URL.includes("web-cli.ably.com");
+    process.env.TERMINAL_SERVER_URL.includes("web-cli-terminal.ably-dev.com");
   const effectiveTimeout =
     process.env.CI || isProduction ? timeout * 2 : timeout;
   const startTime = Date.now();

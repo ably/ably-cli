@@ -57,7 +57,7 @@ test.describe("Domain-Scoped Authentication E2E Tests", () => {
     // Should have domain-scoped keys - check what domain is actually being used
     // When TERMINAL_SERVER_URL is set, it overrides the default domain
     const terminalServerUrl = process.env.TERMINAL_SERVER_URL;
-    let expectedDomain = "web-cli.ably.com";
+    let expectedDomain = "web-cli-terminal.ably-dev.com";
     if (terminalServerUrl) {
       // Extract domain from URL (e.g., 'ws://localhost:8080' -> 'localhost:8080')
       const url = new URL(terminalServerUrl);
@@ -155,7 +155,7 @@ test.describe("Domain-Scoped Authentication E2E Tests", () => {
     // Get the actual domain being used
     const actualDomain = process.env.TERMINAL_SERVER_URL
       ? new URL(process.env.TERMINAL_SERVER_URL).host
-      : "web-cli.ably.com";
+      : "web-cli-terminal.ably-dev.com";
     const webCliAblyKey = Object.entries(credentialData).find(([k]) =>
       k.includes(actualDomain),
     )?.[1];
@@ -187,7 +187,8 @@ test.describe("Domain-Scoped Authentication E2E Tests", () => {
     await page.evaluate(() => {
       // Get the actual WebSocket domain from the URL or use default
       const urlParams = new URLSearchParams(window.location.search);
-      const serverUrl = urlParams.get("serverUrl") || "wss://web-cli.ably.com";
+      const serverUrl =
+        urlParams.get("serverUrl") || "wss://web-cli-terminal.ably-dev.com";
       const wsDomain = new URL(serverUrl).host;
 
       const mockSignedConfig = JSON.stringify({
@@ -250,7 +251,7 @@ test.describe("Domain-Scoped Authentication E2E Tests", () => {
     // Should have cleared current domain but kept other domain
     const actualDomain = process.env.TERMINAL_SERVER_URL
       ? new URL(process.env.TERMINAL_SERVER_URL).host
-      : "web-cli.ably.com";
+      : "web-cli-terminal.ably-dev.com";
     const currentDomainKeys = Object.keys(remainingCredentials).filter((k) =>
       k.includes(actualDomain),
     );
@@ -306,7 +307,7 @@ test.describe("Domain-Scoped Authentication E2E Tests", () => {
       const wsUrl =
         url.searchParams.get("serverUrl") ||
         (window as any).__ABLY_CLI_WEBSOCKET_URL__ ||
-        "wss://web-cli.ably.com";
+        "wss://web-cli-terminal.ably-dev.com";
       return new URL(wsUrl).host;
     });
 
@@ -332,7 +333,7 @@ test.describe("Domain-Scoped Authentication E2E Tests", () => {
       const wsUrl = new URL(
         new URLSearchParams(window.location.search).get("serverUrl") ||
           (window as any).__ABLY_CLI_WEBSOCKET_URL__ ||
-          "wss://web-cli.ably.com",
+          "wss://web-cli-terminal.ably-dev.com",
       );
       const domain = wsUrl.host;
       return {

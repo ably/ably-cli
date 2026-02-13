@@ -22,7 +22,7 @@ import { createSignedConfig } from "./helpers/signing-helper";
 
 // Terminal server endpoint - use environment variable or default to public server
 const TERMINAL_SERVER_URL =
-  process.env.TERMINAL_SERVER_URL || "wss://web-cli.ably.com";
+  process.env.TERMINAL_SERVER_URL || "wss://web-cli-terminal.ably-dev.com";
 
 async function _waitForPrompt(
   page: any,

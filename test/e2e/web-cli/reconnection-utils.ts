@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 // Constants
 const EXAMPLE_DIR = path.resolve(__dirname, "../../../examples/web-cli");
-// Terminal server is now hosted externally at wss://web-cli.ably.com
+// Terminal server is now hosted externally at wss://web-cli-terminal.ably-dev.com
 
 // Helper function to wait for server startup
 export async function waitForServer(

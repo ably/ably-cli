@@ -52,7 +52,7 @@ async function globalSetup() {
     console.log("[Global Setup] Testing network connectivity in CI...");
     try {
       const https = await import("node:https");
-      const testUrl = new URL("https://web-cli.ably.com");
+      const testUrl = new URL("https://web-cli-terminal.ably-dev.com");
       await new Promise<void>((resolve, reject) => {
         https
           .get(testUrl.href, (res) => {
@@ -96,7 +96,10 @@ async function globalSetup() {
   clearRateLimitLock();
 
   // Add initial delay to ensure we start with a clean rate limit window
-  if (!process.env.SKIP_INITIAL_DELAY && !process.env.CI_BYPASS_SECRET) {
+  if (
+    !process.env.SKIP_INITIAL_DELAY &&
+    !process.env.TERMINAL_SERVER_SIGNING_SECRET
+  ) {
     const isCI = !!(process.env.CI || process.env.GITHUB_ACTIONS);
     const initialDelay = isCI ? 30000 : 10000; // 30s for CI, 10s for local
     if (!process.env.CI || process.env.VERBOSE_TESTS) {

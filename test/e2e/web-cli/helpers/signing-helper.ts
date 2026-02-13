@@ -18,9 +18,7 @@ export interface CredentialConfig {
  */
 export function getTestSecret(): string {
   const secret =
-    process.env.TERMINAL_SERVER_SIGNING_SECRET ||
-    process.env.SIGNING_SECRET ||
-    process.env.CI_BYPASS_SECRET;
+    process.env.TERMINAL_SERVER_SIGNING_SECRET || process.env.SIGNING_SECRET;
 
   if (!secret) {
     console.warn(
@@ -95,9 +93,7 @@ export function createSignedConfig(
  */
 export function isSigningAvailable(): boolean {
   return !!(
-    process.env.TERMINAL_SERVER_SIGNING_SECRET ||
-    process.env.SIGNING_SECRET ||
-    process.env.CI_BYPASS_SECRET
+    process.env.TERMINAL_SERVER_SIGNING_SECRET || process.env.SIGNING_SECRET
   );
 }
 
@@ -112,7 +108,6 @@ export function logSigningStatus(): void {
   console.log("[Signing Helper] Configuration:", {
     TERMINAL_SERVER_SIGNING_SECRET: hasTerminalSecret ? "SET" : "NOT SET",
     SIGNING_SECRET: hasSigningSecret ? "SET" : "NOT SET",
-    CI_BYPASS_SECRET: hasCISecret ? "SET" : "NOT SET",
     usingSecret: hasTerminalSecret
       ? "TERMINAL_SERVER_SIGNING_SECRET"
       : hasSigningSecret
