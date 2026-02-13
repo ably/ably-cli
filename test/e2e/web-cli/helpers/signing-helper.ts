@@ -103,7 +103,6 @@ export function isSigningAvailable(): boolean {
 export function logSigningStatus(): void {
   const hasTerminalSecret = !!process.env.TERMINAL_SERVER_SIGNING_SECRET;
   const hasSigningSecret = !!process.env.SIGNING_SECRET;
-  const hasCISecret = !!process.env.CI_BYPASS_SECRET;
 
   console.log("[Signing Helper] Configuration:", {
     TERMINAL_SERVER_SIGNING_SECRET: hasTerminalSecret ? "SET" : "NOT SET",
@@ -112,8 +111,6 @@ export function logSigningStatus(): void {
       ? "TERMINAL_SERVER_SIGNING_SECRET"
       : hasSigningSecret
         ? "SIGNING_SECRET"
-        : hasCISecret
-          ? "CI_BYPASS_SECRET"
-          : "fallback",
+        : "fallback",
   });
 }

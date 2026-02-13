@@ -41,10 +41,10 @@ export function generateCIAuthToken(
 }
 
 /**
- * Check if CI bypass mode should be used
- * @returns true if CI mode is enabled and bypass secret is available
+ * Check if TERMINAL_SERVER_SIGNING_SECRET is set in environment
+ * @returns true if CI mode is enabled and signing secret is available, false otherwise
  */
-export function shouldUseCIBypass(): boolean {
+export function shouldUseTerminalServerSigningSecret(): boolean {
   return !!process.env.TERMINAL_SERVER_SIGNING_SECRET;
 }
 

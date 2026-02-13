@@ -1,9 +1,9 @@
 import { Page } from "playwright/test";
 import {
   generateCIAuthToken,
-  shouldUseCIBypass,
+  shouldUseTerminalServerSigningSecret,
   getCIWebSocketUrl,
-} from "./ci-auth";
+} from "./ci-auth.js";
 
 /**
  * Inject CI authentication configuration into the page
@@ -24,9 +24,11 @@ export async function setupCIAuth(page: Page): Promise<void> {
     });
   }
 
-  if (!shouldUseCIBypass()) {
+  if (!shouldUseTerminalServerSigningSecret()) {
     if (!process.env.CI || process.env.VERBOSE_TESTS) {
-      console.log("[CI Auth] Bypass not enabled, skipping setup");
+      console.log(
+        "[CI Auth] Signing secret not configured, skipping CI auth setup",
+      );
     }
     return;
   }
