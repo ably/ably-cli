@@ -10,11 +10,13 @@ import { AuthScreen } from "./components/AuthScreen";
 // Extend Window interface for CLI-specific properties
 interface CliWindow extends Window {
   __ABLY_CLI_CI_AUTH_TOKEN__?: string;
+  __ABLY_CLI_CI_MODE__?: string;
   _sessionId?: string;
 }
 
 // Default WebSocket URL - use public endpoint for production, localhost for development
-const DEFAULT_WEBSOCKET_URL = "wss://web-cli.ably.com";
+const DEFAULT_PRODUCTION_WEBSOCKET_URL = "wss://web-cli.ably.com";
+const DEFAULT_DEVELOPMENT_WEBSOCKET_URL = "wss://web-cli-terminal.ably-dev.com";
 
 // Get WebSocket URL from query parameters only
 const getWebSocketUrl = () => {
@@ -24,9 +26,12 @@ const getWebSocketUrl = () => {
     console.log(`[App.tsx] Found serverUrl param: ${serverParam}`);
     return serverParam;
   }
-  return DEFAULT_WEBSOCKET_URL;
+  return isRunningCIMode() ? DEFAULT_DEVELOPMENT_WEBSOCKET_URL : DEFAULT_PRODUCTION_WEBSOCKET_URL;
 };
 
+const isRunningCIMode = (): boolean => {
+  return (window as CliWindow).__ABLY_CLI_CI_MODE__ === "true";
+}
 // Get CI auth token if available
 const getCIAuthToken = (): string | undefined => {
   return (window as CliWindow).__ABLY_CLI_CI_AUTH_TOKEN__;
@@ -139,7 +144,7 @@ function App() {
   const [connectionStatus, setConnectionStatus] = useState<TermStatus>('disconnected');
   const [displayMode, setDisplayMode] = useState<"fullscreen" | "drawer">(initialMode);
   const [showAuthSettings, setShowAuthSettings] = useState(false);
-  
+
   // Initialize signed credentials
   const initialCreds = getInitialCredentials();
   const [signedConfig, setSignedConfig] = useState<string | undefined>(initialCreds.signedConfig);
@@ -277,8 +282,8 @@ function App() {
 
   // Show auth screen if not authenticated
   if (!isAuthenticated) {
-    return <AuthScreen 
-      onAuthenticate={handleAuthenticate} 
+    return <AuthScreen
+      onAuthenticate={handleAuthenticate}
       rememberCredentials={rememberCredentials}
       onRememberChange={setRememberCredentials}
     />;

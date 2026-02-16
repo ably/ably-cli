@@ -56,7 +56,6 @@ export function getSigningSecret(): string | null {
   return (
     process.env.TERMINAL_SERVER_SIGNING_SECRET ||
     process.env.SIGNING_SECRET ||
-    process.env.CI_BYPASS_SECRET ||
     null
   );
 }

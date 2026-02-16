@@ -111,7 +111,6 @@ export async function setupWebServer(): Promise<string> {
           TERMINAL_SERVER_SIGNING_SECRET:
             process.env.TERMINAL_SERVER_SIGNING_SECRET,
           SIGNING_SECRET: process.env.SIGNING_SECRET,
-          CI_BYPASS_SECRET: process.env.CI_BYPASS_SECRET,
         },
       },
     );

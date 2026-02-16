@@ -20,8 +20,8 @@ interface RateLimiterState {
 
 // Configuration
 const getConfig = () => {
-  // Check if CI bypass is enabled
-  if (process.env.CI_BYPASS_SECRET) {
+  // Check if a terminal server signing secret is available
+  if (process.env.TERMINAL_SERVER_SIGNING_SECRET) {
     if (process.env.CI && !process.env.VERBOSE_TESTS) {
       // Silent in CI unless verbose mode
     } else {

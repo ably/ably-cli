@@ -13,12 +13,9 @@ import {
   executeCommandWithRetry,
 } from "./wait-helpers.js";
 import { waitForRateLimitLock } from "./rate-limit-lock";
+import { getTerminalServerUrl } from "./helpers/ci-auth.js";
 
-// Terminal server endpoint - use environment variable or default to public server
-const TERMINAL_SERVER_URL =
-  process.env.TERMINAL_SERVER_URL ||
-  process.env.ABLY_CLI_WEBSOCKET_URL ||
-  "wss://web-cli.ably.com";
+const TERMINAL_SERVER_URL = getTerminalServerUrl();
 
 // Removed _waitForPrompt - using wait helpers instead
 
@@ -284,7 +281,7 @@ test.describe("Session Resume E2E Tests", () => {
         // Extract server URL from location params
         const params = new URLSearchParams(win.location.search);
         const serverUrlParam = params.get("serverUrl");
-        let domain = "web-cli.ably.com";
+        let domain = "web-cli-terminal.ably-dev.com";
         if (serverUrlParam) {
           try {
             domain = new URL(decodeURIComponent(serverUrlParam)).host;
@@ -320,7 +317,7 @@ test.describe("Session Resume E2E Tests", () => {
         // Extract server URL from location params
         const params = new URLSearchParams(win.location.search);
         const serverUrlParam = params.get("serverUrl");
-        let domain = "web-cli.ably.com";
+        let domain = "web-cli-terminal.ably-dev.com";
         if (serverUrlParam) {
           try {
             domain = new URL(decodeURIComponent(serverUrlParam)).host;

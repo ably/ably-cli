@@ -1,9 +1,9 @@
 import { Page } from "playwright/test";
 import {
   generateCIAuthToken,
-  shouldUseCIBypass,
-  getCIWebSocketUrl,
-} from "./ci-auth";
+  shouldUseTerminalServerSigningSecret,
+  getTerminalServerUrl,
+} from "./ci-auth.js";
 
 /**
  * Inject CI authentication configuration into the page
@@ -14,21 +14,26 @@ export async function setupCIAuth(page: Page): Promise<void> {
   if (process.env.CI) {
     console.log("[CI Auth] Environment check:", {
       CI: process.env.CI,
-      CI_BYPASS_SECRET: process.env.CI_BYPASS_SECRET ? "SET" : "NOT SET",
-      CI_BYPASS_SECRET_LENGTH: process.env.CI_BYPASS_SECRET?.length || 0,
+      TERMINAL_SERVER_SIGNING_SECRET: process.env.TERMINAL_SERVER_SIGNING_SECRET
+        ? "SET"
+        : "NOT SET",
+      TERMINAL_SERVER_SIGNING_SECRET_LENGTH:
+        process.env.TERMINAL_SERVER_SIGNING_SECRET?.length || 0,
       GITHUB_RUN_ID: process.env.GITHUB_RUN_ID || "not set",
       TEST_GROUP: process.env.TEST_GROUP || "not set",
     });
   }
 
-  if (!shouldUseCIBypass()) {
+  if (!shouldUseTerminalServerSigningSecret()) {
     if (!process.env.CI || process.env.VERBOSE_TESTS) {
-      console.log("[CI Auth] Bypass not enabled, skipping setup");
+      console.log(
+        "[CI Auth] Signing secret not configured, skipping CI auth setup",
+      );
     }
     return;
   }
 
-  const secret = process.env.CI_BYPASS_SECRET!;
+  const secret = process.env.TERMINAL_SERVER_SIGNING_SECRET!;
   const testGroup = process.env.TEST_GROUP || "default";
   const runId = process.env.GITHUB_RUN_ID || "local";
 
@@ -87,7 +92,7 @@ export async function setupCIAuth(page: Page): Promise<void> {
       ciAuthToken,
       testGroup,
       runId,
-      websocketUrl: getCIWebSocketUrl(),
+      websocketUrl: getTerminalServerUrl(),
       verboseTests: process.env.VERBOSE_TESTS || "",
     },
   );
@@ -96,7 +101,7 @@ export async function setupCIAuth(page: Page): Promise<void> {
     console.log("[CI Auth] Setup completed", {
       testGroup,
       runId,
-      websocketUrl: getCIWebSocketUrl(),
+      websocketUrl: getTerminalServerUrl(),
     });
   }
 }
@@ -127,5 +132,5 @@ export async function disableCIAuth(page: Page): Promise<void> {
  * This respects the CI configuration or falls back to the public URL
  */
 export function getTestWebSocketUrl(): string {
-  return getCIWebSocketUrl();
+  return getTerminalServerUrl();
 }

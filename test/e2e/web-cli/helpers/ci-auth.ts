@@ -41,53 +41,41 @@ export function generateCIAuthToken(
 }
 
 /**
- * Check if CI bypass mode should be used
- * @returns true if CI mode is enabled and bypass secret is available
+ * Check if TERMINAL_SERVER_SIGNING_SECRET is set in environment
+ * @returns true if CI mode is enabled and signing secret is available, false otherwise
  */
-export function shouldUseCIBypass(): boolean {
-  return !!process.env.CI_BYPASS_SECRET;
+export function shouldUseTerminalServerSigningSecret(): boolean {
+  return !!process.env.TERMINAL_SERVER_SIGNING_SECRET;
 }
 
 /**
- * Get the WebSocket URL to use (production or local)
- * @returns WebSocket URL from environment or default production URL
+ * Default terminal server URL used when no environment override is set.
  */
-export function getCIWebSocketUrl(): string {
-  return process.env.TERMINAL_SERVER_URL || "wss://web-cli.ably.com";
+const DEFAULT_TERMINAL_SERVER_URL = "wss://web-cli-terminal.ably-dev.com";
+
+/**
+ * Get the WebSocket URL to use for the terminal server.
+ * Checks TERMINAL_SERVER_URL first, then ABLY_CLI_WEBSOCKET_URL, and falls
+ * back to the default dev server.
+ */
+export function getTerminalServerUrl(): string {
+  return (
+    process.env.TERMINAL_SERVER_URL ||
+    process.env.ABLY_CLI_WEBSOCKET_URL ||
+    DEFAULT_TERMINAL_SERVER_URL
+  );
 }
 
 /**
- * Log CI authentication status for debugging
+ * Returns true when the terminal server URL points at a hosted Ably endpoint
+ * (dev or production) rather than a local server.  Use this to gate
+ * behaviours that should only run against remote servers (e.g. extra
+ * stabilisation delays).
  */
-export function logCIAuthStatus(): void {
-  if (shouldUseCIBypass()) {
-    console.log("[CI Auth] Rate limit bypass enabled", {
-      websocketUrl: getCIWebSocketUrl(),
-      testGroup: process.env.TEST_GROUP || "default",
-      runId: process.env.GITHUB_RUN_ID || "local",
-    });
-  } else {
-    console.log("[CI Auth] Rate limit bypass disabled", {
-      hasSecret: !!process.env.CI_BYPASS_SECRET,
-    });
-  }
-}
-
-/**
- * Get CI auth token if bypass is enabled
- * @returns CI auth token or undefined
- */
-export function getCIAuthToken(): string | undefined {
-  const secret = process.env.CI_BYPASS_SECRET;
-  if (!secret) {
-    return undefined;
-  }
-
-  const payload: CIAuthPayload = {
-    timestamp: Date.now(),
-    testGroup: process.env.TEST_GROUP || "e2e-web-cli",
-    runId: process.env.GITHUB_RUN_ID || `local-${Date.now()}`,
-  };
-
-  return generateCIAuthToken(secret, payload);
+export function isRemoteServer(): boolean {
+  const url = getTerminalServerUrl();
+  return (
+    url.includes("web-cli-terminal.ably-dev.com") ||
+    url.includes("web-cli.ably.com")
+  );
 }

@@ -19,10 +19,9 @@ import {
 } from "./wait-helpers.js";
 import { waitForRateLimitLock } from "./rate-limit-lock";
 import { createSignedConfig } from "./helpers/signing-helper";
+import { getTerminalServerUrl } from "./helpers/ci-auth.js";
 
-// Terminal server endpoint - use environment variable or default to public server
-const TERMINAL_SERVER_URL =
-  process.env.TERMINAL_SERVER_URL || "wss://web-cli.ably.com";
+const TERMINAL_SERVER_URL = getTerminalServerUrl();
 
 async function _waitForPrompt(
   page: any,

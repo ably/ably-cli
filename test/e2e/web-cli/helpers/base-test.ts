@@ -5,6 +5,7 @@ import {
   markTestAsFailing,
 } from "./test-helpers";
 import { setupCIAuth } from "./setup-ci-auth";
+import { isRemoteServer } from "./ci-auth";
 
 // Extend the base test with our helpers
 export const test = base.extend({
@@ -159,11 +160,8 @@ export const test = base.extend({
     // Dump console on failure
     dumpConsoleOnFailure();
 
-    // Add a small delay between tests when running against production
-    const isProduction =
-      !process.env.TERMINAL_SERVER_URL ||
-      process.env.TERMINAL_SERVER_URL.includes("web-cli.ably.com");
-    if (isProduction) {
+    // Add a small delay between tests when running against the remote server
+    if (isRemoteServer()) {
       await page.waitForTimeout(1000);
     }
 

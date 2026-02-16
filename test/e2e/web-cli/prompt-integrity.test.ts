@@ -18,10 +18,9 @@ import {
   getTerminalContent,
 } from "./wait-helpers";
 import { createSignedConfig } from "./helpers/signing-helper";
+import { getTerminalServerUrl } from "./helpers/ci-auth.js";
 
-// Public terminal server endpoint
-const TERMINAL_SERVER_URL =
-  process.env.TERMINAL_SERVER_URL || "wss://web-cli.ably.com";
+const TERMINAL_SERVER_URL = getTerminalServerUrl();
 
 test.describe("Web CLI Prompt Integrity E2E Tests", () => {
   test.setTimeout(120_000);
