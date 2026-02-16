@@ -1,4 +1,5 @@
 import { Page } from "playwright/test";
+import { isRemoteServer } from "./helpers/ci-auth";
 
 /**
  * Wait for the terminal to be ready for interaction
@@ -12,12 +13,9 @@ export async function waitForTerminalReady(
     console.log("Waiting for terminal to be ready...");
   }
 
-  // Increase timeout for CI environments or when using production server
-  const isProduction =
-    !process.env.TERMINAL_SERVER_URL ||
-    process.env.TERMINAL_SERVER_URL.includes("web-cli-terminal.ably-dev.com");
+  // Increase timeout for CI environments or when using the remote server
   const effectiveTimeout =
-    process.env.CI || isProduction ? timeout * 2 : timeout;
+    process.env.CI || isRemoteServer() ? timeout * 2 : timeout;
   const startTime = Date.now();
   let manualReconnectAttempts = 0;
   const maxManualReconnects = process.env.CI ? 5 : 3;

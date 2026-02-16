@@ -11,10 +11,9 @@ import { test, expect, getTestUrl } from "./helpers/base-test";
 const log = console.log.bind(console);
 import { authenticateWebCli } from "./auth-helper.js";
 import { waitForRateLimitLock } from "./rate-limit-lock";
+import { getTerminalServerUrl } from "./helpers/ci-auth.js";
 
-// Public terminal server endpoint
-const TERMINAL_SERVER_URL =
-  process.env.TERMINAL_SERVER_URL || "wss://web-cli-terminal.ably-dev.com";
+const TERMINAL_SERVER_URL = getTerminalServerUrl();
 
 test.describe("Web CLI Reconnection Diagnostic E2E Tests", () => {
   // Increase timeout significantly for CI environments

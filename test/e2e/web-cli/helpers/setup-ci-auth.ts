@@ -2,7 +2,7 @@ import { Page } from "playwright/test";
 import {
   generateCIAuthToken,
   shouldUseTerminalServerSigningSecret,
-  getCIWebSocketUrl,
+  getTerminalServerUrl,
 } from "./ci-auth.js";
 
 /**
@@ -92,7 +92,7 @@ export async function setupCIAuth(page: Page): Promise<void> {
       ciAuthToken,
       testGroup,
       runId,
-      websocketUrl: getCIWebSocketUrl(),
+      websocketUrl: getTerminalServerUrl(),
       verboseTests: process.env.VERBOSE_TESTS || "",
     },
   );
@@ -101,7 +101,7 @@ export async function setupCIAuth(page: Page): Promise<void> {
     console.log("[CI Auth] Setup completed", {
       testGroup,
       runId,
-      websocketUrl: getCIWebSocketUrl(),
+      websocketUrl: getTerminalServerUrl(),
     });
   }
 }
@@ -132,5 +132,5 @@ export async function disableCIAuth(page: Page): Promise<void> {
  * This respects the CI configuration or falls back to the public URL
  */
 export function getTestWebSocketUrl(): string {
-  return getCIWebSocketUrl();
+  return getTerminalServerUrl();
 }

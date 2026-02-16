@@ -8,6 +8,7 @@ import {
 import { authenticateWebCli } from "./auth-helper.js";
 import { waitForRateLimitLock } from "./rate-limit-lock";
 import { waitForTerminalReady, waitForTerminalStable } from "./wait-helpers.js";
+import { getTerminalServerUrl } from "./helpers/ci-auth.js";
 
 // Type for browser context in evaluate() calls
 type _BrowserContext = {
@@ -17,10 +18,7 @@ type _BrowserContext = {
 
 // Constants
 const DRAWER_OPEN_KEY = "ablyCliDrawerOpen";
-
-// Terminal server endpoint - use environment variable or default to public server
-const TERMINAL_SERVER_URL =
-  process.env.TERMINAL_SERVER_URL || "wss://web-cli-terminal.ably-dev.com";
+const TERMINAL_SERVER_URL = getTerminalServerUrl();
 
 /**
  * Wait for the terminal prompt to appear, indicating the terminal is ready

@@ -49,11 +49,33 @@ export function shouldUseTerminalServerSigningSecret(): boolean {
 }
 
 /**
- * Get the WebSocket URL to use (production or local)
- * @returns WebSocket URL from environment or default production URL
+ * Default terminal server URL used when no environment override is set.
  */
-export function getCIWebSocketUrl(): string {
+const DEFAULT_TERMINAL_SERVER_URL = "wss://web-cli-terminal.ably-dev.com";
+
+/**
+ * Get the WebSocket URL to use for the terminal server.
+ * Checks TERMINAL_SERVER_URL first, then ABLY_CLI_WEBSOCKET_URL, and falls
+ * back to the default dev server.
+ */
+export function getTerminalServerUrl(): string {
   return (
-    process.env.TERMINAL_SERVER_URL || "wss://web-cli-terminal.ably-dev.com"
+    process.env.TERMINAL_SERVER_URL ||
+    process.env.ABLY_CLI_WEBSOCKET_URL ||
+    DEFAULT_TERMINAL_SERVER_URL
+  );
+}
+
+/**
+ * Returns true when the terminal server URL points at a hosted Ably endpoint
+ * (dev or production) rather than a local server.  Use this to gate
+ * behaviours that should only run against remote servers (e.g. extra
+ * stabilisation delays).
+ */
+export function isRemoteServer(): boolean {
+  const url = getTerminalServerUrl();
+  return (
+    url.includes("web-cli-terminal.ably-dev.com") ||
+    url.includes("web-cli.ably.com")
   );
 }

@@ -161,6 +161,7 @@ const createTestSignedConfig = (
 // Default test signed config and signature
 const DEFAULT_SIGNED_CONFIG = createTestSignedConfig("test-key", "test-token");
 const DEFAULT_SIGNATURE = "test-signature-mock";
+const TEST_WEBSOCKET_URL = "wss://web-cli-terminal.ably-dev.com";
 
 // Simple minimal test component to verify hooks work in the test environment
 const MinimalHookComponent = () => {
@@ -392,7 +393,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
   ) => {
     return render(
       <AblyCliTerminal
-        websocketUrl="wss://web-cli-terminal.ably-dev.com"
+        websocketUrl={TEST_WEBSOCKET_URL}
         signedConfig={DEFAULT_SIGNED_CONFIG}
         signature={DEFAULT_SIGNATURE}
         onConnectionStatusChange={onConnectionStatusChangeMock}
@@ -1478,7 +1479,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     render(
       <AblyCliTerminal
         ref={reference}
-        websocketUrl="wss://web-cli-terminal.ably-dev.com"
+        websocketUrl={TEST_WEBSOCKET_URL}
         signedConfig={DEFAULT_SIGNED_CONFIG}
         signature={DEFAULT_SIGNATURE}
         enableSplitScreen={true}
@@ -1810,7 +1811,7 @@ describe("AblyCliTerminal - Credential Validation", () => {
   ) => {
     return render(
       <AblyCliTerminal
-        websocketUrl="wss://web-cli-terminal.ably-dev.com"
+        websocketUrl={TEST_WEBSOCKET_URL}
         signedConfig={DEFAULT_SIGNED_CONFIG}
         signature={DEFAULT_SIGNATURE}
         onConnectionStatusChange={onConnectionStatusChangeMock}
@@ -2137,7 +2138,7 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
   ) => {
     return render(
       <AblyCliTerminal
-        websocketUrl="wss://web-cli-terminal.ably-dev.com"
+        websocketUrl={TEST_WEBSOCKET_URL}
         signedConfig={DEFAULT_SIGNED_CONFIG}
         signature={DEFAULT_SIGNATURE}
         onConnectionStatusChange={onConnectionStatusChangeMock}
@@ -2245,7 +2246,7 @@ describe("AblyCliTerminal - Cross-Domain Security", () => {
 
     // Render terminal connecting to web-cli-terminal.ably-dev.com
     renderTerminal({
-      websocketUrl: "wss://web-cli-terminal.ably-dev.com",
+      websocketUrl: TEST_WEBSOCKET_URL,
       resumeOnReload: true,
     });
 
@@ -2382,7 +2383,7 @@ describe("AblyCliTerminal - Initial Command Execution", () => {
   ) => {
     return render(
       <AblyCliTerminal
-        websocketUrl="wss://web-cli-terminal.ably-dev.com"
+        websocketUrl={TEST_WEBSOCKET_URL}
         signedConfig={DEFAULT_SIGNED_CONFIG}
         signature={DEFAULT_SIGNATURE}
         onConnectionStatusChange={onConnectionStatusChangeMock}
