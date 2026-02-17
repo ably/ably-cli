@@ -79,7 +79,7 @@ The CLI uses topics (space-separated) to group related commands logically.
 *(Interact with Ably Pub/Sub using the Realtime SDK)*
 
 - `$ ably channels list`: Lists active channels via channel enumeration API. Supports `--prefix`, `--limit`.
-- `$ ably channels publish CHANNEL MESSAGE`: Publishes a message. Supports `--name`, `--encoding`, `--count`, `--delay`, JSON/text message, message interpolation (`{{.Count}}`, `{{.Timestamp}}`), `--transport rest|realtime`.
+- `$ ably channels publish CHANNEL MESSAGE`: Publishes a message. Supports `--name`, `--encoding`, `--count`, `--delay`, JSON/text message, message interpolation (`{{.Count}}`, `{{.Timestamp}}`), `--transport rest|realtime`. Supports `extras.push` for push notifications in message payload.
 - `$ ably channels batch-publish [MESSAGE]`: Publishes multiple messages via REST batch API. Supports `--channels`, `--channels-json`, `--spec`.
 - `$ ably channels subscribe CHANNELS...`: Subscribes to messages on one or more channels. Supports `--rewind`, `--delta`, `--cipher-*` flags for decryption. Runs until terminated.
 - `$ ably channels history CHANNEL`: Retrieves message history. Supports `--start`, `--end`, `--limit`, `--direction`, `--cipher` flags.

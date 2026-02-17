@@ -399,4 +399,31 @@ describe("ChannelsPublish", function () {
       expect(stdout).toMatch(/error/i);
     });
   });
+
+  describe("extras.push support", function () {
+    it("should include extras.push when provided in message data", async function () {
+      const restMock = getMockAblyRest();
+      const channel = restMock.channels._getChannel("test-channel");
+
+      await runCommand(
+        [
+          "channels:publish",
+          "test-channel",
+          '{"data":"hello","extras":{"push":{"notification":{"title":"Test","body":"Push notification"}}}}',
+          "--transport",
+          "rest",
+        ],
+        import.meta.url,
+      );
+
+      expect(channel.publish).toHaveBeenCalledOnce();
+      const publishArgs = channel.publish.mock.calls[0][0];
+      expect(publishArgs).toHaveProperty("data", "hello");
+      expect(publishArgs).toHaveProperty("extras");
+      expect(publishArgs.extras).toHaveProperty("push");
+      expect(publishArgs.extras.push).toEqual({
+        notification: { title: "Test", body: "Push notification" },
+      });
+    });
+  });
 });
