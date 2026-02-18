@@ -5,7 +5,7 @@ export default class SpacesCursors extends Command {
     "Commands for interacting with Cursors in Ably Spaces";
 
   static override examples: Command.Example[] = [
-    `$ ably spaces cursors set my-space --position '{"x": 100, "y": 200}' --data '{"color": "red"}'`,
+    `$ ably spaces cursors set my-space --x 100 --y 200 --data '{"color": "red"}'`,
     `$ ably spaces cursors subscribe my-space`,
     `$ ably spaces cursors get-all my-space`,
   ];
