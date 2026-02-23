@@ -43,12 +43,9 @@ export default class ChannelsInspect extends AblyBaseCommand {
       );
     }
 
-    const url = `https://ably.com/accounts/${accountId}/apps/${appId}/channels/${encodeURIComponent(args.channel)}`;
+    const dashboardHost = flags["dashboard-host"] ?? "https://ably.com";
+    const url = `${dashboardHost}/accounts/${accountId}/apps/${appId}/channels/${encodeURIComponent(args.channel)}`;
 
-    if (this.isWebCliMode) {
-      this.log(`${chalk.cyan("Visit")} ${url}`);
-    } else {
-      await openUrl(url, this);
-    }
+    await openUrl(url, this);
   }
 }

@@ -109,6 +109,27 @@ describe("channels:inspect command", () => {
         `https://ably.com/accounts/${accountId}/apps/override-app/channels/my-channel`,
       );
     });
+
+    it("should use --dashboard-host flag to override base URL", async () => {
+      const mockConfig = getMockConfigManager();
+      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const appId = mockConfig.getCurrentAppId()!;
+
+      const { stdout } = await runCommand(
+        [
+          "channels:inspect",
+          "my-channel",
+          "--dashboard-host",
+          "https://staging.ably.com",
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain(
+        `https://staging.ably.com/accounts/${accountId}/apps/${appId}/channels/my-channel`,
+      );
+      expect(stdout).not.toContain("https://ably.com/accounts");
+    });
   });
 
   describe("web CLI mode", () => {

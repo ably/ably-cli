@@ -9,6 +9,7 @@ export interface BaseFlags {
   "api-key"?: string;
   "client-id"?: string;
   "control-host"?: string;
+  "dashboard-host"?: string;
   env?: string;
   endpoint?: string;
   host?: string;
