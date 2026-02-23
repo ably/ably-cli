@@ -130,6 +130,26 @@ describe("channels:inspect command", () => {
       );
       expect(stdout).not.toContain("https://ably.com/accounts");
     });
+
+    it("should prepend https:// when --dashboard-host has no scheme", async () => {
+      const mockConfig = getMockConfigManager();
+      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const appId = mockConfig.getCurrentAppId()!;
+
+      const { stdout } = await runCommand(
+        [
+          "channels:inspect",
+          "my-channel",
+          "--dashboard-host",
+          "staging.ably.com",
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain(
+        `https://staging.ably.com/accounts/${accountId}/apps/${appId}/channels/my-channel`,
+      );
+    });
   });
 
   describe("web CLI mode", () => {

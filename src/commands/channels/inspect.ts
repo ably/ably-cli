@@ -43,7 +43,10 @@ export default class ChannelsInspect extends AblyBaseCommand {
       );
     }
 
-    const dashboardHost = flags["dashboard-host"] ?? "https://ably.com";
+    let dashboardHost = flags["dashboard-host"] ?? "https://ably.com";
+    if (dashboardHost && !/^https?:\/\//i.test(dashboardHost)) {
+      dashboardHost = `https://${dashboardHost}`;
+    }
     const url = `${dashboardHost}/accounts/${accountId}/apps/${appId}/channels/${encodeURIComponent(args.channel)}`;
 
     await openUrl(url, this);
