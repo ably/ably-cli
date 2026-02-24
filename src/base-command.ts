@@ -118,6 +118,12 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
       env: "ABLY_CONTROL_HOST",
     }),
+    "dashboard-host": Flags.string({
+      description:
+        "Override the host for the Ably dashboard, which defaults to https://ably.com",
+      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
+      env: "ABLY_DASHBOARD_HOST",
+    }),
     env: Flags.string({
       description: "Override the environment for all product API calls",
       env: "ABLY_CLI_ENV",
