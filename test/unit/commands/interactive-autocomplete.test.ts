@@ -269,9 +269,6 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
           { id: "config:get", hidden: false },
           { id: "config:set", hidden: false },
           { id: "version", hidden: false },
-          // MCP commands (restricted in web CLI)
-          { id: "mcp", hidden: false },
-          { id: "mcp:start", hidden: false },
           // Hidden command (should always be filtered)
           { id: "hidden-command", hidden: true },
         ],
@@ -303,7 +300,6 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
         expect(commands).not.toContain("autocomplete");
         expect(commands).not.toContain("config");
         expect(commands).not.toContain("version");
-        expect(commands).not.toContain("mcp"); // MCP is not suitable for interactive mode
 
         // Should include these commands
         expect(commands).toContain("apps");
@@ -339,7 +335,6 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
 
         // Should NOT include web CLI restricted commands
         expect(commands).not.toContain("config"); // config* restricted
-        expect(commands).not.toContain("mcp"); // mcp* restricted
 
         // Should include commands that are only partially restricted
         expect(commands).toContain("accounts"); // only specific subcommands are restricted
@@ -391,7 +386,6 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
         expect(commands).not.toContain("queues"); // restricted in anonymous mode
         expect(commands).not.toContain("logs"); // restricted in anonymous mode
         expect(commands).not.toContain("config"); // restricted in web CLI mode
-        expect(commands).not.toContain("mcp"); // restricted in web CLI mode
 
         // Should still include some commands
         expect(commands).toContain("channels"); // channels root is allowed
@@ -450,8 +444,6 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
         expect(isRestricted("config")).toBe(true); // config* matches config
         expect(isRestricted("config:get")).toBe(true); // config* matches config:get
         expect(isRestricted("config:set")).toBe(true); // config* matches config:set
-        expect(isRestricted("mcp")).toBe(true); // mcp* matches mcp
-        expect(isRestricted("mcp:start")).toBe(true); // mcp* matches mcp:start
 
         // Test exact matches
         expect(isRestricted("accounts:login")).toBe(true);
@@ -470,7 +462,6 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
         const normalCommands = (
           interactiveCommand as any
         ).getTopLevelCommands();
-        expect(normalCommands).not.toContain("mcp"); // MCP is always unsuitable for interactive mode
         expect(normalCommands).toContain("accounts"); // accounts is available in normal mode
 
         // Clear cache
@@ -481,7 +472,6 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
         const webCliCommands = (
           interactiveCommand as any
         ).getTopLevelCommands();
-        expect(webCliCommands).not.toContain("mcp"); // Still filtered
         // accounts:login, logout, switch are restricted but accounts itself is visible
         expect(webCliCommands).toContain("accounts");
       });

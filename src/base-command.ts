@@ -18,8 +18,6 @@ import { ChatClient } from "@ably/chat";
 import isTestMode from "./utils/test-mode.js";
 import isWebCliMode from "./utils/web-mode.js";
 
-// Export BaseFlags for potential use in other modules like MCP
-
 // List of commands not allowed in web CLI mode - EXPORTED
 export const WEB_CLI_RESTRICTED_COMMANDS = [
   // All account login/management commands are not valid in a web env where auth is handled by the website
@@ -43,9 +41,6 @@ export const WEB_CLI_RESTRICTED_COMMANDS = [
 
   // config only applicable to local env
   "config*",
-
-  // MCP functionality is not available in the web CLI
-  "mcp*",
 ];
 
 /* Additional restricted commands when running in anonymous web CLI mode */
@@ -76,7 +71,6 @@ export const INTERACTIVE_UNSUITABLE_COMMANDS = [
   "autocomplete", // Autocomplete setup is not needed in interactive mode
   "config", // Config editing is not suitable for interactive mode
   "version", // Version is shown at startup and available via --version
-  "mcp", // MCP server functionality is not suitable for interactive mode
 ];
 
 // List of commands that should not show account/app info
@@ -325,8 +319,6 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           errorMessage = `Please log in at https://ably.com/login to use authentication features.`;
         } else if (commandId.startsWith("config")) {
           errorMessage = `Local configuration is not supported in the web CLI. Please install the CLI locally.`;
-        } else if (commandId.startsWith("mcp")) {
-          errorMessage = `MCP server functionality is not available in the web CLI. Please install the CLI locally.`;
         } else {
           errorMessage = `This command is not available in the web CLI. Please install the CLI locally.`;
         }
@@ -355,8 +347,6 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           errorMessage = `You cannot switch API keys from within the web CLI. Please use the web interface to change keys.`;
         } else if (commandId.startsWith("config")) {
           errorMessage = `Local configuration is not supported in the web CLI version.`;
-        } else if (commandId.startsWith("mcp")) {
-          errorMessage = `MCP server functionality is not available in the web CLI. Please use the standalone CLI installation instead.`;
         }
 
         this.error(chalk.red(errorMessage));
