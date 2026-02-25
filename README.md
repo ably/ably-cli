@@ -4927,7 +4927,7 @@ Please see the documentation in [`.cursor/rules/Workflow.mdc`](.cursor/rules/Wor
 ## For AI Assistants
 
 **IMPORTANT**: See [`.claude/CLAUDE.md`](./.claude/CLAUDE.md) for mandatory instructions before making any changes.
-If you are an AI assistant, start with [`AI-Assistance.md`](.cursor/rules/AI-Assistance.mdc) first.
+If you are an AI assistant, start with [`AI-Assistance.mdc`](.cursor/rules/AI-Assistance.mdc) first.
 
 ## Quick Development Validation
 
