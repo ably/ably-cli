@@ -365,9 +365,10 @@ test.describe("Web CLI E2E Tests", () => {
     await page.locator(terminalSelector).focus();
     await page.keyboard.type("help");
     await page.keyboard.press("Enter");
-    await expect(page.locator(terminalSelector)).toContainText("COMMANDS", {
-      timeout: 5000,
-    });
+    await expect(page.locator(terminalSelector)).toContainText(
+      "Show help for any command",
+      { timeout: 5000 },
+    );
 
     // Close the drawer by clicking the X button
     const closeButton = drawer.locator('button[aria-label="Close drawer"]');
