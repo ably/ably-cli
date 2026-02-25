@@ -87,7 +87,7 @@ describe("Interactive Mode Command Tests", function () {
   });
 
   describe("Interactive Unsuitable Commands", function () {
-    const unsuitableCommands = ["autocomplete", "config", "mcp"];
+    const unsuitableCommands = ["autocomplete", "config"];
 
     for (const cmd of unsuitableCommands) {
       it(`should block ${cmd} command in interactive mode`, function (done) {

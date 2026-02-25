@@ -216,13 +216,6 @@ export default [
       "n/no-unpublished-import": "off", // Allow dev dependencies like chai in tests
     },
   },
-  // Configuration for MCP files with ModelContextProtocol SDK imports
-  {
-    files: ["src/mcp/**/*.ts"],
-    rules: {
-      "n/no-missing-import": "off"
-    }
-  },
   // Prettier config must be last
   eslintConfigPrettier,
   {

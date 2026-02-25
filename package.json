@@ -97,7 +97,6 @@
     "@ably/chat": "^1.0.0",
     "@ably/spaces": "^0.4.0",
     "@inquirer/prompts": "^5.1.3",
-    "@modelcontextprotocol/sdk": "^1.8.0",
     "@oclif/core": "^4.2.10",
     "@oclif/plugin-autocomplete": "^3.2.30",
     "@oclif/plugin-warn-if-update-available": "^3.1.41",

@@ -1,26 +1,22 @@
-# Ably CLI and MCP server
+# Ably CLI
 
 [![npm version](https://badge.fury.io/js/@ably%2Fcli.svg)](https://badge.fury.io/js/@ably%2Fcli)
 
-[Ably](https://ably.com) CLI and MCP server for [Ably Pub/Sub](https://ably.com/pubsub), [Ably Spaces](https://ably.com/spaces), [Ably Chat](https://ably.com/chat) and the [Ably Control API](https://ably.com/docs/account/control-api).
-
-> [!NOTE]
-> This project is in beta and this CLI and MCP server project is being actively developed.
-> Please [raise an issue](https://github.com/ably/ably-cli/issues) if you have feedback, feature requests or want to report a bug. We welcome [pull requests too](https://github.com/ably/ably-cli/pulls).
+[Ably](https://ably.com) CLI for [Ably Pub/Sub](https://ably.com/pubsub), [Ably Spaces](https://ably.com/spaces), [Ably Chat](https://ably.com/chat) and the [Ably Control API](https://ably.com/docs/account/control-api).
 
 ![Ably CLI screenshot](assets/cli-screenshot.png)
 
 <!-- toc -->
-* [Ably CLI and MCP server](#ably-cli-and-mcp-server)
+* [Ably CLI](#ably-cli)
 * [CLI Usage](#cli-usage)
-* [MCP Usage](#mcp-usage)
 * [Commands](#commands)
-* [MCP Server](#mcp-server)
 * [Contributing](#contributing)
-* [or](#or)
 <!-- tocstop -->
 
 # CLI Usage
+
+> [!NOTE]
+> The Ably CLI is currently in Public Preview status. Please [raise an issue](https://github.com/ably/ably-cli/issues) if you have feedback, feature requests or want to report a bug.
 
 <!-- usage -->
 ```sh-session
@@ -70,20 +66,6 @@ $ ably-interactive
   - Single Ctrl+C interrupts the current command and returns to prompt
   - Double Ctrl+C (within 500ms) force quits the shell
 - **No "ably" prefix needed**: Commands can be typed directly (e.g., just `channels list` instead of `ably channels list`)
-
-# MCP Usage
-
-> [!WARNING]
-> The MCP server is currently experimental. Please [raise an issue](https://github.com/ably/ably-cli/issues) if you have feedback or suggestions for features.
-
-1. Install the CLI following the [CLI usage](#cli-usage) steps.
-2. Follow the instructions for your tool to set up an MCP server, such as [Claude desktop](https://modelcontextprotocol.io/quickstart/user), and configure:
-   1. `command` as ably mcp start-server
-
-See [MCP Server section](#mcp-server) for more details on how to use the MCP Server.
-
-> [!NOTE]
-> If you are having trouble getting the MCP server running, use [MCP inspector](https://github.com/modelcontextprotocol/inspector)
 
 # Commands
 
@@ -162,8 +144,6 @@ See [MCP Server section](#mcp-server) for more details on how to use the MCP Ser
 * [`ably logs push history`](#ably-logs-push-history)
 * [`ably logs push subscribe`](#ably-logs-push-subscribe)
 * [`ably logs subscribe`](#ably-logs-subscribe)
-* [`ably mcp`](#ably-mcp)
-* [`ably mcp start-server`](#ably-mcp-start-server)
 * [`ably queues`](#ably-queues)
 * [`ably queues create`](#ably-queues-create)
 * [`ably queues delete QUEUEID`](#ably-queues-delete-queueid)
@@ -3111,43 +3091,6 @@ EXAMPLES
 
 _See code: [src/commands/logs/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/subscribe.ts)_
 
-## `ably mcp`
-
-Experimental Model Context Protocol (MCP) commands for AI tools to interact with Ably
-
-```
-USAGE
-  $ ably mcp
-
-DESCRIPTION
-  Experimental Model Context Protocol (MCP) commands for AI tools to interact with Ably
-
-EXAMPLES
-  $ ably mcp start-server
-
-COMMANDS
-  ably mcp start-server         Start an MCP server for AI tools to interact with Ably (currently experimental)
-```
-
-_See code: [src/commands/mcp/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/mcp/index.ts)_
-
-## `ably mcp start-server`
-
-Start an MCP server for AI tools to interact with Ably (currently experimental)
-
-```
-USAGE
-  $ ably mcp start-server
-
-DESCRIPTION
-  Start an MCP server for AI tools to interact with Ably (currently experimental)
-
-EXAMPLES
-  $ ably mcp start-server
-```
-
-_See code: [src/commands/mcp/start-server.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/mcp/start-server.ts)_
-
 ## `ably queues`
 
 Manage Ably Queues
@@ -4866,62 +4809,6 @@ EXAMPLES
 _See code: [src/commands/support/contact.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/support/contact.ts)_
 <!-- commandsstop -->
 
-# MCP Server
-
-The Ably CLI can also act as an MCP (Model Context Protocol) server for AI use cases, specifically focussed on IDE tools and AI desktop tools like Claude that support MCP.
-
-## Using the MCP Server
-
-To start the MCP server, run:
-
-```sh
-ably-mcp
-```
-
-Or via npm/pnpm script:
-
-```sh
-pnpm mcp-server
-```
-
-The MCP server runs in file mode (stdio transport) and exposes a subset of Ably CLI commands that AI tools can use to interact with Ably channels.
-
-## Environment Variables
-
-The MCP server supports the following environment variables for authentication and configuration:
-
-- `ABLY_ACCESS_TOKEN` - Overrides the default access token used for the Control API
-- `ABLY_API_KEY` - Overrides the default API key used for the data plane
-- `ABLY_CLIENT_ID` - Overrides the default client ID assigned
-- `ABLY_CONTROL_HOST` - Overrides the default control API host
-- `ABLY_HOST` - Overrides the default data plane host
-- `ABLY_ENVIRONMENT` - Overrides the default data plane environment
-
-### Update Notification Environment Variables
-
-The CLI also supports environment variables to control update notifications:
-
-- `ABLY_SKIP_NEW_VERSION_CHECK=1` - Skip automatic version update checks
-- `ABLY_FORCE_VERSION_CACHE_UPDATE=1` - Force an immediate version check
-
-## Available MCP Commands
-
-The MCP server exposes the following subset of Ably CLI commands:
-
-- `list_channels` - List active channels using the channel enumeration API
-- `subscribe_to_channel` - Subscribe to messages on an Ably channel
-- `publish_to_channel` - Publish a message to an Ably channel
-- `get_channel_history` - Retrieve message history for a channel
-- Channel Presence - Access presence information for channels
-
-## MCP Resources
-
-The MCP server also provides the following resources:
-
-- `channels` - List of active channels on the Ably platform
-- `channel_history` - Historical messages from a specific Ably channel
-- `channel_presence` - Current presence members on a specific Ably channel
-
 # Contributing
 
 Please see the documentation in [`.cursor/rules/Workflow.mdc`](.cursor/rules/Workflow.mdc) for details on how to contribute to this project, including our mandatory development workflow, testing requirements, and code quality standards.
@@ -4929,7 +4816,7 @@ Please see the documentation in [`.cursor/rules/Workflow.mdc`](.cursor/rules/Wor
 ## For AI Assistants
 
 **IMPORTANT**: See [`.claude/CLAUDE.md`](./.claude/CLAUDE.md) for mandatory instructions before making any changes.
-If you are an AI assistant, start with [`AI_START_HERE.md`](./AI_START_HERE.md) first.
+If you are an AI assistant, start with [`AI-Assistance.mdc`](.cursor/rules/AI-Assistance.mdc) first.
 
 ## Quick Development Validation
 
