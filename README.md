@@ -4,10 +4,6 @@
 
 [Ably](https://ably.com) CLI and MCP server for [Ably Pub/Sub](https://ably.com/pubsub), [Ably Spaces](https://ably.com/spaces), [Ably Chat](https://ably.com/chat) and the [Ably Control API](https://ably.com/docs/account/control-api).
 
-> [!NOTE]
-> This project is in beta and this CLI and MCP server project is being actively developed.
-> Please [raise an issue](https://github.com/ably/ably-cli/issues) if you have feedback, feature requests or want to report a bug. We welcome [pull requests too](https://github.com/ably/ably-cli/pulls).
-
 ![Ably CLI screenshot](assets/cli-screenshot.png)
 
 <!-- toc -->
@@ -17,10 +13,12 @@
 * [Commands](#commands)
 * [MCP Server](#mcp-server)
 * [Contributing](#contributing)
-* [or](#or)
 <!-- tocstop -->
 
 # CLI Usage
+
+> [!NOTE]
+> The Ably CLI is currently in Public Preview status. Please [raise an issue](https://github.com/ably/ably-cli/issues) if you have feedback, feature requests or want to report a bug.
 
 <!-- usage -->
 ```sh-session
@@ -4929,7 +4927,7 @@ Please see the documentation in [`.cursor/rules/Workflow.mdc`](.cursor/rules/Wor
 ## For AI Assistants
 
 **IMPORTANT**: See [`.claude/CLAUDE.md`](./.claude/CLAUDE.md) for mandatory instructions before making any changes.
-If you are an AI assistant, start with [`AI_START_HERE.md`](./AI_START_HERE.md) first.
+If you are an AI assistant, start with [`AI-Assistance.md`](.cursor/rules/AI-Assistance.mdc) first.
 
 ## Quick Development Validation
 
