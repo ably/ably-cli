@@ -1,17 +1,8 @@
 import { Flags } from "@oclif/core";
-import jwt from "jsonwebtoken";
+import { SignJWT } from "jose";
 import { randomUUID } from "node:crypto";
 
 import { AblyBaseCommand } from "../../base-command.js";
-
-interface JwtPayload {
-  exp: number;
-  iat: number;
-  jti: string;
-  "x-ably-appId": string;
-  "x-ably-capability": Record<string, string[]>;
-  "x-ably-clientId"?: string;
-}
 
 export default class IssueJwtTokenCommand extends AblyBaseCommand {
   static description = "Creates an Ably JWT token with capabilities";
@@ -74,7 +65,7 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
       }
 
       // Parse capabilities
-      let capabilities;
+      let capabilities: Record<string, string[]>;
       try {
         capabilities = JSON.parse(flags.capability);
       } catch (error) {
@@ -83,38 +74,37 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
         );
       }
 
-      // Create JWT payload
-      const jwtPayload: JwtPayload = {
-        exp: Math.floor(Date.now() / 1000) + flags.ttl, // expiration
-        iat: Math.floor(Date.now() / 1000), // issued at
-        jti: randomUUID(), // unique token ID
-        "x-ably-appId": appId,
-        "x-ably-capability": capabilities,
-      };
-
-      // Handle client ID - use special "none" value to explicitly indicate no clientId
+      // Determine client ID - use special "none" value to explicitly indicate no clientId
       let clientId: null | string = null;
+      let clientIdClaim: Record<string, string> = {};
       if (flags["client-id"]) {
-        if (flags["client-id"].toLowerCase() === "none") {
-          // No client ID - don't add it to the token
-          clientId = null;
-        } else {
-          // Use the provided client ID
-          jwtPayload["x-ably-clientId"] = flags["client-id"];
+        if (flags["client-id"].toLowerCase() !== "none") {
           clientId = flags["client-id"];
+          clientIdClaim = { "x-ably-clientId": clientId };
         }
       } else {
         // Generate a default client ID
-        const defaultClientId = `ably-cli-${randomUUID().slice(0, 8)}`;
-        jwtPayload["x-ably-clientId"] = defaultClientId;
-        clientId = defaultClientId;
+        clientId = `ably-cli-${randomUUID().slice(0, 8)}`;
+        clientIdClaim = { "x-ably-clientId": clientId };
       }
 
-      // Sign the JWT
-      const token = jwt.sign(jwtPayload, keySecret, {
-        algorithm: "HS256",
-        keyid: keyId,
-      });
+      // Timestamps for display
+      const iat = Math.floor(Date.now() / 1000);
+      const exp = iat + flags.ttl;
+
+      // Sign the JWT using jose's fluent API — standard claims via setters,
+      // Ably-specific custom claims passed directly to the constructor.
+      const secretBytes = new TextEncoder().encode(keySecret);
+      const token = await new SignJWT({
+        "x-ably-appId": appId,
+        "x-ably-capability": capabilities,
+        ...clientIdClaim,
+      })
+        .setProtectedHeader({ alg: "HS256", kid: keyId })
+        .setIssuedAt(iat)
+        .setExpirationTime(exp)
+        .setJti(randomUUID())
+        .sign(secretBytes);
 
       // If token-only flag is set, output just the token string
       if (flags["token-only"]) {
@@ -129,8 +119,8 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
               appId,
               capability: capabilities,
               clientId,
-              expires: new Date(jwtPayload.exp * 1000).toISOString(),
-              issued: new Date(jwtPayload.iat * 1000).toISOString(),
+              expires: new Date(exp * 1000).toISOString(),
+              issued: new Date(iat * 1000).toISOString(),
               keyId,
               token,
               ttl: flags.ttl,
@@ -143,12 +133,12 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
         this.log("Generated Ably JWT Token:");
         this.log(`Token: ${token}`);
         this.log(`Type: JWT`);
-        this.log(`Issued: ${new Date(jwtPayload.iat * 1000).toISOString()}`);
-        this.log(`Expires: ${new Date(jwtPayload.exp * 1000).toISOString()}`);
+        this.log(`Issued: ${new Date(iat * 1000).toISOString()}`);
+        this.log(`Expires: ${new Date(exp * 1000).toISOString()}`);
         this.log(`TTL: ${flags.ttl} seconds`);
         this.log(`App ID: ${appId}`);
         this.log(`Key ID: ${keyId}`);
-        this.log(`Client ID: ${clientId || "None"}`);
+        this.log(`Client ID: ${clientId ?? "None"}`);
         this.log(`Capability: ${this.formatJsonOutput(capabilities, flags)}`);
       }
     } catch (error) {
