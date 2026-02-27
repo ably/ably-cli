@@ -71,9 +71,10 @@ export default defineConfig({
           },
           testTimeout: 20000, // Allow 20s per test for plenty of time on actions
           hookTimeout: 60000, // 60 seconds for hooks
-          // Run e2e tests sequentially to avoid API rate limits
-          sequence: { shuffle: false },
-          fileParallelism: false,
+          // Limit parallel e2e files — each spawns CLI subprocesses with live
+          // WebSocket connections; too many concurrent files overwhelms CI
+          pool: "forks",
+          poolOptions: { forks: { maxForks: 3 } },
         },
       },
       {

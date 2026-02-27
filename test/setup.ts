@@ -2,7 +2,6 @@
 import { config } from "dotenv";
 import { resolve } from "node:path";
 import { existsSync } from "node:fs";
-import { exec } from "node:child_process";
 import * as Ably from "ably";
 
 // Import types for test mocks
@@ -89,22 +88,6 @@ export async function cleanupGlobalProcesses(): Promise<void> {
     }
 
     globalProcessRegistry.clear();
-  }
-
-  // Also kill any processes matching our patterns
-  try {
-    await new Promise<void>((resolve) => {
-      exec('pkill -f "bin/run.js.*subscribe"', () => {
-        resolve();
-      });
-    });
-    await new Promise<void>((resolve) => {
-      exec('pkill -f "ably.*subscribe"', () => {
-        resolve();
-      });
-    });
-  } catch {
-    // Ignore errors
   }
 }
 
