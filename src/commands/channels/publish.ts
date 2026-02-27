@@ -225,7 +225,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
   private async publishMessages(
     args: Record<string, unknown>,
     flags: Record<string, unknown>,
-    publisher: (msg: Ably.Message) => Promise<void>,
+    publisher: (msg: Ably.Message) => Promise<void | Ably.PublishResult>,
   ): Promise<void> {
     // Validate count and delay
     const count = Math.max(1, flags.count as number);
