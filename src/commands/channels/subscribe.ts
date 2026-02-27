@@ -29,6 +29,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
     "$ ably channels subscribe my-channel --json",
     "$ ably channels subscribe my-channel --pretty-json",
     "$ ably channels subscribe my-channel --duration 30",
+    "$ ably channels subscribe --stream my-channel",
   ];
 
   static override flags = {
@@ -66,6 +67,11 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       default: false,
       description: "Include sequence numbers in output",
     }),
+    stream: Flags.boolean({
+      default: false,
+      description:
+        "Stream mode: concatenates message.append data for the same serial, rewriting output in-place",
+    }),
   };
 
   static override strict = false;
@@ -73,6 +79,10 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
   private cleanupInProgress = false;
   private client: Ably.Realtime | null = null;
   private sequenceCounter = 0;
+
+  // Stream mode state
+  private streamCurrentSerial: string | null = null;
+  private streamAppendCount = 0;
 
   async run(): Promise<void> {
     const { flags } = await this.parse(ChannelsSubscribe);
@@ -209,6 +219,9 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
             event: message.name || "(none)",
             id: message.id,
             timestamp,
+            ...(flags.stream
+              ? { action: message.action, serial: message.serial }
+              : {}),
             ...(flags["sequence-numbers"]
               ? { sequence: this.sequenceCounter }
               : {}),
@@ -223,6 +236,8 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
           if (this.shouldOutputJson(flags)) {
             this.log(this.formatJsonOutput(messageEvent, flags));
+          } else if (flags.stream && message.serial) {
+            this.handleStreamMessage(message, channel.name, timestamp);
           } else {
             const name = message.name || "(none)";
             const sequencePrefix = flags["sequence-numbers"]
@@ -281,6 +296,12 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
       // Wait until the user interrupts or the optional duration elapses
       const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
+
+      // Finalize any in-progress stream output
+      if (flags.stream && this.streamCurrentSerial !== null) {
+        this.finalizeStream();
+      }
+
       this.logCliEvent(flags, "subscribe", "runComplete", "Exiting wait loop", {
         exitReason,
       });
@@ -303,6 +324,64 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       } else {
         this.error(`Error: ${errorMsg}`);
       }
+    }
+  }
+
+  private handleStreamMessage(
+    message: Ably.Message,
+    channelName: string,
+    timestamp: string,
+  ): void {
+    const action = message.action;
+    const serial = message.serial!;
+    const data =
+      typeof message.data === "string"
+        ? message.data
+        : JSON.stringify(message.data);
+
+    // If we see a new serial, finalize the previous stream and start a new one
+    if (serial !== this.streamCurrentSerial) {
+      if (this.streamCurrentSerial !== null) {
+        this.finalizeStream();
+      }
+
+      this.streamCurrentSerial = serial;
+      this.streamAppendCount = 0;
+    }
+
+    if (action === "message.create" || action === "message.append") {
+      this.streamAppendCount++;
+      const header = `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(channelName)}`;
+
+      if (this.shouldUseTerminalUpdates()) {
+        // TTY: stream tokens inline — each append just writes its delta
+        if (action === "message.create") {
+          process.stdout.write(`${header} ${data}`);
+        } else {
+          process.stdout.write(data);
+        }
+      } else {
+        // Non-TTY / test: log each delta on its own line (captured by test runner)
+        this.log(`${header} ${data}`);
+      }
+    } else {
+      // For other actions (message.update, message.delete, etc.), display normally
+      const name = message.name || "(none)";
+      this.log(
+        `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`Channel: ${channelName}`)} | ${chalk.yellow(`Event: ${name}`)} | ${chalk.dim(`Action: ${action}`)}`,
+      );
+      this.log(`${chalk.blue("Data:")} ${data}`);
+      this.log("");
+    }
+  }
+
+  private finalizeStream(): void {
+    const countLabel = `${this.streamAppendCount} msg${this.streamAppendCount === 1 ? "" : "s"}`;
+    if (this.shouldUseTerminalUpdates()) {
+      process.stdout.write(`\n${chalk.dim(`[${countLabel}]`)}\n\n`);
+    } else {
+      this.log(chalk.dim(`[${countLabel}]`));
+      this.log("");
     }
   }
 }
