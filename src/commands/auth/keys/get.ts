@@ -6,7 +6,7 @@ export default class KeysGetCommand extends ControlBaseCommand {
   static args = {
     keyNameOrValue: Args.string({
       description:
-        "Key name (APP_ID.KEY_ID) or full value of the key to get details for",
+        "Key name (APP_ID.KEY_ID), key ID, key label (e.g. Root), or full key value to get details for",
       required: true,
     }),
   };
@@ -15,9 +15,9 @@ export default class KeysGetCommand extends ControlBaseCommand {
 
   static examples = [
     "$ ably auth keys get APP_ID.KEY_ID",
+    "$ ably auth keys get Root --app APP_ID",
     "$ ably auth keys get KEY_ID --app APP_ID",
     "$ ably auth keys get APP_ID.KEY_ID --json",
-    "$ ably auth keys get APP_ID.KEY_ID --pretty-json",
   ];
 
   static flags = {
@@ -38,15 +38,13 @@ export default class KeysGetCommand extends ControlBaseCommand {
     const controlApi = this.createControlApi(flags);
 
     let appId = flags.app || this.configManager.getCurrentAppId();
-    let keyId = args.keyNameOrValue;
+    const keyIdentifier = args.keyNameOrValue;
 
-    // If keyNameOrValue includes a period, it might be in the app_id.key_id format
-    if (args.keyNameOrValue.includes(".")) {
-      const parts = args.keyNameOrValue.split(".");
-      // If it has exactly one period and no colon, it's likely an app_id.key_id
-      if (parts.length === 2 && !args.keyNameOrValue.includes(":")) {
-        appId = parts[0];
-        keyId = parts[1];
+    // If keyNameOrValue is in APP_ID.KEY_ID format (one period, no colon), extract appId
+    if (keyIdentifier.includes(".") && !keyIdentifier.includes(":")) {
+      const parts = keyIdentifier.split(".");
+      if (parts.length === 2) {
+        appId = appId || parts[0];
       }
     }
 
@@ -70,7 +68,7 @@ export default class KeysGetCommand extends ControlBaseCommand {
     }
 
     try {
-      const key = await controlApi.getKey(appId, keyId);
+      const key = await controlApi.getKey(appId, keyIdentifier);
 
       if (this.shouldOutputJson(flags)) {
         // Add the full key name to the JSON output
@@ -125,7 +123,7 @@ export default class KeysGetCommand extends ControlBaseCommand {
           {
             appId,
             error: error instanceof Error ? error.message : String(error),
-            keyId,
+            keyIdentifier,
             success: false,
           },
           flags,
