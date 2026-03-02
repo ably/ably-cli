@@ -21,7 +21,7 @@ import isWebCliMode from "./utils/web-mode.js";
 // List of commands not allowed in web CLI mode - EXPORTED
 export const WEB_CLI_RESTRICTED_COMMANDS = [
   // All account login/management commands are not valid in a web env where auth is handled by the website
-  // note accounts:stats is supported
+  // note stats:account is a separate top-level command and is not restricted here
   "accounts:current",
   "accounts:list",
   "accounts:login",

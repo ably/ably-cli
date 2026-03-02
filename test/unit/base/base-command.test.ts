@@ -215,7 +215,7 @@ describe("AblyBaseCommand", function () {
       // Test various anonymous-restricted commands
       const testCases = [
         {
-          id: "accounts:stats",
+          id: "accounts:current",
           expectedError:
             /Account management commands are only available when logged in/,
         },

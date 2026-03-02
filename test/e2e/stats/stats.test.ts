@@ -35,7 +35,7 @@ function parseJsonLines(stdout: string): Record<string, unknown>[] {
   );
 }
 
-describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
+describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
   "Stats E2E Tests",
   () => {
     beforeAll(() => {
@@ -65,8 +65,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
             "should fetch account stats with default settings",
           );
 
-          if (SKIP_ACCOUNT_STATS) return;
-
           const result = await runCommand(
             ["stats", "account", "--access-token", E2E_ACCESS_TOKEN!],
             {
@@ -90,8 +88,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
         { timeout: 60000 },
         async () => {
           setupTestFailureHandler("should fetch account stats with hour unit");
-
-          if (SKIP_ACCOUNT_STATS) return;
 
           const result = await runCommand(
             [
@@ -117,8 +113,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
         async () => {
           setupTestFailureHandler("should fetch account stats with day unit");
 
-          if (SKIP_ACCOUNT_STATS) return;
-
           const result = await runCommand(
             [
               "stats",
@@ -143,8 +137,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
         async () => {
           setupTestFailureHandler("should fetch account stats with limit");
 
-          if (SKIP_ACCOUNT_STATS) return;
-
           const result = await runCommand(
             [
               "stats",
@@ -168,8 +160,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
         { timeout: 60000 },
         async () => {
           setupTestFailureHandler("should output account stats in JSON format");
-
-          if (SKIP_ACCOUNT_STATS) return;
 
           const result = await runCommand(
             [
@@ -218,8 +208,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
             "should output account stats in pretty JSON format",
           );
 
-          if (SKIP_ACCOUNT_STATS) return;
-
           const result = await runCommand(
             [
               "stats",
@@ -246,8 +234,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
           setupTestFailureHandler(
             "should handle live stats subscription briefly",
           );
-
-          if (SKIP_ACCOUNT_STATS) return;
 
           const cliPath = join(process.cwd(), "bin", "run.js");
 
@@ -305,9 +291,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
             "should fetch app stats with default settings using access token",
           );
 
-          if (SKIP_ACCOUNT_STATS) return;
-
-          // Get an app ID first if we have access token
           const result = await runCommand(
             ["stats", "app", "--access-token", E2E_ACCESS_TOKEN!],
             {
@@ -328,16 +311,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
         { timeout: 60000 },
         async () => {
           setupTestFailureHandler("should fetch app stats using access token");
-
-          if (SHOULD_SKIP_E2E) return;
-
-          // stats app command uses Control API which requires an access token
-          if (!E2E_ACCESS_TOKEN) {
-            console.log(
-              "Skipping app stats test: E2E_ABLY_ACCESS_TOKEN not available",
-            );
-            return;
-          }
 
           // Verify API key is available (for extracting app ID)
           if (!E2E_API_KEY) {
@@ -369,16 +342,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
         async () => {
           setupTestFailureHandler("should fetch app stats with hour unit");
 
-          if (SHOULD_SKIP_E2E) return;
-
-          // stats app command uses Control API which requires an access token
-          if (!E2E_ACCESS_TOKEN) {
-            console.log(
-              "Skipping app stats test: E2E_ABLY_ACCESS_TOKEN not available",
-            );
-            return;
-          }
-
           if (!E2E_API_KEY) {
             throw new Error("E2E_API_KEY is not available for testing");
           }
@@ -403,16 +366,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
         async () => {
           setupTestFailureHandler("should fetch app stats with day unit");
 
-          if (SHOULD_SKIP_E2E) return;
-
-          // stats app command uses Control API which requires an access token
-          if (!E2E_ACCESS_TOKEN) {
-            console.log(
-              "Skipping app stats test: E2E_ABLY_ACCESS_TOKEN not available",
-            );
-            return;
-          }
-
           if (!E2E_API_KEY) {
             throw new Error("E2E_API_KEY is not available for testing");
           }
@@ -433,16 +386,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
 
       it("should fetch app stats with limit", { timeout: 60000 }, async () => {
         setupTestFailureHandler("should fetch app stats with limit");
-
-        if (SHOULD_SKIP_E2E) return;
-
-        // stats app command uses Control API which requires an access token
-        if (!E2E_ACCESS_TOKEN) {
-          console.log(
-            "Skipping app stats test: E2E_ABLY_ACCESS_TOKEN not available",
-          );
-          return;
-        }
 
         if (!E2E_API_KEY) {
           throw new Error("E2E_API_KEY is not available for testing");
@@ -466,16 +409,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
         { timeout: 60000 },
         async () => {
           setupTestFailureHandler("should output app stats in JSON format");
-
-          if (SHOULD_SKIP_E2E) return;
-
-          // stats app command uses Control API which requires an access token
-          if (!E2E_ACCESS_TOKEN) {
-            console.log(
-              "Skipping app stats test: E2E_ABLY_ACCESS_TOKEN not available",
-            );
-            return;
-          }
 
           if (!E2E_API_KEY) {
             throw new Error("E2E_API_KEY is not available for testing");
@@ -523,16 +456,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
             "should output app stats in pretty JSON format",
           );
 
-          if (SHOULD_SKIP_E2E) return;
-
-          // stats app command uses Control API which requires an access token
-          if (!E2E_ACCESS_TOKEN) {
-            console.log(
-              "Skipping app stats test: E2E_ABLY_ACCESS_TOKEN not available",
-            );
-            return;
-          }
-
           if (!E2E_API_KEY) {
             throw new Error("E2E_API_KEY is not available for testing");
           }
@@ -558,16 +481,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
           setupTestFailureHandler(
             "should handle live app stats subscription briefly",
           );
-
-          if (SHOULD_SKIP_E2E) return;
-
-          // stats app command uses Control API which requires an access token
-          if (!E2E_ACCESS_TOKEN) {
-            console.log(
-              "Skipping live stats test: E2E_ABLY_ACCESS_TOKEN not available",
-            );
-            return;
-          }
 
           if (!E2E_API_KEY) {
             throw new Error("E2E_API_KEY is not available for testing");
@@ -622,21 +535,17 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
             "should handle invalid unit option gracefully",
           );
 
-          if (SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS) return;
-
-          // stats account uses Control API which requires an access token
-          const authArgs = E2E_ACCESS_TOKEN
-            ? ["--access-token", E2E_ACCESS_TOKEN]
-            : [];
-          const envOpts = E2E_ACCESS_TOKEN
-            ? { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN }
-            : {};
-
           const result = await runCommand(
-            ["stats", "account", "--unit", "invalid", ...authArgs],
+            [
+              "stats",
+              "account",
+              "--unit",
+              "invalid",
+              "--access-token",
+              E2E_ACCESS_TOKEN!,
+            ],
             {
               timeoutMs: 30000,
-              env: envOpts,
             },
           );
 
@@ -653,21 +562,17 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
             "should handle invalid timestamp formats gracefully",
           );
 
-          if (SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS) return;
-
-          // stats account uses Control API which requires an access token
-          const authArgs = E2E_ACCESS_TOKEN
-            ? ["--access-token", E2E_ACCESS_TOKEN]
-            : [];
-          const envOpts = E2E_ACCESS_TOKEN
-            ? { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN }
-            : {};
-
           const result = await runCommand(
-            ["stats", "account", "--start", "not-a-timestamp", ...authArgs],
+            [
+              "stats",
+              "account",
+              "--start",
+              "not-a-timestamp",
+              "--access-token",
+              E2E_ACCESS_TOKEN!,
+            ],
             {
               timeoutMs: 30000,
-              env: envOpts,
             },
           );
 
@@ -682,16 +587,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
           setupTestFailureHandler(
             "should handle non-existent app ID gracefully",
           );
-
-          if (SHOULD_SKIP_E2E) return;
-
-          // stats app command uses Control API which requires an access token
-          if (!E2E_ACCESS_TOKEN) {
-            console.log(
-              "Skipping app stats test: E2E_ABLY_ACCESS_TOKEN not available",
-            );
-            return;
-          }
 
           const result = await runCommand(
             ["stats", "app", "non-existent-app-id"],
@@ -741,8 +636,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
             "should fetch account stats with custom time range",
           );
 
-          if (SKIP_ACCOUNT_STATS) return;
-
           const now = Date.now();
           const oneHourAgo = now - 60 * 60 * 1000;
 
@@ -773,16 +666,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
           setupTestFailureHandler(
             "should fetch app stats with custom time range",
           );
-
-          if (SHOULD_SKIP_E2E) return;
-
-          // stats app command uses Control API which requires an access token
-          if (!E2E_ACCESS_TOKEN) {
-            console.log(
-              "Skipping app stats test: E2E_ABLY_ACCESS_TOKEN not available",
-            );
-            return;
-          }
 
           if (!E2E_API_KEY) {
             throw new Error("E2E_API_KEY is not available for testing");
@@ -820,8 +703,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
             "should handle empty stats gracefully for narrow time range",
           );
 
-          if (SKIP_ACCOUNT_STATS) return;
-
           // Use a very recent time range that's unlikely to have stats
           const endTime = Date.now();
           const startTime = endTime - 1000; // 1 second ago
@@ -857,8 +738,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
             "should complete stats retrieval within reasonable time",
           );
 
-          if (SKIP_ACCOUNT_STATS) return;
-
           const startTime = Date.now();
           const result = await runCommand(
             [
@@ -888,8 +767,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
             "should handle multiple consecutive stats requests",
           );
 
-          if (SKIP_ACCOUNT_STATS) return;
-
           // Run multiple stats requests in sequence
           for (let i = 0; i < 3; i++) {
             const result = await runCommand(
@@ -917,8 +794,6 @@ describe.skipIf(SHOULD_SKIP_E2E && SKIP_ACCOUNT_STATS)(
           setupTestFailureHandler(
             "should maintain consistent output format across requests",
           );
-
-          if (SKIP_ACCOUNT_STATS) return;
 
           // Run the same command twice and verify consistent output structure
           const result1 = await runCommand(
