@@ -250,6 +250,14 @@ describe("AblyBaseCommand", function () {
           expectedError: /Queue management requires you to be logged in/,
         },
         {
+          id: "stats:account",
+          expectedError: /Stats commands are only available when logged in/,
+        },
+        {
+          id: "stats:app",
+          expectedError: /Stats commands are only available when logged in/,
+        },
+        {
           id: "logs:tail",
           expectedError: /not available in anonymous mode for privacy reasons/,
         },

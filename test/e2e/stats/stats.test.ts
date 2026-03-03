@@ -178,25 +178,19 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
 
           expect(result.exitCode).toBe(0);
 
-          // Verify output is valid JSON or contains "No stats found"
           const hasNoStats = result.stdout.includes("No stats found");
-          const hasValidJson = result.stdout.trim().length > 0;
-          expect(hasNoStats || hasValidJson).toBe(true);
+          if (hasNoStats) {
+            return;
+          }
 
-          // If there's JSON output, verify it's parseable
+          // Must have at least one valid JSON line
           const lines = result.stdout.trim().split("\n");
           const jsonLines = lines.filter((line) => line.trim().startsWith("{"));
-          // Verify all JSON lines are valid
-          expect(
-            jsonLines.every((line) => {
-              try {
-                JSON.parse(line.trim());
-                return true;
-              } catch {
-                return false;
-              }
-            }),
-          ).toBe(true);
+          expect(jsonLines.length).toBeGreaterThan(0);
+
+          for (const line of jsonLines) {
+            expect(() => JSON.parse(line.trim())).not.toThrow();
+          }
         },
       );
 
@@ -426,25 +420,19 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
 
           expect(result.exitCode).toBe(0);
 
-          // Verify output is valid JSON or contains "No stats found"
           const hasNoStats = result.stdout.includes("No stats found");
-          const hasValidJson = result.stdout.trim().length > 0;
-          expect(hasNoStats || hasValidJson).toBe(true);
+          if (hasNoStats) {
+            return;
+          }
 
-          // If there's JSON output, verify it's parseable
+          // Must have at least one valid JSON line
           const lines = result.stdout.trim().split("\n");
           const jsonLines = lines.filter((line) => line.trim().startsWith("{"));
-          // Verify all JSON lines are valid
-          expect(
-            jsonLines.every((line) => {
-              try {
-                JSON.parse(line.trim());
-                return true;
-              } catch {
-                return false;
-              }
-            }),
-          ).toBe(true);
+          expect(jsonLines.length).toBeGreaterThan(0);
+
+          for (const line of jsonLines) {
+            expect(() => JSON.parse(line.trim())).not.toThrow();
+          }
         },
       );
 
