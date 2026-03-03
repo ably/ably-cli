@@ -159,10 +159,6 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
       expect(command.testIsAllowedInWebCliMode("accounts:logout")).toBe(false);
     });
 
-    it("should restrict MCP commands", function () {
-      expect(command.testIsAllowedInWebCliMode("mcp:start-server")).toBe(false);
-    });
-
     it("should allow help commands", function () {
       expect(command.testIsAllowedInWebCliMode("help")).toBe(true);
       expect(command.testIsAllowedInWebCliMode("help:contact")).toBe(true);

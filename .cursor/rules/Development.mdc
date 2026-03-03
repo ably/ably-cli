@@ -18,7 +18,7 @@ alwaysApply: true
 3.  **Run Tests:** Execute relevant tests locally (e.g., using `pnpm test`) to verify that your changes haven't introduced regressions. Ensure all affected tests pass. For new features, add appropriate unit, integration, or end-to-end tests.
 4.  **Update Documentation:** Update all relevant documentation, including:
     *   `README.md` (especially the command list if commands were changed/added).
-    *   Files within the `docs/` directory (`Product-Requirements.md`, `Project-Structure.md`, `Testing.md` etc.) if the changes affect requirements, structure, or testing procedures.
+    *   Files within the `docs/` directory (`Project-Structure.md`, `Testing.md` etc.) if the changes affect structure or testing procedures.
     *   Files within the `.cursor/rules/` directory if the changes impact development guidelines, Ably usage, or project structure.
 
 **Failure to complete these steps means the work is not finished.**

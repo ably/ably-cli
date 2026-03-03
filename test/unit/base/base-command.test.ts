@@ -304,16 +304,6 @@ describe("AblyBaseCommand", function () {
             /Local configuration is not supported in the web CLI\. Please install the CLI locally/,
         },
         {
-          id: "mcp",
-          expectedError:
-            /MCP server functionality is not available in the web CLI\. Please install the CLI locally/,
-        },
-        {
-          id: "mcp:start-server",
-          expectedError:
-            /MCP server functionality is not available in the web CLI\. Please install the CLI locally/,
-        },
-        {
           id: "accounts:current",
           expectedError:
             /Account management commands are only available when logged in/,
@@ -377,8 +367,6 @@ describe("AblyBaseCommand", function () {
       expect(command.testIsAllowedInWebCliMode("accounts:logout")).toBe(false);
       expect(command.testIsAllowedInWebCliMode("config")).toBe(false);
       expect(command.testIsAllowedInWebCliMode("config:set")).toBe(false);
-      expect(command.testIsAllowedInWebCliMode("mcp")).toBe(false);
-      expect(command.testIsAllowedInWebCliMode("mcp:start-server")).toBe(false);
     });
 
     it("should return true for allowed commands", function () {

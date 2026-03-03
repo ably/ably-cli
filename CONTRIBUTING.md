@@ -19,7 +19,6 @@ In summary, this involves:
 
 Before starting work, please familiarize yourself with:
 
-*   [Product Requirements](./docs/Product-Requirements.md): Understand the goals and features.
 *   [Project Structure](./docs/Project-Structure.md): Know where different code components live.
 *   [Testing Strategy](./docs/Testing.md): Understand the different types of tests and how to run them.
 *   [Development Rules](mdc:.cursor/rules/Development.mdc): Coding standards, linting, dependency management.

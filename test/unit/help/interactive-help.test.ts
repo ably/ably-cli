@@ -181,7 +181,6 @@ ably> channels publish test "msg2"
       expect(help.shouldDisplay({ id: "accounts:list" } as any)).toBe(false);
       expect(help.shouldDisplay({ id: "apps:create" } as any)).toBe(false);
       expect(help.shouldDisplay({ id: "config" } as any)).toBe(false);
-      expect(help.shouldDisplay({ id: "mcp:start" } as any)).toBe(false);
 
       // These should still be visible
       expect(help.shouldDisplay({ id: "channels:publish" } as any)).toBe(true);

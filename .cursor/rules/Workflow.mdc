@@ -26,9 +26,8 @@ alwaysApply: true
     *   Review and update all relevant documentation and rule files based on your changes.
     *   **Checklist:**
         *   `README.md`: Especially the command list if commands were added/changed (often handled by `pnpm prepare`).
-        *   `docs/*.md`: Any file impacted by the changes (e.g., `Product-Requirements.md`, `Project-Structure.md`, `Testing.md`).
+        *   `docs/*.md`: Any file impacted by the changes (e.g., `Project-Structure.md`, `Testing.md`).
         *   `.cursor/rules/*.mdc`: Any rule file impacted by changes to development practices, Ably usage, project structure, etc.
-        *   `docs/TODO.md`: Update any related tasks.
     *   **Purpose:** Keeps project knowledge current for both humans and AI agents.
     *   **Verification:** Manually confirm that documentation accurately reflects the implemented changes.
 

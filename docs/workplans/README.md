@@ -7,14 +7,14 @@ Each workplan file is a markdown file named with the date in the format [yyyy-mm
 ## Example brief for Agent
 
 ```
-Please look at all the tasks tagged with [feat/terminal-server-improvements] in @TODO.md, and write up a plan to implement all of the tagged features.
+Please look at all the tasks tagged with [feat/terminal-server-improvements] and write up a plan to implement all of the tagged features.
 
 Note:
 
 1) Your job is not to implement this yet, your job is to understand the code base fully, the features, and come up with a robust plan that allows another agent to follow the tasks and implement this all interatively and logically in groups of functionality.
 2) Your plan must abide by all the best practices and requirements defined in the .cursor/rules and /docs folder. Make sure you have read every single file in @rules and @docs and any associated files that they reference that are relevant before you propose a plan.
 3) Consider what test coverage is needed and include that in the plan.
-4) Document your plan in the the docs/workplans folder with a file named and structured as described in @README.md, and ensure all documentation and rules, where applicable, are updated as you proceed through the plan, and all @TODO.md tasks are marked as complete when done.
+4) Document your plan in the the docs/workplans folder with a file named and structured as described in @README.md, and ensure all documentation and rules, where applicable, are updated as you proceed through the plan.
 
 You need to use maximum effort researching this code base and the requested features so that we have a solid plan that can be exectued in steps and committed to git in each stage.
 ```

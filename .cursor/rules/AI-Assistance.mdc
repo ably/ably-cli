@@ -12,7 +12,6 @@ This document provides guidance for AI assistants working with the Ably CLI code
 ### Understanding the Project
 
 1. **Start with Key Documentation**:
-   - [Product Requirements](mdc:docs/Product-Requirements.md)
    - [Project Structure](mdc:docs/Project-Structure.md)
    - [Testing Strategy](mdc:docs/Testing.md)
    - [Mandatory Workflow](mdc:.cursor/rules/Workflow.mdc)

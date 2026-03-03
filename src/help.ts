@@ -462,7 +462,7 @@ export default class CustomHelp extends Help {
     // Modify based on web CLI mode using the imported list
     if (this.webCliMode) {
       const isWebRestricted = WEB_CLI_RESTRICTED_COMMANDS.some((restricted) => {
-        // Handle wildcard patterns (e.g., "config*", "mcp*")
+        // Handle wildcard patterns (e.g., "config*")
         if (restricted.endsWith("*")) {
           const prefix = restricted.slice(0, -1); // Remove the asterisk
           return (
@@ -524,7 +524,7 @@ export default class CustomHelp extends Help {
     // In web mode, check if the command should be hidden using the imported list
     // Check if the commandId matches any restricted command pattern
     const isWebRestricted = WEB_CLI_RESTRICTED_COMMANDS.some((restricted) => {
-      // Handle wildcard patterns (e.g., "config*", "mcp*")
+      // Handle wildcard patterns (e.g., "config*")
       if (restricted.endsWith("*")) {
         const prefix = restricted.slice(0, -1); // Remove the asterisk
         return (

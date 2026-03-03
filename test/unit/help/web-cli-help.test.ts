@@ -208,7 +208,6 @@ describe("CLI Help", function () {
             hidden: false,
           },
           { name: "config", description: "Config command", hidden: false },
-          { name: "mcp", description: "MCP command", hidden: false },
         ];
 
         const mockConfig = createMockConfig(mockCommands, mockTopics);
@@ -228,9 +227,8 @@ describe("CLI Help", function () {
         // Should show allowed command
         expect(output).toContain("channels");
 
-        // Should NOT show commands matching wildcard patterns (config*, mcp*)
+        // Should NOT show commands matching wildcard patterns (config*)
         expect(output).not.toContain("config");
-        expect(output).not.toContain("mcp");
       });
 
       it("should show common commands in anonymous mode", async function () {
@@ -335,7 +333,6 @@ describe("CLI Help", function () {
         // Test restricted commands
         expect(help.shouldDisplay({ id: "accounts:login" } as any)).toBe(false);
         expect(help.shouldDisplay({ id: "config" } as any)).toBe(false);
-        expect(help.shouldDisplay({ id: "mcp:start" } as any)).toBe(false);
 
         // Test allowed commands
         expect(help.shouldDisplay({ id: "channels:publish" } as any)).toBe(
