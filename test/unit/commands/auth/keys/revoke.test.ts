@@ -2,29 +2,10 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
-
-function mockKeysList(appId: string, keys: Record<string, unknown>[]) {
-  return nock("https://control.ably.net")
-    .get(`/v1/apps/${appId}/keys`)
-    .reply(200, keys);
-}
-
-function buildMockKey(
-  appId: string,
-  keyId: string,
-  overrides: Record<string, unknown> = {},
-) {
-  return {
-    id: keyId,
-    appId,
-    name: "Test Key",
-    key: `${appId}.${keyId}:secret`,
-    capability: { "*": ["publish", "subscribe"] },
-    created: Date.now(),
-    modified: Date.now(),
-    ...overrides,
-  };
-}
+import {
+  mockKeysList,
+  buildMockKey,
+} from "../../../../helpers/mock-control-api-keys.js";
 
 describe("auth:keys:revoke command", () => {
   const mockKeyId = "testkey";
@@ -45,7 +26,7 @@ describe("auth:keys:revoke command", () => {
 
       // Mock revoke key
       nock("https://control.ably.net")
-        .post(`/v1/apps/${appId}/keys/${mockKeyId}/revoke`)
+        .delete(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {});
 
       const { stdout } = await runCommand(
@@ -66,7 +47,7 @@ describe("auth:keys:revoke command", () => {
       ]);
 
       nock("https://control.ably.net")
-        .post(`/v1/apps/${appId}/keys/${mockKeyId}/revoke`)
+        .delete(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {});
 
       const { stdout } = await runCommand(
@@ -83,7 +64,7 @@ describe("auth:keys:revoke command", () => {
       mockKeysList(appId, [buildMockKey(appId, mockKeyId)]);
 
       nock("https://control.ably.net")
-        .post(`/v1/apps/${appId}/keys/${mockKeyId}/revoke`)
+        .delete(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {});
 
       const { stdout } = await runCommand(
