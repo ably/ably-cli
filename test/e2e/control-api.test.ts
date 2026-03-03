@@ -404,6 +404,31 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
         expect(updatedNamespace).toHaveProperty("batchingEnabled", true);
         expect(updatedNamespace).toHaveProperty("batchingInterval", 5000);
       });
+
+      it("should delete a namespace", async () => {
+        // Create a namespace specifically for deletion
+        const namespaceData = {
+          id: `test-delete-ns-${Date.now()}`,
+          persisted: false,
+          pushEnabled: false,
+        };
+
+        const namespace = await controlApi.createNamespace(
+          testAppId,
+          namespaceData,
+        );
+        createdResources.namespaces.push(namespace.id);
+
+        // Delete the namespace
+        await controlApi.deleteNamespace(testAppId, namespace.id);
+
+        // Verify it's gone by listing namespaces
+        const namespaces = await controlApi.listNamespaces(testAppId);
+        const deletedNamespace = namespaces.find(
+          (ns) => ns.id === namespace.id,
+        );
+        expect(deletedNamespace).toBeUndefined();
+      });
     });
 
     describe("Error Handling", () => {

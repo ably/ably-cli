@@ -583,15 +583,148 @@ describe("Control API E2E Workflow Tests", () => {
 
         expect(listResult.stderr).toBe("");
         const listOutput = JSON.parse(listResult.stdout);
-        expect(listOutput).toHaveProperty("namespaces");
-        expect(Array.isArray(listOutput.namespaces)).toBe(true);
+        expect(listOutput).toHaveProperty("rules");
+        expect(Array.isArray(listOutput.rules)).toBe(true);
 
-        const foundRule = listOutput.namespaces.find(
+        const foundRule = listOutput.rules.find(
           (ns: any) => ns.id === namespaceId,
         );
         expect(foundRule).toBeDefined();
         expect(foundRule).toHaveProperty("persisted", true);
         expect(foundRule).toHaveProperty("pushEnabled", true);
+      },
+    );
+
+    it(
+      "should update a channel rule through CLI",
+      { timeout: 20000 },
+      async () => {
+        setupTestFailureHandler("should update a channel rule through CLI");
+
+        if (shouldSkip) return;
+
+        const ruleName = `e2e-update-rule-${Date.now()}`;
+
+        // 1. Create channel rule
+        const createResult = await runCommand(
+          [
+            "channel-rule",
+            "create",
+            "--app",
+            testAppId,
+            "--name",
+            ruleName,
+            "--persisted",
+            "--json",
+          ],
+          {
+            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          },
+        );
+
+        expect(createResult.stderr).toBe("");
+        const createOutput = JSON.parse(createResult.stdout);
+        expect(createOutput).toHaveProperty("success", true);
+        expect(createOutput.rule).toHaveProperty("persisted", true);
+        expect(createOutput.rule).toHaveProperty("pushEnabled", false);
+
+        const namespaceId = createOutput.rule.id;
+        createdResources.namespaces.push(namespaceId);
+
+        // 2. Update channel rule - enable push, disable persisted
+        const updateResult = await runCommand(
+          [
+            "channel-rule",
+            "update",
+            namespaceId,
+            "--app",
+            testAppId,
+            "--push-enabled",
+            "--no-persisted",
+            "--json",
+          ],
+          {
+            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          },
+        );
+
+        expect(updateResult.stderr).toBe("");
+        const updateOutput = JSON.parse(updateResult.stdout);
+        expect(updateOutput).toHaveProperty("success", true);
+        expect(updateOutput.rule).toHaveProperty("id", namespaceId);
+        expect(updateOutput.rule).toHaveProperty("pushEnabled", true);
+        expect(updateOutput.rule).toHaveProperty("persisted", false);
+
+        // Verify null batchingInterval/conflationInterval don't cause errors
+        // These fields may be null in the response
+        expect(updateOutput.rule).toHaveProperty("batchingInterval");
+        expect(updateOutput.rule).toHaveProperty("conflationInterval");
+      },
+    );
+
+    it(
+      "should delete a channel rule through CLI",
+      { timeout: 20000 },
+      async () => {
+        setupTestFailureHandler("should delete a channel rule through CLI");
+
+        if (shouldSkip) return;
+
+        const ruleName = `e2e-delete-rule-${Date.now()}`;
+
+        // 1. Create channel rule
+        const createResult = await runCommand(
+          [
+            "channel-rule",
+            "create",
+            "--app",
+            testAppId,
+            "--name",
+            ruleName,
+            "--json",
+          ],
+          {
+            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          },
+        );
+
+        expect(createResult.stderr).toBe("");
+        const createOutput = JSON.parse(createResult.stdout);
+        expect(createOutput).toHaveProperty("success", true);
+        const namespaceId = createOutput.rule.id;
+        createdResources.namespaces.push(namespaceId);
+
+        // 2. Delete channel rule with --force
+        const deleteResult = await runCommand(
+          [
+            "channel-rule",
+            "delete",
+            namespaceId,
+            "--app",
+            testAppId,
+            "--force",
+          ],
+          {
+            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          },
+        );
+
+        expect(deleteResult.stderr).toBe("");
+        expect(deleteResult.stdout).toContain("deleted successfully");
+
+        // 3. Verify the rule is gone by listing
+        const listResult = await runCommand(
+          ["channel-rule", "list", "--app", testAppId, "--json"],
+          {
+            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          },
+        );
+
+        const listOutput = JSON.parse(listResult.stdout);
+        const deletedRule = listOutput.rules.find(
+          (ns: any) => ns.id === namespaceId,
+        );
+        expect(deletedRule).toBeUndefined();
       },
     );
   });
