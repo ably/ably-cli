@@ -221,7 +221,7 @@ ably> channels publish test "msg2"
 
       // Test wildcard patterns
       expect(help.shouldDisplay({ id: "accounts" } as any)).toBe(false); // matches accounts*
-      expect(help.shouldDisplay({ id: "accounts:stats" } as any)).toBe(false); // matches accounts*
+      expect(help.shouldDisplay({ id: "accounts:current" } as any)).toBe(false); // matches accounts*
       expect(help.shouldDisplay({ id: "apps" } as any)).toBe(false); // matches apps*
       expect(help.shouldDisplay({ id: "apps:current" } as any)).toBe(false); // matches apps*
       expect(help.shouldDisplay({ id: "bench" } as any)).toBe(false); // matches bench*

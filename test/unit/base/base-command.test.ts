@@ -217,7 +217,7 @@ describe("AblyBaseCommand", function () {
       // Test various anonymous-restricted commands
       const testCases = [
         {
-          id: "accounts:stats",
+          id: "accounts:current",
           expectedError:
             /Account management commands are only available when logged in/,
         },
@@ -250,6 +250,14 @@ describe("AblyBaseCommand", function () {
         {
           id: "queues:list",
           expectedError: /Queue management requires you to be logged in/,
+        },
+        {
+          id: "stats:account",
+          expectedError: /Stats commands are only available when logged in/,
+        },
+        {
+          id: "stats:app",
+          expectedError: /Stats commands are only available when logged in/,
         },
         {
           id: "logs:tail",

@@ -21,7 +21,7 @@ import isWebCliMode from "./utils/web-mode.js";
 // List of commands not allowed in web CLI mode - EXPORTED
 export const WEB_CLI_RESTRICTED_COMMANDS = [
   // All account login/management commands are not valid in a web env where auth is handled by the website
-  // note accounts:stats is supported
+  // note stats:account and stats:app are restricted via WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS
   "accounts:current",
   "accounts:list",
   "accounts:login",
@@ -64,6 +64,9 @@ export const WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS = [
   // Integrations and queues are not available to anonymous users
   "integrations*",
   "queues*",
+
+  // Stats commands expose account/app usage data
+  "stats*",
 ];
 
 /* Commands not suitable for interactive mode */
@@ -238,6 +241,8 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           errorMessage = `Integration management requires you to be logged in. Please log in at https://ably.com/login.`;
         } else if (commandId.startsWith("queues")) {
           errorMessage = `Queue management requires you to be logged in. Please log in at https://ably.com/login.`;
+        } else if (commandId.startsWith("stats")) {
+          errorMessage = `Stats commands are only available when logged in. Please log in at https://ably.com/login.`;
         } else {
           errorMessage = `This command is not available in anonymous mode. Please log in at https://ably.com/login.`;
         }

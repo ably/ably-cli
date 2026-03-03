@@ -243,7 +243,7 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
           { id: "accounts:logout", hidden: false },
           { id: "accounts:switch", hidden: false },
           { id: "accounts:current", hidden: false },
-          { id: "accounts:stats", hidden: false },
+          { id: "stats", hidden: false },
           { id: "auth", hidden: false },
           { id: "auth:keys", hidden: false },
           { id: "auth:keys:switch", hidden: false },
