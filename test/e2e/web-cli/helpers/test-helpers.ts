@@ -1,4 +1,5 @@
-import { Page } from 'playwright/test';
+import { Page } from "playwright/test";
+import { createSignedConfig } from "./signing-helper";
 
 // Helper to suppress console output unless tests fail
 let consoleMessages: Array<{ type: string; text: string; time: Date }> = [];
@@ -6,28 +7,32 @@ let isTestFailing = false;
 
 export function setupConsoleCapture(page: Page): void {
   consoleMessages = [];
-  
-  page.on('console', msg => {
+
+  page.on("console", (msg) => {
     const entry = {
       type: msg.type(),
       text: msg.text(),
       time: new Date(),
     };
     consoleMessages.push(entry);
-    
+
     // Only output immediately if verbose mode
     if (process.env.VERBOSE_TESTS) {
       console.log(`[Browser ${msg.type()}] ${msg.text()}`);
-    } else if (!process.env.CI && msg.type() === 'error') {
+    } else if (!process.env.CI && msg.type() === "error") {
       // In non-CI environments, still show errors
       console.log(`[Browser ${msg.type()}] ${msg.text()}`);
     }
   });
-  
-  page.on('pageerror', error => {
+
+  page.on("pageerror", (error) => {
     // Only log page errors that aren't rate limiting in CI
-    if (!process.env.CI || !error.message?.includes('429') || process.env.VERBOSE_TESTS) {
-      console.error('[Page Error]', error);
+    if (
+      !process.env.CI ||
+      !error.message?.includes("429") ||
+      process.env.VERBOSE_TESTS
+    ) {
+      console.error("[Page Error]", error);
     }
     isTestFailing = true;
   });
@@ -35,11 +40,11 @@ export function setupConsoleCapture(page: Page): void {
 
 export function dumpConsoleOnFailure(): void {
   if (isTestFailing && consoleMessages.length > 0) {
-    console.log('\n=== Browser Console Output (Test Failed) ===');
-    consoleMessages.forEach(msg => {
+    console.log("\n=== Browser Console Output (Test Failed) ===");
+    consoleMessages.forEach((msg) => {
       console.log(`[${msg.time.toISOString()}] [${msg.type}] ${msg.text}`);
     });
-    console.log('===========================================\n');
+    console.log("===========================================\n");
   }
   consoleMessages = [];
   isTestFailing = false;
@@ -53,17 +58,17 @@ export function markTestAsFailing(): void {
 export function getTestUrl(): string {
   const baseUrl = process.env.WEB_CLI_TEST_URL;
   if (!baseUrl) {
-    throw new Error('WEB_CLI_TEST_URL not set. Is the global setup running?');
+    throw new Error("WEB_CLI_TEST_URL not set. Is the global setup running?");
   }
-  
+
   // If a custom terminal server URL is set, append it as a query param
   const terminalServerUrl = process.env.TERMINAL_SERVER_URL;
   if (terminalServerUrl) {
     const url = new URL(baseUrl);
-    url.searchParams.set('serverUrl', terminalServerUrl);
+    url.searchParams.set("serverUrl", terminalServerUrl);
     return url.toString();
   }
-  
+
   return baseUrl;
 }
 
@@ -71,42 +76,78 @@ export function getTestUrl(): string {
 export function buildTestUrl(params?: Record<string, string>): string {
   const url = new URL(getTestUrl());
   // Always clear credentials in tests to ensure consistent state
-  url.searchParams.set('clearCredentials', 'true');
-  
+  url.searchParams.set("clearCredentials", "true");
+
   // Use custom terminal server URL if provided
   const terminalServerUrl = process.env.TERMINAL_SERVER_URL;
   if (terminalServerUrl) {
-    url.searchParams.set('serverUrl', terminalServerUrl);
+    url.searchParams.set("serverUrl", terminalServerUrl);
   }
-  
+
   if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      url.searchParams.set(key, value);
-    });
+    // Check if apiKey is provided - if so, sign it first
+    if (params.apiKey) {
+      const { signedConfig, signature } = createSignedConfig({
+        apiKey: params.apiKey,
+        timestamp: Date.now(),
+        bypassRateLimit: true,
+      });
+      url.searchParams.set("signedConfig", signedConfig);
+      url.searchParams.set("signature", signature);
+
+      // Add other params except apiKey (already handled)
+      Object.entries(params).forEach(([key, value]) => {
+        if (key !== "apiKey") {
+          url.searchParams.set(key, value);
+        }
+      });
+    } else {
+      // No apiKey, just add params as-is
+      Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
+    }
   }
   return url.toString();
 }
 
 // Helper to track reload connections
 export async function reloadPageWithRateLimit(page: Page): Promise<void> {
-  const { incrementConnectionCount, waitForRateLimitIfNeeded } = await import('../test-rate-limiter');
-  const { waitForRateLimitLock } = await import('../rate-limit-lock');
-  
+  const { incrementConnectionCount, waitForRateLimitIfNeeded } = await import(
+    "../test-rate-limiter"
+  );
+  const { waitForRateLimitLock } = await import("../rate-limit-lock");
+
   // ALWAYS wait for any ongoing rate limit pause before proceeding
   await waitForRateLimitLock();
-  
-  // Check if the page will auto-connect after reload (has credentials or apiKey in URL)
+
+  // Check if the page will auto-connect after reload (has signed credentials in URL or storage)
   const currentUrl = page.url();
-  const willAutoConnect = currentUrl.includes('apiKey=') || 
-    await page.evaluate(() => {
-      return !!(sessionStorage.getItem('ably.web-cli.apiKey') || localStorage.getItem('ably.web-cli.apiKey'));
-    });
-  
+  const willAutoConnect =
+    (currentUrl.includes("signedConfig=") &&
+      currentUrl.includes("signature=")) ||
+    (await page.evaluate(() => {
+      // Check for domain-scoped signed config keys
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith("ably.web-cli.signedConfig.")) {
+          return true;
+        }
+      }
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key?.startsWith("ably.web-cli.signedConfig.")) {
+          return true;
+        }
+      }
+      return false;
+    }));
+
   if (willAutoConnect) {
     await waitForRateLimitIfNeeded();
     incrementConnectionCount();
   }
-  
+
   await page.reload();
 }
 

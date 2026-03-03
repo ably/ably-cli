@@ -38,7 +38,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
     count: Flags.integer({
       char: "c",
       default: 1,
-      description: "Number of messages to publish",
+      description: "Number of messages to publish (default: 1)",
     }),
     delay: Flags.integer({
       char: "d",
@@ -70,14 +70,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
       this.progressIntervalId = null;
     }
 
-    if (
-      this.realtime &&
-      this.realtime.connection.state !== "closed" && // Check state before closing to avoid errors if already closed
-      this.realtime.connection.state !== "failed"
-    ) {
-      this.realtime.close();
-    }
-
+    // Client cleanup is handled by base class
     return super.finally(err);
   }
 
@@ -89,9 +82,9 @@ export default class ChannelsPublish extends AblyBaseCommand {
     // Use Realtime transport by default when publishing multiple messages to ensure ordering
     // If transport is not explicitly set and count > 1, use realtime
     // If transport is explicitly set, respect that choice
-    const shouldUseRealtime = flags.transport === "realtime" || 
-      (!flags.transport && flags.count > 1);
-    
+    const shouldUseRealtime =
+      flags.transport === "realtime" || (!flags.transport && flags.count > 1);
+
     await (shouldUseRealtime
       ? this.publishWithRealtime(args, flags)
       : this.publishWithRest(args, flags));
@@ -117,6 +110,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
       { error: errorMsg },
     );
     this.logErrorAndExit(`Failed to publish message: ${errorMsg}`, flags);
+    return;
   }
 
   // --- Original Methods (modified) ---
@@ -136,10 +130,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
     flags: Record<string, unknown>,
   ): void {
     if (this.shouldOutputJson(flags)) {
-      this.log(
-        this.formatJsonOutput({ error: message, success: false }, flags),
-      );
-      process.exitCode = 1; // Set exit code for JSON output errors
+      this.jsonError({ error: message, success: false }, flags); // Set exit code for JSON output errors
     } else {
       this.error(message); // Use oclif error which sets exit code
     }
@@ -177,7 +168,9 @@ export default class ChannelsPublish extends AblyBaseCommand {
           `${chalk.green("✓")} ${published}/${total} messages published successfully${errors > 0 ? ` (${chalk.red(errors)} errors)` : ""}.`,
         );
       } else if (errors === 0) {
-        this.log(`${chalk.green("✓")} Message published successfully to channel "${args.channel}".`);
+        this.log(
+          `${chalk.green("✓")} Message published successfully to channel "${args.channel}".`,
+        );
       } else {
         // Error message already logged by publishMessages loop or prepareMessage
       }
@@ -277,7 +270,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
         flags,
         messageIndex,
       );
-      
+
       try {
         await publisher(message);
         publishedCount++;
@@ -323,7 +316,14 @@ export default class ChannelsPublish extends AblyBaseCommand {
     }
 
     this.clearProgressIndicator();
-    this.logFinalSummary(flags, count, publishedCount, errorCount, results, args);
+    this.logFinalSummary(
+      flags,
+      count,
+      publishedCount,
+      errorCount,
+      results,
+      args,
+    );
   }
 
   private async publishWithRealtime(
@@ -375,18 +375,8 @@ export default class ChannelsPublish extends AblyBaseCommand {
       await this.publishMessages(args, flags, (msg) => channel.publish(msg));
     } catch (error) {
       this.handlePublishError(error, flags);
-    } finally {
-      // Ensure connection is closed if it was opened
-      if (this.realtime) {
-        this.realtime.close();
-        this.logCliEvent(
-          flags,
-          "connection",
-          "closed",
-          "Realtime connection closed.",
-        );
-      }
     }
+    // Client cleanup is handled by command finally() method
   }
 
   private async publishWithRest(

@@ -1,14 +1,9 @@
-import {
-  ChatClient,
-  RoomStatus,
-  Subscription,
-  RoomStatusChange,
-} from "@ably/chat";
-import { Args } from "@oclif/core";
-import * as Ably from "ably";
+import { ChatClient, RoomStatus, RoomStatusChange } from "@ably/chat";
+import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class TypingSubscribe extends ChatBaseCommand {
   static override args = {
@@ -30,39 +25,15 @@ export default class TypingSubscribe extends ChatBaseCommand {
 
   static override flags = {
     ...ChatBaseCommand.globalFlags,
+    duration: Flags.integer({
+      description:
+        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      char: "D",
+      required: false,
+    }),
   };
 
   private chatClient: ChatClient | null = null;
-  private ablyClient: Ably.Realtime | null = null;
-  private unsubscribeStatusFn: (() => void) | null = null;
-  private unsubscribeTypingFn: Subscription | null = null;
-
-  // Override finally to ensure resources are cleaned up
-  async finally(err: Error | undefined): Promise<void> {
-    if (this.unsubscribeTypingFn) {
-      try {
-        this.unsubscribeTypingFn.unsubscribe();
-      } catch {
-        /* ignore */
-      }
-    }
-    if (this.unsubscribeStatusFn) {
-      try {
-        this.unsubscribeStatusFn();
-      } catch {
-        /* ignore */
-      }
-    }
-    if (
-      this.ablyClient &&
-      this.ablyClient.connection.state !== "closed" &&
-      this.ablyClient.connection.state !== "failed"
-    ) {
-      this.ablyClient.close();
-    }
-
-    return super.finally(err);
-  }
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(TypingSubscribe);
@@ -70,8 +41,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
     try {
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);
-      this.ablyClient = this._chatRealtimeClient;
-      if (!this.chatClient || !this.ablyClient) {
+      if (!this.chatClient) {
         this.error("Failed to initialize clients");
         return;
       }
@@ -79,8 +49,8 @@ export default class TypingSubscribe extends ChatBaseCommand {
       const { room: roomName } = args;
 
       // Set up connection state logging
-      this.setupConnectionStateLogging(this.ablyClient, flags, {
-        includeUserFriendlyMessages: true
+      this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
+        includeUserFriendlyMessages: true,
       });
 
       // Get the room with typing enabled
@@ -90,7 +60,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
         "gettingRoom",
         `Getting room handle for ${roomName}`,
       );
-      const room = await this.chatClient.rooms.get(roomName, {});
+      const room = await this.chatClient.rooms.get(roomName);
       this.logCliEvent(
         flags,
         "room",
@@ -105,42 +75,39 @@ export default class TypingSubscribe extends ChatBaseCommand {
         "subscribingToStatus",
         "Subscribing to room status changes",
       );
-      const { off: unsubscribeStatus } = room.onStatusChange(
-        (statusChange: RoomStatusChange) => {
-          let reason: Error | null | string | undefined;
-          if (statusChange.current === RoomStatus.Failed) {
-            reason = room.error; // Get reason from room.error on failure
-          }
+      room.onStatusChange((statusChange: RoomStatusChange) => {
+        let reason: Error | null | string | undefined;
+        if (statusChange.current === RoomStatus.Failed) {
+          reason = room.error; // Get reason from room.error on failure
+        }
 
-          const reasonMsg = reason instanceof Error ? reason.message : reason;
-          this.logCliEvent(
-            flags,
-            "room",
-            `status-${statusChange.current}`,
-            `Room status changed to ${statusChange.current}`,
-            { reason: reasonMsg },
-          );
+        const reasonMsg = reason instanceof Error ? reason.message : reason;
+        this.logCliEvent(
+          flags,
+          "room",
+          `status-${statusChange.current}`,
+          `Room status changed to ${statusChange.current}`,
+          { reason: reasonMsg },
+        );
 
-          if (statusChange.current === RoomStatus.Attached) {
-            if (!this.shouldOutputJson(flags)) {
-              this.log(
-                `${chalk.green("Connected to room:")} ${chalk.bold(roomName)}`,
-              );
-              this.log(
-                `${chalk.dim("Listening for typing indicators. Press Ctrl+C to exit.")}`,
-              );
-            }
-          } else if (
-            statusChange.current === RoomStatus.Failed &&
-            !this.shouldOutputJson(flags)
-          ) {
-            this.error(
-              `Failed to attach to room: ${reasonMsg || "Unknown error"}`,
+        if (statusChange.current === RoomStatus.Attached) {
+          if (!this.shouldOutputJson(flags)) {
+            this.log(
+              `${chalk.green("Connected to room:")} ${chalk.bold(roomName)}`,
+            );
+            this.log(
+              `${chalk.dim("Listening for typing indicators. Press Ctrl+C to exit.")}`,
             );
           }
-        },
-      );
-      this.unsubscribeStatusFn = unsubscribeStatus;
+        } else if (
+          statusChange.current === RoomStatus.Failed &&
+          !this.shouldOutputJson(flags)
+        ) {
+          this.error(
+            `Failed to attach to room: ${reasonMsg || "Unknown error"}`,
+          );
+        }
+      });
       this.logCliEvent(
         flags,
         "room",
@@ -155,57 +122,55 @@ export default class TypingSubscribe extends ChatBaseCommand {
         "subscribing",
         "Subscribing to typing indicators",
       );
-      this.unsubscribeTypingFn = room.typing.subscribe(
-        (typingSetEvent) => {
-          const timestamp = new Date().toISOString();
-          const currentlyTyping = [...(typingSetEvent.currentlyTyping || [])];
-          const eventData = {
-            currentlyTyping,
-            room: roomName,
-            timestamp,
-          };
-          this.logCliEvent(
-            flags,
-            "typing",
-            "update",
-            "Typing status update received",
-            eventData,
+      room.typing.subscribe((typingSetEvent) => {
+        const timestamp = new Date().toISOString();
+        const currentlyTyping = [...(typingSetEvent.currentlyTyping || [])];
+        const eventData = {
+          currentlyTyping,
+          room: roomName,
+          timestamp,
+        };
+        this.logCliEvent(
+          flags,
+          "typing",
+          "update",
+          "Typing status update received",
+          eventData,
+        );
+
+        if (this.shouldOutputJson(flags)) {
+          this.log(
+            this.formatJsonOutput({ success: true, ...eventData }, flags),
           );
+        } else {
+          // Clear-line updates are helpful in an interactive TTY but they make
+          // the mocha output hard to read when the CLI is invoked from unit
+          // tests (ABLY_CLI_TEST_MODE=true) or when stdout is not a TTY (CI).
+          const shouldInlineUpdate = this.shouldUseTerminalUpdates();
 
-          if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput({ success: true, ...eventData }, flags),
-            );
-          } else {
-            // Clear-line updates are helpful in an interactive TTY but they make
-            // the mocha output hard to read when the CLI is invoked from unit
-            // tests (ABLY_CLI_TEST_MODE=true) or when stdout is not a TTY (CI).
-            const shouldInlineUpdate = this.shouldUseTerminalUpdates();
-
-            if (shouldInlineUpdate) {
-              // Clear the current line and rewrite it in-place.
-              process.stdout.write("\r\u001B[K");
+          if (shouldInlineUpdate) {
+            // Clear the current line and rewrite it in-place.
+            process.stdout.write("\r\u001B[K");
 
             if (currentlyTyping.length > 0) {
               const memberNames = currentlyTyping.join(", ");
               process.stdout.write(
-                  chalk.yellow(
-                    `${memberNames} ${currentlyTyping.length === 1 ? "is" : "are"} typing...`,
-                  ),
-                );
-              }
-            } else if (currentlyTyping.length > 0) {
-              // Fallback: just log a new line so that test output remains intact.
-              const memberNames = currentlyTyping.join(", ");
-              this.log(
                 chalk.yellow(
                   `${memberNames} ${currentlyTyping.length === 1 ? "is" : "are"} typing...`,
                 ),
               );
             }
+          } else if (currentlyTyping.length > 0) {
+            // Fallback: just log a new line so that test output remains intact.
+            const memberNames = currentlyTyping.join(", ");
+            this.log(
+              chalk.yellow(
+                `${memberNames} ${currentlyTyping.length === 1 ? "is" : "are"} typing...`,
+              ),
+            );
           }
-        },
-      );
+        }
+      });
       this.logCliEvent(
         flags,
         "typing",
@@ -229,127 +194,9 @@ export default class TypingSubscribe extends ChatBaseCommand {
         "listening",
         "Listening for typing indicators...",
       );
-      // Keep the process running until Ctrl+C
-      await new Promise(() => {
-        // This promise intentionally never resolves
-        process.on("SIGINT", async () => {
-          this.logCliEvent(
-            flags,
-            "typing",
-            "cleanupInitiated",
-            "Cleanup initiated (Ctrl+C pressed)",
-          );
-          if (!this.shouldOutputJson(flags)) {
-            // Move to a new line to not override typing status
-            this.log("\n");
-            this.log(`${chalk.yellow("Disconnecting from room...")}`);
-          }
 
-          // Clean up subscriptions
-          if (this.unsubscribeTypingFn) {
-            try {
-              this.logCliEvent(
-                flags,
-                "typing",
-                "unsubscribing",
-                "Unsubscribing from typing indicators",
-              );
-              this.unsubscribeTypingFn.unsubscribe();
-              this.logCliEvent(
-                flags,
-                "typing",
-                "unsubscribed",
-                "Unsubscribed from typing indicators",
-              );
-            } catch (error) {
-              this.logCliEvent(
-                flags,
-                "typing",
-                "unsubscribeError",
-                "Error unsubscribing typing",
-                {
-                  error: error instanceof Error ? error.message : String(error),
-                },
-              );
-            }
-          }
-
-          if (this.unsubscribeStatusFn) {
-            try {
-              this.logCliEvent(
-                flags,
-                "room",
-                "unsubscribingStatus",
-                "Unsubscribing from room status",
-              );
-              this.unsubscribeStatusFn();
-              this.logCliEvent(
-                flags,
-                "room",
-                "unsubscribedStatus",
-                "Unsubscribed from room status",
-              );
-            } catch (error) {
-              this.logCliEvent(
-                flags,
-                "room",
-                "unsubscribeStatusError",
-                "Error unsubscribing status",
-                {
-                  error: error instanceof Error ? error.message : String(error),
-                },
-              );
-            }
-          }
-
-          // Release the room and close connection
-          try {
-            this.logCliEvent(
-              flags,
-              "room",
-              "releasing",
-              `Releasing room ${roomName}`,
-            );
-            await this.chatClient?.rooms.release(roomName);
-            this.logCliEvent(
-              flags,
-              "room",
-              "released",
-              `Room ${roomName} released`,
-            );
-          } catch (error) {
-            this.logCliEvent(
-              flags,
-              "room",
-              "releaseError",
-              "Error releasing room",
-              { error: error instanceof Error ? error.message : String(error) },
-            );
-          }
-
-          if (this.ablyClient) {
-            this.logCliEvent(
-              flags,
-              "connection",
-              "closing",
-              "Closing Realtime connection",
-            );
-            this.ablyClient.close();
-            this.logCliEvent(
-              flags,
-              "connection",
-              "closed",
-              "Realtime connection closed",
-            );
-          }
-
-          if (!this.shouldOutputJson(flags)) {
-            this.log(`${chalk.green("Successfully disconnected.")}`);
-          }
-
-          // Graceful exit without forcing process termination.
-        });
-      });
+      // Wait until the user interrupts or the optional duration elapses
+      await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(
@@ -359,17 +206,11 @@ export default class TypingSubscribe extends ChatBaseCommand {
         `Failed to subscribe to typing indicators: ${errorMsg}`,
         { error: errorMsg, room: args.room },
       );
-      // Close the connection in case of error
-      if (this.ablyClient) {
-        this.ablyClient.close();
-      }
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { error: errorMsg, room: args.room, success: false },
-            flags,
-          ),
+        this.jsonError(
+          { error: errorMsg, room: args.room, success: false },
+          flags,
         );
       } else {
         this.error(`Failed to subscribe to typing indicators: ${errorMsg}`);

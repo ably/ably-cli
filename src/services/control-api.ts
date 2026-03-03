@@ -1,5 +1,6 @@
 import fetch, { type RequestInit } from "node-fetch";
 import { getCliVersion } from "../utils/version.js";
+import isTestMode from "../utils/test-mode.js";
 
 export interface ControlApiOptions {
   accessToken: string;
@@ -177,9 +178,10 @@ export class ControlApi {
       this.logErrors = options.logErrors;
     } else {
       // Determine logErrors based on environment variables
-      const suppressErrors = process.env.SUPPRESS_CONTROL_API_ERRORS === 'true' ||
-                            process.env.CI === 'true' ||
-                            process.env.ABLY_CLI_TEST_MODE === 'true';
+      const suppressErrors =
+        process.env.SUPPRESS_CONTROL_API_ERRORS === "true" ||
+        process.env.CI === "true" ||
+        isTestMode();
       this.logErrors = !suppressErrors;
     }
   }
@@ -273,8 +275,8 @@ export class ControlApi {
     );
   }
 
-  async deleteQueue(appId: string, queueName: string): Promise<void> {
-    return this.request<void>(`/apps/${appId}/queues/${queueName}`, "DELETE");
+  async deleteQueue(appId: string, queueId: string): Promise<void> {
+    return this.request<void>(`/apps/${appId}/queues/${queueId}`, "DELETE");
   }
 
   async deleteRule(appId: string, ruleId: string): Promise<void> {

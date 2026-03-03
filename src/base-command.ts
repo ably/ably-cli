@@ -5,13 +5,18 @@ import chalk from "chalk";
 import colorJson from "color-json";
 import { randomUUID } from "node:crypto";
 
-import { ConfigManager } from "./services/config-manager.js";
+import {
+  ConfigManager,
+  createConfigManager,
+} from "./services/config-manager.js";
 import { ControlApi } from "./services/control-api.js";
 import { InteractiveHelper } from "./services/interactive-helper.js";
 import { BaseFlags, CommandConfig, ErrorDetails } from "./types/cli.js";
 import { getCliVersion } from "./utils/version.js";
-
-// Export BaseFlags for potential use in other modules like MCP
+import Spaces from "@ably/spaces";
+import { ChatClient } from "@ably/chat";
+import isTestMode from "./utils/test-mode.js";
+import isWebCliMode from "./utils/web-mode.js";
 
 // List of commands not allowed in web CLI mode - EXPORTED
 export const WEB_CLI_RESTRICTED_COMMANDS = [
@@ -24,7 +29,7 @@ export const WEB_CLI_RESTRICTED_COMMANDS = [
   "accounts:logout",
   "accounts:switch",
 
-  // You cannot switch/delete/create apps, you can only work with the current app you have selected in the web UI   
+  // You cannot switch/delete/create apps, you can only work with the current app you have selected in the web UI
   "apps:create",
   "apps:switch",
   "apps:delete",
@@ -36,9 +41,6 @@ export const WEB_CLI_RESTRICTED_COMMANDS = [
 
   // config only applicable to local env
   "config*",
-  
-  // MCP functionality is not available in the web CLI
-  "mcp*",
 ];
 
 /* Additional restricted commands when running in anonymous web CLI mode */
@@ -48,19 +50,19 @@ export const WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS = [
 
   "auth:keys*", // disallow all key commands
   "auth:revoke-token", // token revocation not support when anonymous
-  
+
   "bench*", // all bench commands cannot be run in anonymous mode
-  
+
   // All enumeration and logging commands are disallowed as this could expose other anonymous user behaviour
-  "channels:list", 
-  "channels:logs", 
-  "connections:logs", 
-  "rooms:list", 
-  "spaces:list", 
+  "channels:list",
+  "channels:logs",
+  "connections:logs",
+  "rooms:list",
+  "spaces:list",
   "logs*",
 
   // Integrations and queues are not available to anonymous users
-  "integrations*",     
+  "integrations*",
   "queues*",
 ];
 
@@ -69,7 +71,6 @@ export const INTERACTIVE_UNSUITABLE_COMMANDS = [
   "autocomplete", // Autocomplete setup is not needed in interactive mode
   "config", // Config editing is not suitable for interactive mode
   "version", // Version is shown at startup and available via --version
-  "mcp", // MCP server functionality is not suitable for interactive mode
 ];
 
 // List of commands that should not show account/app info
@@ -89,7 +90,9 @@ const SKIP_AUTH_INFO_COMMANDS = [
 
 export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   protected _authInfoShown = false;
-  
+  private _cachedRestClient: Ably.Rest | null = null;
+  private _cachedRealtimeClient: Ably.Realtime | null = null;
+
   // Add static flags that will be available to all commands
   static globalFlags = {
     "access-token": Flags.string({
@@ -106,8 +109,14 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     "control-host": Flags.string({
       description:
         "Override the host endpoint for the control API, which defaults to control.ably.net",
-      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== 'true',
+      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
       env: "ABLY_CONTROL_HOST",
+    }),
+    "dashboard-host": Flags.string({
+      description:
+        "Override the host for the Ably dashboard, which defaults to https://ably.com",
+      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
+      env: "ABLY_DASHBOARD_HOST",
     }),
     env: Flags.string({
       description: "Override the environment for all product API calls",
@@ -122,15 +131,15 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     }),
     port: Flags.integer({
       description: "Override the port for product API calls",
-      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== 'true',
+      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
     }),
     tlsPort: Flags.integer({
       description: "Override the TLS port for product API calls",
-      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== 'true',
+      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
     }),
     tls: Flags.string({
       description: "Use TLS for product API calls (default is true)",
-      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== 'true',
+      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
     }),
     json: Flags.boolean({
       description: "Output in JSON format",
@@ -164,23 +173,15 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
 
   constructor(argv: string[], config: CommandConfig) {
     super(argv, config);
-    this.configManager = new ConfigManager();
+    this.configManager = createConfigManager();
     this.interactiveHelper = new InteractiveHelper(this.configManager);
     // Check if we're running in web CLI mode
-    this.isWebCliMode = process.env.ABLY_WEB_CLI_MODE === "true";
-  }
-
-  /**
-   * Check if we're running in test mode
-   * @returns true if running in test mode
-   */
-  protected isTestMode(): boolean {
-    return process.env.ABLY_CLI_TEST_MODE === "true";
+    this.isWebCliMode = isWebCliMode();
   }
 
   protected isAnonymousWebMode(): boolean {
     // In web CLI mode, the server sets ABLY_ANONYMOUS_USER_MODE when no access token is available
-    return this.isWebCliMode && process.env.ABLY_ANONYMOUS_USER_MODE === 'true';
+    return this.isWebCliMode && process.env.ABLY_ANONYMOUS_USER_MODE === "true";
   }
 
   /**
@@ -188,11 +189,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    */
   protected matchesCommandPattern(commandId: string, pattern: string): boolean {
     // Handle wildcard patterns
-    if (pattern.endsWith('*')) {
+    if (pattern.endsWith("*")) {
       const prefix = pattern.slice(0, -1);
       return commandId === prefix || commandId.startsWith(prefix);
     }
-    
+
     // Handle exact matches
     return commandId === pattern;
   }
@@ -201,8 +202,8 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * Check if command is restricted in anonymous web CLI mode
    */
   protected isRestrictedInAnonymousMode(commandId: string): boolean {
-    return WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS.some(pattern => 
-      this.matchesCommandPattern(commandId, pattern)
+    return WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS.some((pattern) =>
+      this.matchesCommandPattern(commandId, pattern),
     );
   }
 
@@ -214,7 +215,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * - Not in CI environment
    */
   protected shouldUseTerminalUpdates(): boolean {
-    return process.stdout.isTTY && !this.isTestMode() && !process.env.CI;
+    return process.stdout.isTTY && !isTestMode() && !process.env.CI;
   }
 
   /**
@@ -222,12 +223,49 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * @returns Test mocks object or undefined if not in test mode
    */
   protected getMockAblyRest(): Ably.Rest | undefined {
-    if (!this.isTestMode()) return undefined;
+    if (!isTestMode()) return undefined;
 
     // Access global mock if running in test mode
-    return (globalThis as { __TEST_MOCKS__?: { ablyRestMock: Ably.Rest } }).__TEST_MOCKS__?.ablyRestMock;
+    return (globalThis as { __TEST_MOCKS__?: { ablyRestMock: Ably.Rest } })
+      .__TEST_MOCKS__?.ablyRestMock;
   }
 
+  /**
+   * Get test mocks if in test mode
+   * @returns Test mocks object or undefined if not in test mode
+   */
+  protected getMockAblyRealtime(): Ably.Realtime | undefined {
+    if (!isTestMode()) return undefined;
+
+    // Access global mock if running in test mode
+    return (
+      globalThis as { __TEST_MOCKS__?: { ablyRealtimeMock: Ably.Realtime } }
+    ).__TEST_MOCKS__?.ablyRealtimeMock;
+  }
+
+  /**
+   * Get test mocks if in test mode
+   * @returns Test mocks object or undefined if not in test mode
+   */
+  protected getMockAblySpaces(): Spaces | undefined {
+    if (!isTestMode()) return undefined;
+
+    // Access global mock if running in test mode
+    return (globalThis as { __TEST_MOCKS__?: { ablySpacesMock: Spaces } })
+      .__TEST_MOCKS__?.ablySpacesMock;
+  }
+
+  /**
+   * Get test mocks if in test mode
+   * @returns Test mocks object or undefined if not in test mode
+   */
+  protected getMockAblyChat(): ChatClient | undefined {
+    if (!isTestMode()) return undefined;
+
+    // Access global mock if running in test mode
+    return (globalThis as { __TEST_MOCKS__?: { ablyChatMock: ChatClient } })
+      .__TEST_MOCKS__?.ablyChatMock;
+  }
 
   /**
    * Check if this is a web CLI version and return a consistent error message
@@ -259,8 +297,12 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           errorMessage = `Token revocation requires you to be logged in. Please log in at https://ably.com/login.`;
         } else if (commandId.startsWith("bench")) {
           errorMessage = `Benchmarking commands are only available when logged in. Please log in at https://ably.com/login.`;
-        } else if (commandId === "channels:list" || commandId === "rooms:list" || commandId === "spaces:list" || 
-                   commandId.includes("logs")) {
+        } else if (
+          commandId === "channels:list" ||
+          commandId === "rooms:list" ||
+          commandId === "spaces:list" ||
+          commandId.includes("logs")
+        ) {
           errorMessage = `This command is not available in anonymous mode for privacy reasons. Please log in at https://ably.com/login.`;
         } else if (commandId.startsWith("integrations")) {
           errorMessage = `Integration management requires you to be logged in. Please log in at https://ably.com/login.`;
@@ -277,8 +319,6 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           errorMessage = `Please log in at https://ably.com/login to use authentication features.`;
         } else if (commandId.startsWith("config")) {
           errorMessage = `Local configuration is not supported in the web CLI. Please install the CLI locally.`;
-        } else if (commandId.startsWith("mcp")) {
-          errorMessage = `MCP server functionality is not available in the web CLI. Please install the CLI locally.`;
         } else {
           errorMessage = `This command is not available in the web CLI. Please install the CLI locally.`;
         }
@@ -307,8 +347,6 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           errorMessage = `You cannot switch API keys from within the web CLI. Please use the web interface to change keys.`;
         } else if (commandId.startsWith("config")) {
           errorMessage = `Local configuration is not supported in the web CLI version.`;
-        } else if (commandId.startsWith("mcp")) {
-          errorMessage = `MCP server functionality is not available in the web CLI. Please use the standalone CLI installation instead.`;
         }
 
         this.error(chalk.red(errorMessage));
@@ -323,12 +361,23 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     flags: BaseFlags,
     options?: {
       skipAuthInfo?: boolean;
-    }
+    },
   ): Promise<Ably.Rest | null> {
+    // Return cached client if it exists
+    if (this._cachedRestClient) {
+      return this._cachedRestClient;
+    }
+
     const client = await this.createAblyClientInternal(flags, {
-      type: 'rest',
+      type: "rest",
       skipAuthInfo: options?.skipAuthInfo,
     });
+
+    // Cache the client for reuse
+    if (client) {
+      this._cachedRestClient = client as Ably.Rest;
+    }
+
     return client as Ably.Rest | null;
   }
 
@@ -339,26 +388,24 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     flags: BaseFlags,
     options?: {
       skipAuthInfo?: boolean;
-    }
+    },
   ): Promise<Ably.Realtime | null> {
+    // Return cached client if it exists
+    if (this._cachedRealtimeClient) {
+      return this._cachedRealtimeClient;
+    }
+
     const client = await this.createAblyClientInternal(flags, {
-      type: 'realtime',
+      type: "realtime",
       skipAuthInfo: options?.skipAuthInfo,
     });
-    return client as Ably.Realtime | null;
-  }
 
-  /**
-   * @deprecated Use createAblyRestClient or createAblyRealtimeClient instead
-   */
-  protected async createAblyClient(
-    flags: BaseFlags,
-    options?: {
-      type?: 'rest' | 'realtime';
-      skipAuthInfo?: boolean;
+    // Cache the client for reuse
+    if (client) {
+      this._cachedRealtimeClient = client as Ably.Realtime;
     }
-  ): Promise<Ably.Rest | Ably.Realtime | null> {
-    return this.createAblyClientInternal(flags, options);
+
+    return client as Ably.Realtime | null;
   }
 
   /**
@@ -368,20 +415,23 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   private async createAblyClientInternal(
     flags: BaseFlags,
     options?: {
-      type?: 'rest' | 'realtime';
+      type?: "rest" | "realtime";
       skipAuthInfo?: boolean;
-    }
+    },
   ): Promise<Ably.Rest | Ably.Realtime | null> {
-    const clientType = options?.type || 'realtime';
-    
-    // If in test mode, skip connection and use mock
-    if (this.isTestMode()) {
-      this.debug(`Running in test mode, using mock Ably ${clientType} client`);
-      const mockAblyRest = this.getMockAblyRest();
+    const clientType = options?.type || "realtime";
 
-      if (mockAblyRest) {
+    // If in test mode, skip connection and use mock
+    if (isTestMode()) {
+      this.debug(`Running in test mode, using mock Ably ${clientType} client`);
+      const mock =
+        options?.type === "rest"
+          ? this.getMockAblyRest()
+          : this.getMockAblyRealtime();
+
+      if (mock) {
         // Return mock as appropriate type
-        return mockAblyRest as unknown as Ably.Rest | Ably.Realtime;
+        return mock as unknown as Ably.Rest | Ably.Realtime;
       }
 
       this.error(`No mock Ably ${clientType} client available in test mode`);
@@ -389,7 +439,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     }
 
     // Track whether the user explicitly provided authentication
-    const hasExplicitAuth = !!(flags.token || flags["api-key"] || process.env.ABLY_API_KEY);
+    const hasExplicitAuth = !!(
+      flags.token ||
+      flags["api-key"] ||
+      process.env.ABLY_API_KEY
+    );
 
     // If token is provided or API key is in environment, we can skip the ensureAppAndKey step
     if (!flags.token && !flags["api-key"] && !process.env.ABLY_API_KEY) {
@@ -424,10 +478,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
 
     try {
       // Create REST client
-      if (clientType === 'rest') {
+      if (clientType === "rest") {
         return new Ably.Rest(clientOptions);
       }
-      
+
       // Create Realtime client
       const client = new Ably.Realtime(clientOptions);
 
@@ -549,16 +603,17 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       const appId = flags.app || this.configManager.getCurrentAppId();
       if (appId) {
         let appName = this.configManager.getAppName(appId);
-        
+
         // If app name is missing, try to fetch it from the API and update config
         if (!appName) {
           try {
             // Get access token for control API
             const currentAccount = this.configManager.getCurrentAccount();
-            const accessToken = flags["access-token"] || 
-                              process.env.ABLY_ACCESS_TOKEN || 
-                              currentAccount?.accessToken;
-            
+            const accessToken =
+              flags["access-token"] ||
+              process.env.ABLY_ACCESS_TOKEN ||
+              currentAccount?.accessToken;
+
             if (accessToken) {
               const controlApi = new ControlApi({
                 accessToken,
@@ -566,7 +621,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
               });
               const app = await controlApi.getApp(appId);
               appName = app.name;
-              
+
               // Always persist the app name to avoid repeated lookups
               const existingConfig = this.configManager.getAppConfig(appId);
               if (existingConfig && existingConfig.apiKey) {
@@ -588,7 +643,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             appName = "Unknown App";
           }
         }
-        
+
         displayParts.push(
           `${chalk.green("App=")}${chalk.green.bold(appName)} ${chalk.gray(`(${appId})`)}`,
         );
@@ -776,6 +831,37 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * It's the oclif standard hook that runs before the run() method
    */
   async finally(err: Error | undefined): Promise<void> {
+    // Clean up cached clients
+    try {
+      if (this._cachedRealtimeClient) {
+        const client = this._cachedRealtimeClient;
+
+        if (
+          client.connection.state !== "closed" &&
+          client.connection.state !== "failed"
+        ) {
+          await new Promise<void>((resolve) => {
+            const timeout = setTimeout(() => {
+              resolve();
+            }, 2000);
+
+            const onClosedOrFailed = () => {
+              clearTimeout(timeout);
+              resolve();
+            };
+
+            client.connection.once("closed", onClosedOrFailed);
+            client.connection.once("failed", onClosedOrFailed);
+
+            client.close();
+          });
+        }
+      }
+    } catch (error) {
+      // Log but don't throw cleanup errors
+      this.debug(`Realtime client cleanup error: ${error}`);
+    }
+
     // Call super to maintain the parent class functionality
     await super.finally(err);
   }
@@ -886,7 +972,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     }
 
     if (flags.endpoint) {
-      options.endpoint = flags.endpoint
+      options.endpoint = flags.endpoint;
     }
 
     if (flags.port) {
@@ -953,7 +1039,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     options.logLevel = 4;
 
     // Add agent header to identify requests from the CLI
-    (options as Ably.ClientOptions & { agents: Record<string, string> }).agents = { 'ably-cli': getCliVersion() };
+    (
+      options as Ably.ClientOptions & { agents: Record<string, string> }
+    ).agents = { "ably-cli": getCliVersion() };
 
     return options;
   }
@@ -987,8 +1075,8 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     const commandId = command || this.id || "";
 
     // Check if the command matches any restricted pattern
-    return !WEB_CLI_RESTRICTED_COMMANDS.some(pattern => 
-      this.matchesCommandPattern(commandId, pattern)
+    return !WEB_CLI_RESTRICTED_COMMANDS.some((pattern) =>
+      this.matchesCommandPattern(commandId, pattern),
     );
   }
 
@@ -1142,7 +1230,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       this.debug(`Auth info already shown for command: ${this.id}`);
       return;
     }
-    
+
     // Skip auth info if specified in the exceptions list
     if (!this.shouldShowAuthInfo()) {
       this.debug(`Skipping auth info display for command: ${this.id}`);
@@ -1233,9 +1321,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   ): Promise<void> {
     // In interactive mode, respect the 5-second SIGINT timeout
     // Leave 500ms buffer for the process to exit cleanly
-    const isInteractive = process.env.ABLY_INTERACTIVE_MODE === 'true';
-    const effectiveTimeout = isInteractive ? Math.min(timeoutMs, 4500) : timeoutMs;
-    
+    const isInteractive = process.env.ABLY_INTERACTIVE_MODE === "true";
+    const effectiveTimeout = isInteractive
+      ? Math.min(timeoutMs, 4500)
+      : timeoutMs;
+
     return new Promise((resolve, reject) => {
       let cleanupTimedOut = false;
       const timeout = setTimeout(() => {
@@ -1308,12 +1398,14 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     options?: {
       component?: string;
       includeUserFriendlyMessages?: boolean;
-    }
-  ): (() => void) {
+    },
+  ): () => void {
     const component = options?.component || "connection";
     const showUserMessages = options?.includeUserFriendlyMessages || false;
 
-    const connectionStateHandler = (stateChange: Ably.ConnectionStateChange) => {
+    const connectionStateHandler = (
+      stateChange: Ably.ConnectionStateChange,
+    ) => {
       this.logCliEvent(
         flags,
         component,
@@ -1334,7 +1426,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             break;
           }
           case "failed": {
-            this.log(chalk.red(`✗ Connection failed: ${stateChange.reason?.message || "Unknown error"}`));
+            this.log(
+              chalk.red(
+                `✗ Connection failed: ${stateChange.reason?.message || "Unknown error"}`,
+              ),
+            );
             break;
           }
           case "suspended": {
@@ -1367,8 +1463,8 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     options?: {
       component?: string;
       includeUserFriendlyMessages?: boolean;
-    }
-  ): (() => void) {
+    },
+  ): () => void {
     const component = options?.component || "channel";
     const showUserMessages = options?.includeUserFriendlyMessages || false;
 
@@ -1388,11 +1484,19 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             break;
           }
           case "failed": {
-            this.log(chalk.red(`✗ Failed to attach to channel ${chalk.cyan(channel.name)}: ${stateChange.reason?.message || "Unknown error"}`));
+            this.log(
+              chalk.red(
+                `✗ Failed to attach to channel ${chalk.cyan(channel.name)}: ${stateChange.reason?.message || "Unknown error"}`,
+              ),
+            );
             break;
           }
           case "detached": {
-            this.log(chalk.yellow(`! Detached from channel: ${chalk.cyan(channel.name)} ${stateChange.reason ? `(Reason: ${stateChange.reason.message})` : ""}`));
+            this.log(
+              chalk.yellow(
+                `! Detached from channel: ${chalk.cyan(channel.name)} ${stateChange.reason ? `(Reason: ${stateChange.reason.message})` : ""}`,
+              ),
+            );
             break;
           }
           case "attaching": {
@@ -1409,6 +1513,23 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     return () => {
       channel.off(stateChangeHandler);
     };
+  }
+
+  /**
+   * Output JSON error and exit with code 1 (unless in test mode).
+   * This provides a consistent way to handle JSON errors across commands.
+   *
+   * @param data - The error data to format as JSON
+   * @param flags - Command flags (used to determine JSON formatting)
+   */
+  protected jsonError(data: Record<string, unknown>, flags: BaseFlags) {
+    // Format and log the JSON output
+    this.log(this.formatJsonOutput(data, flags));
+
+    // Exit with code 1 unless in test mode
+    if (process.env.ABLY_CLI_TEST_MODE !== "true") {
+      this.exit(1);
+    }
   }
 }
 export { BaseFlags } from "./types/cli.js";

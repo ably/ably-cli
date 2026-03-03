@@ -1,4 +1,5 @@
 import { Flags } from "@oclif/core";
+import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 
@@ -43,15 +44,13 @@ export default class KeysCreateCommand extends ControlBaseCommand {
 
     if (!appId) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error:
-                'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error:
+              'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
+            success: false,
+          },
+          flags,
         );
       } else {
         this.error(
@@ -67,15 +66,13 @@ export default class KeysCreateCommand extends ControlBaseCommand {
       capabilities = JSON.parse(flags.capabilities);
     } catch {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error:
-                "Invalid capabilities JSON format. Please provide a valid JSON string.",
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error:
+              "Invalid capabilities JSON format. Please provide a valid JSON string.",
+            success: false,
+          },
+          flags,
         );
       } else {
         this.error(
@@ -110,7 +107,7 @@ export default class KeysCreateCommand extends ControlBaseCommand {
           ),
         );
       } else {
-        this.log(`\nKey created successfully!`);
+        this.log(chalk.green("✓ Key created successfully!"));
 
         const keyName = `${key.appId}.${key.id}`;
         this.log(`Key Name: ${keyName}`);
@@ -149,15 +146,13 @@ export default class KeysCreateCommand extends ControlBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              error: error instanceof Error ? error.message : String(error),
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            appId,
+            error: error instanceof Error ? error.message : String(error),
+            success: false,
+          },
+          flags,
         );
       } else {
         this.error(

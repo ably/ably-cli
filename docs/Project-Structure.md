@@ -13,19 +13,15 @@ This document outlines the directory structure of the Ably CLI project.
 │   ├── run.cmd             # Production run script (Windows).
 │   └── run.js              # Production run script (Unix).
 ├── docs/                   # Project documentation.
-│   ├── Product-Requirements.md # Detailed product requirements.
 │   ├── Project-Structure.md  # This file, outlining the project structure.
-│   ├── Testing.md          # Testing strategy and policy.
-│   └── TODO.md             # List of outstanding tasks.
+│   └── Testing.md          # Testing strategy and policy.
 ├── examples/               # Example usage of the CLI or related components.
 │   └── web-cli/            # Example implementation of the web-based CLI.
 ├── packages/               # Internal packages used by the project.
 │   └── react-web-cli/      # React component for the web-based CLI.
 ├── scripts/                # Utility scripts for development and deployment.
-│   ├── lint-test-paths.sh  # Script to validate test file paths.
 │   ├── postinstall-welcome.ts # Post-installation welcome message.
-│   ├── pre-push-validation.sh # Pre-push validation checks.
-│   └── run-tests.sh        # Test runner script.
+│   └── pre-push-validation.sh # Pre-push validation checks.
 ├── src/                    # Source code for the CLI.
 │   ├── base-command.ts     # Base class for all CLI commands, containing common logic.
 │   ├── chat-base-command.ts # Base class specific to Ably Chat commands.
@@ -42,7 +38,6 @@ This document outlines the directory structure of the Ably CLI project.
 │   │   ├── integrations/   # Commands for managing Ably integrations (rules).
 │   │   ├── login.ts        # Alias command for `accounts login`.
 │   │   ├── logs/           # Commands for subscribing to various log streams.
-│   │   ├── mcp/            # Commands specific to the MCP server functionality.
 │   │   ├── queues/         # Commands for managing Ably Queues.
 │   │   ├── rooms/          # Commands for interacting with Ably Chat rooms.
 │   │   └── spaces/         # Commands for interacting with Ably Spaces.
@@ -52,9 +47,6 @@ This document outlines the directory structure of the Ably CLI project.
 │   │   ├── command_not_found/ # Hook for handling unknown commands.
 │   │   └── init/           # Hook executed at CLI initialization.
 │   ├── index.ts            # Main entry point for the CLI source.
-│   ├── mcp/                # Code related to the Model Context Protocol (MCP) server.
-│   │   ├── index.ts        # Entry point for MCP functionality.
-│   │   └── mcp-server.ts   # Implementation of the MCP server.
 │   ├── services/           # Core services used across commands.
 │   │   ├── config-manager.ts # Service for managing CLI configuration.
 │   │   ├── control-api.ts  # Service for interacting with the Ably Control API.
@@ -62,8 +54,7 @@ This document outlines the directory structure of the Ably CLI project.
 │   │   └── stats-display.ts  # Service for displaying stats information.
 │   ├── spaces-base-command.ts # Base class specific to Ably Spaces commands.
 │   ├── types/              # TypeScript type definitions.
-│   │   ├── cli.ts          # General CLI type definitions.
-│   │   └── modelcontextprotocol.d.ts # Type definitions for MCP.
+│   │   └── cli.ts          # General CLI type definitions.
 │   └── utils/              # Utility functions.
 │       ├── json-formatter.ts # Utility for formatting JSON output.
 │       └── logo.ts         # Utility for displaying the Ably logo ASCII art.
@@ -88,7 +79,6 @@ This document outlines the directory structure of the Ably CLI project.
 ├── .eslintignore           # Files/patterns ignored by ESLint.
 ├── .eslintrc.js            # ESLint configuration file.
 ├── .gitignore              # Files/patterns ignored by Git.
-├── .mocharc.json           # Mocha test runner configuration.
 ├── .prettierrc.json        # Prettier code formatter configuration.
 ├── CHANGELOG.md            # Log of changes across versions.
 ├── README.md               # Main project README file.
@@ -97,3 +87,4 @@ This document outlines the directory structure of the Ably CLI project.
 ├── pnpm-lock.yaml          # pnpm lock file for deterministic installs.
 ├── pnpm-workspace.yaml     # Defines the pnpm workspace configuration.
 └── tsconfig.json           # Main TypeScript configuration file.
+└── vitest.config.ts        # Config for vitest

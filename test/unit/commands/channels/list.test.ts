@@ -1,422 +1,233 @@
-import { expect } from "chai";
-import sinon from "sinon";
-import { Config } from "@oclif/core";
-import * as Ably from "ably";
-import ChannelsList from "../../../../src/commands/channels/list.js";
+import { describe, it, expect, beforeEach } from "vitest";
+import { runCommand } from "@oclif/test";
+import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
 
-// Create a testable version of ChannelsList to expose protected methods
-class TestableChannelsList extends ChannelsList {
-  // Override parse to simulate parse output
-  public override async parse() {
-    // Return the parse result that was set via our test setup
-    return this._parseResult;
-  }
-
-  // Add a property to store the parse result for testing
-  private _parseResult: any = {
-    flags: { limit: 100 },
-    args: {},
-    argv: [],
-    raw: []
+describe("channels:list command", () => {
+  // Mock channel response data
+  const mockChannelsResponse = {
+    statusCode: 200,
+    items: [
+      {
+        channelId: "test-channel-1",
+        status: {
+          occupancy: {
+            metrics: {
+              connections: 5,
+              publishers: 2,
+              subscribers: 3,
+              presenceConnections: 1,
+              presenceMembers: 2,
+            },
+          },
+        },
+      },
+      {
+        channelId: "test-channel-2",
+        status: {
+          occupancy: {
+            metrics: {
+              connections: 3,
+              publishers: 1,
+              subscribers: 2,
+            },
+          },
+        },
+      },
+    ],
   };
 
-  // Method to set parse result for testing
-  public setParseResult(result: any) {
-    this._parseResult = result;
-  }
+  beforeEach(() => {
+    const mock = getMockAblyRest();
+    mock.request.mockResolvedValue(mockChannelsResponse);
+  });
 
-  // Override createAblyRestClient to return our mock
-  public override async createAblyRestClient(_flags: any, _options?: any): Promise<Ably.Rest | null> {
-    return this._mockAblyClient as any;
-  }
-
-  private _mockAblyClient: any = {
-    close: () => {}
-  };
-
-  // Method to set the mock Ably client
-  public setMockAblyClient(client: any) {
-    this._mockAblyClient = client;
-  }
-
-  // Override run method to control the flow for testing
-  public override async run(): Promise<void> {
-    const { flags } = await this.parse();
-
-    // Create the Ably client - this will handle displaying data plane info
-    const client = await this.createAblyRestClient(flags);
-    if (!client) return;
-
-    try {
-      // Use our mocked rest client
-      const rest = this.restClient;
-
-      // Build params for channel listing
-      const params: any = {
-        limit: flags.limit,
-      };
-
-      if (flags.prefix) {
-        params.prefix = flags.prefix;
-      }
-
-      // Call our mock request method
-      const channelsResponse = await rest.request(
-        "get",
-        "/channels",
-        2,
-        params,
-        null,
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:list", "--help"],
+        import.meta.url,
       );
 
-      if (channelsResponse.statusCode !== 200) {
-        this.error(`Failed to list channels: ${channelsResponse.statusCode}`);
-        return;
-      }
-
-      const channels = channelsResponse.items || [];
-
-      // Output channels based on format
-      if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              channels: channels.map((channel: any) => ({
-                channelId: channel.channelId,
-                metrics: channel.status?.occupancy?.metrics || {},
-              })),
-              hasMore: channels.length === flags.limit,
-              success: true,
-              timestamp: new Date().toISOString(),
-              total: channels.length,
-            },
-            flags,
-          ),
-        );
-        return;
-      }
-
-      if (channels.length === 0) {
-        this.log("No active channels found.");
-        return;
-      }
-
-      this.log(
-        `Found ${channels.length.toString()} active channels:`,
-      );
-
-      for (const channel of channels) {
-        this.log(`${channel.channelId}`);
-
-        // Show occupancy if available
-        if (channel.status?.occupancy?.metrics) {
-          const { metrics } = channel.status.occupancy;
-          this.log(
-            `  Connections: ${metrics.connections || 0}`,
-          );
-          this.log(
-            `  Publishers: ${metrics.publishers || 0}`,
-          );
-          this.log(
-            `  Subscribers: ${metrics.subscribers || 0}`,
-          );
-
-          if (metrics.presenceConnections !== undefined) {
-            this.log(
-              `  Presence Connections: ${metrics.presenceConnections}`,
-            );
-          }
-
-          if (metrics.presenceMembers !== undefined) {
-            this.log(
-              `  Presence Members: ${metrics.presenceMembers}`,
-            );
-          }
-        }
-
-        this.log(""); // Add a line break between channels
-      }
-
-      if (channels.length === flags.limit) {
-        this.log(
-          `Showing maximum of ${flags.limit} channels. Use --limit to show more.`,
-        );
-      }
-    } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: error instanceof Error ? error.message : String(error),
-              status: "error",
-              success: false,
-            },
-            flags,
-          ),
-        );
-      } else {
-        this.error(
-          `Error listing channels: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    }
-  }
-
-  // Mock Rest client
-  private restClient: any;
-
-  // Method to set rest client
-  public setRestClient(client: any) {
-    this.restClient = client;
-  }
-
-  // Override shouldOutputJson
-  public override shouldOutputJson(_flags: any) {
-    return this._shouldOutputJson;
-  }
-
-  private _shouldOutputJson = false;
-
-  // Method to set shouldOutputJson value
-  public setShouldOutputJson(value: boolean) {
-    this._shouldOutputJson = value;
-  }
-
-  // Override formatJsonOutput
-  public override formatJsonOutput(data: Record<string, unknown>, _flags: any) {
-    return this._formatJsonOutputFn ? this._formatJsonOutputFn(data) : JSON.stringify(data);
-  }
-
-  private _formatJsonOutputFn: ((data: Record<string, unknown>) => string) | null = null;
-
-  // Method to set formatJsonOutput function
-  public setFormatJsonOutput(fn: (data: Record<string, unknown>) => string) {
-    this._formatJsonOutputFn = fn;
-  }
-}
-
-// Mock channel response data
-const mockChannelsResponse = {
-  statusCode: 200,
-  items: [
-    {
-      channelId: "test-channel-1",
-      status: {
-        occupancy: {
-          metrics: {
-            connections: 5,
-            publishers: 2,
-            subscribers: 3,
-            presenceConnections: 1,
-            presenceMembers: 2
-          }
-        }
-      }
-    },
-    {
-      channelId: "test-channel-2",
-      status: {
-        occupancy: {
-          metrics: {
-            connections: 3,
-            publishers: 1,
-            subscribers: 2
-          }
-        }
-      }
-    }
-  ]
-};
-
-describe("ChannelsList", function () {
-  let command: TestableChannelsList;
-  let mockRest: any;
-  let requestStub: sinon.SinonStub;
-  let closeStub: sinon.SinonStub;
-  let mockConfig: Config;
-  let logStub: sinon.SinonStub;
-  let errorStub: sinon.SinonStub;
-  let sandbox: sinon.SinonSandbox;
-
-  beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    // Mock Config
-    mockConfig = {} as Config;
-
-    // Create command instance
-    command = new TestableChannelsList([], mockConfig);
-
-    // Stub the log and error methods using the sandbox
-    logStub = sandbox.stub(command, "log");
-    errorStub = sandbox.stub(command, "error");
-
-    // Create request stub using the sandbox
-    requestStub = sandbox.stub();
-
-    // Create mock REST client
-    mockRest = {
-      request: requestStub
-    };
-
-    // Set the mock rest client
-    command.setRestClient(mockRest);
-
-    // Create a stub for the client close method using the sandbox
-    closeStub = sandbox.stub();
-
-    // Set the mock Ably client
-    command.setMockAblyClient({
-      close: closeStub
+      expect(stdout).toContain("List active channels");
+      expect(stdout).toContain("USAGE");
     });
 
-    // Set default parse result
-    command.setParseResult({
-      flags: { limit: 100 },
-      args: {},
-      argv: [],
-      raw: []
+    it("should display examples in help", async () => {
+      const { stdout } = await runCommand(
+        ["channels:list", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("EXAMPLES");
+      expect(stdout).toContain("channels list");
     });
   });
 
-  afterEach(function () {
-    // Restore only the sandbox
-    sandbox.restore();
-  });
+  describe("channel listing", () => {
+    it("should list channels successfully", async () => {
+      const mock = getMockAblyRest();
 
-  describe("run", function () {
-    it("should list channels successfully", async function () {
-      // Configure the stub to return mock data
-      requestStub.resolves(mockChannelsResponse);
-
-      // Run the command
-      await command.run();
+      const { stdout } = await runCommand(
+        ["channels:list", "--api-key", "app.key:secret"],
+        import.meta.url,
+      );
 
       // Verify the REST client request was called with correct parameters
-      expect(requestStub.calledOnce).to.be.true;
-      expect(requestStub.firstCall.args[0]).to.equal("get");
-      expect(requestStub.firstCall.args[1]).to.equal("/channels");
-      expect(requestStub.firstCall.args[2]).to.equal(2);
-      expect(requestStub.firstCall.args[3]).to.deep.equal({ limit: 100 });
+      expect(mock.request).toHaveBeenCalledOnce();
+      expect(mock.request.mock.calls[0][0]).toBe("get");
+      expect(mock.request.mock.calls[0][1]).toBe("/channels");
+      expect(mock.request.mock.calls[0][2]).toBe(2);
+      expect(mock.request.mock.calls[0][3]).toEqual({ limit: 100 });
 
-      // Verify that we log channel information
-      expect(logStub.called).to.be.true;
-
-      // Verify first call contains the channel count
-      const foundChannels = logStub.args.find(args =>
-        typeof args[0] === 'string' && args[0].includes("Found 2 active channels"));
-      expect(foundChannels).to.exist;
-
+      // Verify output contains channel info
+      expect(stdout).toContain("Found");
+      expect(stdout).toContain("2");
+      expect(stdout).toContain("active channels");
+      expect(stdout).toContain("test-channel-1");
+      expect(stdout).toContain("test-channel-2");
     });
 
-    it("should handle empty channels response", async function () {
-      // Configure the stub to return empty array
-      requestStub.resolves({
-        statusCode: 200,
-        items: []
-      });
+    it("should display channel metrics", async () => {
+      const { stdout } = await runCommand(
+        ["channels:list", "--api-key", "app.key:secret"],
+        import.meta.url,
+      );
 
-      // Run the command
-      await command.run();
-
-      // Verify the REST client request was called
-      expect(requestStub.calledOnce).to.be.true;
-
-      // Verify that we log "No active channels found"
-      const noChannelsLog = logStub.args.find(args =>
-        typeof args[0] === 'string' && args[0] === "No active channels found.");
-      expect(noChannelsLog).to.exist;
-
+      expect(stdout).toContain("Connections: 5");
+      expect(stdout).toContain("Publishers: 2");
+      expect(stdout).toContain("Subscribers: 3");
     });
 
-    it("should handle API errors", async function () {
-      // Configure the stub to return an error
-      requestStub.resolves({
-        statusCode: 400,
-        error: "Bad Request"
-      });
+    it("should handle empty channels response", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({ statusCode: 200, items: [] });
 
-      // Run the command and expect it to error
-      await command.run();
+      const { stdout } = await runCommand(
+        ["channels:list", "--api-key", "app.key:secret"],
+        import.meta.url,
+      );
 
-      // Verify the error was handled
-      expect(errorStub.calledOnce).to.be.true;
-      expect(errorStub.firstCall.args[0]).to.include("Failed to list channels");
-
+      expect(stdout).toContain("No active channels found");
     });
 
-    it("should respect limit flag", async function () {
-      // Override the parse result to use different flags
-      command.setParseResult({
-        flags: { limit: 50 },
-        args: {},
-        argv: [],
-        raw: []
-      });
+    it("should handle API errors", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({ statusCode: 400, error: "Bad Request" });
 
-      // Configure the response
-      requestStub.resolves(mockChannelsResponse);
+      const { error } = await runCommand(
+        ["channels:list", "--api-key", "app.key:secret"],
+        import.meta.url,
+      );
 
-      // Run the command
-      await command.run();
-
-      // Verify the request was called with the correct limit
-      expect(requestStub.calledOnce).to.be.true;
-      expect(requestStub.firstCall.args[3]).to.deep.equal({ limit: 50 });
-
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Failed to list channels");
     });
 
-    it("should respect prefix flag", async function () {
-      // Override the parse result to use different flags
-      command.setParseResult({
-        flags: { limit: 100, prefix: "test-" },
-        args: {},
-        argv: [],
-        raw: []
-      });
+    it("should respect limit flag", async () => {
+      const mock = getMockAblyRest();
 
-      // Configure the response
-      requestStub.resolves(mockChannelsResponse);
+      await runCommand(
+        ["channels:list", "--api-key", "app.key:secret", "--limit", "50"],
+        import.meta.url,
+      );
 
-      // Run the command
-      await command.run();
+      expect(mock.request).toHaveBeenCalledOnce();
+      expect(mock.request.mock.calls[0][3]).toEqual({ limit: 50 });
+    });
 
-      // Verify the request was called with the correct parameters
-      expect(requestStub.calledOnce).to.be.true;
-      expect(requestStub.firstCall.args[3]).to.deep.equal({
+    it("should respect prefix flag", async () => {
+      const mock = getMockAblyRest();
+
+      await runCommand(
+        ["channels:list", "--api-key", "app.key:secret", "--prefix", "test-"],
+        import.meta.url,
+      );
+
+      expect(mock.request).toHaveBeenCalledOnce();
+      expect(mock.request.mock.calls[0][3]).toEqual({
         limit: 100,
-        prefix: "test-"
+        prefix: "test-",
       });
-
     });
   });
 
-  describe("JSON output", function () {
-    it("should output JSON when requested", async function () {
-      // Set shouldOutputJson to return true
-      command.setShouldOutputJson(true);
-
-      // Set formatJsonOutput function
-      command.setFormatJsonOutput((data) => JSON.stringify(data));
-
-      // Configure the response
-      requestStub.resolves(mockChannelsResponse);
-
-      // Run the command
-      await command.run();
-
-      // Verify the JSON output was generated
-      expect(logStub.calledOnce).to.be.true;
+  describe("JSON output", () => {
+    it("should output JSON when requested", async () => {
+      const { stdout } = await runCommand(
+        ["channels:list", "--api-key", "app.key:secret", "--json"],
+        import.meta.url,
+      );
 
       // Parse the JSON that was output
-      const jsonOutput = JSON.parse(logStub.firstCall.args[0]);
+      const jsonOutput = JSON.parse(stdout);
 
       // Verify the structure of the JSON output
-      expect(jsonOutput).to.have.property("channels").that.is.an("array");
-      expect(jsonOutput.channels).to.have.lengthOf(2);
-      expect(jsonOutput.channels[0]).to.have.property("channelId", "test-channel-1");
-      expect(jsonOutput.channels[0]).to.have.property("metrics");
-      expect(jsonOutput).to.have.property("success", true);
+      expect(jsonOutput).toHaveProperty("channels");
+      expect(jsonOutput.channels).toBeInstanceOf(Array);
+      expect(jsonOutput.channels).toHaveLength(2);
+      expect(jsonOutput.channels[0]).toHaveProperty(
+        "channelId",
+        "test-channel-1",
+      );
+      expect(jsonOutput.channels[0]).toHaveProperty("metrics");
+      expect(jsonOutput).toHaveProperty("success", true);
+      expect(jsonOutput).toHaveProperty("total", 2);
+      expect(jsonOutput).toHaveProperty("hasMore", false);
+      expect(jsonOutput).toHaveProperty("timestamp");
+    });
 
+    it("should include channel metrics in JSON output", async () => {
+      const { stdout } = await runCommand(
+        ["channels:list", "--api-key", "app.key:secret", "--json"],
+        import.meta.url,
+      );
+
+      const jsonOutput = JSON.parse(stdout);
+
+      // Verify metrics are included
+      expect(jsonOutput.channels[0].metrics).toEqual({
+        connections: 5,
+        publishers: 2,
+        subscribers: 3,
+        presenceConnections: 1,
+        presenceMembers: 2,
+      });
+    });
+
+    it("should handle API errors in JSON mode", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockRejectedValue(new Error("Network error"));
+
+      const { stdout } = await runCommand(
+        ["channels:list", "--api-key", "app.key:secret", "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", false);
+      expect(result).toHaveProperty("error");
+      expect(result.error).toContain("Network error");
+      expect(result).toHaveProperty("status", "error");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --limit flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:list", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("--limit");
+    });
+
+    it("should accept --prefix flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:list", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("--prefix");
     });
   });
 });

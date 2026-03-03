@@ -55,17 +55,17 @@ echo "   ✅ Lint passed"
 
 # Step 3: Unit tests (fast)
 echo "🧪 Step 3: Running unit tests..."
-run_quiet pnpm test:unit --reporter min
+run_quiet pnpm test:unit
 echo "   ✅ Unit tests passed"
 
 # Step 4: Basic E2E tests (critical path)
 echo "🎯 Step 4: Running basic E2E tests..."
-run_quiet pnpm test:e2e:basic --reporter min
+run_quiet pnpm test:e2e:basic
 echo "   ✅ Basic E2E tests passed"
 
 # Step 5: Integration tests
 echo "🔗 Step 5: Running integration tests..."
-run_quiet pnpm test:integration --reporter min
+run_quiet pnpm test:integration
 echo "   ✅ Integration tests passed"
 
 # Note: Full E2E test suite should be run in CI, not pre-push

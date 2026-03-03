@@ -1,20 +1,23 @@
-import { Hook } from '@oclif/core';
-import chalk from 'chalk';
-import inquirer from 'inquirer';
+import { Hook } from "@oclif/core";
+import chalk from "chalk";
+import inquirer from "inquirer";
 import pkg from "fast-levenshtein";
-import { runInquirerWithReadlineRestore } from '../../utils/readline-helper.js';
-import * as readline from 'node:readline';
+import { runInquirerWithReadlineRestore } from "../../utils/readline-helper.js";
+import * as readline from "node:readline";
 const { get: levenshteinDistance } = pkg;
 
 /**
  * Internal implementation of closest command matching
  * to avoid import issues between compiled and test code
  */
-const findClosestCommand = (target: string, possibilities: string[]): string => {
+const findClosestCommand = (
+  target: string,
+  possibilities: string[],
+): string => {
   if (possibilities.length === 0) return "";
 
   // Normalize the target input to use colons for consistent comparison
-  const normalizedTarget = target.replaceAll(' ', ':');
+  const normalizedTarget = target.replaceAll(" ", ":");
 
   const distances = possibilities.map((id) => ({
     distance: levenshteinDistance(normalizedTarget, id, { useCollator: true }),
@@ -41,9 +44,9 @@ const findClosestCommand = (target: string, possibilities: string[]): string => 
  * Hook that runs when a command is not found. Suggests similar commands
  * and runs them if confirmed, in a similar style to the official oclif plugin.
  */
-const hook: Hook<'command_not_found'> = async function (opts) {
+const hook: Hook<"command_not_found"> = async function (opts) {
   const { id, argv, config } = opts;
-  const isInteractiveMode = process.env.ABLY_INTERACTIVE_MODE === 'true';
+  const isInteractiveMode = process.env.ABLY_INTERACTIVE_MODE === "true";
 
   // Get all command IDs to compare against
   const commandIDs = config.commandIDs;
@@ -51,17 +54,17 @@ const hook: Hook<'command_not_found'> = async function (opts) {
   // In actual CLI usage, the id comes with colons as separators
   // For example "channels:publis:foo:bar" for "ably channels publis foo bar"
   // We need to split the command and try different combinations to find the closest match
-  const commandParts = id.split(':');
+  const commandParts = id.split(":");
 
   // Try to find a command match by considering progressively shorter prefixes
-  let suggestion = '';
+  let suggestion = "";
   let commandPartCount = 0;
   let argumentsFromId: string[] = [];
 
   // Try different command parts
   for (let i = commandParts.length; i > 0; i--) {
     const possibleCommandParts = commandParts.slice(0, i);
-    const possibleCommand = possibleCommandParts.join(':');
+    const possibleCommand = possibleCommandParts.join(":");
 
     suggestion = findClosestCommand(possibleCommand, commandIDs);
 
@@ -75,20 +78,21 @@ const hook: Hook<'command_not_found'> = async function (opts) {
   }
 
   // Format the input command for display (replace colons with spaces)
-  const displayOriginal = commandPartCount > 0
-    ? commandParts.slice(0, commandPartCount).join(' ')
-    : id.replaceAll(':', ' ');
+  const displayOriginal =
+    commandPartCount > 0
+      ? commandParts.slice(0, commandPartCount).join(" ")
+      : id.replaceAll(":", " ");
 
   if (suggestion) {
     // Format the suggestion for display (replace colons with spaces)
-    const displaySuggestion = suggestion.replaceAll(':', ' ');
+    const displaySuggestion = suggestion.replaceAll(":", " ");
 
     // Get all arguments - either from id split or from argv
     // In tests, argv contains the arguments, but in CLI execution, we extract them from id
-    const allArgs = (argv || []).length > 0 ? (argv || []) : argumentsFromId;
+    const allArgs = (argv || []).length > 0 ? argv || [] : argumentsFromId;
 
     // Warn about command not found and suggest alternative with colored command names
-    const warningMessage = `${chalk.cyan(displayOriginal.replaceAll(':', ' '))} is not an ably command.`;
+    const warningMessage = `${chalk.cyan(displayOriginal.replaceAll(":", " "))} is not an ably command.`;
     if (isInteractiveMode) {
       console.log(chalk.yellow(`Warning: ${warningMessage}`));
     } else {
@@ -96,7 +100,9 @@ const hook: Hook<'command_not_found'> = async function (opts) {
     }
 
     // Skip confirmation in tests or non-interactive mode
-    const skipConfirmation = process.env.SKIP_CONFIRMATION === 'true' || process.env.ABLY_CLI_NON_INTERACTIVE === 'true';
+    const skipConfirmation =
+      process.env.SKIP_CONFIRMATION === "true" ||
+      process.env.ABLY_CLI_NON_INTERACTIVE === "true";
 
     // Variable to hold confirmation state
     let confirmed = false;
@@ -107,16 +113,21 @@ const hook: Hook<'command_not_found'> = async function (opts) {
       confirmed = true;
     } else {
       // In interactive mode, we need to handle readline carefully
-      const interactiveReadline = isInteractiveMode ? (globalThis as Record<string, unknown>).__ablyInteractiveReadline : null;
-      
+      const interactiveReadline = isInteractiveMode
+        ? (globalThis as Record<string, unknown>).__ablyInteractiveReadline
+        : null;
+
       const result = await runInquirerWithReadlineRestore(
-        async () => inquirer.prompt([{
-          name: 'confirmed',
-          type: 'confirm',
-          message: `Did you mean ${chalk.green(displaySuggestion)}?`,
-          default: true
-        }]),
-        interactiveReadline as readline.Interface | null
+        async () =>
+          inquirer.prompt([
+            {
+              name: "confirmed",
+              type: "confirm",
+              message: `Did you mean ${chalk.green(displaySuggestion)}?`,
+              default: true,
+            },
+          ]),
+        interactiveReadline as readline.Interface | null,
       );
       confirmed = result.confirmed;
     }
@@ -128,12 +139,14 @@ const hook: Hook<'command_not_found'> = async function (opts) {
       } catch (error: unknown) {
         // Handle the error in the same way as direct command execution
         const err = error as { message?: string; oclif?: { exit?: number } };
-        const exitCode = typeof err.oclif?.exit === 'number' ? err.oclif.exit : 1;
+        const exitCode =
+          typeof err.oclif?.exit === "number" ? err.oclif.exit : 1;
 
         // Check if it's a missing arguments error
-        const isMissingArgsError = err.message?.includes('Missing') &&
-                                  (err.message?.includes('required arg') ||
-                                   err.message?.includes('required flag'));
+        const isMissingArgsError =
+          err.message?.includes("Missing") &&
+          (err.message?.includes("required arg") ||
+            err.message?.includes("required flag"));
 
         // Get command details to show help if it's a missing args error
         if (isMissingArgsError) {
@@ -146,51 +159,65 @@ const hook: Hook<'command_not_found'> = async function (opts) {
               if (commandHelp && commandHelp.id) {
                 // Format usage to use spaces instead of colons
                 const usage = commandHelp.usage || commandHelp.id;
-                const formattedUsage = typeof usage === 'string' ? usage.replaceAll(':', ' ') : usage;
+                const formattedUsage =
+                  typeof usage === "string"
+                    ? usage.replaceAll(":", " ")
+                    : usage;
 
                 // Extract error details for later display
-                const errorMsg = err.message || '';
+                const errorMsg = err.message || "";
 
                 // Show command help/usage info without duplicating error
-                const logFn = isInteractiveMode ? console.log : this.log.bind(this);
-                const binPrefix = isInteractiveMode ? '' : `${config.bin} `;
-                
-                logFn('\nUSAGE');
+                const logFn = isInteractiveMode
+                  ? console.log
+                  : this.log.bind(this);
+                const binPrefix = isInteractiveMode ? "" : `${config.bin} `;
+
+                logFn("\nUSAGE");
                 logFn(`  $ ${binPrefix}${formattedUsage}`);
 
-                if (commandHelp.args && Object.keys(commandHelp.args).length > 0) {
-                  logFn('\nARGUMENTS');
+                if (
+                  commandHelp.args &&
+                  Object.keys(commandHelp.args).length > 0
+                ) {
+                  logFn("\nARGUMENTS");
                   for (const [name, arg] of Object.entries(commandHelp.args)) {
-                    logFn(`  ${name}  ${arg.description || ''}`);
+                    logFn(`  ${name}  ${arg.description || ""}`);
                   }
                 }
 
                 // Add a line of vertical space
-                logFn('');
+                logFn("");
 
                 // Show the full help command with color
-                const fullHelpCommand = isInteractiveMode 
+                const fullHelpCommand = isInteractiveMode
                   ? `${displaySuggestion} --help`
                   : `${config.bin} ${displaySuggestion} --help`;
-                logFn(`${chalk.dim('See more help with:')} ${chalk.cyan(fullHelpCommand)}`);
+                logFn(
+                  `${chalk.dim("See more help with:")} ${chalk.cyan(fullHelpCommand)}`,
+                );
 
                 // Add a line of vertical space
-                logFn('');
+                logFn("");
 
                 // Show the error message at the end, without the "See more help" line
-                const errorLines = errorMsg.split('\n');
+                const errorLines = errorMsg.split("\n");
                 // Filter out the "See more help with --help" line if present
-                const filteredErrorLines = errorLines.filter((line: string) => !line.includes('See more help with --help'));
+                const filteredErrorLines = errorLines.filter(
+                  (line: string) => !line.includes("See more help with --help"),
+                );
 
                 // If we filtered out a help line, add our custom one
-                const customError = filteredErrorLines.join('\n');
+                const customError = filteredErrorLines.join("\n");
 
                 // Show the styled error message
                 if (isInteractiveMode) {
                   // In interactive mode, don't exit - just throw the error
                   // The interactive command will display it
                   const error = new Error(customError);
-                  (error as Error & {oclif?: {exit: number}}).oclif = { exit: exitCode };
+                  (error as Error & { oclif?: { exit: number } }).oclif = {
+                    exit: exitCode,
+                  };
                   throw error;
                 } else {
                   this.error(customError, { exit: exitCode });
@@ -203,33 +230,41 @@ const hook: Hook<'command_not_found'> = async function (opts) {
         }
 
         // Default error handling if not a missing args error or if showing help failed
-        if (err.message && err.message.includes('See more help with --help') && suggestion) {
+        if (
+          err.message &&
+          err.message.includes("See more help with --help") &&
+          suggestion
+        ) {
           // Format the error message to use the full command for help
-          const displaySuggestion = suggestion.replaceAll(':', ' ');
-          const lines = err.message.split('\n');
+          const displaySuggestion = suggestion.replaceAll(":", " ");
+          const lines = err.message.split("\n");
           const filteredLines = lines.map((line: string) => {
-            if (line.includes('See more help with --help')) {
-              return isInteractiveMode 
+            if (line.includes("See more help with --help")) {
+              return isInteractiveMode
                 ? `See more help with: ${displaySuggestion} --help`
                 : `See more help with: ${config.bin} ${displaySuggestion} --help`;
             }
             return line;
           });
           if (isInteractiveMode) {
-            const error = new Error(filteredLines.join('\n'));
-            (error as Error & {oclif?: {exit: number}}).oclif = { exit: exitCode };
+            const error = new Error(filteredLines.join("\n"));
+            (error as Error & { oclif?: { exit: number } }).oclif = {
+              exit: exitCode,
+            };
             throw error;
           } else {
-            this.error(filteredLines.join('\n'), { exit: exitCode });
+            this.error(filteredLines.join("\n"), { exit: exitCode });
           }
         } else {
           // Original error message
           if (isInteractiveMode) {
-            const error = new Error(err.message || 'Unknown error');
-            (error as Error & {oclif?: {exit: number}}).oclif = { exit: exitCode };
+            const error = new Error(err.message || "Unknown error");
+            (error as Error & { oclif?: { exit: number } }).oclif = {
+              exit: exitCode,
+            };
             throw error;
           } else {
-            this.error(err.message || 'Unknown error', { exit: exitCode });
+            this.error(err.message || "Unknown error", { exit: exitCode });
           }
         }
 
@@ -237,36 +272,37 @@ const hook: Hook<'command_not_found'> = async function (opts) {
         return;
       }
     }
-    
+
     // User declined the suggestion - check if we should show topic commands
     if (suggestion) {
       // Extract the topic from the suggestion (e.g., "accounts:current" -> "accounts")
-      const topicParts = suggestion.split(':');
+      const topicParts = suggestion.split(":");
       if (topicParts.length > 1) {
         const topicCommand = topicParts[0];
         const topicCmd = config.findCommand(topicCommand);
-        
+
         if (topicCmd) {
           // In interactive mode, directly output the topic commands
           if (isInteractiveMode) {
             try {
               // Get all commands for this topic
               const topicPrefix = `${topicCommand}:`;
-              const subcommands: Array<{id: string; description: string}> = [];
-              
+              const subcommands: Array<{ id: string; description: string }> =
+                [];
+
               for (const cmd of config.commands) {
                 if (cmd.id.startsWith(topicPrefix) && !cmd.hidden) {
                   // Check if this is a direct child (no additional colons after the topic prefix)
                   const remainingId = cmd.id.slice(topicPrefix.length);
-                  const isDirectChild = !remainingId.includes(':');
-                  
+                  const isDirectChild = !remainingId.includes(":");
+
                   if (isDirectChild) {
                     try {
                       const loadedCmd = await cmd.load();
                       if (!loadedCmd.hidden) {
                         subcommands.push({
-                          id: cmd.id.replaceAll(':', ' '),
-                          description: loadedCmd.description || ''
+                          id: cmd.id.replaceAll(":", " "),
+                          description: loadedCmd.description || "",
                         });
                       }
                     } catch {
@@ -275,36 +311,42 @@ const hook: Hook<'command_not_found'> = async function (opts) {
                   }
                 }
               }
-              
+
               if (subcommands.length > 0) {
                 // Sort commands alphabetically
                 subcommands.sort((a, b) => a.id.localeCompare(b.id));
-                
+
                 // Display the topic commands
                 const logFn = console.log;
                 logFn(`Ably ${topicCommand} management commands:`);
-                logFn('');
-                
-                const maxLength = Math.max(...subcommands.map(cmd => cmd.id.length));
-                const prefix = '';
+                logFn("");
+
+                const maxLength = Math.max(
+                  ...subcommands.map((cmd) => cmd.id.length),
+                );
+                const prefix = "";
                 const prefixLength = prefix.length;
-                
+
                 for (const cmd of subcommands) {
-                  const paddedId = `${prefix}${cmd.id}`.padEnd(maxLength + prefixLength + 2);
-                  const description = cmd.description || '';
+                  const paddedId = `${prefix}${cmd.id}`.padEnd(
+                    maxLength + prefixLength + 2,
+                  );
+                  const description = cmd.description || "";
                   logFn(`  ${chalk.cyan(paddedId)} - ${description}`);
                 }
-                
-                logFn('');
-                const helpCommand = `${topicCommand.replaceAll(':', ' ')} COMMAND --help`;
-                logFn(`Run \`${chalk.cyan(helpCommand)}\` for more information on a command.`);
+
+                logFn("");
+                const helpCommand = `${topicCommand.replaceAll(":", " ")} COMMAND --help`;
+                logFn(
+                  `Run \`${chalk.cyan(helpCommand)}\` for more information on a command.`,
+                );
                 return;
               }
             } catch {
               // Fall through to running the command if direct output fails
             }
           }
-          
+
           // For non-interactive mode, run the topic command
           try {
             await config.runCommand(topicCommand, []);
@@ -317,16 +359,17 @@ const hook: Hook<'command_not_found'> = async function (opts) {
     }
   } else {
     // No suggestion found
-    const displayCommand = id.replaceAll(':', ' ');
-    const errorMessage = isInteractiveMode 
+    const displayCommand = id.replaceAll(":", " ");
+    const errorMessage = isInteractiveMode
       ? `Command ${displayCommand} not found. Run 'help' for a list of available commands.`
       : `Command ${displayCommand} not found.\nRun ${config.bin} --help for a list of available commands.`;
-    
+
     if (isInteractiveMode) {
       // In interactive mode, just throw the error without logging
       // The interactive command will handle displaying it
       const error = new Error(errorMessage);
-      (error as Error & {isCommandNotFound?: boolean}).isCommandNotFound = true;
+      (error as Error & { isCommandNotFound?: boolean }).isCommandNotFound =
+        true;
       throw error;
     } else {
       this.error(errorMessage, { exit: 127 });

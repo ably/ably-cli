@@ -14,35 +14,31 @@ export const CONNECTION_MESSAGES = {
     lines: [
       "Unable to connect to the web terminal service.",
       "",
-      "Press ⏎ to reconnect"
-    ]
+      "Press ⏎ to reconnect",
+    ],
   },
-  
+
   serverDisconnect: {
-    title: "SERVER DISCONNECTED", 
+    title: "SERVER DISCONNECTED",
     lines: [
       "The web terminal service is currently unavailable.",
       "",
-      "Press ⏎ to reconnect"
-    ]
+      "Press ⏎ to reconnect",
+    ],
   },
-  
+
   maxReconnects: {
     title: "SERVICE UNAVAILABLE",
     lines: [
       "Web terminal service is temporarily unavailable.",
       "",
-      "Press ⏎ to reconnect"
-    ]
+      "Press ⏎ to reconnect",
+    ],
   },
-  
+
   capacityReached: {
     title: "AT CAPACITY",
-    lines: [
-      "Web terminal service is at capacity.",
-      "",
-      "Press ⏎ to reconnect"
-    ]
+    lines: ["Web terminal service is at capacity.", "", "Press ⏎ to reconnect"],
   },
 
   connectionTimeout: {
@@ -50,30 +46,23 @@ export const CONNECTION_MESSAGES = {
     lines: [
       "Connection to web terminal timed out.",
       "",
-      "Press ⏎ to reconnect"
-    ]
+      "Press ⏎ to reconnect",
+    ],
   },
 
   reconnectCancelled: {
     title: "RECONNECTION CANCELLED",
-    lines: [
-      "Reconnection attempts cancelled.",
-      "",
-      "Press ⏎ to reconnect"
-    ]
+    lines: ["Reconnection attempts cancelled.", "", "Press ⏎ to reconnect"],
   },
 
   reconnectingWithInstall: {
     title: "RECONNECTING",
-    lines: [
-      "Reconnecting to Ably CLI server...",
-      "",
-      "Press ⏎ to cancel"
-    ]
-  }
+    lines: ["Reconnecting to Ably CLI server...", "", "Press ⏎ to cancel"],
+  },
 };
 
-export function getConnectionMessage(type: keyof typeof CONNECTION_MESSAGES): ConnectionMessage {
+export function getConnectionMessage(
+  type: keyof typeof CONNECTION_MESSAGES,
+): ConnectionMessage {
   return CONNECTION_MESSAGES[type];
 }
-

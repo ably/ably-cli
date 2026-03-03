@@ -1,10 +1,10 @@
-import React from 'react';
-import { render, act, waitFor } from '@testing-library/react';
-import { describe, vi, test, expect, beforeEach } from 'vitest';
-import { AblyCliTerminal } from './AblyCliTerminal';
+import React from "react";
+import { render, act, waitFor } from "@testing-library/react";
+import { describe, vi, test, expect, beforeEach } from "vitest";
+import { AblyCliTerminal } from "./AblyCliTerminal";
 
 // Re-use mocks from the main test file
-vi.mock('./global-reconnect', () => ({
+vi.mock("./global-reconnect", () => ({
   getAttempts: () => 0,
   getMaxAttempts: () => 15,
   isMaxAttemptsReached: () => false,
@@ -20,42 +20,61 @@ vi.mock('./global-reconnect', () => ({
 // Track calls to fit()
 const fitSpy = vi.fn();
 
-vi.mock('@xterm/addon-fit', () => ({
-  FitAddon: vi.fn().mockImplementation(() => ({
-    fit: fitSpy,
-  })),
+vi.mock("@xterm/addon-fit", () => ({
+  FitAddon: vi.fn().mockImplementation(function () {
+    return {
+      fit: fitSpy,
+    };
+  }),
 }));
 
 // Minimal Terminal mock
-vi.mock('@xterm/xterm', () => ({
-  Terminal: vi.fn().mockImplementation(() => ({
-    open: vi.fn(),
-    loadAddon: vi.fn(),
-    onData: vi.fn(),
-    dispose: vi.fn(),
-    focus: vi.fn(),
-    write: vi.fn(),
-    writeln: vi.fn(),
-    attachCustomKeyEventHandler: vi.fn(),
-  })),
+vi.mock("@xterm/xterm", () => ({
+  Terminal: vi.fn().mockImplementation(function () {
+    return {
+      open: vi.fn(),
+      loadAddon: vi.fn(),
+      onData: vi.fn(),
+      dispose: vi.fn(),
+      focus: vi.fn(),
+      write: vi.fn(),
+      writeln: vi.fn(),
+      attachCustomKeyEventHandler: vi.fn(),
+    };
+  }),
 }));
 
-vi.mock('./use-terminal-visibility', () => ({
+vi.mock("./use-terminal-visibility", () => ({
   useTerminalVisibility: () => true,
 }));
 
 // lucide mock
-vi.mock('lucide-react', () => ({ SplitSquareHorizontal: () => null, X: () => null }));
+vi.mock("lucide-react", () => ({
+  SplitSquareHorizontal: () => null,
+  X: () => null,
+}));
 
-describe('AblyCliTerminal – debounced fit', () => {
+// Helper to create test signed config
+const createTestSignedConfig = (apiKey: string = "test-key") => {
+  return JSON.stringify({
+    apiKey,
+    timestamp: Date.now(),
+  });
+};
+
+describe("AblyCliTerminal – debounced fit", () => {
   beforeEach(() => {
     fitSpy.mockClear();
     vi.useFakeTimers();
   });
 
-  test('fit() is called initially and at most once during rapid resize events', async () => {
+  test("fit() is called initially and at most once during rapid resize events", async () => {
     const { unmount } = render(
-      <AblyCliTerminal websocketUrl="ws://dummy" ablyApiKey="key" />,
+      <AblyCliTerminal
+        websocketUrl="ws://dummy"
+        signedConfig={createTestSignedConfig()}
+        signature="test-signature"
+      />,
     );
 
     // Initial fit is called once
@@ -64,7 +83,7 @@ describe('AblyCliTerminal – debounced fit', () => {
     // Fire 5 rapid resize events
     act(() => {
       for (let i = 0; i < 5; i++) {
-        window.dispatchEvent(new Event('resize'));
+        globalThis.dispatchEvent(new Event("resize"));
       }
     });
 
@@ -82,4 +101,4 @@ describe('AblyCliTerminal – debounced fit', () => {
     unmount();
     vi.useRealTimers();
   });
-}); 
+});

@@ -5,9 +5,10 @@ import tsPlugin from "@typescript-eslint/eslint-plugin";
 import eslintPluginN from "eslint-plugin-n";
 import eslintPluginUnicorn from "eslint-plugin-unicorn";
 import eslintConfigPrettier from "eslint-config-prettier";
+import eslintPluginPrettier from "eslint-plugin-prettier";
 import eslint from "@eslint/js"; // Import base eslint config
-// import mochaGlobals from 'eslint-plugin-mocha/lib/configs/globals.js'; // Import mocha globals
-import eslintPluginMocha from "eslint-plugin-mocha"; // Import the plugin
+import vitest from '@vitest/eslint-plugin'
+import eslintPluginReact from "eslint-plugin-react"
 
 export default [
   {
@@ -31,26 +32,12 @@ export default [
       "packages/react-web-cli/dist/index.mjs",
       "bin/", // Added from .eslintrc.cjs
       "playwright-report/**", // Ignore Playwright report files
-      // New comprehensive test files - ignore to prevent CI blocking
-      "test/unit/commands/apps/create.test.ts",
-      "test/unit/commands/apps/delete.test.ts",
-      "test/unit/commands/apps/list.test.ts", 
-      "test/unit/commands/auth/keys/create.test.ts",
-      "test/unit/commands/rooms/**/*.test.ts",
-      "test/unit/commands/spaces/**/*.test.ts",
-      "test/unit/commands/mcp/**/*.test.ts",
-      "test/unit/commands/bench/**/*.test.ts",
-      "test/integration/commands/rooms.test.ts",
-      "test/integration/commands/spaces.test.ts", 
-      "test/e2e/commands/rooms-e2e.test.ts",
-      "test/e2e/commands/spaces-e2e.test.ts",
-      "test/integration/test-utils.ts",
-      "playwright-report/**"
+      "vitest.config.ts"
     ], // Updated to match all ignorePatterns from .eslintrc.json
   },
   {
     // Base configuration for all JS/TS files
-    files: ["**/*.{js,mjs,cjs,ts}"],
+    files: ["**/*.{js,mjs,cjs,ts,tsx}"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
@@ -63,6 +50,7 @@ export default [
     plugins: {
       n: eslintPluginN,
       unicorn: eslintPluginUnicorn,
+      prettier: eslintPluginPrettier,
     },
     rules: {
       // Base ESLint recommended rules
@@ -83,11 +71,13 @@ export default [
       "unicorn/no-process-exit": "off",
       "n/no-process-exit": "off",
       "n/no-unsupported-features/node-builtins": "off",
+      // Prettier
+      "prettier/prettier": "error",
     },
   },
   {
     // Configuration specific to TypeScript files
-    files: ["**/*.ts", "**/*.tsx"],
+    files: ["**/*.ts"],
     plugins: {
       "@typescript-eslint": tsPlugin, // Use the imported plugin object
     },
@@ -117,81 +107,114 @@ export default [
     },
   },
   {
-    // Configuration for React Web CLI package
-    files: ["packages/react-web-cli/**/*"],
+    // Configuration for React Web CLI package - TSX files
+    files: ["packages/react-web-cli/**/*.{ts,tsx}"],
+    plugins: {
+      react: eslintPluginReact,
+      "@typescript-eslint": tsPlugin,
+    },
     languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+        project: "./packages/react-web-cli/tsconfig.json",
+      },
       globals: {
         ...globals.browser,
       },
     },
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
     rules: {
+      // React recommended rules
+      ...eslintPluginReact.configs.recommended.rules,
+      ...eslintPluginReact.configs["jsx-runtime"].rules,
+      // TypeScript rules
+      ...tsPlugin.configs.recommended.rules,
+      // Custom overrides for this package
       "unicorn/prefer-module": "off",
       "unicorn/no-negated-condition": "off",
+      "unicorn/filename-case": "off",
+      "unicorn/prefer-string-slice": "off",
+      "unicorn/prefer-code-point": "off",
+      "unicorn/prevent-abbreviations": "off",
+      "unicorn/no-array-reduce": "off",
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "off",
       "no-console": "off",
+      "no-control-regex": "off", // Terminal escape sequences use control chars
+      "n/no-missing-import": "off", // TSX imports are handled by TypeScript
+      "react/prop-types": "off", // Using TypeScript for prop validation
+      "react/react-in-jsx-scope": "off", // Not needed in React 17+
     },
   },
   {
     // Configuration specific to test files
     files: ["test/**/*.test.ts"],
     plugins: {
-      mocha: eslintPluginMocha,
+      vitest: vitest,
     },
     languageOptions: {
       globals: {
-        ...globals.mocha,
-        describe: "readonly",
-        it: "readonly",
-        before: "readonly",
-        after: "readonly",
-        beforeEach: "readonly",
-        afterEach: "readonly",
+        ...vitest.environments.env.globals,
       },
     },
     rules: {
-      // Apply recommended mocha rules which include globals
-      ...eslintPluginMocha.configs.recommended.rules,
+      // Apply recommended vitest rules
+      ...vitest.configs.recommended.rules,
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-expressions": "off",
-      "mocha/no-exclusive-tests": "error",
-      "mocha/no-skipped-tests": "warn",
+      "vitest/no-focused-tests": "error", // Equivalent to mocha/no-exclusive-tests
+      "vitest/no-disabled-tests": "warn", // Equivalent to mocha/no-skipped-tests
+    },
+  },
+  {
+    // Configuration specific to test files
+    files: ["packages/react-web-cli/**/*.test.ts", "packages/react-web-cli/**/*.test.tsx"],
+    plugins: {
+      vitest: vitest,
+    },
+    languageOptions: {
+      globals: {
+        ...vitest.environments.env.globals,
+        ...globals.browser,
+      },
+    },
+    rules: {
+      // Apply recommended vitest rules
+      ...vitest.configs.recommended.rules,
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-expressions": "off",
+      "vitest/no-focused-tests": "error", // Equivalent to mocha/no-exclusive-tests
+      "vitest/no-disabled-tests": "warn", // Equivalent to mocha/no-skipped-tests
     },
   },
   {
     // Configuration specific to server test files
     files: ["server/tests/**/*.test.ts"],
     plugins: {
-      mocha: eslintPluginMocha,
+      vitest: vitest,
     },
     languageOptions: {
       globals: {
-        ...globals.mocha,
-        describe: "readonly",
-        it: "readonly",
-        before: "readonly",
-        after: "readonly",
-        beforeEach: "readonly",
-        afterEach: "readonly",
+        ...vitest.environments.env.globals,
       },
     },
     rules: {
-      // Apply recommended mocha rules which include globals
-      ...eslintPluginMocha.configs.recommended.rules,
+      // Apply recommended vitest rules
+      ...vitest.configs.recommended.rules,
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-expressions": "off",
-      "mocha/no-exclusive-tests": "error",
-      "mocha/no-skipped-tests": "warn",
+      "vitest/no-focused-tests": "error", // Equivalent to mocha/no-exclusive-tests
+      "vitest/no-disabled-tests": "warn", // Equivalent to mocha/no-skipped-tests
       "unicorn/prefer-optional-catch-binding": "off", // Allow catch (error) in tests
       "n/no-unpublished-import": "off", // Allow dev dependencies like chai in tests
     },
-  },
-  // Configuration for MCP files with ModelContextProtocol SDK imports
-  {
-    files: ["src/mcp/**/*.ts"],
-    rules: {
-      "n/no-missing-import": "off"
-    }
   },
   // Prettier config must be last
   eslintConfigPrettier,

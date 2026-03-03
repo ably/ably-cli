@@ -1,512 +1,263 @@
-import { expect } from "chai";
-import sinon from "sinon";
-import { Config } from "@oclif/core";
-import * as Ably from "ably";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { runCommand } from "@oclif/test";
+import { getMockAblySpaces } from "../../../helpers/mock-ably-spaces.js";
+import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
 
-import SpacesMembersEnter from "../../../../src/commands/spaces/members/enter.js";
-import SpacesMembersSubscribe from "../../../../src/commands/spaces/members/subscribe.js";
-import SpacesLocationsSet from "../../../../src/commands/spaces/locations/set.js";
-import SpacesLocationsGetAll from "../../../../src/commands/spaces/locations/get-all.js";
-import SpacesLocationsSubscribe from "../../../../src/commands/spaces/locations/subscribe.js";
-import SpacesLocksAcquire from "../../../../src/commands/spaces/locks/acquire.js";
-import SpacesLocksGet from "../../../../src/commands/spaces/locks/get.js";
-import SpacesLocksGetAll from "../../../../src/commands/spaces/locks/get-all.js";
-import SpacesLocksSubscribe from "../../../../src/commands/spaces/locks/subscribe.js";
-import SpacesCursorsSet from "../../../../src/commands/spaces/cursors/set.js";
-import SpacesCursorsGetAll from "../../../../src/commands/spaces/cursors/get-all.js";
-import SpacesCursorsSubscribe from "../../../../src/commands/spaces/cursors/subscribe.js";
+describe("spaces commands", () => {
+  beforeEach(() => {
+    // Configure the realtime mock
+    const realtimeMock = getMockAblyRealtime();
+    realtimeMock.auth.clientId = "test-client-id";
+    realtimeMock.connection.id = "conn-123";
 
-// Base testable class for spaces commands
-class TestableSpacesCommand {
-  protected _parseResult: any;
-  public mockRealtimeClient: any;
-  public mockSpacesClient: any;
-  public mockSpace: any;
+    // Configure the spaces mock with test data
+    const spacesMock = getMockAblySpaces();
+    const space = spacesMock._getSpace("test-space");
 
-  public setParseResult(result: any) {
-    this._parseResult = result;
-  }
-
-  public async parse() {
-    return this._parseResult;
-  }
-
-  public async setupSpacesClient(_flags: any, _spaceName: string) {
-    return {
-      realtimeClient: this.mockRealtimeClient,
-      spacesClient: this.mockSpacesClient,
-      space: this.mockSpace,
-    };
-  }
-
-  public createSpacesClient(_realtimeClient: any) {
-    return this.mockSpacesClient;
-  }
-
-  public async createAblyRealtimeClient(_flags: any) {
-    return this.mockRealtimeClient as unknown as Ably.Realtime;
-  }
-
-  public async ensureAppAndKey(_flags: any) {
-    return { apiKey: "fake:key", appId: "fake-app" } as const;
-  }
-
-  public interactiveHelper = {
-    confirm: sinon.stub().resolves(true),
-    promptForText: sinon.stub().resolves("fake-input"),
-    promptToSelect: sinon.stub().resolves("fake-selection"),
-  } as any;
-}
-
-// Testable subclasses for members commands
-class TestableSpacesMembersEnter extends SpacesMembersEnter {
-  private testableCommand = new TestableSpacesCommand();
-
-  public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
-  public override async parse() { return this.testableCommand.parse(); }
-  protected override async setupSpacesClient(flags: any, spaceName: string) { return this.testableCommand.setupSpacesClient(flags, spaceName); }
-  protected override createSpacesClient(realtimeClient: any) { return this.testableCommand.createSpacesClient(realtimeClient); }
-  protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
-  protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
-  protected override interactiveHelper = this.testableCommand.interactiveHelper;
-
-  get mockRealtimeClient() { return this.testableCommand.mockRealtimeClient; }
-  set mockRealtimeClient(value) { this.testableCommand.mockRealtimeClient = value; }
-  get mockSpacesClient() { return this.testableCommand.mockSpacesClient; }
-  set mockSpacesClient(value) { this.testableCommand.mockSpacesClient = value; }
-  get mockSpace() { return this.testableCommand.mockSpace; }
-  set mockSpace(value) { this.testableCommand.mockSpace = value; }
-}
-
-class TestableSpacesMembersSubscribe extends SpacesMembersSubscribe {
-  private testableCommand = new TestableSpacesCommand();
-
-  public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
-  public override async parse() { return this.testableCommand.parse(); }
-  protected override async setupSpacesClient(flags: any, spaceName: string) { return this.testableCommand.setupSpacesClient(flags, spaceName); }
-  protected override createSpacesClient(realtimeClient: any) { return this.testableCommand.createSpacesClient(realtimeClient); }
-  protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
-  protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
-  protected override interactiveHelper = this.testableCommand.interactiveHelper;
-
-  get mockRealtimeClient() { return this.testableCommand.mockRealtimeClient; }
-  set mockRealtimeClient(value) { this.testableCommand.mockRealtimeClient = value; }
-  get mockSpacesClient() { return this.testableCommand.mockSpacesClient; }
-  set mockSpacesClient(value) { this.testableCommand.mockSpacesClient = value; }
-  get mockSpace() { return this.testableCommand.mockSpace; }
-  set mockSpace(value) { this.testableCommand.mockSpace = value; }
-}
-
-// Testable subclasses for locations commands
-class TestableSpacesLocationsSet extends SpacesLocationsSet {
-  private testableCommand = new TestableSpacesCommand();
-
-  public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
-  public override async parse() { return this.testableCommand.parse(); }
-  protected override async setupSpacesClient(flags: any, spaceName: string) { return this.testableCommand.setupSpacesClient(flags, spaceName); }
-  protected override createSpacesClient(realtimeClient: any) { return this.testableCommand.createSpacesClient(realtimeClient); }
-  protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
-  protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
-  protected override interactiveHelper = this.testableCommand.interactiveHelper;
-
-  get mockRealtimeClient() { return this.testableCommand.mockRealtimeClient; }
-  set mockRealtimeClient(value) { this.testableCommand.mockRealtimeClient = value; }
-  get mockSpacesClient() { return this.testableCommand.mockSpacesClient; }
-  set mockSpacesClient(value) { this.testableCommand.mockSpacesClient = value; }
-  get mockSpace() { return this.testableCommand.mockSpace; }
-  set mockSpace(value) { this.testableCommand.mockSpace = value; }
-}
-
-// Testable subclasses for locks commands
-class TestableSpacesLocksAcquire extends SpacesLocksAcquire {
-  private testableCommand = new TestableSpacesCommand();
-
-  public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
-  public override async parse() { return this.testableCommand.parse(); }
-  protected override async setupSpacesClient(flags: any, spaceName: string) { return this.testableCommand.setupSpacesClient(flags, spaceName); }
-  protected override createSpacesClient(realtimeClient: any) { return this.testableCommand.createSpacesClient(realtimeClient); }
-  protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
-  protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
-  protected override interactiveHelper = this.testableCommand.interactiveHelper;
-
-  get mockRealtimeClient() { return this.testableCommand.mockRealtimeClient; }
-  set mockRealtimeClient(value) { this.testableCommand.mockRealtimeClient = value; }
-  get mockSpacesClient() { return this.testableCommand.mockSpacesClient; }
-  set mockSpacesClient(value) { this.testableCommand.mockSpacesClient = value; }
-  get mockSpace() { return this.testableCommand.mockSpace; }
-  set mockSpace(value) { this.testableCommand.mockSpace = value; }
-}
-
-// Testable subclasses for cursors commands  
-class TestableSpacesCursorsSet extends SpacesCursorsSet {
-  private testableCommand = new TestableSpacesCommand();
-
-  public setParseResult(result: any) { this.testableCommand.setParseResult(result); }
-  public override async parse() { return this.testableCommand.parse(); }
-  protected override async setupSpacesClient(flags: any, spaceName: string) { return this.testableCommand.setupSpacesClient(flags, spaceName); }
-  protected override createSpacesClient(realtimeClient: any) { return this.testableCommand.createSpacesClient(realtimeClient); }
-  protected override async createAblyRealtimeClient(flags: any) { return this.testableCommand.createAblyRealtimeClient(flags); }
-  protected override async ensureAppAndKey(flags: any) { return this.testableCommand.ensureAppAndKey(flags); }
-  protected override interactiveHelper = this.testableCommand.interactiveHelper;
-
-  get mockRealtimeClient() { return this.testableCommand.mockRealtimeClient; }
-  set mockRealtimeClient(value) { this.testableCommand.mockRealtimeClient = value; }
-  get mockSpacesClient() { return this.testableCommand.mockSpacesClient; }
-  set mockSpacesClient(value) { this.testableCommand.mockSpacesClient = value; }
-  get mockSpace() { return this.testableCommand.mockSpace; }
-  set mockSpace(value) { this.testableCommand.mockSpace = value; }
-}
-
-describe("spaces commands", function () {
-  let sandbox: sinon.SinonSandbox;
-  let mockConfig: Config;
-
-  beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    mockConfig = { runHook: sinon.stub() } as unknown as Config;
-  });
-
-  afterEach(function () {
-    sandbox.restore();
-  });
-
-  describe("spaces members enter", function () {
-    let command: TestableSpacesMembersEnter;
-    let mockMembers: any;
-    let enterStub: sinon.SinonStub;
-    let subscribeStub: sinon.SinonStub;
-
-    beforeEach(function () {
-      command = new TestableSpacesMembersEnter([], mockConfig);
-      
-      enterStub = sandbox.stub().resolves();
-      subscribeStub = sandbox.stub();
-      mockMembers = {
-        enter: enterStub,
-        subscribe: subscribeStub,
-        unsubscribe: sandbox.stub().resolves(),
-      };
-
-      command.mockSpace = {
-        enter: enterStub,
-        leave: sandbox.stub().resolves(),
-        members: mockMembers,
-      };
-
-      command.mockRealtimeClient = {
-        connection: {
-          on: sandbox.stub(),
-          state: "connected",
-          id: "test-connection-id",
-        },
-        close: sandbox.stub(),
-      };
-
-      command.mockSpacesClient = {};
-
-      command.setParseResult({
-        flags: {},
-        args: { space: "test-space" },
-        argv: [],
-        raw: [],
-      });
+    // Configure members
+    space.members.getSelf.mockResolvedValue({
+      clientId: "test-client-id",
+      connectionId: "conn-123",
+      isConnected: true,
+      profileData: {},
     });
 
-    it("should enter space and subscribe to member updates", async function () {
-      subscribeStub.callsFake((eventType, callback) => {
-        // Simulate receiving a member update
-        setTimeout(() => {
-          callback({
-            clientId: "other-client",
-            connectionId: "other-connection",
-            lastEvent: { name: "enter" },
-            isConnected: true,
-            profileData: { name: "Other User" },
-          });
-        }, 10);
-        return Promise.resolve();
-      });
+    // Configure locks to return a lock object
+    space.locks.acquire.mockResolvedValue({ id: "lock-1" });
+  });
 
-      // Since members enter runs indefinitely, we'll test the setup
-      const runPromise = command.run();
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
-      expect(enterStub.calledOnce).to.be.true;
-      expect(subscribeStub.calledWith("update")).to.be.true;
-      
-      command.mockRealtimeClient.close();
+  describe("spaces topic", () => {
+    it("should list available spaces subcommands when run without arguments", async () => {
+      const { stdout } = await runCommand(["spaces"], import.meta.url);
+
+      expect(stdout).toContain("Spaces commands");
+      expect(stdout).toContain("members");
+      expect(stdout).toContain("locations");
+      expect(stdout).toContain("locks");
+      expect(stdout).toContain("cursors");
     });
 
-    it("should handle profile data when entering", async function () {
-      command.setParseResult({
-        flags: { profile: '{"name": "Test User", "role": "admin"}' },
-        args: { space: "test-space" },
-        argv: [],
-        raw: [],
-      });
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces", "--help"],
+        import.meta.url,
+      );
 
-      subscribeStub.resolves();
-
-      const runPromise = command.run();
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
-      expect(enterStub.calledOnce).to.be.true;
-      const profileData = enterStub.getCall(0).args[0];
-      expect(profileData).to.deep.equal({ name: "Test User", role: "admin" });
-      
-      command.mockRealtimeClient.close();
+      expect(stdout).toContain("Interact with Ably Spaces");
+      expect(stdout).toContain("USAGE");
     });
   });
 
-  describe("spaces members subscribe", function () {
-    let command: TestableSpacesMembersSubscribe;
-    let mockMembers: any;
-    let subscribeStub: sinon.SinonStub;
+  describe("spaces members enter", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:members:enter", "--help"],
+        import.meta.url,
+      );
 
-    beforeEach(function () {
-      command = new TestableSpacesMembersSubscribe([], mockConfig);
-      
-      subscribeStub = sandbox.stub();
-      mockMembers = {
-        subscribe: subscribeStub,
-        unsubscribe: sandbox.stub().resolves(),
-      };
-
-      command.mockSpace = {
-        members: mockMembers,
-      };
-
-      command.mockRealtimeClient = {
-        connection: {
-          on: sandbox.stub(),
-          state: "connected",
-        },
-        close: sandbox.stub(),
-      };
-
-      command.mockSpacesClient = {};
-
-      command.setParseResult({
-        flags: {},
-        args: { space: "test-space" },
-        argv: [],
-        raw: [],
-      });
+      expect(stdout).toContain("Enter a space");
+      expect(stdout).toContain("USAGE");
+      expect(stdout).toContain("SPACE");
     });
 
-    it("should subscribe to member updates", async function () {
-      subscribeStub.callsFake((callback) => {
-        setTimeout(() => {
-          callback({
-            clientId: "client-123",
-            connectionId: "connection-456",
-            lastEvent: { name: "update" },
-            isConnected: true,
-            profileData: { status: "active" },
-          });
-        }, 10);
-        return Promise.resolve();
-      });
+    it("should enter a space successfully", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
 
-      const runPromise = command.run();
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
-      expect(subscribeStub.calledOnce).to.be.true;
-      
-      command.mockRealtimeClient.close();
+      const { stdout } = await runCommand(
+        ["spaces:members:enter", "test-space", "--api-key", "app.key:secret"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("test-space");
+      expect(space.enter).toHaveBeenCalled();
+    });
+
+    it("should enter a space with profile data", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+
+      const { stdout } = await runCommand(
+        [
+          "spaces:members:enter",
+          "test-space",
+          "--api-key",
+          "app.key:secret",
+          "--profile",
+          '{"name":"TestUser","status":"online"}',
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("test-space");
+      expect(space.enter).toHaveBeenCalledWith({
+        name: "TestUser",
+        status: "online",
+      });
     });
   });
 
-  describe("spaces locations set", function () {
-    let command: TestableSpacesLocationsSet;
-    let mockLocations: any;
-    let setStub: sinon.SinonStub;
+  describe("spaces members subscribe", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:members:subscribe", "--help"],
+        import.meta.url,
+      );
 
-    beforeEach(function () {
-      command = new TestableSpacesLocationsSet([], mockConfig);
-      
-      setStub = sandbox.stub().resolves();
-      mockLocations = {
-        set: setStub,
-      };
-
-      command.mockSpace = {
-        locations: mockLocations,
-      };
-
-      command.mockRealtimeClient = {
-        connection: {
-          on: sandbox.stub(),
-          state: "connected",
-        },
-        close: sandbox.stub(),
-      };
-
-      command.mockSpacesClient = {};
-
-      command.setParseResult({
-        flags: {},
-        args: { space: "test-space" },
-        argv: [],
-        raw: [],
-      });
+      expect(stdout).toContain("Subscribe to member");
+      expect(stdout).toContain("USAGE");
+      expect(stdout).toContain("SPACE");
     });
 
-    it("should set location data", async function () {
-      command.setParseResult({
-        flags: { location: '{"x": 100, "y": 200, "page": "dashboard"}' },
-        args: { space: "test-space" },
-        argv: [],
-        raw: [],
+    it("should subscribe and display member events with action and client info", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+
+      // Capture the member callback to simulate events
+      let memberCallback: ((member: unknown) => void) | null = null;
+      space.members.subscribe.mockImplementation(
+        (_event: string, callback: (member: unknown) => void) => {
+          memberCallback = callback;
+          return Promise.resolve();
+        },
+      );
+
+      const commandPromise = runCommand(
+        [
+          "spaces:members:subscribe",
+          "test-space",
+          "--api-key",
+          "app.key:secret",
+        ],
+        import.meta.url,
+      );
+
+      // Wait for subscription to be set up
+      await vi.waitFor(() => {
+        expect(memberCallback).not.toBeNull();
       });
 
-      await command.run();
+      // Simulate a member entering - use a different connectionId than the mock's
+      memberCallback!({
+        clientId: "new-user",
+        connectionId: "other-conn-456",
+        isConnected: true,
+        profileData: { name: "New User" },
+        lastEvent: { name: "enter" },
+      });
 
-      expect(setStub.calledOnce).to.be.true;
-      const locationData = setStub.getCall(0).args[0];
-      expect(locationData).to.deep.equal({ x: 100, y: 200, page: "dashboard" });
+      const { stdout } = await commandPromise;
+
+      // Should display member event with client info and action
+      expect(stdout).toContain("new-user");
+      expect(stdout).toContain("enter");
     });
   });
 
-  describe("spaces locks acquire", function () {
-    let command: TestableSpacesLocksAcquire;
-    let mockLocks: any;
-    let acquireStub: sinon.SinonStub;
+  describe("spaces locations set", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:locations:set", "--help"],
+        import.meta.url,
+      );
 
-    beforeEach(function () {
-      command = new TestableSpacesLocksAcquire([], mockConfig);
-      
-      acquireStub = sandbox.stub().resolves({
-        id: "test-lock",
-        member: { clientId: "test-client" },
-        timestamp: Date.now(),
-      });
-      mockLocks = {
-        acquire: acquireStub,
-      };
-
-      command.mockSpace = {
-        locks: mockLocks,
-      };
-
-      command.mockRealtimeClient = {
-        connection: {
-          on: sandbox.stub(),
-          state: "connected",
-        },
-        close: sandbox.stub(),
-      };
-
-      command.mockSpacesClient = {};
-
-      command.setParseResult({
-        flags: {},
-        args: { space: "test-space", lockId: "test-lock" },
-        argv: [],
-        raw: [],
-      });
+      expect(stdout).toContain("Set your location");
+      expect(stdout).toContain("USAGE");
+      expect(stdout).toContain("SPACE");
     });
 
-    it("should acquire a lock successfully", async function () {
-      await command.run();
+    it("should set location with --location flag", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
 
-      expect(acquireStub.calledOnce).to.be.true;
-      expect(acquireStub.calledWith("test-lock")).to.be.true;
-    });
+      const { stdout } = await runCommand(
+        [
+          "spaces:locations:set",
+          "test-space",
+          "--api-key",
+          "app.key:secret",
+          "--location",
+          '{"x":100,"y":200}',
+        ],
+        import.meta.url,
+      );
 
-    it("should handle lock attributes", async function () {
-      command.setParseResult({
-        flags: { attributes: '{"priority": "high", "timeout": 5000}' },
-        args: { space: "test-space", lockId: "test-lock" },
-        argv: [],
-        raw: [],
-      });
-
-      await command.run();
-
-      expect(acquireStub.calledOnce).to.be.true;
-      const lockCall = acquireStub.getCall(0);
-      expect(lockCall.args[0]).to.equal("test-lock");
-      // Attributes would typically be passed as second argument
-      if (lockCall.args[1]) {
-        expect(lockCall.args[1]).to.deep.include({ priority: "high", timeout: 5000 });
-      }
+      expect(stdout).toContain("Successfully set location");
+      expect(space.locations.set).toHaveBeenCalledWith({ x: 100, y: 200 });
     });
   });
 
-  describe("spaces cursors set", function () {
-    let command: TestableSpacesCursorsSet;
-    let mockCursors: any;
-    let setStub: sinon.SinonStub;
+  describe("spaces locks acquire", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:locks:acquire", "--help"],
+        import.meta.url,
+      );
 
-    beforeEach(function () {
-      command = new TestableSpacesCursorsSet([], mockConfig);
-      
-      setStub = sandbox.stub().resolves();
-      mockCursors = {
-        set: setStub,
-      };
-
-      command.mockSpace = {
-        cursors: mockCursors,
-      };
-
-      command.mockRealtimeClient = {
-        connection: {
-          on: sandbox.stub(),
-          state: "connected",
-        },
-        close: sandbox.stub(),
-      };
-
-      command.mockSpacesClient = {};
-
-      command.setParseResult({
-        flags: {},
-        args: { space: "test-space" },
-        argv: [],
-        raw: [],
-      });
+      expect(stdout).toContain("Acquire a lock");
+      expect(stdout).toContain("USAGE");
+      expect(stdout).toContain("SPACE");
+      expect(stdout).toContain("LOCKID");
     });
 
-    it("should set cursor position", async function () {
-      command.setParseResult({
-        flags: { position: '{"x": 150, "y": 250}' },
-        args: { space: "test-space" },
-        argv: [],
-        raw: [],
+    it("should acquire lock with --data flag", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+
+      const { stdout } = await runCommand(
+        [
+          "spaces:locks:acquire",
+          "test-space",
+          "my-lock",
+          "--api-key",
+          "app.key:secret",
+          "--data",
+          '{"reason":"editing"}',
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Successfully acquired lock");
+      expect(space.locks.acquire).toHaveBeenCalledWith("my-lock", {
+        reason: "editing",
       });
+    });
+  });
 
-      await command.run();
+  describe("spaces cursors set", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:cursors:set", "--help"],
+        import.meta.url,
+      );
 
-      expect(setStub.calledOnce).to.be.true;
-      const cursorData = setStub.getCall(0).args[0];
-      expect(cursorData).to.deep.equal({ x: 150, y: 250 });
+      expect(stdout).toContain("cursor");
+      expect(stdout).toContain("USAGE");
+      expect(stdout).toContain("SPACE");
     });
 
-    it("should handle cursor data with metadata", async function () {
-      command.setParseResult({
-        flags: { 
-          position: '{"x": 150, "y": 250}',
-          data: '{"color": "red", "size": "large"}'
-        },
-        args: { space: "test-space" },
-        argv: [],
-        raw: [],
+    it("should set cursor with x and y flags", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+
+      const { stdout } = await runCommand(
+        [
+          "spaces:cursors:set",
+          "test-space",
+          "--api-key",
+          "app.key:secret",
+          "--x",
+          "50",
+          "--y",
+          "75",
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Set cursor");
+      expect(space.cursors.set).toHaveBeenCalledWith({
+        position: { x: 50, y: 75 },
       });
-
-      await command.run();
-
-      expect(setStub.calledOnce).to.be.true;
-      const cursorCall = setStub.getCall(0);
-      expect(cursorCall.args[0]).to.deep.equal({ x: 150, y: 250 });
-      // Data would typically be passed as second argument
-      if (cursorCall.args[1]) {
-        expect(cursorCall.args[1]).to.deep.include({ color: "red", size: "large" });
-      }
     });
   });
 });

@@ -2,45 +2,75 @@ import React, { useState } from 'react';
 import { Key, Lock, Terminal, AlertCircle, ArrowRight, Save, RefreshCw } from 'lucide-react';
 
 interface AuthScreenProps {
-  onAuthenticate: (apiKey: string, accessToken: string, remember?: boolean) => void;
+  onAuthenticate: (apiKey: string, remember?: boolean) => void;
   rememberCredentials: boolean;
   onRememberChange: (remember: boolean) => void;
 }
 
-export const AuthScreen: React.FC<AuthScreenProps> = ({ 
-  onAuthenticate, 
+export const AuthScreen: React.FC<AuthScreenProps> = ({
+  onAuthenticate,
   rememberCredentials,
-  onRememberChange 
+  onRememberChange
 }) => {
   const [apiKey, setApiKey] = useState('');
-  const [accessToken, setAccessToken] = useState('');
   const [error, setError] = useState('');
-  
-  // Check if there are saved credentials to clear
-  const hasSavedCredentials = localStorage.getItem('ably.web-cli.apiKey') !== null;
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Check if there are saved credentials to clear (domain-scoped or old format)
+  const hasSavedCredentials = (() => {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('ably.web-cli.signedConfig.') ||
+          key?.startsWith('ably.web-cli.apiKey')) {
+        return true;
+      }
+    }
+    return false;
+  })();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
-    if (!apiKey.trim()) {
-      setError('API Key is required to connect to Ably');
-      return;
+    try {
+      if (!apiKey.trim()) {
+        setError('API Key is required to connect to Ably');
+        return;
+      }
+
+      // Basic validation for API key format
+      if (!apiKey.includes(':')) {
+        setError('API Key should be in the format: app_name.key_name:key_secret');
+        return;
+      }
+
+      await onAuthenticate(apiKey.trim(), rememberCredentials);
+    } catch (error) {
+      console.error('[AuthScreen] Authentication failed:', error);
+      setError(error instanceof Error ? error.message : 'Authentication failed');
+    } finally {
+      setIsLoading(false);
     }
-
-    // Basic validation for API key format
-    if (!apiKey.includes(':')) {
-      setError('API Key should be in the format: app_name.key_name:key_secret');
-      return;
-    }
-
-    onAuthenticate(apiKey.trim(), accessToken.trim(), rememberCredentials);
   };
   
   const handleClearSavedCredentials = () => {
-    localStorage.removeItem('ably.web-cli.apiKey');
-    localStorage.removeItem('ably.web-cli.accessToken');
-    localStorage.removeItem('ably.web-cli.rememberCredentials');
+    // Clear all domain-scoped signed config keys
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('ably.web-cli.signedConfig.') ||
+          key?.startsWith('ably.web-cli.signature.') ||
+          key?.startsWith('ably.web-cli.rememberCredentials.') ||
+          key?.startsWith('ably.web-cli.apiKey') ||
+          key?.startsWith('ably.web-cli.accessToken')) {
+        keysToRemove.push(key);
+      }
+    }
+
+    // Remove all identified keys
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+
     setError('');
     // Force a refresh to show the change
     window.location.reload();
@@ -81,27 +111,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               </p>
             </div>
 
-            <div>
-              <label htmlFor="accessToken" className="flex items-center space-x-2 text-sm font-medium text-gray-300 mb-2">
-                <Lock size={16} />
-                <span>Access Token (Optional)</span>
-              </label>
-              <input
-                id="accessToken"
-                type="text"
-                value={accessToken}
-                onChange={(e) => {
-                  setAccessToken(e.target.value);
-                  setError(''); // Clear error when user types
-                }}
-                placeholder="Your JWT access token"
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
-              <p className="mt-2 text-xs text-gray-500">
-                Only required if you're using token authentication instead of an API key
-              </p>
-            </div>
-
             {error && (
               <div className="bg-red-900/50 border border-red-700 rounded-lg p-4 flex items-start space-x-3">
                 <AlertCircle className="text-red-400 mt-0.5" size={20} />
@@ -125,9 +134,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
             <button
               type="submit"
-              className="w-full px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 font-medium"
+              disabled={isLoading}
+              className="w-full px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span>Connect to Terminal</span>
+              <span>{isLoading ? 'Signing credentials...' : 'Connect to Terminal'}</span>
               <ArrowRight size={20} />
             </button>
           </form>

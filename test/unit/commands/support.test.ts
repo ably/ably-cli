@@ -1,119 +1,89 @@
-import { expect } from 'chai';
-import { describe, it } from 'mocha';
-import sinon from 'sinon';
+import { describe, it, expect } from "vitest";
+import { runCommand } from "@oclif/test";
 
-describe('Support Command Tests', function() {
-  let sandbox: sinon.SinonSandbox;
+describe("support command", () => {
+  describe("topic listing", () => {
+    it("should list available support subcommands when run without arguments", async () => {
+      const { stdout } = await runCommand(["support"], import.meta.url);
 
-  beforeEach(function() {
-    sandbox = sinon.createSandbox();
-  });
-
-  afterEach(function() {
-    sandbox.restore();
-  });
-
-  describe('Support Topic Structure', function() {
-    it('should be a topic command with subcommands', function() {
-      // Mock config to simulate the support topic structure
-      const mockConfig = {
-        commands: [
-          { id: 'support:ask', description: 'Ask Ably AI for help' },
-          { id: 'support:contact', description: 'Contact Ably support' },
-          { id: 'support:info', description: 'Show support information' }
-        ],
-        topics: [
-          { name: 'support', description: 'Get support and help from Ably' }
-        ]
-      } as any;
-      
-      // Verify support is a topic
-      const supportTopic = mockConfig.topics.find((t: any) => t.name === 'support');
-      expect(supportTopic).to.exist;
-      expect(supportTopic.description).to.include('support');
-      
-      // Verify subcommands exist
-      const supportCommands = mockConfig.commands.filter((c: any) => c.id.startsWith('support:'));
-      expect(supportCommands).to.have.length(3);
-      
-      // Check specific subcommands
-      expect(supportCommands.some((c: any) => c.id === 'support:ask')).to.be.true;
-      expect(supportCommands.some((c: any) => c.id === 'support:contact')).to.be.true;
-      expect(supportCommands.some((c: any) => c.id === 'support:info')).to.be.true;
+      expect(stdout).toContain("Ably support commands:");
+      expect(stdout).toContain("support ask");
+      expect(stdout).toContain("support contact");
     });
 
-    it('should have correct subcommand mappings', function() {
-      // Verify the migration from help subcommands
-      const commandMappings = {
-        'help:ask': 'support:ask',
-        'help:contact': 'support:contact',
-        'help:support': 'support:info'  // Note: help:support -> support:info
-      };
-      
-      Object.entries(commandMappings).forEach(([oldCmd, newCmd]) => {
-        // Old commands should not exist
-        const mockConfig = {
-          findCommand: (id: string) => {
-            if (id === oldCmd) return null;
-            if (id === newCmd) return { id: newCmd };
-            return null;
-          }
-        } as any;
-        
-        expect(mockConfig.findCommand(oldCmd)).to.be.null;
-        expect(mockConfig.findCommand(newCmd)).to.not.be.null;
-      });
+    it("should display help hint for subcommands", async () => {
+      const { stdout } = await runCommand(["support"], import.meta.url);
+
+      expect(stdout).toContain("--help");
+      expect(stdout).toContain("for more information");
     });
   });
 
-  describe('Support Subcommands', function() {
-    it('support:ask should have correct description', function() {
-      const mockCommand = {
-        id: 'support:ask',
-        description: 'Ask Ably AI for help with the CLI, your account, or Ably features'
-      };
-      
-      expect(mockCommand.description).to.include('AI');
-      expect(mockCommand.description).to.include('help');
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["support", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Get support and help from Ably");
+      expect(stdout).toContain("USAGE");
     });
 
-    it('support:contact should have correct description', function() {
-      const mockCommand = {
-        id: 'support:contact',
-        description: 'Contact Ably support'
-      };
-      
-      expect(mockCommand.description).to.include('Contact');
-      expect(mockCommand.description).to.include('support');
-    });
+    it("should display help with -h flag", async () => {
+      const { stdout } = await runCommand(["support", "-h"], import.meta.url);
 
-    it('support:info should have correct description', function() {
-      const mockCommand = {
-        id: 'support:info',
-        description: 'Get links to Ably support, documentation, and community resources'
-      };
-      
-      expect(mockCommand.description).to.include('support');
-      expect(mockCommand.description).to.include('documentation');
+      expect(stdout).toContain("Get support and help from Ably");
+      expect(stdout).toContain("USAGE");
     });
   });
 
-  describe('Topic Command Behavior', function() {
-    it('should show help when run without subcommand', async function() {
-      // Mock a topic command behavior
-      const mockTopicCommand = {
-        run: async function() {
-          // Topic commands should show their help when run without subcommand
-          return this.config.runCommand('help', ['support']);
-        },
-        config: {
-          runCommand: sandbox.stub().resolves()
+  describe("unknown subcommand", () => {
+    it("should show warning for unknown subcommand", async () => {
+      // Set environment to skip confirmation prompts
+      const originalEnv = process.env.ABLY_CLI_NON_INTERACTIVE;
+      process.env.ABLY_CLI_NON_INTERACTIVE = "true";
+
+      try {
+        const { stdout, stderr } = await runCommand(
+          ["support", "unknowncommand"],
+          import.meta.url,
+        );
+
+        // Should show error or warning about command not found
+        const output = stdout + (stderr || "");
+        expect(output).toMatch(/not found|not.*command|available/i);
+      } finally {
+        if (originalEnv === undefined) {
+          delete process.env.ABLY_CLI_NON_INTERACTIVE;
+        } else {
+          process.env.ABLY_CLI_NON_INTERACTIVE = originalEnv;
         }
-      };
-      
-      await mockTopicCommand.run();
-      
-      expect((mockTopicCommand.config.runCommand as sinon.SinonStub).calledWith('help', ['support'])).to.be.true;
+      }
+    });
+  });
+
+  describe("subcommand routing", () => {
+    it("should route to support:ask when ask subcommand is provided", async () => {
+      // The ask command requires a question, so we test with --help
+      const { stdout } = await runCommand(
+        ["support", "ask", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("USAGE");
+      // The help should be for the ask command specifically
+      expect(stdout).toMatch(/ask|AI|question/i);
+    });
+
+    it("should route to support:contact when contact subcommand is provided", async () => {
+      const { stdout } = await runCommand(
+        ["support", "contact", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("USAGE");
+      expect(stdout).toMatch(/contact|support/i);
     });
   });
 });

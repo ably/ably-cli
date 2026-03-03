@@ -1,5 +1,5 @@
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
+import { OrderBy } from "@ably/chat";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
@@ -20,24 +20,37 @@ export default class MessagesHistory extends ChatBaseCommand {
     '$ ably rooms messages history --api-key "YOUR_API_KEY" my-room',
     "$ ably rooms messages history --limit 50 my-room",
     "$ ably rooms messages history --show-metadata my-room",
+    '$ ably rooms messages history my-room --start "2025-01-01T00:00:00Z"',
+    '$ ably rooms messages history my-room --start "2025-01-01T00:00:00Z" --end "2025-01-02T00:00:00Z"',
+    "$ ably rooms messages history my-room --order newestFirst",
     "$ ably rooms messages history my-room --json",
     "$ ably rooms messages history my-room --pretty-json",
   ];
 
   static override flags = {
     ...ChatBaseCommand.globalFlags,
+    end: Flags.string({
+      description: "End time for the history query (ISO 8601 format)",
+    }),
     limit: Flags.integer({
       char: "l",
-      default: 20,
-      description: "Maximum number of messages to retrieve",
+      default: 50,
+      description: "Maximum number of messages to retrieve (default: 50)",
+    }),
+    order: Flags.string({
+      default: "newestFirst",
+      description:
+        "Query direction: oldestFirst or newestFirst (default: newestFirst)",
+      options: ["oldestFirst", "newestFirst"],
     }),
     "show-metadata": Flags.boolean({
       default: false,
       description: "Display message metadata if available",
     }),
+    start: Flags.string({
+      description: "Start time for the history query (ISO 8601 format)",
+    }),
   };
-
-  private ablyClient: Ably.Realtime | null = null;
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesHistory);
@@ -45,8 +58,6 @@ export default class MessagesHistory extends ChatBaseCommand {
     try {
       // Create Chat client
       const chatClient = await this.createChatClient(flags);
-      // Get the underlying Ably client for cleanup
-      this.ablyClient = this._chatRealtimeClient;
 
       if (!chatClient) {
         this.error("Failed to create Chat client");
@@ -54,7 +65,7 @@ export default class MessagesHistory extends ChatBaseCommand {
       }
 
       // Get the room
-      const room = await chatClient.rooms.get(args.room, {});
+      const room = await chatClient.rooms.get(args.room);
 
       // Attach to the room
       await room.attach();
@@ -79,8 +90,31 @@ export default class MessagesHistory extends ChatBaseCommand {
         }
       }
 
+      // Build history query parameters
+      const historyParams: {
+        limit: number;
+        orderBy?: OrderBy;
+        start?: number;
+        end?: number;
+      } = {
+        limit: flags.limit,
+        orderBy:
+          flags.order === "newestFirst"
+            ? OrderBy.NewestFirst
+            : OrderBy.OldestFirst,
+      };
+
+      // Add time range if specified
+      if (flags.start) {
+        historyParams.start = new Date(flags.start).getTime();
+      }
+
+      if (flags.end) {
+        historyParams.end = new Date(flags.end).getTime();
+      }
+
       // Get historical messages
-      const messagesResult = await room.messages.history({ limit: flags.limit });
+      const messagesResult = await room.messages.history(historyParams);
       const { items } = messagesResult;
 
       if (this.shouldOutputJson(flags)) {
@@ -112,11 +146,11 @@ export default class MessagesHistory extends ChatBaseCommand {
         } else {
           this.log(chalk.dim("---"));
 
-          // Display messages in chronological order (oldest first)
-          const messagesInOrder = [...items].reverse();
+          // Display messages in order provided
+          const messagesInOrder = [...items];
           for (const message of messagesInOrder) {
             // Format message with timestamp, author and content
-            const timestamp = new Date(message.timestamp).toLocaleTimeString();
+            const timestamp = new Date(message.timestamp).toISOString();
             const author = message.clientId || "Unknown";
 
             this.log(
@@ -132,30 +166,20 @@ export default class MessagesHistory extends ChatBaseCommand {
           }
         }
       }
-
-      // Release the room
-      await chatClient.rooms.release(args.room);
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: error instanceof Error ? error.message : String(error),
-              room: args.room,
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            room: args.room,
+            success: false,
+          },
+          flags,
         );
       } else {
         this.error(
           `Failed to get messages: ${error instanceof Error ? error.message : String(error)}`,
         );
-      }
-    } finally {
-      // Close the underlying Ably connection
-      if (this.ablyClient && this.ablyClient.connection.state !== "closed") {
-        this.ablyClient.close();
       }
     }
   }

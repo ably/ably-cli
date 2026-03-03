@@ -6,6 +6,8 @@
 // The logic is intentionally tiny so that commands can just
 // `await waitUntilInterruptedOrTimeout(durationSeconds)`.
 
+import isTestMode from "./test-mode.js";
+
 export type ExitReason = "signal" | "timeout";
 
 export async function waitUntilInterruptedOrTimeout(
@@ -13,39 +15,39 @@ export async function waitUntilInterruptedOrTimeout(
 ): Promise<ExitReason> {
   // In test mode, we may have many instances running concurrently
   // Increase the max listeners to avoid warnings
-  if (process.env.ABLY_CLI_TEST_MODE === "true") {
+  if (isTestMode()) {
     const currentMax = process.getMaxListeners();
     if (currentMax < 50) {
       process.setMaxListeners(50);
     }
   }
-  
+
   return new Promise<ExitReason>((resolve) => {
     let sigintHandler: (() => void) | undefined;
     let sigtermHandler: (() => void) | undefined;
     let resolved = false;
-    
+
     const handleExit = (reason: ExitReason): void => {
       if (resolved) {
         return;
       }
       resolved = true;
-      
+
       if (timeoutId) clearTimeout(timeoutId);
-      
+
       // Remove signal handlers if they were installed
       if (sigintHandler) process.removeListener("SIGINT", sigintHandler);
       if (sigtermHandler) process.removeListener("SIGTERM", sigtermHandler);
-      
+
       // For timeout cases in CLI commands, exit immediately to prevent hanging
       // This is especially important for E2E tests and automated scenarios
-      if (reason === "timeout" && process.env.ABLY_CLI_TEST_MODE !== "true") {
+      if (reason === "timeout" && !isTestMode()) {
         console.log("Duration elapsed – command finished cleanly.");
         // Small delay to ensure output is written to files/streams
         setTimeout(() => process.exit(0), 200);
         return;
       }
-      
+
       resolve(reason);
     };
 
@@ -56,10 +58,10 @@ export async function waitUntilInterruptedOrTimeout(
       typeof durationSeconds === "number" && durationSeconds > 0
         ? durationSeconds
         : process.env.ABLY_CLI_DEFAULT_DURATION
-        ? Number(process.env.ABLY_CLI_DEFAULT_DURATION) > 0
-          ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-          : undefined
-        : undefined;
+          ? Number(process.env.ABLY_CLI_DEFAULT_DURATION) > 0
+            ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
+            : undefined
+          : undefined;
 
     if (effectiveDuration) {
       timeoutId = setTimeout(() => {
@@ -77,9 +79,12 @@ export async function waitUntilInterruptedOrTimeout(
 }
 
 // Helper function to ensure process exits cleanly after cleanup (now unused for timeout cases)
-export function ensureProcessExit(exitReason: ExitReason, delayMs: number = 100): void {
+export function ensureProcessExit(
+  exitReason: ExitReason,
+  delayMs: number = 100,
+): void {
   // Give a small delay for any final cleanup/logging, then force exit
   setTimeout(() => {
     process.exit(0);
   }, delayMs);
-} 
+}

@@ -1,8 +1,8 @@
 /**
  * Rate limit hooks to ensure tests wait for rate limit pauses
  */
-import { test } from './base-test';
-import { waitForRateLimitLock } from '../rate-limit-lock';
+import { test } from "./base-test";
+import { waitForRateLimitLock } from "../rate-limit-lock";
 
 /**
  * Setup rate limit checking before each test

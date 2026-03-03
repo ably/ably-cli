@@ -34,7 +34,7 @@ export default class AskCommand extends ControlBaseCommand {
     const { args, flags } = await this.parse(AskCommand);
 
     const controlApi = this.createControlApi(flags);
-    const isInteractive = process.env.ABLY_INTERACTIVE_MODE === 'true';
+    const isInteractive = process.env.ABLY_INTERACTIVE_MODE === "true";
     const spinner = isInteractive ? null : ora("Thinking...").start();
     if (isInteractive) {
       this.log("Thinking...");

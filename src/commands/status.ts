@@ -1,9 +1,9 @@
 import { Command, Flags } from "@oclif/core";
 import chalk from "chalk";
 import fetch from "node-fetch";
-import open from "open";
 import ora from "ora";
 import { getCliVersion } from "../utils/version.js";
+import openUrl from "../utils/open-url.js";
 
 interface StatusResponse {
   status: boolean;
@@ -26,8 +26,10 @@ export default class StatusCommand extends Command {
   async run(): Promise<void> {
     const { flags } = await this.parse(StatusCommand);
 
-    const isInteractive = process.env.ABLY_INTERACTIVE_MODE === 'true';
-    const spinner = isInteractive ? null : ora("Checking Ably service status...").start();
+    const isInteractive = process.env.ABLY_INTERACTIVE_MODE === "true";
+    const spinner = isInteractive
+      ? null
+      : ora("Checking Ably service status...").start();
     if (isInteractive) {
       this.log("Checking Ably service status...");
     }
@@ -35,8 +37,8 @@ export default class StatusCommand extends Command {
     try {
       const response = await fetch("https://ably.com/status/up.json", {
         headers: {
-          "Ably-Agent": `ably-cli/${getCliVersion()}`
-        }
+          "Ably-Agent": `ably-cli/${getCliVersion()}`,
+        },
       });
       const data = (await response.json()) as StatusResponse;
       if (spinner) spinner.stop();
@@ -61,10 +63,7 @@ export default class StatusCommand extends Command {
       );
 
       if (flags.open) {
-        this.log(
-          `\n${chalk.cyan("Opening")} https://status.ably.com ${chalk.cyan("in your browser")}...`,
-        );
-        await open("https://status.ably.com");
+        await openUrl("https://status.ably.com", this);
       }
     } catch (error) {
       if (spinner) {

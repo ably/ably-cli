@@ -1,5 +1,4 @@
-import { expect } from "chai";
-import sinon from "sinon";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as _fs from "node:fs";
 import * as _Ably from "ably";
 import { AblyBaseCommand } from "../../../src/base-command.js";
@@ -30,11 +29,10 @@ class TestCommand extends AblyBaseCommand {
     this.checkWebCliRestrictions();
   }
 
-  public testIsTestMode(): boolean {
-    return this.isTestMode();
-  }
-
-  public testFormatJsonOutput(data: Record<string, unknown>, flags: BaseFlags): string {
+  public testFormatJsonOutput(
+    data: Record<string, unknown>,
+    flags: BaseFlags,
+  ): string {
     return this.formatJsonOutput(data, flags);
   }
 
@@ -51,18 +49,15 @@ class TestCommand extends AblyBaseCommand {
   }
 }
 
-describe("AblyBaseCommand - Enhanced Coverage", function() {
+describe("AblyBaseCommand - Enhanced Coverage", function () {
   let command: TestCommand;
-  let sandbox: sinon.SinonSandbox;
   let originalEnv: NodeJS.ProcessEnv;
 
-  beforeEach(function() {
-    sandbox = sinon.createSandbox();
+  beforeEach(function () {
     originalEnv = { ...process.env };
 
     // Reset env before each test
     process.env = { ...originalEnv };
-    process.env.ABLY_CLI_TEST_MODE = 'true';
 
     const mockConfig = {
       root: "",
@@ -71,141 +66,130 @@ describe("AblyBaseCommand - Enhanced Coverage", function() {
     command = new TestCommand([], mockConfig);
   });
 
-  afterEach(function() {
-    sandbox.restore();
+  afterEach(function () {
     process.env = originalEnv;
   });
 
-  describe("initialization and setup", function() {
-    it("should detect web CLI mode from environment variable", function() {
-      process.env.ABLY_WEB_CLI_MODE = 'true';
+  describe("initialization and setup", function () {
+    it("should detect web CLI mode from environment variable", function () {
+      process.env.ABLY_WEB_CLI_MODE = "true";
       const webCommand = new TestCommand([], {} as Config);
-      expect(webCommand.testIsWebCliMode).to.be.true;
-    });
-
-    it("should detect test mode correctly", function() {
-      process.env.ABLY_CLI_TEST_MODE = 'true';
-      expect(command.testIsTestMode()).to.be.true;
-
-      delete process.env.ABLY_CLI_TEST_MODE;
-      expect(command.testIsTestMode()).to.be.false;
+      expect(webCommand.testIsWebCliMode).toBe(true);
     });
   });
 
-  describe("output formatting", function() {
-    it("should detect JSON output from json flag", function() {
-      expect(command.testShouldOutputJson({ json: true })).to.be.true;
+  describe("output formatting", function () {
+    it("should detect JSON output from json flag", function () {
+      expect(command.testShouldOutputJson({ json: true })).toBe(true);
     });
 
-    it("should detect JSON output from pretty-json flag", function() {
-      expect(command.testShouldOutputJson({ "pretty-json": true })).to.be.true;
+    it("should detect JSON output from pretty-json flag", function () {
+      expect(command.testShouldOutputJson({ "pretty-json": true })).toBe(true);
     });
 
-    it("should detect JSON output from format flag", function() {
-      expect(command.testShouldOutputJson({ format: "json" })).to.be.true;
+    it("should detect JSON output from format flag", function () {
+      expect(command.testShouldOutputJson({ format: "json" })).toBe(true);
     });
 
-    it("should return false when no JSON flags are present", function() {
-      expect(command.testShouldOutputJson({})).to.be.false;
+    it("should return false when no JSON flags are present", function () {
+      expect(command.testShouldOutputJson({})).toBe(false);
     });
 
-    it("should detect pretty JSON output", function() {
-      expect(command.testIsPrettyJsonOutput({ "pretty-json": true })).to.be.true;
-      expect(command.testIsPrettyJsonOutput({ json: true })).to.be.false;
+    it("should detect pretty JSON output", function () {
+      expect(command.testIsPrettyJsonOutput({ "pretty-json": true })).toBe(
+        true,
+      );
+      expect(command.testIsPrettyJsonOutput({ json: true })).toBe(false);
     });
 
-    it("should format JSON output correctly", function() {
+    it("should format JSON output correctly", function () {
       const data = { success: true, message: "test" };
       const flags: BaseFlags = { json: true };
 
       const output = command.testFormatJsonOutput(data, flags);
-      
+
       // The output should be valid JSON that can be parsed back to the original data
       const parsed = JSON.parse(output);
-      expect(parsed).to.deep.equal(data);
-      
+      expect(parsed).toEqual(data);
+
       // The implementation always formats JSON with newlines
-      expect(output).to.include('\n');
-      expect(output).to.include('"success"');
-      expect(output).to.include('"message"');
+      expect(output).toContain("\n");
+      expect(output).toContain('"success"');
+      expect(output).toContain('"message"');
     });
 
-    it("should format pretty JSON output with colors", function() {
+    it("should format pretty JSON output with colors", function () {
       const data = { success: true, message: "test" };
       const flags: BaseFlags = { "pretty-json": true };
 
       const output = command.testFormatJsonOutput(data, flags);
-      expect(output).to.include("success");
-      expect(output).to.include("true");
+      expect(output).toContain("success");
+      expect(output).toContain("true");
     });
   });
 
-  describe("API key parsing", function() {
-    it("should parse valid API key format", function() {
+  describe("API key parsing", function () {
+    it("should parse valid API key format", function () {
       const result = command.testParseApiKey("appId.keyId:keySecret");
-      
-      expect(result).to.not.be.null;
-      expect(result?.appId).to.equal("appId");
-      expect(result?.keyId).to.equal("keyId");
-      expect(result?.keySecret).to.equal("keySecret");
+
+      expect(result).not.toBeNull();
+      expect(result?.appId).toBe("appId");
+      expect(result?.keyId).toBe("keyId");
+      expect(result?.keySecret).toBe("keySecret");
     });
 
-    it("should return null for invalid API key formats", function() {
-      expect(command.testParseApiKey("invalid")).to.be.null;
-      expect(command.testParseApiKey("app.key")).to.be.null;
-      expect(command.testParseApiKey("app:secret")).to.be.null;
-      expect(command.testParseApiKey("")).to.be.null;
+    it("should return null for invalid API key formats", function () {
+      expect(command.testParseApiKey("invalid")).toBeNull();
+      expect(command.testParseApiKey("app.key")).toBeNull();
+      expect(command.testParseApiKey("app:secret")).toBeNull();
+      expect(command.testParseApiKey("")).toBeNull();
     });
   });
 
-  describe("web CLI mode restrictions", function() {
-    beforeEach(function() {
+  describe("web CLI mode restrictions", function () {
+    beforeEach(function () {
       command.testIsWebCliMode = true;
     });
 
-    it("should restrict login command", function() {
-      expect(command.testIsAllowedInWebCliMode("accounts:login")).to.be.false;
+    it("should restrict login command", function () {
+      expect(command.testIsAllowedInWebCliMode("accounts:login")).toBe(false);
     });
 
-    it("should restrict logout command", function() {
-      expect(command.testIsAllowedInWebCliMode("accounts:logout")).to.be.false;
+    it("should restrict logout command", function () {
+      expect(command.testIsAllowedInWebCliMode("accounts:logout")).toBe(false);
     });
 
-    it("should restrict MCP commands", function() {
-      expect(command.testIsAllowedInWebCliMode("mcp:start-server")).to.be.false;
+    it("should allow help commands", function () {
+      expect(command.testIsAllowedInWebCliMode("help")).toBe(true);
+      expect(command.testIsAllowedInWebCliMode("help:contact")).toBe(true);
     });
 
-    it("should allow help commands", function() {
-      expect(command.testIsAllowedInWebCliMode("help")).to.be.true;
-      expect(command.testIsAllowedInWebCliMode("help:contact")).to.be.true;
+    it("should allow channel commands", function () {
+      expect(command.testIsAllowedInWebCliMode("channels:publish")).toBe(true);
     });
 
-    it("should allow channel commands", function() {
-      expect(command.testIsAllowedInWebCliMode("channels:publish")).to.be.true;
-    });
-
-    it("should handle web CLI restrictions", function() {
+    it("should handle web CLI restrictions", function () {
       command.testIsWebCliMode = true;
       Object.defineProperty(command, "id", { value: "accounts:login" });
 
-      expect(() => command.testCheckWebCliRestrictions()).to.throw();
+      expect(() => command.testCheckWebCliRestrictions()).toThrow();
     });
   });
 
-  describe("environment variable handling", function() {
-    it("should handle ABLY_API_KEY environment variable", function() {
+  describe("environment variable handling", function () {
+    it("should handle ABLY_API_KEY environment variable", function () {
       process.env.ABLY_API_KEY = "testApp.keyId:keySecret";
-      expect(process.env.ABLY_API_KEY).to.equal("testApp.keyId:keySecret");
-      
+      expect(process.env.ABLY_API_KEY).toBe("testApp.keyId:keySecret");
+
       // Verify app ID extraction logic
       const apiKey = process.env.ABLY_API_KEY;
       const appId = apiKey.split(".")[0];
-      expect(appId).to.equal("testApp");
+      expect(appId).toBe("testApp");
     });
 
-    it("should handle ABLY_ACCESS_TOKEN environment variable", function() {
+    it("should handle ABLY_ACCESS_TOKEN environment variable", function () {
       process.env.ABLY_ACCESS_TOKEN = "test-access-token";
-      expect(process.env.ABLY_ACCESS_TOKEN).to.equal("test-access-token");
+      expect(process.env.ABLY_ACCESS_TOKEN).toBe("test-access-token");
     });
   });
 });

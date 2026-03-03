@@ -1,7 +1,7 @@
 import { Args, Flags } from "@oclif/core";
-import * as readline from "node:readline";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class AccountsLogout extends ControlBaseCommand {
   static override args = {
@@ -41,15 +41,14 @@ export default class AccountsLogout extends ControlBaseCommand {
       const error =
         'No account is currently selected and no alias provided. Use "ably accounts list" to see available accounts.';
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error,
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error,
+            success: false,
+          },
+          flags,
         );
+        return;
       } else {
         this.error(error);
       }
@@ -65,15 +64,14 @@ export default class AccountsLogout extends ControlBaseCommand {
     if (!accountExists) {
       const error = `Account with alias "${targetAlias}" not found. Use "ably accounts list" to see available accounts.`;
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error,
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error,
+            success: false,
+          },
+          flags,
         );
+        return;
       } else {
         this.error(error);
       }
@@ -129,15 +127,14 @@ export default class AccountsLogout extends ControlBaseCommand {
     } else {
       const error = `Failed to log out from account ${targetAlias}.`;
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error,
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error,
+            success: false,
+          },
+          flags,
         );
+        return;
       } else {
         this.error(error);
       }
@@ -152,16 +149,6 @@ export default class AccountsLogout extends ControlBaseCommand {
       "This includes access tokens and any app configurations associated with this account.",
     );
 
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    return new Promise((resolve) => {
-      rl.question("Are you sure you want to proceed? (y/N): ", (answer) => {
-        rl.close();
-        resolve(answer.toLowerCase() === "y");
-      });
-    });
+    return promptForConfirmation("Are you sure you want to proceed?");
   }
 }

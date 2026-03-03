@@ -1,9 +1,17 @@
 import { AblyBaseCommand } from "../base-command.js";
-import { getVersionInfo, formatVersionString, formatVersionJson } from "../utils/version.js";
+import {
+  getVersionInfo,
+  formatVersionString,
+  formatVersionJson,
+  formatReleaseStatus,
+} from "../utils/version.js";
 
 export default class Version extends AblyBaseCommand {
   static description = "Display CLI version information";
-  static examples = ["<%= config.bin %> version", "<%= config.bin %> version --json"];
+  static examples = [
+    "<%= config.bin %> version",
+    "<%= config.bin %> version --json",
+  ];
 
   // Hide this command from help output (users should use --version flag instead)
   static hidden = true;
@@ -23,8 +31,9 @@ export default class Version extends AblyBaseCommand {
     if (this.shouldOutputJson(flags)) {
       this.log(formatVersionJson(versionInfo, Boolean(flags["pretty-json"])));
     } else {
-      // Use shared string formatting
+      // Use shared string formatting and display release status
       this.log(formatVersionString(this.config));
+      this.log(formatReleaseStatus(this.config.version, true));
     }
   }
 }

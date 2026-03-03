@@ -1,417 +1,307 @@
-import { expect } from "chai";
-import sinon from "sinon";
-import fs from "node:fs";
-import * as _https from "node:https";
-import * as Ably from "ably";
-import RevokeTokenCommand from "../../../../src/commands/auth/revoke-token.js";
-import { ConfigManager } from "../../../../src/services/config-manager.js";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { runCommand } from "@oclif/test";
+import nock from "nock";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
 
-describe("RevokeTokenCommand", function() {
-  let configManagerStub: sinon.SinonStubbedInstance<ConfigManager>;
-  let sandbox: sinon.SinonSandbox;
-  let originalEnv: NodeJS.ProcessEnv;
-  let mockAblyClient: sinon.SinonStubbedInstance<Ably.Realtime>;
+describe("auth:revoke-token command", () => {
+  const mockToken = "test-token-12345";
+  const mockClientId = "test-client-id";
 
-  beforeEach(function() {
-    sandbox = sinon.createSandbox();
-    originalEnv = { ...process.env };
-    
-    // Reset env before each test
-    process.env = { ...originalEnv };
-    process.env.ABLY_CLI_TEST_MODE = 'true';
-
-    // Stub fs operations
-    sandbox.stub(fs, "existsSync").returns(true);
-    sandbox.stub(fs, "readFileSync").returns("");
-    sandbox.stub(fs, "mkdirSync");
-    sandbox.stub(fs, "writeFileSync");
-
-    // Stub ConfigManager methods
-    configManagerStub = sandbox.createStubInstance(ConfigManager);
-    sandbox.stub(ConfigManager.prototype as any, "ensureConfigDirExists");
-    sandbox.stub(ConfigManager.prototype as any, "saveConfig");
-
-    // Mock Ably client
-    mockAblyClient = sandbox.createStubInstance(Ably.Realtime);
-    mockAblyClient.connection = {
-      once: sandbox.stub(),
-      state: 'connected'
-    } as any;
-    mockAblyClient.close = sandbox.stub();
-
-    // Mock global test mocks for Ably client
-    (globalThis as any).__TEST_MOCKS__ = {
-      ablyRestMock: sandbox.createStubInstance(Ably.Rest)
-    };
+  beforeEach(() => {
+    nock.cleanAll();
+    // Initialize the mock (command creates one but doesn't use it for HTTP)
+    getMockAblyRealtime();
   });
 
-  afterEach(function() {
-    sandbox.restore();
-    process.env = originalEnv;
-    delete (globalThis as any).__TEST_MOCKS__;
+  afterEach(() => {
+    nock.cleanAll();
   });
 
-  describe("command properties", function() {
-    it("should have correct static properties", function() {
-      expect(RevokeTokenCommand.description).to.equal("Revokes the token provided");
-      expect(RevokeTokenCommand.examples).to.be.an('array');
-      expect(RevokeTokenCommand.args).to.have.property('token');
-      expect(RevokeTokenCommand.flags).to.have.property('client-id');
-      expect(RevokeTokenCommand.flags).to.have.property('debug');
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:revoke-token", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Revokes the token provided");
+      expect(stdout).toContain("USAGE");
+      expect(stdout).toContain("--client-id");
+      expect(stdout).toContain("--debug");
     });
 
-    it("should have required token argument", function() {
-      expect(RevokeTokenCommand.args.token).to.have.property('required', true);
-      expect(RevokeTokenCommand.args.token).to.have.property('name', 'token');
+    it("should display examples in help", async () => {
+      const { stdout } = await runCommand(
+        ["auth:revoke-token", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("EXAMPLES");
+      expect(stdout).toContain("revoke-token");
     });
 
-    it("should have client-id flag with char 'c'", function() {
-      expect(RevokeTokenCommand.flags['client-id']).to.have.property('char', 'c');
-    });
+    it("should show token argument is required", async () => {
+      const { stdout } = await runCommand(
+        ["auth:revoke-token", "--help"],
+        import.meta.url,
+      );
 
-    it("should have debug flag with default false", function() {
-      expect(RevokeTokenCommand.flags.debug).to.have.property('default', false);
+      expect(stdout).toContain("TOKEN");
     });
   });
 
-  describe("API key parsing", function() {
-    it("should parse API key correctly", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      ((_command as any)).configManager = configManagerStub;
-      
-      const apiKey = "appId.keyId:keySecret";
-      const keyParts = apiKey.split(":");
-      
-      expect(keyParts).to.have.length(2);
-      expect(keyParts[0]).to.equal("appId.keyId");
-      expect(keyParts[1]).to.equal("keySecret");
-    });
+  describe("argument validation", () => {
+    it("should require token argument", async () => {
+      const { error } = await runCommand(
+        ["auth:revoke-token"],
+        import.meta.url,
+      );
 
-    it("should extract keyName from API key", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const apiKey = "appId.keyId:keySecret";
-      const keyName = apiKey.split(":")[0];
-      
-      expect(keyName).to.equal("appId.keyId");
-    });
-
-    it("should handle invalid API key format", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const invalidApiKey = "invalidkey";
-      const keyParts = invalidApiKey.split(":");
-      
-      expect(keyParts).to.have.length(1);
-      // This would trigger an error in the actual command
-      expect(keyParts.length !== 2).to.be.true;
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Missing 1 required arg");
+      expect(error?.message).toContain("token");
     });
   });
 
-  describe("request body construction", function() {
-    it("should construct request body with client ID", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const clientId = "testClient";
-      const requestBody = {
-        targets: [`clientId:${clientId}`]
-      };
-      
-      expect(requestBody).to.have.property('targets');
-      expect(requestBody.targets).to.be.an('array');
-      expect(requestBody.targets[0]).to.equal("clientId:testClient");
+  describe("token revocation", () => {
+    it("should successfully revoke a token with client-id", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const apiKey = mockConfig.getApiKey()!;
+      // Mock the token revocation endpoint
+      nock("https://rest.ably.io")
+        .post(`/keys/${keyId}/revokeTokens`, {
+          targets: [`clientId:${mockClientId}`],
+        })
+        .reply(200, {});
+
+      const { stdout } = await runCommand(
+        [
+          "auth:revoke-token",
+          mockToken,
+          "--client-id",
+          mockClientId,
+          "--api-key",
+          apiKey,
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Token successfully revoked");
     });
 
-    it("should use token as client ID when no client-id flag provided", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const token = "testToken123";
-      const clientId = token; // When no client-id flag is provided
-      const requestBody = {
-        targets: [`clientId:${clientId}`]
-      };
-      
-      expect(requestBody.targets[0]).to.equal("clientId:testToken123");
-    });
-  });
+    it("should use token as client-id when --client-id not provided", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const apiKey = mockConfig.getApiKey()!;
+      // When no client-id is provided, the token is used as the client-id
+      nock("https://rest.ably.io")
+        .post(`/keys/${keyId}/revokeTokens`, {
+          targets: [`clientId:${mockToken}`],
+        })
+        .reply(200, {});
 
-  describe("HTTPS request handling", function() {
-    it("should construct correct HTTPS request options", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const keyName = "appId.keyId";
-      const secret = "keySecret";
-      const encodedAuth = Buffer.from(`${keyName}:${secret}`).toString("base64");
-      
-      const expectedOptions = {
-        headers: {
-          Accept: "application/json",
-          Authorization: `Basic ${encodedAuth}`,
-          "Content-Type": "application/json",
-        },
-        hostname: "rest.ably.io",
-        method: "POST",
-        path: `/keys/${keyName}/revokeTokens`,
-        port: 443,
-      };
-      
-      expect(expectedOptions.hostname).to.equal("rest.ably.io");
-      expect(expectedOptions.method).to.equal("POST");
-      expect(expectedOptions.path).to.equal("/keys/appId.keyId/revokeTokens");
-      expect(expectedOptions.headers.Authorization).to.include("Basic");
+      const { stdout, stderr } = await runCommand(
+        ["auth:revoke-token", mockToken, "--api-key", apiKey],
+        import.meta.url,
+      );
+
+      // Should show warnings about using token as client-id
+      expect(stderr).toContain(
+        "Revoking a specific token is only possible if it has a client ID",
+      );
+      expect(stderr).toContain("Using the token argument as a client ID");
+      expect(stdout).toContain("Token successfully revoked");
     });
 
-    it("should encode authorization header correctly", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const keyName = "appId.keyId";
-      const secret = "keySecret";
-      const expectedEncoded = Buffer.from(`${keyName}:${secret}`).toString("base64");
-      
-      expect(expectedEncoded).to.be.a('string');
-      expect(expectedEncoded.length).to.be.greaterThan(0);
-    });
-  });
+    it("should output JSON format when --json flag is used", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const apiKey = mockConfig.getApiKey()!;
+      nock("https://rest.ably.io")
+        .post(`/keys/${keyId}/revokeTokens`, {
+          targets: [`clientId:${mockClientId}`],
+        })
+        .reply(200, { issuedBefore: 1234567890 });
 
-  describe("debug output", function() {
-    it("should log debug information when debug flag is enabled", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      const _logSpy = sandbox.spy(_command, 'log');
-      
-      const debugFlag = true;
-      const apiKey = "appId.keyId:keySecret";
-      const maskedKey = apiKey.replace(/:.+/, ":***");
-      
-      if (debugFlag) {
-        // This would be logged in debug mode
-        const debugMessage = `Debug: Using API key: ${maskedKey}`;
-        expect(debugMessage).to.include("Debug: Using API key:");
-        expect(debugMessage).to.include(":***");
-      }
-    });
+      const { stdout } = await runCommand(
+        [
+          "auth:revoke-token",
+          mockToken,
+          "--client-id",
+          mockClientId,
+          "--api-key",
+          apiKey,
+          "--json",
+        ],
+        import.meta.url,
+      );
 
-    it("should mask API key secret in debug output", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const apiKey = "appId.keyId:realSecret";
-      const maskedKey = apiKey.replace(/:.+/, ":***");
-      
-      expect(maskedKey).to.equal("appId.keyId:***");
-      expect(maskedKey).to.not.include("realSecret");
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", true);
+      expect(result).toHaveProperty(
+        "message",
+        "Token revocation processed successfully",
+      );
+      expect(result).toHaveProperty("response");
     });
 
-    it("should log request details in debug mode", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const keyName = "appId.keyId";
-      const requestBody = { targets: ["clientId:testClient"] };
-      
-      const debugMessages = [
-        `Debug: Sending request to endpoint: /keys/${keyName}/revokeTokens`,
-        `Debug: Request body: ${JSON.stringify(requestBody)}`
-      ];
-      
-      expect(debugMessages[0]).to.include("/keys/appId.keyId/revokeTokens");
-      expect(debugMessages[1]).to.include("clientId:testClient");
-    });
-  });
+    it("should handle token not found error with special message", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const apiKey = mockConfig.getApiKey()!;
+      // The command handles token_not_found specifically in the response body
+      nock("https://rest.ably.io")
+        .post(`/keys/${keyId}/revokeTokens`)
+        .reply(404, "token_not_found");
 
-  describe("warning messages", function() {
-    it("should warn about token revocation limitations", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      const _warnSpy = sandbox.spy(_command, 'warn');
-      
-      const expectedWarnings = [
-        "Revoking a specific token is only possible if it has a client ID or revocation key",
-        "For advanced token revocation options, see: https://ably.com/docs/auth/revocation",
-        "Using the token argument as a client ID for this operation"
-      ];
-      
-      expectedWarnings.forEach(warning => {
-        expect(warning).to.be.a('string');
-        expect(warning.length).to.be.greaterThan(0);
-      });
-    });
-  });
+      const { stdout } = await runCommand(
+        [
+          "auth:revoke-token",
+          mockToken,
+          "--client-id",
+          mockClientId,
+          "--api-key",
+          apiKey,
+        ],
+        import.meta.url,
+      );
 
-  describe("output formatting", function() {
-    it("should format successful JSON output", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const successData = {
-        message: "Token revocation processed successfully",
-        response: {},
-        success: true
-      };
-      
-      const jsonOutput = JSON.stringify(successData);
-      expect(jsonOutput).to.include('"success":true');
-      expect(jsonOutput).to.include('"message"');
-      expect(jsonOutput).to.include("Token revocation processed successfully");
+      // Command outputs special message for token_not_found
+      expect(stdout).toContain("Token not found or already revoked");
     });
 
-    it("should format error JSON output", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const errorData = {
-        error: "Token not found or already revoked",
-        success: false
-      };
-      
-      const jsonOutput = JSON.stringify(errorData);
-      expect(jsonOutput).to.include('"success":false');
-      expect(jsonOutput).to.include('"error"');
-      expect(jsonOutput).to.include("Token not found");
+    it("should handle authentication error (invalid API key)", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const apiKey = mockConfig.getApiKey()!;
+      nock("https://rest.ably.io")
+        .post(`/keys/${keyId}/revokeTokens`)
+        .reply(401, { error: { message: "Unauthorized" } });
+
+      const { error } = await runCommand(
+        [
+          "auth:revoke-token",
+          mockToken,
+          "--client-id",
+          mockClientId,
+          "--api-key",
+          apiKey,
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/401|error|revoking/i);
     });
 
-    it("should handle successful text output", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      const _logSpy = sandbox.spy(_command, 'log');
-      
-      const successMessage = "Token successfully revoked";
-      expect(successMessage).to.equal("Token successfully revoked");
+    it("should handle server error", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const apiKey = mockConfig.getApiKey()!;
+      nock("https://rest.ably.io")
+        .post(`/keys/${keyId}/revokeTokens`)
+        .reply(500, { error: "Internal Server Error" });
+
+      const { error } = await runCommand(
+        [
+          "auth:revoke-token",
+          mockToken,
+          "--client-id",
+          mockClientId,
+          "--api-key",
+          apiKey,
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/500|error|revoking/i);
     });
   });
 
-  describe("error handling", function() {
-    it("should handle token not found error", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const error = new Error("token_not_found");
-      const isTokenNotFound = error.message.includes("token_not_found");
-      
-      expect(isTokenNotFound).to.be.true;
-      
-      if (isTokenNotFound) {
-        const errorMessage = "Token not found or already revoked";
-        expect(errorMessage).to.include("not found or already revoked");
-      }
+  describe("debug mode", () => {
+    it("should show debug information when --debug flag is used", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const apiKey = mockConfig.getApiKey()!;
+      nock("https://rest.ably.io")
+        .post(`/keys/${keyId}/revokeTokens`)
+        .reply(200, {});
+
+      const { stdout } = await runCommand(
+        [
+          "auth:revoke-token",
+          mockToken,
+          "--client-id",
+          mockClientId,
+          "--api-key",
+          apiKey,
+          "--debug",
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Debug: Using API key:");
     });
 
-    it("should handle network errors", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      const _errorSpy = sandbox.spy(_command, 'error');
-      
-      const networkError = new Error("Network connection failed");
-      const errorMessage = `Error revoking token: ${networkError.message}`;
-      
-      expect(errorMessage).to.include("Error revoking token:");
-      expect(errorMessage).to.include("Network connection failed");
-    });
+    it("should mask the API key secret in debug output", async () => {
+      const mockConfig = getMockConfigManager();
+      const keyId = mockConfig.getKeyId()!;
+      const apiKey = mockConfig.getApiKey()!;
+      const keySecret = apiKey.split(":")[1];
+      nock("https://rest.ably.io")
+        .post(`/keys/${keyId}/revokeTokens`)
+        .reply(200, {});
 
-    it("should handle non-Error objects", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const unknownError = { code: 500, message: "Internal Server Error" };
-      const errorMessage = typeof unknownError === "object" ? JSON.stringify(unknownError) : String(unknownError);
-      
-      expect(errorMessage).to.include("500");
-      expect(errorMessage).to.include("Internal Server Error");
-    });
-  });
+      const { stdout } = await runCommand(
+        [
+          "auth:revoke-token",
+          mockToken,
+          "--client-id",
+          mockClientId,
+          "--api-key",
+          apiKey,
+          "--debug",
+        ],
+        import.meta.url,
+      );
 
-  describe("client lifecycle", function() {
-    it("should create Ably client", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      ((_command as any)).configManager = configManagerStub;
-      
-      // Test that client creation is handled
-      const _flags = {};
-      
-      // Mock ensureAppAndKey to return valid credentials
-      configManagerStub.getCurrentAppId.returns("testApp");
-      configManagerStub.getApiKey.returns("testApp.keyId:keySecret");
-      
-      expect(configManagerStub.getCurrentAppId).to.exist;
-      expect(configManagerStub.getApiKey).to.exist;
-    });
-
-    it("should close client after operation", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      // Test that client would be closed in finally block
-      const mockClient = mockAblyClient;
-      const closeStub = mockClient.close as sinon.SinonStub;
-      
-      expect(closeStub).to.be.a('function');
-    });
-
-    it("should handle client creation failure", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      ((_command as any)).configManager = configManagerStub;
-      
-      // Test scenario where ensureAppAndKey returns null
-      configManagerStub.getCurrentAppId.returns("");
-      configManagerStub.getApiKey.returns("");
-      
-      const appId = configManagerStub.getCurrentAppId();
-      const apiKey = configManagerStub.getApiKey();
-      
-      expect(appId).to.equal("");
-      expect(apiKey).to.equal("");
+      // Verify the secret part of the API key is masked
+      expect(stdout).not.toContain(keySecret);
+      expect(stdout).toContain("***");
     });
   });
 
-  describe("API endpoint construction", function() {
-    it("should construct correct revoke tokens endpoint", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const keyName = "appId.keyId";
-      const endpoint = `/keys/${keyName}/revokeTokens`;
-      
-      expect(endpoint).to.equal("/keys/appId.keyId/revokeTokens");
+  describe("flags", () => {
+    it("should accept --debug flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:revoke-token", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("--debug");
+      expect(stdout).toContain("debug information");
     });
 
-    it("should use rest.ably.io as hostname", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const hostname = "rest.ably.io";
-      const port = 443;
-      
-      expect(hostname).to.equal("rest.ably.io");
-      expect(port).to.equal(443);
-    });
-  });
+    it("should accept --client-id flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:revoke-token", "--help"],
+        import.meta.url,
+      );
 
-  describe("response parsing", function() {
-    it("should parse successful JSON response", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const responseData = '{"success": true, "message": "Token revoked"}';
-      let jsonResponse;
-      
-      try {
-        jsonResponse = JSON.parse(responseData);
-      } catch {
-        jsonResponse = responseData;
-      }
-      
-      expect(jsonResponse).to.be.an('object');
-      expect(jsonResponse.success).to.be.true;
+      expect(stdout).toContain("--client-id");
+      expect(stdout).toContain("Client ID");
     });
 
-    it("should handle empty response", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const emptyData = "";
-      const jsonResponse = emptyData.length > 0 ? JSON.parse(emptyData) : null;
-      
-      expect(jsonResponse).to.be.null;
-    });
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:revoke-token", "--help"],
+        import.meta.url,
+      );
 
-    it("should handle non-JSON response", function() {
-      const _command = new RevokeTokenCommand([], {} as any);
-      
-      const textData = "Token revoked successfully";
-      let jsonResponse;
-      
-      try {
-        jsonResponse = JSON.parse(textData);
-      } catch {
-        jsonResponse = textData;
-      }
-      
-      expect(jsonResponse).to.equal("Token revoked successfully");
+      expect(stdout).toContain("--json");
     });
   });
 });

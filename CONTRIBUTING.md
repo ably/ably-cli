@@ -19,7 +19,6 @@ In summary, this involves:
 
 Before starting work, please familiarize yourself with:
 
-*   [Product Requirements](./docs/Product-Requirements.md): Understand the goals and features.
 *   [Project Structure](./docs/Project-Structure.md): Know where different code components live.
 *   [Testing Strategy](./docs/Testing.md): Understand the different types of tests and how to run them.
 *   [Development Rules](mdc:.cursor/rules/Development.mdc): Coding standards, linting, dependency management.
@@ -60,6 +59,7 @@ This allows testing CLI changes against local server modifications before deploy
     - Review the generated README.md changes to ensure they're correct.
     - Stage all changes: `git add package.json README.md CHANGELOG.md`
     - Commit all changes with a message like `chore: prepare release <version>`.
+    - Update the `package.json` for `packages/react-web-cli`.
 3. Once the release branch is approved, merge it into main.
 4. Create a new tag on the merged commit in main, which will run the release workflow:
     ```bash

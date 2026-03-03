@@ -1,9 +1,9 @@
 import { RoomStatus, ChatClient, RoomStatusChange } from "@ably/chat";
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 // The heartbeats are throttled to one every 10 seconds. There's a 2 second
 // leeway to send a keystroke/heartbeat after the 10 second mark so the
@@ -13,7 +13,6 @@ import { ChatBaseCommand } from "../../../chat-base-command.js";
 //
 // The best thing to do to keep the indicator on is to keystroke() often.
 const KEYSTROKE_INTERVAL = 450; // ms
-
 
 export default class TypingKeystroke extends ChatBaseCommand {
   static override args = {
@@ -43,35 +42,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
   };
 
   private chatClient: ChatClient | null = null;
-  private ablyClient: Ably.Realtime | null = null;
   private typingIntervalId: NodeJS.Timeout | null = null;
-  private unsubscribeStatusFn: (() => void) | null = null;
-  private roomName: string | null = null;
-
-  private async properlyCloseAblyClient(): Promise<void> {
-    if (!this.ablyClient || this.ablyClient.connection.state === 'closed') {
-      return;
-    }
-
-    return new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => {
-        console.warn('Ably client cleanup timed out after 3 seconds');
-        resolve();
-      }, 3000);
-
-      const onClosed = () => {
-        clearTimeout(timeout);
-        resolve();
-      };
-
-      // Listen for both closed and failed states
-      this.ablyClient!.connection.once('closed', onClosed);
-      this.ablyClient!.connection.once('failed', onClosed);
-      
-      // Close the client
-      this.ablyClient!.close();
-    });
-  }
 
   // Override finally to ensure resources are cleaned up
   async finally(err: Error | undefined): Promise<void> {
@@ -79,27 +50,6 @@ export default class TypingKeystroke extends ChatBaseCommand {
       clearInterval(this.typingIntervalId);
       this.typingIntervalId = null;
     }
-
-    if (this.unsubscribeStatusFn) {
-      try {
-        this.unsubscribeStatusFn();
-      } catch {
-        /* ignore */
-      }
-    }
-
-    // Proper cleanup sequence
-    try {
-      // Release room if we have one
-      if (this.chatClient && this.roomName) {
-        await this.chatClient.rooms.release(this.roomName);
-      }
-    } catch {
-      // Ignore release errors in cleanup
-    }
-
-    // Close Ably client properly
-    await this.properlyCloseAblyClient();
 
     return super.finally(err);
   }
@@ -110,18 +60,16 @@ export default class TypingKeystroke extends ChatBaseCommand {
     try {
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);
-      this.ablyClient = this._chatRealtimeClient;
-      if (!this.chatClient || !this.ablyClient) {
+      if (!this.chatClient) {
         this.error("Failed to initialize clients");
         return;
       }
 
       const { room: roomName } = args;
-      this.roomName = roomName;
 
       // Set up connection state logging
-      this.setupConnectionStateLogging(this.ablyClient, flags, {
-        includeUserFriendlyMessages: true
+      this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
+        includeUserFriendlyMessages: true,
       });
 
       // Get the room with typing enabled
@@ -131,7 +79,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
         "gettingRoom",
         `Getting room handle for ${roomName}`,
       );
-      const room = await this.chatClient.rooms.get(roomName, {});
+      const room = await this.chatClient.rooms.get(roomName);
       this.logCliEvent(
         flags,
         "room",
@@ -146,98 +94,95 @@ export default class TypingKeystroke extends ChatBaseCommand {
         "subscribingToStatus",
         "Subscribing to room status changes",
       );
-      const { off: unsubscribeStatus } = room.onStatusChange(
-        (statusChange: RoomStatusChange) => {
-          let reason: Error | null | string | undefined;
-          if (statusChange.current === RoomStatus.Failed) {
-            reason = room.error; // Get reason from room.error on failure
+      room.onStatusChange((statusChange: RoomStatusChange) => {
+        let reason: Error | null | string | undefined;
+        if (statusChange.current === RoomStatus.Failed) {
+          reason = room.error; // Get reason from room.error on failure
+        }
+
+        const reasonMsg = reason instanceof Error ? reason.message : reason;
+        this.logCliEvent(
+          flags,
+          "room",
+          `status-${statusChange.current}`,
+          `Room status changed to ${statusChange.current}`,
+          { reason: reasonMsg },
+        );
+
+        if (statusChange.current === RoomStatus.Attached) {
+          if (!this.shouldOutputJson(flags)) {
+            this.log(
+              `${chalk.green("Connected to room:")} ${chalk.bold(roomName)}`,
+            );
           }
 
-          const reasonMsg = reason instanceof Error ? reason.message : reason;
+          // Start typing immediately
           this.logCliEvent(
             flags,
-            "room",
-            `status-${statusChange.current}`,
-            `Room status changed to ${statusChange.current}`,
-            { reason: reasonMsg },
+            "typing",
+            "startAttempt",
+            "Attempting to start typing...",
           );
-
-          if (statusChange.current === RoomStatus.Attached) {
-            if (!this.shouldOutputJson(flags)) {
-              this.log(
-                `${chalk.green("Connected to room:")} ${chalk.bold(roomName)}`,
+          room.typing
+            .keystroke()
+            .then(() => {
+              this.logCliEvent(
+                flags,
+                "typing",
+                "started",
+                "Successfully started typing",
               );
-            }
-
-            // Start typing immediately
-            this.logCliEvent(
-              flags,
-              "typing",
-              "startAttempt",
-              "Attempting to start typing...",
-            );
-            room.typing
-              .keystroke()
-              .then(() => {
-                this.logCliEvent(
-                  flags,
-                  "typing",
-                  "started",
-                  "Successfully started typing",
-                );
-                if (!this.shouldOutputJson(flags)) {
-                  this.log(`${chalk.green("Started typing in room.")}`);
-                  if (flags.autoType) {
-                    this.log(
-                      `${chalk.dim("Will automatically remain typing until this command is terminated. Press Ctrl+C to exit.")}`,
-                    );
-                  } else {
-                    this.log(
-                      `${chalk.dim("Sent a single typing indicator. Use --autoType flag to keep typing automatically. Press Ctrl+C to exit.")}`,
-                    );
-                  }
-                }
-
-                // Keep typing active by calling keystroke() periodically if autoType is enabled
-                if (this.typingIntervalId) clearInterval(this.typingIntervalId);
-
+              if (!this.shouldOutputJson(flags)) {
+                this.log(`${chalk.green("Started typing in room.")}`);
                 if (flags.autoType) {
-                  this.typingIntervalId = setInterval(() => {
-                    room.typing.keystroke().catch((error: Error) => {
-                      this.logCliEvent(
-                        flags,
-                        "typing",
-                        "startErrorPeriodic",
-                        `Error refreshing typing state: ${error.message}`,
-                        { error: error.message },
-                      );
-                    });
-                  }, KEYSTROKE_INTERVAL);
+                  this.log(
+                    `${chalk.dim("Will automatically remain typing until this command is terminated. Press Ctrl+C to exit.")}`,
+                  );
+                } else {
+                  this.log(
+                    `${chalk.dim("Sent a single typing indicator. Use --autoType flag to keep typing automatically. Press Ctrl+C to exit.")}`,
+                  );
                 }
-              })
-              .catch((error: Error) => {
-                this.logCliEvent(
-                  flags,
-                  "typing",
-                  "startErrorInitial",
-                  `Failed to start typing initially: ${error.message}`,
-                  { error: error.message },
-                );
-                if (!this.shouldOutputJson(flags)) {
-                  this.error(`Failed to start typing: ${error.message}`);
-                }
-              });
-          } else if (
-            statusChange.current === RoomStatus.Failed &&
-            !this.shouldOutputJson(flags)
-          ) {
-            this.error(
-              `Failed to attach to room: ${reasonMsg || "Unknown error"}`,
-            );
-          }
-        },
-      );
-      this.unsubscribeStatusFn = unsubscribeStatus;
+              }
+
+              // Keep typing active by calling keystroke() periodically if autoType is enabled
+              if (this.typingIntervalId) clearInterval(this.typingIntervalId);
+
+              if (flags.autoType) {
+                this.typingIntervalId = setInterval(() => {
+                  room.typing.keystroke().catch((error: Error) => {
+                    this.logCliEvent(
+                      flags,
+                      "typing",
+                      "startErrorPeriodic",
+                      `Error refreshing typing state: ${error.message}`,
+                      { error: error.message },
+                    );
+                  });
+                }, KEYSTROKE_INTERVAL);
+              }
+            })
+            .catch((error: Error) => {
+              this.logCliEvent(
+                flags,
+                "typing",
+                "startErrorInitial",
+                `Failed to start typing initially: ${error.message}`,
+                { error: error.message },
+              );
+              if (!this.shouldOutputJson(flags)) {
+                this.error(`Failed to start typing: ${error.message}`);
+              }
+            });
+        } else if (
+          statusChange.current === RoomStatus.Failed &&
+          !this.shouldOutputJson(flags)
+        ) {
+          this.error(
+            `Failed to attach to room: ${reasonMsg || "Unknown error"}`,
+          );
+        }
+      });
       this.logCliEvent(
         flags,
         "room",
@@ -262,138 +207,8 @@ export default class TypingKeystroke extends ChatBaseCommand {
         "Maintaining typing status...",
       );
 
-      // Keep the process running until Ctrl+C
-      await new Promise<void>((resolve) => {
-        // This promise intentionally never resolves
-        process.on("SIGINT", async () => {
-          this.logCliEvent(
-            flags,
-            "typing",
-            "cleanupInitiated",
-            "Cleanup initiated (Ctrl+C pressed)",
-          );
-          if (!this.shouldOutputJson(flags)) {
-            this.log("");
-            this.log(
-              `${chalk.yellow("Stopping typing and disconnecting from room...")}`,
-            );
-          }
-
-          // Clear the typing interval
-          if (this.typingIntervalId) {
-            this.logCliEvent(
-              flags,
-              "typing",
-              "clearingInterval",
-              "Clearing typing refresh interval",
-            );
-            clearInterval(this.typingIntervalId);
-            this.typingIntervalId = null;
-          }
-
-          // Clean up subscriptions
-          if (this.unsubscribeStatusFn) {
-            try {
-              this.logCliEvent(
-                flags,
-                "room",
-                "unsubscribingStatus",
-                "Unsubscribing from room status",
-              );
-              this.unsubscribeStatusFn();
-              this.logCliEvent(
-                flags,
-                "room",
-                "unsubscribedStatus",
-                "Unsubscribed from room status",
-              );
-            } catch (error) {
-              this.logCliEvent(
-                flags,
-                "room",
-                "unsubscribeStatusError",
-                "Error unsubscribing status",
-                {
-                  error: error instanceof Error ? error.message : String(error),
-                },
-              );
-            }
-          }
-
-          // Stop typing explicitly (optional, but good practice)
-          try {
-            this.logCliEvent(
-              flags,
-              "typing",
-              "stopAttempt",
-              "Attempting to stop typing indicator",
-            );
-            await room.typing.stop();
-            this.logCliEvent(
-              flags,
-              "typing",
-              "stopped",
-              "Stopped typing indicator",
-            );
-          } catch (error) {
-            this.logCliEvent(
-              flags,
-              "typing",
-              "stopError",
-              "Error stopping typing",
-              { error: error instanceof Error ? error.message : String(error) },
-            );
-          }
-
-          // Release the room and close connection
-          try {
-            this.logCliEvent(
-              flags,
-              "room",
-              "releasing",
-              `Releasing room ${roomName}`,
-            );
-            await this.chatClient?.rooms.release(roomName);
-            this.logCliEvent(
-              flags,
-              "room",
-              "released",
-              `Room ${roomName} released`,
-            );
-          } catch (error) {
-            this.logCliEvent(
-              flags,
-              "room",
-              "releaseError",
-              "Error releasing room",
-              { error: error instanceof Error ? error.message : String(error) },
-            );
-          }
-
-          if (this.ablyClient) {
-            this.logCliEvent(
-              flags,
-              "connection",
-              "closing",
-              "Closing Realtime connection",
-            );
-            this.ablyClient.connection.off(); // unsubscribe connection events
-            this.ablyClient.close(); // close client
-            this.logCliEvent(
-              flags,
-              "connection",
-              "closed",
-              "Realtime connection closed",
-            );
-          }
-
-          if (!this.shouldOutputJson(flags)) {
-            this.log(`${chalk.green("Successfully disconnected.")}`);
-          }
-
-          resolve();
-        });
-      });
+      // Decide how long to remain connected
+      await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(
@@ -403,17 +218,11 @@ export default class TypingKeystroke extends ChatBaseCommand {
         `Failed to start typing: ${errorMsg}`,
         { error: errorMsg, room: args.room },
       );
-      // Close the connection in case of error
-      if (this.ablyClient) {
-        this.ablyClient.close();
-      }
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { error: errorMsg, room: args.room, success: false },
-            flags,
-          ),
+        this.jsonError(
+          { error: errorMsg, room: args.room, success: false },
+          flags,
         );
       } else {
         this.error(`Failed to start typing: ${errorMsg}`);

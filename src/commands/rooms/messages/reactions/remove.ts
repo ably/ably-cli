@@ -1,6 +1,10 @@
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
-import { ChatClient, RoomStatus, RoomStatusChange, MessageReactionType } from "@ably/chat";
+import {
+  RoomStatus,
+  RoomStatusChange,
+  MessageReactionType,
+  ConnectionStatusChange,
+} from "@ably/chat";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../../chat-base-command.js";
@@ -38,7 +42,8 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
     }),
   };
 
-  static override description = "Remove a reaction from a message in a chat room";
+  static override description =
+    "Remove a reaction from a message in a chat room";
 
   static override examples = [
     "$ ably rooms messages reactions remove my-room message-serial 👍",
@@ -55,57 +60,28 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
     }),
   };
 
-  private ablyClient: Ably.Realtime | null = null;
-  private chatClient: ChatClient | null = null;
-  private unsubscribeStatusFn: (() => void) | null = null;
-
-  async finally(err: Error | undefined): Promise<void> {
-    if (this.unsubscribeStatusFn) {
-      try {
-        this.unsubscribeStatusFn();
-      } catch {
-        /* ignore */
-      }
-    }
-    if (
-      this.ablyClient &&
-      this.ablyClient.connection.state !== "closed" &&
-      this.ablyClient.connection.state !== "failed"
-    ) {
-      this.ablyClient.close();
-    }
-
-    return super.finally(err);
-  }
-
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesReactionsRemove);
     const { room, messageSerial, reaction } = args;
 
     try {
       // Create Chat client
-      this.chatClient = await this.createChatClient(flags);
-      // Get the underlying Ably client for connection state changes
-      this.ablyClient = this._chatRealtimeClient;
+      const chatClient = await this.createChatClient(flags);
 
-      if (!this.chatClient) {
+      if (!chatClient) {
         this.error("Failed to create Chat client");
-        return;
-      }
-      if (!this.ablyClient) {
-        this.error("Failed to create Ably client");
         return;
       }
 
       // Add listeners for connection state changes
-      this.ablyClient.connection.on(
-        (stateChange: Ably.ConnectionStateChange) => {
+      chatClient.connection.onStatusChange(
+        (stateChange: ConnectionStatusChange) => {
           this.logCliEvent(
             flags,
             "connection",
             stateChange.current,
             `Realtime connection state changed to ${stateChange.current}`,
-            { reason: stateChange.reason },
+            { error: stateChange.error },
           );
         },
       );
@@ -117,13 +93,8 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
         "gettingRoom",
         `Getting room handle for ${room}`,
       );
-      const chatRoom = await this.chatClient.rooms.get(room);
-      this.logCliEvent(
-        flags,
-        "room",
-        "gotRoom",
-        `Got room handle for ${room}`,
-      );
+      const chatRoom = await chatClient.rooms.get(room);
+      this.logCliEvent(flags, "room", "gotRoom", `Got room handle for ${room}`);
 
       // Subscribe to room status changes
       this.logCliEvent(
@@ -132,33 +103,30 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
         "subscribingToStatus",
         "Subscribing to room status changes",
       );
-      const { off: unsubscribeStatus } = chatRoom.onStatusChange(
-        (statusChange: RoomStatusChange) => {
-          let reason: Error | null | string | undefined;
-          if (statusChange.current === RoomStatus.Failed) {
-            reason = chatRoom.error; // Get reason from chatRoom.error on failure
-          }
+      chatRoom.onStatusChange((statusChange: RoomStatusChange) => {
+        let reason: Error | null | string | undefined;
+        if (statusChange.current === RoomStatus.Failed) {
+          reason = chatRoom.error; // Get reason from chatRoom.error on failure
+        }
 
-          const reasonMsg = reason instanceof Error ? reason.message : reason;
-          this.logCliEvent(
-            flags,
-            "room",
-            `status-${statusChange.current}`,
-            `Room status changed to ${statusChange.current}`,
-            { reason: reasonMsg },
+        const reasonMsg = reason instanceof Error ? reason.message : reason;
+        this.logCliEvent(
+          flags,
+          "room",
+          `status-${statusChange.current}`,
+          `Room status changed to ${statusChange.current}`,
+          { reason: reasonMsg },
+        );
+
+        if (
+          statusChange.current === RoomStatus.Failed &&
+          !this.shouldOutputJson(flags)
+        ) {
+          this.error(
+            `Failed to attach to room: ${reasonMsg || "Unknown error"}`,
           );
-
-          if (
-            statusChange.current === RoomStatus.Failed &&
-            !this.shouldOutputJson(flags)
-          ) {
-            this.error(
-              `Failed to attach to room: ${reasonMsg || "Unknown error"}`,
-            );
-          }
-        },
-      );
-      this.unsubscribeStatusFn = unsubscribeStatus;
+        }
+      });
       this.logCliEvent(
         flags,
         "room",
@@ -167,12 +135,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
       );
 
       // Attach to the room
-      this.logCliEvent(
-        flags,
-        "room",
-        "attaching",
-        `Attaching to room ${room}`,
-      );
+      this.logCliEvent(flags, "room", "attaching", `Attaching to room ${room}`);
       await chatRoom.attach();
       this.logCliEvent(
         flags,
@@ -191,18 +154,15 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
           messageSerial,
           reaction,
           ...(flags.type && { type: flags.type }),
-        }
+        },
       );
 
       // Use delete method instead of remove
-      await chatRoom.messages.reactions.delete(
-        { serial: messageSerial }, 
-        { 
-          name: reaction,
-          ...(flags.type && { type: REACTION_TYPE_MAP[flags.type] }),
-        }
-      );
-      
+      await chatRoom.messages.reactions.delete(messageSerial, {
+        name: reaction,
+        ...(flags.type && { type: REACTION_TYPE_MAP[flags.type] }),
+      });
+
       this.logCliEvent(
         flags,
         "reaction",
@@ -226,25 +186,6 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
           `${chalk.green("✓")} Removed reaction ${chalk.yellow(reaction)} from message ${chalk.cyan(messageSerial)} in room ${chalk.cyan(room)}`,
         );
       }
-
-      // Clean up resources
-      this.logCliEvent(flags, "room", "releasing", `Releasing room ${room}`);
-      await this.chatClient.rooms.release(room);
-      this.logCliEvent(flags, "room", "released", `Released room ${room}`);
-
-      this.logCliEvent(
-        flags,
-        "connection",
-        "closing",
-        "Closing Realtime connection",
-      );
-      this.ablyClient.close();
-      this.logCliEvent(
-        flags,
-        "connection",
-        "closed",
-        "Realtime connection closed",
-      );
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(
@@ -255,24 +196,17 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
         { error: errorMsg, room, messageSerial, reaction },
       );
 
-      // Close the connection in case of error
-      if (this.ablyClient) {
-        this.ablyClient.close();
-      }
-
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: errorMsg,
-              room,
-              messageSerial,
-              reaction,
-              ...(flags.type && { type: flags.type }),
-              success: false
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: errorMsg,
+            room,
+            messageSerial,
+            reaction,
+            ...(flags.type && { type: flags.type }),
+            success: false,
+          },
+          flags,
         );
       } else {
         this.error(`Failed to remove reaction: ${errorMsg}`);

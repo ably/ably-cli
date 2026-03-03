@@ -1,4 +1,4 @@
-import { CliRunner } from './cli-runner.js';
+import { CliRunner } from "./cli-runner.js";
 
 // Type for Mocha test context
 interface MochaTest {
@@ -23,4 +23,4 @@ export function getTrackedRunners(test: MochaTest): CliRunner[] {
 
 export function clearTrackingForTest(test: MochaTest): void {
   testRunners.delete(test);
-} 
+}

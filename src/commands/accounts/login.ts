@@ -1,11 +1,12 @@
 import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
-import { execSync } from "node:child_process";
 import * as readline from "node:readline";
+import open from "open";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { ControlApi } from "../../services/control-api.js";
 import { displayLogo } from "../../utils/logo.js";
+import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 // Moved function definition outside the class
 function validateAndGetAlias(
@@ -95,7 +96,7 @@ export default class AccountsLogin extends ControlBaseCommand {
           this.log("Opening browser to get an access token...");
         }
 
-        this.openBrowser(obtainTokenPath);
+        await this.openBrowser(obtainTokenPath);
       } else if (!this.shouldOutputJson(flags)) {
         this.log(`Please visit ${obtainTokenPath} to create an access token`);
       }
@@ -123,7 +124,7 @@ export default class AccountsLogin extends ControlBaseCommand {
         );
 
         // Ask if they want to provide an alias
-        const shouldProvideAlias = await this.promptYesNo(
+        const shouldProvideAlias = await promptForConfirmation(
           "Would you like to provide an alias for this account?",
         );
 
@@ -143,7 +144,7 @@ export default class AccountsLogin extends ControlBaseCommand {
         );
 
         // Ask if they want to provide an alias
-        const shouldProvideAlias = await this.promptYesNo(
+        const shouldProvideAlias = await promptForConfirmation(
           "Would you like to provide an alias for this account?",
         );
 
@@ -210,8 +211,8 @@ export default class AccountsLogin extends ControlBaseCommand {
           // No apps exist - offer to create one
           this.log("\nNo apps found in your account.");
 
-          const shouldCreateApp = await this.promptYesNo(
-            "Would you like to create your first app now?"
+          const shouldCreateApp = await promptForConfirmation(
+            "Would you like to create your first app now?",
           );
 
           if (shouldCreateApp) {
@@ -234,7 +235,9 @@ export default class AccountsLogin extends ControlBaseCommand {
 
               this.log(`${chalk.green("✓")} App created successfully!`);
             } catch (createError) {
-              this.warn(`Failed to create app: ${createError instanceof Error ? createError.message : String(createError)}`);
+              this.warn(
+                `Failed to create app: ${createError instanceof Error ? createError.message : String(createError)}`,
+              );
               // Continue with login even if app creation fails
             }
           }
@@ -243,7 +246,9 @@ export default class AccountsLogin extends ControlBaseCommand {
       } catch (error) {
         // Don't fail login if app fetching fails, just log for debugging
         if (!this.shouldOutputJson(flags)) {
-          this.warn(`Could not fetch apps: ${error instanceof Error ? error.message : String(error)}`);
+          this.warn(
+            `Could not fetch apps: ${error instanceof Error ? error.message : String(error)}`,
+          );
         }
       }
 
@@ -266,7 +271,10 @@ export default class AccountsLogin extends ControlBaseCommand {
             // Prompt user to select a key when multiple exist
             this.log("\nSelect an API key to use:");
 
-            selectedKey = await this.interactiveHelper.selectKey(controlApi, selectedApp.id);
+            selectedKey = await this.interactiveHelper.selectKey(
+              controlApi,
+              selectedApp.id,
+            );
 
             if (selectedKey) {
               this.configManager.storeAppKey(selectedApp.id, selectedKey.key, {
@@ -278,7 +286,9 @@ export default class AccountsLogin extends ControlBaseCommand {
           // If keys.length === 0, continue without key (should be rare for newly created apps)
         } catch (keyError) {
           // Don't fail login if key fetching fails
-          this.warn(`Could not fetch API keys: ${keyError instanceof Error ? keyError.message : String(keyError)}`);
+          this.warn(
+            `Could not fetch API keys: ${keyError instanceof Error ? keyError.message : String(keyError)}`,
+          );
         }
       }
 
@@ -356,31 +366,25 @@ export default class AccountsLogin extends ControlBaseCommand {
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: error instanceof Error ? error.message : String(error),
-              success: false,
-            },
-            flags,
-          ),
+        this.jsonError(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            success: false,
+          },
+          flags,
         );
+        return;
       } else {
         this.error(`Failed to authenticate: ${error}`);
       }
     }
   }
 
-  private openBrowser(url: string): void {
+  private async openBrowser(url: string): Promise<void> {
     try {
-      const command =
-        process.platform === "darwin"
-          ? "open"
-          : process.platform === "win32"
-            ? "start"
-            : "xdg-open";
-
-      execSync(`${command} ${url}`);
+      // Use the 'open' package for cross-platform browser opening
+      // This handles platform differences safely and avoids shell injection
+      await open(url);
     } catch (error) {
       this.warn(`Failed to open browser: ${error}`);
       this.log(`Please visit ${url} manually to create an access token`);
@@ -430,7 +434,7 @@ export default class AccountsLogin extends ControlBaseCommand {
 
     return new Promise((resolve) => {
       const askForAppName = () => {
-        rl.question('Enter a name for your app: ', (appName) => {
+        rl.question("Enter a name for your app: ", (appName) => {
           const trimmedName = appName.trim();
 
           if (trimmedName.length === 0) {
@@ -458,34 +462,6 @@ export default class AccountsLogin extends ControlBaseCommand {
         rl.close();
         resolve(token.trim());
       });
-    });
-  }
-
-  private promptYesNo(question: string): Promise<boolean> {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    return new Promise((resolve) => {
-      const askQuestion = () => {
-        rl.question(`${question} (y/n) `, (answer) => {
-          const lowercaseAnswer = answer.toLowerCase().trim();
-
-          if (lowercaseAnswer === "y" || lowercaseAnswer === "yes") {
-            rl.close();
-            resolve(true);
-          } else if (lowercaseAnswer === "n" || lowercaseAnswer === "no") {
-            rl.close();
-            resolve(false);
-          } else {
-            this.log("Please answer with yes/y or no/n");
-            askQuestion();
-          }
-        });
-      };
-
-      askQuestion();
     });
   }
 }

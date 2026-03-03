@@ -1,9 +1,10 @@
-import { Args } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 import Table from "cli-table3";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
 
 interface TestMetrics {
   endToEndLatencies: number[]; // Publisher -> Subscriber
@@ -30,6 +31,11 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
   static override flags = {
     ...AblyBaseCommand.globalFlags,
+    duration: Flags.integer({
+      char: "d",
+      description:
+        "Duration to subscribe for in seconds (default: indefinite until Ctrl+C)",
+    }),
   };
 
   private receivedEchoCount = 0;
@@ -56,14 +62,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
       this.checkPublisherIntervalId = null;
     }
 
-    if (
-      this.realtime &&
-      this.realtime.connection.state !== "closed" && // Check state before closing to avoid errors if already closed
-      this.realtime.connection.state !== "failed"
-    ) {
-      this.realtime.close();
-    }
-
+    // Client cleanup is handled by base class
     return super.finally(err);
   }
 
@@ -93,25 +92,29 @@ export default class BenchSubscriber extends AblyBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(`Attaching to channel: ${chalk.cyan(args.channel)}...`);
       }
-      
+
       await this.handlePresence(channel, metrics, flags);
 
       this.subscribeToMessages(channel, metrics, flags);
 
       await this.checkInitialPresence(channel, metrics, flags);
-      
+
       // Emit subscriberReady event for test automation
       this.logCliEvent(
         flags,
         "benchmark",
         "subscriberReady",
         `Subscriber ready on channel: ${args.channel}`,
-        { channel: args.channel }
+        { channel: args.channel },
       );
-      
+
       // Show success message
       if (!this.shouldOutputJson(flags)) {
-        this.log(chalk.green(`✓ Subscribed to channel: ${chalk.cyan(args.channel)}. Waiting for benchmark messages...`));
+        this.log(
+          chalk.green(
+            `✓ Subscribed to channel: ${chalk.cyan(args.channel)}. Waiting for benchmark messages...`,
+          ),
+        );
       }
 
       await this.waitForTermination(flags);
@@ -525,7 +528,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
     // Set up connection state logging
     this.setupConnectionStateLogging(realtime, flags, {
-      includeUserFriendlyMessages: true
+      includeUserFriendlyMessages: true,
     });
     return realtime;
   }
@@ -790,11 +793,14 @@ export default class BenchSubscriber extends AblyBaseCommand {
   }
 
   private async waitForTermination(
-    _flags: Record<string, unknown>,
+    flags: Record<string, unknown>,
   ): Promise<void> {
-    // Keep the connection open indefinitely until Ctrl+C
-    await new Promise(() => {
-      /* Never resolves */
+    // Wait until the user interrupts or the optional duration elapses
+    const exitReason = await waitUntilInterruptedOrTimeout(
+      flags.duration as number | undefined,
+    );
+    this.logCliEvent(flags, "benchmark", "runComplete", "Exiting wait loop", {
+      exitReason,
     });
   }
 }
