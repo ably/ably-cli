@@ -3,6 +3,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { productApiFlags } from "../../flags.js";
 import { BaseFlags } from "../../types/cli.js";
 import { StatsDisplay } from "../../services/stats-display.js";
 import { StatsDisplayData } from "../../services/stats-display.js";
@@ -21,7 +22,7 @@ export default class ConnectionsStats extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     debug: Flags.boolean({
       default: false,
       description: "Show debug information for live stats polling",
@@ -85,8 +86,8 @@ export default class ConnectionsStats extends AblyBaseCommand {
       flags.unit = "minute";
     }
 
-    // Get API key from flags or config
-    const apiKey = flags["api-key"] || (await this.configManager.getApiKey());
+    // Get API key from env or config
+    const apiKey = process.env.ABLY_API_KEY || this.configManager.getApiKey();
     if (!apiKey) {
       this.error(
         'No API key found. Please set an API key using "ably keys add" or set the ABLY_API_KEY environment variable.',

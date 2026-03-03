@@ -26,7 +26,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
 
   static override examples = [
     "$ ably rooms reactions send my-room 👍",
-    '$ ably rooms reactions send --api-key "YOUR_API_KEY" my-room 🎉',
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably rooms reactions send my-room 🎉',
     "$ ably rooms reactions send my-room ❤️ --json",
     "$ ably rooms reactions send my-room 😂 --pretty-json",
   ];

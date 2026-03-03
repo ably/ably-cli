@@ -18,7 +18,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
 
   static override examples = [
     "$ ably rooms typing subscribe my-room",
-    '$ ably rooms typing subscribe --api-key "YOUR_API_KEY" my-room',
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably rooms typing subscribe my-room',
     "$ ably rooms typing subscribe my-room --json",
     "$ ably rooms typing subscribe my-room --pretty-json",
   ];

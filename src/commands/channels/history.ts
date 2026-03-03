@@ -3,6 +3,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { productApiFlags } from "../../flags.js";
 import { formatJson, isJsonData } from "../../utils/json-formatter.js";
 
 export default class ChannelsHistory extends AblyBaseCommand {
@@ -25,7 +26,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     cipher: Flags.string({
       description: "Decryption key for encrypted messages (AES-128)",
     }),

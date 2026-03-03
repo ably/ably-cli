@@ -40,7 +40,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
   static override examples = [
     "$ ably rooms messages subscribe my-room",
     "$ ably rooms messages subscribe room1 room2 room3",
-    '$ ably rooms messages subscribe --api-key "YOUR_API_KEY" my-room',
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably rooms messages subscribe my-room',
     "$ ably rooms messages subscribe --show-metadata my-room",
     "$ ably rooms messages subscribe my-room --duration 30",
     "$ ably rooms messages subscribe my-room --json",

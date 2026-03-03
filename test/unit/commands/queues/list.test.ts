@@ -6,6 +6,7 @@ import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 describe("queues:list command", () => {
   afterEach(() => {
     nock.cleanAll();
+    delete process.env.ABLY_ACCESS_TOKEN;
   });
 
   describe("successful queue listing", () => {
@@ -247,9 +248,11 @@ describe("queues:list command", () => {
       expect(stdout).toContain("Queue ID: queue-1");
     });
 
-    it("should use custom access token when provided", async () => {
+    it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const customToken = "custom_access_token";
+
+      process.env.ABLY_ACCESS_TOKEN = customToken;
 
       nock("https://control.ably.net", {
         reqheaders: {
@@ -259,10 +262,7 @@ describe("queues:list command", () => {
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, []);
 
-      const { stdout } = await runCommand(
-        ["queues:list", "--access-token", "custom_access_token"],
-        import.meta.url,
-      );
+      const { stdout } = await runCommand(["queues:list"], import.meta.url);
 
       expect(stdout).toContain("No queues found");
     });

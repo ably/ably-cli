@@ -9,6 +9,7 @@ describe("queues:create command", () => {
 
   afterEach(() => {
     nock.cleanAll();
+    delete process.env.ABLY_ACCESS_TOKEN;
   });
 
   function createMockQueueResponse(appId: string) {
@@ -189,11 +190,13 @@ describe("queues:create command", () => {
       expect(stdout).toContain("Queue created successfully");
     });
 
-    it("should use custom access token when provided", async () => {
+    it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
       const accountId = mockConfig.getCurrentAccount()!.accountId!;
       const customToken = "custom_access_token";
+
+      process.env.ABLY_ACCESS_TOKEN = customToken;
 
       nock("https://control.ably.net", {
         reqheaders: {
@@ -219,13 +222,7 @@ describe("queues:create command", () => {
         .reply(201, createMockQueueResponse(appId));
 
       const { stdout } = await runCommand(
-        [
-          "queues:create",
-          "--name",
-          mockQueueName,
-          "--access-token",
-          "custom_access_token",
-        ],
+        ["queues:create", "--name", mockQueueName],
         import.meta.url,
       );
 

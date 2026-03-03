@@ -20,6 +20,7 @@ export interface AccountConfig {
     [appId: string]: AppConfig;
   };
   currentAppId?: string;
+  endpoint?: string;
   tokenId?: string;
   userEmail?: string;
 }
@@ -78,6 +79,10 @@ export interface ConfigManager {
     accountAlias?: string,
   ): void;
   removeApiKey(appId: string): boolean;
+
+  // Endpoint management
+  getEndpoint(alias?: string): string | undefined;
+  storeEndpoint(endpoint: string, alias?: string): void;
 
   // Help context (AI conversation)
   getHelpContext():
@@ -191,6 +196,16 @@ export class TomlConfigManager implements ConfigManager {
 
     const cfg = currentAccount.apps[appId];
     return cfg ? { ...cfg } : undefined;
+  }
+
+  // Get endpoint for the current account or specific alias
+  public getEndpoint(alias?: string): string | undefined {
+    if (alias) {
+      return this.config.accounts[alias]?.endpoint;
+    }
+
+    const currentAccount = this.getCurrentAccount();
+    return currentAccount?.endpoint;
   }
 
   // Get path to config file
@@ -356,6 +371,18 @@ export class TomlConfigManager implements ConfigManager {
       this.config.current = { account: alias };
     }
 
+    this.saveConfig();
+  }
+
+  // Store endpoint for the current account or specific alias
+  public storeEndpoint(endpoint: string, alias?: string): void {
+    const targetAlias = alias || this.getCurrentAccountAlias() || "default";
+
+    if (!this.config.accounts[targetAlias]) {
+      throw new Error(`Account "${targetAlias}" not found`);
+    }
+
+    this.config.accounts[targetAlias].endpoint = endpoint;
     this.saveConfig();
   }
 

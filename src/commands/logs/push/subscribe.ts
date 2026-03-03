@@ -3,6 +3,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
+import { productApiFlags } from "../../../flags.js";
 import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
 
 export default class LogsPushSubscribe extends AblyBaseCommand {
@@ -15,7 +16,7 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     json: Flags.boolean({
       default: false,
       description: "Output results as JSON",

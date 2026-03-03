@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import { parse } from "smol-toml";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { coreGlobalFlags } from "../../flags.js";
 
 export default class ConfigShow extends AblyBaseCommand {
   static override description =
@@ -13,7 +14,7 @@ export default class ConfigShow extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...coreGlobalFlags,
   };
 
   public async run(): Promise<void> {

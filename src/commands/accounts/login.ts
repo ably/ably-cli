@@ -4,6 +4,7 @@ import * as readline from "node:readline";
 import open from "open";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { endpointFlag } from "../../flags.js";
 import { ControlApi } from "../../services/control-api.js";
 import { displayLogo } from "../../utils/logo.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
@@ -57,6 +58,7 @@ export default class AccountsLogin extends ControlBaseCommand {
 
   static override flags = {
     ...ControlBaseCommand.globalFlags,
+    ...endpointFlag,
     alias: Flags.string({
       char: "a",
       description: "Alias for this account (default account if not specified)",
@@ -180,6 +182,11 @@ export default class AccountsLogin extends ControlBaseCommand {
 
       // Switch to this account
       this.configManager.switchAccount(alias);
+
+      // Store custom endpoint if provided
+      if (flags.endpoint) {
+        this.configManager.storeEndpoint(flags.endpoint as string);
+      }
 
       // Handle app selection based on available apps
       let selectedApp = null;

@@ -19,7 +19,7 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
     "$ ably apps delete",
     "$ ably apps delete app-id",
     "$ ably apps delete --app app-id",
-    '$ ably apps delete app-id --access-token "YOUR_ACCESS_TOKEN"',
+    '$ ABLY_ACCESS_TOKEN="YOUR_ACCESS_TOKEN" ably apps delete app-id',
     "$ ably apps delete app-id --force",
     "$ ably apps delete app-id --json",
     "$ ably apps delete app-id --pretty-json",

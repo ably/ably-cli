@@ -3,6 +3,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { productApiFlags } from "../../flags.js";
 import { formatJson, isJsonData } from "../../utils/json-formatter.js";
 import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
 
@@ -21,18 +22,17 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
   static override examples = [
     "$ ably channels subscribe my-channel",
     "$ ably channels subscribe my-channel another-channel",
-    '$ ably channels subscribe --api-key "YOUR_API_KEY" my-channel',
-    '$ ably channels subscribe --token "YOUR_ABLY_TOKEN" my-channel',
     "$ ably channels subscribe --rewind 10 my-channel",
     "$ ably channels subscribe --delta my-channel",
     "$ ably channels subscribe --cipher-key YOUR_CIPHER_KEY my-channel",
     "$ ably channels subscribe my-channel --json",
     "$ ably channels subscribe my-channel --pretty-json",
     "$ ably channels subscribe my-channel --duration 30",
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably channels subscribe my-channel',
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     "cipher-algorithm": Flags.string({
       default: "aes",
       description: "Encryption algorithm to use (default: aes)",

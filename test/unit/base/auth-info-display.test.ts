@@ -56,6 +56,7 @@ describe("Auth Info Display", function () {
     getCurrentAppId: ReturnType<typeof vi.fn>;
     getAppName: ReturnType<typeof vi.fn>;
     getApiKey: ReturnType<typeof vi.fn>;
+    getEndpoint: ReturnType<typeof vi.fn>;
     getKeyName: ReturnType<typeof vi.fn>;
   };
   let logStub: ReturnType<typeof vi.fn>;
@@ -68,6 +69,7 @@ describe("Auth Info Display", function () {
       getCurrentAppId: vi.fn(),
       getAppName: vi.fn(),
       getApiKey: vi.fn(),
+      getEndpoint: vi.fn(),
       getKeyName: vi.fn(),
     };
 
@@ -90,6 +92,7 @@ describe("Auth Info Display", function () {
 
     // Make sure environment variables are clean
     delete process.env.ABLY_API_KEY;
+    delete process.env.ABLY_TOKEN;
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
@@ -103,29 +106,15 @@ describe("Auth Info Display", function () {
       expect(command.testShouldHideAccountInfo({})).toBe(true);
     });
 
-    it("should return true when API key is provided explicitly", function () {
-      expect(
-        command.testShouldHideAccountInfo({ "api-key": "app-id.key:secret" }),
-      ).toBe(true);
-    });
-
-    it("should return true when token is provided explicitly", function () {
-      expect(command.testShouldHideAccountInfo({ token: "some-token" })).toBe(
-        true,
-      );
-    });
-
-    it("should return true when access token is provided explicitly", function () {
-      expect(
-        command.testShouldHideAccountInfo({
-          "access-token": "some-access-token",
-        }),
-      ).toBe(true);
-    });
-
     it("should return true when ABLY_API_KEY environment variable is set", function () {
       process.env.ABLY_API_KEY = "app-id.key:secret";
       expect(command.testShouldHideAccountInfo({})).toBe(true);
+    });
+
+    it("should return true when ABLY_TOKEN environment variable is set", function () {
+      process.env.ABLY_TOKEN = "some-token";
+      expect(command.testShouldHideAccountInfo({})).toBe(true);
+      delete process.env.ABLY_TOKEN;
     });
 
     it("should return true when ABLY_ACCESS_TOKEN environment variable is set", function () {
@@ -199,13 +188,16 @@ describe("Auth Info Display", function () {
       expect(logStub).not.toHaveBeenCalled();
     });
 
-    it("should display app and auth info when token is provided", async function () {
+    it("should display app and auth info when ABLY_TOKEN env var is set", async function () {
       // Setup
       shouldHideAccountInfoStub.mockReturnValue(true);
+      process.env.ABLY_TOKEN = "test-token-value";
 
-      // Execute with token - also need to ensure the command has a token that's reflected in output
-      const flags = { token: "test-token" };
-      await command.testDisplayAuthInfo(flags);
+      // Execute
+      await command.testDisplayAuthInfo({});
+
+      // Cleanup
+      delete process.env.ABLY_TOKEN;
 
       // Verify output includes token info but not account info
       expect(logStub).toHaveBeenCalled();

@@ -47,7 +47,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
 
   static override examples = [
     "$ ably rooms messages reactions remove my-room message-serial 👍",
-    '$ ably rooms messages reactions remove --api-key "YOUR_API_KEY" my-room message-serial ❤️',
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably rooms messages reactions remove my-room message-serial ❤️',
     "$ ably rooms messages reactions remove my-room message-serial 👍 --type unique",
     "$ ably rooms messages reactions remove my-room message-serial 👍 --json",
   ];

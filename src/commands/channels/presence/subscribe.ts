@@ -3,6 +3,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
+import { clientIdFlag, productApiFlags } from "../../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
@@ -18,15 +19,15 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
   static override examples = [
     "$ ably channels presence subscribe my-channel",
     '$ ably channels presence subscribe my-channel --client-id "filter123"',
-    '$ ably channels presence subscribe my-channel --api-key "YOUR_API_KEY"',
-    '$ ably channels presence subscribe my-channel --token "YOUR_ABLY_TOKEN"',
     "$ ably channels presence subscribe my-channel --json",
     "$ ably channels presence subscribe my-channel --pretty-json",
     "$ ably channels presence subscribe my-channel --duration 30",
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably channels presence subscribe my-channel',
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
+    ...clientIdFlag,
     duration: Flags.integer({
       description:
         "Automatically exit after the given number of seconds (0 = run indefinitely)",
