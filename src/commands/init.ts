@@ -1,26 +1,26 @@
-import { Command, Flags } from "@oclif/core";
-import chalk from "chalk";
-import ora from "ora";
-import { SkillsDownloader } from "../services/skills-downloader.js";
-import {
-  SkillsInstaller,
-  InstallResult,
-} from "../services/skills-installer.js";
+import { Flags } from "@oclif/core";
+
+import { AblyBaseCommand } from "../base-command.js";
+import { coreGlobalFlags } from "../flags.js";
+import { TARGET_CONFIGS } from "../services/skills-installer.js";
+import { BaseFlags } from "../types/cli.js";
 import { displayLogo } from "../utils/logo.js";
+import { formatHeading } from "../utils/output.js";
 
-export default class Init extends Command {
-  static description =
-    "Set up Ably for AI-powered development — authenticates and installs Agent Skills";
+export default class Init extends AblyBaseCommand {
+  static override description =
+    "Set up Ably for AI-powered development — authenticate and install Agent Skills";
 
-  static examples = [
+  static override examples = [
     "<%= config.bin %> <%= command.id %>",
     "<%= config.bin %> <%= command.id %> --global",
     "<%= config.bin %> <%= command.id %> --target claude-code",
     "<%= config.bin %> <%= command.id %> --skip-auth",
+    "<%= config.bin %> <%= command.id %> --skip-auth --json",
   ];
 
-  static flags = {
-    help: Flags.help({ char: "h" }),
+  static override flags = {
+    ...coreGlobalFlags,
     global: Flags.boolean({
       char: "g",
       default: false,
@@ -29,8 +29,8 @@ export default class Init extends Command {
     target: Flags.string({
       char: "t",
       multiple: true,
-      options: ["claude-code", "cursor", "agents", "all"],
-      default: ["all"],
+      options: ["auto", ...Object.keys(TARGET_CONFIGS), "all"],
+      default: ["auto"],
       description: "Target IDE(s) to install skills for",
     }),
     force: Flags.boolean({
@@ -47,108 +47,75 @@ export default class Init extends Command {
       multiple: true,
       description: "Install only specific skill(s) by name",
     }),
-    // TODO: Replace with "ably/agent-skills" before raising a PR. Using vercel-labs for testing only.
     "skills-repo": Flags.string({
-      default: "vercel-labs/agent-skills",
+      default: "ably/agent-skills",
       description: "GitHub repo to fetch skills from",
     }),
   };
 
   async run(): Promise<void> {
     const { flags } = await this.parse(Init);
+    const jsonMode = this.shouldOutputJson(flags);
 
-    displayLogo(this.log.bind(this));
-
-    // Step 1: Auth (unless skipped)
-    if (!flags["skip-auth"]) {
-      this.log(chalk.bold("\n  Step 1: Authenticate with Ably\n"));
-      try {
-        await this.config.runCommand("accounts:login", []);
-      } catch {
-        this.error(
-          "Authentication failed. Use --skip-auth if you are already logged in.",
-        );
-      }
+    if (!jsonMode) {
+      displayLogo(this.log.bind(this));
     }
 
-    // Step 2: Download skills from GitHub
-    this.log(
-      chalk.bold(
-        `\n  Step ${flags["skip-auth"] ? "1" : "2"}: Download Ably Agent Skills\n`,
-      ),
+    await this.runAuth(flags);
+    await this.config.runCommand(
+      "skills:install",
+      this.buildInstallArgv(flags),
     );
-
-    const downloader = new SkillsDownloader();
-    const downloadSpinner = ora("  Downloading skills from GitHub...").start();
-
-    let skills;
-    try {
-      skills = await downloader.download(flags["skills-repo"]);
-      downloadSpinner.succeed(`  Downloaded ${skills.length} skills`);
-    } catch (error) {
-      downloadSpinner.fail("  Failed to download skills");
-      downloader.cleanup();
-      this.error(
-        error instanceof Error ? error.message : "Failed to download skills",
-      );
-    }
-
-    // Step 3: Install to IDE directories
-    this.log(
-      chalk.bold(
-        `\n  Step ${flags["skip-auth"] ? "2" : "3"}: Install skills for AI coding tools\n`,
-      ),
-    );
-
-    const installer = new SkillsInstaller();
-    const targets = SkillsInstaller.resolveTargets(flags.target);
-
-    let results: InstallResult[];
-    try {
-      results = await installer.install({
-        skills,
-        global: flags.global,
-        targets,
-        force: flags.force,
-        skillFilter: flags.skill,
-        log: this.log.bind(this),
-      });
-    } catch (error) {
-      downloader.cleanup();
-      this.error(
-        error instanceof Error ? error.message : "Failed to install skills",
-      );
-    }
-
-    downloader.cleanup();
-
-    this.displaySummary(results);
   }
 
-  private displaySummary(results: InstallResult[]): void {
-    const totalInstalled = results.reduce((sum, r) => sum + r.skillCount, 0);
-    const errors = results.flatMap((r) =>
-      r.skills.filter((s) => s.status === "error"),
-    );
+  private async runAuth(
+    flags: BaseFlags & { "skip-auth": boolean },
+  ): Promise<void> {
+    if (flags["skip-auth"]) return;
 
-    if (errors.length > 0) {
-      this.log(chalk.yellow("\n  Some skills failed to install:"));
-      for (const err of errors) {
-        this.log(chalk.red(`    ✗ ${err.skillName}: ${err.error}`));
-      }
+    if (this.shouldOutputJson(flags)) {
+      this.fail(
+        "Authentication cannot run in --json mode. Use --skip-auth or set ABLY_ACCESS_TOKEN.",
+        flags,
+        "init",
+      );
     }
 
-    if (totalInstalled > 0) {
-      this.log(
-        chalk.green("\n  Done! Restart your IDE to activate Ably skills."),
+    this.log(`\n  ${formatHeading("Authenticate with Ably")}\n`);
+    try {
+      await this.config.runCommand("accounts:login", []);
+    } catch {
+      this.fail(
+        "Authentication failed. Use --skip-auth if you are already logged in.",
+        flags,
+        "init",
       );
-      this.log(
-        chalk.dim(
-          "  Your AI assistant now understands Ably SDKs, APIs, and best practices.\n",
-        ),
-      );
-    } else {
-      this.log(chalk.dim("\n  No new skills were installed.\n"));
     }
+  }
+
+  private buildInstallArgv(
+    flags: BaseFlags & {
+      global: boolean;
+      target: string[];
+      force: boolean;
+      skill?: string[];
+      "skills-repo": string;
+    },
+  ): string[] {
+    const argv: string[] = [];
+
+    if (flags.global) argv.push("--global");
+    for (const target of flags.target) argv.push("--target", target);
+    if (flags.force) argv.push("--force");
+    if (flags.skill) {
+      for (const skill of flags.skill) argv.push("--skill", skill);
+    }
+    argv.push("--skills-repo", flags["skills-repo"]);
+
+    if (flags.json) argv.push("--json");
+    else if (flags["pretty-json"]) argv.push("--pretty-json");
+    if (flags.verbose) argv.push("--verbose");
+
+    return argv;
   }
 }

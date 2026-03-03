@@ -7,17 +7,17 @@ import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
-} from "../../helpers/standard-tests.js";
+} from "../../../helpers/standard-tests.js";
 
 const fetchMock = vi.fn();
 globalThis.fetch = fetchMock as typeof fetch;
 
-describe("init command", () => {
+describe("skills:install command", () => {
   let tempDir: string;
   let originalCwd: string;
 
   beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "init-test-"));
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "skills-install-test-"));
     originalCwd = process.cwd();
     process.chdir(tempDir);
     fetchMock.mockReset();
@@ -31,10 +31,9 @@ describe("init command", () => {
     vi.restoreAllMocks();
   });
 
-  standardHelpTests("init", import.meta.url);
-  standardArgValidationTests("init", import.meta.url);
-  standardFlagTests("init", import.meta.url, [
-    "--skip-auth",
+  standardHelpTests("skills:install", import.meta.url);
+  standardArgValidationTests("skills:install", import.meta.url);
+  standardFlagTests("skills:install", import.meta.url, [
     "--global",
     "--target",
     "--force",
@@ -43,23 +42,25 @@ describe("init command", () => {
     "--json",
   ]);
 
-  describe("error handling", () => {
-    it("should fail when --json is set without --skip-auth", async () => {
-      const { stdout } = await runCommand(["init", "--json"], import.meta.url);
-      // In JSON mode fail() emits a JSON error record on stdout and exits.
-      expect(stdout).toMatch(/Authentication cannot run in --json mode/i);
-      const firstLine = stdout.trim().split("\n")[0]!;
-      const record = JSON.parse(firstLine) as {
-        type: string;
-        error: { message: string };
-      };
-      expect(record.type).toBe("error");
-      expect(record.error.message).toMatch(
-        /Authentication cannot run in --json mode/i,
+  describe("flags", () => {
+    it("should list all target options in help", async () => {
+      const { stdout } = await runCommand(
+        ["skills:install", "--help"],
+        import.meta.url,
       );
+      expect(stdout).toContain("claude-code");
+      expect(stdout).toContain("cursor");
+      expect(stdout).toContain("agents");
+      expect(stdout).toContain("auto");
+      expect(stdout).toContain("vscode");
+      expect(stdout).toContain("windsurf");
+      expect(stdout).toContain("zed");
+      expect(stdout).toContain("continue");
     });
+  });
 
-    it("should delegate to skills:install and surface download failures", async () => {
+  describe("error handling", () => {
+    it("should surface download failures", async () => {
       fetchMock.mockResolvedValue({
         ok: false,
         statusText: "Not Found",
@@ -67,8 +68,7 @@ describe("init command", () => {
 
       const { error } = await runCommand(
         [
-          "init",
-          "--skip-auth",
+          "skills:install",
           "--target",
           "all",
           "--skills-repo",
