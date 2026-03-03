@@ -57,7 +57,11 @@ describe("SkillsInstaller", () => {
       expect(targets).toContain("claude-code");
       expect(targets).toContain("cursor");
       expect(targets).toContain("agents");
-      expect(targets).toHaveLength(3);
+      expect(targets).toContain("vscode");
+      expect(targets).toContain("windsurf");
+      expect(targets).toContain("zed");
+      expect(targets).toContain("continue");
+      expect(targets).toHaveLength(7);
     });
 
     it("should pass through specific targets", () => {
@@ -68,6 +72,11 @@ describe("SkillsInstaller", () => {
     it("should pass through multiple targets", () => {
       const targets = SkillsInstaller.resolveTargets(["claude-code", "cursor"]);
       expect(targets).toEqual(["claude-code", "cursor"]);
+    });
+
+    it('should return empty array for "auto"', () => {
+      const targets = SkillsInstaller.resolveTargets(["auto"]);
+      expect(targets).toEqual([]);
     });
   });
 

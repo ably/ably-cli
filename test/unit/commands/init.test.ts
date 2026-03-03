@@ -31,6 +31,18 @@ describe("init command", () => {
     expect(stdout).toContain("--force");
   });
 
+  it("should list all target options in help", async () => {
+    const { stdout } = await runCommand(["init", "--help"], import.meta.url);
+    expect(stdout).toContain("claude-code");
+    expect(stdout).toContain("cursor");
+    expect(stdout).toContain("agents");
+    expect(stdout).toContain("auto");
+    expect(stdout).toContain("vscode");
+    expect(stdout).toContain("windsurf");
+    expect(stdout).toContain("zed");
+    expect(stdout).toContain("continue");
+  });
+
   it("should accept --skip-auth flag", async () => {
     // With skip-auth and a non-existent repo, it should fail on download
     // but not try to authenticate
@@ -38,6 +50,8 @@ describe("init command", () => {
       [
         "init",
         "--skip-auth",
+        "--target",
+        "all",
         "--skills-repo",
         "ably/nonexistent-repo-xyz-12345",
       ],
@@ -47,13 +61,6 @@ describe("init command", () => {
     // Should fail on download, not auth
     expect(error).toBeDefined();
     expect(error?.message).toMatch(/Failed to download skills|Not Found/i);
-  });
-
-  it("should accept --target flag", async () => {
-    const { stdout } = await runCommand(["init", "--help"], import.meta.url);
-    expect(stdout).toContain("claude-code");
-    expect(stdout).toContain("cursor");
-    expect(stdout).toContain("agents");
   });
 
   it("should reject unknown flags", async () => {

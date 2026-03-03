@@ -40,6 +40,26 @@ export const TARGET_CONFIGS: Record<string, TargetConfig> = {
     projectDir: ".agents/skills",
     globalDir: path.join(os.homedir(), ".agents", "skills"),
   },
+  vscode: {
+    name: "VS Code",
+    projectDir: ".vscode/skills",
+    globalDir: path.join(os.homedir(), ".vscode", "skills"),
+  },
+  windsurf: {
+    name: "Windsurf",
+    projectDir: ".windsurf/skills",
+    globalDir: path.join(os.homedir(), ".windsurf", "skills"),
+  },
+  zed: {
+    name: "Zed",
+    projectDir: ".zed/skills",
+    globalDir: path.join(os.homedir(), ".config", "zed", "skills"),
+  },
+  continue: {
+    name: "Continue.dev",
+    projectDir: ".continue/skills",
+    globalDir: path.join(os.homedir(), ".continue", "skills"),
+  },
 };
 
 export class SkillsInstaller {
@@ -149,6 +169,10 @@ export class SkillsInstaller {
   static resolveTargets(targets: string[]): string[] {
     if (targets.includes("all")) {
       return Object.keys(TARGET_CONFIGS);
+    }
+    // "auto" is handled by init.ts via tool detection — treat as empty here
+    if (targets.includes("auto")) {
+      return [];
     }
     return targets;
   }
