@@ -43,7 +43,7 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
     let appId: string | undefined;
 
     try {
-      let appId = flags.app;
+      appId = flags.app;
       if (!appId) {
         appId = await this.resolveAppId(flags);
       }
@@ -131,7 +131,7 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
           );
         }
 
-        if (namespace.batchingInterval != null) {
+        if (typeof namespace.batchingInterval === "number") {
           this.log(
             `Batching Interval: ${chalk.green(namespace.batchingInterval.toString())}`,
           );
@@ -143,7 +143,7 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
           );
         }
 
-        if (namespace.conflationInterval != null) {
+        if (typeof namespace.conflationInterval === "number") {
           this.log(
             `Conflation Interval: ${chalk.green(namespace.conflationInterval.toString())}`,
           );

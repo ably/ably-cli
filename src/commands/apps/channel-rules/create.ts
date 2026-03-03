@@ -92,7 +92,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
     let appId: string | undefined;
 
     try {
-      let appId = flags.app;
+      appId = flags.app;
       if (!appId) {
         appId = await this.resolveAppId(flags);
       }
@@ -207,7 +207,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
           );
         }
 
-        if (createdNamespace.batchingInterval != null) {
+        if (typeof createdNamespace.batchingInterval === "number") {
           this.log(
             `Batching Interval: ${chalk.green(createdNamespace.batchingInterval.toString())}`,
           );
@@ -219,7 +219,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
           );
         }
 
-        if (createdNamespace.conflationInterval != null) {
+        if (typeof createdNamespace.conflationInterval === "number") {
           this.log(
             `Conflation Interval: ${chalk.green(createdNamespace.conflationInterval.toString())}`,
           );

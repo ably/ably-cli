@@ -340,7 +340,7 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
 
       it("should create a new namespace", async () => {
         const namespaceData = {
-          channelNamespace: `test-namespace-${Date.now()}`,
+          id: `test-namespace-${Date.now()}`,
           persisted: true,
           pushEnabled: false,
           tlsOnly: true,
