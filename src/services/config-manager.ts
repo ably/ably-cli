@@ -14,12 +14,16 @@ export interface AppConfig {
 
 export interface AccountConfig {
   accessToken: string;
+  accessTokenExpiresAt?: number;
   accountId?: string;
   accountName?: string;
   apps?: {
     [appId: string]: AppConfig;
   };
+  authMethod?: "oauth" | "token";
   currentAppId?: string;
+  oauthScope?: string;
+  refreshToken?: string;
   tokenId?: string;
   userEmail?: string;
 }
@@ -57,6 +61,32 @@ export interface ConfigManager {
   ): void;
   switchAccount(alias: string): boolean;
   removeAccount(alias: string): boolean;
+
+  // OAuth management
+  storeOAuthTokens(
+    alias: string,
+    tokens: {
+      accessToken: string;
+      refreshToken: string;
+      expiresAt: number;
+      scope?: string;
+      userId?: string;
+      userEmail?: string;
+    },
+    accountInfo?: {
+      accountId?: string;
+      accountName?: string;
+    },
+  ): void;
+  getOAuthTokens(alias?: string):
+    | {
+        accessToken: string;
+        refreshToken: string;
+        expiresAt: number;
+      }
+    | undefined;
+  isAccessTokenExpired(alias?: string): boolean;
+  getAuthMethod(alias?: string): "oauth" | "token" | undefined;
 
   // App management
   getApiKey(appId?: string): string | undefined;
@@ -442,6 +472,86 @@ export class TomlConfigManager implements ConfigManager {
     );
 
     this.saveConfig();
+  }
+
+  // Store OAuth tokens for an account
+  public storeOAuthTokens(
+    alias: string,
+    tokens: {
+      accessToken: string;
+      refreshToken: string;
+      expiresAt: number;
+      scope?: string;
+      userId?: string;
+      userEmail?: string;
+    },
+    accountInfo?: {
+      accountId?: string;
+      accountName?: string;
+    },
+  ): void {
+    this.config.accounts[alias] = {
+      ...this.config.accounts[alias],
+      accessToken: tokens.accessToken,
+      accessTokenExpiresAt: tokens.expiresAt,
+      accountId:
+        accountInfo?.accountId ?? this.config.accounts[alias]?.accountId,
+      accountName:
+        accountInfo?.accountName ?? this.config.accounts[alias]?.accountName,
+      apps: this.config.accounts[alias]?.apps || {},
+      authMethod: "oauth",
+      currentAppId: this.config.accounts[alias]?.currentAppId,
+      oauthScope: tokens.scope,
+      refreshToken: tokens.refreshToken,
+      userEmail: tokens.userEmail ?? this.config.accounts[alias]?.userEmail,
+    };
+
+    if (!this.config.current || !this.config.current.account) {
+      this.config.current = { account: alias };
+    }
+
+    this.saveConfig();
+  }
+
+  // Get OAuth tokens for the current account or specific alias
+  public getOAuthTokens(alias?: string):
+    | {
+        accessToken: string;
+        refreshToken: string;
+        expiresAt: number;
+      }
+    | undefined {
+    const account = alias
+      ? this.config.accounts[alias]
+      : this.getCurrentAccount();
+    if (!account || account.authMethod !== "oauth") return undefined;
+    if (!account.refreshToken || !account.accessTokenExpiresAt)
+      return undefined;
+
+    return {
+      accessToken: account.accessToken,
+      expiresAt: account.accessTokenExpiresAt,
+      refreshToken: account.refreshToken,
+    };
+  }
+
+  // Check if access token is expired (within 60 seconds of expiry)
+  public isAccessTokenExpired(alias?: string): boolean {
+    const account = alias
+      ? this.config.accounts[alias]
+      : this.getCurrentAccount();
+    if (!account || !account.accessTokenExpiresAt) return false;
+
+    // Consider expired if within 60 seconds of expiry
+    return Date.now() >= account.accessTokenExpiresAt - 60_000;
+  }
+
+  // Get the auth method for the current account or specific alias
+  public getAuthMethod(alias?: string): "oauth" | "token" | undefined {
+    const account = alias
+      ? this.config.accounts[alias]
+      : this.getCurrentAccount();
+    return account?.authMethod;
   }
 
   // Switch to a different account

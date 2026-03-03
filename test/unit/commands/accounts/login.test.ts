@@ -295,4 +295,67 @@ describe("accounts:login command", () => {
       expect(config.accounts["default"].userEmail).toBe("test@example.com");
     });
   });
+
+  describe("legacy and OAuth login paths", () => {
+    it("should show --no-browser flag in help output for non-OAuth login", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:login", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("--no-browser");
+      expect(stdout).toContain("Do not open a browser");
+    });
+
+    it("should store authMethod as non-oauth when logging in with direct token argument", async () => {
+      // Mock the /me endpoint
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: mockAccountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
+
+      // Mock the apps list endpoint
+      nock("https://control.ably.net")
+        .get(`/v1/accounts/${mockAccountId}/apps`)
+        .reply(200, []);
+
+      await runCommand(
+        ["accounts:login", mockAccessToken, "--json"],
+        import.meta.url,
+      );
+
+      // Verify config does not have authMethod set to "oauth"
+      const mock = getMockConfigManager();
+      const config = mock.getConfig();
+      expect(config.accounts["default"].authMethod).not.toBe("oauth");
+    });
+
+    it("should not set refreshToken or accessTokenExpiresAt for direct token login", async () => {
+      // Mock the /me endpoint
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: mockAccountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
+
+      // Mock the apps list endpoint
+      nock("https://control.ably.net")
+        .get(`/v1/accounts/${mockAccountId}/apps`)
+        .reply(200, []);
+
+      await runCommand(
+        ["accounts:login", mockAccessToken, "--json"],
+        import.meta.url,
+      );
+
+      // Verify config does not have OAuth-specific fields
+      const mock = getMockConfigManager();
+      const config = mock.getConfig();
+      expect(config.accounts["default"].refreshToken).toBeUndefined();
+      expect(config.accounts["default"].accessTokenExpiresAt).toBeUndefined();
+    });
+  });
 });

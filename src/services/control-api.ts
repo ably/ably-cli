@@ -1,11 +1,13 @@
 import fetch, { type RequestInit } from "node-fetch";
 import { getCliVersion } from "../utils/version.js";
 import isTestMode from "../utils/test-mode.js";
+import type { TokenRefreshMiddleware } from "./token-refresh-middleware.js";
 
 export interface ControlApiOptions {
   accessToken: string;
   controlHost?: string;
   logErrors?: boolean;
+  tokenRefreshMiddleware?: TokenRefreshMiddleware;
 }
 
 export interface App {
@@ -167,10 +169,12 @@ export class ControlApi {
   private accessToken: string;
   private controlHost: string;
   private logErrors: boolean;
+  private tokenRefreshMiddleware?: TokenRefreshMiddleware;
 
   constructor(options: ControlApiOptions) {
     this.accessToken = options.accessToken;
     this.controlHost = options.controlHost || "control.ably.net";
+    this.tokenRefreshMiddleware = options.tokenRefreshMiddleware;
     // Respect SUPPRESS_CONTROL_API_ERRORS env var for default behavior
     // Explicit options.logErrors will override the env var.
     // eslint-disable-next-line unicorn/no-negated-condition
@@ -509,6 +513,12 @@ export class ControlApi {
     method = "GET",
     body?: unknown,
   ): Promise<T> {
+    // If we have a token refresh middleware, get a valid token before each request
+    if (this.tokenRefreshMiddleware) {
+      this.accessToken =
+        await this.tokenRefreshMiddleware.getValidAccessToken();
+    }
+
     const url = this.controlHost.includes("local")
       ? `http://${this.controlHost}/api/v1${path}`
       : `https://${this.controlHost}/v1${path}`;

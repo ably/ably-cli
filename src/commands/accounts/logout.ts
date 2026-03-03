@@ -1,6 +1,7 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { OAuthClient } from "../../services/oauth-client.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class AccountsLogout extends ControlBaseCommand {
@@ -85,6 +86,21 @@ export default class AccountsLogout extends ControlBaseCommand {
       if (!confirmed) {
         this.log("Logout canceled.");
         return;
+      }
+    }
+
+    // Revoke OAuth tokens if this is an OAuth account
+    if (this.configManager.getAuthMethod(targetAlias) === "oauth") {
+      const oauthTokens = this.configManager.getOAuthTokens(targetAlias);
+      if (oauthTokens) {
+        const oauthClient = new OAuthClient({
+          controlHost: flags["control-host"],
+        });
+        // Best-effort revocation -- don't block on failure
+        await Promise.all([
+          oauthClient.revokeToken(oauthTokens.accessToken),
+          oauthClient.revokeToken(oauthTokens.refreshToken),
+        ]).catch(() => {});
       }
     }
 

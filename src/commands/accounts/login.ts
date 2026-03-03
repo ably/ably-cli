@@ -1,11 +1,14 @@
 import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 import * as readline from "node:readline";
-import open from "open";
+import ora from "ora";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { ControlApi } from "../../services/control-api.js";
+import { OAuthClient, type OAuthTokens } from "../../services/oauth-client.js";
+import { BaseFlags } from "../../types/cli.js";
 import { displayLogo } from "../../utils/logo.js";
+import openUrl from "../../utils/open-url.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 // Moved function definition outside the class
@@ -51,6 +54,7 @@ export default class AccountsLogin extends ControlBaseCommand {
   static override examples = [
     "<%= config.bin %> <%= command.id %>",
     "<%= config.bin %> <%= command.id %> --alias mycompany",
+    "<%= config.bin %> <%= command.id %> --legacy",
     "<%= config.bin %> <%= command.id %> --json",
     "<%= config.bin %> <%= command.id %> --pretty-json",
   ];
@@ -60,6 +64,10 @@ export default class AccountsLogin extends ControlBaseCommand {
     alias: Flags.string({
       char: "a",
       description: "Alias for this account (default account if not specified)",
+    }),
+    legacy: Flags.boolean({
+      default: false,
+      description: "Use legacy token-based login instead of OAuth",
     }),
     "no-browser": Flags.boolean({
       default: false,
@@ -76,87 +84,34 @@ export default class AccountsLogin extends ControlBaseCommand {
     }
 
     let accessToken: string;
+    let oauthTokens: OAuthTokens | undefined;
+
     if (args.token) {
+      // Direct token provided as argument
       accessToken = args.token;
+    } else if (flags.legacy || flags["no-browser"]) {
+      // Legacy flow: manual token paste
+      accessToken = await this.legacyTokenLogin(flags);
     } else {
-      let obtainTokenPath = "https://ably.com/users/access_tokens";
-      if (flags["control-host"]) {
+      // OAuth flow (default)
+      try {
+        oauthTokens = await this.oauthLogin(flags);
+        accessToken = oauthTokens.accessToken;
+      } catch (error) {
         if (!this.shouldOutputJson(flags)) {
-          this.log("Using control host:", flags["control-host"]);
+          this.warn(
+            `OAuth login failed: ${error instanceof Error ? error.message : String(error)}`,
+          );
+          this.log("Falling back to manual token login...");
         }
-
-        obtainTokenPath = flags["control-host"].includes("local")
-          ? `http://${flags["control-host"]}/users/access_tokens`
-          : `https://${flags["control-host"]}/users/access_tokens`;
+        accessToken = await this.legacyTokenLogin(flags);
       }
-
-      // Prompt the user to get a token
-      if (!flags["no-browser"]) {
-        if (!this.shouldOutputJson(flags)) {
-          this.log("Opening browser to get an access token...");
-        }
-
-        await this.openBrowser(obtainTokenPath);
-      } else if (!this.shouldOutputJson(flags)) {
-        this.log(`Please visit ${obtainTokenPath} to create an access token`);
-      }
-
-      accessToken = await this.promptForToken();
     }
 
-    // If no alias flag provided, prompt the user if they want to provide one
+    // If no alias flag provided, prompt the user
     let { alias } = flags;
     if (!alias && !this.shouldOutputJson(flags)) {
-      // Check if the default account already exists
-      const accounts = this.configManager.listAccounts();
-      const hasDefaultAccount = accounts.some(
-        (account) => account.alias === "default",
-      );
-
-      if (hasDefaultAccount) {
-        // Explain to the user the implications of not providing an alias
-        this.log("\nYou have not specified an alias for this account.");
-        this.log(
-          "If you continue without an alias, your existing default account configuration will be overwritten.",
-        );
-        this.log(
-          "To maintain multiple account profiles, please provide an alias.",
-        );
-
-        // Ask if they want to provide an alias
-        const shouldProvideAlias = await promptForConfirmation(
-          "Would you like to provide an alias for this account?",
-        );
-
-        if (shouldProvideAlias) {
-          alias = await this.promptForAlias();
-        } else {
-          alias = "default";
-          this.log(
-            "No alias provided. The default account configuration will be overwritten.",
-          );
-        }
-      } else {
-        // No default account exists yet, but still offer to set an alias
-        this.log("\nYou have not specified an alias for this account.");
-        this.log(
-          "Using an alias allows you to maintain multiple account profiles that you can switch between.",
-        );
-
-        // Ask if they want to provide an alias
-        const shouldProvideAlias = await promptForConfirmation(
-          "Would you like to provide an alias for this account?",
-        );
-
-        if (shouldProvideAlias) {
-          alias = await this.promptForAlias();
-        } else {
-          alias = "default";
-          this.log(
-            "No alias provided. This will be set as your default account.",
-          );
-        }
-      }
+      alias = await this.resolveAlias();
     } else if (!alias) {
       alias = "default";
     }
@@ -170,13 +125,20 @@ export default class AccountsLogin extends ControlBaseCommand {
 
       const { account, user } = await controlApi.getMe();
 
-      // Store the account information
-      this.configManager.storeAccount(accessToken, alias, {
-        accountId: account.id,
-        accountName: account.name,
-        tokenId: "unknown", // Token ID is not returned by getMe(), would need additional API if needed
-        userEmail: user.email,
-      });
+      // Store based on auth method
+      if (oauthTokens) {
+        this.configManager.storeOAuthTokens(alias, oauthTokens, {
+          accountId: account.id,
+          accountName: account.name,
+        });
+      } else {
+        this.configManager.storeAccount(accessToken, alias, {
+          accountId: account.id,
+          accountName: account.name,
+          tokenId: "unknown",
+          userEmail: user.email,
+        });
+      }
 
       // Switch to this account
       this.configManager.switchAccount(alias);
@@ -223,28 +185,24 @@ export default class AccountsLogin extends ControlBaseCommand {
 
               const app = await controlApi.createApp({
                 name: appName,
-                tlsOnly: true, // Default to true for security
+                tlsOnly: true,
               });
 
               selectedApp = app;
-              isAutoSelected = true; // Consider this auto-selected since it's the only one
+              isAutoSelected = true;
 
-              // Set as current app
               this.configManager.setCurrentApp(app.id);
               this.configManager.storeAppInfo(app.id, { appName: app.name });
 
-              this.log(`${chalk.green("✓")} App created successfully!`);
+              this.log(`${chalk.green("\u2713")} App created successfully!`);
             } catch (createError) {
               this.warn(
                 `Failed to create app: ${createError instanceof Error ? createError.message : String(createError)}`,
               );
-              // Continue with login even if app creation fails
             }
           }
         }
-        // If apps.length === 0 and JSON mode, or user declined to create app, do nothing
       } catch (error) {
-        // Don't fail login if app fetching fails, just log for debugging
         if (!this.shouldOutputJson(flags)) {
           this.warn(
             `Could not fetch apps: ${error instanceof Error ? error.message : String(error)}`,
@@ -260,7 +218,6 @@ export default class AccountsLogin extends ControlBaseCommand {
           const keys = await controlApi.listKeys(selectedApp.id);
 
           if (keys.length === 1) {
-            // Auto-select the only key
             selectedKey = keys[0];
             isKeyAutoSelected = true;
             this.configManager.storeAppKey(selectedApp.id, selectedKey.key, {
@@ -268,7 +225,6 @@ export default class AccountsLogin extends ControlBaseCommand {
               keyName: selectedKey.name || "Unnamed key",
             });
           } else if (keys.length > 1) {
-            // Prompt user to select a key when multiple exist
             this.log("\nSelect an API key to use:");
 
             selectedKey = await this.interactiveHelper.selectKey(
@@ -283,9 +239,7 @@ export default class AccountsLogin extends ControlBaseCommand {
               });
             }
           }
-          // If keys.length === 0, continue without key (should be rare for newly created apps)
         } catch (keyError) {
-          // Don't fail login if key fetching fails
           this.warn(
             `Could not fetch API keys: ${keyError instanceof Error ? keyError.message : String(keyError)}`,
           );
@@ -293,57 +247,38 @@ export default class AccountsLogin extends ControlBaseCommand {
       }
 
       if (this.shouldOutputJson(flags)) {
-        const response: {
-          account: {
-            alias: string;
-            id: string;
-            name: string;
-            user: { email: string };
-          };
-          success: boolean;
-          app?: {
-            id: string;
-            name: string;
-            autoSelected: boolean;
-          };
-          key?: {
-            id: string;
-            name: string;
-            autoSelected: boolean;
-          };
-        } = {
+        const response: Record<string, unknown> = {
           account: {
             alias,
             id: account.id,
             name: account.name,
-            user: {
-              email: user.email,
-            },
+            user: { email: user.email },
           },
+          authMethod: oauthTokens ? "oauth" : "token",
           success: true,
         };
-
         if (selectedApp) {
           response.app = {
+            autoSelected: isAutoSelected,
             id: selectedApp.id,
             name: selectedApp.name,
-            autoSelected: isAutoSelected,
           };
-
           if (selectedKey) {
             response.key = {
+              autoSelected: isKeyAutoSelected,
               id: selectedKey.id,
               name: selectedKey.name || "Unnamed key",
-              autoSelected: isKeyAutoSelected,
             };
           }
         }
-
         this.log(this.formatJsonOutput(response, flags));
       } else {
         this.log(
           `Successfully logged in to ${chalk.cyan(account.name)} (account ID: ${chalk.greenBright(account.id)})`,
         );
+        if (oauthTokens) {
+          this.log(`Authenticated via OAuth (token auto-refreshes)`);
+        }
         if (alias !== "default") {
           this.log(`Account stored with alias: ${alias}`);
         }
@@ -352,15 +287,15 @@ export default class AccountsLogin extends ControlBaseCommand {
 
         if (selectedApp) {
           const message = isAutoSelected
-            ? `${chalk.green("✓")} Automatically selected app: ${chalk.cyan(selectedApp.name)} (${selectedApp.id})`
-            : `${chalk.green("✓")} Selected app: ${chalk.cyan(selectedApp.name)} (${selectedApp.id})`;
+            ? `${chalk.green("\u2713")} Automatically selected app: ${chalk.cyan(selectedApp.name)} (${selectedApp.id})`
+            : `${chalk.green("\u2713")} Selected app: ${chalk.cyan(selectedApp.name)} (${selectedApp.id})`;
           this.log(message);
         }
 
         if (selectedKey) {
           const keyMessage = isKeyAutoSelected
-            ? `${chalk.green("✓")} Automatically selected API key: ${chalk.cyan(selectedKey.name || "Unnamed key")} (${selectedKey.id})`
-            : `${chalk.green("✓")} Selected API key: ${chalk.cyan(selectedKey.name || "Unnamed key")} (${selectedKey.id})`;
+            ? `${chalk.green("\u2713")} Automatically selected API key: ${chalk.cyan(selectedKey.name || "Unnamed key")} (${selectedKey.id})`
+            : `${chalk.green("\u2713")} Selected API key: ${chalk.cyan(selectedKey.name || "Unnamed key")} (${selectedKey.id})`;
           this.log(keyMessage);
         }
       }
@@ -380,15 +315,98 @@ export default class AccountsLogin extends ControlBaseCommand {
     }
   }
 
-  private async openBrowser(url: string): Promise<void> {
-    try {
-      // Use the 'open' package for cross-platform browser opening
-      // This handles platform differences safely and avoids shell injection
-      await open(url);
-    } catch (error) {
-      this.warn(`Failed to open browser: ${error}`);
-      this.log(`Please visit ${url} manually to create an access token`);
+  private async oauthLogin(flags: BaseFlags): Promise<OAuthTokens> {
+    const oauthClient = new OAuthClient({
+      controlHost: flags["control-host"],
+    });
+
+    if (!this.shouldOutputJson(flags)) {
+      this.log("Starting OAuth login...");
     }
+
+    const spinner = this.shouldOutputJson(flags)
+      ? undefined
+      : ora("Waiting for browser authentication...").start();
+
+    try {
+      const tokens = await oauthClient.login(async (url) => {
+        await openUrl(url, this);
+      });
+
+      spinner?.succeed("Authentication successful!");
+      return tokens;
+    } catch (error) {
+      spinner?.fail("Authentication failed");
+      throw error;
+    }
+  }
+
+  private async legacyTokenLogin(flags: BaseFlags): Promise<string> {
+    let obtainTokenPath = "https://ably.com/users/access_tokens";
+    if (flags["control-host"]) {
+      if (!this.shouldOutputJson(flags)) {
+        this.log("Using control host:", flags["control-host"]);
+      }
+      const host = flags["control-host"];
+      obtainTokenPath = host.includes("local")
+        ? `http://${host}/users/access_tokens`
+        : `https://${host}/users/access_tokens`;
+    }
+
+    if (!flags["no-browser"]) {
+      if (!this.shouldOutputJson(flags)) {
+        this.log("Opening browser to get an access token...");
+      }
+      await openUrl(obtainTokenPath, this);
+    } else if (!this.shouldOutputJson(flags)) {
+      this.log(`Please visit ${obtainTokenPath} to create an access token`);
+    }
+
+    return this.promptForToken();
+  }
+
+  private async resolveAlias(): Promise<string> {
+    const accounts = this.configManager.listAccounts();
+    const hasDefaultAccount = accounts.some(
+      (account) => account.alias === "default",
+    );
+
+    if (hasDefaultAccount) {
+      this.log("\nYou have not specified an alias for this account.");
+      this.log(
+        "If you continue without an alias, your existing default account configuration will be overwritten.",
+      );
+      this.log(
+        "To maintain multiple account profiles, please provide an alias.",
+      );
+
+      const shouldProvideAlias = await promptForConfirmation(
+        "Would you like to provide an alias for this account?",
+      );
+
+      if (shouldProvideAlias) {
+        return this.promptForAlias();
+      }
+      this.log(
+        "No alias provided. The default account configuration will be overwritten.",
+      );
+      return "default";
+    }
+
+    this.log("\nYou have not specified an alias for this account.");
+    this.log(
+      "Using an alias allows you to maintain multiple account profiles that you can switch between.",
+    );
+
+    const shouldProvideAlias = await promptForConfirmation(
+      "Would you like to provide an alias for this account?",
+    );
+
+    if (shouldProvideAlias) {
+      return this.promptForAlias();
+    }
+    this.log("No alias provided. This will be set as your default account.");
+    return "default";
   }
 
   private promptForAlias(): Promise<string> {

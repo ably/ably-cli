@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
+import nock from "nock";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 
 describe("accounts:logout command", () => {
@@ -192,6 +193,112 @@ describe("accounts:logout command", () => {
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error).toContain("not found");
+    });
+  });
+
+  describe("OAuth token revocation", () => {
+    afterEach(() => {
+      nock.cleanAll();
+    });
+
+    it("should call revocation endpoint when logging out an OAuth account", async () => {
+      const mock = getMockConfigManager();
+      mock.setConfig({
+        current: { account: "testaccount" },
+        accounts: {
+          testaccount: {
+            accessToken: "oauth_access_token",
+            accountId: "acc-123",
+            accountName: "Test Account",
+            userEmail: "test@example.com",
+            authMethod: "oauth",
+            refreshToken: "oauth_refresh_token",
+            accessTokenExpiresAt: Date.now() + 3600000,
+          },
+        },
+      });
+
+      // Expect two revocation calls (one for access token, one for refresh token)
+      const revokeScope = nock("https://ably.com")
+        .post("/oauth/revoke")
+        .twice()
+        .reply(200);
+
+      const { stdout } = await runCommand(
+        ["accounts:logout", "--force", "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", true);
+      expect(revokeScope.isDone()).toBe(true);
+    });
+
+    it("should succeed even if revocation endpoint fails", async () => {
+      const mock = getMockConfigManager();
+      mock.setConfig({
+        current: { account: "testaccount" },
+        accounts: {
+          testaccount: {
+            accessToken: "oauth_access_token",
+            accountId: "acc-123",
+            accountName: "Test Account",
+            userEmail: "test@example.com",
+            authMethod: "oauth",
+            refreshToken: "oauth_refresh_token",
+            accessTokenExpiresAt: Date.now() + 3600000,
+          },
+        },
+      });
+
+      // Revocation endpoint returns errors
+      nock("https://ably.com")
+        .post("/oauth/revoke")
+        .twice()
+        .replyWithError("Connection refused");
+
+      const { stdout } = await runCommand(
+        ["accounts:logout", "--force", "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", true);
+
+      // Verify the account was still removed
+      const config = mock.getConfig();
+      expect(config.accounts["testaccount"]).toBeUndefined();
+    });
+
+    it("should not call revocation endpoint for non-OAuth account logout", async () => {
+      const mock = getMockConfigManager();
+      mock.setConfig({
+        current: { account: "testaccount" },
+        accounts: {
+          testaccount: {
+            accessToken: "regular_token",
+            accountId: "acc-123",
+            accountName: "Test Account",
+            userEmail: "test@example.com",
+          },
+        },
+      });
+
+      // Set up nock interceptor that should NOT be called
+      const revokeScope = nock("https://ably.com")
+        .post("/oauth/revoke")
+        .reply(200);
+
+      const { stdout } = await runCommand(
+        ["accounts:logout", "--force", "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", true);
+
+      // The revocation endpoint should not have been called
+      expect(revokeScope.isDone()).toBe(false);
     });
   });
 });
