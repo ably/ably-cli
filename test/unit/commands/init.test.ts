@@ -3,6 +3,11 @@ import { runCommand } from "@oclif/test";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../helpers/standard-tests.js";
 
 describe("init command", () => {
   let tempDir: string;
@@ -22,47 +27,49 @@ describe("init command", () => {
     vi.restoreAllMocks();
   });
 
-  it("should show help with --help flag", async () => {
-    const { stdout } = await runCommand(["init", "--help"], import.meta.url);
-    expect(stdout).toContain("Set up Ably for AI-powered development");
-    expect(stdout).toContain("--skip-auth");
-    expect(stdout).toContain("--global");
-    expect(stdout).toContain("--target");
-    expect(stdout).toContain("--force");
-  });
+  standardHelpTests("init", import.meta.url);
+  standardArgValidationTests("init", import.meta.url);
+  standardFlagTests("init", import.meta.url, [
+    "--skip-auth",
+    "--global",
+    "--target",
+    "--force",
+    "--skill",
+    "--skills-repo",
+    "--json",
+  ]);
 
-  it("should accept --skip-auth flag", async () => {
-    // With skip-auth and a non-existent repo, it should fail on download
-    // but not try to authenticate
-    const { error } = await runCommand(
-      [
-        "init",
-        "--skip-auth",
-        "--skills-repo",
-        "ably/nonexistent-repo-xyz-12345",
-      ],
-      import.meta.url,
-    );
+  describe("error handling", () => {
+    it("should fail when --json is set without --skip-auth", async () => {
+      const { stdout } = await runCommand(["init", "--json"], import.meta.url);
+      // In JSON mode fail() emits a JSON error record on stdout and exits.
+      expect(stdout).toMatch(/Authentication cannot run in --json mode/i);
+      const firstLine = stdout.trim().split("\n")[0]!;
+      const record = JSON.parse(firstLine) as {
+        type: string;
+        error: { message: string };
+      };
+      expect(record.type).toBe("error");
+      expect(record.error.message).toMatch(
+        /Authentication cannot run in --json mode/i,
+      );
+    });
 
-    // Should fail on download, not auth
-    expect(error).toBeDefined();
-    expect(error?.message).toMatch(/Failed to download skills|Not Found/i);
-  });
+    it("should delegate to skills:install and surface download failures", async () => {
+      const { error } = await runCommand(
+        [
+          "init",
+          "--skip-auth",
+          "--target",
+          "all",
+          "--skills-repo",
+          "ably/nonexistent-repo-xyz-12345",
+        ],
+        import.meta.url,
+      );
 
-  it("should accept --target flag", async () => {
-    const { stdout } = await runCommand(["init", "--help"], import.meta.url);
-    expect(stdout).toContain("claude-code");
-    expect(stdout).toContain("cursor");
-    expect(stdout).toContain("agents");
-  });
-
-  it("should reject unknown flags", async () => {
-    const { error } = await runCommand(
-      ["init", "--unknown-flag"],
-      import.meta.url,
-    );
-
-    expect(error).toBeDefined();
-    expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/Failed to download skills|Not Found/i);
+    });
   });
 });

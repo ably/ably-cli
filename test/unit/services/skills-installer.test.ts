@@ -9,16 +9,8 @@ describe("SkillsInstaller", () => {
   let tempSrcDir: string;
   let tempDestDir: string;
   let skills: DownloadedSkill[];
-  const logMessages: string[] = [];
-
-  function mockLog(message: string) {
-    logMessages.push(message);
-  }
 
   beforeEach(() => {
-    logMessages.length = 0;
-
-    // Create source skill directories
     tempSrcDir = fs.mkdtempSync(path.join(os.tmpdir(), "skills-src-"));
     tempDestDir = fs.mkdtempSync(path.join(os.tmpdir(), "skills-dest-"));
 
@@ -57,7 +49,11 @@ describe("SkillsInstaller", () => {
       expect(targets).toContain("claude-code");
       expect(targets).toContain("cursor");
       expect(targets).toContain("agents");
-      expect(targets).toHaveLength(3);
+      expect(targets).toContain("vscode");
+      expect(targets).toContain("windsurf");
+      expect(targets).toContain("zed");
+      expect(targets).toContain("continue");
+      expect(targets).toHaveLength(7);
     });
 
     it("should pass through specific targets", () => {
@@ -69,33 +65,33 @@ describe("SkillsInstaller", () => {
       const targets = SkillsInstaller.resolveTargets(["claude-code", "cursor"]);
       expect(targets).toEqual(["claude-code", "cursor"]);
     });
+
+    it('should return empty array for "auto"', () => {
+      const targets = SkillsInstaller.resolveTargets(["auto"]);
+      expect(targets).toEqual([]);
+    });
   });
 
   describe("install", () => {
-    it("should install skills to the specified target directory", async () => {
-      // We override the target config by using global with a known home
-      // Instead, we test the behavior through the actual project-level install
+    it("should install skills to the specified target directory", () => {
       const installer = new SkillsInstaller();
-
-      // For testing, we'll use the project-level install which uses relative paths
-      // We need to change cwd to tempDestDir for this to work
       const originalCwd = process.cwd();
       process.chdir(tempDestDir);
 
       try {
-        const results = await installer.install({
+        const { results, skippedCount } = installer.install({
           skills,
           global: false,
           targets: ["claude-code"],
           force: false,
-          log: mockLog,
         });
 
         expect(results).toHaveLength(1);
-        expect(results[0].target).toBe("claude-code");
-        expect(results[0].skillCount).toBe(2);
+        expect(results[0]!.target).toBe("claude-code");
+        expect(results[0]!.name).toBe("Claude Code");
+        expect(results[0]!.skillCount).toBe(2);
+        expect(skippedCount).toBe(0);
 
-        // Verify files were copied
         const skillDir = path.join(
           tempDestDir,
           ".claude",
@@ -121,18 +117,17 @@ describe("SkillsInstaller", () => {
       }
     });
 
-    it("should install to multiple targets", async () => {
+    it("should install to multiple targets", () => {
       const installer = new SkillsInstaller();
       const originalCwd = process.cwd();
       process.chdir(tempDestDir);
 
       try {
-        const results = await installer.install({
+        const { results } = installer.install({
           skills,
           global: false,
           targets: ["claude-code", "cursor", "agents"],
           force: false,
-          log: mockLog,
         });
 
         expect(results).toHaveLength(3);
@@ -175,13 +170,12 @@ describe("SkillsInstaller", () => {
       }
     });
 
-    it("should skip existing skills without --force", async () => {
+    it("should skip existing skills without --force", () => {
       const installer = new SkillsInstaller();
       const originalCwd = process.cwd();
       process.chdir(tempDestDir);
 
       try {
-        // Pre-create a skill directory
         const existingDir = path.join(
           tempDestDir,
           ".claude",
@@ -191,19 +185,18 @@ describe("SkillsInstaller", () => {
         fs.mkdirSync(existingDir, { recursive: true });
         fs.writeFileSync(path.join(existingDir, "SKILL.md"), "# Old content");
 
-        const results = await installer.install({
+        const { results, skippedCount } = installer.install({
           skills,
           global: false,
           targets: ["claude-code"],
           force: false,
-          log: mockLog,
         });
 
-        expect(results[0].skills[0].status).toBe("skipped");
-        expect(results[0].skills[1].status).toBe("installed");
-        expect(results[0].skillCount).toBe(1);
+        expect(results[0]!.skills[0]!.status).toBe("skipped");
+        expect(results[0]!.skills[1]!.status).toBe("installed");
+        expect(results[0]!.skillCount).toBe(1);
+        expect(skippedCount).toBe(1);
 
-        // Verify old content is preserved
         const content = fs.readFileSync(
           path.join(existingDir, "SKILL.md"),
           "utf8",
@@ -214,13 +207,12 @@ describe("SkillsInstaller", () => {
       }
     });
 
-    it("should overwrite existing skills with --force", async () => {
+    it("should overwrite existing skills with --force", () => {
       const installer = new SkillsInstaller();
       const originalCwd = process.cwd();
       process.chdir(tempDestDir);
 
       try {
-        // Pre-create a skill directory
         const existingDir = path.join(
           tempDestDir,
           ".claude",
@@ -230,18 +222,16 @@ describe("SkillsInstaller", () => {
         fs.mkdirSync(existingDir, { recursive: true });
         fs.writeFileSync(path.join(existingDir, "SKILL.md"), "# Old content");
 
-        const results = await installer.install({
+        const { results } = installer.install({
           skills,
           global: false,
           targets: ["claude-code"],
           force: true,
-          log: mockLog,
         });
 
-        expect(results[0].skills[0].status).toBe("updated");
-        expect(results[0].skillCount).toBe(2);
+        expect(results[0]!.skills[0]!.status).toBe("updated");
+        expect(results[0]!.skillCount).toBe(2);
 
-        // Verify new content
         const content = fs.readFileSync(
           path.join(existingDir, "SKILL.md"),
           "utf8",
@@ -252,24 +242,23 @@ describe("SkillsInstaller", () => {
       }
     });
 
-    it("should filter skills when skillFilter is provided", async () => {
+    it("should filter skills when skillFilter is provided", () => {
       const installer = new SkillsInstaller();
       const originalCwd = process.cwd();
       process.chdir(tempDestDir);
 
       try {
-        const results = await installer.install({
+        const { results } = installer.install({
           skills,
           global: false,
           targets: ["claude-code"],
           force: false,
           skillFilter: ["ably-chat"],
-          log: mockLog,
         });
 
-        expect(results[0].skillCount).toBe(1);
-        expect(results[0].skills).toHaveLength(1);
-        expect(results[0].skills[0].skillName).toBe("ably-chat");
+        expect(results[0]!.skillCount).toBe(1);
+        expect(results[0]!.skills).toHaveLength(1);
+        expect(results[0]!.skills[0]!.skillName).toBe("ably-chat");
 
         expect(
           fs.existsSync(
@@ -292,33 +281,31 @@ describe("SkillsInstaller", () => {
       }
     });
 
-    it("should throw when skillFilter matches no skills", async () => {
+    it("should throw when skillFilter matches no skills", () => {
       const installer = new SkillsInstaller();
 
-      await expect(
+      expect(() =>
         installer.install({
           skills,
           global: false,
           targets: ["claude-code"],
           force: false,
           skillFilter: ["nonexistent-skill"],
-          log: mockLog,
         }),
-      ).rejects.toThrow(/No matching skills found/);
+      ).toThrow(/No matching skills found/);
     });
 
-    it("should ignore unknown target keys", async () => {
+    it("should ignore unknown target keys", () => {
       const installer = new SkillsInstaller();
       const originalCwd = process.cwd();
       process.chdir(tempDestDir);
 
       try {
-        const results = await installer.install({
+        const { results } = installer.install({
           skills,
           global: false,
           targets: ["unknown-target"],
           force: false,
-          log: mockLog,
         });
 
         expect(results).toHaveLength(0);
@@ -327,8 +314,7 @@ describe("SkillsInstaller", () => {
       }
     });
 
-    it("should copy all skill contents recursively", async () => {
-      // Add nested directories to source skills
+    it("should copy all skill contents recursively", () => {
       const scriptsDir = path.join(tempSrcDir, "ably-pubsub", "scripts");
       fs.mkdirSync(scriptsDir, { recursive: true });
       fs.writeFileSync(
@@ -341,12 +327,11 @@ describe("SkillsInstaller", () => {
       process.chdir(tempDestDir);
 
       try {
-        await installer.install({
+        installer.install({
           skills,
           global: false,
           targets: ["claude-code"],
           force: false,
-          log: mockLog,
         });
 
         const destScriptsDir = path.join(

@@ -1,12 +1,11 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import chalk from "chalk";
-import ora from "ora";
 import { DownloadedSkill } from "./skills-downloader.js";
 
 export interface InstallResult {
   target: string;
+  name: string;
   directory: string;
   skillCount: number;
   skills: SkillResult[];
@@ -16,6 +15,11 @@ export interface SkillResult {
   skillName: string;
   status: "installed" | "updated" | "skipped" | "error";
   error?: string;
+}
+
+export interface InstallSummary {
+  results: InstallResult[];
+  skippedCount: number;
 }
 
 interface TargetConfig {
@@ -40,25 +44,37 @@ export const TARGET_CONFIGS: Record<string, TargetConfig> = {
     projectDir: ".agents/skills",
     globalDir: path.join(os.homedir(), ".agents", "skills"),
   },
+  vscode: {
+    name: "VS Code",
+    projectDir: ".vscode/skills",
+    globalDir: path.join(os.homedir(), ".vscode", "skills"),
+  },
+  windsurf: {
+    name: "Windsurf",
+    projectDir: ".windsurf/skills",
+    globalDir: path.join(os.homedir(), ".windsurf", "skills"),
+  },
+  zed: {
+    name: "Zed",
+    projectDir: ".zed/skills",
+    globalDir: path.join(os.homedir(), ".config", "zed", "skills"),
+  },
+  continue: {
+    name: "Continue.dev",
+    projectDir: ".continue/skills",
+    globalDir: path.join(os.homedir(), ".continue", "skills"),
+  },
 };
 
 export class SkillsInstaller {
-  async install(options: {
+  install(options: {
     skills: DownloadedSkill[];
     global: boolean;
     targets: string[];
     force: boolean;
     skillFilter?: string[];
-    log: (message: string) => void;
-  }): Promise<InstallResult[]> {
-    const {
-      skills,
-      global: isGlobal,
-      targets,
-      force,
-      skillFilter,
-      log,
-    } = options;
+  }): InstallSummary {
+    const { skills, global: isGlobal, targets, force, skillFilter } = options;
     const results: InstallResult[] = [];
 
     const filteredSkills = skillFilter
@@ -76,7 +92,6 @@ export class SkillsInstaller {
       if (!config) continue;
 
       const baseDir = isGlobal ? config.globalDir : config.projectDir;
-      const spinner = ora(`Installing to ${config.name}...`).start();
       const skillResults: SkillResult[] = [];
 
       for (const skill of filteredSkills) {
@@ -88,30 +103,22 @@ export class SkillsInstaller {
       const installed = skillResults.filter(
         (r) => r.status === "installed" || r.status === "updated",
       ).length;
-      spinner.succeed(
-        `${config.name.padEnd(12)} → ${chalk.dim(baseDir + "/")}   (${installed} skills)`,
-      );
 
       results.push({
         target: targetKey,
+        name: config.name,
         directory: baseDir,
         skillCount: installed,
         skills: skillResults,
       });
     }
 
-    const skipped = results.flatMap((r) =>
-      r.skills.filter((s) => s.status === "skipped"),
+    const skippedCount = results.reduce(
+      (sum, r) => sum + r.skills.filter((s) => s.status === "skipped").length,
+      0,
     );
-    if (skipped.length > 0) {
-      log(
-        chalk.dim(
-          `\n  ${skipped.length} existing skill(s) skipped. Use --force to overwrite.`,
-        ),
-      );
-    }
 
-    return results;
+    return { results, skippedCount };
   }
 
   private installSkill(
@@ -149,6 +156,9 @@ export class SkillsInstaller {
   static resolveTargets(targets: string[]): string[] {
     if (targets.includes("all")) {
       return Object.keys(TARGET_CONFIGS);
+    }
+    if (targets.includes("auto")) {
+      return [];
     }
     return targets;
   }
