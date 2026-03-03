@@ -40,11 +40,15 @@ export default class KeysGetCommand extends ControlBaseCommand {
     let appId = flags.app || this.configManager.getCurrentAppId();
     const keyIdentifier = args.keyNameOrValue;
 
-    // If keyNameOrValue is in APP_ID.KEY_ID format (one period, no colon), extract appId
-    if (keyIdentifier.includes(".") && !keyIdentifier.includes(":")) {
+    // If keyNameOrValue is in APP_ID.KEY_ID format (one period, no colon), extract appId.
+    // Only attempt this when no appId is already known (from --app flag or current app),
+    // to avoid misinterpreting labels containing periods (e.g. "v1.0") as APP_ID.KEY_ID.
+    // When appId IS known, the full identifier is passed to getKey() which matches by
+    // label, key ID, APP_ID.KEY_ID format, or full key value.
+    if (!appId && keyIdentifier.includes(".") && !keyIdentifier.includes(":")) {
       const parts = keyIdentifier.split(".");
       if (parts.length === 2) {
-        appId = appId || parts[0];
+        appId = parts[0];
       }
     }
 

@@ -61,6 +61,22 @@ describe("auth:keys:get command", () => {
       expect(stdout).toContain("Key Label: Root");
     });
 
+    it("should get key details by label containing a period (e.g. v1.0)", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      mockKeysList(appId, [
+        buildMockKey(appId, mockKeyId, { name: "v1.0" }),
+        buildMockKey(appId, "otherkey", { name: "Secondary" }),
+      ]);
+
+      const { stdout } = await runCommand(
+        ["auth:keys:get", "v1.0", "--app", appId],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
+      expect(stdout).toContain("Key Label: v1.0");
+    });
+
     it("should get key details by key ID only", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       mockKeysList(appId, [
