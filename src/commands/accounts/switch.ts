@@ -1,6 +1,7 @@
 import { Args } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { endpointFlag } from "../../flags.js";
 import { ControlApi } from "../../services/control-api.js";
 
 export default class AccountsSwitch extends ControlBaseCommand {
@@ -22,6 +23,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
 
   static override flags = {
     ...ControlBaseCommand.globalFlags,
+    ...endpointFlag,
   };
 
   public async run(): Promise<void> {
@@ -122,6 +124,11 @@ export default class AccountsSwitch extends ControlBaseCommand {
 
     // Switch to the account
     this.configManager.switchAccount(alias);
+
+    // Store custom endpoint if provided
+    if (flags.endpoint) {
+      this.configManager.storeEndpoint(flags.endpoint as string);
+    }
 
     // Verify the account is valid by making an API call
     try {

@@ -113,7 +113,7 @@ describe("benchmarking commands", { timeout: 20000 }, () => {
     describe("argument validation", () => {
       it("should require channel argument", async () => {
         const { error } = await runCommand(
-          ["bench:publisher", "--api-key", "app.key:secret"],
+          ["bench:publisher"],
           import.meta.url,
         );
 
@@ -131,8 +131,6 @@ describe("benchmarking commands", { timeout: 20000 }, () => {
           [
             "bench:publisher",
             "test-channel",
-            "--api-key",
-            "app.key:secret",
             "--messages",
             "5",
             "--rate",
@@ -164,8 +162,6 @@ describe("benchmarking commands", { timeout: 20000 }, () => {
           [
             "bench:publisher",
             "test-channel",
-            "--api-key",
-            "app.key:secret",
             "--messages",
             "3",
             "--rate",
@@ -193,8 +189,6 @@ describe("benchmarking commands", { timeout: 20000 }, () => {
           [
             "bench:publisher",
             "test-channel",
-            "--api-key",
-            "app.key:secret",
             "--messages",
             "2",
             "--rate",
@@ -238,8 +232,6 @@ describe("benchmarking commands", { timeout: 20000 }, () => {
         [
           "bench:publisher",
           "test-channel",
-          "--api-key",
-          "app.key:secret",
           "--messages",
           "2",
           "--rate",
@@ -301,7 +293,7 @@ describe("benchmarking commands", { timeout: 20000 }, () => {
     describe("argument validation", () => {
       it("should require channel argument", async () => {
         const { error } = await runCommand(
-          ["bench:subscriber", "--api-key", "app.key:secret"],
+          ["bench:subscriber"],
           import.meta.url,
         );
 
@@ -316,7 +308,7 @@ describe("benchmarking commands", { timeout: 20000 }, () => {
         const channel = realtimeMock.channels._getChannel("test-channel");
 
         const { error } = await runCommand(
-          ["bench:subscriber", "test-channel", "--api-key", "app.key:secret"],
+          ["bench:subscriber", "test-channel"],
           import.meta.url,
         );
 

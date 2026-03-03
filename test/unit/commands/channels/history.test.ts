@@ -67,7 +67,7 @@ describe("channels:history command", () => {
       const channel = mock.channels._getChannel("test-channel");
 
       const { stdout } = await runCommand(
-        ["channels:history", "test-channel", "--api-key", "app.key:secret"],
+        ["channels:history", "test-channel"],
         import.meta.url,
       );
 
@@ -79,7 +79,7 @@ describe("channels:history command", () => {
 
     it("should display message details", async () => {
       const { stdout } = await runCommand(
-        ["channels:history", "test-channel", "--api-key", "app.key:secret"],
+        ["channels:history", "test-channel"],
         import.meta.url,
       );
 
@@ -94,7 +94,7 @@ describe("channels:history command", () => {
       channel.history.mockResolvedValue({ items: [] });
 
       const { stdout } = await runCommand(
-        ["channels:history", "test-channel", "--api-key", "app.key:secret"],
+        ["channels:history", "test-channel"],
         import.meta.url,
       );
 
@@ -103,13 +103,7 @@ describe("channels:history command", () => {
 
     it("should output JSON format when --json flag is used", async () => {
       const { stdout } = await runCommand(
-        [
-          "channels:history",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-          "--json",
-        ],
+        ["channels:history", "test-channel", "--json"],
         import.meta.url,
       );
 
@@ -127,14 +121,7 @@ describe("channels:history command", () => {
       const channel = mock.channels._getChannel("test-channel");
 
       await runCommand(
-        [
-          "channels:history",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-          "--limit",
-          "10",
-        ],
+        ["channels:history", "test-channel", "--limit", "10"],
         import.meta.url,
       );
 
@@ -148,14 +135,7 @@ describe("channels:history command", () => {
       const channel = mock.channels._getChannel("test-channel");
 
       await runCommand(
-        [
-          "channels:history",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-          "--direction",
-          "forwards",
-        ],
+        ["channels:history", "test-channel", "--direction", "forwards"],
         import.meta.url,
       );
 
@@ -171,16 +151,7 @@ describe("channels:history command", () => {
       const end = "2023-01-02T00:00:00Z";
 
       await runCommand(
-        [
-          "channels:history",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-          "--start",
-          start,
-          "--end",
-          end,
-        ],
+        ["channels:history", "test-channel", "--start", start, "--end", end],
         import.meta.url,
       );
 
@@ -198,7 +169,7 @@ describe("channels:history command", () => {
       channel.history.mockRejectedValue(new Error("API error"));
 
       const { error } = await runCommand(
-        ["channels:history", "test-channel", "--api-key", "app.key:secret"],
+        ["channels:history", "test-channel"],
         import.meta.url,
       );
 
@@ -212,14 +183,7 @@ describe("channels:history command", () => {
       const mock = getMockAblyRest();
 
       await runCommand(
-        [
-          "channels:history",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-          "--cipher",
-          "my-encryption-key",
-        ],
+        ["channels:history", "test-channel", "--cipher", "my-encryption-key"],
         import.meta.url,
       );
 

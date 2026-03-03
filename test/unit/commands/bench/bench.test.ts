@@ -54,8 +54,6 @@ describe("bench publisher control envelopes", function () {
       [
         "bench:publisher",
         "test-channel",
-        "--api-key",
-        "app.key:secret",
         "--messages",
         "2",
         "--rate",

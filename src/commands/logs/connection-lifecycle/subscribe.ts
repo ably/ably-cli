@@ -3,6 +3,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
+import { productApiFlags } from "../../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
@@ -16,7 +17,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     duration: Flags.integer({
       description:
         "Automatically exit after the given number of seconds (0 = run indefinitely)",

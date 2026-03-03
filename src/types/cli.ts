@@ -5,20 +5,16 @@ import * as Ably from "ably";
  * Base interface for CLI flags.
  */
 export interface BaseFlags {
-  "access-token"?: string;
-  "api-key"?: string;
+  "api-key"?: string; // Not a CLI flag; set internally by ensureAppAndKey
   "client-id"?: string;
   "control-host"?: string;
   "dashboard-host"?: string;
-  env?: string;
   endpoint?: string;
-  host?: string;
   port?: number;
   tls?: string;
   tlsPort?: number;
   json?: boolean;
   "pretty-json"?: boolean;
-  token?: string;
   verbose?: boolean;
   "web-cli-help"?: boolean;
   format?: string;

@@ -2,10 +2,12 @@ import { ChatClient } from "@ably/chat";
 import * as Ably from "ably";
 
 import { AblyBaseCommand } from "./base-command.js";
+import { productApiFlags } from "./flags.js";
 import { BaseFlags } from "./types/cli.js";
 import isTestMode from "./utils/test-mode.js";
 
 export abstract class ChatBaseCommand extends AblyBaseCommand {
+  static globalFlags = { ...productApiFlags };
   protected _chatRealtimeClient: Ably.Realtime | null = null;
   private _chatClient: ChatClient | null = null;
   private _cleanupTimeout: NodeJS.Timeout | undefined;

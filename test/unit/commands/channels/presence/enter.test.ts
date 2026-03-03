@@ -68,12 +68,7 @@ describe("channels:presence:enter command", () => {
       const channel = mock.channels._getChannel("test-channel");
 
       const { stdout } = await runCommand(
-        [
-          "channels:presence:enter",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-        ],
+        ["channels:presence:enter", "test-channel"],
         import.meta.url,
       );
 
@@ -92,8 +87,6 @@ describe("channels:presence:enter command", () => {
         [
           "channels:presence:enter",
           "test-channel",
-          "--api-key",
-          "app.key:secret",
           "--data",
           '{"status":"online","name":"TestUser"}',
         ],
@@ -128,13 +121,7 @@ describe("channels:presence:enter command", () => {
       );
 
       const { stdout } = await runCommand(
-        [
-          "channels:presence:enter",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-          "--show-others",
-        ],
+        ["channels:presence:enter", "test-channel", "--show-others"],
         import.meta.url,
       );
 
@@ -148,13 +135,7 @@ describe("channels:presence:enter command", () => {
       const channel = mock.channels._getChannel("test-channel");
 
       const { error } = await runCommand(
-        [
-          "channels:presence:enter",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-          "--json",
-        ],
+        ["channels:presence:enter", "test-channel", "--json"],
         import.meta.url,
       );
 
@@ -166,14 +147,7 @@ describe("channels:presence:enter command", () => {
 
     it("should handle invalid JSON data gracefully", async () => {
       const { error } = await runCommand(
-        [
-          "channels:presence:enter",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-          "--data",
-          "not-valid-json",
-        ],
+        ["channels:presence:enter", "test-channel", "--data", "not-valid-json"],
         import.meta.url,
       );
 
@@ -187,12 +161,7 @@ describe("channels:presence:enter command", () => {
       const channel = mock.channels._getChannel("test-channel");
 
       const { stdout } = await runCommand(
-        [
-          "channels:presence:enter",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-        ],
+        ["channels:presence:enter", "test-channel"],
         import.meta.url,
       );
 

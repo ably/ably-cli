@@ -3,6 +3,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { productApiFlags } from "../../flags.js";
 
 export default class ConnectionsTest extends AblyBaseCommand {
   static override description = "Test connection to Ably";
@@ -14,7 +15,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     transport: Flags.string({
       default: "all",
       description:

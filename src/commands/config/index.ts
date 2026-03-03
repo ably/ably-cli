@@ -1,4 +1,5 @@
 import { AblyBaseCommand } from "../../base-command.js";
+import { coreGlobalFlags } from "../../flags.js";
 
 export default class ConfigIndex extends AblyBaseCommand {
   static override description = "Manage Ably CLI configuration";
@@ -9,7 +10,7 @@ export default class ConfigIndex extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...coreGlobalFlags,
   };
 
   async run(): Promise<void> {

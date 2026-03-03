@@ -1,27 +1,25 @@
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "./base-command.js";
+import { controlApiFlags } from "./flags.js";
 import { ControlApi, App } from "./services/control-api.js";
 import { BaseFlags, ErrorDetails } from "./types/cli.js";
 
 export abstract class ControlBaseCommand extends AblyBaseCommand {
-  // Add flags specific to control API commands
-  static globalFlags = {
-    ...AblyBaseCommand.globalFlags,
-    // Other Control API specific flags can be added here
-  };
+  // Control API commands get core + hidden control API flags
+  static globalFlags = { ...controlApiFlags };
 
   /**
    * Create a Control API instance for making requests
    */
   protected createControlApi(flags: BaseFlags): ControlApi {
-    let accessToken = flags["access-token"] || process.env.ABLY_ACCESS_TOKEN;
+    let accessToken = process.env.ABLY_ACCESS_TOKEN;
 
     if (!accessToken) {
       const account = this.configManager.getCurrentAccount();
       if (!account) {
         this.error(
-          `No access token provided. Please specify --access-token or configure an account with "ably accounts login".`,
+          `No access token provided. Please set the ABLY_ACCESS_TOKEN environment variable or configure an account with "ably accounts login".`,
         );
       }
 
@@ -30,7 +28,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
 
     if (!accessToken) {
       this.error(
-        `No access token provided. Please specify --access-token or configure an account with "ably accounts login".`,
+        `No access token provided. Please set the ABLY_ACCESS_TOKEN environment variable or configure an account with "ably accounts login".`,
       );
     }
 

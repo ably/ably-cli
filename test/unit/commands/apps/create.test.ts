@@ -13,6 +13,7 @@ describe("apps:create command", () => {
 
   afterEach(() => {
     nock.cleanAll();
+    delete process.env.ABLY_ACCESS_TOKEN;
   });
 
   describe("successful app creation", () => {
@@ -139,12 +140,14 @@ describe("apps:create command", () => {
       expect(result).toHaveProperty("success", true);
     });
 
-    it("should use custom access token when provided", async () => {
+    it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
       const mock = getMockConfigManager();
       const accountId = mock.getCurrentAccount()!.accountId!;
       const accountName = mock.getCurrentAccount()!.accountName!;
       const userEmail = mock.getCurrentAccount()!.userEmail!;
       const customToken = "custom_access_token";
+
+      process.env.ABLY_ACCESS_TOKEN = customToken;
 
       // Mock the /me endpoint with custom token
       nock("https://control.ably.net", {
@@ -176,13 +179,7 @@ describe("apps:create command", () => {
         });
 
       const { stdout } = await runCommand(
-        [
-          "apps:create",
-          "--name",
-          mockAppName,
-          "--access-token",
-          "custom_access_token",
-        ],
+        ["apps:create", "--name", mockAppName],
         import.meta.url,
       );
 

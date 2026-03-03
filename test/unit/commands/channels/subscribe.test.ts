@@ -88,7 +88,7 @@ describe("channels:subscribe command", () => {
       const mock = getMockAblyRealtime();
 
       const { stdout } = await runCommand(
-        ["channels:subscribe", "test-channel", "--api-key", "app.key:secret"],
+        ["channels:subscribe", "test-channel"],
         import.meta.url,
       );
 
@@ -104,7 +104,7 @@ describe("channels:subscribe command", () => {
     it("should receive and display messages with event name and data", async () => {
       // Run command in background-like manner
       const commandPromise = runCommand(
-        ["channels:subscribe", "test-channel", "--api-key", "app.key:secret"],
+        ["channels:subscribe", "test-channel"],
         import.meta.url,
       );
 
@@ -133,13 +133,7 @@ describe("channels:subscribe command", () => {
 
     it("should run with --json flag without errors", async () => {
       const { stdout, error } = await runCommand(
-        [
-          "channels:subscribe",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-          "--json",
-        ],
+        ["channels:subscribe", "test-channel", "--json"],
         import.meta.url,
       );
 
@@ -193,14 +187,7 @@ describe("channels:subscribe command", () => {
       const mock = getMockAblyRealtime();
 
       await runCommand(
-        [
-          "channels:subscribe",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-          "--rewind",
-          "5",
-        ],
+        ["channels:subscribe", "test-channel", "--rewind", "5"],
         import.meta.url,
       );
 
@@ -216,13 +203,7 @@ describe("channels:subscribe command", () => {
       const mock = getMockAblyRealtime();
 
       await runCommand(
-        [
-          "channels:subscribe",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-          "--delta",
-        ],
+        ["channels:subscribe", "test-channel", "--delta"],
         import.meta.url,
       );
 

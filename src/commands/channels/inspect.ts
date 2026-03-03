@@ -2,6 +2,7 @@ import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { hiddenControlApiFlags, productApiFlags } from "../../flags.js";
 import openUrl from "../../utils/open-url.js";
 
 export default class ChannelsInspect extends AblyBaseCommand {
@@ -18,7 +19,8 @@ export default class ChannelsInspect extends AblyBaseCommand {
   static override examples = ["<%= config.bin %> <%= command.id %> my-channel"];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
+    ...hiddenControlApiFlags,
     app: Flags.string({
       description: "App ID to use (uses current app if not specified)",
       env: "ABLY_APP_ID",

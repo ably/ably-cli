@@ -67,10 +67,7 @@ describe("channels:list command", () => {
     it("should list channels successfully", async () => {
       const mock = getMockAblyRest();
 
-      const { stdout } = await runCommand(
-        ["channels:list", "--api-key", "app.key:secret"],
-        import.meta.url,
-      );
+      const { stdout } = await runCommand(["channels:list"], import.meta.url);
 
       // Verify the REST client request was called with correct parameters
       expect(mock.request).toHaveBeenCalledOnce();
@@ -88,10 +85,7 @@ describe("channels:list command", () => {
     });
 
     it("should display channel metrics", async () => {
-      const { stdout } = await runCommand(
-        ["channels:list", "--api-key", "app.key:secret"],
-        import.meta.url,
-      );
+      const { stdout } = await runCommand(["channels:list"], import.meta.url);
 
       expect(stdout).toContain("Connections: 5");
       expect(stdout).toContain("Publishers: 2");
@@ -102,10 +96,7 @@ describe("channels:list command", () => {
       const mock = getMockAblyRest();
       mock.request.mockResolvedValue({ statusCode: 200, items: [] });
 
-      const { stdout } = await runCommand(
-        ["channels:list", "--api-key", "app.key:secret"],
-        import.meta.url,
-      );
+      const { stdout } = await runCommand(["channels:list"], import.meta.url);
 
       expect(stdout).toContain("No active channels found");
     });
@@ -114,10 +105,7 @@ describe("channels:list command", () => {
       const mock = getMockAblyRest();
       mock.request.mockResolvedValue({ statusCode: 400, error: "Bad Request" });
 
-      const { error } = await runCommand(
-        ["channels:list", "--api-key", "app.key:secret"],
-        import.meta.url,
-      );
+      const { error } = await runCommand(["channels:list"], import.meta.url);
 
       expect(error).toBeDefined();
       expect(error?.message).toContain("Failed to list channels");
@@ -126,10 +114,7 @@ describe("channels:list command", () => {
     it("should respect limit flag", async () => {
       const mock = getMockAblyRest();
 
-      await runCommand(
-        ["channels:list", "--api-key", "app.key:secret", "--limit", "50"],
-        import.meta.url,
-      );
+      await runCommand(["channels:list", "--limit", "50"], import.meta.url);
 
       expect(mock.request).toHaveBeenCalledOnce();
       expect(mock.request.mock.calls[0][3]).toEqual({ limit: 50 });
@@ -138,10 +123,7 @@ describe("channels:list command", () => {
     it("should respect prefix flag", async () => {
       const mock = getMockAblyRest();
 
-      await runCommand(
-        ["channels:list", "--api-key", "app.key:secret", "--prefix", "test-"],
-        import.meta.url,
-      );
+      await runCommand(["channels:list", "--prefix", "test-"], import.meta.url);
 
       expect(mock.request).toHaveBeenCalledOnce();
       expect(mock.request.mock.calls[0][3]).toEqual({
@@ -154,7 +136,7 @@ describe("channels:list command", () => {
   describe("JSON output", () => {
     it("should output JSON when requested", async () => {
       const { stdout } = await runCommand(
-        ["channels:list", "--api-key", "app.key:secret", "--json"],
+        ["channels:list", "--json"],
         import.meta.url,
       );
 
@@ -178,7 +160,7 @@ describe("channels:list command", () => {
 
     it("should include channel metrics in JSON output", async () => {
       const { stdout } = await runCommand(
-        ["channels:list", "--api-key", "app.key:secret", "--json"],
+        ["channels:list", "--json"],
         import.meta.url,
       );
 
@@ -199,7 +181,7 @@ describe("channels:list command", () => {
       mock.request.mockRejectedValue(new Error("Network error"));
 
       const { stdout } = await runCommand(
-        ["channels:list", "--api-key", "app.key:secret", "--json"],
+        ["channels:list", "--json"],
         import.meta.url,
       );
 
