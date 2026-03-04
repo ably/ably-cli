@@ -31,6 +31,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
     '$ ably channels publish --transport realtime my-channel "Using realtime transport"',
     '$ ably channels publish my-channel "Hello World" --json',
     '$ ably channels publish my-channel "Hello World" --pretty-json',
+    '$ ably channels publish my-channel \'{"data":"Push notification","extras":{"push":{"notification":{"title":"Hello","body":"World"}}}}\'',
   ];
 
   static override flags = {
@@ -206,11 +207,22 @@ export default class ChannelsPublish extends AblyBaseCommand {
       delete messageData.name;
     }
 
+    // Add extras if provided in the message data (before processing data)
+    if (
+      messageData.extras &&
+      typeof messageData.extras === "object" &&
+      Object.keys(messageData.extras).length > 0
+    ) {
+      message.extras = messageData.extras;
+      // Remove extras from messageData to avoid duplication in data
+      delete messageData.extras;
+    }
+
     // If data is explicitly provided in the message, use it
     if ("data" in messageData) {
       message.data = messageData.data;
-    } else {
-      // Otherwise use the entire messageData as the data
+    } else if (Object.keys(messageData).length > 0) {
+      // Otherwise use the entire messageData object (not empty) as the data
       message.data = messageData;
     }
 
