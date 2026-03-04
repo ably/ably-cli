@@ -3,7 +3,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
-import { productApiFlags } from "../../flags.js";
+import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { BaseFlags } from "../../types/cli.js";
 
 export default class ChannelsPublish extends AblyBaseCommand {
@@ -36,6 +36,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
+    ...clientIdFlag,
     count: Flags.integer({
       char: "c",
       default: 1,

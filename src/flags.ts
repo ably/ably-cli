@@ -77,6 +77,7 @@ export const endpointFlag = {
   endpoint: Flags.string({
     description:
       "Set a custom endpoint for all product API calls, stored in account config",
+    hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
   }),
 };
 
