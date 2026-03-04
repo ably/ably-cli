@@ -203,6 +203,9 @@ export default class StatsAccountCommand extends ControlBaseCommand {
     controlApi: ControlApi,
   ): Promise<void> {
     try {
+      const { account } = await controlApi.getMe();
+      this.log(`Fetching stats for account ${account.name} (${account.id})...`);
+
       // If no start/end time provided, use the last 24 hours
       if (!flags.start && !flags.end) {
         const now = new Date();
