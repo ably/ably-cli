@@ -89,7 +89,7 @@ export default class AccountsLogin extends ControlBaseCommand {
     if (args.token) {
       // Direct token provided as argument
       accessToken = args.token;
-    } else if (flags.legacy || flags["no-browser"]) {
+    } else if (flags.legacy) {
       // Legacy flow: manual token paste
       accessToken = await this.legacyTokenLogin(flags);
     } else {
@@ -320,18 +320,48 @@ export default class AccountsLogin extends ControlBaseCommand {
       controlHost: flags["control-host"],
     });
 
-    if (!this.shouldOutputJson(flags)) {
-      this.log("Starting OAuth login...");
+    const deviceResponse = await oauthClient.requestDeviceCode();
+
+    if (this.shouldOutputJson(flags)) {
+      this.log(
+        this.formatJsonOutput(
+          {
+            status: "awaiting_authorization",
+            userCode: deviceResponse.userCode,
+            verificationUri: deviceResponse.verificationUri,
+            verificationUriComplete: deviceResponse.verificationUriComplete,
+          },
+          flags,
+        ),
+      );
+    } else {
+      this.log("");
+      this.log(
+        `  Your authorization code: ${chalk.bold.cyan(deviceResponse.userCode)}`,
+      );
+      this.log("");
+      this.log(
+        `  Visit: ${chalk.underline(deviceResponse.verificationUriComplete)}`,
+      );
+      this.log("");
+    }
+
+    if (!flags["no-browser"]) {
+      await openUrl(deviceResponse.verificationUriComplete, this);
+    } else if (!this.shouldOutputJson(flags)) {
+      this.log("Open the URL above in your browser to authorize.");
     }
 
     const spinner = this.shouldOutputJson(flags)
       ? undefined
-      : ora("Waiting for browser authentication...").start();
+      : ora("Waiting for authorization...").start();
 
     try {
-      const tokens = await oauthClient.login(async (url) => {
-        await openUrl(url, this);
-      });
+      const tokens = await oauthClient.pollForToken(
+        deviceResponse.deviceCode,
+        deviceResponse.interval,
+        deviceResponse.expiresIn,
+      );
 
       spinner?.succeed("Authentication successful!");
       return tokens;

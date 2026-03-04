@@ -1,80 +1,33 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import nock from "nock";
-import fetch from "node-fetch";
 import { OAuthClient } from "../../../src/services/oauth-client.js";
-import {
-  getErrorPage,
-  getSuccessPage,
-} from "../../../src/services/oauth-callback-page.js";
 
 describe("OAuthClient", () => {
-  afterEach(() => {
+  beforeEach(() => {
     nock.cleanAll();
   });
 
-  describe("PKCE generation", () => {
-    it("generateCodeVerifier() returns a base64url string of expected length", () => {
-      const client = new OAuthClient();
-      const verifier = client.generateCodeVerifier();
-
-      // 32 random bytes encoded as base64url produces ~43 characters
-      expect(verifier).toMatch(/^[A-Za-z0-9_-]+$/);
-      expect(verifier.length).toBeGreaterThanOrEqual(40);
-      expect(verifier.length).toBeLessThanOrEqual(50);
-    });
-
-    it("generateCodeChallenge() returns a base64url SHA256 hash", () => {
-      const client = new OAuthClient();
-      const verifier = "test-verifier-value";
-      const challenge = client.generateCodeChallenge(verifier);
-
-      // SHA256 digest as base64url is 43 characters
-      expect(challenge).toMatch(/^[A-Za-z0-9_-]+$/);
-      expect(challenge.length).toBeGreaterThanOrEqual(40);
-      expect(challenge.length).toBeLessThanOrEqual(50);
-    });
-
-    it("generateCodeChallenge() is deterministic for the same verifier", () => {
-      const client = new OAuthClient();
-      const verifier = "deterministic-test-verifier";
-      const challenge1 = client.generateCodeChallenge(verifier);
-      const challenge2 = client.generateCodeChallenge(verifier);
-
-      expect(challenge1).toBe(challenge2);
-    });
-
-    it("generateCodeChallenge() produces different challenges for different verifiers", () => {
-      const client = new OAuthClient();
-      const challenge1 = client.generateCodeChallenge("verifier-one");
-      const challenge2 = client.generateCodeChallenge("verifier-two");
-
-      expect(challenge1).not.toBe(challenge2);
-    });
-
-    it("generateState() returns a base64url string of expected length", () => {
-      const client = new OAuthClient();
-      const state = client.generateState();
-
-      // 16 random bytes encoded as base64url produces ~22 characters
-      expect(state).toMatch(/^[A-Za-z0-9_-]+$/);
-      expect(state.length).toBeGreaterThanOrEqual(20);
-      expect(state.length).toBeLessThanOrEqual(25);
-    });
+  afterEach(() => {
+    nock.cleanAll();
   });
 
   describe("OAuth config derivation", () => {
     it("default host uses https scheme", async () => {
       const client = new OAuthClient();
 
-      const scope = nock("https://ably.com").post("/oauth/token").reply(200, {
-        access_token: "new_access",
-        expires_in: 3600,
-        refresh_token: "new_refresh",
-        scope: "full_access",
-        token_type: "Bearer",
-      });
+      const scope = nock("https://ably.com")
+        .post("/oauth/authorize_device")
+        .reply(200, {
+          device_code: "dc_test",
+          expires_in: 300,
+          interval: 5,
+          user_code: "ABCD-1234",
+          verification_uri: "https://ably.com/device",
+          verification_uri_complete:
+            "https://ably.com/device?user_code=ABCD-1234",
+        });
 
-      await client.refreshAccessToken("some_refresh_token");
+      await client.requestDeviceCode();
 
       expect(scope.isDone()).toBe(true);
     });
@@ -83,16 +36,18 @@ describe("OAuthClient", () => {
       const client = new OAuthClient({ controlHost: "localhost:3000" });
 
       const scope = nock("http://localhost:3000")
-        .post("/oauth/token")
+        .post("/oauth/authorize_device")
         .reply(200, {
-          access_token: "new_access",
-          expires_in: 3600,
-          refresh_token: "new_refresh",
-          scope: "full_access",
-          token_type: "Bearer",
+          device_code: "dc_test",
+          expires_in: 300,
+          interval: 5,
+          user_code: "ABCD-1234",
+          verification_uri: "http://localhost:3000/device",
+          verification_uri_complete:
+            "http://localhost:3000/device?user_code=ABCD-1234",
         });
 
-      await client.refreshAccessToken("some_refresh_token");
+      await client.requestDeviceCode();
 
       expect(scope.isDone()).toBe(true);
     });
@@ -102,6 +57,180 @@ describe("OAuthClient", () => {
       expect(client.getClientId()).toBe(
         "_YfP7jQzCscq8nAxvx0CKPx9zKNx3vcdp0QEDNAAdow",
       );
+    });
+  });
+
+  describe("requestDeviceCode", () => {
+    it("returns all fields from server response", async () => {
+      const client = new OAuthClient();
+
+      nock("https://ably.com").post("/oauth/authorize_device").reply(200, {
+        device_code: "dc_abc123",
+        expires_in: 600,
+        interval: 10,
+        user_code: "WXYZ-5678",
+        verification_uri: "https://ably.com/device",
+        verification_uri_complete:
+          "https://ably.com/device?user_code=WXYZ-5678",
+      });
+
+      const result = await client.requestDeviceCode();
+
+      expect(result.deviceCode).toBe("dc_abc123");
+      expect(result.expiresIn).toBe(600);
+      expect(result.interval).toBe(10);
+      expect(result.userCode).toBe("WXYZ-5678");
+      expect(result.verificationUri).toBe("https://ably.com/device");
+      expect(result.verificationUriComplete).toBe(
+        "https://ably.com/device?user_code=WXYZ-5678",
+      );
+    });
+
+    it("sends correct client_id and scope in body", async () => {
+      const client = new OAuthClient();
+
+      const scope = nock("https://ably.com")
+        .post(
+          "/oauth/authorize_device",
+          (body: Record<string, string>) =>
+            body.client_id === "_YfP7jQzCscq8nAxvx0CKPx9zKNx3vcdp0QEDNAAdow" &&
+            body.scope === "full_access",
+        )
+        .reply(200, {
+          device_code: "dc_test",
+          expires_in: 300,
+          interval: 5,
+          user_code: "TEST-CODE",
+          verification_uri: "https://ably.com/device",
+          verification_uri_complete:
+            "https://ably.com/device?user_code=TEST-CODE",
+        });
+
+      await client.requestDeviceCode();
+
+      expect(scope.isDone()).toBe(true);
+    });
+
+    it("throws on non-200 response", async () => {
+      const client = new OAuthClient();
+
+      nock("https://ably.com")
+        .post("/oauth/authorize_device")
+        .reply(400, "invalid_client");
+
+      await expect(client.requestDeviceCode()).rejects.toThrow(
+        "Device code request failed (400): invalid_client",
+      );
+    });
+  });
+
+  describe("pollForToken", () => {
+    it("returns tokens after authorization_pending then success", async () => {
+      const client = new OAuthClient();
+
+      // First call: authorization_pending
+      nock("https://ably.com")
+        .post("/oauth/token")
+        .reply(400, { error: "authorization_pending" });
+
+      // Second call: success
+      nock("https://ably.com").post("/oauth/token").reply(200, {
+        access_token: "at_device_flow",
+        expires_in: 3600,
+        refresh_token: "rt_device_flow",
+        scope: "full_access",
+        token_type: "Bearer",
+      });
+
+      const tokens = await client.pollForToken("dc_test", 0.01, 10);
+
+      expect(tokens.accessToken).toBe("at_device_flow");
+      expect(tokens.refreshToken).toBe("rt_device_flow");
+      expect(tokens.tokenType).toBe("Bearer");
+    });
+
+    it("increases interval on slow_down", async () => {
+      const client = new OAuthClient();
+
+      // First call: slow_down (interval increases by 5s per RFC 8628)
+      nock("https://ably.com")
+        .post("/oauth/token")
+        .reply(400, { error: "slow_down" });
+
+      // Second call: success
+      nock("https://ably.com").post("/oauth/token").reply(200, {
+        access_token: "at_slow",
+        expires_in: 3600,
+        refresh_token: "rt_slow",
+        token_type: "Bearer",
+      });
+
+      const tokens = await client.pollForToken("dc_test", 0.01, 30);
+
+      expect(tokens.accessToken).toBe("at_slow");
+    }, 15_000);
+
+    it("throws on expired_token", async () => {
+      const client = new OAuthClient();
+
+      nock("https://ably.com")
+        .post("/oauth/token")
+        .reply(400, { error: "expired_token" });
+
+      await expect(client.pollForToken("dc_test", 0.01, 10)).rejects.toThrow(
+        "Device code expired",
+      );
+    });
+
+    it("throws on access_denied", async () => {
+      const client = new OAuthClient();
+
+      nock("https://ably.com")
+        .post("/oauth/token")
+        .reply(400, { error: "access_denied" });
+
+      await expect(client.pollForToken("dc_test", 0.01, 10)).rejects.toThrow(
+        "Authorization denied",
+      );
+    });
+
+    it("sends correct grant_type and device_code", async () => {
+      const client = new OAuthClient();
+
+      const scope = nock("https://ably.com")
+        .post("/oauth/token", (body: Record<string, string>) => {
+          return (
+            body.grant_type ===
+              "urn:ietf:params:oauth:grant-type:device_code" &&
+            body.device_code === "dc_verify" &&
+            body.client_id === "_YfP7jQzCscq8nAxvx0CKPx9zKNx3vcdp0QEDNAAdow"
+          );
+        })
+        .reply(200, {
+          access_token: "at_verify",
+          expires_in: 3600,
+          refresh_token: "rt_verify",
+          token_type: "Bearer",
+        });
+
+      await client.pollForToken("dc_verify", 0.01, 10);
+
+      expect(scope.isDone()).toBe(true);
+    });
+
+    it("throws after deadline exceeded", async () => {
+      const client = new OAuthClient();
+
+      // Keep returning authorization_pending; the deadline will expire
+      nock("https://ably.com")
+        .post("/oauth/token")
+        .times(10)
+        .reply(400, { error: "authorization_pending" });
+
+      // Use a very short expiresIn so the deadline passes quickly
+      await expect(
+        client.pollForToken("dc_expired", 0.01, 0.05),
+      ).rejects.toThrow("Device code expired");
     });
   });
 
@@ -183,118 +312,6 @@ describe("OAuthClient", () => {
       await expect(
         client.revokeToken("token_to_revoke"),
       ).resolves.toBeUndefined();
-    });
-  });
-
-  describe("login flow (callback server)", () => {
-    it("completes login when callback receives valid code and state", async () => {
-      const client = new OAuthClient();
-
-      // Mock the token exchange endpoint
-      nock("https://ably.com").post("/oauth/token").reply(200, {
-        access_token: "login_access_token",
-        expires_in: 3600,
-        refresh_token: "login_refresh_token",
-        scope: "full_access",
-        token_type: "Bearer",
-      });
-
-      let capturedUrl = "";
-      const tokens = await client.login(async (url) => {
-        capturedUrl = url;
-
-        // Extract state and redirect_uri from the authorization URL
-        const parsed = new URL(url);
-        const state = parsed.searchParams.get("state")!;
-        const redirectUri = parsed.searchParams.get("redirect_uri")!;
-
-        // Simulate browser callback with the correct state
-        await fetch(`${redirectUri}?code=test_auth_code&state=${state}`);
-      });
-
-      expect(capturedUrl).toContain("oauth/authorize");
-      expect(capturedUrl).toContain("code_challenge_method=S256");
-      expect(capturedUrl).toContain("response_type=code");
-      expect(tokens.accessToken).toBe("login_access_token");
-      expect(tokens.refreshToken).toBe("login_refresh_token");
-    });
-
-    it("rejects when callback receives an error from the OAuth server", async () => {
-      const client = new OAuthClient();
-
-      await expect(
-        client.login(async (url) => {
-          const parsed = new URL(url);
-          const redirectUri = parsed.searchParams.get("redirect_uri")!;
-
-          await fetch(
-            `${redirectUri}?error=access_denied&error_description=User+denied`,
-          );
-        }),
-      ).rejects.toThrow("OAuth authorization failed: User denied");
-    });
-
-    it("rejects when callback has mismatched state", async () => {
-      const client = new OAuthClient();
-
-      await expect(
-        client.login(async (url) => {
-          const parsed = new URL(url);
-          const redirectUri = parsed.searchParams.get("redirect_uri")!;
-
-          await fetch(`${redirectUri}?code=test_code&state=wrong_state`);
-        }),
-      ).rejects.toThrow("Invalid OAuth callback");
-    });
-
-    it("rejects when token exchange fails", async () => {
-      const client = new OAuthClient();
-
-      nock("https://ably.com").post("/oauth/token").reply(400, "invalid_grant");
-
-      await expect(
-        client.login(async (url) => {
-          const parsed = new URL(url);
-          const state = parsed.searchParams.get("state")!;
-          const redirectUri = parsed.searchParams.get("redirect_uri")!;
-
-          await fetch(`${redirectUri}?code=bad_code&state=${state}`);
-        }),
-      ).rejects.toThrow("Token exchange failed (400)");
-    });
-  });
-
-  describe("callback page HTML", () => {
-    it("getSuccessPage returns HTML with success message", () => {
-      const html = getSuccessPage();
-      expect(html).toContain("Authentication Successful");
-      expect(html).toContain("close this tab");
-    });
-
-    it("getErrorPage escapes HTML special characters to prevent XSS", () => {
-      const malicious = '<script>alert("xss")</script>';
-      const html = getErrorPage(malicious);
-
-      expect(html).not.toContain("<script>");
-      expect(html).toContain("&lt;script&gt;");
-      expect(html).toContain("&lt;/script&gt;");
-      expect(html).toContain("Authentication Failed");
-    });
-
-    it("getErrorPage escapes ampersands and quotes", () => {
-      const input = 'Error with "quotes" & <angles>';
-      const html = getErrorPage(input);
-
-      expect(html).toContain("&amp;");
-      expect(html).toContain("&quot;quotes&quot;");
-      expect(html).toContain("&lt;angles&gt;");
-    });
-
-    it("getErrorPage renders safe text unmodified", () => {
-      const safeText = "Access was denied by the user";
-      const html = getErrorPage(safeText);
-
-      expect(html).toContain(safeText);
     });
   });
 });
