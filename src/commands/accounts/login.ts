@@ -54,7 +54,7 @@ export default class AccountsLogin extends ControlBaseCommand {
   static override examples = [
     "<%= config.bin %> <%= command.id %>",
     "<%= config.bin %> <%= command.id %> --alias mycompany",
-    "<%= config.bin %> <%= command.id %> --legacy",
+    "<%= config.bin %> <%= command.id %> --no-browser",
     "<%= config.bin %> <%= command.id %> --json",
     "<%= config.bin %> <%= command.id %> --pretty-json",
   ];
@@ -64,10 +64,6 @@ export default class AccountsLogin extends ControlBaseCommand {
     alias: Flags.string({
       char: "a",
       description: "Alias for this account (default account if not specified)",
-    }),
-    legacy: Flags.boolean({
-      default: false,
-      description: "Use legacy token-based login instead of OAuth",
     }),
     "no-browser": Flags.boolean({
       default: false,
@@ -89,23 +85,10 @@ export default class AccountsLogin extends ControlBaseCommand {
     if (args.token) {
       // Direct token provided as argument
       accessToken = args.token;
-    } else if (flags.legacy) {
-      // Legacy flow: manual token paste
-      accessToken = await this.legacyTokenLogin(flags);
     } else {
-      // OAuth flow (default)
-      try {
-        oauthTokens = await this.oauthLogin(flags);
-        accessToken = oauthTokens.accessToken;
-      } catch (error) {
-        if (!this.shouldOutputJson(flags)) {
-          this.warn(
-            `OAuth login failed: ${error instanceof Error ? error.message : String(error)}`,
-          );
-          this.log("Falling back to manual token login...");
-        }
-        accessToken = await this.legacyTokenLogin(flags);
-      }
+      // OAuth device flow (default)
+      oauthTokens = await this.oauthLogin(flags);
+      accessToken = oauthTokens.accessToken;
     }
 
     // If no alias flag provided, prompt the user
@@ -371,30 +354,6 @@ export default class AccountsLogin extends ControlBaseCommand {
     }
   }
 
-  private async legacyTokenLogin(flags: BaseFlags): Promise<string> {
-    let obtainTokenPath = "https://ably.com/users/access_tokens";
-    if (flags["control-host"]) {
-      if (!this.shouldOutputJson(flags)) {
-        this.log("Using control host:", flags["control-host"]);
-      }
-      const host = flags["control-host"];
-      obtainTokenPath = host.includes("local")
-        ? `http://${host}/users/access_tokens`
-        : `https://${host}/users/access_tokens`;
-    }
-
-    if (!flags["no-browser"]) {
-      if (!this.shouldOutputJson(flags)) {
-        this.log("Opening browser to get an access token...");
-      }
-      await openUrl(obtainTokenPath, this);
-    } else if (!this.shouldOutputJson(flags)) {
-      this.log(`Please visit ${obtainTokenPath} to create an access token`);
-    }
-
-    return this.promptForToken();
-  }
-
   private async resolveAlias(): Promise<string> {
     const accounts = this.configManager.listAccounts();
     const hasDefaultAccount = accounts.some(
@@ -496,20 +455,6 @@ export default class AccountsLogin extends ControlBaseCommand {
       };
 
       askForAppName();
-    });
-  }
-
-  private promptForToken(): Promise<string> {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    return new Promise((resolve) => {
-      rl.question("\nEnter your access token: ", (token) => {
-        rl.close();
-        resolve(token.trim());
-      });
     });
   }
 }
