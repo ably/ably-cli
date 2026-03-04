@@ -33,7 +33,7 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
       description: "Skip confirmation prompt",
     }),
     app: Flags.string({
-      description: "App ID to delete (overrides argument and current app)",
+      description: "The app ID or name (defaults to current app)",
       env: "ABLY_APP_ID",
     }),
   };

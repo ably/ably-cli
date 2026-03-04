@@ -4,6 +4,7 @@ import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import { success, listening, resource } from "../../../utils/output.js";
 
 export default class RoomsReactionsSubscribe extends ChatBaseCommand {
   static override args = {
@@ -24,8 +25,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
   static override flags = {
     ...ChatBaseCommand.globalFlags,
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -63,7 +63,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
       );
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          `Connecting to Ably and subscribing to reactions in room ${chalk.cyan(roomName)}...`,
+          `Connecting to Ably and subscribing to reactions in room ${resource(roomName)}...`,
         );
       }
 
@@ -107,10 +107,12 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         switch (statusChange.current) {
           case RoomStatus.Attached: {
             if (!this.shouldOutputJson(flags)) {
-              this.log(chalk.green("Successfully connected to Ably"));
               this.log(
-                `Listening for reactions in room ${chalk.cyan(roomName)}. Press Ctrl+C to exit.`,
+                success(
+                  `Subscribed to reactions in room: ${resource(roomName)}.`,
+                ),
               );
+              this.log(listening("Listening for reactions."));
             }
 
             break;
@@ -140,7 +142,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         flags,
         "room",
         "subscribedToStatus",
-        "Successfully subscribed to room status changes",
+        "Subscribed to room status changes",
       );
 
       // Attach to the room
@@ -199,7 +201,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         flags,
         "reactions",
         "subscribed",
-        "Successfully subscribed to reactions",
+        "Subscribed to reactions",
       );
 
       this.logCliEvent(

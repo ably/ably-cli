@@ -28,7 +28,7 @@ describe("ChannelsPublish", function () {
     expect(restMock.channels.get).toHaveBeenCalledWith("test-channel");
     expect(channel.publish).toHaveBeenCalledOnce();
     expect(channel.publish.mock.calls[0][0]).toEqual({ data: "hello" });
-    expect(stdout).toContain("Message published successfully");
+    expect(stdout).toContain("Message published to channel");
   });
 
   it("should publish a message using Realtime successfully", async function () {
@@ -51,7 +51,7 @@ describe("ChannelsPublish", function () {
     expect(channel.publish.mock.calls[0][0]).toEqual({
       data: "realtime hello",
     });
-    expect(stdout).toContain("Message published successfully");
+    expect(stdout).toContain("Message published to channel");
   });
 
   it("should handle API errors during REST publish", async function () {
@@ -141,7 +141,7 @@ describe("ChannelsPublish", function () {
     );
 
     expect(channel.publish).toHaveBeenCalledTimes(3);
-    expect(stdout).toContain("messages published successfully");
+    expect(stdout).toContain("messages published to channel");
   });
 
   it("should output JSON when requested", async function () {

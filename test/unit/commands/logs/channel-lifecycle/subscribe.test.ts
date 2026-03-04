@@ -63,7 +63,7 @@ describe("logs:channel-lifecycle:subscribe command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Subscribing to");
+      expect(stdout).toContain("Subscribed to");
       expect(stdout).toContain("[meta]channel.lifecycle");
       expect(stdout).toContain("Press Ctrl+C to exit");
     });

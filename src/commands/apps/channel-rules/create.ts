@@ -15,7 +15,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
   static flags = {
     ...ControlBaseCommand.globalFlags,
     app: Flags.string({
-      description: "App ID or name to create the channel rule in",
+      description: "The app ID or name (defaults to current app)",
       required: false,
     }),
     authenticated: Flags.boolean({

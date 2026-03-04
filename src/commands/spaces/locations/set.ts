@@ -4,6 +4,7 @@ import chalk from "chalk";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
+import { success, listening, resource } from "../../../utils/output.js";
 
 // Define the type for location subscription
 interface LocationSubscription {
@@ -32,8 +33,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       required: true,
     }),
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = exit immediately after setting location)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -134,22 +134,14 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
 
         // Enter the space and set location
         await this.space.enter();
-        this.logCliEvent(
-          flags,
-          "spaces",
-          "entered",
-          "Successfully entered space",
-          { clientId: this.realtimeClient.auth.clientId },
-        );
+        this.logCliEvent(flags, "spaces", "entered", "Entered space", {
+          clientId: this.realtimeClient.auth.clientId,
+        });
 
         await this.space.locations.set(location);
-        this.logCliEvent(
-          flags,
-          "location",
-          "setSuccess",
-          "Successfully set location",
-          { location },
-        );
+        this.logCliEvent(flags, "location", "setSuccess", "Set location", {
+          location,
+        });
 
         if (this.shouldOutputJson(flags)) {
           this.log(
@@ -159,9 +151,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
             ),
           );
         } else {
-          this.log(
-            `${chalk.green("Successfully set location:")} ${JSON.stringify(location, null, 2)}`,
-          );
+          this.log(success(`Location set in space: ${resource(spaceName)}.`));
         }
       } catch {
         // If an error occurs in E2E mode, just exit cleanly after showing what we can
@@ -207,36 +197,26 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
         flags,
         "spaces",
         "gotSpace",
-        `Successfully got space handle: ${spaceName}`,
+        `Got space handle: ${spaceName}`,
       );
 
       // Enter the space first
       this.logCliEvent(flags, "spaces", "entering", "Entering space...");
       await this.space.enter();
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "entered",
-        "Successfully entered space",
-        { clientId: this.realtimeClient!.auth.clientId },
-      );
+      this.logCliEvent(flags, "spaces", "entered", "Entered space", {
+        clientId: this.realtimeClient!.auth.clientId,
+      });
 
       // Set the location
       this.logCliEvent(flags, "location", "setting", "Setting location", {
         location,
       });
       await this.space.locations.set(location);
-      this.logCliEvent(
-        flags,
-        "location",
-        "setSuccess",
-        "Successfully set location",
-        { location },
-      );
+      this.logCliEvent(flags, "location", "setSuccess", "Set location", {
+        location,
+      });
       if (!this.shouldOutputJson(flags)) {
-        this.log(
-          `${chalk.green("Successfully set location:")} ${JSON.stringify(location, null, 2)}`,
-        );
+        this.log(success(`Location set in space: ${resource(spaceName)}.`));
       }
 
       // Subscribe to location updates from other users
@@ -247,9 +227,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
         "Watching for other location changes...",
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log(
-          `\n${chalk.dim("Watching for other location changes. Press Ctrl+C to exit.")}\n`,
-        );
+        this.log(`\n${listening("Watching for other location changes.")}\n`);
       }
 
       // Store subscription handlers
@@ -315,7 +293,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
         flags,
         "location",
         "subscribed",
-        "Successfully subscribed to location updates",
+        "Subscribed to location updates",
       );
 
       this.logCliEvent(

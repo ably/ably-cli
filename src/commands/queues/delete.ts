@@ -22,7 +22,7 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
   static flags = {
     ...ControlBaseCommand.globalFlags,
     app: Flags.string({
-      description: "App ID or name to delete the queue from",
+      description: "The app ID or name (defaults to current app)",
       required: false,
     }),
     force: Flags.boolean({

@@ -5,6 +5,12 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import {
+  listening,
+  progress,
+  resource,
+  success,
+} from "../../../utils/output.js";
 
 export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
   static override args = {
@@ -27,8 +33,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
   static override flags = {
     ...productApiFlags,
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -78,7 +83,9 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          `${chalk.green("Subscribing to occupancy events on channel:")} ${chalk.cyan(channelName)}`,
+          progress(
+            `Subscribing to occupancy events on channel: ${resource(channelName)}`,
+          ),
         );
       }
 
@@ -117,15 +124,21 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
         }
       });
 
+      if (!this.shouldOutputJson(flags)) {
+        this.log(
+          success(
+            `Subscribed to occupancy on channel: ${resource(channelName)}.`,
+          ),
+        );
+        this.log(listening("Listening for occupancy events."));
+      }
+
       this.logCliEvent(
         flags,
         "occupancy",
         "listening",
         "Listening for occupancy events. Press Ctrl+C to exit.",
       );
-      if (!this.shouldOutputJson(flags)) {
-        this.log("Listening for occupancy events. Press Ctrl+C to exit.");
-      }
 
       // Wait until the user interrupts or the optional duration elapses
       const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);

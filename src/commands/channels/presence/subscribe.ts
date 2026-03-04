@@ -5,6 +5,12 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import {
+  listening,
+  progress,
+  resource,
+  success,
+} from "../../../utils/output.js";
 
 export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
   static override args = {
@@ -29,8 +35,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
     ...productApiFlags,
     ...clientIdFlag,
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -73,7 +78,9 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          `${chalk.green("Subscribing to presence events on channel:")} ${chalk.cyan(channelName)}`,
+          progress(
+            `Subscribing to presence events on channel: ${resource(channelName)}`,
+          ),
         );
       }
 
@@ -121,15 +128,21 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
         }
       });
 
+      if (!this.shouldOutputJson(flags)) {
+        this.log(
+          success(
+            `Subscribed to presence on channel: ${resource(channelName)}.`,
+          ),
+        );
+        this.log(listening("Listening for presence events."));
+      }
+
       this.logCliEvent(
         flags,
         "presence",
         "listening",
         "Listening for presence events. Press Ctrl+C to exit.",
       );
-      if (!this.shouldOutputJson(flags)) {
-        this.log("Listening for presence events. Press Ctrl+C to exit.");
-      }
 
       // Wait until the user interrupts or the optional duration elapses
       const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);

@@ -76,7 +76,7 @@ describe("queues:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Queue created successfully");
+      expect(stdout).toContain("Queue created:");
       expect(stdout).toContain(`Queue ID: ${mockQueueId}`);
       expect(stdout).toContain(`Name: ${mockQueueName}`);
       expect(stdout).toContain("Region: us-east-1-a");
@@ -127,7 +127,7 @@ describe("queues:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Queue created successfully");
+      expect(stdout).toContain("Queue created:");
       expect(stdout).toContain("Region: eu-west-1-a");
       expect(stdout).toContain("TTL: 3600 seconds");
       expect(stdout).toContain("Max Length: 50000 messages");
@@ -187,7 +187,7 @@ describe("queues:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Queue created successfully");
+      expect(stdout).toContain("Queue created:");
     });
 
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
@@ -226,7 +226,7 @@ describe("queues:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Queue created successfully");
+      expect(stdout).toContain("Queue created:");
     });
   });
 
@@ -481,7 +481,7 @@ describe("queues:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Queue created successfully");
+      expect(stdout).toContain("Queue created:");
       expect(stdout).toContain("TTL: 1 seconds");
       expect(stdout).toContain("Max Length: 1 messages");
     });
@@ -527,7 +527,7 @@ describe("queues:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Queue created successfully");
+      expect(stdout).toContain("Queue created:");
       expect(stdout).toContain("Region: ap-southeast-2-a");
       expect(stdout).toContain("TTL: 86400 seconds");
       expect(stdout).toContain("Max Length: 1000000 messages");

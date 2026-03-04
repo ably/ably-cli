@@ -25,7 +25,7 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
   static flags = {
     ...ControlBaseCommand.globalFlags,
     app: Flags.string({
-      description: "App ID or name to delete the channel rule from",
+      description: "The app ID or name (defaults to current app)",
       required: false,
     }),
     force: Flags.boolean({

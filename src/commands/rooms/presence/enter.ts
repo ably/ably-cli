@@ -11,6 +11,7 @@ import { Args, Flags, Interfaces } from "@oclif/core";
 import chalk from "chalk";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import { success, listening, resource } from "../../../utils/output.js";
 
 export default class RoomsPresenceEnter extends ChatBaseCommand {
   static override args = {
@@ -36,8 +37,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       description: "Show other presence events while present (default: false)",
     }),
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -90,7 +90,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
     try {
       // Always show the readiness signal first, before attempting auth
       if (!this.shouldOutputJson(flags)) {
-        this.log(`${chalk.dim("Staying present. Press Ctrl+C to exit.")}`);
+        this.log(listening("Staying present."));
       }
 
       // Create clients
@@ -135,9 +135,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
             !this.shouldOutputJson(flags) &&
             this.roomName
           ) {
-            this.log(
-              `${chalk.green("Successfully connected to room:")} ${chalk.cyan(this.roomName)}`,
-            );
+            this.log(success(`Connected to room: ${resource(this.roomName)}`));
           } else {
             this.logCliEvent(
               flags,
@@ -217,24 +215,16 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
         data: this.data,
       });
       await currentRoom.presence.enter(this.data || {});
-      this.logCliEvent(
-        flags,
-        "presence",
-        "entered",
-        "Entered presence successfully",
-      );
+      this.logCliEvent(flags, "presence", "entered", "Entered presence");
 
       if (!this.shouldOutputJson(flags) && this.roomName) {
-        // Output the exact signal that E2E tests expect (without ANSI codes)
         this.log(
-          `✓ Entered room ${this.roomName} as ${this.chatClient?.clientId || "Unknown"}`,
+          success(`Entered presence in room: ${resource(this.roomName)}.`),
         );
         if (flags["show-others"]) {
-          this.log(
-            `\n${chalk.dim("Listening for presence events until terminated. Press Ctrl+C to exit.")}`,
-          );
+          this.log(`\n${listening("Listening for presence events.")}`);
         } else {
-          this.log(`\n${chalk.dim("Staying present. Press Ctrl+C to exit.")}`);
+          this.log(`\n${listening("Staying present.")}`);
         }
       }
 

@@ -84,7 +84,7 @@ describe("Channel Presence E2E Tests", () => {
 
     console.log(`Presence enter output: ${enterResult.stdout}`);
     expect(enterResult.exitCode).toBe(0);
-    expect(enterResult.stdout).toContain("Entered channel");
+    expect(enterResult.stdout).toContain("Entered presence on channel");
     expect(enterResult.stdout).toContain(
       "Duration elapsed – command finished cleanly",
     );

@@ -41,7 +41,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
     }),
     limit: Flags.integer({
       default: 50,
-      description: "Maximum number of messages to retrieve (default: 50)",
+      description: "Maximum number of results to return (default: 50)",
     }),
     start: Flags.string({
       description: "Start time for the history query (ISO 8601 format)",

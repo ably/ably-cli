@@ -46,7 +46,7 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Key created successfully");
+      expect(stdout).toContain("Key created:");
       expect(stdout).toContain(mockKeyName);
       expect(stdout).toContain(mockKeyId);
     });
@@ -90,7 +90,7 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Key created successfully");
+      expect(stdout).toContain("Key created:");
       expect(stdout).toContain("channel1");
       expect(stdout).toContain("publish");
       expect(stdout).toContain("subscribe");
@@ -165,7 +165,7 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Key created successfully");
+      expect(stdout).toContain("Key created:");
     });
   });
 
@@ -369,7 +369,7 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Key created successfully");
+      expect(stdout).toContain("Key created:");
       expect(stdout).toContain("publish");
     });
 
@@ -412,7 +412,7 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Key created successfully");
+      expect(stdout).toContain("Key created:");
       expect(stdout).toContain("chat-*");
       expect(stdout).toContain("subscribe");
       expect(stdout).toContain("updates");

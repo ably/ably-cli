@@ -1,7 +1,7 @@
 import { Flags } from "@oclif/core";
-import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { resource, success } from "../../utils/output.js";
 
 export default class AppsCreateCommand extends ControlBaseCommand {
   static description = "Create a new app";
@@ -59,7 +59,7 @@ export default class AppsCreateCommand extends ControlBaseCommand {
           ),
         );
       } else {
-        this.log(chalk.green("✓ App created successfully!"));
+        this.log(success(`App created: ${resource(app.name)} (${app.id}).`));
         this.log(`App ID: ${app.id}`);
         this.log(`Name: ${app.name}`);
         this.log(`Status: ${app.status}`);

@@ -123,6 +123,21 @@ If this is part of a workspace, there may be:
 
 But focus on THIS project unless specifically asked about others.
 
+## CLI Output & Flag Conventions
+
+### Output patterns (use helpers from src/utils/output.ts)
+- **Progress**: `progress("Attaching to channel: " + resource(name))` — no color on action text, ends with `...`
+- **Success**: `success("Message published to channel " + resource(name) + ".")` — green ✓, ends with `.`
+- **Listening**: `listening("Listening for messages.")` — dim, includes "Press Ctrl+C to exit."
+- **Resource names**: Always `resource(name)` (cyan), never quoted
+
+### Flag conventions
+- All flags kebab-case: `--my-flag` (never camelCase)
+- `--app`: `"The app ID or name (defaults to current app)"`
+- `--limit`: `"Maximum number of results to return (default: N)"`
+- `--duration`: `"Automatically exit after N seconds (0 = run indefinitely)"`, alias `-D`
+- Channels use "publish", Rooms use "send" (matches SDK terminology)
+
 ## ✓ Before Marking Complete
 
 - [ ] `pnpm prepare` succeeds

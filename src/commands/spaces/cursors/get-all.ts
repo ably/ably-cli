@@ -3,6 +3,7 @@ import chalk from "chalk";
 
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import isTestMode from "../../../utils/test-mode.js";
+import { success, resource } from "../../../utils/output.js";
 
 interface CursorPosition {
   x: number;
@@ -105,9 +106,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
                   ),
                 );
               } else {
-                this.log(
-                  `${chalk.green("Successfully entered space:")} ${chalk.cyan(spaceName)}`,
-                );
+                this.log(success(`Entered space: ${resource(spaceName)}.`));
               }
 
               resolve();

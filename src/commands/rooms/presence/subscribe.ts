@@ -13,6 +13,7 @@ import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import { success, listening, resource } from "../../../utils/output.js";
 
 export default class RoomsPresenceSubscribe extends ChatBaseCommand {
   static override args = {
@@ -33,8 +34,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
   static override flags = {
     ...ChatBaseCommand.globalFlags,
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -56,8 +56,12 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
     try {
       // Always show the readiness signal first, before attempting auth
       if (!this.shouldOutputJson(flags)) {
-        // Output the exact signal that E2E tests expect (without ANSI codes)
-        this.log("Subscribing to presence events. Press Ctrl+C to exit.");
+        this.log(
+          success(
+            `Subscribed to presence in room: ${resource(this.roomName!)}.`,
+          ),
+        );
+        this.log(listening("Listening for presence events."));
       }
 
       // Try to create clients, but don't fail if auth fails
@@ -151,9 +155,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
           !this.shouldOutputJson(flags) &&
           this.roomName
         ) {
-          this.log(
-            `${chalk.green("Successfully connected to room:")} ${chalk.cyan(this.roomName)}`,
-          );
+          this.log(success(`Connected to room: ${resource(this.roomName)}`));
         } else if (
           statusChange.current === RoomStatus.Failed &&
           !this.shouldOutputJson(flags)
@@ -259,7 +261,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         flags,
         "presence",
         "subscribedToEvents",
-        "Successfully subscribed to presence events",
+        "Subscribed to presence events",
       );
 
       if (!this.shouldOutputJson(flags)) {

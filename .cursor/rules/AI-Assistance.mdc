@@ -109,6 +109,21 @@ This document provides guidance for AI assistants working with the Ably CLI code
    const url = `https://${controlHost}/v1/apps`
    ```
 
+## CLI Output & Flag Conventions
+
+### Output patterns (use helpers from src/utils/output.ts)
+- **Progress**: `progress("Attaching to channel: " + resource(name))` — no color on action text, ends with `...`
+- **Success**: `success("Message published to channel " + resource(name) + ".")` — green ✓, ends with `.`
+- **Listening**: `listening("Listening for messages.")` — dim, includes "Press Ctrl+C to exit."
+- **Resource names**: Always `resource(name)` (cyan), never quoted
+
+### Flag conventions
+- All flags kebab-case: `--my-flag` (never camelCase)
+- `--app`: `"The app ID or name (defaults to current app)"`
+- `--limit`: `"Maximum number of results to return (default: N)"`
+- `--duration`: `"Automatically exit after N seconds (0 = run indefinitely)"`, alias `-D`
+- Channels use "publish", Rooms use "send" (matches SDK terminology)
+
 ## Effective Testing
 
 1. **Mocking Ably SDK Example**:

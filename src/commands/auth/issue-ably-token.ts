@@ -23,7 +23,7 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
   static flags = {
     ...productApiFlags,
     app: Flags.string({
-      description: "App ID to use (uses current app if not specified)",
+      description: "The app ID or name (defaults to current app)",
       env: "ABLY_APP_ID",
     }),
     capability: Flags.string({

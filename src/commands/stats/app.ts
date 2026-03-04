@@ -45,7 +45,7 @@ export default class StatsAppCommand extends ControlBaseCommand {
     }),
     limit: Flags.integer({
       default: 10,
-      description: "Maximum number of stats records to return",
+      description: "Maximum number of results to return (default: 10)",
     }),
 
     live: Flags.boolean({

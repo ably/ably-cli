@@ -26,7 +26,7 @@ describe("rooms messages commands", function () {
       expect(room.messages.send).toHaveBeenCalledWith({
         text: "HelloWorld",
       });
-      expect(stdout).toContain("Message sent successfully");
+      expect(stdout).toContain("Message sent to room test-room");
     });
 
     it("should send multiple messages with interpolation", async function () {
@@ -58,7 +58,7 @@ describe("rooms messages commands", function () {
       expect(sentTexts).toContain("Message1");
       expect(sentTexts).toContain("Message2");
       expect(sentTexts).toContain("Message3");
-      expect(stdout).toContain("3/3 messages sent successfully");
+      expect(stdout).toContain("3/3 messages sent to room test-room");
     });
 
     it("should handle metadata in messages", async function () {

@@ -5,6 +5,7 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import { listening, success } from "../../../utils/output.js";
 
 export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
   static override description = "Subscribe to live connection lifecycle logs";
@@ -19,8 +20,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
   static override flags = {
     ...productApiFlags,
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -75,7 +75,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
       );
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(`${chalk.green("Subscribing to connection lifecycle logs")}`);
+        this.log(success("Subscribed to connection lifecycle logs."));
       }
 
       // Subscribe to connection lifecycle logs
@@ -121,9 +121,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
         "Listening for connection lifecycle log events. Press Ctrl+C to exit.",
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log(
-          "Listening for connection lifecycle log events. Press Ctrl+C to exit.",
-        );
+        this.log(listening("Listening for connection lifecycle log events."));
       }
 
       // Wait until the user interrupts or the optional duration elapses

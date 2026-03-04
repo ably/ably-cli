@@ -35,7 +35,7 @@ export default class MessagesHistory extends ChatBaseCommand {
     limit: Flags.integer({
       char: "l",
       default: 50,
-      description: "Maximum number of messages to retrieve (default: 50)",
+      description: "Maximum number of results to return (default: 50)",
     }),
     order: Flags.string({
       default: "newestFirst",

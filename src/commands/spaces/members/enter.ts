@@ -4,6 +4,7 @@ import chalk from "chalk";
 
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import { success, listening, resource } from "../../../utils/output.js";
 
 export default class SpacesMembersEnter extends SpacesBaseCommand {
   static override args = {
@@ -30,8 +31,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
       required: false,
     }),
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -53,7 +53,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
     try {
       // Always show the readiness signal first, before attempting auth
       if (!this.shouldOutputJson(flags)) {
-        this.log(`${chalk.dim("Entering space. Press Ctrl+C to exit.")}`);
+        this.log(listening("Entering space."));
       }
 
       // Create Spaces client using setupSpacesClient
@@ -112,7 +112,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         flags,
         "spaces",
         "gotSpace",
-        `Successfully got space handle: ${spaceName}`,
+        `Got space handle: ${spaceName}`,
       );
 
       // Enter the space with optional profile
@@ -134,7 +134,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         flags,
         "member",
         "enteredSpace",
-        "Successfully entered space",
+        "Entered space",
         enteredEventData,
       );
 
@@ -143,9 +143,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
           this.formatJsonOutput({ success: true, ...enteredEventData }, flags),
         );
       } else {
-        this.log(
-          `${chalk.green("Successfully entered space:")} ${chalk.cyan(spaceName)}`,
-        );
+        this.log(success(`Entered space: ${resource(spaceName)}.`));
         if (profileData) {
           this.log(
             `${chalk.dim("Profile:")} ${JSON.stringify(profileData, null, 2)}`,
@@ -169,9 +167,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         "Subscribing to member updates",
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log(
-          `\n${chalk.dim("Watching for other members. Press Ctrl+C to exit.")}\n`,
-        );
+        this.log(`\n${listening("Watching for other members.")}\n`);
       }
 
       // Define the listener function
@@ -320,7 +316,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         flags,
         "member",
         "subscribed",
-        "Successfully subscribed to member updates",
+        "Subscribed to member updates",
       );
 
       this.logCliEvent(

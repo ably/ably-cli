@@ -4,6 +4,7 @@ import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import { success, listening, resource } from "../../../utils/output.js";
 
 export default class TypingSubscribe extends ChatBaseCommand {
   static override args = {
@@ -26,8 +27,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
   static override flags = {
     ...ChatBaseCommand.globalFlags,
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -93,11 +93,9 @@ export default class TypingSubscribe extends ChatBaseCommand {
         if (statusChange.current === RoomStatus.Attached) {
           if (!this.shouldOutputJson(flags)) {
             this.log(
-              `${chalk.green("Connected to room:")} ${chalk.bold(roomName)}`,
+              success(`Subscribed to typing in room: ${resource(roomName)}.`),
             );
-            this.log(
-              `${chalk.dim("Listening for typing indicators. Press Ctrl+C to exit.")}`,
-            );
+            this.log(listening("Listening for typing indicators."));
           }
         } else if (
           statusChange.current === RoomStatus.Failed &&
@@ -112,7 +110,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
         flags,
         "room",
         "subscribedToStatus",
-        "Successfully subscribed to room status changes",
+        "Subscribed to room status changes",
       );
 
       // Set up typing indicators
@@ -175,7 +173,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
         flags,
         "typing",
         "subscribed",
-        "Successfully subscribed to typing indicators",
+        "Subscribed to typing indicators",
       );
 
       // Attach to the room

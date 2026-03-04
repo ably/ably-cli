@@ -16,7 +16,7 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
     ...ControlBaseCommand.globalFlags,
 
     app: Flags.string({
-      description: "App ID or name to list integrations for",
+      description: "The app ID or name (defaults to current app)",
       required: false,
     }),
   };

@@ -53,7 +53,7 @@ describe("apps:create command", () => {
         `"${mockAppName}"`,
       ]);
 
-      expect(stdout).toContain("App created successfully");
+      expect(stdout).toContain("App created:");
       expect(stdout).toContain(newAppId);
       expect(stdout).toContain(mockAppName);
       expect(stdout).toContain("Automatically switched to app");
@@ -94,7 +94,7 @@ describe("apps:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("App created successfully");
+      expect(stdout).toContain("App created:");
       expect(stdout).toContain("TLS Only: Yes");
       expect(stdout).toContain("Automatically switched to app");
     });
@@ -183,7 +183,7 @@ describe("apps:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("App created successfully");
+      expect(stdout).toContain("App created:");
       expect(stdout).toContain("Automatically switched to app");
     });
 
@@ -219,7 +219,7 @@ describe("apps:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("App created successfully");
+      expect(stdout).toContain("App created:");
       expect(stdout).toContain(
         `Automatically switched to app: ${mockAppName} (${newAppId})`,
       );

@@ -9,6 +9,7 @@ import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import { success, listening, resource } from "../../../utils/output.js";
 
 export interface OccupancyMetrics {
   connections?: number;
@@ -34,8 +35,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
   static flags = {
     ...ChatBaseCommand.globalFlags,
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -114,9 +114,10 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         switch (statusChange.current) {
           case RoomStatus.Attached: {
             if (!this.shouldOutputJson(flags)) {
-              this.log("Successfully connected to Ably");
               this.log(
-                `Subscribing to occupancy events for room '${this.roomName}'...`,
+                success(
+                  `Subscribed to occupancy in room: ${resource(this.roomName!)}.`,
+                ),
               );
             }
 
@@ -145,7 +146,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         flags,
         "room",
         "subscribedToStatus",
-        "Successfully subscribed to room status changes",
+        "Subscribed to room status changes",
       );
 
       // Attach to the room
@@ -165,7 +166,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         "Listening for occupancy updates...",
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log("Listening for occupancy updates. Press Ctrl+C to exit.");
+        this.log(listening("Listening for occupancy updates."));
       }
 
       // Get the initial occupancy metrics
@@ -222,7 +223,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         flags,
         "occupancy",
         "subscribed",
-        "Successfully subscribed to occupancy updates",
+        "Subscribed to occupancy updates",
       );
 
       // Wait until the user interrupts or the optional duration elapses
