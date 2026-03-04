@@ -2,6 +2,8 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "./base-command.js";
 import { ControlApi, App } from "./services/control-api.js";
+import { OAuthClient } from "./services/oauth-client.js";
+import { TokenRefreshMiddleware } from "./services/token-refresh-middleware.js";
 import { BaseFlags, ErrorDetails } from "./types/cli.js";
 
 export abstract class ControlBaseCommand extends AblyBaseCommand {
@@ -16,6 +18,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
    */
   protected createControlApi(flags: BaseFlags): ControlApi {
     let accessToken = flags["access-token"] || process.env.ABLY_ACCESS_TOKEN;
+    let tokenRefreshMiddleware: TokenRefreshMiddleware | undefined;
 
     if (!accessToken) {
       const account = this.configManager.getCurrentAccount();
@@ -26,6 +29,17 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
       }
 
       accessToken = account.accessToken;
+
+      // Set up token refresh middleware for OAuth accounts
+      if (this.configManager.getAuthMethod() === "oauth") {
+        const oauthClient = new OAuthClient({
+          controlHost: flags["control-host"],
+        });
+        tokenRefreshMiddleware = new TokenRefreshMiddleware(
+          this.configManager,
+          oauthClient,
+        );
+      }
     }
 
     if (!accessToken) {
@@ -37,6 +51,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
     return new ControlApi({
       accessToken,
       controlHost: flags["control-host"],
+      tokenRefreshMiddleware,
     });
   }
 

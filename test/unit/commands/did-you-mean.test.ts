@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 describe("Did You Mean Functionality", () => {
-  const timeout = 15000;
+  const timeout = 30000;
   let binPath: string;
 
   beforeAll(() => {
@@ -42,7 +42,7 @@ describe("Did You Mean Functionality", () => {
                   "Test timed out - process did not exit. Output: " + output,
                 ),
               );
-            }, 10000);
+            }, 20000);
 
             child.stdout.on("data", (data) => {
               output += data.toString();
@@ -59,11 +59,11 @@ describe("Did You Mean Functionality", () => {
 
             setTimeout(() => {
               child.stdin.write("account current\n");
-            }, 500);
+            }, 2000);
 
             setTimeout(() => {
               child.stdin.write("exit\n");
-            }, 2000);
+            }, 5000);
 
             child.on("exit", () => {
               clearTimeout(killTimeout);

@@ -52,6 +52,11 @@ describe("accounts:login command", () => {
           user: { email: "test@example.com" },
         });
 
+      // Mock the /me/accounts endpoint
+      nock("https://control.ably.net")
+        .get("/v1/me/accounts")
+        .reply(200, [{ id: mockAccountId, name: "Test Account" }]);
+
       // Mock the apps list endpoint
       nock("https://control.ably.net")
         .get(`/v1/accounts/${mockAccountId}/apps`)
@@ -72,12 +77,14 @@ describe("accounts:login command", () => {
       // Verify config was updated correctly via mock
       const mock = getMockConfigManager();
       const config = mock.getConfig();
-      expect(config.current?.account).toBe("default");
-      expect(config.accounts["default"]).toBeDefined();
-      expect(config.accounts["default"].accessToken).toBe(mockAccessToken);
-      expect(config.accounts["default"].accountId).toBe(mockAccountId);
-      expect(config.accounts["default"].accountName).toBe("Test Account");
-      expect(config.accounts["default"].userEmail).toBe("test@example.com");
+      expect(config.current?.account).toBe("test-account");
+      expect(config.accounts["test-account"]).toBeDefined();
+      expect(config.accounts["test-account"].accessToken).toBe(mockAccessToken);
+      expect(config.accounts["test-account"].accountId).toBe(mockAccountId);
+      expect(config.accounts["test-account"].accountName).toBe("Test Account");
+      expect(config.accounts["test-account"].userEmail).toBe(
+        "test@example.com",
+      );
     });
 
     it("should include alias in JSON response when --alias flag is provided", async () => {
@@ -90,6 +97,11 @@ describe("accounts:login command", () => {
           account: { id: mockAccountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
+
+      // Mock the /me/accounts endpoint
+      nock("https://control.ably.net")
+        .get("/v1/me/accounts")
+        .reply(200, [{ id: mockAccountId, name: "Test Account" }]);
 
       // Mock the apps list endpoint
       nock("https://control.ably.net")
@@ -129,6 +141,11 @@ describe("accounts:login command", () => {
           user: { email: "test@example.com" },
         });
 
+      // Mock the /me/accounts endpoint
+      nock("https://control.ably.net")
+        .get("/v1/me/accounts")
+        .reply(200, [{ id: mockAccountId, name: "Test Account" }]);
+
       // Mock the apps list endpoint with single app
       nock("https://control.ably.net")
         .get(`/v1/accounts/${mockAccountId}/apps`)
@@ -151,13 +168,13 @@ describe("accounts:login command", () => {
       // Verify config was written with app info via mock
       const mock = getMockConfigManager();
       const config = mock.getConfig();
-      expect(config.current?.account).toBe("default");
-      expect(config.accounts["default"]).toBeDefined();
-      expect(config.accounts["default"].accessToken).toBe(mockAccessToken);
-      expect(config.accounts["default"].accountId).toBe(mockAccountId);
-      expect(config.accounts["default"].currentAppId).toBe(mockAppId);
-      expect(config.accounts["default"].apps?.[mockAppId]).toBeDefined();
-      expect(config.accounts["default"].apps?.[mockAppId]?.appName).toBe(
+      expect(config.current?.account).toBe("test-account");
+      expect(config.accounts["test-account"]).toBeDefined();
+      expect(config.accounts["test-account"].accessToken).toBe(mockAccessToken);
+      expect(config.accounts["test-account"].accountId).toBe(mockAccountId);
+      expect(config.accounts["test-account"].currentAppId).toBe(mockAppId);
+      expect(config.accounts["test-account"].apps?.[mockAppId]).toBeDefined();
+      expect(config.accounts["test-account"].apps?.[mockAppId]?.appName).toBe(
         mockAppName,
       );
     });
@@ -171,6 +188,11 @@ describe("accounts:login command", () => {
           account: { id: mockAccountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
+
+      // Mock the /me/accounts endpoint
+      nock("https://control.ably.net")
+        .get("/v1/me/accounts")
+        .reply(200, [{ id: mockAccountId, name: "Test Account" }]);
 
       // Mock the apps list endpoint with multiple apps
       nock("https://control.ably.net")
@@ -192,12 +214,12 @@ describe("accounts:login command", () => {
       // Verify config was written without app selection via mock
       const mock = getMockConfigManager();
       const config = mock.getConfig();
-      expect(config.current?.account).toBe("default");
-      expect(config.accounts["default"]).toBeDefined();
-      expect(config.accounts["default"].accessToken).toBe(mockAccessToken);
-      expect(config.accounts["default"].accountId).toBe(mockAccountId);
+      expect(config.current?.account).toBe("test-account");
+      expect(config.accounts["test-account"]).toBeDefined();
+      expect(config.accounts["test-account"].accessToken).toBe(mockAccessToken);
+      expect(config.accounts["test-account"].accountId).toBe(mockAccountId);
       // Should NOT have currentAppId when multiple apps exist
-      expect(config.accounts["default"].currentAppId).toBeUndefined();
+      expect(config.accounts["test-account"].currentAppId).toBeUndefined();
     });
   });
 
@@ -219,9 +241,12 @@ describe("accounts:login command", () => {
     });
 
     it("should output error in JSON format when network fails", async () => {
-      // Mock network error
+      // Mock network error for both endpoints called in parallel
       nock("https://control.ably.net")
         .get("/v1/me")
+        .replyWithError("Network error");
+      nock("https://control.ably.net")
+        .get("/v1/me/accounts")
         .replyWithError("Network error");
 
       const { stdout } = await runCommand(
@@ -264,6 +289,11 @@ describe("accounts:login command", () => {
           user: { email: "test@example.com" },
         });
 
+      // Mock the /me/accounts endpoint on custom host
+      nock(`https://${customHost}`)
+        .get("/v1/me/accounts")
+        .reply(200, [{ id: mockAccountId, name: "Test Account" }]);
+
       // Mock the apps list endpoint on custom host
       nock(`https://${customHost}`)
         .get(`/v1/accounts/${mockAccountId}/apps`)
@@ -287,12 +317,89 @@ describe("accounts:login command", () => {
       // Verify config was written correctly via mock
       const mock = getMockConfigManager();
       const config = mock.getConfig();
-      expect(config.current?.account).toBe("default");
-      expect(config.accounts["default"]).toBeDefined();
-      expect(config.accounts["default"].accessToken).toBe(mockAccessToken);
-      expect(config.accounts["default"].accountId).toBe(mockAccountId);
-      expect(config.accounts["default"].accountName).toBe("Test Account");
-      expect(config.accounts["default"].userEmail).toBe("test@example.com");
+      expect(config.current?.account).toBe("test-account");
+      expect(config.accounts["test-account"]).toBeDefined();
+      expect(config.accounts["test-account"].accessToken).toBe(mockAccessToken);
+      expect(config.accounts["test-account"].accountId).toBe(mockAccountId);
+      expect(config.accounts["test-account"].accountName).toBe("Test Account");
+      expect(config.accounts["test-account"].userEmail).toBe(
+        "test@example.com",
+      );
+    });
+  });
+
+  describe("legacy and OAuth login paths", () => {
+    it("should show --no-browser flag in help output for non-OAuth login", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:login", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("--no-browser");
+      expect(stdout).toContain("Do not open a browser");
+    });
+
+    it("should store authMethod as non-oauth when logging in with direct token argument", async () => {
+      // Mock the /me endpoint
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: mockAccountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
+
+      // Mock the /me/accounts endpoint
+      nock("https://control.ably.net")
+        .get("/v1/me/accounts")
+        .reply(200, [{ id: mockAccountId, name: "Test Account" }]);
+
+      // Mock the apps list endpoint
+      nock("https://control.ably.net")
+        .get(`/v1/accounts/${mockAccountId}/apps`)
+        .reply(200, []);
+
+      await runCommand(
+        ["accounts:login", mockAccessToken, "--json"],
+        import.meta.url,
+      );
+
+      // Verify config does not have authMethod set to "oauth"
+      const mock = getMockConfigManager();
+      const config = mock.getConfig();
+      expect(config.accounts["test-account"].authMethod).not.toBe("oauth");
+    });
+
+    it("should not set refreshToken or accessTokenExpiresAt for direct token login", async () => {
+      // Mock the /me endpoint
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: mockAccountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
+
+      // Mock the /me/accounts endpoint
+      nock("https://control.ably.net")
+        .get("/v1/me/accounts")
+        .reply(200, [{ id: mockAccountId, name: "Test Account" }]);
+
+      // Mock the apps list endpoint
+      nock("https://control.ably.net")
+        .get(`/v1/accounts/${mockAccountId}/apps`)
+        .reply(200, []);
+
+      await runCommand(
+        ["accounts:login", mockAccessToken, "--json"],
+        import.meta.url,
+      );
+
+      // Verify config does not have OAuth-specific fields
+      const mock = getMockConfigManager();
+      const config = mock.getConfig();
+      expect(config.accounts["test-account"].refreshToken).toBeUndefined();
+      expect(
+        config.accounts["test-account"].accessTokenExpiresAt,
+      ).toBeUndefined();
     });
   });
 });

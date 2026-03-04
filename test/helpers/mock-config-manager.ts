@@ -455,6 +455,78 @@ export class MockConfigManager implements ConfigManager {
     );
   }
 
+  public storeOAuthTokens(
+    alias: string,
+    tokens: {
+      accessToken: string;
+      refreshToken: string;
+      expiresAt: number;
+      scope?: string;
+      userId?: string;
+      userEmail?: string;
+    },
+    accountInfo?: {
+      accountId?: string;
+      accountName?: string;
+    },
+  ): void {
+    this.config.accounts[alias] = {
+      ...this.config.accounts[alias],
+      accessToken: tokens.accessToken,
+      accessTokenExpiresAt: tokens.expiresAt,
+      accountId:
+        accountInfo?.accountId ?? this.config.accounts[alias]?.accountId,
+      accountName:
+        accountInfo?.accountName ?? this.config.accounts[alias]?.accountName,
+      apps: this.config.accounts[alias]?.apps || {},
+      authMethod: "oauth",
+      currentAppId: this.config.accounts[alias]?.currentAppId,
+      oauthScope: tokens.scope,
+      refreshToken: tokens.refreshToken,
+      userEmail: tokens.userEmail ?? this.config.accounts[alias]?.userEmail,
+    };
+
+    if (!this.config.current || !this.config.current.account) {
+      this.config.current = { account: alias };
+    }
+  }
+
+  public getOAuthTokens(alias?: string):
+    | {
+        accessToken: string;
+        refreshToken: string;
+        expiresAt: number;
+      }
+    | undefined {
+    const account = alias
+      ? this.config.accounts[alias]
+      : this.getCurrentAccount();
+    if (!account || account.authMethod !== "oauth") return undefined;
+    if (!account.refreshToken || !account.accessTokenExpiresAt)
+      return undefined;
+
+    return {
+      accessToken: account.accessToken,
+      expiresAt: account.accessTokenExpiresAt,
+      refreshToken: account.refreshToken,
+    };
+  }
+
+  public isAccessTokenExpired(alias?: string): boolean {
+    const account = alias
+      ? this.config.accounts[alias]
+      : this.getCurrentAccount();
+    if (!account || !account.accessTokenExpiresAt) return false;
+    return Date.now() >= account.accessTokenExpiresAt - 60_000;
+  }
+
+  public getAuthMethod(alias?: string): "oauth" | "token" | undefined {
+    const account = alias
+      ? this.config.accounts[alias]
+      : this.getCurrentAccount();
+    return account?.authMethod;
+  }
+
   public switchAccount(alias: string): boolean {
     if (!this.config.accounts[alias]) {
       return false;
@@ -466,6 +538,11 @@ export class MockConfigManager implements ConfigManager {
 
     this.config.current.account = alias;
     return true;
+  }
+
+  public setAccountControlHost(alias: string, controlHost: string): void {
+    if (!this.config.accounts[alias]) return;
+    this.config.accounts[alias].controlHost = controlHost;
   }
 }
 

@@ -1,11 +1,13 @@
 import fetch, { type RequestInit } from "node-fetch";
 import { getCliVersion } from "../utils/version.js";
 import isTestMode from "../utils/test-mode.js";
+import type { TokenRefreshMiddleware } from "./token-refresh-middleware.js";
 
 export interface ControlApiOptions {
   accessToken: string;
   controlHost?: string;
   logErrors?: boolean;
+  tokenRefreshMiddleware?: TokenRefreshMiddleware;
 }
 
 export interface App {
@@ -163,14 +165,31 @@ export interface MeResponse {
   user: { email: string };
 }
 
+export interface AccountSummary {
+  id: string;
+  name: string;
+}
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 export class ControlApi {
   private accessToken: string;
   private controlHost: string;
   private logErrors: boolean;
+  private tokenRefreshMiddleware?: TokenRefreshMiddleware;
 
   constructor(options: ControlApiOptions) {
     this.accessToken = options.accessToken;
     this.controlHost = options.controlHost || "control.ably.net";
+    this.tokenRefreshMiddleware = options.tokenRefreshMiddleware;
     // Respect SUPPRESS_CONTROL_API_ERRORS env var for default behavior
     // Explicit options.logErrors will override the env var.
     // eslint-disable-next-line unicorn/no-negated-condition
@@ -374,6 +393,20 @@ export class ControlApi {
     return this.request<Key>(`/apps/${appId}/keys/${keyIdOrValue}`);
   }
 
+  // Get all accounts for the authenticated user
+  async getAccounts(): Promise<AccountSummary[]> {
+    try {
+      return await this.request<AccountSummary[]>("/me/accounts");
+    } catch (error: unknown) {
+      // Graceful degradation: fall back to single account from /me if endpoint not available
+      if (error instanceof ApiError && error.statusCode === 404) {
+        const me = await this.getMe();
+        return [{ id: me.account.id, name: me.account.name }];
+      }
+      throw error;
+    }
+  }
+
   // Get user and account info
   async getMe(): Promise<MeResponse> {
     return this.request<MeResponse>("/me");
@@ -509,6 +542,12 @@ export class ControlApi {
     method = "GET",
     body?: unknown,
   ): Promise<T> {
+    // If we have a token refresh middleware, get a valid token before each request
+    if (this.tokenRefreshMiddleware) {
+      this.accessToken =
+        await this.tokenRefreshMiddleware.getValidAccessToken();
+    }
+
     const url = this.controlHost.includes("local")
       ? `http://${this.controlHost}/api/v1${path}`
       : `https://${this.controlHost}/v1${path}`;
@@ -570,7 +609,7 @@ export class ControlApi {
         // Include short string responses directly
         errorMessage += `: ${responseData}`;
       }
-      throw new Error(errorMessage);
+      throw new ApiError(errorMessage, response.status);
     }
 
     if (response.status === 204) {
