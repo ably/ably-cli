@@ -58,9 +58,10 @@ export default class AccountsLogout extends ControlBaseCommand {
     }
 
     const accounts = this.configManager.listAccounts();
-    const accountExists = accounts.some(
+    const targetAccount = accounts.find(
       (account) => account.alias === targetAlias,
-    );
+    )?.account;
+    const accountExists = Boolean(targetAccount);
 
     if (!accountExists) {
       const error = `Account with alias "${targetAlias}" not found. Use "ably accounts list" to see available accounts.`;
@@ -94,7 +95,9 @@ export default class AccountsLogout extends ControlBaseCommand {
       const oauthTokens = this.configManager.getOAuthTokens(targetAlias);
       if (oauthTokens) {
         const oauthClient = new OAuthClient({
-          controlHost: flags["control-host"],
+          controlHost:
+            (flags["control-host"] as string | undefined) ||
+            targetAccount?.controlHost,
         });
         // Best-effort revocation -- don't block on failure
         await Promise.all([

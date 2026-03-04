@@ -270,6 +270,40 @@ describe("accounts:logout command", () => {
       expect(config.accounts["testaccount"]).toBeUndefined();
     });
 
+    it("should use stored control host for revocation when flag is not provided", async () => {
+      const customControlHost = "custom.ably.net";
+      const mock = getMockConfigManager();
+      mock.setConfig({
+        current: { account: "testaccount" },
+        accounts: {
+          testaccount: {
+            accessToken: "oauth_access_token",
+            accessTokenExpiresAt: Date.now() + 3600000,
+            accountId: "acc-123",
+            accountName: "Test Account",
+            authMethod: "oauth",
+            controlHost: customControlHost,
+            refreshToken: "oauth_refresh_token",
+            userEmail: "test@example.com",
+          },
+        },
+      });
+
+      const revokeScope = nock(`https://${customControlHost}`)
+        .post("/oauth/revoke")
+        .twice()
+        .reply(200);
+
+      const { stdout } = await runCommand(
+        ["accounts:logout", "--force", "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", true);
+      expect(revokeScope.isDone()).toBe(true);
+    });
+
     it("should not call revocation endpoint for non-OAuth account logout", async () => {
       const mock = getMockConfigManager();
       mock.setConfig({

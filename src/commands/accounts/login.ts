@@ -98,21 +98,23 @@ export default class AccountsLogin extends ControlBaseCommand {
         controlHost: flags["control-host"],
       });
 
-      const [{ user }, accounts] = await Promise.all([
+      const [{ account, user }, accounts] = await Promise.all([
         controlApi.getMe(),
         controlApi.getAccounts(),
       ]);
 
       let selectedAccountInfo: { id: string; name: string };
 
-      if (accounts.length === 1) {
+      if (accounts.length === 0) {
+        selectedAccountInfo = { id: account.id, name: account.name };
+      } else if (accounts.length === 1) {
         selectedAccountInfo = accounts[0];
       } else if (accounts.length > 1 && !this.shouldOutputJson(flags)) {
         const picked =
           await this.interactiveHelper.selectAccountFromApi(accounts);
         selectedAccountInfo = picked ?? accounts[0];
       } else {
-        // Multiple accounts in JSON mode or empty (backward compat: use first)
+        // Multiple accounts in JSON mode (backward compat: use first)
         selectedAccountInfo = accounts[0];
       }
 
@@ -126,10 +128,14 @@ export default class AccountsLogin extends ControlBaseCommand {
 
       // Store based on auth method
       if (oauthTokens) {
-        this.configManager.storeOAuthTokens(alias, oauthTokens, {
-          accountId: selectedAccountInfo.id,
-          accountName: selectedAccountInfo.name,
-        });
+        this.configManager.storeOAuthTokens(
+          alias,
+          { ...oauthTokens, userEmail: oauthTokens.userEmail ?? user.email },
+          {
+            accountId: selectedAccountInfo.id,
+            accountName: selectedAccountInfo.name,
+          },
+        );
       } else {
         this.configManager.storeAccount(accessToken, alias, {
           accountId: selectedAccountInfo.id,

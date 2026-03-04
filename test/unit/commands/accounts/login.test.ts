@@ -128,6 +128,48 @@ describe("accounts:login command", () => {
       expect(config.accounts[customAlias].userEmail).toBe("test@example.com");
     });
 
+    it("should fall back to /me account when /me/accounts is empty", async () => {
+      const fallbackAccountId = "fallback-account-id";
+      const fallbackAccountName = "Fallback Account";
+
+      // Mock the /me endpoint twice - once for initial login, once for listApps
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .twice()
+        .reply(200, {
+          account: { id: fallbackAccountId, name: fallbackAccountName },
+          user: { email: "fallback@example.com" },
+        });
+
+      // Mock an empty /me/accounts response
+      nock("https://control.ably.net").get("/v1/me/accounts").reply(200, []);
+
+      // Mock the apps list endpoint
+      nock("https://control.ably.net")
+        .get(`/v1/accounts/${fallbackAccountId}/apps`)
+        .reply(200, []);
+
+      const { stdout } = await runCommand(
+        ["accounts:login", mockAccessToken, "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", true);
+      expect(result.account).toHaveProperty("id", fallbackAccountId);
+      expect(result.account).toHaveProperty("name", fallbackAccountName);
+
+      const mock = getMockConfigManager();
+      const config = mock.getConfig();
+      expect(config.accounts["fallback-account"]).toBeDefined();
+      expect(config.accounts["fallback-account"].accountId).toBe(
+        fallbackAccountId,
+      );
+      expect(config.accounts["fallback-account"].accountName).toBe(
+        fallbackAccountName,
+      );
+    });
+
     it("should include app info when single app is auto-selected", async () => {
       const mockAppId = "app-123";
       const mockAppName = "My Only App";
@@ -400,6 +442,54 @@ describe("accounts:login command", () => {
       expect(
         config.accounts["test-account"].accessTokenExpiresAt,
       ).toBeUndefined();
+    });
+
+    it("should store user email from /me for OAuth login when token response omits user_email", async () => {
+      const oauthAccountId = "oauth-account-id";
+      const oauthEmail = "oauth-user@example.com";
+
+      nock("https://ably.com").post("/oauth/authorize_device").reply(200, {
+        device_code: "device-code-123",
+        expires_in: 300,
+        interval: 0.01,
+        user_code: "ABC123",
+        verification_uri: "https://ably.com/verify",
+        verification_uri_complete: "https://ably.com/verify?user_code=ABC123",
+      });
+
+      nock("https://ably.com").post("/oauth/token").reply(200, {
+        access_token: "oauth_access_token",
+        expires_in: 3600,
+        refresh_token: "oauth_refresh_token",
+        token_type: "Bearer",
+      });
+
+      // Mock the /me endpoint twice - once for initial login, once for listApps
+      nock("https://control.ably.net")
+        .get("/v1/me")
+        .twice()
+        .reply(200, {
+          account: { id: oauthAccountId, name: "OAuth Account" },
+          user: { email: oauthEmail },
+        });
+
+      nock("https://control.ably.net")
+        .get("/v1/me/accounts")
+        .reply(200, [{ id: oauthAccountId, name: "OAuth Account" }]);
+
+      nock("https://control.ably.net")
+        .get(`/v1/accounts/${oauthAccountId}/apps`)
+        .reply(200, []);
+
+      await runCommand(
+        ["accounts:login", "--no-browser", "--json"],
+        import.meta.url,
+      );
+
+      const mock = getMockConfigManager();
+      const config = mock.getConfig();
+      expect(config.accounts["oauth-account"].authMethod).toBe("oauth");
+      expect(config.accounts["oauth-account"].userEmail).toBe(oauthEmail);
     });
   });
 });

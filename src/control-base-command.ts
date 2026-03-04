@@ -19,21 +19,23 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
   protected createControlApi(flags: BaseFlags): ControlApi {
     let accessToken = flags["access-token"] || process.env.ABLY_ACCESS_TOKEN;
     let tokenRefreshMiddleware: TokenRefreshMiddleware | undefined;
+    let currentAccount = this.configManager.getCurrentAccount();
 
     if (!accessToken) {
-      const account = this.configManager.getCurrentAccount();
-      if (!account) {
+      if (!currentAccount) {
         this.error(
           `No access token provided. Please specify --access-token or configure an account with "ably accounts login".`,
         );
       }
 
-      accessToken = account.accessToken;
+      accessToken = currentAccount.accessToken;
 
       // Set up token refresh middleware for OAuth accounts
       if (this.configManager.getAuthMethod() === "oauth") {
         const oauthClient = new OAuthClient({
-          controlHost: flags["control-host"],
+          controlHost:
+            (flags["control-host"] as string | undefined) ||
+            currentAccount?.controlHost,
         });
         tokenRefreshMiddleware = new TokenRefreshMiddleware(
           this.configManager,
