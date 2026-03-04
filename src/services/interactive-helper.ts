@@ -1,6 +1,6 @@
 import inquirer from "inquirer";
 import type { ConfigManager, AccountConfig } from "./config-manager.js";
-import type { App, ControlApi, Key } from "./control-api.js";
+import type { AccountSummary, App, ControlApi, Key } from "./control-api.js";
 
 export interface InteractiveHelperOptions {
   logErrors?: boolean;
@@ -66,6 +66,39 @@ export class InteractiveHelper {
               value: account,
             };
           }),
+          message: "Select an account:",
+          name: "selectedAccount",
+          type: "list",
+        },
+      ]);
+
+      return selectedAccount;
+    } catch (error) {
+      if (this.logErrors) {
+        console.error("Error selecting account:", error);
+      }
+      return null;
+    }
+  }
+
+  /**
+   * Interactively select an account from API results (multi-account OAuth flow)
+   */
+  async selectAccountFromApi(
+    accounts: AccountSummary[],
+  ): Promise<AccountSummary | null> {
+    try {
+      if (accounts.length === 0) {
+        console.log("No accounts found.");
+        return null;
+      }
+
+      const { selectedAccount } = await inquirer.prompt([
+        {
+          choices: accounts.map((account) => ({
+            name: `${account.name} (${account.id})`,
+            value: account,
+          })),
           message: "Select an account:",
           name: "selectedAccount",
           type: "list",

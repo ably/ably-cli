@@ -539,6 +539,11 @@ export class MockConfigManager implements ConfigManager {
     this.config.current.account = alias;
     return true;
   }
+
+  public setAccountControlHost(alias: string, controlHost: string): void {
+    if (!this.config.accounts[alias]) return;
+    this.config.accounts[alias].controlHost = controlHost;
+  }
 }
 
 /**

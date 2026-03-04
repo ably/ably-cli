@@ -1,7 +1,10 @@
 import { Args } from "@oclif/core";
+import chalk from "chalk";
+import inquirer from "inquirer";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { ControlApi } from "../../services/control-api.js";
+import { ControlApi, type AccountSummary } from "../../services/control-api.js";
+import { slugifyAccountName } from "../../utils/slugify.js";
 
 export default class AccountsSwitch extends ControlBaseCommand {
   static override args = {
@@ -27,17 +30,14 @@ export default class AccountsSwitch extends ControlBaseCommand {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(AccountsSwitch);
 
-    // Get available accounts
-    const accounts = this.configManager.listAccounts();
+    const localAccounts = this.configManager.listAccounts();
 
-    if (accounts.length === 0) {
-      // No accounts configured, proxy to login command
+    if (localAccounts.length === 0) {
       if (this.shouldOutputJson(flags)) {
-        const error =
-          'No accounts configured. Use "ably accounts login" to add an account.';
         this.jsonError(
           {
-            error,
+            error:
+              'No accounts configured. Use "ably accounts login" to add an account.',
             success: false,
           },
           flags,
@@ -45,7 +45,6 @@ export default class AccountsSwitch extends ControlBaseCommand {
         return;
       }
 
-      // In interactive mode, proxy to login
       this.log("No accounts configured. Redirecting to login...");
       await this.config.runCommand("accounts:login");
       return;
@@ -53,22 +52,21 @@ export default class AccountsSwitch extends ControlBaseCommand {
 
     // If alias is provided, switch directly
     if (args.alias) {
-      await this.switchToAccount(args.alias, accounts, flags);
+      await this.switchToLocalAccount(args.alias, localAccounts, flags);
       return;
     }
 
-    // Otherwise, show interactive selection if not in JSON mode
+    // JSON mode requires an explicit alias
     if (this.shouldOutputJson(flags)) {
-      const error =
-        "No account alias provided. Please specify an account alias to switch to.";
       this.jsonError(
         {
-          availableAccounts: accounts.map(({ account, alias }) => ({
+          availableAccounts: localAccounts.map(({ account, alias }) => ({
             alias,
             id: account.accountId || "Unknown",
             name: account.accountName || "Unknown",
           })),
-          error,
+          error:
+            "No account alias provided. Please specify an account alias to switch to.",
           success: false,
         },
         flags,
@@ -76,17 +74,159 @@ export default class AccountsSwitch extends ControlBaseCommand {
       return;
     }
 
-    this.log("Select an account to switch to:");
-    const selectedAccount = await this.interactiveHelper.selectAccount();
+    // Interactive mode: show local aliases + remote accounts
+    const selected = await this.interactiveSwitch(localAccounts, flags);
 
-    if (selectedAccount) {
-      await this.switchToAccount(selectedAccount.alias, accounts, flags);
-    } else {
+    if (!selected) {
       this.log("Account switch cancelled.");
     }
   }
 
-  private async switchToAccount(
+  private async interactiveSwitch(
+    localAccounts: Array<{
+      account: {
+        accountId?: string;
+        accountName?: string;
+        userEmail?: string;
+      };
+      alias: string;
+    }>,
+    flags: Record<string, unknown>,
+  ): Promise<boolean> {
+    const currentAlias = this.configManager.getCurrentAccountAlias();
+
+    // Try to fetch remote accounts using the current token
+    let remoteAccounts: AccountSummary[] = [];
+    const accessToken = this.configManager.getAccessToken();
+    if (accessToken) {
+      try {
+        const currentAccount = this.configManager.getCurrentAccount();
+        const controlHost =
+          (flags["control-host"] as string | undefined) ||
+          currentAccount?.controlHost;
+        const controlApi = new ControlApi({
+          accessToken,
+          controlHost,
+        });
+        remoteAccounts = await controlApi.getAccounts();
+      } catch {
+        // Couldn't fetch remote accounts — fall back to local only
+      }
+    }
+
+    // Build local account IDs set for deduplication
+    const localAccountIds = new Set(
+      localAccounts.map((a) => a.account.accountId).filter(Boolean),
+    );
+
+    // Remote accounts not already configured locally
+    const remoteOnly = remoteAccounts.filter((r) => !localAccountIds.has(r.id));
+
+    type Choice = {
+      name: string;
+      value:
+        | { type: "local"; alias: string }
+        | { type: "remote"; account: AccountSummary };
+    };
+
+    const choices: Array<Choice | inquirer.Separator> = [];
+
+    // Local accounts section
+    if (localAccounts.length > 0) {
+      choices.push(new inquirer.Separator("── Local accounts ──"));
+      for (const { account, alias } of localAccounts) {
+        const isCurrent = alias === currentAlias;
+        const name = account.accountName || account.accountId || "Unknown";
+        const label = `${isCurrent ? "* " : "  "}${alias} ${chalk.dim(`(${name})`)}`;
+        choices.push({ name: label, value: { type: "local", alias } });
+      }
+    }
+
+    // Remote-only accounts section
+    if (remoteOnly.length > 0) {
+      choices.push(
+        new inquirer.Separator("── Other accounts (no login required) ──"),
+      );
+      for (const account of remoteOnly) {
+        const label = `  ${account.name} ${chalk.dim(`(${account.id})`)}`;
+        choices.push({ name: label, value: { type: "remote", account } });
+      }
+    }
+
+    if (choices.length === 0) {
+      this.log("No accounts available.");
+      return false;
+    }
+
+    const { selected } = await inquirer.prompt([
+      {
+        choices,
+        message: "Select an account:",
+        name: "selected",
+        type: "list",
+      },
+    ]);
+
+    if (selected.type === "local") {
+      await this.switchToLocalAccount(selected.alias, localAccounts, flags);
+      return true;
+    }
+
+    // Remote account — create a local alias using the current token
+    await this.addAndSwitchToRemoteAccount(selected.account);
+    return true;
+  }
+
+  private async addAndSwitchToRemoteAccount(
+    remoteAccount: AccountSummary,
+  ): Promise<void> {
+    const currentAlias = this.configManager.getCurrentAccountAlias();
+    if (!currentAlias) {
+      this.error("No current account to copy credentials from.");
+      return;
+    }
+
+    const oauthTokens = this.configManager.getOAuthTokens(currentAlias);
+    if (!oauthTokens) {
+      this.error(
+        "Current account does not use OAuth. Please log in with the target account directly.",
+      );
+      return;
+    }
+
+    const currentAccount = this.configManager.getCurrentAccount();
+    const newAlias = slugifyAccountName(remoteAccount.name);
+
+    // Store the new alias with the same OAuth tokens but different account info
+    this.configManager.storeOAuthTokens(
+      newAlias,
+      {
+        ...oauthTokens,
+        userEmail: currentAccount?.userEmail,
+      },
+      {
+        accountId: remoteAccount.id,
+        accountName: remoteAccount.name,
+      },
+    );
+
+    // Carry over control host from the source account
+    if (currentAccount?.controlHost) {
+      this.configManager.setAccountControlHost(
+        newAlias,
+        currentAccount.controlHost,
+      );
+    }
+
+    this.configManager.switchAccount(newAlias);
+
+    this.log(
+      `Switched to account: ${chalk.cyan(remoteAccount.name)} (${remoteAccount.id})`,
+    );
+    this.log(`Saved as alias: ${chalk.cyan(newAlias)}`);
+  }
+
+  private async switchToLocalAccount(
     alias: string,
     accounts: Array<{
       account: { accountId?: string; accountName?: string };
@@ -94,7 +234,6 @@ export default class AccountsSwitch extends ControlBaseCommand {
     }>,
     flags: Record<string, unknown>,
   ): Promise<void> {
-    // Check if account exists
     const accountExists = accounts.some((account) => account.alias === alias);
 
     if (!accountExists) {
@@ -120,23 +259,15 @@ export default class AccountsSwitch extends ControlBaseCommand {
       return;
     }
 
-    // Switch to the account
     this.configManager.switchAccount(alias);
 
-    // Verify the account is valid by making an API call
     try {
       const accessToken = this.configManager.getAccessToken();
       if (!accessToken) {
         const error =
           "No access token found for this account. Please log in again.";
         if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            {
-              error,
-              success: false,
-            },
-            flags,
-          );
+          this.jsonError({ error, success: false }, flags);
           return;
         } else {
           this.error(error);
@@ -160,9 +291,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
                 alias,
                 id: account.id,
                 name: account.name,
-                user: {
-                  email: user.email,
-                },
+                user: { email: user.email },
               },
               success: true,
             },

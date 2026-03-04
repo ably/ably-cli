@@ -10,8 +10,8 @@ import { BaseFlags } from "../../types/cli.js";
 import { displayLogo } from "../../utils/logo.js";
 import openUrl from "../../utils/open-url.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
+import { slugifyAccountName } from "../../utils/slugify.js";
 
-// Moved function definition outside the class
 function validateAndGetAlias(
   input: string,
   logFn: (msg: string) => void,
@@ -91,14 +91,6 @@ export default class AccountsLogin extends ControlBaseCommand {
       accessToken = oauthTokens.accessToken;
     }
 
-    // If no alias flag provided, prompt the user
-    let { alias } = flags;
-    if (!alias && !this.shouldOutputJson(flags)) {
-      alias = await this.resolveAlias();
-    } else if (!alias) {
-      alias = "default";
-    }
-
     try {
       // Fetch account information
       const controlApi = new ControlApi({
@@ -106,21 +98,53 @@ export default class AccountsLogin extends ControlBaseCommand {
         controlHost: flags["control-host"],
       });
 
-      const { account, user } = await controlApi.getMe();
+      const [{ user }, accounts] = await Promise.all([
+        controlApi.getMe(),
+        controlApi.getAccounts(),
+      ]);
+
+      let selectedAccountInfo: { id: string; name: string };
+
+      if (accounts.length === 1) {
+        selectedAccountInfo = accounts[0];
+      } else if (accounts.length > 1 && !this.shouldOutputJson(flags)) {
+        const picked =
+          await this.interactiveHelper.selectAccountFromApi(accounts);
+        selectedAccountInfo = picked ?? accounts[0];
+      } else {
+        // Multiple accounts in JSON mode or empty (backward compat: use first)
+        selectedAccountInfo = accounts[0];
+      }
+
+      // Resolve alias AFTER account selection so we can default to account name
+      let { alias } = flags;
+      if (!alias && !this.shouldOutputJson(flags)) {
+        alias = await this.resolveAlias(selectedAccountInfo.name);
+      } else if (!alias) {
+        alias = slugifyAccountName(selectedAccountInfo.name);
+      }
 
       // Store based on auth method
       if (oauthTokens) {
         this.configManager.storeOAuthTokens(alias, oauthTokens, {
-          accountId: account.id,
-          accountName: account.name,
+          accountId: selectedAccountInfo.id,
+          accountName: selectedAccountInfo.name,
         });
       } else {
         this.configManager.storeAccount(accessToken, alias, {
-          accountId: account.id,
-          accountName: account.name,
+          accountId: selectedAccountInfo.id,
+          accountName: selectedAccountInfo.name,
           tokenId: "unknown",
           userEmail: user.email,
         });
+      }
+
+      // Persist control host so other commands (like switch) can use it
+      if (flags["control-host"]) {
+        this.configManager.setAccountControlHost(
+          alias,
+          flags["control-host"] as string,
+        );
       }
 
       // Switch to this account
@@ -233,8 +257,8 @@ export default class AccountsLogin extends ControlBaseCommand {
         const response: Record<string, unknown> = {
           account: {
             alias,
-            id: account.id,
-            name: account.name,
+            id: selectedAccountInfo.id,
+            name: selectedAccountInfo.name,
             user: { email: user.email },
           },
           authMethod: oauthTokens ? "oauth" : "token",
@@ -257,7 +281,7 @@ export default class AccountsLogin extends ControlBaseCommand {
         this.log(this.formatJsonOutput(response, flags));
       } else {
         this.log(
-          `Successfully logged in to ${chalk.cyan(account.name)} (account ID: ${chalk.greenBright(account.id)})`,
+          `Successfully logged in to ${chalk.cyan(selectedAccountInfo.name)} (account ID: ${chalk.greenBright(selectedAccountInfo.id)})`,
         );
         if (oauthTokens) {
           this.log(`Authenticated via OAuth (token auto-refreshes)`);
@@ -354,72 +378,50 @@ export default class AccountsLogin extends ControlBaseCommand {
     }
   }
 
-  private async resolveAlias(): Promise<string> {
-    const accounts = this.configManager.listAccounts();
-    const hasDefaultAccount = accounts.some(
-      (account) => account.alias === "default",
-    );
+  private async resolveAlias(accountName: string): Promise<string> {
+    const defaultAlias = slugifyAccountName(accountName);
+    const existingAccounts = this.configManager.listAccounts();
+    const aliasExists = existingAccounts.some((a) => a.alias === defaultAlias);
 
-    if (hasDefaultAccount) {
-      this.log("\nYou have not specified an alias for this account.");
+    if (aliasExists) {
       this.log(
-        "If you continue without an alias, your existing default account configuration will be overwritten.",
+        `\nAn account with alias "${defaultAlias}" already exists and will be overwritten.`,
       );
-      this.log(
-        "To maintain multiple account profiles, please provide an alias.",
+      const shouldCustomize = await promptForConfirmation(
+        "Would you like to use a different alias?",
       );
-
-      const shouldProvideAlias = await promptForConfirmation(
-        "Would you like to provide an alias for this account?",
-      );
-
-      if (shouldProvideAlias) {
-        return this.promptForAlias();
+      if (shouldCustomize) {
+        return this.promptForAlias(defaultAlias);
       }
-      this.log(
-        "No alias provided. The default account configuration will be overwritten.",
-      );
-      return "default";
+      return defaultAlias;
     }
 
-    this.log("\nYou have not specified an alias for this account.");
-    this.log(
-      "Using an alias allows you to maintain multiple account profiles that you can switch between.",
-    );
-
-    const shouldProvideAlias = await promptForConfirmation(
-      "Would you like to provide an alias for this account?",
-    );
-
-    if (shouldProvideAlias) {
-      return this.promptForAlias();
-    }
-    this.log("No alias provided. This will be set as your default account.");
-    return "default";
+    return this.promptForAlias(defaultAlias);
   }
 
-  private promptForAlias(): Promise<string> {
+  private promptForAlias(defaultAlias: string): Promise<string> {
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
     });
 
-    // Pass this.log as the logging function to the external validator
     const logFn = this.log.bind(this);
 
     return new Promise((resolve) => {
       const askForAlias = () => {
         rl.question(
-          'Enter an alias for this account (e.g. "dev", "production", "personal"): ',
-          (alias) => {
-            // Use the external validator function, passing the log function
-            const validatedAlias = validateAndGetAlias(alias, logFn);
+          `Enter an alias for this account [${defaultAlias}]: `,
+          (input) => {
+            // Accept default on empty input
+            if (!input.trim()) {
+              rl.close();
+              resolve(defaultAlias);
+              return;
+            }
+
+            const validatedAlias = validateAndGetAlias(input, logFn);
 
             if (validatedAlias === null) {
-              if (!alias.trim()) {
-                logFn("Error: Alias cannot be empty"); // Use logFn here too
-              }
-
               askForAlias();
             } else {
               rl.close();

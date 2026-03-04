@@ -165,6 +165,21 @@ export interface MeResponse {
   user: { email: string };
 }
 
+export interface AccountSummary {
+  id: string;
+  name: string;
+}
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 export class ControlApi {
   private accessToken: string;
   private controlHost: string;
@@ -378,6 +393,20 @@ export class ControlApi {
     return this.request<Key>(`/apps/${appId}/keys/${keyIdOrValue}`);
   }
 
+  // Get all accounts for the authenticated user
+  async getAccounts(): Promise<AccountSummary[]> {
+    try {
+      return await this.request<AccountSummary[]>("/me/accounts");
+    } catch (error: unknown) {
+      // Graceful degradation: fall back to single account from /me if endpoint not available
+      if (error instanceof ApiError && error.statusCode === 404) {
+        const me = await this.getMe();
+        return [{ id: me.account.id, name: me.account.name }];
+      }
+      throw error;
+    }
+  }
+
   // Get user and account info
   async getMe(): Promise<MeResponse> {
     return this.request<MeResponse>("/me");
@@ -580,7 +609,7 @@ export class ControlApi {
         // Include short string responses directly
         errorMessage += `: ${responseData}`;
       }
-      throw new Error(errorMessage);
+      throw new ApiError(errorMessage, response.status);
     }
 
     if (response.status === 204) {

@@ -21,6 +21,7 @@ export interface AccountConfig {
     [appId: string]: AppConfig;
   };
   authMethod?: "oauth" | "token";
+  controlHost?: string;
   currentAppId?: string;
   oauthScope?: string;
   refreshToken?: string;
@@ -61,6 +62,7 @@ export interface ConfigManager {
   ): void;
   switchAccount(alias: string): boolean;
   removeAccount(alias: string): boolean;
+  setAccountControlHost(alias: string, controlHost: string): void;
 
   // OAuth management
   storeOAuthTokens(
@@ -567,6 +569,12 @@ export class TomlConfigManager implements ConfigManager {
     this.config.current.account = alias;
     this.saveConfig();
     return true;
+  }
+
+  public setAccountControlHost(alias: string, controlHost: string): void {
+    if (!this.config.accounts[alias]) return;
+    this.config.accounts[alias].controlHost = controlHost;
+    this.saveConfig();
   }
 
   private ensureConfigDirExists(): void {

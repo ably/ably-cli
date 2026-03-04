@@ -19,7 +19,7 @@ import {
 import { spawn } from "node:child_process";
 import { join } from "node:path";
 
-describe("Connections E2E Tests", () => {
+describe.skipIf(!process.env.E2E_ABLY_API_KEY)("Connections E2E Tests", () => {
   beforeAll(() => {
     process.on("SIGINT", forceExit);
   });

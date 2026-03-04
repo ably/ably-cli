@@ -55,7 +55,7 @@ describe("OAuthClient", () => {
     it("client ID matches the expected value", () => {
       const client = new OAuthClient();
       expect(client.getClientId()).toBe(
-        "_YfP7jQzCscq8nAxvx0CKPx9zKNx3vcdp0QEDNAAdow",
+        "gb-I8-bZRnXs-gF83jOWKQrUxPPWp_ldTfQtgGP0EFg",
       );
     });
   });
@@ -93,7 +93,7 @@ describe("OAuthClient", () => {
         .post(
           "/oauth/authorize_device",
           (body: Record<string, string>) =>
-            body.client_id === "_YfP7jQzCscq8nAxvx0CKPx9zKNx3vcdp0QEDNAAdow" &&
+            body.client_id === "gb-I8-bZRnXs-gF83jOWKQrUxPPWp_ldTfQtgGP0EFg" &&
             body.scope === "full_access",
         )
         .reply(200, {
@@ -203,7 +203,7 @@ describe("OAuthClient", () => {
             body.grant_type ===
               "urn:ietf:params:oauth:grant-type:device_code" &&
             body.device_code === "dc_verify" &&
-            body.client_id === "_YfP7jQzCscq8nAxvx0CKPx9zKNx3vcdp0QEDNAAdow"
+            body.client_id === "gb-I8-bZRnXs-gF83jOWKQrUxPPWp_ldTfQtgGP0EFg"
           );
         })
         .reply(200, {
@@ -273,7 +273,7 @@ describe("OAuthClient", () => {
         .post("/oauth/token", (body: Record<string, string>) => {
           return (
             body.grant_type === "refresh_token" &&
-            body.client_id === "_YfP7jQzCscq8nAxvx0CKPx9zKNx3vcdp0QEDNAAdow" &&
+            body.client_id === "gb-I8-bZRnXs-gF83jOWKQrUxPPWp_ldTfQtgGP0EFg" &&
             body.refresh_token === refreshToken
           );
         })
