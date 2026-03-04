@@ -1,6 +1,7 @@
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
+import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import isTestMode from "../../../utils/test-mode.js";
 
@@ -34,6 +35,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
 
   static override flags = {
     ...SpacesBaseCommand.globalFlags,
+    ...clientIdFlag,
   };
 
   async run(): Promise<void> {

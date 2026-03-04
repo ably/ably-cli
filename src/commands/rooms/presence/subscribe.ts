@@ -11,6 +11,7 @@ import { Args, Interfaces, Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 
+import { clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
@@ -32,6 +33,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
 
   static override flags = {
     ...ChatBaseCommand.globalFlags,
+    ...clientIdFlag,
     duration: Flags.integer({
       description:
         "Automatically exit after the given number of seconds (0 = run indefinitely)",

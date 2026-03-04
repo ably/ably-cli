@@ -115,6 +115,39 @@ pnpm dev
 └── package.json       # Scripts defined here
 ```
 
+## 🏗️ Flag Architecture
+
+Flags are NOT global. Each command explicitly declares only the flags it needs via composable flag sets defined in `src/flags.ts`:
+
+- **`coreGlobalFlags`** — `--verbose`, `--json`, `--pretty-json` (on every command via `AblyBaseCommand.globalFlags`)
+- **`productApiFlags`** — core + hidden product API flags (`port`, `tlsPort`, `tls`). Use for commands that talk to the Ably product API.
+- **`controlApiFlags`** — core + hidden control API flags (`control-host`, `dashboard-host`). Use for commands that talk to the Control API.
+- **`clientIdFlag`** — `--client-id`. Add only to commands that create a realtime connection where client identity matters (presence, spaces members, cursors, locks, publish, etc.). Do NOT add globally.
+- **`endpointFlag`** — `--endpoint`. Hidden, only on `accounts login` and `accounts switch`.
+
+**When creating a new command:**
+```typescript
+// Product API command (channels, spaces, rooms, etc.)
+import { productApiFlags, clientIdFlag } from "../../flags.js";
+static override flags = {
+  ...productApiFlags,
+  ...clientIdFlag,  // Only if command needs client identity
+  // command-specific flags...
+};
+
+// Control API command (apps, keys, queues, etc.)
+import { controlApiFlags } from "../../flags.js";
+static override flags = {
+  ...controlApiFlags,
+  // command-specific flags...
+};
+```
+
+**Auth** is managed via `ably login` (stored config). Environment variables override stored config for CI, scripting, or testing:
+- `ABLY_API_KEY`, `ABLY_TOKEN`, `ABLY_ACCESS_TOKEN`
+
+Do NOT add `--api-key`, `--token`, or `--access-token` flags to commands.
+
 ## 🔍 Related Projects
 
 If this is part of a workspace, there may be:

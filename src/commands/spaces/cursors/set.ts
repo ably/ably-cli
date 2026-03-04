@@ -2,6 +2,7 @@ import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 
+import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
@@ -41,6 +42,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
   static override flags = {
     ...SpacesBaseCommand.globalFlags,
+    ...clientIdFlag,
     data: Flags.string({
       description: "The cursor data to set (as JSON string)",
       required: false,

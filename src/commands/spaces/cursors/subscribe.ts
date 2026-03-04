@@ -3,6 +3,7 @@ import { Args, Flags as _Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 
+import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
@@ -25,6 +26,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
 
   static override flags = {
     ...SpacesBaseCommand.globalFlags,
+    ...clientIdFlag,
     duration: _Flags.integer({
       description:
         "Automatically exit after the given number of seconds (0 = run indefinitely)",

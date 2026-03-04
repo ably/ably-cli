@@ -11,6 +11,7 @@
 * [CLI Usage](#cli-usage)
 * [Commands](#commands)
 * [Contributing](#contributing)
+* [or](#or)
 <!-- tocstop -->
 
 # CLI Usage
@@ -1738,9 +1739,9 @@ Subscribe to messages published on one or more Ably channels
 
 ```
 USAGE
-  $ ably channels subscribe CHANNELS... [-v] [--json | --pretty-json] [--cipher-algorithm <value>] [--cipher-key
-    <value>] [--cipher-key-length <value>] [--cipher-mode <value>] [--delta] [-D <value>] [--rewind <value>]
-    [--sequence-numbers]
+  $ ably channels subscribe CHANNELS... [-v] [--json | --pretty-json] [--client-id <value>] [--cipher-algorithm <value>]
+    [--cipher-key <value>] [--cipher-key-length <value>] [--cipher-mode <value>] [--delta] [-D <value>] [--rewind
+    <value>] [--sequence-numbers]
 
 ARGUMENTS
   CHANNELS...  Channel name(s) to subscribe to
@@ -1752,6 +1753,8 @@ FLAGS
       --cipher-key=<value>         Encryption key for decrypting messages (hex-encoded)
       --cipher-key-length=<value>  [default: 256] Length of encryption key in bits (default: 256)
       --cipher-mode=<value>        [default: cbc] Cipher mode to use (default: cbc)
+      --client-id=<value>          Overrides any default client ID when using API authentication. Use "none" to
+                                   explicitly set no client ID. Not applicable when using token authentication.
       --delta                      Enable delta compression for messages
       --json                       Output in JSON format
       --pretty-json                Output in colorized JSON format
@@ -1891,10 +1894,12 @@ Test connection to Ably
 
 ```
 USAGE
-  $ ably connections test [-v] [--json | --pretty-json] [--transport ws|xhr|all]
+  $ ably connections test [-v] [--json | --pretty-json] [--client-id <value>] [--transport ws|xhr|all]
 
 FLAGS
   -v, --verbose             Output verbose logs
+      --client-id=<value>   Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                            no client ID. Not applicable when using token authentication.
       --json                Output in JSON format
       --pretty-json         Output in colorized JSON format
       --transport=<option>  [default: all] Transport protocol to use (ws for WebSockets, xhr for HTTP)
@@ -2846,19 +2851,22 @@ Send a message to an Ably Chat room
 
 ```
 USAGE
-  $ ably rooms messages send ROOM TEXT [-v] [--json | --pretty-json] [-c <value>] [-d <value>] [--metadata <value>]
+  $ ably rooms messages send ROOM TEXT [-v] [--json | --pretty-json] [--client-id <value>] [-c <value>] [-d <value>]
+    [--metadata <value>]
 
 ARGUMENTS
   ROOM  The room to send the message to
   TEXT  The message text to send
 
 FLAGS
-  -c, --count=<value>     [default: 1] Number of messages to send (default: 1)
-  -d, --delay=<value>     [default: 40] Delay between messages in milliseconds (default: 40ms, max 25 msgs/sec)
-  -v, --verbose           Output verbose logs
-      --json              Output in JSON format
-      --metadata=<value>  Additional metadata for the message (JSON format)
-      --pretty-json       Output in colorized JSON format
+  -c, --count=<value>      [default: 1] Number of messages to send (default: 1)
+  -d, --delay=<value>      [default: 40] Delay between messages in milliseconds (default: 40ms, max 25 msgs/sec)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --metadata=<value>   Additional metadata for the message (JSON format)
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Send a message to an Ably Chat room
@@ -2887,19 +2895,21 @@ Subscribe to messages in one or more Ably Chat rooms
 
 ```
 USAGE
-  $ ably rooms messages subscribe ROOMS... [-v] [--json | --pretty-json] [--show-metadata] [-D <value>]
-  [--sequence-numbers]
+  $ ably rooms messages subscribe ROOMS... [-v] [--json | --pretty-json] [--client-id <value>] [--show-metadata] [-D <value>]
+    [--sequence-numbers]
 
 ARGUMENTS
   ROOMS...  Room name(s) to subscribe to messages from
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose           Output verbose logs
-      --json              Output in JSON format
-      --pretty-json       Output in colorized JSON format
-      --sequence-numbers  Include sequence numbers in output
-      --show-metadata     Display message metadata if available
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+      --sequence-numbers   Include sequence numbers in output
+      --show-metadata      Display message metadata if available
 
 DESCRIPTION
   Subscribe to messages in one or more Ably Chat rooms
@@ -3027,20 +3037,22 @@ Enter presence in a chat room and remain present until terminated
 
 ```
 USAGE
-  $ ably rooms presence enter ROOM [-v] [--json | --pretty-json] [--show-others] [-D <value>] [--data <value>]
-    [--sequence-numbers]
+  $ ably rooms presence enter ROOM [-v] [--json | --pretty-json] [--client-id <value>] [--show-others] [-D <value>]
+    [--data <value>] [--sequence-numbers]
 
 ARGUMENTS
   ROOM  Room to enter presence on
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose           Output verbose logs
-      --data=<value>      Data to include with the member (JSON format)
-      --json              Output in JSON format
-      --pretty-json       Output in colorized JSON format
-      --sequence-numbers  Include sequence numbers in output
-      --show-others       Show other presence events while present (default: false)
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --data=<value>       Data to include with the member (JSON format)
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+      --sequence-numbers   Include sequence numbers in output
+      --show-others        Show other presence events while present (default: false)
 
 DESCRIPTION
   Enter presence in a chat room and remain present until terminated
@@ -3063,16 +3075,18 @@ Subscribe to presence events in a chat room
 
 ```
 USAGE
-  $ ably rooms presence subscribe ROOM [-v] [--json | --pretty-json] [-D <value>]
+  $ ably rooms presence subscribe ROOM [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
   ROOM  Room to subscribe to presence for
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose           Output verbose logs
-      --json              Output in JSON format
-      --pretty-json       Output in colorized JSON format
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to presence events in a chat room
@@ -3312,15 +3326,17 @@ Get all current cursors in a space
 
 ```
 USAGE
-  $ ably spaces cursors get-all SPACE [-v] [--json | --pretty-json]
+  $ ably spaces cursors get-all SPACE [-v] [--json | --pretty-json] [--client-id <value>]
 
 ARGUMENTS
   SPACE  Space to get cursors from
 
 FLAGS
-  -v, --verbose      Output verbose logs
-      --json         Output in JSON format
-      --pretty-json  Output in colorized JSON format
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Get all current cursors in a space
@@ -3341,22 +3357,24 @@ Set a cursor with position data in a space
 
 ```
 USAGE
-  $ ably spaces cursors set SPACE [-v] [--json | --pretty-json] [--data <value>] [--x <value>] [--y <value>]
-    [--simulate] [-D <value>]
+  $ ably spaces cursors set SPACE [-v] [--json | --pretty-json] [--client-id <value>] [--data <value>] [--x <value>]
+    [--y <value>] [--simulate] [-D <value>]
 
 ARGUMENTS
   SPACE  The space to set cursor in
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = exit immediately after setting the
-                          cursor)
-  -v, --verbose           Output verbose logs
-      --data=<value>      The cursor data to set (as JSON string)
-      --json              Output in JSON format
-      --pretty-json       Output in colorized JSON format
-      --simulate          Simulate cursor movement every 250ms with random positions
-      --x=<value>         The x coordinate for cursor position
-      --y=<value>         The y coordinate for cursor position
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = exit immediately after setting the
+                           cursor)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --data=<value>       The cursor data to set (as JSON string)
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+      --simulate           Simulate cursor movement every 250ms with random positions
+      --x=<value>          The x coordinate for cursor position
+      --y=<value>          The y coordinate for cursor position
 
 DESCRIPTION
   Set a cursor with position data in a space
@@ -3389,16 +3407,18 @@ Subscribe to cursor movements in a space
 
 ```
 USAGE
-  $ ably spaces cursors subscribe SPACE [-v] [--json | --pretty-json] [-D <value>]
+  $ ably spaces cursors subscribe SPACE [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
   SPACE  Space to subscribe to cursors for
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose           Output verbose logs
-      --json              Output in JSON format
-      --pretty-json       Output in colorized JSON format
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to cursor movements in a space
@@ -3503,18 +3523,20 @@ Set your location in a space
 
 ```
 USAGE
-  $ ably spaces locations set SPACE --location <value> [-v] [--json | --pretty-json] [-D <value>]
+  $ ably spaces locations set SPACE --location <value> [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
   SPACE  Space to set location in
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = exit immediately after setting
-                          location)
-  -v, --verbose           Output verbose logs
-      --json              Output in JSON format
-      --location=<value>  (required) Location data to set (JSON format)
-      --pretty-json       Output in colorized JSON format
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = exit immediately after setting
+                           location)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --location=<value>   (required) Location data to set (JSON format)
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Set your location in a space
@@ -3533,16 +3555,18 @@ Subscribe to location updates for members in a space
 
 ```
 USAGE
-  $ ably spaces locations subscribe SPACE [-v] [--json | --pretty-json] [-D <value>]
+  $ ably spaces locations subscribe SPACE [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
   SPACE  Space to subscribe to locations for
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose           Output verbose logs
-      --json              Output in JSON format
-      --pretty-json       Output in colorized JSON format
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to location updates for members in a space
@@ -3588,17 +3612,19 @@ Acquire a lock in a space
 
 ```
 USAGE
-  $ ably spaces locks acquire SPACE LOCKID [-v] [--json | --pretty-json] [--data <value>]
+  $ ably spaces locks acquire SPACE LOCKID [-v] [--json | --pretty-json] [--client-id <value>] [--data <value>]
 
 ARGUMENTS
   SPACE   Space to acquire lock in
   LOCKID  ID of the lock to acquire
 
 FLAGS
-  -v, --verbose       Output verbose logs
-      --data=<value>  Optional data to associate with the lock (JSON format)
-      --json          Output in JSON format
-      --pretty-json   Output in colorized JSON format
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --data=<value>       Optional data to associate with the lock (JSON format)
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Acquire a lock in a space
@@ -3676,16 +3702,18 @@ Subscribe to lock events in a space
 
 ```
 USAGE
-  $ ably spaces locks subscribe SPACE [-v] [--json | --pretty-json] [-D <value>]
+  $ ably spaces locks subscribe SPACE [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
   SPACE  Space to subscribe to locks for
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose           Output verbose logs
-      --json              Output in JSON format
-      --pretty-json       Output in colorized JSON format
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to lock events in a space
@@ -3727,17 +3755,19 @@ Enter a space and remain present until terminated
 
 ```
 USAGE
-  $ ably spaces members enter SPACE [-v] [--json | --pretty-json] [--profile <value>] [-D <value>]
+  $ ably spaces members enter SPACE [-v] [--json | --pretty-json] [--client-id <value>] [--profile <value>] [-D <value>]
 
 ARGUMENTS
   SPACE  Space to enter
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose           Output verbose logs
-      --json              Output in JSON format
-      --pretty-json       Output in colorized JSON format
-      --profile=<value>   Optional profile data to include with the member (JSON format)
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+      --profile=<value>    Optional profile data to include with the member (JSON format)
 
 DESCRIPTION
   Enter a space and remain present until terminated
@@ -3758,16 +3788,18 @@ Subscribe to member presence events in a space
 
 ```
 USAGE
-  $ ably spaces members subscribe SPACE [-v] [--json | --pretty-json] [-D <value>]
+  $ ably spaces members subscribe SPACE [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
   SPACE  Space to subscribe to members for
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose           Output verbose logs
-      --json              Output in JSON format
-      --pretty-json       Output in colorized JSON format
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to member presence events in a space

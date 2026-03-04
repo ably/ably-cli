@@ -1,6 +1,7 @@
 import { Args, Flags } from "@oclif/core";
 import { ChatClient, ConnectionStatusChange, JsonObject } from "@ably/chat";
 
+import { clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 
 // Define interfaces for the message send command
@@ -54,6 +55,7 @@ export default class MessagesSend extends ChatBaseCommand {
 
   static override flags = {
     ...ChatBaseCommand.globalFlags,
+    ...clientIdFlag,
     count: Flags.integer({
       char: "c",
       default: 1,
