@@ -46,7 +46,7 @@ export async function startSubscribeCommand(
 // Start a presence enter command and wait for ready
 export async function startPresenceCommand(
   argv: string[],
-  readyMatcher: RegExp | string = /Entered presence on/,
+  readyMatcher: RegExp | string = /Entered presence/,
   opts: Partial<RunnerOpts> = {},
 ): Promise<CliRunner> {
   const outfile = getOutputFile("-presence");

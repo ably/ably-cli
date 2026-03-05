@@ -84,7 +84,7 @@ describe("Rooms E2E Tests", () => {
               "--duration",
               "15",
             ],
-            /Entered room/,
+            /Entered presence in room/,
             { timeoutMs: process.env.CI ? 20000 : 15000 },
           );
 
@@ -167,7 +167,7 @@ describe("Rooms E2E Tests", () => {
               "--duration",
               "35",
             ],
-            /Subscribing to presence events/,
+            /Subscribed to presence in room/,
             { timeoutMs: process.env.CI ? 30000 : 20000 },
           );
 
@@ -189,7 +189,7 @@ describe("Rooms E2E Tests", () => {
               "--duration",
               "25",
             ],
-            /Entered room/,
+            /Entered presence in room/,
             { timeoutMs: process.env.CI ? 30000 : 20000 },
           );
 
