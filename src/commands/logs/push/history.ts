@@ -1,4 +1,5 @@
 import { Flags } from "@oclif/core";
+import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
@@ -48,7 +49,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
       const channel = client.channels.get(channelName);
 
       // Get message history
-      const historyOptions: Record<string, unknown> = {
+      const historyOptions: Ably.RealtimeHistoryParams = {
         direction: flags.direction as "backwards" | "forwards",
         limit: flags.limit,
       };

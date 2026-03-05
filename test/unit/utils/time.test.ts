@@ -75,6 +75,26 @@ describe("parseTimestamp", () => {
     });
   });
 
+  describe("whitespace handling", () => {
+    it("should trim whitespace from numeric input", () => {
+      expect(parseTimestamp(" 1700000000000 ")).toBe(1700000000000);
+    });
+
+    it("should trim whitespace from relative input", () => {
+      const NOW = 1700000000000;
+      vi.useFakeTimers();
+      vi.setSystemTime(NOW);
+      expect(parseTimestamp(" 1h ")).toBe(NOW - 3_600_000);
+      vi.useRealTimers();
+    });
+
+    it("should trim whitespace from ISO input", () => {
+      expect(parseTimestamp(" 2023-01-01T00:00:00Z ")).toBe(
+        new Date("2023-01-01T00:00:00Z").getTime(),
+      );
+    });
+  });
+
   describe("error cases", () => {
     it("should throw on invalid input", () => {
       expect(() => parseTimestamp("not-a-date")).toThrow(
@@ -84,6 +104,19 @@ describe("parseTimestamp", () => {
 
     it("should throw on empty string", () => {
       expect(() => parseTimestamp("")).toThrow('Invalid timestamp: ""');
+    });
+
+    it("should reject date-time without timezone", () => {
+      expect(() => parseTimestamp("2023-01-01T00:00:00")).toThrow(
+        'Invalid timestamp: "2023-01-01T00:00:00"',
+      );
+    });
+
+    it("should reject non-ISO date formats", () => {
+      expect(() => parseTimestamp("03/05/2026")).toThrow("Invalid timestamp");
+      expect(() => parseTimestamp("March 5, 2026")).toThrow(
+        "Invalid timestamp",
+      );
     });
 
     it("should include the label in error messages", () => {

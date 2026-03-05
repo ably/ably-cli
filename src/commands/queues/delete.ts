@@ -59,6 +59,19 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
         return;
       }
 
+      // In JSON mode, require --force to prevent accidental destructive actions
+      if (!flags.force && this.shouldOutputJson(flags)) {
+        this.jsonError(
+          {
+            error:
+              "The --force flag is required when using --json to confirm deletion",
+            success: false,
+          },
+          flags,
+        );
+        return;
+      }
+
       // If not using force flag, prompt for confirmation
       if (!flags.force && !this.shouldOutputJson(flags)) {
         this.log(`\nYou are about to delete the following queue:`);

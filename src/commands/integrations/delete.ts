@@ -53,6 +53,19 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
       // Get integration details for confirmation
       const integration = await controlApi.getRule(appId, args.integrationId);
 
+      // In JSON mode, require --force to prevent accidental destructive actions
+      if (!flags.force && this.shouldOutputJson(flags)) {
+        this.jsonError(
+          {
+            error:
+              "The --force flag is required when using --json to confirm deletion",
+            success: false,
+          },
+          flags,
+        );
+        return;
+      }
+
       // If not using force flag, prompt for confirmation
       if (!flags.force && !this.shouldOutputJson(flags)) {
         this.log(`\nYou are about to delete the following integration:`);
