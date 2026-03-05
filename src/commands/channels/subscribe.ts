@@ -243,10 +243,10 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
             // Message data with consistent formatting
             if (isJsonData(message.data)) {
-              this.log(chalk.blue("Data:"));
+              this.log(chalk.dim("Data:"));
               this.log(formatJson(message.data));
             } else {
-              this.log(`${chalk.blue("Data:")} ${message.data}`);
+              this.log(`${chalk.dim("Data:")} ${message.data}`);
             }
 
             this.log(""); // Empty line for better readability
@@ -259,9 +259,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
       // Log the ready signal for E2E tests
       if (channelNames.length === 1) {
-        this.log(
-          `Successfully attached to channel: ${channelNames[0]}`,
-        );
+        this.log(`Successfully attached to channel: ${channelNames[0]}`);
       }
 
       // Show success message once all channels are attached

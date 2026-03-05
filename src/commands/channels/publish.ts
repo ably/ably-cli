@@ -308,7 +308,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
         ) {
           this.log(
             success(
-              `Message ${messageIndex} published to channel ${resource(args.channel as string)}.`,
+              `Message ${messageIndex} published to channel: ${resource(args.channel as string)}.`,
             ),
           );
         }
