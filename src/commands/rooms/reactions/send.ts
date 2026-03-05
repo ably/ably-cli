@@ -8,7 +8,7 @@ import {
 import { Args, Flags } from "@oclif/core";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { productApiFlags } from "../../../flags.js";
+import { clientIdFlag, productApiFlags } from "../../../flags.js";
 import { resource, success } from "../../../utils/output.js";
 
 export default class RoomsReactionsSend extends ChatBaseCommand {
@@ -34,6 +34,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
 
   static override flags = {
     ...productApiFlags,
+    ...clientIdFlag,
     metadata: Flags.string({
       description:
         "Additional metadata to send with the reaction (as JSON string)",

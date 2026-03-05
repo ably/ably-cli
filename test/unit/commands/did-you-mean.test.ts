@@ -193,13 +193,10 @@ describe("Did You Mean Functionality", () => {
               },
             });
 
-            let output = "";
             let foundPrompt = false;
             let executedCommand = false;
 
             child.stdout.on("data", (data) => {
-              output += data.toString();
-
               if (
                 data.toString().includes("Did you mean accounts current?") ||
                 data.toString().includes("(Y/n)")
@@ -232,8 +229,6 @@ describe("Did You Mean Functionality", () => {
             });
 
             child.stderr.on("data", (data) => {
-              output += data.toString();
-
               const errorOutput = data.toString();
               if (
                 errorOutput.includes("No access token provided") ||
@@ -256,7 +251,7 @@ describe("Did You Mean Functionality", () => {
               child.stdin.write("accounts curren\n");
             }, 1000);
 
-            child.on("exit", (code) => {
+            child.on("exit", () => {
               expect(foundPrompt).toBe(true);
               expect(executedCommand).toBe(true);
               resolve();

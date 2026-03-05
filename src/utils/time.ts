@@ -23,8 +23,21 @@ export function parseTimestamp(input: string, label = "timestamp"): number {
     return Date.now() - Number.parseInt(match[1], 10) * multipliers[match[2]];
   }
 
-  // ISO 8601 or other parseable date string
-  const ms = new Date(input).getTime();
+  // Strict ISO 8601 validation: date-only or date-time with optional fractional seconds and timezone
+  const trimmed = input.trim();
+  const isIso =
+    /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ||
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?$/.test(
+      trimmed,
+    );
+  if (!isIso) {
+    throw new TypeError(
+      `Invalid ${label}: "${input}". ` +
+        `Use ISO 8601 (e.g., "2023-01-01T00:00:00Z"), Unix ms (e.g., "1700000000000"), or relative (e.g., "1h", "30m", "2d").`,
+    );
+  }
+
+  const ms = new Date(trimmed).getTime();
   if (Number.isNaN(ms)) {
     throw new TypeError(
       `Invalid ${label}: "${input}". ` +
