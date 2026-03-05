@@ -110,7 +110,9 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
             if (this.realtimeClient!.connection.state === "connected") {
               clearTimeout(timeout);
               if (!this.shouldOutputJson(flags)) {
-                this.log(success(`Connected to space: ${resource(spaceName)}`));
+                this.log(
+                  success(`Connected to space: ${resource(spaceName)}.`),
+                );
               }
 
               resolve();

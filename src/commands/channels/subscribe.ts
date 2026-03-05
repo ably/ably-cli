@@ -11,7 +11,7 @@ import {
   progress,
   resource,
   success,
-  timestamp as formatTimestamp,
+  formatTimestamp,
 } from "../../utils/output.js";
 
 export default class ChannelsSubscribe extends AblyBaseCommand {

@@ -9,7 +9,7 @@ import {
   listening,
   resource,
   success,
-  timestamp as formatTimestamp,
+  formatTimestamp,
 } from "../../utils/output.js";
 
 export default class LogsSubscribe extends AblyBaseCommand {
@@ -118,7 +118,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          success(`Subscribed to app logs: ${resource(logTypes.join(", "))}`),
+          success(`Subscribed to app logs: ${resource(logTypes.join(", "))}.`),
         );
       }
 

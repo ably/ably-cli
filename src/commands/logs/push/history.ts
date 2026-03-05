@@ -4,7 +4,7 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
 import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
-import { timestamp as formatTimestamp } from "../../../utils/output.js";
+import { formatTimestamp } from "../../../utils/output.js";
 
 export default class LogsPushHistory extends AblyBaseCommand {
   static override description = "Retrieve push notification log history";

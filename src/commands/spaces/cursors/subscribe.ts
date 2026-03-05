@@ -7,9 +7,10 @@ import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
+  listening,
   resource,
   success,
-  timestamp as formatTimestamp,
+  formatTimestamp,
 } from "../../../utils/output.js";
 
 export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
@@ -337,11 +338,8 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
 
       // Print success message
       if (!this.shouldOutputJson(flags)) {
-        this.log(
-          success(
-            `Subscribed to space: ${resource(spaceName)}. Listening for cursor movements`,
-          ),
-        );
+        this.log(success(`Subscribed to space: ${resource(spaceName)}.`));
+        this.log(listening("Listening for cursor movements."));
       }
 
       // Wait until the user interrupts or the optional duration elapses

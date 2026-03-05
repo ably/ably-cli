@@ -16,6 +16,6 @@ export function resource(name: string): string {
   return chalk.cyan(name);
 }
 
-export function timestamp(ts: string): string {
+export function formatTimestamp(ts: string): string {
   return chalk.dim(`[${ts}]`);
 }

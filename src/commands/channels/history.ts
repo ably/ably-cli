@@ -103,7 +103,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
         }
 
         this.log(
-          `Found ${chalk.cyan(messages.length.toString())} messages in the history of channel: ${resource(channelName)}`,
+          `Found ${chalk.cyan(messages.length.toString())} ${messages.length === 1 ? "message" : "messages"} in the history of channel: ${resource(channelName)}`,
         );
         this.log("");
 

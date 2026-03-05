@@ -5,7 +5,12 @@ import chalk from "chalk";
 import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import { listening, resource, success } from "../../../utils/output.js";
+import {
+  listening,
+  progress,
+  resource,
+  success,
+} from "../../../utils/output.js";
 
 // Define cursor types based on Ably documentation
 interface CursorPosition {
@@ -210,7 +215,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           stateChange.current === "attached" &&
           !this.shouldOutputJson(flags)
         ) {
-          this.log(success(`Entered space: ${resource(spaceName)}`));
+          this.log(success(`Entered space: ${resource(spaceName)}.`));
         }
       };
 
@@ -393,7 +398,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         );
 
         if (!this.shouldOutputJson(flags)) {
-          this.log("Starting cursor movement simulation every 250ms...");
+          this.log(progress("Starting cursor movement simulation every 250ms"));
         }
 
         this.simulationIntervalId = setInterval(async () => {

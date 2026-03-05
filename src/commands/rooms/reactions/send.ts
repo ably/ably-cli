@@ -198,7 +198,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
         this.log(this.formatJsonOutput(resultData, flags));
       } else {
         this.log(
-          success(`Sent reaction ${emoji} in room ${resource(roomName)}`),
+          success(`Sent reaction ${emoji} in room ${resource(roomName)}.`),
         );
       }
     } catch (error) {

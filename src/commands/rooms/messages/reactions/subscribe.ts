@@ -14,7 +14,8 @@ import {
   listening,
   progress,
   resource,
-  timestamp as formatTimestamp,
+  success,
+  formatTimestamp,
 } from "../../../../utils/output.js";
 
 export default class MessagesReactionsSubscribe extends ChatBaseCommand {
@@ -128,7 +129,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
         switch (statusChange.current) {
           case RoomStatus.Attached: {
             if (!this.shouldOutputJson(flags)) {
-              this.log(chalk.green("Successfully connected to Ably"));
+              this.log(success("Connected to Ably."));
               this.log(
                 listening(
                   `Listening for message reactions in room ${resource(room)}.`,

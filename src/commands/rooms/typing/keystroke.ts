@@ -111,7 +111,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
 
         if (statusChange.current === RoomStatus.Attached) {
           if (!this.shouldOutputJson(flags)) {
-            this.log(success(`Connected to room: ${resource(roomName)}`));
+            this.log(success(`Connected to room: ${resource(roomName)}.`));
           }
 
           // Start typing immediately

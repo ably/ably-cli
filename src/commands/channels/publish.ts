@@ -159,8 +159,8 @@ export default class ChannelsPublish extends AblyBaseCommand {
       total > 1 ? "multiPublishComplete" : "singlePublishComplete";
     const eventMessage =
       total > 1
-        ? `Published ${total} messages to channel "${args.channel}"`
-        : `Published message to channel "${args.channel}"`;
+        ? `Published ${total} messages to channel ${args.channel}`
+        : `Published message to channel ${args.channel}`;
     this.logCliEvent(flags, "publish", eventType, eventMessage, finalResult);
 
     if (!this.shouldSuppressOutput(flags)) {
@@ -298,7 +298,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
           flags,
           "publish",
           "messagePublished",
-          `Message ${messageIndex} published to channel "${args.channel}"`,
+          `Message ${messageIndex} published to channel ${args.channel}`,
           { index: messageIndex, message, channel: args.channel },
         );
         if (

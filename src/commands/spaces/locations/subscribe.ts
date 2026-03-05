@@ -9,7 +9,7 @@ import {
   listening,
   progress,
   resource,
-  timestamp as formatTimestamp,
+  formatTimestamp,
 } from "../../../utils/output.js";
 
 // Define interfaces for location types

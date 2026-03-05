@@ -10,7 +10,7 @@ import {
   listening,
   resource,
   success,
-  timestamp as formatTimestamp,
+  formatTimestamp,
 } from "../../../utils/output.js";
 
 export default class ChannelsPresenceEnter extends AblyBaseCommand {

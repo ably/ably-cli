@@ -208,11 +208,11 @@ But focus on THIS project unless specifically asked about others.
 ## CLI Output & Flag Conventions
 
 ### Output patterns (use helpers from src/utils/output.ts)
-- **Progress**: `progress("Attaching to channel: " + resource(name))` — no color on action text, ends with `...`
-- **Success**: `success("Message published to channel " + resource(name) + ".")` — green ✓, ends with `.`
-- **Listening**: `listening("Listening for messages.")` — dim, includes "Press Ctrl+C to exit."
-- **Resource names**: Always `resource(name)` (cyan), never quoted
-- **Timestamps**: `formatTimestamp(ts)` — dim `[timestamp]` for event streams. Import as `formatTimestamp` to avoid clashing with local `timestamp` variables.
+- **Progress**: `progress("Attaching to channel: " + resource(name))` — no color on action text, `progress()` appends `...` automatically. Never manually write `"Doing something..."` — always use `progress("Doing something")`.
+- **Success**: `success("Message published to channel " + resource(name) + ".")` — green ✓, **must** end with `.` (not `!`). Never use `chalk.green("✓ ...")` directly — always use the `success()` helper.
+- **Listening**: `listening("Listening for messages.")` — dim, includes "Press Ctrl+C to exit." Don't combine listening text inside a `success()` call — use a separate `listening()` call.
+- **Resource names**: Always `resource(name)` (cyan), never quoted — including in `logCliEvent` messages.
+- **Timestamps**: `formatTimestamp(ts)` — dim `[timestamp]` for event streams. Exported as `formatTimestamp` to avoid clashing with local `timestamp` variables.
 - **JSON guard**: All human-readable output (progress, success, listening messages) must be wrapped in `if (!this.shouldOutputJson(flags))` so it doesn't pollute `--json` output. Only JSON payloads should be emitted when `--json` is active.
 
 ### Additional output patterns (direct chalk, not helpers)

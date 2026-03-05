@@ -3,7 +3,7 @@ import chalk from "chalk";
 import fetch from "node-fetch";
 import ora from "ora";
 import openUrl from "../utils/open-url.js";
-import { success } from "../utils/output.js";
+import { progress, success } from "../utils/output.js";
 import { getCliVersion } from "../utils/version.js";
 
 interface StatusResponse {
@@ -32,7 +32,7 @@ export default class StatusCommand extends Command {
       ? null
       : ora("Checking Ably service status...").start();
     if (isInteractive) {
-      this.log("Checking Ably service status...");
+      this.log(progress("Checking Ably service status"));
     }
 
     try {
@@ -49,7 +49,7 @@ export default class StatusCommand extends Command {
           "Invalid response from status endpoint: status attribute is missing",
         );
       } else if (data.status) {
-        this.log(success(`Ably services are ${chalk.green("operational")}`));
+        this.log(success(`Ably services are ${chalk.green("operational")}.`));
         this.log("No incidents currently reported");
       } else {
         this.log(

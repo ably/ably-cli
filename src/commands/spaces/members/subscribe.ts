@@ -5,11 +5,7 @@ import chalk from "chalk";
 import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import {
-  listening,
-  progress,
-  timestamp as formatTimestamp,
-} from "../../../utils/output.js";
+import { listening, progress, formatTimestamp } from "../../../utils/output.js";
 
 export default class SpacesMembersSubscribe extends SpacesBaseCommand {
   static override args = {

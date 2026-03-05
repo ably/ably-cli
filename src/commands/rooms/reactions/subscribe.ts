@@ -9,7 +9,7 @@ import {
   success,
   listening,
   resource,
-  timestamp as formatTimestamp,
+  formatTimestamp,
 } from "../../../utils/output.js";
 
 export default class RoomsReactionsSubscribe extends ChatBaseCommand {

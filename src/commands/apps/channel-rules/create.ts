@@ -2,6 +2,7 @@ import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { success } from "../../../utils/output.js";
 
 export default class ChannelRulesCreateCommand extends ControlBaseCommand {
   static description = "Create a channel rule";
@@ -168,7 +169,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
           ),
         );
       } else {
-        this.log(chalk.green("✓ Channel rule created successfully!"));
+        this.log(success("Channel rule created."));
         this.log(`ID: ${createdNamespace.id}`);
         this.log(
           `Persisted: ${createdNamespace.persisted ? chalk.green("Yes") : "No"}`,

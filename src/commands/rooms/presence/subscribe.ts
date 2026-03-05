@@ -19,7 +19,7 @@ import {
   success,
   listening,
   resource,
-  timestamp as formatTimestamp,
+  formatTimestamp,
 } from "../../../utils/output.js";
 
 export default class RoomsPresenceSubscribe extends ChatBaseCommand {
@@ -162,7 +162,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
           !this.shouldOutputJson(flags) &&
           this.roomName
         ) {
-          this.log(success(`Connected to room: ${resource(this.roomName)}`));
+          this.log(success(`Connected to room: ${resource(this.roomName)}.`));
         } else if (
           statusChange.current === RoomStatus.Failed &&
           !this.shouldOutputJson(flags)

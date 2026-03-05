@@ -9,7 +9,7 @@ import {
   listening,
   progress,
   resource,
-  timestamp as formatTimestamp,
+  formatTimestamp,
 } from "../../../utils/output.js";
 
 export default class SpacesLocksSubscribe extends SpacesBaseCommand {

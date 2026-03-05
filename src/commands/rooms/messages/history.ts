@@ -3,7 +3,7 @@ import { OrderBy } from "@ably/chat";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { timestamp as formatTimestamp } from "../../../utils/output.js";
+import { formatTimestamp } from "../../../utils/output.js";
 
 export default class MessagesHistory extends ChatBaseCommand {
   static override args = {

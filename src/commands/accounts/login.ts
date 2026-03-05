@@ -241,7 +241,7 @@ export default class AccountsLogin extends ControlBaseCommand {
               this.configManager.setCurrentApp(app.id);
               this.configManager.storeAppInfo(app.id, { appName: app.name });
 
-              this.log(success("App created successfully!"));
+              this.log(success("App created successfully."));
             } catch (createError) {
               this.warn(
                 `Failed to create app: ${createError instanceof Error ? createError.message : String(createError)}`,

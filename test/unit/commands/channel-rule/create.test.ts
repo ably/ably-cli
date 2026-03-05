@@ -32,7 +32,7 @@ describe("channel-rule:create command (alias)", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Channel rule created successfully");
+      expect(stdout).toContain("Channel rule created.");
     });
 
     it("should require name flag", async () => {

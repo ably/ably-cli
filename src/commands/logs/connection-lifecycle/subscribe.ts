@@ -5,11 +5,7 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import {
-  listening,
-  success,
-  timestamp as formatTimestamp,
-} from "../../../utils/output.js";
+import { listening, success, formatTimestamp } from "../../../utils/output.js";
 
 export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
   static override description = "Subscribe to live connection lifecycle logs";

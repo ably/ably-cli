@@ -9,7 +9,7 @@ import {
   success,
   listening,
   resource,
-  timestamp as formatTimestamp,
+  formatTimestamp,
 } from "../../../utils/output.js";
 
 // Define message interface
