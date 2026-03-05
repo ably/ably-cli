@@ -234,11 +234,11 @@ export default class MessagesSubscribe extends ChatBaseCommand {
   }
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(MessagesSubscribe);
-    const _args = await this.parse(MessagesSubscribe);
+    const parseResult = await this.parse(MessagesSubscribe);
+    const { flags } = parseResult;
 
     // Get all room names from argv
-    this.roomNames = _args.argv as string[];
+    this.roomNames = parseResult.argv as string[];
 
     if (this.roomNames.length === 0) {
       const errorMsg = "At least one room name is required";

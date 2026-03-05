@@ -92,11 +92,9 @@ describe("Interactive Mode - SIGINT Handling", () => {
         done();
       });
 
-      // Timeout fallback
+      // Timeout fallback - always send exit to prevent hanging
       setTimeout(() => {
-        if (!commandStarted) {
-          child.stdin.write("exit\n");
-        }
+        child.stdin.write("exit\n");
       }, timeout - 1000);
     },
     timeout,

@@ -87,9 +87,12 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
         }
         this.data = JSON.parse(trimmed);
       } catch (error) {
-        this.error(
-          `Invalid data JSON: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        const errorMsg = `Invalid data JSON: ${error instanceof Error ? error.message : String(error)}`;
+        if (this.shouldOutputJson(flags)) {
+          this.jsonError({ error: errorMsg, success: false }, flags);
+        } else {
+          this.error(errorMsg);
+        }
         return; // Exit early if JSON is invalid
       }
     }

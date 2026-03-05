@@ -105,9 +105,12 @@ export default class StatsAccountCommand extends ControlBaseCommand {
         this.statsDisplay!.display(stats[0]);
       }
     } catch (error) {
-      this.error(
-        `Error fetching stats: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorMsg = `Error fetching stats: ${error instanceof Error ? error.message : String(error)}`;
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
     }
   }
 
@@ -192,9 +195,12 @@ export default class StatsAccountCommand extends ControlBaseCommand {
         // The process will exit via the SIGINT/SIGTERM handlers
       });
     } catch (error) {
-      this.error(
-        `Error setting up live stats: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorMsg = `Error setting up live stats: ${error instanceof Error ? error.message : String(error)}`;
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
       if (this.pollInterval) {
         clearInterval(this.pollInterval);
       }
@@ -254,9 +260,12 @@ export default class StatsAccountCommand extends ControlBaseCommand {
         this.statsDisplay!.display(stat);
       }
     } catch (error) {
-      this.error(
-        `Error fetching account stats: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorMsg = `Error fetching account stats: ${error instanceof Error ? error.message : String(error)}`;
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
     }
   }
 }

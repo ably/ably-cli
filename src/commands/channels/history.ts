@@ -141,10 +141,12 @@ export default class ChannelsHistory extends AblyBaseCommand {
         }
       }
     } catch (error) {
-      // Restore standard error handling
-      this.error(
-        `Error retrieving channel history: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorMsg = `Error retrieving channel history: ${error instanceof Error ? error.message : String(error)}`;
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
     }
   }
 }

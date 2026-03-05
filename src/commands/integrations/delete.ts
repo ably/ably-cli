@@ -102,9 +102,12 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
         this.log(`Source Type: ${integration.source.type}`);
       }
     } catch (error) {
-      this.error(
-        `Error deleting integration: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorMsg = `Error deleting integration: ${error instanceof Error ? error.message : String(error)}`;
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
     }
   }
 }

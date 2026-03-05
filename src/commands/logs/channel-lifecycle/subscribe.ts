@@ -164,7 +164,11 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
         `Error during log subscription: ${err.message}`,
         { channel: channelName, error: err.message },
       );
-      this.error(err.message);
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: err.message, success: false }, flags);
+      } else {
+        this.error(err.message);
+      }
     }
     // Client cleanup is handled by command finally() method
   }

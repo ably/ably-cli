@@ -78,14 +78,20 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
           );
         }
       } catch (error) {
-        this.error(
-          `Failed to get lock: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        const errorMsg = `Failed to get lock: ${error instanceof Error ? error.message : String(error)}`;
+        if (this.shouldOutputJson(flags)) {
+          this.jsonError({ error: errorMsg, success: false }, flags);
+        } else {
+          this.error(errorMsg);
+        }
       }
     } catch (error) {
-      this.error(
-        `Error: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorMsg = `Error: ${error instanceof Error ? error.message : String(error)}`;
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
     }
   }
 }

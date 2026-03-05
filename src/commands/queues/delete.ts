@@ -102,9 +102,12 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
         );
       }
     } catch (error) {
-      this.error(
-        `Error deleting queue: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorMsg = `Error deleting queue: ${error instanceof Error ? error.message : String(error)}`;
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
     }
   }
 }

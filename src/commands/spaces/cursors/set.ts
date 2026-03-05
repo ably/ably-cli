@@ -107,9 +107,13 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
             const additionalData = JSON.parse(flags.data);
             cursorData.data = additionalData;
           } catch {
-            this.error(
-              'Invalid JSON in --data flag. Expected format: {"name":"value",...}',
-            );
+            const errorMsg =
+              'Invalid JSON in --data flag. Expected format: {"name":"value",...}';
+            if (this.shouldOutputJson(flags)) {
+              this.jsonError({ error: errorMsg, success: false }, flags);
+            } else {
+              this.error(errorMsg);
+            }
             return;
           }
         }
@@ -125,9 +129,13 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
             const additionalData = JSON.parse(flags.data);
             cursorData.data = additionalData;
           } catch {
-            this.error(
-              'Invalid JSON in --data flag when used with --x and --y. Expected format: {"name":"value",...}',
-            );
+            const errorMsg =
+              'Invalid JSON in --data flag when used with --x and --y. Expected format: {"name":"value",...}';
+            if (this.shouldOutputJson(flags)) {
+              this.jsonError({ error: errorMsg, success: false }, flags);
+            } else {
+              this.error(errorMsg);
+            }
             return;
           }
         }
@@ -136,9 +144,13 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         try {
           cursorData = JSON.parse(flags.data);
         } catch {
-          this.error(
-            'Invalid JSON in --data flag. Expected format: {"position":{"x":number,"y":number},"data":{...}}',
-          );
+          const errorMsg =
+            'Invalid JSON in --data flag. Expected format: {"position":{"x":number,"y":number},"data":{...}}';
+          if (this.shouldOutputJson(flags)) {
+            this.jsonError({ error: errorMsg, success: false }, flags);
+          } else {
+            this.error(errorMsg);
+          }
           return;
         }
 

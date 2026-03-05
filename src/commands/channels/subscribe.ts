@@ -82,8 +82,8 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
   private sequenceCounter = 0;
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(ChannelsSubscribe);
     const parseResult = await this.parse(ChannelsSubscribe);
+    const { flags } = parseResult;
 
     // Get all channel names from argv
     const channelNames = parseResult.argv as string[];

@@ -104,7 +104,11 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
           this.logCliEvent(flags, "lock", "dataParseError", errorMsg, {
             error: errorMsg,
           });
-          this.error(errorMsg);
+          if (this.shouldOutputJson(flags)) {
+            this.jsonError({ error: errorMsg, success: false }, flags);
+          } else {
+            this.error(errorMsg);
+          }
           return;
         }
       }
@@ -198,7 +202,12 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
       // Decide how long to remain connected
       await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error) {
-      this.error(error instanceof Error ? error.message : String(error));
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
     }
   }
 }

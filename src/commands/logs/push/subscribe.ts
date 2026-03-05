@@ -190,7 +190,11 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
         `Error during log subscription: ${err.message}`,
         { error: err.message },
       );
-      this.error(err.message);
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: err.message, success: false }, flags);
+      } else {
+        this.error(err.message);
+      }
     }
     // Client cleanup is handled by command finally() method
   }

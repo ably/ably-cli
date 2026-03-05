@@ -95,7 +95,11 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       this.logCliEvent(flags, "location", "dataParseError", errorMsg, {
         error: errorMsg,
       });
-      this.error(errorMsg);
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
       return;
     }
 

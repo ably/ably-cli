@@ -90,7 +90,7 @@ export default class AskCommand extends ControlBaseCommand {
         const processedWithCodeBlocks = response.answer.replaceAll(
           /```(?:javascript|js|html)?\n([\S\s]*?)```/g,
           (_, codeContent) =>
-            // Return the code block with each line highlighted in cyan
+            // Return the code block with each line highlighted in green
             codeContent
               .split("\n")
               .map((line: string) => chalk.green(`  ${line}`))

@@ -248,7 +248,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
         } as BatchContent;
       }
 
-      if (!this.shouldOutputJson(flags)) {
+      if (!this.shouldOutputJson(flags) && !this.shouldSuppressOutput(flags)) {
         this.log(progress("Sending batch publish request"));
       }
 

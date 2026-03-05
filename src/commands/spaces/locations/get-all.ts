@@ -293,7 +293,14 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
         error instanceof Error
           ? error.message
           : String(error || "Unknown error");
-      this.error(`Error: ${errorMessage}`);
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError(
+          { error: errorMessage, spaceName, status: "error", success: false },
+          flags,
+        );
+      } else {
+        this.error(`Error: ${errorMessage}`);
+      }
     }
   }
 }
