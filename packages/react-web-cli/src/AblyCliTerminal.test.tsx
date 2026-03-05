@@ -2557,3 +2557,76 @@ describe("AblyCliTerminal - Initial Command Execution", () => {
     expect(hasTestCmd).toBe(true);
   }, 15_000);
 });
+
+describe("AblyCliTerminal - Unmount cleanup", () => {
+  test("closes socket normally on unmount (no special code for resume support)", async () => {
+    mockClose.mockClear();
+
+    const { unmount } = render(
+      <AblyCliTerminal
+        websocketUrl="wss://test.ably.com"
+        ablyApiKey="test-key"
+      />,
+    );
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    expect(mockSocketInstance).toBeTruthy();
+    expect(mockSocketInstance.readyState).toBe(WebSocket.OPEN);
+
+    unmount();
+
+    // Should close without special code (allows grace period for resume)
+    expect(mockClose).toHaveBeenCalledWith();
+  });
+
+  test("does not call close if socket already closing", async () => {
+    mockClose.mockClear();
+
+    const { unmount } = render(
+      <AblyCliTerminal
+        websocketUrl="wss://test.ably.com"
+        ablyApiKey="test-key"
+      />,
+    );
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    mockSocketInstance.readyState = WebSocket.CLOSING;
+
+    unmount();
+
+    expect(mockClose).not.toHaveBeenCalled();
+  });
+
+  test("terminateSession() sends close code 4001 for immediate cleanup", async () => {
+    mockClose.mockClear();
+    const terminalRef = React.createRef<AblyCliTerminalHandle>();
+
+    render(
+      <AblyCliTerminal
+        ref={terminalRef}
+        websocketUrl="wss://test.ably.com"
+        ablyApiKey="test-key"
+      />,
+    );
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    expect(mockSocketInstance).toBeTruthy();
+    expect(mockSocketInstance.readyState).toBe(WebSocket.OPEN);
+
+    // Call terminateSession explicitly
+    act(() => {
+      terminalRef.current?.terminateSession();
+    });
+
+    expect(mockClose).toHaveBeenCalledWith(4001, "user-closed-panel");
+  });
+});
