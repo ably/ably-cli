@@ -6,9 +6,9 @@ import {
   ConnectionStatusChange,
 } from "@ably/chat";
 import { Args, Flags } from "@oclif/core";
-import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { resource, success } from "../../../utils/output.js";
 
 export default class RoomsReactionsSend extends ChatBaseCommand {
   static override args = {
@@ -198,7 +198,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
         this.log(this.formatJsonOutput(resultData, flags));
       } else {
         this.log(
-          `${chalk.green("✓")} Sent reaction ${emoji} in room ${chalk.cyan(roomName)}`,
+          success(`Sent reaction ${emoji} in room ${resource(roomName)}.`),
         );
       }
     } catch (error) {

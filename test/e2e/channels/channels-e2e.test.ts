@@ -235,9 +235,8 @@ describe("Channel E2E Tests", () => {
       );
     }
 
-    expect(publishResult.stdout).toContain(
-      `Message published successfully to channel "${uniqueChannel}"`,
-    );
+    expect(publishResult.stdout).toContain(`Message published to channel`);
+    expect(publishResult.stdout).toContain(uniqueChannel);
 
     // Add a delay to ensure message is stored and available in history
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -480,17 +479,18 @@ describe("Channel E2E Tests", () => {
     }
 
     expect(countPublishResult.stdout).toContain(
-      "Message 1 published successfully",
+      "Message 1 published to channel",
     );
     expect(countPublishResult.stdout).toContain(
-      "Message 2 published successfully",
+      "Message 2 published to channel",
     );
     expect(countPublishResult.stdout).toContain(
-      "Message 3 published successfully",
+      "Message 3 published to channel",
     );
     expect(countPublishResult.stdout).toContain(
-      "3/3 messages published successfully",
+      "3/3 messages published to channel",
     );
+    expect(countPublishResult.stdout).toContain(countChannel);
 
     // Add a delay to ensure messages are stored and available in history
     await new Promise((resolve) => setTimeout(resolve, 2000));

@@ -5,6 +5,7 @@ import chalk from "chalk";
 import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import { listening, progress, formatTimestamp } from "../../../utils/output.js";
 
 export default class SpacesMembersSubscribe extends SpacesBaseCommand {
   static override args = {
@@ -28,8 +29,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
     ...SpacesBaseCommand.globalFlags,
     ...clientIdFlag,
     duration: _Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -51,7 +51,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
     try {
       // Always show the readiness signal first, before attempting auth
       if (!this.shouldOutputJson(flags)) {
-        this.log("Subscribing to member updates");
+        this.log(progress("Subscribing to member updates"));
       }
 
       // Create Spaces client using setupSpacesClient
@@ -79,7 +79,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
         flags,
         "spaces",
         "gotSpace",
-        `Successfully got space handle: ${spaceName}`,
+        `Got space handle: ${spaceName}`,
       );
 
       // Enter the space to subscribe
@@ -89,13 +89,9 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
         return;
       }
       await this.space.enter();
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "entered",
-        "Successfully entered space",
-        { clientId: this.realtimeClient!.auth.clientId },
-      );
+      this.logCliEvent(flags, "spaces", "entered", "Entered space", {
+        clientId: this.realtimeClient!.auth.clientId,
+      });
 
       // Get current members
       this.logCliEvent(
@@ -170,9 +166,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
       }
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(
-          `\n${chalk.dim("Subscribing to member events. Press Ctrl+C to exit.")}\n`,
-        );
+        this.log(`\n${listening("Listening for member events.")}\n`);
       }
 
       // Subscribe to member presence events
@@ -279,7 +273,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
           }
 
           this.log(
-            `[${timestamp}] ${actionColor(actionSymbol)} ${chalk.blue(clientId)} ${actionColor(action)}`,
+            `${formatTimestamp(timestamp)} ${actionColor(actionSymbol)} ${chalk.blue(clientId)} ${actionColor(action)}`,
           );
 
           if (
@@ -308,7 +302,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
         flags,
         "member",
         "subscribed",
-        "Successfully subscribed to member updates",
+        "Subscribed to member updates",
       );
 
       this.logCliEvent(

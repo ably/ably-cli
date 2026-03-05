@@ -5,6 +5,12 @@ import chalk from "chalk";
 import { clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import {
+  success,
+  listening,
+  resource,
+  formatTimestamp,
+} from "../../../utils/output.js";
 
 // Define message interface
 interface ChatMessage {
@@ -56,8 +62,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       description: "Display message metadata if available",
     }),
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -146,7 +151,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
 
         // Message content with consistent formatting
         this.log(
-          `${roomPrefix}${chalk.gray(`[${timestamp}]`)}${sequencePrefix} ${chalk.cyan(`${author}:`)} ${message.text}`,
+          `${roomPrefix}${formatTimestamp(timestamp)}${sequencePrefix} ${chalk.cyan(`${author}:`)} ${message.text}`,
         );
 
         // Show metadata if enabled and available
@@ -163,7 +168,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       flags,
       "room",
       "subscribedToMessages",
-      `Successfully subscribed to messages in room ${roomName}`,
+      `Subscribed to messages in room ${roomName}`,
     );
 
     // Subscribe to room status changes
@@ -192,11 +197,8 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         // Log the ready signal for E2E tests
         this.log(`Connected to room: ${roomName}`);
         if (!this.shouldOutputJson(flags)) {
-          this.log(
-            chalk.green(
-              `✓ Subscribed to room: ${chalk.cyan(roomName)}. Listening for messages...`,
-            ),
-          );
+          this.log(success(`Subscribed to room: ${resource(roomName)}.`));
+          this.log(listening("Listening for messages."));
         }
       } else if (change.current === "failed") {
         const errorMsg = room.error?.message || "Unknown error";
@@ -211,7 +213,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       flags,
       "room",
       "subscribedToStatus",
-      `Successfully subscribed to status changes for room ${roomName}`,
+      `Subscribed to status changes for room ${roomName}`,
     );
 
     // Attach to the room

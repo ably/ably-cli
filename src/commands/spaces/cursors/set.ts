@@ -5,6 +5,12 @@ import chalk from "chalk";
 import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import {
+  listening,
+  progress,
+  resource,
+  success,
+} from "../../../utils/output.js";
 
 // Define cursor types based on Ably documentation
 interface CursorPosition {
@@ -60,8 +66,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       required: false,
     }),
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = exit immediately after setting the cursor)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
@@ -210,7 +215,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           stateChange.current === "attached" &&
           !this.shouldOutputJson(flags)
         ) {
-          this.log(`${chalk.green("Entered space:")} ${chalk.cyan(spaceName)}`);
+          this.log(success(`Entered space: ${resource(spaceName)}.`));
         }
       };
 
@@ -367,7 +372,9 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         );
       } else {
         this.log(
-          `${chalk.green("✓")} Set cursor in space ${chalk.cyan(spaceName)} with data: ${chalk.blue(JSON.stringify(cursorForOutput))}`,
+          success(
+            `Set cursor in space ${resource(spaceName)} with data: ${chalk.blue(JSON.stringify(cursorForOutput))}`,
+          ),
         );
       }
 
@@ -391,7 +398,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         );
 
         if (!this.shouldOutputJson(flags)) {
-          this.log("Starting cursor movement simulation every 250ms...");
+          this.log(progress("Starting cursor movement simulation every 250ms"));
         }
 
         this.simulationIntervalId = setInterval(async () => {
@@ -446,7 +453,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         this.log(
           flags.duration
             ? `Waiting ${flags.duration}s before exiting… Press Ctrl+C to exit sooner.`
-            : `Cursor set. Press Ctrl+C to exit.`,
+            : listening("Cursor set."),
         );
       }
 

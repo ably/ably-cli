@@ -5,6 +5,12 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
+import {
+  listening,
+  resource,
+  success,
+  formatTimestamp,
+} from "../../utils/output.js";
 
 export default class LogsSubscribe extends AblyBaseCommand {
   static override description = "Subscribe to live app logs";
@@ -21,14 +27,13 @@ export default class LogsSubscribe extends AblyBaseCommand {
   static override flags = {
     ...productApiFlags,
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
     rewind: Flags.integer({
       default: 0,
-      description: "Number of messages to rewind when subscribing",
+      description: "Number of messages to rewind when subscribing (default: 0)",
     }),
     type: Flags.string({
       description: "Filter by log type",
@@ -113,7 +118,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          `${chalk.green("Subscribing to app logs:")} ${chalk.cyan(logTypes.join(", "))}`,
+          success(`Subscribed to app logs: ${resource(logTypes.join(", "))}.`),
         );
       }
 
@@ -141,7 +146,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
             this.log(this.formatJsonOutput(event, flags));
           } else {
             this.log(
-              `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`Type: ${logType}`)}`,
+              `${formatTimestamp(timestamp)} ${chalk.cyan(`Type: ${logType}`)}`,
             );
 
             if (message.data !== null && message.data !== undefined) {
@@ -163,7 +168,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
         "Listening for log events. Press Ctrl+C to exit.",
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log("Listening for log events. Press Ctrl+C to exit.");
+        this.log(listening("Listening for log events."));
       }
 
       // Wait until the user interrupts or the optional duration elapses

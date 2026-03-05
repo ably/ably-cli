@@ -852,8 +852,8 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       options.port = flags.port;
     }
 
-    if (flags.tlsPort) {
-      options.tlsPort = flags.tlsPort;
+    if (flags["tls-port"]) {
+      options.tlsPort = flags["tls-port"];
     }
 
     if (flags.tls) {

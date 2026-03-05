@@ -1,9 +1,9 @@
 import { RoomStatus, ChatClient, RoomStatusChange } from "@ably/chat";
 import { Args, Flags } from "@oclif/core";
-import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import { listening, resource, success } from "../../../utils/output.js";
 
 // The heartbeats are throttled to one every 10 seconds. There's a 2 second
 // leeway to send a keystroke/heartbeat after the 10 second mark so the
@@ -23,11 +23,11 @@ export default class TypingKeystroke extends ChatBaseCommand {
   };
 
   static override description =
-    "Send a typing indicator in an Ably Chat room (use --autoType to keep typing automatically until terminated)";
+    "Send a typing indicator in an Ably Chat room (use --auto-type to keep typing automatically until terminated)";
 
   static override examples = [
     "$ ably rooms typing keystroke my-room",
-    "$ ably rooms typing keystroke my-room --autoType",
+    "$ ably rooms typing keystroke my-room --auto-type",
     '$ ABLY_API_KEY="YOUR_API_KEY" ably rooms typing keystroke my-room',
     "$ ably rooms typing keystroke my-room --json",
     "$ ably rooms typing keystroke my-room --pretty-json",
@@ -35,7 +35,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
 
   static override flags = {
     ...ChatBaseCommand.globalFlags,
-    autoType: Flags.boolean({
+    "auto-type": Flags.boolean({
       description: "Automatically keep typing indicator active",
       default: false,
     }),
@@ -111,9 +111,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
 
         if (statusChange.current === RoomStatus.Attached) {
           if (!this.shouldOutputJson(flags)) {
-            this.log(
-              `${chalk.green("Connected to room:")} ${chalk.bold(roomName)}`,
-            );
+            this.log(success(`Connected to room: ${resource(roomName)}.`));
           }
 
           // Start typing immediately
@@ -126,21 +124,22 @@ export default class TypingKeystroke extends ChatBaseCommand {
           room.typing
             .keystroke()
             .then(() => {
-              this.logCliEvent(
-                flags,
-                "typing",
-                "started",
-                "Successfully started typing",
-              );
+              this.logCliEvent(flags, "typing", "started", "Started typing");
               if (!this.shouldOutputJson(flags)) {
-                this.log(`${chalk.green("Started typing in room.")}`);
-                if (flags.autoType) {
+                this.log(
+                  success(`Started typing in room: ${resource(roomName)}.`),
+                );
+                if (flags["auto-type"]) {
                   this.log(
-                    `${chalk.dim("Will automatically remain typing until this command is terminated. Press Ctrl+C to exit.")}`,
+                    listening(
+                      "Will automatically remain typing until terminated.",
+                    ),
                   );
                 } else {
                   this.log(
-                    `${chalk.dim("Sent a single typing indicator. Use --autoType flag to keep typing automatically. Press Ctrl+C to exit.")}`,
+                    listening(
+                      "Sent a single typing indicator. Use --auto-type to keep typing automatically.",
+                    ),
                   );
                 }
               }
@@ -148,7 +147,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
               // Keep typing active by calling keystroke() periodically if autoType is enabled
               if (this.typingIntervalId) clearInterval(this.typingIntervalId);
 
-              if (flags.autoType) {
+              if (flags["auto-type"]) {
                 this.typingIntervalId = setInterval(() => {
                   room.typing.keystroke().catch((error: Error) => {
                     this.logCliEvent(
@@ -187,7 +186,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
         flags,
         "room",
         "subscribedToStatus",
-        "Successfully subscribed to room status changes",
+        "Subscribed to room status changes",
       );
 
       // Attach to the room

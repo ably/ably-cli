@@ -109,6 +109,32 @@ This document provides guidance for AI assistants working with the Ably CLI code
    const url = `https://${controlHost}/v1/apps`
    ```
 
+## CLI Output & Flag Conventions
+
+### Output patterns (use helpers from src/utils/output.ts)
+- **Progress**: `progress("Attaching to channel: " + resource(name))` — no color on action text, ends with `...`
+- **Success**: `success("Message published to channel " + resource(name) + ".")` — green ✓, ends with `.`
+- **Listening**: `listening("Listening for messages.")` — dim, includes "Press Ctrl+C to exit."
+- **Resource names**: Always `resource(name)` (cyan), never quoted
+- **Timestamps**: `formatTimestamp(ts)` — dim `[timestamp]` for event streams. Import as `formatTimestamp` to avoid clashing with local `timestamp` variables.
+
+### Additional output patterns (direct chalk, not helpers)
+- **Secondary labels**: `chalk.dim("Label:")` — for field names in structured output (e.g., `${chalk.dim("Profile:")} ${value}`)
+- **Client IDs**: `chalk.blue(clientId)` — for user/client identifiers in events
+- **Event types**: `chalk.yellow(eventType)` — for action/event type labels
+- **Warnings**: `chalk.yellow("Warning: ...")` — for non-fatal warnings
+- **Errors**: Use `this.error()` (oclif standard) for fatal errors, not `this.log(chalk.red(...))`
+- **No app error**: `'No app specified. Use --app flag or select an app with "ably apps switch"'`
+
+### Flag conventions
+- All flags kebab-case: `--my-flag` (never camelCase)
+- `--app`: `"The app ID or name (defaults to current app)"` (for commands with `resolveAppId`), `"The app ID (defaults to current app)"` (for commands without)
+- `--limit`: `"Maximum number of results to return (default: N)"`
+- `--duration`: `"Automatically exit after N seconds (0 = run indefinitely)"`, alias `-D`
+- `--rewind`: `"Number of messages to rewind when subscribing (default: 0)"`
+- Channels use "publish", Rooms use "send" (matches SDK terminology)
+- Command descriptions: imperative mood, sentence case, no trailing period (e.g., `"Subscribe to presence events on a channel"`)
+
 ## Effective Testing
 
 1. **Mocking Ably SDK Example**:

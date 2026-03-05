@@ -5,6 +5,7 @@ import chalk from "chalk";
 import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import { success, listening, resource } from "../../../utils/output.js";
 
 export default class SpacesLocksAcquire extends SpacesBaseCommand {
   static override args = {
@@ -114,19 +115,15 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
         flags,
         "spaces",
         "gotSpace",
-        `Successfully got space handle: ${spaceName}`,
+        `Got space handle: ${spaceName}`,
       );
 
       // Enter the space first
       this.logCliEvent(flags, "spaces", "entering", "Entering space...");
       await this.space.enter();
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "entered",
-        "Successfully entered space",
-        { clientId: this.realtimeClient!.auth.clientId },
-      );
+      this.logCliEvent(flags, "spaces", "entered", "Entered space", {
+        clientId: this.realtimeClient!.auth.clientId,
+      });
 
       // Try to acquire the lock
       try {
@@ -157,7 +154,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
           flags,
           "lock",
           "acquired",
-          `Successfully acquired lock: ${lockId}`,
+          `Lock acquired: ${lockId}`,
           lockDetails,
         );
 
@@ -166,15 +163,11 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
             this.formatJsonOutput({ lock: lockDetails, success: true }, flags),
           );
         } else {
-          this.log(
-            `${chalk.green("Successfully acquired lock:")} ${chalk.cyan(lockId)}`,
-          );
+          this.log(success(`Lock acquired: ${resource(lockId)}.`));
           this.log(
             `${chalk.dim("Lock details:")} ${this.formatJsonOutput(lockDetails, { ...flags, "pretty-json": true })}`,
           );
-          this.log(
-            `\n${chalk.dim("Holding lock. Press Ctrl+C to release and exit.")}`,
-          );
+          this.log(`\n${listening("Holding lock.")}`);
         }
       } catch (error) {
         const errorMsg = `Failed to acquire lock: ${error instanceof Error ? error.message : String(error)}`;

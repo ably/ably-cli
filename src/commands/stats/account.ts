@@ -35,7 +35,7 @@ export default class StatsAccountCommand extends ControlBaseCommand {
     }),
     limit: Flags.integer({
       default: 10,
-      description: "Maximum number of stats records to return",
+      description: "Maximum number of results to return (default: 10)",
     }),
 
     live: Flags.boolean({
@@ -119,7 +119,7 @@ export default class StatsAccountCommand extends ControlBaseCommand {
     try {
       this.isPolling = true;
       if (flags.debug) {
-        console.log(
+        this.log(
           chalk.dim(`\n[${new Date().toISOString()}] Polling for new stats...`),
         );
       }
@@ -127,7 +127,7 @@ export default class StatsAccountCommand extends ControlBaseCommand {
       await this.fetchAndDisplayStats(flags, controlApi);
     } catch (error) {
       if (flags.debug) {
-        console.error(
+        this.logToStderr(
           chalk.red(
             `Error during stats polling: ${error instanceof Error ? error.message : String(error)}`,
           ),
@@ -173,7 +173,7 @@ export default class StatsAccountCommand extends ControlBaseCommand {
             this.pollStats(flags, controlApi);
           } else if (flags.debug) {
             // Only show this message if debug flag is enabled
-            console.log(
+            this.log(
               chalk.yellow(
                 "Skipping poll - previous request still in progress",
               ),

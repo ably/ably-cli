@@ -46,7 +46,7 @@ describe("integrations:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Integration created successfully");
+      expect(stdout).toContain("Integration rule created:");
       expect(stdout).toContain(mockRuleId);
       expect(stdout).toContain("http");
     });
@@ -83,7 +83,7 @@ describe("integrations:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Integration created successfully");
+      expect(stdout).toContain("Integration rule created:");
       expect(stdout).toContain("amqp");
     });
 

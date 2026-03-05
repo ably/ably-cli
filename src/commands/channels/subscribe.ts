@@ -6,6 +6,13 @@ import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { formatJson, isJsonData } from "../../utils/json-formatter.js";
 import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
+import {
+  listening,
+  progress,
+  resource,
+  success,
+  formatTimestamp,
+} from "../../utils/output.js";
 
 export default class ChannelsSubscribe extends AblyBaseCommand {
   static override args = {
@@ -54,8 +61,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       description: "Enable delta compression for messages",
     }),
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -176,7 +182,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           { channel: channel.name },
         );
         if (!this.shouldOutputJson(flags)) {
-          this.log(`Attaching to channel: ${chalk.cyan(channel.name)}...`);
+          this.log(progress(`Attaching to channel: ${resource(channel.name)}`));
         }
 
         // Set up channel state logging
@@ -232,15 +238,15 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
             // Message header with timestamp and channel info
             this.log(
-              `${chalk.gray(`[${timestamp}]`)}${sequencePrefix} ${chalk.cyan(`Channel: ${channel.name}`)} | ${chalk.yellow(`Event: ${name}`)}`,
+              `${formatTimestamp(timestamp)}${sequencePrefix} ${chalk.cyan(`Channel: ${channel.name}`)} | ${chalk.yellow(`Event: ${name}`)}`,
             );
 
             // Message data with consistent formatting
             if (isJsonData(message.data)) {
-              this.log(chalk.blue("Data:"));
+              this.log(chalk.dim("Data:"));
               this.log(formatJson(message.data));
             } else {
-              this.log(`${chalk.blue("Data:")} ${message.data}`);
+              this.log(`${chalk.dim("Data:")} ${message.data}`);
             }
 
             this.log(""); // Empty line for better readability
@@ -253,24 +259,20 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
       // Log the ready signal for E2E tests
       if (channelNames.length === 1) {
-        this.log(`Successfully attached to channel ${channelNames[0]}`);
+        this.log(`Successfully attached to channel: ${channelNames[0]}`);
       }
 
       // Show success message once all channels are attached
       if (!this.shouldOutputJson(flags)) {
         if (channelNames.length === 1) {
           this.log(
-            chalk.green(
-              `✓ Subscribed to channel: ${chalk.cyan(channelNames[0])}. Listening for messages...`,
-            ),
+            success(`Subscribed to channel: ${resource(channelNames[0])}.`),
           );
         } else {
-          this.log(
-            chalk.green(
-              `✓ Subscribed to ${channelNames.length} channels. Listening for messages...`,
-            ),
-          );
+          this.log(success(`Subscribed to ${channelNames.length} channels.`));
         }
+
+        this.log(listening("Listening for messages."));
       }
 
       this.logCliEvent(

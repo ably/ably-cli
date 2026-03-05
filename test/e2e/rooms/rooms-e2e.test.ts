@@ -84,7 +84,7 @@ describe("Rooms E2E Tests", () => {
               "--duration",
               "15",
             ],
-            /Entered room/,
+            /Entered presence in room/,
             { timeoutMs: process.env.CI ? 20000 : 15000 },
           );
 
@@ -167,7 +167,7 @@ describe("Rooms E2E Tests", () => {
               "--duration",
               "35",
             ],
-            /Subscribing to presence events/,
+            /Subscribed to presence in room/,
             { timeoutMs: process.env.CI ? 30000 : 20000 },
           );
 
@@ -189,7 +189,7 @@ describe("Rooms E2E Tests", () => {
               "--duration",
               "25",
             ],
-            /Entered room/,
+            /Entered presence in room/,
             { timeoutMs: process.env.CI ? 30000 : 20000 },
           );
 
@@ -291,9 +291,9 @@ describe("Rooms E2E Tests", () => {
           // Check for success - either exit code 0 or successful output (even if process was killed after success)
           const isSuccessful =
             sendResult.exitCode === 0 ||
-            sendResult.stdout.includes("Message sent successfully");
+            sendResult.stdout.includes("Message sent to room");
           expect(isSuccessful).toBe(true);
-          expect(sendResult.stdout).toContain("Message sent successfully");
+          expect(sendResult.stdout).toContain("Message sent to room");
 
           // Wait for the message to be received by the subscriber
           await waitForOutput(
@@ -331,7 +331,7 @@ describe("Rooms E2E Tests", () => {
           // Check for success - either exit code 0 or successful output (even if process was killed after success)
           const isSecondSuccessful =
             sendResult2.exitCode === 0 ||
-            sendResult2.stdout.includes("Message sent successfully");
+            sendResult2.stdout.includes("Message sent to room");
           expect(isSecondSuccessful).toBe(true);
 
           // Wait for the second message to be received

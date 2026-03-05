@@ -5,6 +5,12 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
 import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
+import {
+  listening,
+  resource,
+  success,
+  formatTimestamp,
+} from "../../../utils/output.js";
 
 export default class LogsPushSubscribe extends AblyBaseCommand {
   static override description =
@@ -17,13 +23,9 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
-    json: Flags.boolean({
-      default: false,
-      description: "Output results as JSON",
-    }),
     rewind: Flags.integer({
       default: 0,
-      description: "Number of messages to rewind when subscribing",
+      description: "Number of messages to rewind when subscribing (default: 0)",
     }),
   };
 
@@ -76,11 +78,6 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
         "subscribing",
         `Subscribing to ${channelName}...`,
       );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(`Subscribing to ${chalk.cyan(channelName)}...`);
-        this.log("Press Ctrl+C to exit");
-        this.log("");
-      }
 
       // Subscribe to the channel
       channel.subscribe((message) => {
@@ -147,7 +144,7 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
 
         // Format the log output
         this.log(
-          `${chalk.dim(`[${timestamp}]`)} Channel: ${chalk.cyan(channelName)} | Event: ${eventColor(event)}`,
+          `${formatTimestamp(timestamp)} Channel: ${chalk.cyan(channelName)} | Event: ${eventColor(event)}`,
         );
         if (message.data) {
           if (isJsonData(message.data)) {
@@ -160,11 +157,18 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
 
         this.log("");
       });
+
+      if (!this.shouldOutputJson(flags)) {
+        this.log(success(`Subscribed to ${resource(channelName)}.`));
+        this.log(listening("Listening for push logs."));
+        this.log("");
+      }
+
       this.logCliEvent(
         flags,
         "logs",
         "subscribed",
-        `Successfully subscribed to ${channelName}`,
+        `Subscribed to ${channelName}`,
       );
 
       // Set up cleanup for when the process is terminated

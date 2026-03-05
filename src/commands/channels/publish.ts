@@ -5,6 +5,7 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { BaseFlags } from "../../types/cli.js";
+import { resource, success } from "../../utils/output.js";
 
 export default class ChannelsPublish extends AblyBaseCommand {
   static override args = {
@@ -158,8 +159,8 @@ export default class ChannelsPublish extends AblyBaseCommand {
       total > 1 ? "multiPublishComplete" : "singlePublishComplete";
     const eventMessage =
       total > 1
-        ? `Finished publishing ${total} messages`
-        : "Finished publishing message";
+        ? `Published ${total} messages to channel ${args.channel}`
+        : `Published message to channel ${args.channel}`;
     this.logCliEvent(flags, "publish", eventType, eventMessage, finalResult);
 
     if (!this.shouldSuppressOutput(flags)) {
@@ -167,11 +168,15 @@ export default class ChannelsPublish extends AblyBaseCommand {
         this.log(this.formatJsonOutput(finalResult, flags));
       } else if (total > 1) {
         this.log(
-          `${chalk.green("✓")} ${published}/${total} messages published successfully${errors > 0 ? ` (${chalk.red(errors)} errors)` : ""}.`,
+          success(
+            `${published}/${total} messages published to channel: ${resource(args.channel as string)}${errors > 0 ? ` (${chalk.red(errors)} errors)` : ""}.`,
+          ),
         );
       } else if (errors === 0) {
         this.log(
-          `${chalk.green("✓")} Message published successfully to channel "${args.channel}".`,
+          success(
+            `Message published to channel: ${resource(args.channel as string)}.`,
+          ),
         );
       } else {
         // Error message already logged by publishMessages loop or prepareMessage
@@ -293,7 +298,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
           flags,
           "publish",
           "messagePublished",
-          `Message ${messageIndex} published successfully to channel "${args.channel}"`,
+          `Message ${messageIndex} published to channel ${args.channel}`,
           { index: messageIndex, message, channel: args.channel },
         );
         if (
@@ -302,7 +307,9 @@ export default class ChannelsPublish extends AblyBaseCommand {
           count > 1 // Only show individual success messages when publishing multiple messages
         ) {
           this.log(
-            `${chalk.green("✓")} Message ${messageIndex} published successfully to channel "${args.channel}".`,
+            success(
+              `Message ${messageIndex} published to channel: ${resource(args.channel as string)}.`,
+            ),
           );
         }
       } catch (error) {

@@ -2,6 +2,7 @@ import { Args } from "@oclif/core";
 import chalk from "chalk";
 
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
+import { progress, resource, success } from "../../../utils/output.js";
 
 interface LockItem {
   attributes?: Record<string, unknown>;
@@ -69,7 +70,10 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
       });
 
       // Get the space
-      this.log(`Connecting to space: ${chalk.cyan(spaceName)}...`);
+      if (!this.shouldOutputJson(flags)) {
+        this.log(progress(`Connecting to space: ${resource(spaceName)}`));
+      }
+
       await this.space.enter();
 
       // Wait for space to be properly entered before fetching locks
@@ -82,9 +86,12 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
           try {
             if (this.realtimeClient!.connection.state === "connected") {
               clearTimeout(timeout);
-              this.log(
-                `${chalk.green("Connected to space:")} ${chalk.cyan(spaceName)}`,
-              );
+              if (!this.shouldOutputJson(flags)) {
+                this.log(
+                  success(`Connected to space: ${resource(spaceName)}.`),
+                );
+              }
+
               resolve();
             } else if (
               this.realtimeClient!.connection.state === "failed" ||
@@ -111,7 +118,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
 
       // Get all locks
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Fetching locks for space ${chalk.cyan(spaceName)}...`);
+        this.log(progress(`Fetching locks for space ${resource(spaceName)}`));
       }
 
       let locks: LockItem[] = [];

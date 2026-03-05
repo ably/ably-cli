@@ -697,7 +697,7 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
 
       // Check for product API flags (hidden)
       expect(batchPublish.flags).toHaveProperty("port");
-      expect(batchPublish.flags).toHaveProperty("tlsPort");
+      expect(batchPublish.flags).toHaveProperty("tls-port");
       expect(batchPublish.flags).toHaveProperty("tls");
 
       // Verify removed global flags are no longer present

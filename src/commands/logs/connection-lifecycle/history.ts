@@ -26,7 +26,7 @@ export default class LogsConnectionLifecycleHistory extends AblyBaseCommand {
     }),
     limit: Flags.integer({
       default: 100,
-      description: "Maximum number of logs to retrieve",
+      description: "Maximum number of results to return (default: 100)",
     }),
   };
 

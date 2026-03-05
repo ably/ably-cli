@@ -23,7 +23,7 @@ export default class IntegrationsGetCommand extends ControlBaseCommand {
     ...ControlBaseCommand.globalFlags,
 
     app: Flags.string({
-      description: "App ID or name to get the integration rule from",
+      description: "The app ID or name (defaults to current app)",
       required: false,
     }),
   };

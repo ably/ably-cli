@@ -3,6 +3,7 @@ import { ChatClient, ConnectionStatusChange, JsonObject } from "@ably/chat";
 
 import { clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { success, resource } from "../../../utils/output.js";
 
 // Define interfaces for the message send command
 interface MessageToSend {
@@ -123,7 +124,7 @@ export default class MessagesSend extends ChatBaseCommand {
             flags,
             "message",
             "metadataParsed",
-            "Message metadata parsed successfully",
+            "Message metadata parsed",
             { metadata },
           );
         } catch (error) {
@@ -168,7 +169,7 @@ export default class MessagesSend extends ChatBaseCommand {
         flags,
         "room",
         "attached",
-        `Successfully attached to room ${args.room}`,
+        `Attached to room ${args.room}`,
       );
 
       // Validate count and delay
@@ -258,7 +259,7 @@ export default class MessagesSend extends ChatBaseCommand {
                 flags,
                 "message",
                 "sentSuccess",
-                `Message ${i + 1} sent successfully`,
+                `Message ${i + 1} sent`,
                 { index: i + 1 },
               );
 
@@ -349,7 +350,9 @@ export default class MessagesSend extends ChatBaseCommand {
               );
             }
             this.log(
-              `${sentCount}/${count} messages sent successfully (${errorCount} errors).`,
+              success(
+                `${sentCount}/${count} messages sent to room ${resource(args.room)} (${errorCount} errors).`,
+              ),
             );
           }
         }
@@ -381,7 +384,7 @@ export default class MessagesSend extends ChatBaseCommand {
             flags,
             "message",
             "singleSendComplete",
-            "Message sent successfully",
+            "Message sent",
             result,
           );
 
@@ -389,7 +392,7 @@ export default class MessagesSend extends ChatBaseCommand {
             if (this.shouldOutputJson(flags)) {
               this.log(this.formatJsonOutput(result, flags));
             } else {
-              this.log("Message sent successfully.");
+              this.log(success(`Message sent to room ${resource(args.room)}.`));
             }
           }
         } catch (error) {

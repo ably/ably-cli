@@ -71,7 +71,7 @@ describe("Channel Occupancy E2E Tests", () => {
         `bin/run.js channels subscribe ${occupancyChannel} --duration 20`,
         outputPath,
         {
-          readySignal: "Successfully attached to channel",
+          readySignal: "Subscribed to channel",
           timeoutMs: process.env.CI ? 20000 : 15000, // Increased timeout for CI
           retryCount: 2,
         },
@@ -155,7 +155,7 @@ describe("Channel Occupancy E2E Tests", () => {
         `bin/run.js channels subscribe ${occupancyChannel} --duration 20`,
         await createTempOutputFile(),
         {
-          readySignal: "Successfully attached to channel",
+          readySignal: "Subscribed to channel",
           timeoutMs: process.env.CI ? 20000 : 15000,
           retryCount: 2,
         },

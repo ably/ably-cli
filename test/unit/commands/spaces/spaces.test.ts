@@ -173,7 +173,7 @@ describe("spaces commands", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Successfully set location");
+      expect(stdout).toContain("Location set in space:");
       expect(space.locations.set).toHaveBeenCalledWith({ x: 100, y: 200 });
     });
   });
@@ -206,7 +206,7 @@ describe("spaces commands", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Successfully acquired lock");
+      expect(stdout).toContain("Lock acquired:");
       expect(space.locks.acquire).toHaveBeenCalledWith("my-lock", {
         reason: "editing",
       });

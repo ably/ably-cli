@@ -4,6 +4,7 @@ import chalk from "chalk";
 import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import isTestMode from "../../../utils/test-mode.js";
+import { progress, success, resource } from "../../../utils/output.js";
 
 interface CursorPosition {
   x: number;
@@ -76,7 +77,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
 
       // Get the space
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Connecting to space: ${chalk.cyan(spaceName)}...`);
+        this.log(progress(`Connecting to space: ${resource(spaceName)}`));
       }
 
       // Enter the space
@@ -107,9 +108,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
                   ),
                 );
               } else {
-                this.log(
-                  `${chalk.green("Successfully entered space:")} ${chalk.cyan(spaceName)}`,
-                );
+                this.log(success(`Entered space: ${resource(spaceName)}.`));
               }
 
               resolve();

@@ -25,7 +25,7 @@ describe("auth:revoke-token command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Revokes the token provided");
+      expect(stdout).toContain("Revoke a token");
       expect(stdout).toContain("USAGE");
       expect(stdout).toContain("--client-id");
       expect(stdout).toContain("--debug");
