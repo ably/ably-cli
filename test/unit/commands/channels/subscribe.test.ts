@@ -233,5 +233,217 @@ describe("channels:subscribe command", () => {
         }),
       );
     });
+
+    it("should accept --stream flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:subscribe", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("--stream");
+    });
+  });
+
+  describe("stream mode", () => {
+    it("should display message.create data in stream mode", async () => {
+      const commandPromise = runCommand(
+        [
+          "channels:subscribe",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+          "--stream",
+        ],
+        import.meta.url,
+      );
+
+      await vi.waitFor(() => {
+        expect(mockSubscribeCallback).not.toBeNull();
+      });
+
+      mockSubscribeCallback!({
+        name: "test-event",
+        data: "Hello",
+        timestamp: Date.now(),
+        id: "msg-1",
+        clientId: "client-1",
+        connectionId: "conn-1",
+        action: "message.create",
+        serial: "serial-001",
+      });
+
+      const { stdout } = await commandPromise;
+
+      expect(stdout).toContain("Hello");
+      expect(stdout).toContain("test-channel");
+      expect(stdout).toContain("1 msg]");
+    });
+
+    it("should stream message.append data for the same serial", async () => {
+      const commandPromise = runCommand(
+        [
+          "channels:subscribe",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+          "--stream",
+        ],
+        import.meta.url,
+      );
+
+      await vi.waitFor(() => {
+        expect(mockSubscribeCallback).not.toBeNull();
+      });
+
+      mockSubscribeCallback!({
+        name: "test-event",
+        data: "Hello",
+        timestamp: Date.now(),
+        id: "msg-1",
+        clientId: "client-1",
+        connectionId: "conn-1",
+        action: "message.create",
+        serial: "serial-001",
+      });
+
+      mockSubscribeCallback!({
+        name: "test-event",
+        data: " World",
+        timestamp: Date.now(),
+        id: "msg-2",
+        clientId: "client-1",
+        connectionId: "conn-1",
+        action: "message.append",
+        serial: "serial-001",
+      });
+
+      const { stdout } = await commandPromise;
+
+      // In non-TTY test mode, each token is logged on its own line
+      expect(stdout).toContain("Hello");
+      expect(stdout).toContain(" World");
+      expect(stdout).toContain("2 msgs]");
+    });
+
+    it("should include action and serial in JSON output with --stream", async () => {
+      const commandPromise = runCommand(
+        [
+          "channels:subscribe",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+          "--stream",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      await vi.waitFor(() => {
+        expect(mockSubscribeCallback).not.toBeNull();
+      });
+
+      mockSubscribeCallback!({
+        name: "test-event",
+        data: "Hello",
+        timestamp: Date.now(),
+        id: "msg-1",
+        clientId: "client-1",
+        connectionId: "conn-1",
+        action: "message.create",
+        serial: "serial-001",
+      });
+
+      mockSubscribeCallback!({
+        name: "test-event",
+        data: " World",
+        timestamp: Date.now(),
+        id: "msg-2",
+        clientId: "client-1",
+        connectionId: "conn-1",
+        action: "message.append",
+        serial: "serial-001",
+      });
+
+      const { stdout } = await commandPromise;
+
+      expect(stdout).toContain("message.create");
+      expect(stdout).toContain("message.append");
+      expect(stdout).toContain("serial-001");
+    });
+
+    it("should reset accumulation when serial changes", async () => {
+      const commandPromise = runCommand(
+        [
+          "channels:subscribe",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+          "--stream",
+        ],
+        import.meta.url,
+      );
+
+      await vi.waitFor(() => {
+        expect(mockSubscribeCallback).not.toBeNull();
+      });
+
+      mockSubscribeCallback!({
+        name: "event",
+        data: "First",
+        timestamp: Date.now(),
+        id: "msg-1",
+        clientId: "c1",
+        connectionId: "conn-1",
+        action: "message.create",
+        serial: "serial-001",
+      });
+
+      mockSubscribeCallback!({
+        name: "event",
+        data: "Second",
+        timestamp: Date.now(),
+        id: "msg-2",
+        clientId: "c1",
+        connectionId: "conn-1",
+        action: "message.create",
+        serial: "serial-002",
+      });
+
+      const { stdout } = await commandPromise;
+
+      expect(stdout).toContain("First");
+      expect(stdout).toContain("Second");
+    });
+
+    it("should display messages without serial normally in stream mode", async () => {
+      const commandPromise = runCommand(
+        [
+          "channels:subscribe",
+          "test-channel",
+          "--api-key",
+          "app.key:secret",
+          "--stream",
+        ],
+        import.meta.url,
+      );
+
+      await vi.waitFor(() => {
+        expect(mockSubscribeCallback).not.toBeNull();
+      });
+
+      mockSubscribeCallback!({
+        name: "test-event",
+        data: "plain message",
+        timestamp: Date.now(),
+        id: "msg-1",
+        clientId: "client-1",
+        connectionId: "conn-1",
+      });
+
+      const { stdout } = await commandPromise;
+
+      expect(stdout).toContain("plain message");
+      expect(stdout).toContain("Event: test-event");
+    });
   });
 });
