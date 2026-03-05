@@ -104,12 +104,10 @@ describe("E2E: ably bench publisher and subscriber", () => {
                 "bench",
                 "subscriber",
                 testChannel,
-                "--api-key",
-                apiKey,
                 "--json",
                 "--verbose",
               ],
-              { env: subEnv },
+              { env: { ...subEnv, ABLY_API_KEY: apiKey } },
             );
 
             console.log(
@@ -271,8 +269,6 @@ describe("E2E: ably bench publisher and subscriber", () => {
                 "bench",
                 "publisher",
                 testChannel,
-                "--api-key",
-                apiKey,
                 "--messages",
                 messageCount.toString(),
                 "--rate",
@@ -280,7 +276,7 @@ describe("E2E: ably bench publisher and subscriber", () => {
                 "--json",
                 "--verbose",
               ],
-              { env: pubEnv },
+              { env: { ...pubEnv, ABLY_API_KEY: apiKey } },
             );
 
             publisherProcess.stdout.on("data", (data) => {

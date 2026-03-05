@@ -2,6 +2,7 @@ import type { ProfileData, SpaceMember } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
+import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import { success, listening, resource } from "../../../utils/output.js";
@@ -25,6 +26,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
 
   static override flags = {
     ...SpacesBaseCommand.globalFlags,
+    ...clientIdFlag,
     profile: Flags.string({
       description:
         "Optional profile data to include with the member (JSON format)",

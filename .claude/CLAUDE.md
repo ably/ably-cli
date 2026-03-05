@@ -115,6 +115,87 @@ pnpm dev
 └── package.json       # Scripts defined here
 ```
 
+## 🏗️ Flag Architecture
+
+Flags are NOT global. Each command explicitly declares only the flags it needs via composable flag sets defined in `src/flags.ts`:
+
+- **`coreGlobalFlags`** — `--verbose`, `--json`, `--pretty-json`, `--web-cli-help` (hidden) (on every command via `AblyBaseCommand.globalFlags`)
+- **`productApiFlags`** — core + hidden product API flags (`port`, `tlsPort`, `tls`). Use for commands that talk to the Ably product API.
+- **`controlApiFlags`** — core + hidden control API flags (`control-host`, `dashboard-host`). Use for commands that talk to the Control API.
+- **`clientIdFlag`** — `--client-id`. Add only to commands that create a realtime connection where client identity matters (presence, spaces members, cursors, locks, publish, etc.). Do NOT add globally.
+- **`endpointFlag`** — `--endpoint`. Hidden, only on `accounts login` and `accounts switch`.
+
+**When creating a new command:**
+```typescript
+// Product API command (channels, spaces, rooms, etc.)
+import { productApiFlags, clientIdFlag } from "../../flags.js";
+static override flags = {
+  ...productApiFlags,
+  ...clientIdFlag,  // Only if command needs client identity
+  // command-specific flags...
+};
+
+// Control API command (apps, keys, queues, etc.)
+import { controlApiFlags } from "../../flags.js";
+static override flags = {
+  ...controlApiFlags,
+  // command-specific flags...
+};
+```
+
+**Auth** is managed via `ably login` (stored config). Environment variables override stored config for CI, scripting, or testing:
+- `ABLY_API_KEY`, `ABLY_TOKEN`, `ABLY_ACCESS_TOKEN`
+
+Do NOT add `--api-key`, `--token`, or `--access-token` flags to commands.
+
+## 🧪 Writing Tests
+
+**Auth in tests — do NOT use CLI flags (`--api-key`, `--token`, `--access-token`):**
+**Unit tests** — Auth is provided automatically by `MockConfigManager` (see `test/helpers/mock-config-manager.ts`). No env vars needed. Only set `ABLY_API_KEY` when specifically testing env var override behavior.
+```typescript
+// ❌ WRONG — don't pass auth flags
+runCommand(["channels", "publish", "my-channel", "hello", "--api-key", key]);
+
+// ✅ CORRECT — MockConfigManager provides auth automatically
+runCommand(["channels", "publish", "my-channel", "hello"]);
+
+// ✅ CORRECT — use getMockConfigManager() to access test auth values
+import { getMockConfigManager } from "../../helpers/mock-config-manager.js";
+const mockConfig = getMockConfigManager();
+const apiKey = mockConfig.getApiKey()!;
+const appId = mockConfig.getCurrentAppId()!;
+```
+
+**E2E tests** — Commands run as real subprocesses, so auth must be passed via env vars:
+```typescript
+// ✅ CORRECT — pass auth via env vars for E2E
+runCommand(["channels", "publish", "my-channel", "hello"], {
+  env: { ABLY_API_KEY: key },
+});
+
+// ✅ CORRECT — spawn with env vars
+spawn("node", [cliPath, "channels", "subscribe", "my-channel"], {
+  env: { ...process.env, ABLY_API_KEY: key },
+});
+
+// ✅ Control API commands use ABLY_ACCESS_TOKEN
+runCommand(["stats", "account"], {
+  env: { ABLY_ACCESS_TOKEN: token },
+});
+```
+
+**Test structure:**
+- `test/unit/` — Fast, mocked tests. Auth via `MockConfigManager` (automatic). Only set `ABLY_API_KEY` env var when testing env var override behavior.
+- `test/e2e/` — Full scenarios against real Ably. Auth via env vars (`ABLY_API_KEY`, `ABLY_ACCESS_TOKEN`).
+- Helpers in `test/helpers/` — `runCommand()`, `runLongRunningBackgroundProcess()`, `e2e-test-helper.ts`, `mock-config-manager.ts`.
+
+**Running tests:**
+```bash
+pnpm test:unit                    # All unit tests
+pnpm test:e2e                     # All E2E tests
+pnpm test test/unit/commands/foo.test.ts  # Specific test
+```
+
 ## 🔍 Related Projects
 
 If this is part of a workspace, there may be:

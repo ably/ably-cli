@@ -19,6 +19,10 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
+    json: Flags.boolean({
+      default: false,
+      description: "Output results as JSON",
+    }),
     rewind: Flags.integer({
       default: 0,
       description: "Number of messages to rewind when subscribing",

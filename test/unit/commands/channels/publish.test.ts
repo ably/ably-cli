@@ -399,4 +399,82 @@ describe("ChannelsPublish", function () {
       expect(stdout).toMatch(/error/i);
     });
   });
+
+  describe("should publish a message with data and extras", function () {
+    it("should include extras.push when provided in message data", async function () {
+      const restMock = getMockAblyRest();
+      const channel = restMock.channels._getChannel("test-channel");
+
+      await runCommand(
+        [
+          "channels:publish",
+          "test-channel",
+          '{"data":"hello","extras":{"push":{"notification":{"title":"Test","body":"Push notification"}}}}',
+          "--transport",
+          "rest",
+        ],
+        import.meta.url,
+      );
+
+      expect(channel.publish).toHaveBeenCalledOnce();
+      const publishArgs = channel.publish.mock.calls[0][0];
+      expect(publishArgs).toHaveProperty("data", "hello");
+      expect(publishArgs).toHaveProperty("extras");
+      expect(publishArgs.extras).toHaveProperty("push");
+      expect(publishArgs.extras.push).toEqual({
+        notification: { title: "Test", body: "Push notification" },
+      });
+    });
+
+    it("should publish a message when only extras is provided without data", async function () {
+      const restMock = getMockAblyRest();
+      const channel = restMock.channels._getChannel("test-channel");
+
+      await runCommand(
+        [
+          "channels:publish",
+          "test-channel",
+          '{"extras":{"push":{"notification":{"title":"Extras only","body":"No data field"}}}}',
+          "--transport",
+          "rest",
+        ],
+        import.meta.url,
+      );
+
+      expect(channel.publish).toHaveBeenCalledOnce();
+      const publishArgs = channel.publish.mock.calls[0][0];
+      expect(publishArgs).toHaveProperty("extras");
+      expect(publishArgs.extras).toHaveProperty("push");
+      expect(publishArgs.extras.push).toEqual({
+        notification: { title: "Extras only", body: "No data field" },
+      });
+      expect(publishArgs).not.toHaveProperty("data");
+    });
+
+    it("should preserve name when extras is provided without data", async function () {
+      const restMock = getMockAblyRest();
+      const channel = restMock.channels._getChannel("test-channel");
+
+      await runCommand(
+        [
+          "channels:publish",
+          "test-channel",
+          '{"name":"eventName","extras":{"push":{"notification":{"title":"With name","body":"No data field"}}}}',
+          "--transport",
+          "rest",
+        ],
+        import.meta.url,
+      );
+
+      expect(channel.publish).toHaveBeenCalledOnce();
+      const publishArgs = channel.publish.mock.calls[0][0];
+      expect(publishArgs).toHaveProperty("name", "eventName");
+      expect(publishArgs).toHaveProperty("extras");
+      expect(publishArgs.extras).toHaveProperty("push");
+      expect(publishArgs.extras.push).toEqual({
+        notification: { title: "With name", body: "No data field" },
+      });
+      expect(publishArgs).not.toHaveProperty("data");
+    });
+  });
 });

@@ -3,7 +3,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
-import { productApiFlags } from "../../flags.js";
+import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { formatJson, isJsonData } from "../../utils/json-formatter.js";
 import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
 import { listening, resource, success } from "../../utils/output.js";
@@ -34,6 +34,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
+    ...clientIdFlag,
     "cipher-algorithm": Flags.string({
       default: "aes",
       description: "Encryption algorithm to use (default: aes)",

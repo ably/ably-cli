@@ -2,6 +2,7 @@ import { Args, Flags } from "@oclif/core";
 import { ChatMessageEvent, ChatClient } from "@ably/chat"; // Import ChatClient and StatusSubscription
 import chalk from "chalk";
 
+import { clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import { success, listening, resource } from "../../../utils/output.js";
@@ -50,6 +51,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
 
   static override flags = {
     ...ChatBaseCommand.globalFlags,
+    ...clientIdFlag,
     "show-metadata": Flags.boolean({
       default: false,
       description: "Display message metadata if available",

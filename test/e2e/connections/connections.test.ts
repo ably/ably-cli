@@ -176,17 +176,9 @@ describe("Connections E2E Tests", () => {
         // Use connection-lifecycle command which uses the correct meta channel
         const connectionsMonitor = spawn(
           "node",
-          [
-            cliPath,
-            "logs",
-            "connection-lifecycle",
-            "subscribe",
-            "--api-key",
-            apiKey,
-            "--json",
-          ],
+          [cliPath, "logs", "connection-lifecycle", "subscribe", "--json"],
           {
-            env: monitorEnv,
+            env: { ...monitorEnv, ABLY_API_KEY: apiKey },
           },
         );
 
@@ -300,13 +292,11 @@ describe("Connections E2E Tests", () => {
             "channels",
             "subscribe",
             testChannelName,
-            "--api-key",
-            apiKey,
             "--client-id",
             testClientId,
           ],
           {
-            env: subEnv,
+            env: { ...subEnv, ABLY_API_KEY: apiKey },
           },
         );
 

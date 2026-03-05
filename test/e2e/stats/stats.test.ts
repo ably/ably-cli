@@ -65,12 +65,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
             "should fetch account stats with default settings",
           );
 
-          const result = await runCommand(
-            ["stats", "account", "--access-token", E2E_ACCESS_TOKEN!],
-            {
-              timeoutMs: 60000,
-            },
-          );
+          const result = await runCommand(["stats", "account"], {
+            timeoutMs: 60000,
+            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN! },
+          });
 
           expect(result.exitCode).toBe(0);
           // Output should contain some stats information or "No stats found"
@@ -90,16 +88,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
           setupTestFailureHandler("should fetch account stats with hour unit");
 
           const result = await runCommand(
-            [
-              "stats",
-              "account",
-              "--unit",
-              "hour",
-              "--access-token",
-              E2E_ACCESS_TOKEN!,
-            ],
+            ["stats", "account", "--unit", "hour"],
             {
               timeoutMs: 60000,
+              env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN! },
             },
           );
 
@@ -114,16 +106,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
           setupTestFailureHandler("should fetch account stats with day unit");
 
           const result = await runCommand(
-            [
-              "stats",
-              "account",
-              "--unit",
-              "day",
-              "--access-token",
-              E2E_ACCESS_TOKEN!,
-            ],
+            ["stats", "account", "--unit", "day"],
             {
               timeoutMs: 60000,
+              env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN! },
             },
           );
 
@@ -138,16 +124,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
           setupTestFailureHandler("should fetch account stats with limit");
 
           const result = await runCommand(
-            [
-              "stats",
-              "account",
-              "--limit",
-              "5",
-              "--access-token",
-              E2E_ACCESS_TOKEN!,
-            ],
+            ["stats", "account", "--limit", "5"],
             {
               timeoutMs: 60000,
+              env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN! },
             },
           );
 
@@ -162,17 +142,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
           setupTestFailureHandler("should output account stats in JSON format");
 
           const result = await runCommand(
-            [
-              "stats",
-              "account",
-              "--json",
-              "--limit",
-              "1",
-              "--access-token",
-              E2E_ACCESS_TOKEN!,
-            ],
+            ["stats", "account", "--json", "--limit", "1"],
             {
               timeoutMs: 60000,
+              env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN! },
             },
           );
 
@@ -203,17 +176,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
           );
 
           const result = await runCommand(
-            [
-              "stats",
-              "account",
-              "--pretty-json",
-              "--limit",
-              "1",
-              "--access-token",
-              E2E_ACCESS_TOKEN!,
-            ],
+            ["stats", "account", "--pretty-json", "--limit", "1"],
             {
               timeoutMs: 60000,
+              env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN! },
             },
           );
 
@@ -234,19 +200,11 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
           // Start live stats subscription
           const statsMonitor = spawn(
             "node",
-            [
-              cliPath,
-              "stats",
-              "account",
-              "--live",
-              "--interval",
-              "2",
-              "--access-token",
-              E2E_ACCESS_TOKEN!,
-            ],
+            [cliPath, "stats", "account", "--live", "--interval", "2"],
             {
               env: {
                 ...process.env,
+                ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN!,
               },
             },
           );
@@ -285,12 +243,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
             "should fetch app stats with default settings using access token",
           );
 
-          const result = await runCommand(
-            ["stats", "app", "--access-token", E2E_ACCESS_TOKEN!],
-            {
-              timeoutMs: 60000,
-            },
-          );
+          const result = await runCommand(["stats", "app"], {
+            timeoutMs: 60000,
+            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN! },
+          });
 
           // Either success or an error about no app ID selected (which is expected without config)
           expect(
@@ -524,16 +480,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
           );
 
           const result = await runCommand(
-            [
-              "stats",
-              "account",
-              "--unit",
-              "invalid",
-              "--access-token",
-              E2E_ACCESS_TOKEN!,
-            ],
+            ["stats", "account", "--unit", "invalid"],
             {
               timeoutMs: 30000,
+              env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN! },
             },
           );
 
@@ -551,16 +501,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
           );
 
           const result = await runCommand(
-            [
-              "stats",
-              "account",
-              "--start",
-              "not-a-timestamp",
-              "--access-token",
-              E2E_ACCESS_TOKEN!,
-            ],
+            ["stats", "account", "--start", "not-a-timestamp"],
             {
               timeoutMs: 30000,
+              env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN! },
             },
           );
 
@@ -595,12 +539,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
         async () => {
           setupTestFailureHandler("should reject invalid authentication");
 
-          const result = await runCommand(
-            ["stats", "account", "--access-token", "invalid-token"],
-            {
-              timeoutMs: 30000,
-            },
-          );
+          const result = await runCommand(["stats", "account"], {
+            timeoutMs: 30000,
+            env: { ABLY_ACCESS_TOKEN: "invalid-token" },
+          });
 
           expect(result.exitCode).not.toBe(0);
           // Should contain an authentication error
@@ -635,11 +577,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
               oneHourAgo.toString(),
               "--end",
               now.toString(),
-              "--access-token",
-              E2E_ACCESS_TOKEN!,
             ],
             {
               timeoutMs: 60000,
+              env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN! },
             },
           );
 
@@ -703,11 +644,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
               startTime.toString(),
               "--end",
               endTime.toString(),
-              "--access-token",
-              E2E_ACCESS_TOKEN!,
             ],
             {
               timeoutMs: 60000,
+              env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN! },
             },
           );
 
@@ -728,16 +668,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
 
           const startTime = Date.now();
           const result = await runCommand(
-            [
-              "stats",
-              "account",
-              "--limit",
-              "10",
-              "--access-token",
-              E2E_ACCESS_TOKEN!,
-            ],
+            ["stats", "account", "--limit", "10"],
             {
               timeoutMs: 45000,
+              env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN! },
             },
           );
           const endTime = Date.now();
@@ -758,16 +692,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
           // Run multiple stats requests in sequence
           for (let i = 0; i < 3; i++) {
             const result = await runCommand(
-              [
-                "stats",
-                "account",
-                "--limit",
-                "2",
-                "--access-token",
-                E2E_ACCESS_TOKEN!,
-              ],
+              ["stats", "account", "--limit", "2"],
               {
                 timeoutMs: 30000,
+                env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN! },
               },
             );
             expect(result.exitCode).toBe(0);
@@ -785,31 +713,17 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
 
           // Run the same command twice and verify consistent output structure
           const result1 = await runCommand(
-            [
-              "stats",
-              "account",
-              "--json",
-              "--limit",
-              "2",
-              "--access-token",
-              E2E_ACCESS_TOKEN!,
-            ],
+            ["stats", "account", "--json", "--limit", "2"],
             {
               timeoutMs: 45000,
+              env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN! },
             },
           );
           const result2 = await runCommand(
-            [
-              "stats",
-              "account",
-              "--json",
-              "--limit",
-              "2",
-              "--access-token",
-              E2E_ACCESS_TOKEN!,
-            ],
+            ["stats", "account", "--json", "--limit", "2"],
             {
               timeoutMs: 45000,
+              env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN! },
             },
           );
 
