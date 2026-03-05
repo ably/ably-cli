@@ -2,6 +2,7 @@ import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
+import { productApiFlags } from "../../../flags.js";
 import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
 
 export default class LogsPushHistory extends AblyBaseCommand {
@@ -16,7 +17,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     direction: Flags.string({
       default: "backwards",
       description: "Direction of log retrieval",

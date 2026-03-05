@@ -4,6 +4,7 @@ import chalk from "chalk";
 import Table from "cli-table3";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { productApiFlags } from "../../flags.js";
 
 interface TestMetrics {
   batchCount: number;
@@ -66,7 +67,7 @@ export default class BenchPublisher extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     "message-size": Flags.integer({
       default: 100,
       description: "Size of the message payload in bytes",

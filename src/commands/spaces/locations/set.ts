@@ -3,6 +3,7 @@ import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
+import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 
 // Define the type for location subscription
@@ -27,6 +28,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
 
   static override flags = {
     ...SpacesBaseCommand.globalFlags,
+    ...clientIdFlag,
     location: Flags.string({
       description: "Location data to set (JSON format)",
       required: true,

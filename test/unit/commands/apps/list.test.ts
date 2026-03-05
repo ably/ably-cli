@@ -114,8 +114,10 @@ describe("apps:list command", () => {
       expect(stdout).toContain("No apps found");
     });
 
-    it("should use custom access token when provided", async () => {
+    it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
       const customToken = "custom_access_token";
+
+      process.env.ABLY_ACCESS_TOKEN = customToken;
 
       // Mock the /me endpoint with custom token
       nock("https://control.ably.net", {
@@ -138,10 +140,7 @@ describe("apps:list command", () => {
         .get(`/v1/accounts/${mockAccountId}/apps`)
         .reply(200, mockApps);
 
-      const { stdout } = await runCommand(
-        ["apps:list", "--access-token", "custom_access_token"],
-        import.meta.url,
-      );
+      const { stdout } = await runCommand(["apps:list"], import.meta.url);
 
       expect(stdout).toContain("Test App 1");
       expect(stdout).toContain("Test App 2");

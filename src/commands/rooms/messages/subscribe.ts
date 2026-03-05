@@ -2,6 +2,7 @@ import { Args, Flags } from "@oclif/core";
 import { ChatMessageEvent, ChatClient } from "@ably/chat"; // Import ChatClient and StatusSubscription
 import chalk from "chalk";
 
+import { clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
@@ -40,7 +41,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
   static override examples = [
     "$ ably rooms messages subscribe my-room",
     "$ ably rooms messages subscribe room1 room2 room3",
-    '$ ably rooms messages subscribe --api-key "YOUR_API_KEY" my-room',
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably rooms messages subscribe my-room',
     "$ ably rooms messages subscribe --show-metadata my-room",
     "$ ably rooms messages subscribe my-room --duration 30",
     "$ ably rooms messages subscribe my-room --json",
@@ -49,6 +50,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
 
   static override flags = {
     ...ChatBaseCommand.globalFlags,
+    ...clientIdFlag,
     "show-metadata": Flags.boolean({
       default: false,
       description: "Display message metadata if available",

@@ -95,6 +95,7 @@ type MockConfigManager = ConfigManager & {
   getCurrentAppId: ReturnType<typeof vi.fn>;
   getApiKey: ReturnType<typeof vi.fn>;
   getAccessToken: ReturnType<typeof vi.fn>;
+  getEndpoint: ReturnType<typeof vi.fn>;
   selectKey: ReturnType<typeof vi.fn>;
   selectApp: ReturnType<typeof vi.fn>;
   setCurrentApp: ReturnType<typeof vi.fn>;
@@ -133,6 +134,7 @@ describe("AblyBaseCommand", function () {
       getCurrentAppId: vi.fn(),
       getApiKey: vi.fn(),
       getAccessToken: vi.fn(),
+      getEndpoint: vi.fn(),
       selectKey: vi.fn(),
       selectApp: vi.fn(),
       setCurrentApp: vi.fn(),
@@ -555,17 +557,20 @@ describe("AblyBaseCommand", function () {
   });
 
   describe("ensureAppAndKey", function () {
-    it("should use app and key from flags if available", async function () {
+    it("should use app and key from flags and config if available", async function () {
       const flags: BaseFlags = {
         app: "testAppId",
-        "api-key": "testApiKey",
       };
+
+      // Configure config manager to return the API key for the given app
+      configManagerStub.getApiKey.mockReturnValue("testApiKey");
 
       const result = await command.testEnsureAppAndKey(flags);
 
       expect(result).not.toBeNull();
       expect(result?.appId).toBe("testAppId");
       expect(result?.apiKey).toBe("testApiKey");
+      expect(configManagerStub.getApiKey).toHaveBeenCalledWith("testAppId");
     });
 
     it("should use app and key from config if available", async function () {
@@ -645,42 +650,47 @@ describe("AblyBaseCommand", function () {
     });
   });
 
-  describe("endpoint flag handling", function () {
-    it("should set endpoint in client options when endpoint flag is provided", function () {
-      const flags: BaseFlags = {
-        endpoint: "custom-endpoint.example.com",
-        "api-key": "test-key:secret",
-      };
+  describe("endpoint handling", function () {
+    it("should set endpoint in client options when ABLY_ENDPOINT env var is provided", function () {
+      process.env.ABLY_ENDPOINT = "custom-endpoint.example.com";
+      process.env.ABLY_API_KEY = "test-key:secret";
+
+      const flags: BaseFlags = {};
 
       const clientOptions = command.testGetClientOptions(flags);
 
       expect(clientOptions.endpoint).toBe("custom-endpoint.example.com");
+
+      delete process.env.ABLY_ENDPOINT;
+      delete process.env.ABLY_API_KEY;
     });
 
-    it("should not set endpoint when flag is not provided", function () {
-      const flags: BaseFlags = {
-        "api-key": "test-key:secret",
-      };
+    it("should not set endpoint when env var is not provided", function () {
+      delete process.env.ABLY_ENDPOINT;
+      process.env.ABLY_API_KEY = "test-key:secret";
+
+      const flags: BaseFlags = {};
 
       const clientOptions = command.testGetClientOptions(flags);
 
       expect(clientOptions.endpoint).toBeUndefined();
+
+      delete process.env.ABLY_API_KEY;
     });
 
-    it("should work alongside other flags like env and host", function () {
-      const flags: BaseFlags = {
-        endpoint: "custom-endpoint.example.com",
-        env: "sandbox",
-        host: "custom-host.example.com",
-        "api-key": "test-key:secret",
-      };
+    it("should set endpoint from ABLY_ENDPOINT env var alongside other options", function () {
+      process.env.ABLY_ENDPOINT = "custom-endpoint.example.com";
+      process.env.ABLY_API_KEY = "test-key:secret";
+
+      const flags: BaseFlags = {};
 
       const clientOptions = command.testGetClientOptions(flags);
 
       expect(clientOptions.endpoint).toBe("custom-endpoint.example.com");
-      expect(clientOptions.environment).toBe("sandbox");
-      expect(clientOptions.realtimeHost).toBe("custom-host.example.com");
-      expect(clientOptions.restHost).toBe("custom-host.example.com");
+      expect(clientOptions.key).toBe("test-key:secret");
+
+      delete process.env.ABLY_ENDPOINT;
+      delete process.env.ABLY_API_KEY;
     });
   });
 });

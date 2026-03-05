@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { coreGlobalFlags } from "../../flags.js";
 
 export default class ConfigPath extends AblyBaseCommand {
   static override description = "Print the path to the Ably CLI config file";
@@ -13,7 +14,7 @@ export default class ConfigPath extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...coreGlobalFlags,
   };
 
   public async run(): Promise<void> {

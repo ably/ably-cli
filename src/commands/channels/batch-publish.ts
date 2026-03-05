@@ -1,5 +1,6 @@
 import { Args, Flags } from "@oclif/core";
 import { AblyBaseCommand } from "../../base-command.js";
+import { productApiFlags } from "../../flags.js";
 
 // Define interfaces for the batch-publish command
 interface BatchMessage {
@@ -64,7 +65,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     channels: Flags.string({
       description:
         "Comma-separated list of channel names to publish to (mutually exclusive with --channels-json and --spec)",

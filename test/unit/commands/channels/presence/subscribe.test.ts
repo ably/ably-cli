@@ -74,12 +74,7 @@ describe("channels:presence:subscribe command", () => {
       const channel = mock.channels._getChannel("test-channel");
 
       const { stdout } = await runCommand(
-        [
-          "channels:presence:subscribe",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-        ],
+        ["channels:presence:subscribe", "test-channel"],
         import.meta.url,
       );
 
@@ -93,12 +88,7 @@ describe("channels:presence:subscribe command", () => {
     it("should receive and display presence events with action, client and data", async () => {
       // Run command
       const commandPromise = runCommand(
-        [
-          "channels:presence:subscribe",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-        ],
+        ["channels:presence:subscribe", "test-channel"],
         import.meta.url,
       );
 
@@ -131,13 +121,7 @@ describe("channels:presence:subscribe command", () => {
       const channel = mock.channels._getChannel("test-channel");
 
       const { error } = await runCommand(
-        [
-          "channels:presence:subscribe",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-          "--json",
-        ],
+        ["channels:presence:subscribe", "test-channel", "--json"],
         import.meta.url,
       );
 
@@ -149,12 +133,7 @@ describe("channels:presence:subscribe command", () => {
 
     it("should handle multiple presence events", async () => {
       const commandPromise = runCommand(
-        [
-          "channels:presence:subscribe",
-          "test-channel",
-          "--api-key",
-          "app.key:secret",
-        ],
+        ["channels:presence:subscribe", "test-channel"],
         import.meta.url,
       );
 

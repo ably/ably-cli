@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { randomUUID } from "node:crypto";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { productApiFlags } from "../../flags.js";
 
 interface JwtPayload {
   exp: number;
@@ -24,11 +25,11 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
     "$ ably auth issue-jwt-token --json",
     "$ ably auth issue-jwt-token --pretty-json",
     "$ ably auth issue-jwt-token --token-only",
-    '$ ably channels publish --token "$(ably auth issue-jwt-token --token-only)" my-channel "Hello"',
+    '$ ABLY_TOKEN="$(ably auth issue-jwt-token --token-only)" ably channels publish my-channel "Hello"',
   ];
 
   static flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     app: Flags.string({
       description: "App ID to use (uses current app if not specified)",
       env: "ABLY_APP_ID",

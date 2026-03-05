@@ -2,6 +2,7 @@ import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 
+import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
@@ -34,13 +35,14 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
     "$ ably spaces cursors set my-space --simulate --x 500 --y 500",
     '$ ably spaces cursors set my-space --data \'{"position": {"x": 100, "y": 200}}\'',
     '$ ably spaces cursors set my-space --data \'{"position": {"x": 100, "y": 200}, "data": {"name": "John", "color": "#ff0000"}}\'',
-    '$ ably spaces cursors set --api-key "YOUR_API_KEY" my-space --x 100 --y 200',
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably spaces cursors set my-space --x 100 --y 200',
     "$ ably spaces cursors set my-space --x 100 --y 200 --json",
     "$ ably spaces cursors set my-space --x 100 --y 200 --pretty-json",
   ];
 
   static override flags = {
     ...SpacesBaseCommand.globalFlags,
+    ...clientIdFlag,
     data: Flags.string({
       description: "The cursor data to set (as JSON string)",
       required: false,

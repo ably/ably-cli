@@ -65,7 +65,7 @@ describe("spaces commands", () => {
       const space = spacesMock._getSpace("test-space");
 
       const { stdout } = await runCommand(
-        ["spaces:members:enter", "test-space", "--api-key", "app.key:secret"],
+        ["spaces:members:enter", "test-space"],
         import.meta.url,
       );
 
@@ -81,8 +81,6 @@ describe("spaces commands", () => {
         [
           "spaces:members:enter",
           "test-space",
-          "--api-key",
-          "app.key:secret",
           "--profile",
           '{"name":"TestUser","status":"online"}',
         ],
@@ -123,12 +121,7 @@ describe("spaces commands", () => {
       );
 
       const commandPromise = runCommand(
-        [
-          "spaces:members:subscribe",
-          "test-space",
-          "--api-key",
-          "app.key:secret",
-        ],
+        ["spaces:members:subscribe", "test-space"],
         import.meta.url,
       );
 
@@ -174,8 +167,6 @@ describe("spaces commands", () => {
         [
           "spaces:locations:set",
           "test-space",
-          "--api-key",
-          "app.key:secret",
           "--location",
           '{"x":100,"y":200}',
         ],
@@ -209,8 +200,6 @@ describe("spaces commands", () => {
           "spaces:locks:acquire",
           "test-space",
           "my-lock",
-          "--api-key",
-          "app.key:secret",
           "--data",
           '{"reason":"editing"}',
         ],
@@ -241,16 +230,7 @@ describe("spaces commands", () => {
       const space = spacesMock._getSpace("test-space");
 
       const { stdout } = await runCommand(
-        [
-          "spaces:cursors:set",
-          "test-space",
-          "--api-key",
-          "app.key:secret",
-          "--x",
-          "50",
-          "--y",
-          "75",
-        ],
+        ["spaces:cursors:set", "test-space", "--x", "50", "--y", "75"],
         import.meta.url,
       );
 

@@ -12,6 +12,7 @@ describe("apps:update command", () => {
 
   afterEach(() => {
     nock.cleanAll();
+    delete process.env.ABLY_ACCESS_TOKEN;
   });
 
   describe("successful app update", () => {
@@ -140,12 +141,14 @@ describe("apps:update command", () => {
       expect(result).toHaveProperty("success", true);
     });
 
-    it("should use custom access token when provided", async () => {
+    it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
       const mock = getMockConfigManager();
       const accountId = mock.getCurrentAccount()!.accountId!;
       const appId = mock.getCurrentAppId()!;
       const customToken = "custom_access_token";
       const updatedName = "UpdatedAppName";
+
+      process.env.ABLY_ACCESS_TOKEN = customToken;
 
       // Mock the app update endpoint with custom token
       nock("https://control.ably.net", {
@@ -165,14 +168,7 @@ describe("apps:update command", () => {
         });
 
       const { stdout } = await runCommand(
-        [
-          "apps:update",
-          appId,
-          "--name",
-          updatedName,
-          "--access-token",
-          customToken,
-        ],
+        ["apps:update", appId, "--name", updatedName],
         import.meta.url,
       );
 

@@ -11,6 +11,7 @@
 * [CLI Usage](#cli-usage)
 * [Commands](#commands)
 * [Contributing](#contributing)
+* [or](#or)
 <!-- tocstop -->
 
 # CLI Usage
@@ -24,7 +25,7 @@ $ npm install -g @ably/cli
 $ ably COMMAND
 running command...
 $ ably (--version)
-@ably/cli/0.15.0 darwin-arm64 node-v22.14.0
+@ably/cli/0.16.0 darwin-arm64 node-v24.4.1
 $ ably --help [COMMAND]
 USAGE
   $ ably COMMAND
@@ -108,6 +109,7 @@ $ ably-interactive
 * [`ably channels`](#ably-channels)
 * [`ably channels batch-publish [MESSAGE]`](#ably-channels-batch-publish-message)
 * [`ably channels history CHANNEL`](#ably-channels-history-channel)
+* [`ably channels inspect CHANNEL`](#ably-channels-inspect-channel)
 * [`ably channels list`](#ably-channels-list)
 * [`ably channels occupancy`](#ably-channels-occupancy)
 * [`ably channels occupancy get CHANNEL`](#ably-channels-occupancy-get-channel)
@@ -141,8 +143,6 @@ $ ably-interactive
 * [`ably logs push history`](#ably-logs-push-history)
 * [`ably logs push subscribe`](#ably-logs-push-subscribe)
 * [`ably logs subscribe`](#ably-logs-subscribe)
-* [`ably mcp`](#ably-mcp)
-* [`ably mcp start-server`](#ably-mcp-start-server)
 * [`ably queues`](#ably-queues)
 * [`ably queues create`](#ably-queues-create)
 * [`ably queues delete QUEUEID`](#ably-queues-delete-queueid)
@@ -225,7 +225,7 @@ COMMANDS
   ably accounts switch          Switch to a different Ably account
 ```
 
-_See code: [src/commands/accounts/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/accounts/index.ts)_
+_See code: [src/commands/accounts/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/accounts/index.ts)_
 
 ## `ably accounts current`
 
@@ -233,21 +233,12 @@ Show the current Ably account
 
 ```
 USAGE
-  $ ably accounts current [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+  $ ably accounts current [-v] [--json | --pretty-json]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Show the current Ably account
@@ -260,7 +251,7 @@ EXAMPLES
   $ ably accounts current --pretty-json
 ```
 
-_See code: [src/commands/accounts/current.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/accounts/current.ts)_
+_See code: [src/commands/accounts/current.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/accounts/current.ts)_
 
 ## `ably accounts list`
 
@@ -268,21 +259,12 @@ List locally configured Ably accounts
 
 ```
 USAGE
-  $ ably accounts list [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+  $ ably accounts list [-v] [--json | --pretty-json]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   List locally configured Ably accounts
@@ -295,7 +277,7 @@ EXAMPLES
   $ ably accounts list --pretty-json
 ```
 
-_See code: [src/commands/accounts/list.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/accounts/list.ts)_
+_See code: [src/commands/accounts/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/accounts/list.ts)_
 
 ## `ably accounts login [TOKEN]`
 
@@ -303,26 +285,17 @@ Log in to your Ably account
 
 ```
 USAGE
-  $ ably accounts login [TOKEN] [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-a <value>] [--no-browser]
+  $ ably accounts login [TOKEN] [-v] [--json | --pretty-json] [-a <value>] [--no-browser]
 
 ARGUMENTS
   TOKEN  Access token (if not provided, will prompt for it)
 
 FLAGS
-  -a, --alias=<value>         Alias for this account (default account if not specified)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --no-browser            Do not open a browser
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -a, --alias=<value>  Alias for this account (default account if not specified)
+  -v, --verbose        Output verbose logs
+      --json           Output in JSON format
+      --no-browser     Do not open a browser
+      --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
   Log in to your Ably account
@@ -337,7 +310,7 @@ EXAMPLES
   $ ably accounts login --pretty-json
 ```
 
-_See code: [src/commands/accounts/login.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/accounts/login.ts)_
+_See code: [src/commands/accounts/login.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/accounts/login.ts)_
 
 ## `ably accounts logout [ALIAS]`
 
@@ -345,25 +318,16 @@ Log out from an Ably account
 
 ```
 USAGE
-  $ ably accounts logout [ALIAS] [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-f]
+  $ ably accounts logout [ALIAS] [-v] [--json | --pretty-json] [-f]
 
 ARGUMENTS
   ALIAS  Alias of the account to log out from (defaults to current account)
 
 FLAGS
-  -f, --force                 Force logout without confirmation
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -f, --force        Force logout without confirmation
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Log out from an Ably account
@@ -378,7 +342,7 @@ EXAMPLES
   $ ably accounts logout --pretty-json
 ```
 
-_See code: [src/commands/accounts/logout.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/accounts/logout.ts)_
+_See code: [src/commands/accounts/logout.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/accounts/logout.ts)_
 
 ## `ably accounts switch [ALIAS]`
 
@@ -386,24 +350,15 @@ Switch to a different Ably account
 
 ```
 USAGE
-  $ ably accounts switch [ALIAS] [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+  $ ably accounts switch [ALIAS] [-v] [--json | --pretty-json]
 
 ARGUMENTS
   ALIAS  Alias of the account to switch to
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Switch to a different Ably account
@@ -418,7 +373,7 @@ EXAMPLES
   $ ably accounts switch --pretty-json
 ```
 
-_See code: [src/commands/accounts/switch.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/accounts/switch.ts)_
+_See code: [src/commands/accounts/switch.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/accounts/switch.ts)_
 
 ## `ably apps`
 
@@ -457,7 +412,7 @@ COMMANDS
   ably apps update              Update an app
 ```
 
-_See code: [src/commands/apps/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/index.ts)_
+_See code: [src/commands/apps/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/index.ts)_
 
 ## `ably apps channel-rules`
 
@@ -480,7 +435,7 @@ EXAMPLES
   $ ably apps channel-rules delete chat
 ```
 
-_See code: [src/commands/apps/channel-rules/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/channel-rules/index.ts)_
+_See code: [src/commands/apps/channel-rules/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/channel-rules/index.ts)_
 
 ## `ably apps channel-rules create`
 
@@ -488,29 +443,21 @@ Create a channel rule
 
 ```
 USAGE
-  $ ably apps channel-rules create --name <value> [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
-    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>]
-    [--authenticated] [--batching-enabled] [--batching-interval <value>] [--conflation-enabled] [--conflation-interval
-    <value>] [--conflation-key <value>] [--expose-time-serial] [--persist-last] [--persisted]
-    [--populate-channel-registry] [--push-enabled] [--tls-only]
+  $ ably apps channel-rules create --name <value> [-v] [--json | --pretty-json] [--app <value>] [--authenticated]
+    [--batching-enabled] [--batching-interval <value>] [--conflation-enabled] [--conflation-interval <value>]
+    [--conflation-key <value>] [--expose-time-serial] [--persist-last] [--persisted] [--populate-channel-registry]
+    [--push-enabled] [--tls-only]
 
 FLAGS
   -v, --verbose                      Output verbose logs
-      --access-token=<value>         Overrides any configured access token used for the Control API
-      --api-key=<value>              Overrides any configured API key used for the product APIs
       --app=<value>                  App ID or name to create the channel rule in
       --authenticated                Whether channels matching this rule require clients to be authenticated
       --batching-enabled             Whether to enable batching for messages on channels matching this rule
       --batching-interval=<value>    The batching interval for messages on channels matching this rule
-      --client-id=<value>            Overrides any default client ID when using API authentication. Use "none" to
-                                     explicitly set no client ID. Not applicable when using token authentication.
       --conflation-enabled           Whether to enable conflation for messages on channels matching this rule
       --conflation-interval=<value>  The conflation interval for messages on channels matching this rule
       --conflation-key=<value>       The conflation key for messages on channels matching this rule
-      --endpoint=<value>             Override the endpoint for all product API calls
-      --env=<value>                  Override the environment for all product API calls
       --expose-time-serial           Whether to expose the time serial for messages on channels matching this rule
-      --host=<value>                 Override the host endpoint for all product API calls
       --json                         Output in JSON format
       --name=<value>                 (required) Name of the channel rule
       --persist-last                 Whether to persist only the last message on channels matching this rule
@@ -519,7 +466,6 @@ FLAGS
       --pretty-json                  Output in colorized JSON format
       --push-enabled                 Whether push notifications should be enabled for channels matching this rule
       --tls-only                     Whether to enforce TLS for channels matching this rule
-      --token=<value>                Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
   Create a channel rule
@@ -532,7 +478,7 @@ EXAMPLES
   $ ably apps channel-rules create --name "notifications" --persisted --push-enabled --app "My App"
 ```
 
-_See code: [src/commands/apps/channel-rules/create.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/channel-rules/create.ts)_
+_See code: [src/commands/apps/channel-rules/create.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/channel-rules/create.ts)_
 
 ## `ably apps channel-rules delete NAMEORID`
 
@@ -540,26 +486,17 @@ Delete a channel rule
 
 ```
 USAGE
-  $ ably apps channel-rules delete NAMEORID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>] [-f]
+  $ ably apps channel-rules delete NAMEORID [-v] [--json | --pretty-json] [--app <value>] [-f]
 
 ARGUMENTS
   NAMEORID  Name or ID of the channel rule to delete
 
 FLAGS
-  -f, --force                 Force deletion without confirmation
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID or name to delete the channel rule from
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -f, --force        Force deletion without confirmation
+  -v, --verbose      Output verbose logs
+      --app=<value>  App ID or name to delete the channel rule from
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Delete a channel rule
@@ -576,7 +513,7 @@ EXAMPLES
   $ ably apps channel-rules delete chat --pretty-json
 ```
 
-_See code: [src/commands/apps/channel-rules/delete.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/channel-rules/delete.ts)_
+_See code: [src/commands/apps/channel-rules/delete.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/channel-rules/delete.ts)_
 
 ## `ably apps channel-rules list`
 
@@ -599,7 +536,7 @@ EXAMPLES
   $ ably apps:channel-rules:list --pretty-json
 ```
 
-_See code: [src/commands/apps/channel-rules/list.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/channel-rules/list.ts)_
+_See code: [src/commands/apps/channel-rules/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/channel-rules/list.ts)_
 
 ## `ably apps channel-rules update NAMEORID`
 
@@ -607,32 +544,24 @@ Update a channel rule
 
 ```
 USAGE
-  $ ably apps channel-rules update NAMEORID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>]
-    [--authenticated] [--batching-enabled] [--batching-interval <value>] [--conflation-enabled] [--conflation-interval
-    <value>] [--conflation-key <value>] [--expose-time-serial] [--persist-last] [--persisted]
-    [--populate-channel-registry] [--push-enabled] [--tls-only]
+  $ ably apps channel-rules update NAMEORID [-v] [--json | --pretty-json] [--app <value>] [--authenticated]
+    [--batching-enabled] [--batching-interval <value>] [--conflation-enabled] [--conflation-interval <value>]
+    [--conflation-key <value>] [--expose-time-serial] [--persist-last] [--persisted] [--populate-channel-registry]
+    [--push-enabled] [--tls-only]
 
 ARGUMENTS
   NAMEORID  Name or ID of the channel rule to update
 
 FLAGS
   -v, --verbose                         Output verbose logs
-      --access-token=<value>            Overrides any configured access token used for the Control API
-      --api-key=<value>                 Overrides any configured API key used for the product APIs
       --app=<value>                     App ID or name to update the channel rule in
       --[no-]authenticated              Whether channels matching this rule require clients to be authenticated
       --[no-]batching-enabled           Whether to enable batching for messages on channels matching this rule
       --batching-interval=<value>       The batching interval for messages on channels matching this rule
-      --client-id=<value>               Overrides any default client ID when using API authentication. Use "none" to
-                                        explicitly set no client ID. Not applicable when using token authentication.
       --[no-]conflation-enabled         Whether to enable conflation for messages on channels matching this rule
       --conflation-interval=<value>     The conflation interval for messages on channels matching this rule
       --conflation-key=<value>          The conflation key for messages on channels matching this rule
-      --endpoint=<value>                Override the endpoint for all product API calls
-      --env=<value>                     Override the environment for all product API calls
       --[no-]expose-time-serial         Whether to expose the time serial for messages on channels matching this rule
-      --host=<value>                    Override the host endpoint for all product API calls
       --json                            Output in JSON format
       --[no-]persist-last               Whether to persist only the last message on channels matching this rule
       --[no-]persisted                  Whether messages on channels matching this rule should be persisted
@@ -640,7 +569,6 @@ FLAGS
       --pretty-json                     Output in colorized JSON format
       --[no-]push-enabled               Whether push notifications should be enabled for channels matching this rule
       --[no-]tls-only                   Whether to enforce TLS for channels matching this rule
-      --token=<value>                   Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
   Update a channel rule
@@ -653,7 +581,7 @@ EXAMPLES
   $ ably apps channel-rules update notifications --persisted --push-enabled --app "My App"
 ```
 
-_See code: [src/commands/apps/channel-rules/update.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/channel-rules/update.ts)_
+_See code: [src/commands/apps/channel-rules/update.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/channel-rules/update.ts)_
 
 ## `ably apps create`
 
@@ -661,23 +589,14 @@ Create a new app
 
 ```
 USAGE
-  $ ably apps create --name <value> [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
-    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--tls-only]
+  $ ably apps create --name <value> [-v] [--json | --pretty-json] [--tls-only]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --name=<value>          (required) Name of the app
-      --pretty-json           Output in colorized JSON format
-      --tls-only              Whether the app should accept TLS connections only
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose       Output verbose logs
+      --json          Output in JSON format
+      --name=<value>  (required) Name of the app
+      --pretty-json   Output in colorized JSON format
+      --tls-only      Whether the app should accept TLS connections only
 
 DESCRIPTION
   Create a new app
@@ -687,10 +606,10 @@ EXAMPLES
 
   $ ably apps create --name "My New App" --tls-only
 
-  $ ably apps create --name "My New App" --access-token "YOUR_ACCESS_TOKEN"
+  $ ABLY_ACCESS_TOKEN="YOUR_ACCESS_TOKEN" ably apps create --name "My New App"
 ```
 
-_See code: [src/commands/apps/create.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/create.ts)_
+_See code: [src/commands/apps/create.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/create.ts)_
 
 ## `ably apps current`
 
@@ -698,21 +617,12 @@ Show the currently selected app
 
 ```
 USAGE
-  $ ably apps current [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+  $ ably apps current [-v] [--json | --pretty-json]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Show the currently selected app
@@ -725,7 +635,7 @@ EXAMPLES
   $ ably apps current --pretty-json
 ```
 
-_See code: [src/commands/apps/current.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/current.ts)_
+_See code: [src/commands/apps/current.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/current.ts)_
 
 ## `ably apps delete [APPID]`
 
@@ -733,26 +643,17 @@ Delete an app
 
 ```
 USAGE
-  $ ably apps delete [APPID] [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-f] [--app <value>]
+  $ ably apps delete [APPID] [-v] [--json | --pretty-json] [-f] [--app <value>]
 
 ARGUMENTS
   APPID  App ID to delete (uses current app if not specified)
 
 FLAGS
-  -f, --force                 Skip confirmation prompt
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID to delete (overrides argument and current app)
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -f, --force        Skip confirmation prompt
+  -v, --verbose      Output verbose logs
+      --app=<value>  App ID to delete (overrides argument and current app)
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Delete an app
@@ -764,7 +665,7 @@ EXAMPLES
 
   $ ably apps delete --app app-id
 
-  $ ably apps delete app-id --access-token "YOUR_ACCESS_TOKEN"
+  $ ABLY_ACCESS_TOKEN="YOUR_ACCESS_TOKEN" ably apps delete app-id
 
   $ ably apps delete app-id --force
 
@@ -773,7 +674,7 @@ EXAMPLES
   $ ably apps delete app-id --pretty-json
 ```
 
-_See code: [src/commands/apps/delete.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/delete.ts)_
+_See code: [src/commands/apps/delete.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/delete.ts)_
 
 ## `ably apps list`
 
@@ -781,21 +682,12 @@ List all apps in the current account
 
 ```
 USAGE
-  $ ably apps list [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+  $ ably apps list [-v] [--json | --pretty-json]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   List all apps in the current account
@@ -808,7 +700,7 @@ EXAMPLES
   $ ably apps list --pretty-json
 ```
 
-_See code: [src/commands/apps/list.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/list.ts)_
+_See code: [src/commands/apps/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/list.ts)_
 
 ## `ably apps set-apns-p12 ID`
 
@@ -816,28 +708,19 @@ Upload Apple Push Notification Service P12 certificate for an app
 
 ```
 USAGE
-  $ ably apps set-apns-p12 ID --certificate <value> [--access-token <value>] [--api-key <value>] [--client-id <value>]
-    [--env <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--password
-    <value>] [--use-for-sandbox]
+  $ ably apps set-apns-p12 ID --certificate <value> [-v] [--json | --pretty-json] [--password <value>]
+    [--use-for-sandbox]
 
 ARGUMENTS
   ID  App ID to set the APNS certificate for
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --certificate=<value>   (required) Path to the P12 certificate file
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --password=<value>      Password for the P12 certificate
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --use-for-sandbox       Whether to use this certificate for the APNS sandbox environment
+  -v, --verbose              Output verbose logs
+      --certificate=<value>  (required) Path to the P12 certificate file
+      --json                 Output in JSON format
+      --password=<value>     Password for the P12 certificate
+      --pretty-json          Output in colorized JSON format
+      --use-for-sandbox      Whether to use this certificate for the APNS sandbox environment
 
 DESCRIPTION
   Upload Apple Push Notification Service P12 certificate for an app
@@ -850,7 +733,7 @@ EXAMPLES
   $ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --use-for-sandbox
 ```
 
-_See code: [src/commands/apps/set-apns-p12.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/set-apns-p12.ts)_
+_See code: [src/commands/apps/set-apns-p12.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/set-apns-p12.ts)_
 
 ## `ably apps switch [APPID]`
 
@@ -858,24 +741,15 @@ Switch to a different Ably app
 
 ```
 USAGE
-  $ ably apps switch [APPID] [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+  $ ably apps switch [APPID] [-v] [--json | --pretty-json]
 
 ARGUMENTS
   APPID  ID of the app to switch to
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Switch to a different Ably app
@@ -886,7 +760,7 @@ EXAMPLES
   $ ably apps switch
 ```
 
-_See code: [src/commands/apps/switch.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/switch.ts)_
+_See code: [src/commands/apps/switch.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/switch.ts)_
 
 ## `ably apps update ID`
 
@@ -894,26 +768,17 @@ Update an app
 
 ```
 USAGE
-  $ ably apps update ID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--name <value>] [--tls-only]
+  $ ably apps update ID [-v] [--json | --pretty-json] [--name <value>] [--tls-only]
 
 ARGUMENTS
   ID  App ID to update
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --name=<value>          New name for the app
-      --pretty-json           Output in colorized JSON format
-      --tls-only              Whether the app should accept TLS connections only
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose       Output verbose logs
+      --json          Output in JSON format
+      --name=<value>  New name for the app
+      --pretty-json   Output in colorized JSON format
+      --tls-only      Whether the app should accept TLS connections only
 
 DESCRIPTION
   Update an app
@@ -925,10 +790,10 @@ EXAMPLES
 
   $ ably apps update app-id --name "Updated App Name" --tls-only
 
-  $ ably apps update app-id --name "Updated App Name" --access-token "YOUR_ACCESS_TOKEN"
+  $ ABLY_ACCESS_TOKEN="YOUR_ACCESS_TOKEN" ably apps update app-id --name "Updated App Name"
 ```
 
-_See code: [src/commands/apps/update.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/apps/update.ts)_
+_See code: [src/commands/apps/update.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/update.ts)_
 
 ## `ably auth`
 
@@ -955,7 +820,7 @@ COMMANDS
   ably auth revoke-token        Revokes the token provided
 ```
 
-_See code: [src/commands/auth/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/auth/index.ts)_
+_See code: [src/commands/auth/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/index.ts)_
 
 ## `ably auth issue-ably-token`
 
@@ -963,26 +828,19 @@ Creates an Ably Token with capabilities
 
 ```
 USAGE
-  $ ably auth issue-ably-token [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>] [--capability
-    <value>] [--token-only] [--ttl <value>]
+  $ ably auth issue-ably-token [-v] [--json | --pretty-json] [--app <value>] [--capability <value>] [--client-id <value>]
+    [--token-only] [--ttl <value>]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID to use (uses current app if not specified)
-      --capability=<value>    [default: {"*":["*"]}] Capabilities JSON string (e.g. {"channel":["publish","subscribe"]})
-      --client-id=<value>     Client ID to associate with the token. Use "none" to explicitly issue a token with no
-                              client ID, otherwise a default will be generated.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --token-only            Output only the token string without any formatting or additional information
-      --ttl=<value>           [default: 3600] Time to live in seconds (default: 3600, 1 hour)
+  -v, --verbose             Output verbose logs
+      --app=<value>         App ID to use (uses current app if not specified)
+      --capability=<value>  [default: {"*":["*"]}] Capabilities JSON string (e.g. {"channel":["publish","subscribe"]})
+      --client-id=<value>   Client ID to associate with the token. Use "none" to explicitly issue a token with no client
+                            ID, otherwise a default will be generated.
+      --json                Output in JSON format
+      --pretty-json         Output in colorized JSON format
+      --token-only          Output only the token string without any formatting or additional information
+      --ttl=<value>         [default: 3600] Time to live in seconds (default: 3600, 1 hour)
 
 DESCRIPTION
   Creates an Ably Token with capabilities
@@ -1004,10 +862,10 @@ EXAMPLES
 
   $ ably auth issue-ably-token --token-only
 
-  $ ably channels publish --token "$(ably auth issue-ably-token --token-only)" my-channel "Hello"
+  $ ABLY_TOKEN="$(ably auth issue-ably-token --token-only)" ably channels publish my-channel "Hello"
 ```
 
-_See code: [src/commands/auth/issue-ably-token.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/auth/issue-ably-token.ts)_
+_See code: [src/commands/auth/issue-ably-token.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/issue-ably-token.ts)_
 
 ## `ably auth issue-jwt-token`
 
@@ -1015,26 +873,19 @@ Creates an Ably JWT token with capabilities
 
 ```
 USAGE
-  $ ably auth issue-jwt-token [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>] [--capability
-    <value>] [--token-only] [--ttl <value>]
+  $ ably auth issue-jwt-token [-v] [--json | --pretty-json] [--app <value>] [--capability <value>] [--client-id <value>]
+    [--token-only] [--ttl <value>]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID to use (uses current app if not specified)
-      --capability=<value>    [default: {"*":["*"]}] Capabilities JSON string (e.g. {"channel":["publish","subscribe"]})
-      --client-id=<value>     Client ID to associate with the token. Use "none" to explicitly issue a token with no
-                              client ID, otherwise a default will be generated.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --token-only            Output only the token string without any formatting or additional information
-      --ttl=<value>           [default: 3600] Time to live in seconds (default: 3600, 1 hour)
+  -v, --verbose             Output verbose logs
+      --app=<value>         App ID to use (uses current app if not specified)
+      --capability=<value>  [default: {"*":["*"]}] Capabilities JSON string (e.g. {"channel":["publish","subscribe"]})
+      --client-id=<value>   Client ID to associate with the token. Use "none" to explicitly issue a token with no client
+                            ID, otherwise a default will be generated.
+      --json                Output in JSON format
+      --pretty-json         Output in colorized JSON format
+      --token-only          Output only the token string without any formatting or additional information
+      --ttl=<value>         [default: 3600] Time to live in seconds (default: 3600, 1 hour)
 
 DESCRIPTION
   Creates an Ably JWT token with capabilities
@@ -1054,10 +905,10 @@ EXAMPLES
 
   $ ably auth issue-jwt-token --token-only
 
-  $ ably channels publish --token "$(ably auth issue-jwt-token --token-only)" my-channel "Hello"
+  $ ABLY_TOKEN="$(ably auth issue-jwt-token --token-only)" ably channels publish my-channel "Hello"
 ```
 
-_See code: [src/commands/auth/issue-jwt-token.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/auth/issue-jwt-token.ts)_
+_See code: [src/commands/auth/issue-jwt-token.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/issue-jwt-token.ts)_
 
 ## `ably auth keys`
 
@@ -1084,7 +935,7 @@ EXAMPLES
   $ ably auth keys switch KEY_ID
 ```
 
-_See code: [src/commands/auth/keys/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/auth/keys/index.ts)_
+_See code: [src/commands/auth/keys/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/keys/index.ts)_
 
 ## `ably auth keys create`
 
@@ -1092,26 +943,16 @@ Create a new API key for an app
 
 ```
 USAGE
-  $ ably auth keys create --name <value> [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
-    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>]
-    [--capabilities <value>]
+  $ ably auth keys create --name <value> [-v] [--json | --pretty-json] [--app <value>] [--capabilities <value>]
 
 FLAGS
   -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
       --app=<value>           App ID the key belongs to (uses current app if not specified)
       --capabilities=<value>  [default: {"*":["*"]}] Capability object as a JSON string. Example:
                               '{"channel:*":["publish"]}'
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
       --json                  Output in JSON format
       --name=<value>          (required) Name of the key
       --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
   Create a new API key for an app
@@ -1136,7 +977,7 @@ EXAMPLES
   $ ably auth keys create --name "My New Key" --capabilities '{"channel1":["publish","subscribe"],"channel2":["history"]}'
 ```
 
-_See code: [src/commands/auth/keys/create.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/auth/keys/create.ts)_
+_See code: [src/commands/auth/keys/create.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/keys/create.ts)_
 
 ## `ably auth keys current`
 
@@ -1144,22 +985,13 @@ Show the current API key for the selected app
 
 ```
 USAGE
-  $ ably auth keys current [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>]
+  $ ably auth keys current [-v] [--json | --pretty-json] [--app <value>]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID to check key for (uses current app if not specified)
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --app=<value>  App ID to check key for (uses current app if not specified)
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Show the current API key for the selected app
@@ -1174,7 +1006,7 @@ EXAMPLES
   $ ably auth keys current --pretty-json
 ```
 
-_See code: [src/commands/auth/keys/current.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/auth/keys/current.ts)_
+_See code: [src/commands/auth/keys/current.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/keys/current.ts)_
 
 ## `ably auth keys get KEYNAMEORVALUE`
 
@@ -1182,25 +1014,16 @@ Get details for a specific key
 
 ```
 USAGE
-  $ ably auth keys get KEYNAMEORVALUE [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
-    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>]
+  $ ably auth keys get KEYNAMEORVALUE [-v] [--json | --pretty-json] [--app <value>]
 
 ARGUMENTS
   KEYNAMEORVALUE  Key name (APP_ID.KEY_ID) or full value of the key to get details for
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID the key belongs to (uses current app if not specified)
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --app=<value>  App ID the key belongs to (uses current app if not specified)
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Get details for a specific key
@@ -1215,7 +1038,7 @@ EXAMPLES
   $ ably auth keys get APP_ID.KEY_ID --pretty-json
 ```
 
-_See code: [src/commands/auth/keys/get.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/auth/keys/get.ts)_
+_See code: [src/commands/auth/keys/get.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/keys/get.ts)_
 
 ## `ably auth keys list`
 
@@ -1223,22 +1046,13 @@ List all keys in the app
 
 ```
 USAGE
-  $ ably auth keys list [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>]
+  $ ably auth keys list [-v] [--json | --pretty-json] [--app <value>]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID to list keys for (uses current app if not specified)
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --app=<value>  App ID to list keys for (uses current app if not specified)
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   List all keys in the app
@@ -1253,7 +1067,7 @@ EXAMPLES
   $ ably auth keys list --pretty-json
 ```
 
-_See code: [src/commands/auth/keys/list.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/auth/keys/list.ts)_
+_See code: [src/commands/auth/keys/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/keys/list.ts)_
 
 ## `ably auth keys revoke KEYNAME`
 
@@ -1261,26 +1075,17 @@ Revoke an API key (permanently disables the key)
 
 ```
 USAGE
-  $ ably auth keys revoke KEYNAME [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>] [--force]
+  $ ably auth keys revoke KEYNAME [-v] [--json | --pretty-json] [--app <value>] [--force]
 
 ARGUMENTS
   KEYNAME  Key name (APP_ID.KEY_ID) of the key to revoke
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID the key belongs to (uses current app if not specified)
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --force                 Skip confirmation prompt
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --app=<value>  App ID the key belongs to (uses current app if not specified)
+      --force        Skip confirmation prompt
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Revoke an API key (permanently disables the key)
@@ -1297,7 +1102,7 @@ EXAMPLES
   $ ably auth keys revoke APP_ID.KEY_ID --pretty-json
 ```
 
-_See code: [src/commands/auth/keys/revoke.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/auth/keys/revoke.ts)_
+_See code: [src/commands/auth/keys/revoke.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/keys/revoke.ts)_
 
 ## `ably auth keys switch [KEYNAMEORVALUE]`
 
@@ -1305,25 +1110,16 @@ Switch to a different API key for the current app
 
 ```
 USAGE
-  $ ably auth keys switch [KEYNAMEORVALUE] [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
-    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>]
+  $ ably auth keys switch [KEYNAMEORVALUE] [-v] [--json | --pretty-json] [--app <value>]
 
 ARGUMENTS
   KEYNAMEORVALUE  Key name (APP_ID.KEY_ID) or full value of the key to switch to
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID to switch keys for (uses current app if not specified)
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --app=<value>  App ID to switch keys for (uses current app if not specified)
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Switch to a different API key for the current app
@@ -1336,7 +1132,7 @@ EXAMPLES
   $ ably auth keys switch KEY_ID --app APP_ID
 ```
 
-_See code: [src/commands/auth/keys/switch.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/auth/keys/switch.ts)_
+_See code: [src/commands/auth/keys/switch.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/keys/switch.ts)_
 
 ## `ably auth keys update KEYNAME`
 
@@ -1344,28 +1140,19 @@ Update a key's properties
 
 ```
 USAGE
-  $ ably auth keys update KEYNAME [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>]
-    [--capabilities <value>] [--name <value>]
+  $ ably auth keys update KEYNAME [-v] [--json | --pretty-json] [--app <value>] [--capabilities <value>] [--name
+    <value>]
 
 ARGUMENTS
   KEYNAME  Key name (APP_ID.KEY_ID) of the key to update
 
 FLAGS
   -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
       --app=<value>           App ID the key belongs to (uses current app if not specified)
       --capabilities=<value>  New capabilities for the key (comma-separated list)
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
       --json                  Output in JSON format
       --name=<value>          New name for the key
       --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
   Update a key's properties
@@ -1378,7 +1165,7 @@ EXAMPLES
   $ ably auth keys update APP_ID.KEY_ID --name "New Name" --capabilities "publish,subscribe"
 ```
 
-_See code: [src/commands/auth/keys/update.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/auth/keys/update.ts)_
+_See code: [src/commands/auth/keys/update.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/keys/update.ts)_
 
 ## `ably auth revoke-token TOKEN`
 
@@ -1386,25 +1173,18 @@ Revokes the token provided
 
 ```
 USAGE
-  $ ably auth revoke-token TOKEN [--access-token <value>] [--api-key <value>] [-c <value>] [--env <value>] [--endpoint
-    <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>] [--debug]
+  $ ably auth revoke-token TOKEN [-v] [--json | --pretty-json] [--app <value>] [-c <value>] [--debug]
 
 ARGUMENTS
   TOKEN  Token to revoke
 
 FLAGS
-  -c, --client-id=<value>     Client ID to revoke tokens for
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID to use (uses current app if not specified)
-      --debug                 Show debug information
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -c, --client-id=<value>  Client ID to revoke tokens for
+  -v, --verbose            Output verbose logs
+      --app=<value>        App ID to use (uses current app if not specified)
+      --debug              Show debug information
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Revokes the token provided
@@ -1419,7 +1199,7 @@ EXAMPLES
   $ ably auth revoke-token TOKEN --pretty-json
 ```
 
-_See code: [src/commands/auth/revoke-token.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/auth/revoke-token.ts)_
+_See code: [src/commands/auth/revoke-token.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/revoke-token.ts)_
 
 ## `ably autocomplete [SHELL]`
 
@@ -1473,7 +1253,7 @@ COMMANDS
   ably bench subscriber         Run a subscriber benchmark test
 ```
 
-_See code: [src/commands/bench/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/bench/index.ts)_
+_See code: [src/commands/bench/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/bench/index.ts)_
 
 ## `ably bench publisher CHANNEL`
 
@@ -1481,9 +1261,8 @@ Run a publisher benchmark test
 
 ```
 USAGE
-  $ ably bench publisher CHANNEL [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--message-size <value>] [-m
-    <value>] [-r <value>] [-t rest|realtime] [--wait-for-subscribers]
+  $ ably bench publisher CHANNEL [-v] [--json | --pretty-json] [--message-size <value>] [-m <value>] [-r <value>] [-t
+    rest|realtime] [--wait-for-subscribers]
 
 ARGUMENTS
   CHANNEL  The channel name to publish to
@@ -1494,17 +1273,9 @@ FLAGS
   -t, --transport=<option>    [default: realtime] Transport to use for publishing
                               <options: rest|realtime>
   -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
       --json                  Output in JSON format
       --message-size=<value>  [default: 100] Size of the message payload in bytes
       --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
       --wait-for-subscribers  Wait for subscribers to be present before starting
 
 DESCRIPTION
@@ -1518,7 +1289,7 @@ EXAMPLES
   $ ably bench publisher --transport realtime my-channel
 ```
 
-_See code: [src/commands/bench/publisher.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/bench/publisher.ts)_
+_See code: [src/commands/bench/publisher.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/bench/publisher.ts)_
 
 ## `ably bench subscriber CHANNEL`
 
@@ -1526,25 +1297,16 @@ Run a subscriber benchmark test
 
 ```
 USAGE
-  $ ably bench subscriber CHANNEL [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-d <value>]
+  $ ably bench subscriber CHANNEL [-v] [--json | --pretty-json] [-d <value>]
 
 ARGUMENTS
   CHANNEL  The channel name to subscribe to
 
 FLAGS
-  -d, --duration=<value>      Duration to subscribe for in seconds (default: indefinite until Ctrl+C)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -d, --duration=<value>  Duration to subscribe for in seconds (default: indefinite until Ctrl+C)
+  -v, --verbose           Output verbose logs
+      --json              Output in JSON format
+      --pretty-json       Output in colorized JSON format
 
 DESCRIPTION
   Run a subscriber benchmark test
@@ -1553,7 +1315,7 @@ EXAMPLES
   $ ably bench subscriber my-channel
 ```
 
-_See code: [src/commands/bench/subscriber.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/bench/subscriber.ts)_
+_See code: [src/commands/bench/subscriber.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/bench/subscriber.ts)_
 
 ## `ably channels`
 
@@ -1576,6 +1338,7 @@ EXAMPLES
 COMMANDS
   ably channels batch-publish   Publish messages to multiple Ably channels with a single request
   ably channels history         Retrieve message history for a channel
+  ably channels inspect         Open the Ably dashboard to inspect a specific channel
   ably channels list            List active channels using the channel enumeration API
   ably channels occupancy       Get occupancy metrics for a channel
   ably channels presence        Manage presence on Ably channels
@@ -1583,7 +1346,7 @@ COMMANDS
   ably channels subscribe       Subscribe to messages published on one or more Ably channels
 ```
 
-_See code: [src/commands/channels/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/channels/index.ts)_
+_See code: [src/commands/channels/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/index.ts)_
 
 ## `ably channels batch-publish [MESSAGE]`
 
@@ -1591,9 +1354,8 @@ Publish messages to multiple Ably channels with a single request
 
 ```
 USAGE
-  $ ably channels batch-publish [MESSAGE] [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--channels <value> |
-    --channels-json <value> | --spec <value>] [-e <value> | ] [-n <value> | ]
+  $ ably channels batch-publish [MESSAGE] [-v] [--json | --pretty-json] [--channels <value> | --channels-json <value> |
+    --spec <value>] [-e <value> | ] [-n <value> | ]
 
 ARGUMENTS
   MESSAGE  The message to publish (JSON format or plain text, not needed if using --spec)
@@ -1602,21 +1364,13 @@ FLAGS
   -e, --encoding=<value>       The encoding for the message (not used with --spec)
   -n, --name=<value>           The event name (if not specified in the message JSON, not used with --spec)
   -v, --verbose                Output verbose logs
-      --access-token=<value>   Overrides any configured access token used for the Control API
-      --api-key=<value>        Overrides any configured API key used for the product APIs
       --channels=<value>       Comma-separated list of channel names to publish to (mutually exclusive with
                                --channels-json and --spec)
       --channels-json=<value>  JSON array of channel names to publish to (mutually exclusive with --channels and --spec)
-      --client-id=<value>      Overrides any default client ID when using API authentication. Use "none" to explicitly
-                               set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>       Override the endpoint for all product API calls
-      --env=<value>            Override the environment for all product API calls
-      --host=<value>           Override the host endpoint for all product API calls
       --json                   Output in JSON format
       --pretty-json            Output in colorized JSON format
       --spec=<value>           Complete batch spec JSON (either a single BatchSpec object or an array of BatchSpec
                                objects). When used, --channels, --channels-json, --name, and --encoding are ignored
-      --token=<value>          Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
   Publish messages to multiple Ably channels with a single request
@@ -1637,7 +1391,7 @@ EXAMPLES
   $ ably channels batch-publish --channels channel1,channel2 '{"data":"Message"}' --pretty-json
 ```
 
-_See code: [src/commands/channels/batch-publish.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/channels/batch-publish.ts)_
+_See code: [src/commands/channels/batch-publish.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/batch-publish.ts)_
 
 ## `ably channels history CHANNEL`
 
@@ -1645,31 +1399,22 @@ Retrieve message history for a channel
 
 ```
 USAGE
-  $ ably channels history CHANNEL [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--cipher <value>]
-    [--direction backwards|forwards] [--end <value>] [--limit <value>] [--start <value>]
+  $ ably channels history CHANNEL [-v] [--json | --pretty-json] [--cipher <value>] [--direction backwards|forwards]
+    [--end <value>] [--limit <value>] [--start <value>]
 
 ARGUMENTS
   CHANNEL  Channel name to retrieve history for
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --cipher=<value>        Decryption key for encrypted messages (AES-128)
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --direction=<option>    [default: backwards] Direction of message retrieval (default: backwards)
-                              <options: backwards|forwards>
-      --end=<value>           End time for the history query (ISO 8601 format)
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --limit=<value>         [default: 50] Maximum number of messages to retrieve (default: 50)
-      --pretty-json           Output in colorized JSON format
-      --start=<value>         Start time for the history query (ISO 8601 format)
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose             Output verbose logs
+      --cipher=<value>      Decryption key for encrypted messages (AES-128)
+      --direction=<option>  [default: backwards] Direction of message retrieval (default: backwards)
+                            <options: backwards|forwards>
+      --end=<value>         End time for the history query (ISO 8601 format)
+      --json                Output in JSON format
+      --limit=<value>       [default: 50] Maximum number of messages to retrieve (default: 50)
+      --pretty-json         Output in colorized JSON format
+      --start=<value>       Start time for the history query (ISO 8601 format)
 
 DESCRIPTION
   Retrieve message history for a channel
@@ -1688,7 +1433,33 @@ EXAMPLES
   $ ably channels history my-channel --direction forward
 ```
 
-_See code: [src/commands/channels/history.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/channels/history.ts)_
+_See code: [src/commands/channels/history.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/history.ts)_
+
+## `ably channels inspect CHANNEL`
+
+Open the Ably dashboard to inspect a specific channel
+
+```
+USAGE
+  $ ably channels inspect CHANNEL [-v] [--json | --pretty-json] [--app <value>]
+
+ARGUMENTS
+  CHANNEL  The name of the channel to inspect in the Ably dashboard
+
+FLAGS
+  -v, --verbose      Output verbose logs
+      --app=<value>  App ID to use (uses current app if not specified)
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
+
+DESCRIPTION
+  Open the Ably dashboard to inspect a specific channel
+
+EXAMPLES
+  $ ably channels inspect my-channel
+```
+
+_See code: [src/commands/channels/inspect.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/inspect.ts)_
 
 ## `ably channels list`
 
@@ -1696,23 +1467,14 @@ List active channels using the channel enumeration API
 
 ```
 USAGE
-  $ ably channels list [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--limit <value>] [-p <value>]
+  $ ably channels list [-v] [--json | --pretty-json] [--limit <value>] [-p <value>]
 
 FLAGS
-  -p, --prefix=<value>        Filter channels by prefix
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --limit=<value>         [default: 100] Maximum number of channels to return (default: 100)
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -p, --prefix=<value>  Filter channels by prefix
+  -v, --verbose         Output verbose logs
+      --json            Output in JSON format
+      --limit=<value>   [default: 100] Maximum number of channels to return (default: 100)
+      --pretty-json     Output in colorized JSON format
 
 DESCRIPTION
   List active channels using the channel enumeration API
@@ -1729,7 +1491,7 @@ EXAMPLES
   $ ably channels list --pretty-json
 ```
 
-_See code: [src/commands/channels/list.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/channels/list.ts)_
+_See code: [src/commands/channels/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/list.ts)_
 
 ## `ably channels occupancy`
 
@@ -1748,7 +1510,7 @@ EXAMPLES
   $ ably channels occupancy subscribe my-channel
 ```
 
-_See code: [src/commands/channels/occupancy.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/channels/occupancy.ts)_
+_See code: [src/commands/channels/occupancy.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/occupancy.ts)_
 
 ## `ably channels occupancy get CHANNEL`
 
@@ -1756,24 +1518,15 @@ Get current occupancy metrics for a channel
 
 ```
 USAGE
-  $ ably channels occupancy get CHANNEL [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+  $ ably channels occupancy get CHANNEL [-v] [--json | --pretty-json]
 
 ARGUMENTS
   CHANNEL  Channel name to get occupancy for
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Get current occupancy metrics for a channel
@@ -1781,14 +1534,14 @@ DESCRIPTION
 EXAMPLES
   $ ably channels occupancy get my-channel
 
-  $ ably channels occupancy get --api-key "YOUR_API_KEY" my-channel
-
   $ ably channels occupancy get my-channel --json
 
   $ ably channels occupancy get my-channel --pretty-json
+
+  $ ABLY_API_KEY="YOUR_API_KEY" ably channels occupancy get my-channel
 ```
 
-_See code: [src/commands/channels/occupancy/get.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/channels/occupancy/get.ts)_
+_See code: [src/commands/channels/occupancy/get.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/occupancy/get.ts)_
 
 ## `ably channels occupancy subscribe CHANNEL`
 
@@ -1796,25 +1549,16 @@ Subscribe to occupancy events on a channel
 
 ```
 USAGE
-  $ ably channels occupancy subscribe CHANNEL [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>]
+  $ ably channels occupancy subscribe CHANNEL [-v] [--json | --pretty-json] [-D <value>]
 
 ARGUMENTS
   CHANNEL  Channel name to subscribe to occupancy events
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose           Output verbose logs
+      --json              Output in JSON format
+      --pretty-json       Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to occupancy events on a channel
@@ -1822,18 +1566,16 @@ DESCRIPTION
 EXAMPLES
   $ ably channels occupancy subscribe my-channel
 
-  $ ably channels occupancy subscribe my-channel --api-key "YOUR_API_KEY"
-
-  $ ably channels occupancy subscribe my-channel --token "YOUR_ABLY_TOKEN"
-
   $ ably channels occupancy subscribe my-channel --json
 
   $ ably channels occupancy subscribe my-channel --pretty-json
 
   $ ably channels occupancy subscribe my-channel --duration 30
+
+  $ ABLY_API_KEY="YOUR_API_KEY" ably channels occupancy subscribe my-channel
 ```
 
-_See code: [src/commands/channels/occupancy/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/channels/occupancy/subscribe.ts)_
+_See code: [src/commands/channels/occupancy/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/occupancy/subscribe.ts)_
 
 ## `ably channels presence`
 
@@ -1852,7 +1594,7 @@ EXAMPLES
   $ ably channels presence subscribe my-channel
 ```
 
-_See code: [src/commands/channels/presence.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/channels/presence.ts)_
+_See code: [src/commands/channels/presence.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/presence.ts)_
 
 ## `ably channels presence enter CHANNEL`
 
@@ -1860,29 +1602,22 @@ Enter presence on a channel and listen for presence events
 
 ```
 USAGE
-  $ ably channels presence enter CHANNEL [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--data <value>] [-D <value>]
+  $ ably channels presence enter CHANNEL [-v] [--json | --pretty-json] [--client-id <value>] [--data <value>] [-D <value>]
     [--show-others] [--sequence-numbers]
 
 ARGUMENTS
   CHANNEL  Channel to enter presence on
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --data=<value>          Optional JSON data to associate with the presence
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --sequence-numbers      Include sequence numbers in output
-      --show-others           Show other presence events while present (default: false)
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --data=<value>       Optional JSON data to associate with the presence
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+      --sequence-numbers   Include sequence numbers in output
+      --show-others        Show other presence events while present (default: false)
 
 DESCRIPTION
   Enter presence on a channel and listen for presence events
@@ -1892,10 +1627,6 @@ EXAMPLES
 
   $ ably channels presence enter my-channel --client-id "client123" --data '{"name":"John","status":"online"}'
 
-  $ ably channels presence enter my-channel --api-key "YOUR_API_KEY"
-
-  $ ably channels presence enter my-channel --token "YOUR_ABLY_TOKEN"
-
   $ ably channels presence enter my-channel --show-others
 
   $ ably channels presence enter my-channel --json
@@ -1903,9 +1634,11 @@ EXAMPLES
   $ ably channels presence enter my-channel --pretty-json
 
   $ ably channels presence enter my-channel --duration 30
+
+  $ ABLY_API_KEY="YOUR_API_KEY" ably channels presence enter my-channel
 ```
 
-_See code: [src/commands/channels/presence/enter.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/channels/presence/enter.ts)_
+_See code: [src/commands/channels/presence/enter.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/presence/enter.ts)_
 
 ## `ably channels presence subscribe CHANNEL`
 
@@ -1913,25 +1646,18 @@ Subscribe to presence events on a channel
 
 ```
 USAGE
-  $ ably channels presence subscribe CHANNEL [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>]
+  $ ably channels presence subscribe CHANNEL [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
   CHANNEL  Channel name to subscribe to presence events
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to presence events on a channel
@@ -1941,18 +1667,16 @@ EXAMPLES
 
   $ ably channels presence subscribe my-channel --client-id "filter123"
 
-  $ ably channels presence subscribe my-channel --api-key "YOUR_API_KEY"
-
-  $ ably channels presence subscribe my-channel --token "YOUR_ABLY_TOKEN"
-
   $ ably channels presence subscribe my-channel --json
 
   $ ably channels presence subscribe my-channel --pretty-json
 
   $ ably channels presence subscribe my-channel --duration 30
+
+  $ ABLY_API_KEY="YOUR_API_KEY" ably channels presence subscribe my-channel
 ```
 
-_See code: [src/commands/channels/presence/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/channels/presence/subscribe.ts)_
+_See code: [src/commands/channels/presence/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/presence/subscribe.ts)_
 
 ## `ably channels publish CHANNEL MESSAGE`
 
@@ -1960,8 +1684,7 @@ Publish a message to an Ably channel
 
 ```
 USAGE
-  $ ably channels publish CHANNEL MESSAGE [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
-    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-c <value>] [-d
+  $ ably channels publish CHANNEL MESSAGE [-v] [--json | --pretty-json] [--client-id <value>] [-c <value>] [-d
     <value>] [-e <value>] [-n <value>] [--transport rest|realtime]
 
 ARGUMENTS
@@ -1969,33 +1692,23 @@ ARGUMENTS
   MESSAGE  The message to publish (JSON format or plain text)
 
 FLAGS
-  -c, --count=<value>         [default: 1] Number of messages to publish (default: 1)
-  -d, --delay=<value>         [default: 40] Delay between messages in milliseconds (default: 40ms, max 25 msgs/sec)
-  -e, --encoding=<value>      The encoding for the message
-  -n, --name=<value>          The event name (if not specified in the message JSON)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --transport=<option>    Transport method to use for publishing (rest or realtime)
-                              <options: rest|realtime>
+  -c, --count=<value>       [default: 1] Number of messages to publish (default: 1)
+  -d, --delay=<value>       [default: 40] Delay between messages in milliseconds (default: 40ms, max 25 msgs/sec)
+  -e, --encoding=<value>    The encoding for the message
+  -n, --name=<value>        The event name (if not specified in the message JSON)
+  -v, --verbose             Output verbose logs
+      --client-id=<value>   Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                            no client ID. Not applicable when using token authentication.
+      --json                Output in JSON format
+      --pretty-json         Output in colorized JSON format
+      --transport=<option>  Transport method to use for publishing (rest or realtime)
+                            <options: rest|realtime>
 
 DESCRIPTION
   Publish a message to an Ably channel
 
 EXAMPLES
   $ ably channels publish my-channel '{"name":"event","data":"Hello World"}'
-
-  $ ably channels publish --api-key "YOUR_API_KEY" my-channel '{"data":"Simple message"}'
-
-  $ ably channels publish --token "YOUR_ABLY_TOKEN" my-channel '{"data":"Using token auth"}'
 
   $ ably channels publish --name event my-channel '{"text":"Hello World"}'
 
@@ -2012,9 +1725,13 @@ EXAMPLES
   $ ably channels publish my-channel "Hello World" --json
 
   $ ably channels publish my-channel "Hello World" --pretty-json
+
+  $ ably channels publish my-channel '{"data":"Push notification","extras":{"push":{"notification":{"title":"Hello","body":"World"}}}}'
+
+  $ ABLY_API_KEY="YOUR_API_KEY" ably channels publish my-channel '{"data":"Simple message"}'
 ```
 
-_See code: [src/commands/channels/publish.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/channels/publish.ts)_
+_See code: [src/commands/channels/publish.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/publish.ts)_
 
 ## `ably channels subscribe CHANNELS`
 
@@ -2022,10 +1739,9 @@ Subscribe to messages published on one or more Ably channels
 
 ```
 USAGE
-  $ ably channels subscribe CHANNELS... [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
-    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--cipher-algorithm
-    <value>] [--cipher-key <value>] [--cipher-key-length <value>] [--cipher-mode <value>] [--delta] [-D <value>]
-    [--rewind <value>] [--sequence-numbers]
+  $ ably channels subscribe CHANNELS... [-v] [--json | --pretty-json] [--client-id <value>] [--cipher-algorithm <value>]
+    [--cipher-key <value>] [--cipher-key-length <value>] [--cipher-mode <value>] [--delta] [-D <value>] [--rewind
+    <value>] [--sequence-numbers]
 
 ARGUMENTS
   CHANNELS...  Channel name(s) to subscribe to
@@ -2033,8 +1749,6 @@ ARGUMENTS
 FLAGS
   -D, --duration=<value>           Automatically exit after the given number of seconds (0 = run indefinitely)
   -v, --verbose                    Output verbose logs
-      --access-token=<value>       Overrides any configured access token used for the Control API
-      --api-key=<value>            Overrides any configured API key used for the product APIs
       --cipher-algorithm=<value>   [default: aes] Encryption algorithm to use (default: aes)
       --cipher-key=<value>         Encryption key for decrypting messages (hex-encoded)
       --cipher-key-length=<value>  [default: 256] Length of encryption key in bits (default: 256)
@@ -2042,14 +1756,10 @@ FLAGS
       --client-id=<value>          Overrides any default client ID when using API authentication. Use "none" to
                                    explicitly set no client ID. Not applicable when using token authentication.
       --delta                      Enable delta compression for messages
-      --endpoint=<value>           Override the endpoint for all product API calls
-      --env=<value>                Override the environment for all product API calls
-      --host=<value>               Override the host endpoint for all product API calls
       --json                       Output in JSON format
       --pretty-json                Output in colorized JSON format
       --rewind=<value>             Number of messages to rewind when subscribing (default: 0)
       --sequence-numbers           Include sequence numbers in output
-      --token=<value>              Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
   Subscribe to messages published on one or more Ably channels
@@ -2058,10 +1768,6 @@ EXAMPLES
   $ ably channels subscribe my-channel
 
   $ ably channels subscribe my-channel another-channel
-
-  $ ably channels subscribe --api-key "YOUR_API_KEY" my-channel
-
-  $ ably channels subscribe --token "YOUR_ABLY_TOKEN" my-channel
 
   $ ably channels subscribe --rewind 10 my-channel
 
@@ -2074,9 +1780,11 @@ EXAMPLES
   $ ably channels subscribe my-channel --pretty-json
 
   $ ably channels subscribe my-channel --duration 30
+
+  $ ABLY_API_KEY="YOUR_API_KEY" ably channels subscribe my-channel
 ```
 
-_See code: [src/commands/channels/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/channels/subscribe.ts)_
+_See code: [src/commands/channels/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/subscribe.ts)_
 
 ## `ably config`
 
@@ -2084,21 +1792,12 @@ Manage Ably CLI configuration
 
 ```
 USAGE
-  $ ably config [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+  $ ably config [-v] [--json | --pretty-json]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Manage Ably CLI configuration
@@ -2113,7 +1812,7 @@ COMMANDS
   ably config show              Display the contents of the Ably CLI config file
 ```
 
-_See code: [src/commands/config/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/config/index.ts)_
+_See code: [src/commands/config/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/config/index.ts)_
 
 ## `ably config path`
 
@@ -2121,21 +1820,12 @@ Print the path to the Ably CLI config file
 
 ```
 USAGE
-  $ ably config path [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+  $ ably config path [-v] [--json | --pretty-json]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Print the path to the Ably CLI config file
@@ -2150,7 +1840,7 @@ EXAMPLES
   vim $(ably config path)
 ```
 
-_See code: [src/commands/config/path.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/config/path.ts)_
+_See code: [src/commands/config/path.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/config/path.ts)_
 
 ## `ably config show`
 
@@ -2158,21 +1848,12 @@ Display the contents of the Ably CLI config file
 
 ```
 USAGE
-  $ ably config show [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+  $ ably config show [-v] [--json | --pretty-json]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Display the contents of the Ably CLI config file
@@ -2183,7 +1864,7 @@ EXAMPLES
   $ ably config show --json
 ```
 
-_See code: [src/commands/config/show.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/config/show.ts)_
+_See code: [src/commands/config/show.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/config/show.ts)_
 
 ## `ably connections`
 
@@ -2205,7 +1886,7 @@ COMMANDS
   ably connections test         Test connection to Ably
 ```
 
-_See code: [src/commands/connections/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/connections/index.ts)_
+_See code: [src/commands/connections/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/connections/index.ts)_
 
 ## `ably connections test`
 
@@ -2213,23 +1894,16 @@ Test connection to Ably
 
 ```
 USAGE
-  $ ably connections test [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--transport ws|xhr|all]
+  $ ably connections test [-v] [--json | --pretty-json] [--client-id <value>] [--transport ws|xhr|all]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --transport=<option>    [default: all] Transport protocol to use (ws for WebSockets, xhr for HTTP)
-                              <options: ws|xhr|all>
+  -v, --verbose             Output verbose logs
+      --client-id=<value>   Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                            no client ID. Not applicable when using token authentication.
+      --json                Output in JSON format
+      --pretty-json         Output in colorized JSON format
+      --transport=<option>  [default: all] Transport protocol to use (ws for WebSockets, xhr for HTTP)
+                            <options: ws|xhr|all>
 
 DESCRIPTION
   Test connection to Ably
@@ -2242,7 +1916,7 @@ EXAMPLES
   $ ably connections test --transport xhr
 ```
 
-_See code: [src/commands/connections/test.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/connections/test.ts)_
+_See code: [src/commands/connections/test.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/connections/test.ts)_
 
 ## `ably help [COMMANDS]`
 
@@ -2266,7 +1940,7 @@ EXAMPLES
   $ ably help channels publish
 ```
 
-_See code: [src/commands/help.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/help.ts)_
+_See code: [src/commands/help.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/help.ts)_
 
 ## `ably integrations`
 
@@ -2294,7 +1968,7 @@ COMMANDS
   ably integrations update      Update an integration rule
 ```
 
-_See code: [src/commands/integrations/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/integrations/index.ts)_
+_See code: [src/commands/integrations/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/integrations/index.ts)_
 
 ## `ably integrations create`
 
@@ -2303,22 +1977,14 @@ Create an integration
 ```
 USAGE
   $ ably integrations create --rule-type http|amqp|kinesis|firehose|pulsar|kafka|azure|azure-functions|mqtt|cloudmqtt
-    --source-type channel.message|channel.presence|channel.lifecycle|presence.message [--access-token <value>]
-    [--api-key <value>] [--client-id <value>] [--env <value>] [--endpoint <value>] [--host <value>] [--json |
-    --pretty-json] [--token <value>] [-v] [--app <value>] [--channel-filter <value>] [--request-mode single|batch]
-    [--status enabled|disabled] [--target-url <value>]
+    --source-type channel.message|channel.presence|channel.lifecycle|presence.message [-v] [--json | --pretty-json]
+    [--app <value>] [--channel-filter <value>] [--request-mode single|batch] [--status enabled|disabled] [--target-url
+    <value>]
 
 FLAGS
   -v, --verbose                 Output verbose logs
-      --access-token=<value>    Overrides any configured access token used for the Control API
-      --api-key=<value>         Overrides any configured API key used for the product APIs
       --app=<value>             App ID or name to create the integration in
       --channel-filter=<value>  Channel filter pattern
-      --client-id=<value>       Overrides any default client ID when using API authentication. Use "none" to explicitly
-                                set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>        Override the endpoint for all product API calls
-      --env=<value>             Override the environment for all product API calls
-      --host=<value>            Override the host endpoint for all product API calls
       --json                    Output in JSON format
       --pretty-json             Output in colorized JSON format
       --request-mode=<option>   [default: single] Request mode for the integration (default: single)
@@ -2330,7 +1996,6 @@ FLAGS
       --status=<option>         [default: enabled] Initial status of the integration (default: enabled)
                                 <options: enabled|disabled>
       --target-url=<value>      Target URL for HTTP integrations
-      --token=<value>           Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
   Create an integration
@@ -2341,7 +2006,7 @@ EXAMPLES
   $ ably integrations create --rule-type "amqp" --source-type "channel.message" --channel-filter "chat:*"
 ```
 
-_See code: [src/commands/integrations/create.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/integrations/create.ts)_
+_See code: [src/commands/integrations/create.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/integrations/create.ts)_
 
 ## `ably integrations delete INTEGRATIONID`
 
@@ -2349,26 +2014,17 @@ Delete an integration
 
 ```
 USAGE
-  $ ably integrations delete INTEGRATIONID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
-    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>] [-f]
+  $ ably integrations delete INTEGRATIONID [-v] [--json | --pretty-json] [--app <value>] [-f]
 
 ARGUMENTS
   INTEGRATIONID  The integration ID to delete
 
 FLAGS
-  -f, --force                 Force deletion without confirmation
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID or name to delete the integration from
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -f, --force        Force deletion without confirmation
+  -v, --verbose      Output verbose logs
+      --app=<value>  App ID or name to delete the integration from
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Delete an integration
@@ -2381,7 +2037,7 @@ EXAMPLES
   $ ably integrations delete integration123 --force
 ```
 
-_See code: [src/commands/integrations/delete.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/integrations/delete.ts)_
+_See code: [src/commands/integrations/delete.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/integrations/delete.ts)_
 
 ## `ably integrations get RULEID`
 
@@ -2389,25 +2045,16 @@ Get an integration rule by ID
 
 ```
 USAGE
-  $ ably integrations get RULEID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>]
+  $ ably integrations get RULEID [-v] [--json | --pretty-json] [--app <value>]
 
 ARGUMENTS
   RULEID  The rule ID to get
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID or name to get the integration rule from
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --app=<value>  App ID or name to get the integration rule from
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Get an integration rule by ID
@@ -2420,7 +2067,7 @@ EXAMPLES
   $ ably integrations get rule123 --app "My App" --pretty-json
 ```
 
-_See code: [src/commands/integrations/get.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/integrations/get.ts)_
+_See code: [src/commands/integrations/get.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/integrations/get.ts)_
 
 ## `ably integrations list`
 
@@ -2428,22 +2075,13 @@ List all integrations
 
 ```
 USAGE
-  $ ably integrations list [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>]
+  $ ably integrations list [-v] [--json | --pretty-json] [--app <value>]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID or name to list integrations for
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --app=<value>  App ID or name to list integrations for
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   List all integrations
@@ -2456,7 +2094,7 @@ EXAMPLES
   $ ably integrations list --app "My App" --pretty-json
 ```
 
-_See code: [src/commands/integrations/list.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/integrations/list.ts)_
+_See code: [src/commands/integrations/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/integrations/list.ts)_
 
 ## `ably integrations update RULEID`
 
@@ -2464,25 +2102,16 @@ Update an integration rule
 
 ```
 USAGE
-  $ ably integrations update RULEID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>]
-    [--channel-filter <value>] [--status enabled|disabled] [--target-url <value>] [--request-mode <value>] [--source
-    <value>] [--target <value>]
+  $ ably integrations update RULEID [-v] [--json | --pretty-json] [--app <value>] [--channel-filter <value>] [--status
+    enabled|disabled] [--target-url <value>] [--request-mode <value>] [--source <value>] [--target <value>]
 
 ARGUMENTS
   RULEID  The rule ID to update
 
 FLAGS
   -v, --verbose                 Output verbose logs
-      --access-token=<value>    Overrides any configured access token used for the Control API
-      --api-key=<value>         Overrides any configured API key used for the product APIs
       --app=<value>             App ID or name of the app containing the integration rule
       --channel-filter=<value>  Channel filter pattern
-      --client-id=<value>       Overrides any default client ID when using API authentication. Use "none" to explicitly
-                                set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>        Override the endpoint for all product API calls
-      --env=<value>             Override the environment for all product API calls
-      --host=<value>            Override the host endpoint for all product API calls
       --json                    Output in JSON format
       --pretty-json             Output in colorized JSON format
       --request-mode=<value>    Request mode of the rule
@@ -2491,7 +2120,6 @@ FLAGS
                                 <options: enabled|disabled>
       --target=<value>          Target of the rule
       --target-url=<value>      Target URL for HTTP rules
-      --token=<value>           Authenticate using an Ably Token or JWT Token instead of an API key
 
 DESCRIPTION
   Update an integration rule
@@ -2504,7 +2132,7 @@ EXAMPLES
   $ ably integrations update rule123 --target-url "https://new-example.com/webhook"
 ```
 
-_See code: [src/commands/integrations/update.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/integrations/update.ts)_
+_See code: [src/commands/integrations/update.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/integrations/update.ts)_
 
 ## `ably login [TOKEN]`
 
@@ -2512,26 +2140,17 @@ Log in to your Ably account (alias for "ably accounts login")
 
 ```
 USAGE
-  $ ably login [TOKEN] [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-a <value>] [--no-browser]
+  $ ably login [TOKEN] [-v] [--json | --pretty-json] [-a <value>] [--no-browser]
 
 ARGUMENTS
   TOKEN  Access token (if not provided, will prompt for it)
 
 FLAGS
-  -a, --alias=<value>         Alias for this account (default account if not specified)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --no-browser            Do not open a browser
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -a, --alias=<value>  Alias for this account (default account if not specified)
+  -v, --verbose        Output verbose logs
+      --json           Output in JSON format
+      --no-browser     Do not open a browser
+      --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
   Log in to your Ably account (alias for "ably accounts login")
@@ -2542,7 +2161,7 @@ EXAMPLES
   $ ably login --alias mycompany
 ```
 
-_See code: [src/commands/login.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/login.ts)_
+_See code: [src/commands/login.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/login.ts)_
 
 ## `ably logs`
 
@@ -2570,7 +2189,7 @@ COMMANDS
   ably logs subscribe           Subscribe to live app logs
 ```
 
-_See code: [src/commands/logs/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/index.ts)_
+_See code: [src/commands/logs/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/index.ts)_
 
 ## `ably logs channel-lifecycle`
 
@@ -2589,7 +2208,7 @@ EXAMPLES
   $ ably logs channel-lifecycle subscribe --rewind 10
 ```
 
-_See code: [src/commands/logs/channel-lifecycle/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/channel-lifecycle/index.ts)_
+_See code: [src/commands/logs/channel-lifecycle/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/channel-lifecycle/index.ts)_
 
 ## `ably logs channel-lifecycle subscribe`
 
@@ -2597,22 +2216,13 @@ Stream logs from [meta]channel.lifecycle meta channel
 
 ```
 USAGE
-  $ ably logs channel-lifecycle subscribe [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--pretty-json | --json] [--token <value>] [-v] [--rewind <value>]
+  $ ably logs channel-lifecycle subscribe [-v] [--pretty-json | --json] [--rewind <value>]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output results as JSON
-      --pretty-json           Output in colorized JSON format
-      --rewind=<value>        Number of messages to rewind when subscribing
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose         Output verbose logs
+      --json            Output results as JSON
+      --pretty-json     Output in colorized JSON format
+      --rewind=<value>  Number of messages to rewind when subscribing
 
 DESCRIPTION
   Stream logs from [meta]channel.lifecycle meta channel
@@ -2623,7 +2233,7 @@ EXAMPLES
   $ ably logs channel-lifecycle subscribe --rewind 10
 ```
 
-_See code: [src/commands/logs/channel-lifecycle/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/channel-lifecycle/subscribe.ts)_
+_See code: [src/commands/logs/channel-lifecycle/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/channel-lifecycle/subscribe.ts)_
 
 ## `ably logs connection-lifecycle`
 
@@ -2642,7 +2252,7 @@ EXAMPLES
   $ ably logs connection-lifecycle subscribe --rewind 10
 ```
 
-_See code: [src/commands/logs/connection-lifecycle/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/connection-lifecycle/index.ts)_
+_See code: [src/commands/logs/connection-lifecycle/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/connection-lifecycle/index.ts)_
 
 ## `ably logs connection-lifecycle history`
 
@@ -2650,25 +2260,16 @@ Retrieve connection lifecycle log history
 
 ```
 USAGE
-  $ ably logs connection-lifecycle history [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--direction
-    backwards|forwards] [--limit <value>]
+  $ ably logs connection-lifecycle history [-v] [--json | --pretty-json] [--direction backwards|forwards] [--limit
+  <value>]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --direction=<option>    [default: backwards] Direction of log retrieval
-                              <options: backwards|forwards>
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --limit=<value>         [default: 100] Maximum number of logs to retrieve
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose             Output verbose logs
+      --direction=<option>  [default: backwards] Direction of log retrieval
+                            <options: backwards|forwards>
+      --json                Output in JSON format
+      --limit=<value>       [default: 100] Maximum number of logs to retrieve
+      --pretty-json         Output in colorized JSON format
 
 DESCRIPTION
   Retrieve connection lifecycle log history
@@ -2685,7 +2286,7 @@ EXAMPLES
   $ ably logs connection-lifecycle history --pretty-json
 ```
 
-_See code: [src/commands/logs/connection-lifecycle/history.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/connection-lifecycle/history.ts)_
+_See code: [src/commands/logs/connection-lifecycle/history.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/connection-lifecycle/history.ts)_
 
 ## `ably logs connection-lifecycle subscribe`
 
@@ -2693,24 +2294,14 @@ Subscribe to live connection lifecycle logs
 
 ```
 USAGE
-  $ ably logs connection-lifecycle subscribe [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>] [--rewind
-    <value>]
+  $ ably logs connection-lifecycle subscribe [-v] [--json | --pretty-json] [-D <value>] [--rewind <value>]
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --rewind=<value>        Number of messages to replay from history when subscribing
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose           Output verbose logs
+      --json              Output in JSON format
+      --pretty-json       Output in colorized JSON format
+      --rewind=<value>    Number of messages to replay from history when subscribing
 
 DESCRIPTION
   Subscribe to live connection lifecycle logs
@@ -2725,7 +2316,7 @@ EXAMPLES
   $ ably logs connection-lifecycle subscribe --duration 30
 ```
 
-_See code: [src/commands/logs/connection-lifecycle/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/connection-lifecycle/subscribe.ts)_
+_See code: [src/commands/logs/connection-lifecycle/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/connection-lifecycle/subscribe.ts)_
 
 ## `ably logs history`
 
@@ -2733,25 +2324,15 @@ Retrieve application log history
 
 ```
 USAGE
-  $ ably logs history [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--direction
-    backwards|forwards] [--limit <value>]
+  $ ably logs history [-v] [--json | --pretty-json] [--direction backwards|forwards] [--limit <value>]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --direction=<option>    [default: backwards] Direction of log retrieval
-                              <options: backwards|forwards>
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --limit=<value>         [default: 100] Maximum number of logs to retrieve
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose             Output verbose logs
+      --direction=<option>  [default: backwards] Direction of log retrieval
+                            <options: backwards|forwards>
+      --json                Output in JSON format
+      --limit=<value>       [default: 100] Maximum number of logs to retrieve
+      --pretty-json         Output in colorized JSON format
 
 DESCRIPTION
   Retrieve application log history
@@ -2768,7 +2349,7 @@ EXAMPLES
   $ ably logs history --pretty-json
 ```
 
-_See code: [src/commands/logs/history.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/history.ts)_
+_See code: [src/commands/logs/history.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/history.ts)_
 
 ## `ably logs push`
 
@@ -2789,7 +2370,7 @@ EXAMPLES
   $ ably logs push history
 ```
 
-_See code: [src/commands/logs/push/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/push/index.ts)_
+_See code: [src/commands/logs/push/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/push/index.ts)_
 
 ## `ably logs push history`
 
@@ -2797,25 +2378,15 @@ Retrieve push notification log history
 
 ```
 USAGE
-  $ ably logs push history [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--direction
-    backwards|forwards] [--limit <value>]
+  $ ably logs push history [-v] [--json | --pretty-json] [--direction backwards|forwards] [--limit <value>]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --direction=<option>    [default: backwards] Direction of log retrieval
-                              <options: backwards|forwards>
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --limit=<value>         [default: 100] Maximum number of logs to retrieve
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose             Output verbose logs
+      --direction=<option>  [default: backwards] Direction of log retrieval
+                            <options: backwards|forwards>
+      --json                Output in JSON format
+      --limit=<value>       [default: 100] Maximum number of logs to retrieve
+      --pretty-json         Output in colorized JSON format
 
 DESCRIPTION
   Retrieve push notification log history
@@ -2832,7 +2403,7 @@ EXAMPLES
   $ ably logs push history --pretty-json
 ```
 
-_See code: [src/commands/logs/push/history.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/push/history.ts)_
+_See code: [src/commands/logs/push/history.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/push/history.ts)_
 
 ## `ably logs push subscribe`
 
@@ -2840,22 +2411,13 @@ Stream logs from the push notifications meta channel [meta]log:push
 
 ```
 USAGE
-  $ ably logs push subscribe [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--pretty-json | --json] [--token <value>] [-v] [--rewind <value>]
+  $ ably logs push subscribe [-v] [--pretty-json | --json] [--rewind <value>]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output results as JSON
-      --pretty-json           Output in colorized JSON format
-      --rewind=<value>        Number of messages to rewind when subscribing
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose         Output verbose logs
+      --json            Output results as JSON
+      --pretty-json     Output in colorized JSON format
+      --rewind=<value>  Number of messages to rewind when subscribing
 
 DESCRIPTION
   Stream logs from the push notifications meta channel [meta]log:push
@@ -2866,7 +2428,7 @@ EXAMPLES
   $ ably logs push subscribe --rewind 10
 ```
 
-_See code: [src/commands/logs/push/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/push/subscribe.ts)_
+_See code: [src/commands/logs/push/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/push/subscribe.ts)_
 
 ## `ably logs subscribe`
 
@@ -2874,27 +2436,18 @@ Subscribe to live app logs
 
 ```
 USAGE
-  $ ably logs subscribe [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>] [--rewind
-    <value>] [--type channel.lifecycle|channel.occupancy|channel.presence|connection.lifecycle|push.publish]
+  $ ably logs subscribe [-v] [--json | --pretty-json] [-D <value>] [--rewind <value>] [--type
+    channel.lifecycle|channel.occupancy|channel.presence|connection.lifecycle|push.publish]
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --rewind=<value>        Number of messages to rewind when subscribing
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --type=<option>         Filter by log type
-                              <options:
-                              channel.lifecycle|channel.occupancy|channel.presence|connection.lifecycle|push.publish>
+  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose           Output verbose logs
+      --json              Output in JSON format
+      --pretty-json       Output in colorized JSON format
+      --rewind=<value>    Number of messages to rewind when subscribing
+      --type=<option>     Filter by log type
+                          <options:
+                          channel.lifecycle|channel.occupancy|channel.presence|connection.lifecycle|push.publish>
 
 DESCRIPTION
   Subscribe to live app logs
@@ -2913,44 +2466,7 @@ EXAMPLES
   $ ably logs subscribe --duration 30
 ```
 
-_See code: [src/commands/logs/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/logs/subscribe.ts)_
-
-## `ably mcp`
-
-Experimental Model Context Protocol (MCP) commands for AI tools to interact with Ably
-
-```
-USAGE
-  $ ably mcp
-
-DESCRIPTION
-  Experimental Model Context Protocol (MCP) commands for AI tools to interact with Ably
-
-EXAMPLES
-  $ ably mcp start-server
-
-COMMANDS
-  ably mcp start-server         Start an MCP server for AI tools to interact with Ably (currently experimental)
-```
-
-_See code: [src/commands/mcp/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/mcp/index.ts)_
-
-## `ably mcp start-server`
-
-Start an MCP server for AI tools to interact with Ably (currently experimental)
-
-```
-USAGE
-  $ ably mcp start-server
-
-DESCRIPTION
-  Start an MCP server for AI tools to interact with Ably (currently experimental)
-
-EXAMPLES
-  $ ably mcp start-server
-```
-
-_See code: [src/commands/mcp/start-server.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/mcp/start-server.ts)_
+_See code: [src/commands/logs/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/subscribe.ts)_
 
 ## `ably queues`
 
@@ -2976,7 +2492,7 @@ COMMANDS
   ably queues list              List all queues
 ```
 
-_See code: [src/commands/queues/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/queues/index.ts)_
+_See code: [src/commands/queues/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/queues/index.ts)_
 
 ## `ably queues create`
 
@@ -2984,27 +2500,18 @@ Create a queue
 
 ```
 USAGE
-  $ ably queues create --name <value> [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
-    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>]
-    [--max-length <value>] [--region <value>] [--ttl <value>]
+  $ ably queues create --name <value> [-v] [--json | --pretty-json] [--app <value>] [--max-length <value>]
+    [--region <value>] [--ttl <value>]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID or name to create the queue in
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --max-length=<value>    [default: 10000] Maximum number of messages in the queue (default: 10000)
-      --name=<value>          (required) Name of the queue
-      --pretty-json           Output in colorized JSON format
-      --region=<value>        [default: us-east-1-a] Region for the queue (default: us-east-1-a)
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --ttl=<value>           [default: 60] Time to live for messages in seconds (default: 60)
+  -v, --verbose             Output verbose logs
+      --app=<value>         App ID or name to create the queue in
+      --json                Output in JSON format
+      --max-length=<value>  [default: 10000] Maximum number of messages in the queue (default: 10000)
+      --name=<value>        (required) Name of the queue
+      --pretty-json         Output in colorized JSON format
+      --region=<value>      [default: us-east-1-a] Region for the queue (default: us-east-1-a)
+      --ttl=<value>         [default: 60] Time to live for messages in seconds (default: 60)
 
 DESCRIPTION
   Create a queue
@@ -3017,7 +2524,7 @@ EXAMPLES
   $ ably queues create --name "my-queue" --region "eu-west-1-a" --app "My App"
 ```
 
-_See code: [src/commands/queues/create.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/queues/create.ts)_
+_See code: [src/commands/queues/create.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/queues/create.ts)_
 
 ## `ably queues delete QUEUEID`
 
@@ -3025,26 +2532,17 @@ Delete a queue
 
 ```
 USAGE
-  $ ably queues delete QUEUEID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>] [-f]
+  $ ably queues delete QUEUEID [-v] [--json | --pretty-json] [--app <value>] [-f]
 
 ARGUMENTS
   QUEUEID  ID of the queue to delete
 
 FLAGS
-  -f, --force                 Force deletion without confirmation
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID or name to delete the queue from
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -f, --force        Force deletion without confirmation
+  -v, --verbose      Output verbose logs
+      --app=<value>  App ID or name to delete the queue from
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Delete a queue
@@ -3057,7 +2555,7 @@ EXAMPLES
   $ ably queues delete appAbc:us-east-1-a:foo --force
 ```
 
-_See code: [src/commands/queues/delete.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/queues/delete.ts)_
+_See code: [src/commands/queues/delete.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/queues/delete.ts)_
 
 ## `ably queues list`
 
@@ -3065,22 +2563,13 @@ List all queues
 
 ```
 USAGE
-  $ ably queues list [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--app <value>]
+  $ ably queues list [-v] [--json | --pretty-json] [--app <value>]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --app=<value>           App ID or name to list queues for
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --app=<value>  App ID or name to list queues for
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   List all queues
@@ -3093,7 +2582,7 @@ EXAMPLES
   $ ably queues list --app "My App" --pretty-json
 ```
 
-_See code: [src/commands/queues/list.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/queues/list.ts)_
+_See code: [src/commands/queues/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/queues/list.ts)_
 
 ## `ably rooms`
 
@@ -3122,7 +2611,7 @@ COMMANDS
   ably rooms typing             Commands for working with typing indicators in chat rooms
 ```
 
-_See code: [src/commands/rooms/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/index.ts)_
+_See code: [src/commands/rooms/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/index.ts)_
 
 ## `ably rooms list`
 
@@ -3130,23 +2619,14 @@ List active chat rooms
 
 ```
 USAGE
-  $ ably rooms list [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--limit <value>] [-p <value>]
+  $ ably rooms list [-v] [--json | --pretty-json] [--limit <value>] [-p <value>]
 
 FLAGS
-  -p, --prefix=<value>        Filter rooms by prefix
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --limit=<value>         [default: 100] Maximum number of rooms to return (default: 100)
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -p, --prefix=<value>  Filter rooms by prefix
+  -v, --verbose         Output verbose logs
+      --json            Output in JSON format
+      --limit=<value>   [default: 100] Maximum number of rooms to return (default: 100)
+      --pretty-json     Output in colorized JSON format
 
 DESCRIPTION
   List active chat rooms
@@ -3163,7 +2643,7 @@ EXAMPLES
   $ ably rooms list --pretty-json
 ```
 
-_See code: [src/commands/rooms/list.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/list.ts)_
+_See code: [src/commands/rooms/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/list.ts)_
 
 ## `ably rooms messages`
 
@@ -3186,7 +2666,7 @@ EXAMPLES
   $ ably rooms messages reactions add my-room "message-id" "👍"
 ```
 
-_See code: [src/commands/rooms/messages/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/messages/index.ts)_
+_See code: [src/commands/rooms/messages/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/messages/index.ts)_
 
 ## `ably rooms messages history ROOM`
 
@@ -3194,31 +2674,22 @@ Get historical messages from an Ably Chat room
 
 ```
 USAGE
-  $ ably rooms messages history ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--end <value>] [-l <value>]
-    [--order oldestFirst|newestFirst] [--show-metadata] [--start <value>]
+  $ ably rooms messages history ROOM [-v] [--json | --pretty-json] [--end <value>] [-l <value>] [--order
+    oldestFirst|newestFirst] [--show-metadata] [--start <value>]
 
 ARGUMENTS
   ROOM  The room to get message history from
 
 FLAGS
-  -l, --limit=<value>         [default: 50] Maximum number of messages to retrieve (default: 50)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --end=<value>           End time for the history query (ISO 8601 format)
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --order=<option>        [default: newestFirst] Query direction: oldestFirst or newestFirst (default: newestFirst)
-                              <options: oldestFirst|newestFirst>
-      --pretty-json           Output in colorized JSON format
-      --show-metadata         Display message metadata if available
-      --start=<value>         Start time for the history query (ISO 8601 format)
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -l, --limit=<value>   [default: 50] Maximum number of messages to retrieve (default: 50)
+  -v, --verbose         Output verbose logs
+      --end=<value>     End time for the history query (ISO 8601 format)
+      --json            Output in JSON format
+      --order=<option>  [default: newestFirst] Query direction: oldestFirst or newestFirst (default: newestFirst)
+                        <options: oldestFirst|newestFirst>
+      --pretty-json     Output in colorized JSON format
+      --show-metadata   Display message metadata if available
+      --start=<value>   Start time for the history query (ISO 8601 format)
 
 DESCRIPTION
   Get historical messages from an Ably Chat room
@@ -3226,7 +2697,7 @@ DESCRIPTION
 EXAMPLES
   $ ably rooms messages history my-room
 
-  $ ably rooms messages history --api-key "YOUR_API_KEY" my-room
+  $ ABLY_API_KEY="YOUR_API_KEY" ably rooms messages history my-room
 
   $ ably rooms messages history --limit 50 my-room
 
@@ -3243,7 +2714,7 @@ EXAMPLES
   $ ably rooms messages history my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/messages/history.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/messages/history.ts)_
+_See code: [src/commands/rooms/messages/history.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/messages/history.ts)_
 
 ## `ably rooms messages reactions`
 
@@ -3264,7 +2735,7 @@ EXAMPLES
   $ ably rooms messages reactions remove my-room "message-id" "👍"
 ```
 
-_See code: [src/commands/rooms/messages/reactions/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/messages/reactions/index.ts)_
+_See code: [src/commands/rooms/messages/reactions/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/messages/reactions/index.ts)_
 
 ## `ably rooms messages reactions remove ROOM MESSAGESERIAL REACTION`
 
@@ -3272,9 +2743,8 @@ Remove a reaction from a message in a chat room
 
 ```
 USAGE
-  $ ably rooms messages reactions remove ROOM MESSAGESERIAL REACTION [--access-token <value>] [--api-key <value>] [--client-id
-    <value>] [--env <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
-    [--type unique|distinct|multiple]
+  $ ably rooms messages reactions remove ROOM MESSAGESERIAL REACTION [-v] [--json | --pretty-json] [--type
+  unique|distinct|multiple]
 
 ARGUMENTS
   ROOM           The room where the message is located
@@ -3282,19 +2752,11 @@ ARGUMENTS
   REACTION       The reaction to remove (e.g. 👍, ❤️, 😂)
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --type=<option>         The type of reaction (unique, distinct, or multiple)
-                              <options: unique|distinct|multiple>
+  -v, --verbose        Output verbose logs
+      --json           Output in JSON format
+      --pretty-json    Output in colorized JSON format
+      --type=<option>  The type of reaction (unique, distinct, or multiple)
+                       <options: unique|distinct|multiple>
 
 DESCRIPTION
   Remove a reaction from a message in a chat room
@@ -3302,14 +2764,14 @@ DESCRIPTION
 EXAMPLES
   $ ably rooms messages reactions remove my-room message-serial 👍
 
-  $ ably rooms messages reactions remove --api-key "YOUR_API_KEY" my-room message-serial ❤️
+  $ ABLY_API_KEY="YOUR_API_KEY" ably rooms messages reactions remove my-room message-serial ❤️
 
   $ ably rooms messages reactions remove my-room message-serial 👍 --type unique
 
   $ ably rooms messages reactions remove my-room message-serial 👍 --json
 ```
 
-_See code: [src/commands/rooms/messages/reactions/remove.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/messages/reactions/remove.ts)_
+_See code: [src/commands/rooms/messages/reactions/remove.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/messages/reactions/remove.ts)_
 
 ## `ably rooms messages reactions send ROOM MESSAGESERIAL REACTION`
 
@@ -3317,9 +2779,8 @@ Send a reaction to a message in a chat room
 
 ```
 USAGE
-  $ ably rooms messages reactions send ROOM MESSAGESERIAL REACTION [--access-token <value>] [--api-key <value>] [--client-id
-    <value>] [--env <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
-    [--count <value> --type unique|distinct|multiple]
+  $ ably rooms messages reactions send ROOM MESSAGESERIAL REACTION [-v] [--json | --pretty-json] [--count <value> --type
+    unique|distinct|multiple]
 
 ARGUMENTS
   ROOM           The room where the message is located
@@ -3327,20 +2788,12 @@ ARGUMENTS
   REACTION       The reaction to send (e.g. 👍, ❤️, 😂)
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --count=<value>         Count value for Multiple type reactions
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --type=<option>         The type of reaction (unique, distinct, or multiple)
-                              <options: unique|distinct|multiple>
+  -v, --verbose        Output verbose logs
+      --count=<value>  Count value for Multiple type reactions
+      --json           Output in JSON format
+      --pretty-json    Output in colorized JSON format
+      --type=<option>  The type of reaction (unique, distinct, or multiple)
+                       <options: unique|distinct|multiple>
 
 DESCRIPTION
   Send a reaction to a message in a chat room
@@ -3348,7 +2801,7 @@ DESCRIPTION
 EXAMPLES
   $ ably rooms messages reactions send my-room message-serial 👍
 
-  $ ably rooms messages reactions send --api-key "YOUR_API_KEY" my-room message-serial ❤️
+  $ ABLY_API_KEY="YOUR_API_KEY" ably rooms messages reactions send my-room message-serial ❤️
 
   $ ably rooms messages reactions send my-room message-serial 👍 --type multiple --count 10
 
@@ -3357,7 +2810,7 @@ EXAMPLES
   $ ably rooms messages reactions send my-room message-serial 👍 --json
 ```
 
-_See code: [src/commands/rooms/messages/reactions/send.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/messages/reactions/send.ts)_
+_See code: [src/commands/rooms/messages/reactions/send.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/messages/reactions/send.ts)_
 
 ## `ably rooms messages reactions subscribe ROOM`
 
@@ -3365,26 +2818,17 @@ Subscribe to message reactions in a chat room
 
 ```
 USAGE
-  $ ably rooms messages reactions subscribe ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--raw] [-D <value>]
+  $ ably rooms messages reactions subscribe ROOM [-v] [--json | --pretty-json] [--raw] [-D <value>]
 
 ARGUMENTS
   ROOM  Room to subscribe to message reactions in
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --raw                   Subscribe to raw individual reaction events instead of summaries
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose           Output verbose logs
+      --json              Output in JSON format
+      --pretty-json       Output in colorized JSON format
+      --raw               Subscribe to raw individual reaction events instead of summaries
 
 DESCRIPTION
   Subscribe to message reactions in a chat room
@@ -3399,7 +2843,7 @@ EXAMPLES
   $ ably rooms messages reactions subscribe my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/messages/reactions/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/messages/reactions/subscribe.ts)_
+_See code: [src/commands/rooms/messages/reactions/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/messages/reactions/subscribe.ts)_
 
 ## `ably rooms messages send ROOM TEXT`
 
@@ -3407,8 +2851,7 @@ Send a message to an Ably Chat room
 
 ```
 USAGE
-  $ ably rooms messages send ROOM TEXT [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-c <value>] [-d <value>]
+  $ ably rooms messages send ROOM TEXT [-v] [--json | --pretty-json] [--client-id <value>] [-c <value>] [-d <value>]
     [--metadata <value>]
 
 ARGUMENTS
@@ -3416,20 +2859,14 @@ ARGUMENTS
   TEXT  The message text to send
 
 FLAGS
-  -c, --count=<value>         [default: 1] Number of messages to send (default: 1)
-  -d, --delay=<value>         [default: 40] Delay between messages in milliseconds (default: 40ms, max 25 msgs/sec)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --metadata=<value>      Additional metadata for the message (JSON format)
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -c, --count=<value>      [default: 1] Number of messages to send (default: 1)
+  -d, --delay=<value>      [default: 40] Delay between messages in milliseconds (default: 40ms, max 25 msgs/sec)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --metadata=<value>   Additional metadata for the message (JSON format)
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Send a message to an Ably Chat room
@@ -3437,7 +2874,7 @@ DESCRIPTION
 EXAMPLES
   $ ably rooms messages send my-room "Hello World!"
 
-  $ ably rooms messages send --api-key "YOUR_API_KEY" my-room "Welcome to the chat!"
+  $ ABLY_API_KEY="YOUR_API_KEY" ably rooms messages send my-room "Welcome to the chat!"
 
   $ ably rooms messages send --metadata '{"isImportant":true}' my-room "Attention please!"
 
@@ -3450,7 +2887,7 @@ EXAMPLES
   $ ably rooms messages send my-room "Hello World!" --pretty-json
 ```
 
-_See code: [src/commands/rooms/messages/send.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/messages/send.ts)_
+_See code: [src/commands/rooms/messages/send.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/messages/send.ts)_
 
 ## `ably rooms messages subscribe ROOMS`
 
@@ -3458,28 +2895,21 @@ Subscribe to messages in one or more Ably Chat rooms
 
 ```
 USAGE
-  $ ably rooms messages subscribe ROOMS... [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--show-metadata] [-D <value>]
+  $ ably rooms messages subscribe ROOMS... [-v] [--json | --pretty-json] [--client-id <value>] [--show-metadata] [-D <value>]
     [--sequence-numbers]
 
 ARGUMENTS
   ROOMS...  Room name(s) to subscribe to messages from
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --sequence-numbers      Include sequence numbers in output
-      --show-metadata         Display message metadata if available
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+      --sequence-numbers   Include sequence numbers in output
+      --show-metadata      Display message metadata if available
 
 DESCRIPTION
   Subscribe to messages in one or more Ably Chat rooms
@@ -3489,7 +2919,7 @@ EXAMPLES
 
   $ ably rooms messages subscribe room1 room2 room3
 
-  $ ably rooms messages subscribe --api-key "YOUR_API_KEY" my-room
+  $ ABLY_API_KEY="YOUR_API_KEY" ably rooms messages subscribe my-room
 
   $ ably rooms messages subscribe --show-metadata my-room
 
@@ -3500,7 +2930,7 @@ EXAMPLES
   $ ably rooms messages subscribe my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/messages/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/messages/subscribe.ts)_
+_See code: [src/commands/rooms/messages/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/messages/subscribe.ts)_
 
 ## `ably rooms occupancy`
 
@@ -3519,7 +2949,7 @@ EXAMPLES
   $ ably rooms occupancy subscribe my-room
 ```
 
-_See code: [src/commands/rooms/occupancy/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/occupancy/index.ts)_
+_See code: [src/commands/rooms/occupancy/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/occupancy/index.ts)_
 
 ## `ably rooms occupancy get ROOM`
 
@@ -3527,24 +2957,15 @@ Get current occupancy metrics for a room
 
 ```
 USAGE
-  $ ably rooms occupancy get ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+  $ ably rooms occupancy get ROOM [-v] [--json | --pretty-json]
 
 ARGUMENTS
   ROOM  Room to get occupancy for
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Get current occupancy metrics for a room
@@ -3552,14 +2973,14 @@ DESCRIPTION
 EXAMPLES
   $ ably rooms occupancy get my-room
 
-  $ ably rooms occupancy get --api-key "YOUR_API_KEY" my-room
+  $ ABLY_API_KEY="YOUR_API_KEY" ably rooms occupancy get my-room
 
   $ ably rooms occupancy get my-room --json
 
   $ ably rooms occupancy get my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/occupancy/get.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/occupancy/get.ts)_
+_See code: [src/commands/rooms/occupancy/get.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/occupancy/get.ts)_
 
 ## `ably rooms occupancy subscribe ROOM`
 
@@ -3567,25 +2988,16 @@ Subscribe to real-time occupancy metrics for a room
 
 ```
 USAGE
-  $ ably rooms occupancy subscribe ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>]
+  $ ably rooms occupancy subscribe ROOM [-v] [--json | --pretty-json] [-D <value>]
 
 ARGUMENTS
   ROOM  Room to subscribe to occupancy for
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose           Output verbose logs
+      --json              Output in JSON format
+      --pretty-json       Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to real-time occupancy metrics for a room
@@ -3598,7 +3010,7 @@ EXAMPLES
   $ ably rooms occupancy subscribe --pretty-json my-room
 ```
 
-_See code: [src/commands/rooms/occupancy/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/occupancy/subscribe.ts)_
+_See code: [src/commands/rooms/occupancy/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/occupancy/subscribe.ts)_
 
 ## `ably rooms presence`
 
@@ -3617,7 +3029,7 @@ EXAMPLES
   $ ably rooms presence subscribe my-room
 ```
 
-_See code: [src/commands/rooms/presence/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/presence/index.ts)_
+_See code: [src/commands/rooms/presence/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/presence/index.ts)_
 
 ## `ably rooms presence enter ROOM`
 
@@ -3625,29 +3037,22 @@ Enter presence in a chat room and remain present until terminated
 
 ```
 USAGE
-  $ ably rooms presence enter ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--show-others] [-D <value>]
+  $ ably rooms presence enter ROOM [-v] [--json | --pretty-json] [--client-id <value>] [--show-others] [-D <value>]
     [--data <value>] [--sequence-numbers]
 
 ARGUMENTS
   ROOM  Room to enter presence on
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --data=<value>          Data to include with the member (JSON format)
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --sequence-numbers      Include sequence numbers in output
-      --show-others           Show other presence events while present (default: false)
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --data=<value>       Data to include with the member (JSON format)
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+      --sequence-numbers   Include sequence numbers in output
+      --show-others        Show other presence events while present (default: false)
 
 DESCRIPTION
   Enter presence in a chat room and remain present until terminated
@@ -3662,7 +3067,7 @@ EXAMPLES
   $ ably rooms presence enter my-room --duration 30
 ```
 
-_See code: [src/commands/rooms/presence/enter.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/presence/enter.ts)_
+_See code: [src/commands/rooms/presence/enter.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/presence/enter.ts)_
 
 ## `ably rooms presence subscribe ROOM`
 
@@ -3670,25 +3075,18 @@ Subscribe to presence events in a chat room
 
 ```
 USAGE
-  $ ably rooms presence subscribe ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>]
+  $ ably rooms presence subscribe ROOM [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
   ROOM  Room to subscribe to presence for
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to presence events in a chat room
@@ -3701,7 +3099,7 @@ EXAMPLES
   $ ably rooms presence subscribe my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/presence/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/presence/subscribe.ts)_
+_See code: [src/commands/rooms/presence/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/presence/subscribe.ts)_
 
 ## `ably rooms reactions`
 
@@ -3720,7 +3118,7 @@ EXAMPLES
   $ ably rooms reactions subscribe my-room
 ```
 
-_See code: [src/commands/rooms/reactions/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/reactions/index.ts)_
+_See code: [src/commands/rooms/reactions/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/reactions/index.ts)_
 
 ## `ably rooms reactions send ROOM EMOJI`
 
@@ -3728,26 +3126,17 @@ Send a reaction in a chat room
 
 ```
 USAGE
-  $ ably rooms reactions send ROOM EMOJI [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
-    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--metadata <value>]
+  $ ably rooms reactions send ROOM EMOJI [-v] [--json | --pretty-json] [--metadata <value>]
 
 ARGUMENTS
   ROOM   The room to send the reaction to
   EMOJI  The emoji reaction to send (e.g. 👍, ❤️, 😂)
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --metadata=<value>      Additional metadata to send with the reaction (as JSON string)
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose           Output verbose logs
+      --json              Output in JSON format
+      --metadata=<value>  Additional metadata to send with the reaction (as JSON string)
+      --pretty-json       Output in colorized JSON format
 
 DESCRIPTION
   Send a reaction in a chat room
@@ -3755,14 +3144,14 @@ DESCRIPTION
 EXAMPLES
   $ ably rooms reactions send my-room 👍
 
-  $ ably rooms reactions send --api-key "YOUR_API_KEY" my-room 🎉
+  $ ABLY_API_KEY="YOUR_API_KEY" ably rooms reactions send my-room 🎉
 
   $ ably rooms reactions send my-room ❤️ --json
 
   $ ably rooms reactions send my-room 😂 --pretty-json
 ```
 
-_See code: [src/commands/rooms/reactions/send.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/reactions/send.ts)_
+_See code: [src/commands/rooms/reactions/send.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/reactions/send.ts)_
 
 ## `ably rooms reactions subscribe ROOM`
 
@@ -3770,25 +3159,16 @@ Subscribe to reactions in a chat room
 
 ```
 USAGE
-  $ ably rooms reactions subscribe ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>]
+  $ ably rooms reactions subscribe ROOM [-v] [--json | --pretty-json] [-D <value>]
 
 ARGUMENTS
   ROOM  Room to subscribe to reactions in
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose           Output verbose logs
+      --json              Output in JSON format
+      --pretty-json       Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to reactions in a chat room
@@ -3801,7 +3181,7 @@ EXAMPLES
   $ ably rooms reactions subscribe my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/reactions/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/reactions/subscribe.ts)_
+_See code: [src/commands/rooms/reactions/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/reactions/subscribe.ts)_
 
 ## `ably rooms typing`
 
@@ -3820,7 +3200,7 @@ EXAMPLES
   $ ably rooms typing keystroke my-room
 ```
 
-_See code: [src/commands/rooms/typing/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/typing/index.ts)_
+_See code: [src/commands/rooms/typing/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/typing/index.ts)_
 
 ## `ably rooms typing keystroke ROOM`
 
@@ -3828,25 +3208,16 @@ Send a typing indicator in an Ably Chat room (use --autoType to keep typing auto
 
 ```
 USAGE
-  $ ably rooms typing keystroke ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--autoType]
+  $ ably rooms typing keystroke ROOM [-v] [--json | --pretty-json] [--autoType]
 
 ARGUMENTS
   ROOM  The room to start typing in
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --autoType              Automatically keep typing indicator active
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --autoType     Automatically keep typing indicator active
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Send a typing indicator in an Ably Chat room (use --autoType to keep typing automatically until terminated)
@@ -3856,14 +3227,14 @@ EXAMPLES
 
   $ ably rooms typing keystroke my-room --autoType
 
-  $ ably rooms typing keystroke --api-key "YOUR_API_KEY" my-room
+  $ ABLY_API_KEY="YOUR_API_KEY" ably rooms typing keystroke my-room
 
   $ ably rooms typing keystroke my-room --json
 
   $ ably rooms typing keystroke my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/typing/keystroke.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/typing/keystroke.ts)_
+_See code: [src/commands/rooms/typing/keystroke.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/typing/keystroke.ts)_
 
 ## `ably rooms typing subscribe ROOM`
 
@@ -3871,25 +3242,16 @@ Subscribe to typing indicators in an Ably Chat room
 
 ```
 USAGE
-  $ ably rooms typing subscribe ROOM [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>]
+  $ ably rooms typing subscribe ROOM [-v] [--json | --pretty-json] [-D <value>]
 
 ARGUMENTS
   ROOM  The room to subscribe to typing indicators from
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>  Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose           Output verbose logs
+      --json              Output in JSON format
+      --pretty-json       Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to typing indicators in an Ably Chat room
@@ -3897,14 +3259,14 @@ DESCRIPTION
 EXAMPLES
   $ ably rooms typing subscribe my-room
 
-  $ ably rooms typing subscribe --api-key "YOUR_API_KEY" my-room
+  $ ABLY_API_KEY="YOUR_API_KEY" ably rooms typing subscribe my-room
 
   $ ably rooms typing subscribe my-room --json
 
   $ ably rooms typing subscribe my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/typing/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/rooms/typing/subscribe.ts)_
+_See code: [src/commands/rooms/typing/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/typing/subscribe.ts)_
 
 ## `ably spaces`
 
@@ -3932,7 +3294,7 @@ COMMANDS
   ably spaces members           Commands for managing members in Ably Spaces
 ```
 
-_See code: [src/commands/spaces/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/index.ts)_
+_See code: [src/commands/spaces/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/index.ts)_
 
 ## `ably spaces cursors`
 
@@ -3949,14 +3311,14 @@ DESCRIPTION
   Commands for interacting with Cursors in Ably Spaces
 
 EXAMPLES
-  $ ably spaces cursors set my-space --position '{"x": 100, "y": 200}' --data '{"color": "red"}'
+  $ ably spaces cursors set my-space --x 100 --y 200 --data '{"color": "red"}'
 
   $ ably spaces cursors subscribe my-space
 
   $ ably spaces cursors get-all my-space
 ```
 
-_See code: [src/commands/spaces/cursors/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/cursors/index.ts)_
+_See code: [src/commands/spaces/cursors/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/cursors/index.ts)_
 
 ## `ably spaces cursors get-all SPACE`
 
@@ -3964,24 +3326,17 @@ Get all current cursors in a space
 
 ```
 USAGE
-  $ ably spaces cursors get-all SPACE [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+  $ ably spaces cursors get-all SPACE [-v] [--json | --pretty-json] [--client-id <value>]
 
 ARGUMENTS
   SPACE  Space to get cursors from
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Get all current cursors in a space
@@ -3994,7 +3349,7 @@ EXAMPLES
   $ ably spaces cursors get-all my-space --pretty-json
 ```
 
-_See code: [src/commands/spaces/cursors/get-all.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/cursors/get-all.ts)_
+_See code: [src/commands/spaces/cursors/get-all.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/cursors/get-all.ts)_
 
 ## `ably spaces cursors set SPACE`
 
@@ -4002,31 +3357,24 @@ Set a cursor with position data in a space
 
 ```
 USAGE
-  $ ably spaces cursors set SPACE [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--data <value>] [--x <value>]
+  $ ably spaces cursors set SPACE [-v] [--json | --pretty-json] [--client-id <value>] [--data <value>] [--x <value>]
     [--y <value>] [--simulate] [-D <value>]
 
 ARGUMENTS
   SPACE  The space to set cursor in
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = exit immediately after setting
-                              the cursor)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --data=<value>          The cursor data to set (as JSON string)
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --simulate              Simulate cursor movement every 250ms with random positions
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --x=<value>             The x coordinate for cursor position
-      --y=<value>             The y coordinate for cursor position
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = exit immediately after setting the
+                           cursor)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --data=<value>       The cursor data to set (as JSON string)
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+      --simulate           Simulate cursor movement every 250ms with random positions
+      --x=<value>          The x coordinate for cursor position
+      --y=<value>          The y coordinate for cursor position
 
 DESCRIPTION
   Set a cursor with position data in a space
@@ -4044,14 +3392,14 @@ EXAMPLES
 
   $ ably spaces cursors set my-space --data '{"position": {"x": 100, "y": 200}, "data": {"name": "John", "color": "#ff0000"}}'
 
-  $ ably spaces cursors set --api-key "YOUR_API_KEY" my-space --x 100 --y 200
+  $ ABLY_API_KEY="YOUR_API_KEY" ably spaces cursors set my-space --x 100 --y 200
 
   $ ably spaces cursors set my-space --x 100 --y 200 --json
 
   $ ably spaces cursors set my-space --x 100 --y 200 --pretty-json
 ```
 
-_See code: [src/commands/spaces/cursors/set.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/cursors/set.ts)_
+_See code: [src/commands/spaces/cursors/set.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/cursors/set.ts)_
 
 ## `ably spaces cursors subscribe SPACE`
 
@@ -4059,25 +3407,18 @@ Subscribe to cursor movements in a space
 
 ```
 USAGE
-  $ ably spaces cursors subscribe SPACE [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>]
+  $ ably spaces cursors subscribe SPACE [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
   SPACE  Space to subscribe to cursors for
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to cursor movements in a space
@@ -4092,7 +3433,7 @@ EXAMPLES
   $ ably spaces cursors subscribe my-space --duration 30
 ```
 
-_See code: [src/commands/spaces/cursors/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/cursors/subscribe.ts)_
+_See code: [src/commands/spaces/cursors/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/cursors/subscribe.ts)_
 
 ## `ably spaces list`
 
@@ -4100,23 +3441,14 @@ List active spaces
 
 ```
 USAGE
-  $ ably spaces list [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--limit <value>] [-p <value>]
+  $ ably spaces list [-v] [--json | --pretty-json] [--limit <value>] [-p <value>]
 
 FLAGS
-  -p, --prefix=<value>        Filter spaces by prefix
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --limit=<value>         [default: 100] Maximum number of spaces to return (default: 100)
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -p, --prefix=<value>  Filter spaces by prefix
+  -v, --verbose         Output verbose logs
+      --json            Output in JSON format
+      --limit=<value>   [default: 100] Maximum number of spaces to return (default: 100)
+      --pretty-json     Output in colorized JSON format
 
 DESCRIPTION
   List active spaces
@@ -4133,7 +3465,7 @@ EXAMPLES
   $ ably spaces list --pretty-json
 ```
 
-_See code: [src/commands/spaces/list.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/list.ts)_
+_See code: [src/commands/spaces/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/list.ts)_
 
 ## `ably spaces locations`
 
@@ -4141,27 +3473,18 @@ Spaces Locations API commands (Ably Spaces client-to-client location sharing)
 
 ```
 USAGE
-  $ ably spaces locations [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+  $ ably spaces locations [-v] [--json | --pretty-json]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Spaces Locations API commands (Ably Spaces client-to-client location sharing)
 ```
 
-_See code: [src/commands/spaces/locations/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/locations/index.ts)_
+_See code: [src/commands/spaces/locations/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locations/index.ts)_
 
 ## `ably spaces locations get-all SPACE`
 
@@ -4169,26 +3492,17 @@ Get all current locations in a space
 
 ```
 USAGE
-  $ ably spaces locations get-all SPACE [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-f text|json]
+  $ ably spaces locations get-all SPACE [-v] [--json | --pretty-json] [-f text|json]
 
 ARGUMENTS
   SPACE  Space to get locations from
 
 FLAGS
-  -f, --format=<option>       [default: text] Output format
-                              <options: text|json>
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -f, --format=<option>  [default: text] Output format
+                         <options: text|json>
+  -v, --verbose          Output verbose logs
+      --json             Output in JSON format
+      --pretty-json      Output in colorized JSON format
 
 DESCRIPTION
   Get all current locations in a space
@@ -4201,7 +3515,7 @@ EXAMPLES
   $ ably spaces locations get-all my-space --pretty-json
 ```
 
-_See code: [src/commands/spaces/locations/get-all.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/locations/get-all.ts)_
+_See code: [src/commands/spaces/locations/get-all.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locations/get-all.ts)_
 
 ## `ably spaces locations set SPACE`
 
@@ -4209,27 +3523,20 @@ Set your location in a space
 
 ```
 USAGE
-  $ ably spaces locations set SPACE --location <value> [--access-token <value>] [--api-key <value>] [--client-id <value>]
-    [--env <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>]
+  $ ably spaces locations set SPACE --location <value> [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
   SPACE  Space to set location in
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = exit immediately after setting
-                              location)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --location=<value>      (required) Location data to set (JSON format)
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = exit immediately after setting
+                           location)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --location=<value>   (required) Location data to set (JSON format)
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Set your location in a space
@@ -4240,7 +3547,7 @@ EXAMPLES
   $ ably spaces locations set my-space --location '{"sectionId":"section1"}'
 ```
 
-_See code: [src/commands/spaces/locations/set.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/locations/set.ts)_
+_See code: [src/commands/spaces/locations/set.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locations/set.ts)_
 
 ## `ably spaces locations subscribe SPACE`
 
@@ -4248,25 +3555,18 @@ Subscribe to location updates for members in a space
 
 ```
 USAGE
-  $ ably spaces locations subscribe SPACE [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>]
+  $ ably spaces locations subscribe SPACE [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
   SPACE  Space to subscribe to locations for
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to location updates for members in a space
@@ -4281,7 +3581,7 @@ EXAMPLES
   $ ably spaces locations subscribe my-space --duration 30
 ```
 
-_See code: [src/commands/spaces/locations/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/locations/subscribe.ts)_
+_See code: [src/commands/spaces/locations/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locations/subscribe.ts)_
 
 ## `ably spaces locks`
 
@@ -4304,7 +3604,7 @@ EXAMPLES
   $ ably spaces locks get-all my-space
 ```
 
-_See code: [src/commands/spaces/locks/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/locks/index.ts)_
+_See code: [src/commands/spaces/locks/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locks/index.ts)_
 
 ## `ably spaces locks acquire SPACE LOCKID`
 
@@ -4312,26 +3612,19 @@ Acquire a lock in a space
 
 ```
 USAGE
-  $ ably spaces locks acquire SPACE LOCKID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
-    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--data <value>]
+  $ ably spaces locks acquire SPACE LOCKID [-v] [--json | --pretty-json] [--client-id <value>] [--data <value>]
 
 ARGUMENTS
   SPACE   Space to acquire lock in
   LOCKID  ID of the lock to acquire
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --data=<value>          Optional data to associate with the lock (JSON format)
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --data=<value>       Optional data to associate with the lock (JSON format)
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Acquire a lock in a space
@@ -4342,7 +3635,7 @@ EXAMPLES
   $ ably spaces locks acquire my-space my-lock-id --data '{"type":"editor"}'
 ```
 
-_See code: [src/commands/spaces/locks/acquire.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/locks/acquire.ts)_
+_See code: [src/commands/spaces/locks/acquire.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locks/acquire.ts)_
 
 ## `ably spaces locks get SPACE LOCKID`
 
@@ -4350,25 +3643,16 @@ Get a lock in a space
 
 ```
 USAGE
-  $ ably spaces locks get SPACE LOCKID [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env
-    <value>] [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+  $ ably spaces locks get SPACE LOCKID [-v] [--json | --pretty-json]
 
 ARGUMENTS
   SPACE   Space to get lock from
   LOCKID  Lock ID to get
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Get a lock in a space
@@ -4381,7 +3665,7 @@ EXAMPLES
   $ ably spaces locks get my-space my-lock --pretty-json
 ```
 
-_See code: [src/commands/spaces/locks/get.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/locks/get.ts)_
+_See code: [src/commands/spaces/locks/get.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locks/get.ts)_
 
 ## `ably spaces locks get-all SPACE`
 
@@ -4389,24 +3673,15 @@ Get all current locks in a space
 
 ```
 USAGE
-  $ ably spaces locks get-all SPACE [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v]
+  $ ably spaces locks get-all SPACE [-v] [--json | --pretty-json]
 
 ARGUMENTS
   SPACE  Space to get locks from
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Get all current locks in a space
@@ -4419,7 +3694,7 @@ EXAMPLES
   $ ably spaces locks get-all my-space --pretty-json
 ```
 
-_See code: [src/commands/spaces/locks/get-all.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/locks/get-all.ts)_
+_See code: [src/commands/spaces/locks/get-all.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locks/get-all.ts)_
 
 ## `ably spaces locks subscribe SPACE`
 
@@ -4427,25 +3702,18 @@ Subscribe to lock events in a space
 
 ```
 USAGE
-  $ ably spaces locks subscribe SPACE [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>]
+  $ ably spaces locks subscribe SPACE [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
   SPACE  Space to subscribe to locks for
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to lock events in a space
@@ -4460,7 +3728,7 @@ EXAMPLES
   $ ably spaces locks subscribe my-space --duration 30
 ```
 
-_See code: [src/commands/spaces/locks/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/locks/subscribe.ts)_
+_See code: [src/commands/spaces/locks/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locks/subscribe.ts)_
 
 ## `ably spaces members`
 
@@ -4479,7 +3747,7 @@ EXAMPLES
   $ ably spaces members enter my-space
 ```
 
-_See code: [src/commands/spaces/members/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/members/index.ts)_
+_See code: [src/commands/spaces/members/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/members/index.ts)_
 
 ## `ably spaces members enter SPACE`
 
@@ -4487,27 +3755,19 @@ Enter a space and remain present until terminated
 
 ```
 USAGE
-  $ ably spaces members enter SPACE [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--profile <value>] [-D
-    <value>]
+  $ ably spaces members enter SPACE [-v] [--json | --pretty-json] [--client-id <value>] [--profile <value>] [-D <value>]
 
 ARGUMENTS
   SPACE  Space to enter
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --profile=<value>       Optional profile data to include with the member (JSON format)
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+      --profile=<value>    Optional profile data to include with the member (JSON format)
 
 DESCRIPTION
   Enter a space and remain present until terminated
@@ -4520,7 +3780,7 @@ EXAMPLES
   $ ably spaces members enter my-space --duration 30
 ```
 
-_See code: [src/commands/spaces/members/enter.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/members/enter.ts)_
+_See code: [src/commands/spaces/members/enter.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/members/enter.ts)_
 
 ## `ably spaces members subscribe SPACE`
 
@@ -4528,25 +3788,18 @@ Subscribe to member presence events in a space
 
 ```
 USAGE
-  $ ably spaces members subscribe SPACE [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [-D <value>]
+  $ ably spaces members subscribe SPACE [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
   SPACE  Space to subscribe to members for
 
 FLAGS
-  -D, --duration=<value>      Automatically exit after the given number of seconds (0 = run indefinitely)
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -D, --duration=<value>   Automatically exit after the given number of seconds (0 = run indefinitely)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to member presence events in a space
@@ -4561,7 +3814,7 @@ EXAMPLES
   $ ably spaces members subscribe my-space --duration 30
 ```
 
-_See code: [src/commands/spaces/members/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/spaces/members/subscribe.ts)_
+_See code: [src/commands/spaces/members/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/members/subscribe.ts)_
 
 ## `ably stats`
 
@@ -4592,7 +3845,7 @@ COMMANDS
   ably stats app                Get app stats with optional live updates
 ```
 
-_See code: [src/commands/stats/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/stats/index.ts)_
+_See code: [src/commands/stats/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/stats/index.ts)_
 
 ## `ably stats account`
 
@@ -4600,30 +3853,21 @@ Get account stats with optional live updates
 
 ```
 USAGE
-  $ ably stats account [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--debug] [--end <value>]
-    [--interval <value>] [--limit <value>] [--live] [--start <value>] [--unit minute|hour|day|month]
+  $ ably stats account [-v] [--json | --pretty-json] [--debug] [--end <value>] [--interval <value>] [--limit
+    <value>] [--live] [--start <value>] [--unit minute|hour|day|month]
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --debug                 Show debug information for live stats polling
-      --end=<value>           End time in milliseconds since epoch
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --interval=<value>      [default: 6] Polling interval in seconds (only used with --live)
-      --json                  Output in JSON format
-      --limit=<value>         [default: 10] Maximum number of stats records to return
-      --live                  Subscribe to live stats updates (uses minute interval)
-      --pretty-json           Output in colorized JSON format
-      --start=<value>         Start time in milliseconds since epoch
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --unit=<option>         [default: minute] Time unit for stats
-                              <options: minute|hour|day|month>
+  -v, --verbose           Output verbose logs
+      --debug             Show debug information for live stats polling
+      --end=<value>       End time in milliseconds since epoch
+      --interval=<value>  [default: 6] Polling interval in seconds (only used with --live)
+      --json              Output in JSON format
+      --limit=<value>     [default: 10] Maximum number of stats records to return
+      --live              Subscribe to live stats updates (uses minute interval)
+      --pretty-json       Output in colorized JSON format
+      --start=<value>     Start time in milliseconds since epoch
+      --unit=<option>     [default: minute] Time unit for stats
+                          <options: minute|hour|day|month>
 
 DESCRIPTION
   Get account stats with optional live updates
@@ -4646,7 +3890,7 @@ EXAMPLES
   $ ably stats account --live --interval 15
 ```
 
-_See code: [src/commands/stats/account.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/stats/account.ts)_
+_See code: [src/commands/stats/account.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/stats/account.ts)_
 
 ## `ably stats app [ID]`
 
@@ -4654,33 +3898,24 @@ Get app stats with optional live updates
 
 ```
 USAGE
-  $ ably stats app [ID] [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--debug] [--end <value>]
-    [--interval <value>] [--limit <value>] [--live] [--start <value>] [--unit minute|hour|day|month]
+  $ ably stats app [ID] [-v] [--json | --pretty-json] [--debug] [--end <value>] [--interval <value>] [--limit
+    <value>] [--live] [--start <value>] [--unit minute|hour|day|month]
 
 ARGUMENTS
   ID  App ID to get stats for (uses default app if not provided)
 
 FLAGS
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --debug                 Show debug information for live stats polling
-      --end=<value>           End time in milliseconds since epoch
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --interval=<value>      [default: 6] Polling interval in seconds (only used with --live)
-      --json                  Output in JSON format
-      --limit=<value>         [default: 10] Maximum number of stats records to return
-      --live                  Subscribe to live stats updates (uses minute interval)
-      --pretty-json           Output in colorized JSON format
-      --start=<value>         Start time in milliseconds since epoch
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
-      --unit=<option>         [default: minute] Time unit for stats
-                              <options: minute|hour|day|month>
+  -v, --verbose           Output verbose logs
+      --debug             Show debug information for live stats polling
+      --end=<value>       End time in milliseconds since epoch
+      --interval=<value>  [default: 6] Polling interval in seconds (only used with --live)
+      --json              Output in JSON format
+      --limit=<value>     [default: 10] Maximum number of stats records to return
+      --live              Subscribe to live stats updates (uses minute interval)
+      --pretty-json       Output in colorized JSON format
+      --start=<value>     Start time in milliseconds since epoch
+      --unit=<option>     [default: minute] Time unit for stats
+                          <options: minute|hour|day|month>
 
 DESCRIPTION
   Get app stats with optional live updates
@@ -4709,7 +3944,7 @@ EXAMPLES
   $ ably stats app --live --interval 15
 ```
 
-_See code: [src/commands/stats/app.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/stats/app.ts)_
+_See code: [src/commands/stats/app.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/stats/app.ts)_
 
 ## `ably status`
 
@@ -4730,7 +3965,7 @@ EXAMPLES
   $ ably status
 ```
 
-_See code: [src/commands/status.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/status.ts)_
+_See code: [src/commands/status.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/status.ts)_
 
 ## `ably support`
 
@@ -4755,7 +3990,7 @@ COMMANDS
   ably support contact          Contact Ably for assistance
 ```
 
-_See code: [src/commands/support/index.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/support/index.ts)_
+_See code: [src/commands/support/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/support/index.ts)_
 
 ## `ably support ask QUESTION`
 
@@ -4763,26 +3998,17 @@ Ask a question to the Ably AI agent for help
 
 ```
 USAGE
-  $ ably support ask QUESTION [--access-token <value>] [--api-key <value>] [--client-id <value>] [--env <value>]
-    [--endpoint <value>] [--host <value>] [--json | --pretty-json] [--token <value>] [-v] [--continue] [-h]
+  $ ably support ask QUESTION [-v] [--json | --pretty-json] [--continue] [-h]
 
 ARGUMENTS
   QUESTION  The question to ask the Ably AI agent
 
 FLAGS
-  -h, --help                  Show CLI help.
-  -v, --verbose               Output verbose logs
-      --access-token=<value>  Overrides any configured access token used for the Control API
-      --api-key=<value>       Overrides any configured API key used for the product APIs
-      --client-id=<value>     Overrides any default client ID when using API authentication. Use "none" to explicitly
-                              set no client ID. Not applicable when using token authentication.
-      --continue              Continue the previous conversation with the Ably AI agent
-      --endpoint=<value>      Override the endpoint for all product API calls
-      --env=<value>           Override the environment for all product API calls
-      --host=<value>          Override the host endpoint for all product API calls
-      --json                  Output in JSON format
-      --pretty-json           Output in colorized JSON format
-      --token=<value>         Authenticate using an Ably Token or JWT Token instead of an API key
+  -h, --help         Show CLI help.
+  -v, --verbose      Output verbose logs
+      --continue     Continue the previous conversation with the Ably AI agent
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Ask a question to the Ably AI agent for help
@@ -4795,7 +4021,7 @@ EXAMPLES
   $ ably support ask --continue "Can you explain more about token capabilities?"
 ```
 
-_See code: [src/commands/support/ask.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/support/ask.ts)_
+_See code: [src/commands/support/ask.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/support/ask.ts)_
 
 ## `ably support contact`
 
@@ -4815,8 +4041,26 @@ EXAMPLES
   $ ably support contact
 ```
 
-_See code: [src/commands/support/contact.ts](https://github.com/ably/ably-cli/blob/v0.15.0/src/commands/support/contact.ts)_
+_See code: [src/commands/support/contact.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/support/contact.ts)_
 <!-- commandsstop -->
+
+## Environment Variables
+
+The CLI supports the following environment variables for authentication and configuration:
+
+- `ABLY_ACCESS_TOKEN` - Overrides the default access token used for the Control API
+- `ABLY_API_KEY` - Overrides the default API key used for the data plane
+- `ABLY_TOKEN` - Authenticate using an Ably Token or JWT instead of an API key
+- `ABLY_CLIENT_ID` - Overrides the default client ID assigned
+- `ABLY_CONTROL_HOST` - Overrides the default control API host
+- `ABLY_ENDPOINT` - Overrides the default data plane endpoint
+
+### Update Notification Environment Variables
+
+The CLI also supports environment variables to control update notifications:
+
+- `ABLY_SKIP_NEW_VERSION_CHECK=1` - Skip automatic version update checks
+- `ABLY_FORCE_VERSION_CACHE_UPDATE=1` - Force an immediate version check
 
 # Contributing
 
@@ -4832,7 +4076,9 @@ If you are an AI assistant, start with [`AI-Assistance.mdc`](.cursor/rules/AI-As
 Before submitting any changes, run our automated validation script to ensure your code meets all requirements:
 
 ```bash
-pnpm validate  # or: ./scripts/pre-push-validation.sh
+pnpm validate
+# or
+./scripts/pre-push-validation.sh
 ```
 
 This script automatically runs all mandatory steps including build, linting, and testing. See [`.cursor/rules/Workflow.mdc`](.cursor/rules/Workflow.mdc) for detailed information about each step.

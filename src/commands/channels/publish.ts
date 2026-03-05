@@ -3,6 +3,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { BaseFlags } from "../../types/cli.js";
 
 export default class ChannelsPublish extends AblyBaseCommand {
@@ -21,8 +22,6 @@ export default class ChannelsPublish extends AblyBaseCommand {
 
   static override examples = [
     '$ ably channels publish my-channel \'{"name":"event","data":"Hello World"}\'',
-    '$ ably channels publish --api-key "YOUR_API_KEY" my-channel \'{"data":"Simple message"}\'',
-    '$ ably channels publish --token "YOUR_ABLY_TOKEN" my-channel \'{"data":"Using token auth"}\'',
     '$ ably channels publish --name event my-channel \'{"text":"Hello World"}\'',
     '$ ably channels publish my-channel "Hello World"',
     '$ ably channels publish --name event my-channel "Plain text message"',
@@ -32,10 +31,12 @@ export default class ChannelsPublish extends AblyBaseCommand {
     '$ ably channels publish my-channel "Hello World" --json',
     '$ ably channels publish my-channel "Hello World" --pretty-json',
     '$ ably channels publish my-channel \'{"data":"Push notification","extras":{"push":{"notification":{"title":"Hello","body":"World"}}}}\'',
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably channels publish my-channel \'{"data":"Simple message"}\'',
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
+    ...clientIdFlag,
     count: Flags.integer({
       char: "c",
       default: 1,

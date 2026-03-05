@@ -1,6 +1,7 @@
 import { Args, Flags } from "@oclif/core";
 import { ChatClient, ConnectionStatusChange, JsonObject } from "@ably/chat";
 
+import { clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 
 // Define interfaces for the message send command
@@ -44,7 +45,7 @@ export default class MessagesSend extends ChatBaseCommand {
 
   static override examples = [
     '$ ably rooms messages send my-room "Hello World!"',
-    '$ ably rooms messages send --api-key "YOUR_API_KEY" my-room "Welcome to the chat!"',
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably rooms messages send my-room "Welcome to the chat!"',
     '$ ably rooms messages send --metadata \'{"isImportant":true}\' my-room "Attention please!"',
     '$ ably rooms messages send --count 5 my-room "Message number {{.Count}}"',
     '$ ably rooms messages send --count 10 --delay 1000 my-room "Message at {{.Timestamp}}"',
@@ -54,6 +55,7 @@ export default class MessagesSend extends ChatBaseCommand {
 
   static override flags = {
     ...ChatBaseCommand.globalFlags,
+    ...clientIdFlag,
     count: Flags.integer({
       char: "c",
       default: 1,

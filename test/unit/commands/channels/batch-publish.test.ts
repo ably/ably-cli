@@ -41,12 +41,7 @@ describe("channels:batch-publish command", () => {
   describe("argument validation", () => {
     it("should require channels flag when not using --spec", async () => {
       const { error } = await runCommand(
-        [
-          "channels:batch-publish",
-          '{"data":"test"}',
-          "--api-key",
-          "app.key:secret",
-        ],
+        ["channels:batch-publish", '{"data":"test"}'],
         import.meta.url,
       );
 
@@ -58,13 +53,7 @@ describe("channels:batch-publish command", () => {
 
     it("should require message when not using --spec", async () => {
       const { error } = await runCommand(
-        [
-          "channels:batch-publish",
-          "--channels",
-          "channel1,channel2",
-          "--api-key",
-          "app.key:secret",
-        ],
+        ["channels:batch-publish", "--channels", "channel1,channel2"],
         import.meta.url,
       );
 
@@ -85,8 +74,6 @@ describe("channels:batch-publish command", () => {
           "--channels",
           "channel1,channel2",
           '{"data":"test message"}',
-          "--api-key",
-          "app.key:secret",
         ],
         import.meta.url,
       );
@@ -114,8 +101,6 @@ describe("channels:batch-publish command", () => {
           "--channels-json",
           '["channel1","channel2"]', // No spaces - prevents argument splitting
           '{"data":"test"}',
-          "--api-key",
-          "app.key:secret",
         ],
         import.meta.url,
       );
@@ -143,13 +128,7 @@ describe("channels:batch-publish command", () => {
       });
 
       await runCommand(
-        [
-          "channels:batch-publish",
-          "--spec",
-          spec,
-          "--api-key",
-          "app.key:secret",
-        ],
+        ["channels:batch-publish", "--spec", spec],
         import.meta.url,
       );
 
@@ -176,8 +155,6 @@ describe("channels:batch-publish command", () => {
           "--name",
           "custom-event",
           '{"data":"test"}',
-          "--api-key",
-          "app.key:secret",
         ],
         import.meta.url,
       );
@@ -204,8 +181,6 @@ describe("channels:batch-publish command", () => {
           "--encoding",
           "base64",
           '{"data":"dGVzdA=="}',
-          "--api-key",
-          "app.key:secret",
         ],
         import.meta.url,
       );
@@ -228,8 +203,6 @@ describe("channels:batch-publish command", () => {
           "--channels",
           "channel1,channel2",
           '{"data":"test"}',
-          "--api-key",
-          "app.key:secret",
           "--json",
         ],
         import.meta.url,
@@ -257,14 +230,7 @@ describe("channels:batch-publish command", () => {
       mock.request.mockRejectedValue(new Error("Publish failed"));
 
       const { error } = await runCommand(
-        [
-          "channels:batch-publish",
-          "--channels",
-          "channel1",
-          '{"data":"test"}',
-          "--api-key",
-          "app.key:secret",
-        ],
+        ["channels:batch-publish", "--channels", "channel1", '{"data":"test"}'],
         import.meta.url,
       );
 
@@ -294,8 +260,6 @@ describe("channels:batch-publish command", () => {
           "--channels",
           "channel1,channel2",
           '{"data":"test"}',
-          "--api-key",
-          "app.key:secret",
         ],
         import.meta.url,
       );
@@ -321,8 +285,6 @@ describe("channels:batch-publish command", () => {
           "--channels",
           "channel1",
           '{"data":"test"}',
-          "--api-key",
-          "app.key:secret",
           "--json",
         ],
         import.meta.url,

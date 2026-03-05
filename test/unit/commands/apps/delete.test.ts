@@ -12,6 +12,7 @@ describe("apps:delete command", () => {
 
   afterEach(() => {
     nock.cleanAll();
+    delete process.env.ABLY_ACCESS_TOKEN;
   });
 
   describe("successful app deletion", () => {
@@ -101,13 +102,15 @@ describe("apps:delete command", () => {
       expect(result.app).toHaveProperty("name", mockAppName);
     });
 
-    it("should use custom access token when provided", async () => {
+    it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
       const mock = getMockConfigManager();
       const accountId = mock.getCurrentAccount()!.accountId!;
       const accountName = mock.getCurrentAccount()!.accountName!;
       const userEmail = mock.getCurrentAccount()!.userEmail!;
       const appId = mock.getCurrentAppId()!;
       const customToken = "custom_access_token";
+
+      process.env.ABLY_ACCESS_TOKEN = customToken;
 
       // Mock the /me endpoint with custom token
       nock("https://control.ably.net", {
@@ -150,13 +153,7 @@ describe("apps:delete command", () => {
         .reply(204);
 
       const { stdout } = await runCommand(
-        [
-          "apps:delete",
-          appId,
-          "--force",
-          "--access-token",
-          "custom_access_token",
-        ],
+        ["apps:delete", appId, "--force"],
         import.meta.url,
       );
 

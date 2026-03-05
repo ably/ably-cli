@@ -48,7 +48,7 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
 
   static override examples = [
     "$ ably rooms messages reactions send my-room message-serial 👍",
-    '$ ably rooms messages reactions send --api-key "YOUR_API_KEY" my-room message-serial ❤️',
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably rooms messages reactions send my-room message-serial ❤️',
     "$ ably rooms messages reactions send my-room message-serial 👍 --type multiple --count 10",
     "$ ably rooms messages reactions send my-room message-serial 👍 --type unique",
     "$ ably rooms messages reactions send my-room message-serial 👍 --json",

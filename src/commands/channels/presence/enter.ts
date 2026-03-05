@@ -3,6 +3,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
+import { clientIdFlag, productApiFlags } from "../../../flags.js";
 import { isJsonData } from "../../../utils/json-formatter.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
@@ -20,16 +21,16 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
   static override examples = [
     '$ ably channels presence enter my-channel --client-id "client123"',
     '$ ably channels presence enter my-channel --client-id "client123" --data \'{"name":"John","status":"online"}\'',
-    '$ ably channels presence enter my-channel --api-key "YOUR_API_KEY"',
-    '$ ably channels presence enter my-channel --token "YOUR_ABLY_TOKEN"',
     "$ ably channels presence enter my-channel --show-others",
     "$ ably channels presence enter my-channel --json",
     "$ ably channels presence enter my-channel --pretty-json",
     "$ ably channels presence enter my-channel --duration 30",
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably channels presence enter my-channel',
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
+    ...clientIdFlag,
     data: Flags.string({
       description: "Optional JSON data to associate with the presence",
     }),

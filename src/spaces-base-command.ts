@@ -1,6 +1,7 @@
 import * as Ably from "ably";
 import Spaces, { type Space, type SpaceOptions } from "@ably/spaces";
 import { AblyBaseCommand } from "./base-command.js";
+import { productApiFlags } from "./flags.js";
 import { BaseFlags } from "./types/cli.js";
 import isTestMode from "./utils/test-mode.js";
 
@@ -24,6 +25,7 @@ async function getSpacesConstructor(): Promise<
 }
 
 export abstract class SpacesBaseCommand extends AblyBaseCommand {
+  static globalFlags = { ...productApiFlags };
   protected space: Space | null = null;
   protected spaces: Spaces | null = null;
   protected realtimeClient: Ably.Realtime | null = null;

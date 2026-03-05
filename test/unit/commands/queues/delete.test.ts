@@ -8,6 +8,7 @@ describe("queues:delete command", () => {
 
   afterEach(() => {
     nock.cleanAll();
+    delete process.env.ABLY_ACCESS_TOKEN;
   });
 
   function createMockQueue(appId: string, queueId: string) {
@@ -100,10 +101,12 @@ describe("queues:delete command", () => {
       );
     });
 
-    it("should use custom access token when provided", async () => {
+    it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
       const customToken = "custom_access_token";
+
+      process.env.ABLY_ACCESS_TOKEN = customToken;
 
       nock("https://control.ably.net", {
         reqheaders: {
@@ -122,13 +125,7 @@ describe("queues:delete command", () => {
         .reply(204);
 
       const { error } = await runCommand(
-        [
-          "queues:delete",
-          mockQueueId,
-          "--access-token",
-          "custom_access_token",
-          "--force",
-        ],
+        ["queues:delete", mockQueueId, "--force"],
         import.meta.url,
       );
 

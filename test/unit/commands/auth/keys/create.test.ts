@@ -17,6 +17,7 @@ describe("auth:keys:create command", () => {
 
   afterEach(() => {
     nock.cleanAll();
+    delete process.env.ABLY_ACCESS_TOKEN;
   });
 
   describe("successful key creation", () => {
@@ -134,9 +135,11 @@ describe("auth:keys:create command", () => {
       expect(result).toHaveProperty("success", true);
     });
 
-    it("should use custom access token when provided", async () => {
+    it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       const customToken = "custom_access_token";
+
+      process.env.ABLY_ACCESS_TOKEN = customToken;
 
       // Mock the key creation endpoint with custom token
       nock("https://control.ably.net", {
@@ -158,15 +161,7 @@ describe("auth:keys:create command", () => {
         });
 
       const { stdout } = await runCommand(
-        [
-          "auth:keys:create",
-          "--name",
-          `"${mockKeyName}"`,
-          "--app",
-          appId,
-          "--access-token",
-          "custom_access_token",
-        ],
+        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
 

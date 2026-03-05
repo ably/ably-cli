@@ -1,6 +1,7 @@
 import { Args } from "@oclif/core";
 
 import { AblyBaseCommand } from "../../../base-command.js";
+import { productApiFlags } from "../../../flags.js";
 
 interface OccupancyMetrics {
   connections: number;
@@ -23,13 +24,13 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
 
   static examples = [
     "$ ably channels occupancy get my-channel",
-    '$ ably channels occupancy get --api-key "YOUR_API_KEY" my-channel',
     "$ ably channels occupancy get my-channel --json",
     "$ ably channels occupancy get my-channel --pretty-json",
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably channels occupancy get my-channel',
   ];
 
   static flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
   };
 
   async run(): Promise<void> {

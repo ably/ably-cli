@@ -28,7 +28,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
   static override examples = [
     "$ ably rooms typing keystroke my-room",
     "$ ably rooms typing keystroke my-room --autoType",
-    '$ ably rooms typing keystroke --api-key "YOUR_API_KEY" my-room',
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably rooms typing keystroke my-room',
     "$ ably rooms typing keystroke my-room --json",
     "$ ably rooms typing keystroke my-room --pretty-json",
   ];

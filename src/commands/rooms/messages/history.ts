@@ -17,7 +17,7 @@ export default class MessagesHistory extends ChatBaseCommand {
 
   static override examples = [
     "$ ably rooms messages history my-room",
-    '$ ably rooms messages history --api-key "YOUR_API_KEY" my-room',
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably rooms messages history my-room',
     "$ ably rooms messages history --limit 50 my-room",
     "$ ably rooms messages history --show-metadata my-room",
     '$ ably rooms messages history my-room --start "2025-01-01T00:00:00Z"',

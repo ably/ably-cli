@@ -4,6 +4,7 @@ import chalk from "chalk";
 import Table from "cli-table3";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { productApiFlags } from "../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
 
 interface TestMetrics {
@@ -30,7 +31,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
   static override examples = ["$ ably bench subscriber my-channel"];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     duration: Flags.integer({
       char: "d",
       description:
