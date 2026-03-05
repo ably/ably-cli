@@ -148,6 +148,41 @@ static override flags = {
 
 Do NOT add `--api-key`, `--token`, or `--access-token` flags to commands.
 
+## 🧪 Writing Tests
+
+**Auth in tests — use environment variables, NEVER CLI flags:**
+```typescript
+// ❌ WRONG — --api-key, --token, --access-token are NOT CLI flags
+runCommand(["channels", "publish", "my-channel", "hello", "--api-key", key]);
+
+// ✅ CORRECT — pass auth via env vars
+runCommand(["channels", "publish", "my-channel", "hello"], {
+  env: { ABLY_API_KEY: key },
+});
+
+// ✅ CORRECT — spawn with env vars
+spawn("node", [cliPath, "channels", "subscribe", "my-channel"], {
+  env: { ...process.env, ABLY_API_KEY: key },
+});
+
+// ✅ Control API commands use ABLY_ACCESS_TOKEN
+runCommand(["stats", "account"], {
+  env: { ABLY_ACCESS_TOKEN: token },
+});
+```
+
+**Test structure:**
+- `test/unit/` — Fast, mocked tests. Use `ABLY_API_KEY` env var in test setup.
+- `test/e2e/` — Full scenarios against real Ably. Use env vars for auth.
+- Helpers in `test/helpers/` — `runCommand()`, `runLongRunningBackgroundProcess()`, `e2e-test-helper.ts`.
+
+**Running tests:**
+```bash
+pnpm test:unit                    # All unit tests
+pnpm test:e2e                     # All E2E tests
+pnpm test test/unit/commands/foo.test.ts  # Specific test
+```
+
 ## 🔍 Related Projects
 
 If this is part of a workspace, there may be:
