@@ -259,7 +259,9 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
       // Log the ready signal for E2E tests
       if (channelNames.length === 1) {
-        this.log(`Successfully attached to channel ${channelNames[0]}`);
+        this.log(
+          `Successfully attached to channel: ${channelNames[0]}`,
+        );
       }
 
       // Show success message once all channels are attached

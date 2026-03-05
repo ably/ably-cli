@@ -64,7 +64,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
       // await space.enter() // Use this.space
       await this.space.enter();
       if (!this.shouldOutputJson(flags)) {
-        this.log(success(`Successfully entered space: ${resource(spaceName)}`));
+        this.log(success(`Entered space: ${resource(spaceName)}.`));
       }
 
       // Try to get the lock

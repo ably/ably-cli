@@ -118,40 +118,6 @@ export default class CustomHelp extends Help {
     const cleanedOutput = this.removeTrailingWhitespace(output);
     this.log(this.formatHelpOutput(cleanedOutput));
 
-    // Check if this is a topic command by looking for subcommands
-    const topicPrefix = `${command.id}:`;
-    const subcommands = this.config.commands.filter(
-      (cmd) =>
-        cmd.id.startsWith(topicPrefix) &&
-        !cmd.hidden &&
-        !cmd.id.slice(topicPrefix.length).includes(":"),
-    );
-
-    if (subcommands.length > 0 && !output.includes("COMMANDS")) {
-      // This is a topic command without a COMMANDS section, add it
-      this.log(`\n${chalk.bold("COMMANDS")}`);
-
-      const entries = subcommands.map((cmd) => {
-        const formattedId = cmd.id.replaceAll(":", " ");
-        const binPrefix = this.interactiveMode ? "" : `${this.config.bin} `;
-        return {
-          name: `${binPrefix}${formattedId}`,
-          description: cmd.description || "",
-        };
-      });
-
-      if (entries.length > 0) {
-        const maxLength = Math.max(...entries.map((cmd) => cmd.name.length));
-
-        entries.forEach((cmd) => {
-          const paddedName = cmd.name.padEnd(maxLength + 2);
-          this.log(
-            `  ${chalk.cyan(paddedName)}${chalk.whiteBright(cmd.description)}`,
-          );
-        });
-      }
-    }
-
     // Only exit if not in interactive mode
     if (process.env.ABLY_INTERACTIVE_MODE !== "true") {
       process.exit(0);

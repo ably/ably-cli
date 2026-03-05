@@ -62,14 +62,13 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
     this.roomName = args.room;
 
     try {
-      // Always show the readiness signal first, before attempting auth
+      // Show a progress signal early so E2E harnesses know the command is running
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          success(
-            `Subscribed to presence in room: ${resource(this.roomName!)}.`,
+          progress(
+            `Subscribing to presence in room: ${resource(this.roomName!)}`,
           ),
         );
-        this.log(listening("Listening for presence events."));
       }
 
       // Try to create clients, but don't fail if auth fails
@@ -275,7 +274,12 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       );
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(listening("Subscribing to presence events."));
+        this.log(
+          success(
+            `Subscribed to presence in room: ${resource(this.roomName!)}.`,
+          ),
+        );
+        this.log(listening("Listening for presence events."));
       }
 
       // Wait until the user interrupts or the optional duration elapses

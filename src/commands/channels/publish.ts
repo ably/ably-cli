@@ -169,13 +169,13 @@ export default class ChannelsPublish extends AblyBaseCommand {
       } else if (total > 1) {
         this.log(
           success(
-            `${published}/${total} messages published to channel ${resource(args.channel as string)}${errors > 0 ? ` (${chalk.red(errors)} errors)` : ""}.`,
+            `${published}/${total} messages published to channel: ${resource(args.channel as string)}${errors > 0 ? ` (${chalk.red(errors)} errors)` : ""}.`,
           ),
         );
       } else if (errors === 0) {
         this.log(
           success(
-            `Message published to channel ${resource(args.channel as string)}.`,
+            `Message published to channel: ${resource(args.channel as string)}.`,
           ),
         );
       } else {

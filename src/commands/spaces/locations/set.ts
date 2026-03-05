@@ -40,7 +40,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       required: true,
     }),
     duration: Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),

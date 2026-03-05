@@ -61,7 +61,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       required: false,
     }),
     duration: Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
