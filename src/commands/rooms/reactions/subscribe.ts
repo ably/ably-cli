@@ -4,7 +4,13 @@ import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import { success, listening, resource } from "../../../utils/output.js";
+import {
+  progress,
+  success,
+  listening,
+  resource,
+  timestamp as formatTimestamp,
+} from "../../../utils/output.js";
 
 export default class RoomsReactionsSubscribe extends ChatBaseCommand {
   static override args = {
@@ -63,7 +69,9 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
       );
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          `Connecting to Ably and subscribing to reactions in room ${resource(roomName)}...`,
+          progress(
+            `Connecting to Ably and subscribing to reactions in room ${resource(roomName)}`,
+          ),
         );
       }
 
@@ -186,7 +194,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
           );
         } else {
           this.log(
-            `[${chalk.dim(timestamp)}] ${chalk.green("⚡")} ${chalk.blue(reaction.clientId || "Unknown")} reacted with ${chalk.yellow(reaction.name || "unknown")}`,
+            `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${chalk.blue(reaction.clientId || "Unknown")} reacted with ${chalk.yellow(reaction.name || "unknown")}`,
           );
 
           // Show any additional metadata in the reaction

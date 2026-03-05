@@ -25,14 +25,14 @@ export const coreGlobalFlags = {
 };
 
 /**
- * Hidden flags for product API (Ably SDK) commands — port, tls, tlsPort.
+ * Hidden flags for product API (Ably SDK) commands — port, tls, tls-port.
  */
 export const hiddenProductApiFlags = {
   port: Flags.integer({
     description: "Override the port for product API calls",
     hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
   }),
-  tlsPort: Flags.integer({
+  "tls-port": Flags.integer({
     description: "Override the TLS port for product API calls",
     hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
   }),

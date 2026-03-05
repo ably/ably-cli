@@ -5,7 +5,12 @@ import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
 import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { success, listening, resource } from "../../../utils/output.js";
+import {
+  success,
+  listening,
+  resource,
+  timestamp as formatTimestamp,
+} from "../../../utils/output.js";
 
 // Define the type for location subscription
 interface LocationSubscription {
@@ -272,7 +277,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
           const action = "update";
 
           this.log(
-            `[${timestamp}] ${chalk.blue(member.clientId || "Unknown")} ${actionColor(action)}d location:`,
+            `${formatTimestamp(timestamp)} ${chalk.blue(member.clientId || "Unknown")} ${actionColor(action)}d location:`,
           );
           this.log(
             `  ${chalk.dim("Location:")} ${JSON.stringify(currentLocation, null, 2)}`,

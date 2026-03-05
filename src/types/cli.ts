@@ -12,7 +12,7 @@ export interface BaseFlags {
   endpoint?: string;
   port?: number;
   tls?: string;
-  tlsPort?: number;
+  "tls-port"?: number;
   json?: boolean;
   "pretty-json"?: boolean;
   verbose?: boolean;

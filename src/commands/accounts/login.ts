@@ -7,6 +7,7 @@ import { ControlBaseCommand } from "../../control-base-command.js";
 import { endpointFlag } from "../../flags.js";
 import { ControlApi } from "../../services/control-api.js";
 import { displayLogo } from "../../utils/logo.js";
+import { resource, success } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 // Moved function definition outside the class
@@ -240,7 +241,7 @@ export default class AccountsLogin extends ControlBaseCommand {
               this.configManager.setCurrentApp(app.id);
               this.configManager.storeAppInfo(app.id, { appName: app.name });
 
-              this.log(`${chalk.green("✓")} App created successfully!`);
+              this.log(success("App created successfully!"));
             } catch (createError) {
               this.warn(
                 `Failed to create app: ${createError instanceof Error ? createError.message : String(createError)}`,
@@ -349,25 +350,33 @@ export default class AccountsLogin extends ControlBaseCommand {
         this.log(this.formatJsonOutput(response, flags));
       } else {
         this.log(
-          `Successfully logged in to ${chalk.cyan(account.name)} (account ID: ${chalk.greenBright(account.id)})`,
+          `Successfully logged in to ${resource(account.name)} (account ID: ${chalk.greenBright(account.id)})`,
         );
         if (alias !== "default") {
           this.log(`Account stored with alias: ${alias}`);
         }
 
-        this.log(`Account ${chalk.cyan(alias)} is now the current account`);
+        this.log(`Account ${resource(alias)} is now the current account`);
 
         if (selectedApp) {
           const message = isAutoSelected
-            ? `${chalk.green("✓")} Automatically selected app: ${chalk.cyan(selectedApp.name)} (${selectedApp.id})`
-            : `${chalk.green("✓")} Selected app: ${chalk.cyan(selectedApp.name)} (${selectedApp.id})`;
+            ? success(
+                `Automatically selected app: ${resource(selectedApp.name)} (${selectedApp.id})`,
+              )
+            : success(
+                `Selected app: ${resource(selectedApp.name)} (${selectedApp.id})`,
+              );
           this.log(message);
         }
 
         if (selectedKey) {
           const keyMessage = isKeyAutoSelected
-            ? `${chalk.green("✓")} Automatically selected API key: ${chalk.cyan(selectedKey.name || "Unnamed key")} (${selectedKey.id})`
-            : `${chalk.green("✓")} Selected API key: ${chalk.cyan(selectedKey.name || "Unnamed key")} (${selectedKey.id})`;
+            ? success(
+                `Automatically selected API key: ${resource(selectedKey.name || "Unnamed key")} (${selectedKey.id})`,
+              )
+            : success(
+                `Selected API key: ${resource(selectedKey.name || "Unnamed key")} (${selectedKey.id})`,
+              );
           this.log(keyMessage);
         }
       }

@@ -50,6 +50,7 @@ cat .cursor/rules/AI-Assistance.mdc
 5. **Remove tests without asking** - Always get permission first
 6. **NODE_ENV** - To check if the CLI is in test mode, use the `isTestMode()` helper function.
 7. **`process.exit`** - When creating a command, use `this.exit()` for consistent test mode handling.
+8. **`console.log` / `console.error`** - In commands, always use `this.log()` (stdout) and `this.logToStderr()` (stderr). `console.*` bypasses oclif and can't be captured by tests.
 
 ## ✅ Correct Practices
 
@@ -211,13 +212,38 @@ But focus on THIS project unless specifically asked about others.
 - **Success**: `success("Message published to channel " + resource(name) + ".")` — green ✓, ends with `.`
 - **Listening**: `listening("Listening for messages.")` — dim, includes "Press Ctrl+C to exit."
 - **Resource names**: Always `resource(name)` (cyan), never quoted
+- **Timestamps**: `formatTimestamp(ts)` — dim `[timestamp]` for event streams. Import as `formatTimestamp` to avoid clashing with local `timestamp` variables.
+- **JSON guard**: All human-readable output (progress, success, listening messages) must be wrapped in `if (!this.shouldOutputJson(flags))` so it doesn't pollute `--json` output. Only JSON payloads should be emitted when `--json` is active.
+
+### Additional output patterns (direct chalk, not helpers)
+- **Secondary labels**: `chalk.dim("Label:")` — for field names in structured output (e.g., `${chalk.dim("Profile:")} ${value}`)
+- **Client IDs**: `chalk.blue(clientId)` — for user/client identifiers in events
+- **Event types**: `chalk.yellow(eventType)` — for action/event type labels
+- **Warnings**: `chalk.yellow("Warning: ...")` — for non-fatal warnings
+- **Errors**: Use `this.error()` (oclif standard) for fatal errors, not `this.log(chalk.red(...))`
+- **No app error**: `'No app specified. Use --app flag or select an app with "ably apps switch"'`
+
+### Help output theme
+Help colors are configured via `package.json > oclif.theme` (oclif's built-in theme system). The custom help class in `src/help.ts` also applies colors to COMMANDS sections it builds manually. Color scheme:
+- **Commands/bin/topics**: cyan — primary actionable items
+- **Flags/args**: whiteBright — bright but secondary to commands
+- **Section headers**: bold — USAGE, FLAGS, COMMANDS, etc.
+- **Command summaries**: whiteBright — descriptions in command listings
+- **Defaults/options**: yellow — `[default: N]`, `<options: ...>`
+- **Required flags**: red — `(required)` marker
+- **`$` prompt**: green — shell prompt in examples/usage
+- **Flag separator**: dim — comma between `-c, --count`
+
+When adding COMMANDS sections in `src/help.ts`, use `chalk.bold()` for headers, `chalk.cyan()` for command names, and `chalk.whiteBright()` for descriptions to stay consistent.
 
 ### Flag conventions
 - All flags kebab-case: `--my-flag` (never camelCase)
-- `--app`: `"The app ID or name (defaults to current app)"`
+- `--app`: `"The app ID or name (defaults to current app)"` (for commands with `resolveAppId`), `"The app ID (defaults to current app)"` (for commands without)
 - `--limit`: `"Maximum number of results to return (default: N)"`
 - `--duration`: `"Automatically exit after N seconds (0 = run indefinitely)"`, alias `-D`
+- `--rewind`: `"Number of messages to rewind when subscribing (default: 0)"`
 - Channels use "publish", Rooms use "send" (matches SDK terminology)
+- Command descriptions: imperative mood, sentence case, no trailing period (e.g., `"Subscribe to presence events on a channel"`)
 
 ## ✓ Before Marking Complete
 

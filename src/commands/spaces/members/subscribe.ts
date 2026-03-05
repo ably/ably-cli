@@ -5,7 +5,11 @@ import chalk from "chalk";
 import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import { listening, progress } from "../../../utils/output.js";
+import {
+  listening,
+  progress,
+  timestamp as formatTimestamp,
+} from "../../../utils/output.js";
 
 export default class SpacesMembersSubscribe extends SpacesBaseCommand {
   static override args = {
@@ -29,8 +33,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
     ...SpacesBaseCommand.globalFlags,
     ...clientIdFlag,
     duration: _Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -274,7 +277,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
           }
 
           this.log(
-            `[${timestamp}] ${actionColor(actionSymbol)} ${chalk.blue(clientId)} ${actionColor(action)}`,
+            `${formatTimestamp(timestamp)} ${actionColor(actionSymbol)} ${chalk.blue(clientId)} ${actionColor(action)}`,
           );
 
           if (

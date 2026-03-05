@@ -2,6 +2,7 @@ import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
+import { progress, resource, success } from "../../../utils/output.js";
 
 interface LocationData {
   [key: string]: unknown;
@@ -93,7 +94,10 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
         checkConnection();
       });
 
-      this.log(`Connecting to space: ${chalk.cyan(spaceName)}...`);
+      if (!this.shouldOutputJson(flags)) {
+        this.log(progress(`Connecting to space: ${resource(spaceName)}`));
+      }
+
       await this.space.enter();
 
       await new Promise<void>((resolve, reject) => {
@@ -105,9 +109,10 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
           try {
             if (this.realtimeClient!.connection.state === "connected") {
               clearTimeout(timeout);
-              this.log(
-                `${chalk.green("Connected to space:")} ${chalk.cyan(spaceName)}`,
-              );
+              if (!this.shouldOutputJson(flags)) {
+                this.log(success(`Connected to space: ${resource(spaceName)}`));
+              }
+
               resolve();
             } else if (
               this.realtimeClient!.connection.state === "failed" ||
@@ -133,7 +138,9 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
       });
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Fetching locations for space ${chalk.cyan(spaceName)}...`);
+        this.log(
+          progress(`Fetching locations for space ${resource(spaceName)}`),
+        );
       }
 
       let locations: LocationItem[] = [];

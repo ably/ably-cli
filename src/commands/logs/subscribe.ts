@@ -5,7 +5,12 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
-import { listening, resource, success } from "../../utils/output.js";
+import {
+  listening,
+  resource,
+  success,
+  timestamp as formatTimestamp,
+} from "../../utils/output.js";
 
 export default class LogsSubscribe extends AblyBaseCommand {
   static override description = "Subscribe to live app logs";
@@ -28,7 +33,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
     }),
     rewind: Flags.integer({
       default: 0,
-      description: "Number of messages to rewind when subscribing",
+      description: "Number of messages to rewind when subscribing (default: 0)",
     }),
     type: Flags.string({
       description: "Filter by log type",
@@ -141,7 +146,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
             this.log(this.formatJsonOutput(event, flags));
           } else {
             this.log(
-              `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`Type: ${logType}`)}`,
+              `${formatTimestamp(timestamp)} ${chalk.cyan(`Type: ${logType}`)}`,
             );
 
             if (message.data !== null && message.data !== undefined) {

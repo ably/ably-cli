@@ -5,7 +5,12 @@ import chalk from "chalk";
 import { clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import { success, listening, resource } from "../../../utils/output.js";
+import {
+  success,
+  listening,
+  resource,
+  timestamp as formatTimestamp,
+} from "../../../utils/output.js";
 
 // Define message interface
 interface ChatMessage {
@@ -146,7 +151,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
 
         // Message content with consistent formatting
         this.log(
-          `${roomPrefix}${chalk.gray(`[${timestamp}]`)}${sequencePrefix} ${chalk.cyan(`${author}:`)} ${message.text}`,
+          `${roomPrefix}${formatTimestamp(timestamp)}${sequencePrefix} ${chalk.cyan(`${author}:`)} ${message.text}`,
         );
 
         // Show metadata if enabled and available

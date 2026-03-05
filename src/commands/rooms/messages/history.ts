@@ -3,6 +3,7 @@ import { OrderBy } from "@ably/chat";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { timestamp as formatTimestamp } from "../../../utils/output.js";
 
 export default class MessagesHistory extends ChatBaseCommand {
   static override args = {
@@ -154,7 +155,7 @@ export default class MessagesHistory extends ChatBaseCommand {
             const author = message.clientId || "Unknown";
 
             this.log(
-              `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`${author}:`)} ${message.text}`,
+              `${formatTimestamp(timestamp)} ${chalk.cyan(`${author}:`)} ${message.text}`,
             );
 
             // Show metadata if enabled and available

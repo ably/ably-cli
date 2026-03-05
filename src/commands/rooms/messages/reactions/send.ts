@@ -9,6 +9,7 @@ import {
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../../chat-base-command.js";
+import { resource, success } from "../../../../utils/output.js";
 
 // Map CLI-friendly type names to SDK MessageReactionType values
 const REACTION_TYPE_MAP: Record<string, MessageReactionType> = {
@@ -224,7 +225,9 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
         this.log(this.formatJsonOutput(resultData, flags));
       } else {
         this.log(
-          `${chalk.green("✓")} Sent reaction ${chalk.yellow(reaction)} to message ${chalk.cyan(messageSerial)} in room ${chalk.cyan(room)}`,
+          success(
+            `Sent reaction ${chalk.yellow(reaction)} to message ${resource(messageSerial)} in room ${resource(room)}`,
+          ),
         );
       }
     } catch (error) {

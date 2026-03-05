@@ -15,7 +15,7 @@ interface JwtPayload {
 }
 
 export default class IssueJwtTokenCommand extends AblyBaseCommand {
-  static description = "Creates an Ably JWT token with capabilities";
+  static description = "Create an Ably JWT token with capabilities";
 
   static examples = [
     "$ ably auth issue-jwt-token",

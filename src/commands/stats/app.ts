@@ -140,7 +140,7 @@ export default class StatsAppCommand extends ControlBaseCommand {
     try {
       this.isPolling = true;
       if (flags.debug) {
-        console.log(
+        this.log(
           chalk.dim(`\n[${new Date().toISOString()}] Polling for new stats...`),
         );
       }
@@ -148,7 +148,7 @@ export default class StatsAppCommand extends ControlBaseCommand {
       await this.fetchAndDisplayStats(appId, flags, controlApi);
     } catch (error) {
       if (flags.debug) {
-        console.error(
+        this.logToStderr(
           chalk.red(
             `Error during stats polling: ${error instanceof Error ? error.message : String(error)}`,
           ),
@@ -191,7 +191,7 @@ export default class StatsAppCommand extends ControlBaseCommand {
             this.pollStats(appId, flags, controlApi);
           } else if (flags.debug) {
             // Only show this message if debug flag is enabled
-            console.log(
+            this.log(
               chalk.yellow(
                 "Skipping poll - previous request still in progress",
               ),

@@ -10,6 +10,12 @@ import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../../utils/long-running.js";
+import {
+  listening,
+  progress,
+  resource,
+  timestamp as formatTimestamp,
+} from "../../../../utils/output.js";
 
 export default class MessagesReactionsSubscribe extends ChatBaseCommand {
   static override args = {
@@ -71,7 +77,9 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
       );
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          `Connecting to Ably and subscribing to message reactions in room ${chalk.cyan(room)}...`,
+          progress(
+            `Connecting to Ably and subscribing to message reactions in room ${resource(room)}`,
+          ),
         );
       }
 
@@ -122,7 +130,9 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
             if (!this.shouldOutputJson(flags)) {
               this.log(chalk.green("Successfully connected to Ably"));
               this.log(
-                `Listening for message reactions in room ${chalk.cyan(room)}. Press Ctrl+C to exit.`,
+                listening(
+                  `Listening for message reactions in room ${resource(room)}.`,
+                ),
               );
             }
 
@@ -194,7 +204,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
               );
             } else {
               this.log(
-                `[${chalk.dim(timestamp)}] ${chalk.green("⚡")} ${chalk.blue(event.reaction.clientId || "Unknown")} [${event.reaction.type}] ${event.type}: ${chalk.yellow(event.reaction.name || "unknown")} to message ${chalk.cyan(event.reaction.messageSerial)}`,
+                `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${chalk.blue(event.reaction.clientId || "Unknown")} [${event.reaction.type}] ${event.type}: ${chalk.yellow(event.reaction.name || "unknown")} to message ${chalk.cyan(event.reaction.messageSerial)}`,
               );
             }
           },
@@ -246,7 +256,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
               );
             } else {
               this.log(
-                `[${chalk.dim(timestamp)}] ${chalk.green("📊")} Reaction summary for message ${chalk.cyan(event.messageSerial)}:`,
+                `${formatTimestamp(timestamp)} ${chalk.green("📊")} Reaction summary for message ${chalk.cyan(event.messageSerial)}:`,
               );
 
               // Display the summaries by type if they exist

@@ -10,6 +10,7 @@ import {
   progress,
   resource,
   success,
+  timestamp as formatTimestamp,
 } from "../../../utils/output.js";
 
 export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
@@ -112,7 +113,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
           const clientId = presenceMessage.clientId || "Unknown";
 
           this.log(
-            `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`Channel: ${channelName}`)} | ${chalk.yellow(`Action: ${action}`)} | ${chalk.blue(`Client: ${clientId}`)}`,
+            `${formatTimestamp(timestamp)} ${chalk.cyan(`Channel: ${channelName}`)} | ${chalk.yellow(`Action: ${action}`)} | ${chalk.blue(`Client: ${clientId}`)}`,
           );
 
           if (

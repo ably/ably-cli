@@ -6,7 +6,12 @@ import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../../flags.js";
 import { isJsonData } from "../../../utils/json-formatter.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import { listening, resource, success } from "../../../utils/output.js";
+import {
+  listening,
+  resource,
+  success,
+  timestamp as formatTimestamp,
+} from "../../../utils/output.js";
 
 export default class ChannelsPresenceEnter extends AblyBaseCommand {
   static override args = {
@@ -144,7 +149,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
               ? `${chalk.dim(`[${this.sequenceCounter}]`)}`
               : "";
             this.log(
-              `${chalk.gray(`[${timestamp}]`)}${sequencePrefix} ${chalk.cyan(`Channel: ${channelName}`)} | ${chalk.yellow(`Action: ${presenceMessage.action}`)} | ${chalk.blue(`Client: ${presenceMessage.clientId || "N/A"}`)}`,
+              `${formatTimestamp(timestamp)}${sequencePrefix} ${chalk.cyan(`Channel: ${channelName}`)} | ${chalk.yellow(`Action: ${presenceMessage.action}`)} | ${chalk.blue(`Client: ${presenceMessage.clientId || "N/A"}`)}`,
             );
 
             if (

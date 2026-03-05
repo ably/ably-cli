@@ -6,7 +6,12 @@ import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
 import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import { listening, resource, success } from "../../../utils/output.js";
+import {
+  listening,
+  resource,
+  success,
+  timestamp as formatTimestamp,
+} from "../../../utils/output.js";
 
 export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
   static override description =
@@ -19,13 +24,9 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
-    json: Flags.boolean({
-      default: false,
-      description: "Output results as JSON",
-    }),
     rewind: Flags.integer({
       default: 0,
-      description: "Number of messages to rewind when subscribing",
+      description: "Number of messages to rewind when subscribing (default: 0)",
     }),
   };
 
@@ -126,7 +127,7 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
 
         // Format the log output with consistent styling
         this.log(
-          `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`Channel: ${channelName}`)} | ${eventColor(`Event: ${event}`)}`,
+          `${formatTimestamp(timestamp)} ${chalk.cyan(`Channel: ${channelName}`)} | ${eventColor(`Event: ${event}`)}`,
         );
 
         if (message.data) {

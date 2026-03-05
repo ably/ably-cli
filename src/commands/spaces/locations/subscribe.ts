@@ -5,6 +5,12 @@ import chalk from "chalk";
 import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import {
+  listening,
+  progress,
+  resource,
+  timestamp as formatTimestamp,
+} from "../../../utils/output.js";
 
 // Define interfaces for location types
 interface SpaceMember {
@@ -47,8 +53,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
     ...SpacesBaseCommand.globalFlags,
     ...clientIdFlag,
     duration: _Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -156,7 +161,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
         `Getting space: ${spaceName}...`,
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Connecting to space: ${chalk.cyan(spaceName)}...`);
+        this.log(progress(`Connecting to space: ${resource(spaceName)}`));
       }
 
       this.logCliEvent(
@@ -186,7 +191,9 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
       );
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          `Fetching current locations for space ${chalk.cyan(spaceName)}...`,
+          progress(
+            `Fetching current locations for space ${resource(spaceName)}`,
+          ),
         );
       }
 
@@ -291,9 +298,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
         "Subscribing to location updates",
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log(
-          `\n${chalk.dim("Subscribing to location updates. Press Ctrl+C to exit.")}\n`,
-        );
+        this.log(listening("Subscribing to location updates."));
       }
       this.logCliEvent(
         flags,
@@ -339,7 +344,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
               );
             } else {
               this.log(
-                `[${timestamp}] ${chalk.blue(update.member.clientId)} ${chalk.yellow("updated")} location:`,
+                `${formatTimestamp(timestamp)} ${chalk.blue(update.member.clientId)} ${chalk.yellow("updated")} location:`,
               );
               this.log(
                 `  ${chalk.dim("Current:")} ${JSON.stringify(update.currentLocation)}`,

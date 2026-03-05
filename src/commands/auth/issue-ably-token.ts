@@ -6,7 +6,7 @@ import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
 
 export default class IssueAblyTokenCommand extends AblyBaseCommand {
-  static description = "Creates an Ably Token with capabilities";
+  static description = "Create an Ably Token with capabilities";
 
   static examples = [
     "$ ably auth issue-ably-token",

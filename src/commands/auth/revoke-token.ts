@@ -14,7 +14,7 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
     }),
   };
 
-  static description = "Revokes the token provided";
+  static description = "Revoke a token";
 
   static examples = [
     "$ ably auth revoke-token TOKEN",

@@ -10,6 +10,7 @@ import {
   progress,
   resource,
   success,
+  timestamp as formatTimestamp,
 } from "../../../utils/output.js";
 
 export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
@@ -111,7 +112,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
           this.log(this.formatJsonOutput(event, flags));
         } else {
           this.log(
-            `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`Channel: ${channelName}`)} | ${chalk.yellow("Occupancy Update")}`,
+            `${formatTimestamp(timestamp)} ${chalk.cyan(`Channel: ${channelName}`)} | ${chalk.yellow("Occupancy Update")}`,
           );
 
           if (message.data !== null && message.data !== undefined) {

@@ -9,7 +9,13 @@ import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import { success, listening, resource } from "../../../utils/output.js";
+import {
+  success,
+  listening,
+  progress,
+  resource,
+  timestamp as formatTimestamp,
+} from "../../../utils/output.js";
 
 export interface OccupancyMetrics {
   connections?: number;
@@ -56,7 +62,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         "Connecting to Ably...",
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log("Connecting to Ably...");
+        this.log(progress("Connecting to Ably"));
       }
 
       // Create Chat client
@@ -273,7 +279,9 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       this.log(this.formatJsonOutput({ success: true, ...logData }, flags));
     } else {
       const prefix = isInitial ? "Initial occupancy" : "Occupancy update";
-      this.log(`[${timestamp}] ${prefix} for room '${roomName}'`);
+      this.log(
+        `${formatTimestamp(timestamp)} ${prefix} for room ${resource(roomName)}`,
+      );
       // Type guard to handle both OccupancyMetrics and OccupancyEvent
       const connections =
         "connections" in occupancyMetrics ? occupancyMetrics.connections : 0;

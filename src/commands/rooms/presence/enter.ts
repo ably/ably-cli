@@ -12,7 +12,12 @@ import chalk from "chalk";
 import { clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import { success, listening, resource } from "../../../utils/output.js";
+import {
+  success,
+  listening,
+  resource,
+  timestamp as formatTimestamp,
+} from "../../../utils/output.js";
 
 export default class RoomsPresenceEnter extends ChatBaseCommand {
   static override args = {
@@ -192,7 +197,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
                 ? `${chalk.dim(`[${this.sequenceCounter}]`)}`
                 : "";
               this.log(
-                `[${timestamp}]${sequencePrefix} ${actionColor(actionSymbol)} ${chalk.blue(member.clientId || "Unknown")} ${actionColor(event.type)}`,
+                `${formatTimestamp(timestamp)}${sequencePrefix} ${actionColor(actionSymbol)} ${chalk.blue(member.clientId || "Unknown")} ${actionColor(event.type)}`,
               );
               if (
                 member.data &&

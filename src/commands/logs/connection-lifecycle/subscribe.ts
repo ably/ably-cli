@@ -5,7 +5,11 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import { listening, success } from "../../../utils/output.js";
+import {
+  listening,
+  success,
+  timestamp as formatTimestamp,
+} from "../../../utils/output.js";
 
 export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
   static override description = "Subscribe to live connection lifecycle logs";
@@ -101,7 +105,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
           this.log(this.formatJsonOutput(event, flags));
         } else {
           this.log(
-            `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`Event: ${event.event}`)}`,
+            `${formatTimestamp(timestamp)} ${chalk.cyan(`Event: ${event.event}`)}`,
           );
 
           if (message.data !== null && message.data !== undefined) {

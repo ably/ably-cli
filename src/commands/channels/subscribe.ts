@@ -6,7 +6,13 @@ import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { formatJson, isJsonData } from "../../utils/json-formatter.js";
 import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
-import { listening, resource, success } from "../../utils/output.js";
+import {
+  listening,
+  progress,
+  resource,
+  success,
+  timestamp as formatTimestamp,
+} from "../../utils/output.js";
 
 export default class ChannelsSubscribe extends AblyBaseCommand {
   static override args = {
@@ -176,7 +182,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           { channel: channel.name },
         );
         if (!this.shouldOutputJson(flags)) {
-          this.log(`Attaching to channel: ${chalk.cyan(channel.name)}...`);
+          this.log(progress(`Attaching to channel: ${resource(channel.name)}`));
         }
 
         // Set up channel state logging
@@ -232,7 +238,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
             // Message header with timestamp and channel info
             this.log(
-              `${chalk.gray(`[${timestamp}]`)}${sequencePrefix} ${chalk.cyan(`Channel: ${channel.name}`)} | ${chalk.yellow(`Event: ${name}`)}`,
+              `${formatTimestamp(timestamp)}${sequencePrefix} ${chalk.cyan(`Channel: ${channel.name}`)} | ${chalk.yellow(`Event: ${name}`)}`,
             );
 
             // Message data with consistent formatting

@@ -5,7 +5,12 @@ import chalk from "chalk";
 import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import { success, listening, resource } from "../../../utils/output.js";
+import {
+  success,
+  listening,
+  resource,
+  timestamp as formatTimestamp,
+} from "../../../utils/output.js";
 
 export default class SpacesMembersEnter extends SpacesBaseCommand {
   static override args = {
@@ -265,7 +270,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
           }
 
           this.log(
-            `[${timestamp}] ${actionColor(actionSymbol)} ${chalk.blue(clientId)} ${actionColor(action)}`,
+            `${formatTimestamp(timestamp)} ${actionColor(actionSymbol)} ${chalk.blue(clientId)} ${actionColor(action)}`,
           );
 
           const hasProfileData =

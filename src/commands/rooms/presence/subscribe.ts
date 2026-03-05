@@ -14,7 +14,13 @@ import chalk from "chalk";
 import { clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import { success, listening, resource } from "../../../utils/output.js";
+import {
+  progress,
+  success,
+  listening,
+  resource,
+  timestamp as formatTimestamp,
+} from "../../../utils/output.js";
 
 export default class RoomsPresenceSubscribe extends ChatBaseCommand {
   static override args = {
@@ -170,7 +176,9 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
 
       if (!this.shouldOutputJson(flags) && this.roomName) {
         this.log(
-          `Fetching current presence members for room ${chalk.cyan(this.roomName)}...`,
+          progress(
+            `Fetching current presence members for room ${resource(this.roomName)}`,
+          ),
         );
         const members: PresenceMember[] = await currentRoom.presence.get();
         if (members.length === 0) {
@@ -242,7 +250,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
             actionColor = chalk.yellow;
           }
           this.log(
-            `[${timestamp}] ${actionColor(actionSymbol)} ${chalk.blue(member.clientId || "Unknown")} ${actionColor(event.type)}`,
+            `${formatTimestamp(timestamp)} ${actionColor(actionSymbol)} ${chalk.blue(member.clientId || "Unknown")} ${actionColor(event.type)}`,
           );
           if (
             member.data &&
@@ -267,10 +275,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       );
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(
-          // Output the exact signal that E2E tests expect (without ANSI codes)
-          "Subscribing to presence events. Press Ctrl+C to exit.",
-        );
+        this.log(listening("Subscribing to presence events."));
       }
 
       // Wait until the user interrupts or the optional duration elapses

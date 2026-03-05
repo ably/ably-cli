@@ -2,8 +2,9 @@ import { Command, Flags } from "@oclif/core";
 import chalk from "chalk";
 import fetch from "node-fetch";
 import ora from "ora";
-import { getCliVersion } from "../utils/version.js";
 import openUrl from "../utils/open-url.js";
+import { success } from "../utils/output.js";
+import { getCliVersion } from "../utils/version.js";
 
 interface StatusResponse {
   status: boolean;
@@ -48,9 +49,7 @@ export default class StatusCommand extends Command {
           "Invalid response from status endpoint: status attribute is missing",
         );
       } else if (data.status) {
-        this.log(
-          `${chalk.green("✓")} Ably services are ${chalk.green("operational")}`,
-        );
+        this.log(success(`Ably services are ${chalk.green("operational")}`));
         this.log("No incidents currently reported");
       } else {
         this.log(
