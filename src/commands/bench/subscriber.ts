@@ -35,7 +35,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
     ...productApiFlags,
     duration: Flags.integer({
       char: "D",
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds",
     }),
   };
 

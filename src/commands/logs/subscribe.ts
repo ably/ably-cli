@@ -27,7 +27,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
   static override flags = {
     ...productApiFlags,
     duration: Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
@@ -47,13 +47,11 @@ export default class LogsSubscribe extends AblyBaseCommand {
     }),
   };
 
-  private cleanupInProgress = false;
   private client: Ably.Realtime | null = null;
 
   async run(): Promise<void> {
     const { flags } = await this.parse(LogsSubscribe);
     let channel: Ably.RealtimeChannel | null = null;
-    let subscribedEvents: string[] = [];
 
     try {
       this.client = await this.createAblyRealtimeClient(flags);
@@ -158,7 +156,6 @@ export default class LogsSubscribe extends AblyBaseCommand {
             this.log(""); // Empty line for better readability
           }
         });
-        subscribedEvents.push(logType);
       }
 
       this.logCliEvent(
@@ -176,7 +173,6 @@ export default class LogsSubscribe extends AblyBaseCommand {
       this.logCliEvent(flags, "logs", "runComplete", "Exiting wait loop", {
         exitReason,
       });
-      this.cleanupInProgress = exitReason === "signal";
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(

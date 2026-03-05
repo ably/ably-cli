@@ -2,7 +2,7 @@ import { type LockOptions } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
-import { clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import { success, listening, resource } from "../../../utils/output.js";
@@ -27,10 +27,15 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
   ];
 
   static override flags = {
-    ...SpacesBaseCommand.globalFlags,
+    ...productApiFlags,
     ...clientIdFlag,
     data: Flags.string({
       description: "Optional data to associate with the lock (JSON format)",
+      required: false,
+    }),
+    duration: Flags.integer({
+      description: "Automatically exit after N seconds",
+      char: "D",
       required: false,
     }),
   };

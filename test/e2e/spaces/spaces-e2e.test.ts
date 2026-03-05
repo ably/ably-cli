@@ -586,15 +586,6 @@ describe("Spaces E2E Tests", () => {
             ) {
               lockReleasedReceived = true;
               break;
-            } else if (
-              i % 5 === 0 &&
-              output.length > 0 &&
-              process.env.E2E_DEBUG
-            ) {
-              // Debug output for troubleshooting
-              console.log(
-                `[DEBUG] Lock release check attempt ${i}: ${output.slice(-200)}`,
-              );
             }
             await new Promise((resolve) => setTimeout(resolve, 300));
           }

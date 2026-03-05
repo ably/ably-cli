@@ -1,6 +1,7 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { resource, success } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class QueuesDeleteCommand extends ControlBaseCommand {
@@ -59,7 +60,7 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
       }
 
       // If not using force flag, prompt for confirmation
-      if (!flags.force) {
+      if (!flags.force && !this.shouldOutputJson(flags)) {
         this.log(`\nYou are about to delete the following queue:`);
         this.log(`Queue ID: ${queue.id}`);
         this.log(`Name: ${queue.name}`);
@@ -81,7 +82,25 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
 
       await controlApi.deleteQueue(appId, queue.id);
 
-      this.log(`Queue "${queue.name}" (ID: ${queue.id}) deleted successfully`);
+      if (this.shouldOutputJson(flags)) {
+        this.log(
+          this.formatJsonOutput(
+            {
+              queue: {
+                id: queue.id,
+                name: queue.name,
+              },
+              success: true,
+              timestamp: new Date().toISOString(),
+            },
+            flags,
+          ),
+        );
+      } else {
+        this.log(
+          success(`Queue deleted: ${resource(queue.name)} (${queue.id}).`),
+        );
+      }
     } catch (error) {
       this.error(
         `Error deleting queue: ${error instanceof Error ? error.message : String(error)}`,

@@ -3,7 +3,7 @@ import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
-import { clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
   success,
@@ -33,7 +33,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
   ];
 
   static override flags = {
-    ...SpacesBaseCommand.globalFlags,
+    ...productApiFlags,
     ...clientIdFlag,
     location: Flags.string({
       description: "Location data to set (JSON format)",
@@ -174,7 +174,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       }
 
       // For E2E tests, force immediate exit regardless of any errors
-      process.exit(0);
+      this.exit(0);
     }
 
     // Original path for interactive use

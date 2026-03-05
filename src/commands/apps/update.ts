@@ -1,6 +1,7 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { progress, resource } from "../../utils/output.js";
 
 export default class AppsUpdateCommand extends ControlBaseCommand {
   static args = {
@@ -59,7 +60,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
 
     try {
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Updating app ${args.id}...`);
+        this.log(progress(`Updating app ${resource(args.id)}`));
       }
 
       const updateData: { name?: string; tlsOnly?: boolean } = {};

@@ -34,7 +34,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
   static override flags = {
     ...productApiFlags,
     duration: Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
@@ -117,7 +117,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
 
           if (message.data !== null && message.data !== undefined) {
             this.log(
-              `${chalk.green("Occupancy Data:")} ${JSON.stringify(message.data, null, 2)}`,
+              `${chalk.dim("Occupancy Data:")} ${JSON.stringify(message.data, null, 2)}`,
             );
           }
 

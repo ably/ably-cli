@@ -2,9 +2,10 @@ import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
-import { productApiFlags } from "../../../flags.js";
+import { productApiFlags, timeRangeFlags } from "../../../flags.js";
 import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
 import { formatTimestamp } from "../../../utils/output.js";
+import { parseTimestamp } from "../../../utils/time.js";
 
 export default class LogsPushHistory extends AblyBaseCommand {
   static override description = "Retrieve push notification log history";
@@ -15,10 +16,13 @@ export default class LogsPushHistory extends AblyBaseCommand {
     "$ ably logs push history --direction forwards",
     "$ ably logs push history --json",
     "$ ably logs push history --pretty-json",
+    '$ ably logs push history --start "2023-01-01T00:00:00Z" --end "2023-01-02T00:00:00Z"',
+    "$ ably logs push history --start 1h",
   ];
 
   static override flags = {
     ...productApiFlags,
+    ...timeRangeFlags,
     direction: Flags.string({
       default: "backwards",
       description: "Direction of log retrieval",
@@ -44,10 +48,19 @@ export default class LogsPushHistory extends AblyBaseCommand {
       const channel = client.channels.get(channelName);
 
       // Get message history
-      const historyOptions = {
+      const historyOptions: Record<string, unknown> = {
         direction: flags.direction as "backwards" | "forwards",
         limit: flags.limit,
       };
+
+      // Add time range if specified
+      if (flags.start) {
+        historyOptions.start = parseTimestamp(flags.start, "start");
+      }
+
+      if (flags.end) {
+        historyOptions.end = parseTimestamp(flags.end, "end");
+      }
 
       const historyPage = await channel.history(historyOptions);
       const messages = historyPage.items;

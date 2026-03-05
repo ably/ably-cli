@@ -1,8 +1,8 @@
 import { type Lock } from "@ably/spaces";
-import { Args, Flags as _Flags } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
-import { clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
@@ -30,10 +30,10 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
   ];
 
   static override flags = {
-    ...SpacesBaseCommand.globalFlags,
+    ...productApiFlags,
     ...clientIdFlag,
-    duration: _Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+    duration: Flags.integer({
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
@@ -274,7 +274,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
           );
         } else {
           this.log(
-            `${formatTimestamp(timestamp)} 🔒 Lock ${chalk.blue(lock.id)} updated`,
+            `${formatTimestamp(timestamp)} Lock ${chalk.blue(lock.id)} updated`,
           );
           this.log(`  ${chalk.dim("Status:")} ${lock.status}`);
           this.log(
@@ -313,8 +313,12 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
       this.logCliEvent(flags, "lock", "executionError", errorMsg, {
         error: errorMsg,
       });
-      if (!this.shouldOutputJson(flags)) {
-        this.log(chalk.red(errorMsg));
+      if (this.shouldOutputJson(flags)) {
+        this.log(
+          this.formatJsonOutput({ error: errorMsg, success: false }, flags),
+        );
+      } else {
+        this.error(errorMsg);
       }
     } finally {
       // Cleanup is now handled by base class finally() method

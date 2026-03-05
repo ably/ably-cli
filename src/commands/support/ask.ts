@@ -35,8 +35,11 @@ export default class AskCommand extends ControlBaseCommand {
 
     const controlApi = this.createControlApi(flags);
     const isInteractive = process.env.ABLY_INTERACTIVE_MODE === "true";
-    const spinner = isInteractive ? null : ora("Thinking...").start();
-    if (isInteractive) {
+    const spinner =
+      isInteractive || this.shouldOutputJson(flags)
+        ? null
+        : ora("Thinking...").start();
+    if (isInteractive && !this.shouldOutputJson(flags)) {
       this.log("Thinking...");
     }
 
@@ -69,56 +72,69 @@ export default class AskCommand extends ControlBaseCommand {
 
       if (spinner) spinner.stop();
 
-      // Display the AI agent's answer
-      // Convert markdown to styled terminal output
-      // Process code blocks first
-      const processedWithCodeBlocks = response.answer.replaceAll(
-        /```(?:javascript|js|html)?\n([\S\s]*?)```/g,
-        (_, codeContent) =>
-          // Return the code block with each line highlighted in cyan
-          codeContent
-            .split("\n")
-            .map((line: string) => chalk.green(`  ${line}`))
-            .join("\n"),
-      );
+      if (this.shouldOutputJson(flags)) {
+        this.log(
+          this.formatJsonOutput(
+            {
+              answer: response.answer,
+              links: response.links,
+              success: true,
+            },
+            flags,
+          ),
+        );
+      } else {
+        // Display the AI agent's answer
+        // Convert markdown to styled terminal output
+        // Process code blocks first
+        const processedWithCodeBlocks = response.answer.replaceAll(
+          /```(?:javascript|js|html)?\n([\S\s]*?)```/g,
+          (_, codeContent) =>
+            // Return the code block with each line highlighted in cyan
+            codeContent
+              .split("\n")
+              .map((line: string) => chalk.green(`  ${line}`))
+              .join("\n"),
+        );
 
-      // Then apply other markdown formatting
-      const formattedAnswer = processedWithCodeBlocks
-        .replaceAll(/\*\*(.*?)\*\*/g, (_, text) => chalk.bold(text))
-        .replaceAll(/\*(.*?)\*/g, (_, text) => chalk.italic(text))
-        .replaceAll(/`(.*?)`/g, (_, text) => chalk.green(text))
-        .replaceAll(
-          /\[(.*?)]\((.*?)\)/g,
-          (_, text, url) => `${text} (${chalk.blueBright(url)})`,
-        )
-        .replaceAll(/^# (.*?)$/gm, (_, text) => chalk.bold.underline(text))
-        .replaceAll(/^## (.*?)$/gm, (_, text) => chalk.bold(text))
-        .replaceAll(/^### (.*?)$/gm, (_, text) => chalk.yellow(text));
+        // Then apply other markdown formatting
+        const formattedAnswer = processedWithCodeBlocks
+          .replaceAll(/\*\*(.*?)\*\*/g, (_, text) => chalk.bold(text))
+          .replaceAll(/\*(.*?)\*/g, (_, text) => chalk.italic(text))
+          .replaceAll(/`(.*?)`/g, (_, text) => chalk.green(text))
+          .replaceAll(
+            /\[(.*?)]\((.*?)\)/g,
+            (_, text, url) => `${text} (${chalk.blueBright(url)})`,
+          )
+          .replaceAll(/^# (.*?)$/gm, (_, text) => chalk.bold.underline(text))
+          .replaceAll(/^## (.*?)$/gm, (_, text) => chalk.bold(text))
+          .replaceAll(/^### (.*?)$/gm, (_, text) => chalk.yellow(text));
 
-      this.log(formattedAnswer);
+        this.log(formattedAnswer);
 
-      // Display the links section if there are links
-      if (response.links && response.links.length > 0) {
-        this.log("");
-        this.log(chalk.bold("Helpful Links:"));
-        for (const [index, link] of response.links.entries()) {
-          this.log(
-            `${index + 1}. ${chalk.cyan(link.title)} - ${chalk.blue(link.url)}`,
-          );
+        // Display the links section if there are links
+        if (response.links && response.links.length > 0) {
+          this.log("");
+          this.log(chalk.bold("Helpful Links:"));
+          for (const [index, link] of response.links.entries()) {
+            this.log(
+              `${index + 1}. ${chalk.cyan(link.title)} - ${chalk.blue(link.url)}`,
+            );
+          }
         }
+
+        // Suggest continuing the conversation
+        this.log("");
+        this.log(chalk.italic("To ask a follow-up question, run:"));
+        this.log(
+          chalk.yellow.italic(
+            `  $ ${this.config.bin} help ask --continue "Your follow-up question"`,
+          ),
+        );
       }
 
       // Store the conversation for future reference
       this.configManager.storeHelpContext(args.question, response.answer);
-
-      // Suggest continuing the conversation
-      this.log("");
-      this.log(chalk.italic("To ask a follow-up question, run:"));
-      this.log(
-        chalk.yellow.italic(
-          `  $ ${this.config.bin} help ask --continue "Your follow-up question"`,
-        ),
-      );
     } catch (error) {
       if (spinner) {
         spinner.fail("Failed to get a response from the Ably AI agent");

@@ -1,6 +1,8 @@
 import { Flags } from "@oclif/core";
-import { SpacesBaseCommand } from "../../spaces-base-command.js";
 import chalk from "chalk";
+
+import { productApiFlags } from "../../flags.js";
+import { SpacesBaseCommand } from "../../spaces-base-command.js";
 
 interface SpaceMetrics {
   connections?: number;
@@ -35,7 +37,7 @@ export default class SpacesList extends SpacesBaseCommand {
   ];
 
   static override flags = {
-    ...SpacesBaseCommand.globalFlags,
+    ...productApiFlags,
     limit: Flags.integer({
       default: 100,
       description: "Maximum number of results to return (default: 100)",

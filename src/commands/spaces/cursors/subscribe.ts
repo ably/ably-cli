@@ -1,9 +1,9 @@
 import { type CursorUpdate } from "@ably/spaces";
-import { Args, Flags as _Flags } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 
-import { clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
@@ -31,10 +31,10 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
   ];
 
   static override flags = {
-    ...SpacesBaseCommand.globalFlags,
+    ...productApiFlags,
     ...clientIdFlag,
-    duration: _Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+    duration: Flags.integer({
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
@@ -187,7 +187,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
                 flags,
               );
             } else {
-              this.log(chalk.red(errorMsg));
+              this.logToStderr(errorMsg);
             }
           }
         };
@@ -333,8 +333,10 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
         "Listening for cursor updates...",
       );
 
-      // Log the ready signal for E2E tests
-      this.log("Subscribing to cursor movements");
+      if (!this.shouldOutputJson(flags)) {
+        // Log the ready signal for E2E tests
+        this.log("Subscribing to cursor movements");
+      }
 
       // Print success message
       if (!this.shouldOutputJson(flags)) {

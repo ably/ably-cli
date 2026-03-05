@@ -1,6 +1,9 @@
 import { Args, Flags } from "@oclif/core";
+import chalk from "chalk";
+
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
+import { progress, resource, success } from "../../utils/output.js";
 
 // Define interfaces for the batch-publish command
 interface BatchMessage {
@@ -245,8 +248,8 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
         } as BatchContent;
       }
 
-      if (!this.shouldSuppressOutput(flags)) {
-        this.log("Sending batch publish request...");
+      if (!this.shouldOutputJson(flags)) {
+        this.log(progress("Sending batch publish request"));
       }
 
       // Make the batch publish request using the REST client's request method
@@ -280,7 +283,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
               ),
             );
           } else {
-            this.log("Batch publish successful!");
+            this.log(success("Batch publish successful."));
             this.log(
               `Response: ${this.formatJsonOutput({ responses: responseItems }, flags)}`,
             );
@@ -329,11 +332,13 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
                 batchResponses.forEach((item: BatchResponseItem) => {
                   if (item.error) {
                     this.log(
-                      `Failed to publish to channel '${item.channel}': ${item.error.message} (${item.error.code})`,
+                      `${chalk.red("✗")} Failed to publish to channel ${resource(item.channel)}: ${item.error.message} (${item.error.code})`,
                     );
                   } else {
                     this.log(
-                      `Published to channel '${item.channel}' with messageId: ${item.messageId}`,
+                      success(
+                        `Published to channel ${resource(item.channel)} with messageId: ${item.messageId}.`,
+                      ),
                     );
                   }
                 });

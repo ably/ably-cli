@@ -40,10 +40,10 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
     const { args, flags } = await this.parse(ChannelRulesDeleteCommand);
 
     const controlApi = this.createControlApi(flags);
-    let appId: string | undefined;
+
+    let appId: string | undefined = flags.app;
 
     try {
-      let appId = flags.app;
       if (!appId) {
         appId = await this.resolveAppId(flags);
       }

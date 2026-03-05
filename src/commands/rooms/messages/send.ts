@@ -1,9 +1,9 @@
 import { Args, Flags } from "@oclif/core";
 import { ChatClient, ConnectionStatusChange, JsonObject } from "@ably/chat";
 
-import { clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { success, resource } from "../../../utils/output.js";
+import { progress, success, resource } from "../../../utils/output.js";
 
 // Define interfaces for the message send command
 interface MessageToSend {
@@ -55,7 +55,7 @@ export default class MessagesSend extends ChatBaseCommand {
   ];
 
   static override flags = {
-    ...ChatBaseCommand.globalFlags,
+    ...productApiFlags,
     ...clientIdFlag,
     count: Flags.integer({
       char: "c",
@@ -197,7 +197,7 @@ export default class MessagesSend extends ChatBaseCommand {
         { count, delay },
       );
       if (count > 1 && !this.shouldOutputJson(flags)) {
-        this.log(`Sending ${count} messages with ${delay}ms delay...`);
+        this.log(progress(`Sending ${count} messages with ${delay}ms delay`));
       }
 
       // Track send progress

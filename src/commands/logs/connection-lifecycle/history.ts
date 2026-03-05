@@ -3,8 +3,10 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
-import { productApiFlags } from "../../../flags.js";
+import { productApiFlags, timeRangeFlags } from "../../../flags.js";
 import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
+import { formatTimestamp } from "../../../utils/output.js";
+import { parseTimestamp } from "../../../utils/time.js";
 
 export default class LogsConnectionLifecycleHistory extends AblyBaseCommand {
   static override description = "Retrieve connection lifecycle log history";
@@ -15,10 +17,13 @@ export default class LogsConnectionLifecycleHistory extends AblyBaseCommand {
     "$ ably logs connection-lifecycle history --direction forwards",
     "$ ably logs connection-lifecycle history --json",
     "$ ably logs connection-lifecycle history --pretty-json",
+    '$ ably logs connection-lifecycle history --start "2023-01-01T00:00:00Z" --end "2023-01-02T00:00:00Z"',
+    "$ ably logs connection-lifecycle history --start 1h",
   ];
 
   static override flags = {
     ...productApiFlags,
+    ...timeRangeFlags,
     direction: Flags.string({
       default: "backwards",
       description: "Direction of log retrieval",
@@ -48,6 +53,15 @@ export default class LogsConnectionLifecycleHistory extends AblyBaseCommand {
         direction: flags.direction as "backwards" | "forwards",
         limit: flags.limit,
       };
+
+      // Add time range if specified
+      if (flags.start) {
+        historyParams.start = parseTimestamp(flags.start, "start");
+      }
+
+      if (flags.end) {
+        historyParams.end = parseTimestamp(flags.end, "end");
+      }
 
       // Get history
       const history = await channel.history(historyParams);
@@ -90,7 +104,9 @@ export default class LogsConnectionLifecycleHistory extends AblyBaseCommand {
             ? new Date(message.timestamp).toISOString()
             : "Unknown timestamp";
 
-          this.log(chalk.dim(`[${index + 1}] ${timestamp}`));
+          this.log(
+            `${chalk.dim(`[${index + 1}]`)} ${formatTimestamp(timestamp)}`,
+          );
 
           // Event name
           if (message.name) {

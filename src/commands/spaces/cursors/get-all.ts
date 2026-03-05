@@ -1,7 +1,7 @@
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
-import { clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import isTestMode from "../../../utils/test-mode.js";
 import { progress, success, resource } from "../../../utils/output.js";
@@ -35,7 +35,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
   ];
 
   static override flags = {
-    ...SpacesBaseCommand.globalFlags,
+    ...productApiFlags,
     ...clientIdFlag,
   };
 
@@ -163,9 +163,8 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
             const x = cursor.position.x;
             const y = cursor.position.y;
 
-            // Clear the line and write the update
-            process.stdout.write(
-              `\r${chalk.gray("►")} ${chalk.blue(clientDisplay)}: (${chalk.yellow(x)}, ${chalk.yellow(y)})${" ".repeat(30)}`,
+            this.log(
+              `${chalk.gray("►")} ${chalk.blue(clientDisplay)}: (${chalk.yellow(x)}, ${chalk.yellow(y)})`,
             );
           }
         }
@@ -184,13 +183,6 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
       const waitTime = isTestMode() ? 500 : 5000;
       await new Promise<void>((resolve) => {
         setTimeout(() => {
-          if (
-            !this.shouldOutputJson(flags) &&
-            this.shouldUseTerminalUpdates()
-          ) {
-            // Clear the last update line
-            process.stdout.write("\r" + " ".repeat(60) + "\r");
-          }
           resolve();
         }, waitTime);
       });
@@ -416,7 +408,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
         const message = isConnectionError
           ? "Connection was closed before operation completed. Please try again."
           : `Error getting cursors: ${errorMessage}`;
-        this.log(chalk.red(message));
+        this.error(message);
       }
     }
   }

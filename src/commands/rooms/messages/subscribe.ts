@@ -2,10 +2,11 @@ import { Args, Flags } from "@oclif/core";
 import { ChatMessageEvent, ChatClient } from "@ably/chat"; // Import ChatClient and StatusSubscription
 import chalk from "chalk";
 
-import { clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
+  progress,
   success,
   listening,
   resource,
@@ -55,14 +56,14 @@ export default class MessagesSubscribe extends ChatBaseCommand {
   ];
 
   static override flags = {
-    ...ChatBaseCommand.globalFlags,
+    ...productApiFlags,
     ...clientIdFlag,
     "show-metadata": Flags.boolean({
       default: false,
       description: "Display message metadata if available",
     }),
     duration: Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
@@ -151,7 +152,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
 
         // Message content with consistent formatting
         this.log(
-          `${roomPrefix}${formatTimestamp(timestamp)}${sequencePrefix} ${chalk.cyan(`${author}:`)} ${message.text}`,
+          `${roomPrefix}${formatTimestamp(timestamp)}${sequencePrefix} ${chalk.blue(`${author}:`)} ${message.text}`,
         );
 
         // Show metadata if enabled and available
@@ -279,12 +280,14 @@ export default class MessagesSubscribe extends ChatBaseCommand {
 
       const roomList =
         this.roomNames.length > 1
-          ? this.roomNames.map((r) => chalk.cyan(r)).join(", ")
-          : chalk.cyan(this.roomNames[0]);
+          ? this.roomNames.map((r) => resource(r)).join(", ")
+          : resource(this.roomNames[0]);
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          `Attaching to room${this.roomNames.length > 1 ? "s" : ""}: ${roomList}...`,
+          progress(
+            `Attaching to room${this.roomNames.length > 1 ? "s" : ""}: ${roomList}`,
+          ),
         );
       }
 

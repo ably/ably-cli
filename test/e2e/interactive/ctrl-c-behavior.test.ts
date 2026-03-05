@@ -156,11 +156,9 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
 
         proc.stdout?.on("data", (data) => {
           output += data.toString();
-          if (process.env.DEBUG_TEST) console.log("STDOUT:", data.toString());
         });
         proc.stderr?.on("data", (data) => {
           output += data.toString();
-          if (process.env.DEBUG_TEST) console.log("STDERR:", data.toString());
         });
 
         // Wait for prompt using simple polling
@@ -679,27 +677,18 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
           const text = data.toString();
           output += text;
 
-          if (process.env.DEBUG_TEST) {
-            console.log("STDOUT:", text);
-          }
-
           // Check for the specific error
           if (
             text.includes("setRawMode EIO") ||
             text.includes("Failed to start interactive mode")
           ) {
             hasError = true;
-            console.error("DETECTED ERROR:", text);
           }
         });
 
         proc.stderr?.on("data", (data) => {
           const text = data.toString();
           output += text;
-
-          if (process.env.DEBUG_TEST) {
-            console.log("STDERR:", text);
-          }
 
           if (
             text.includes("setRawMode EIO") ||

@@ -1,26 +1,28 @@
 import { Args } from "@oclif/core";
 import { ChatClient, Room, OccupancyData } from "@ably/chat";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { productApiFlags } from "../../../flags.js";
+import { resource } from "../../../utils/output.js";
 
 export default class RoomsOccupancyGet extends ChatBaseCommand {
-  static args = {
+  static override args = {
     room: Args.string({
       description: "Room to get occupancy for",
       required: true,
     }),
   };
 
-  static description = "Get current occupancy metrics for a room";
+  static override description = "Get current occupancy metrics for a room";
 
-  static examples = [
+  static override examples = [
     "$ ably rooms occupancy get my-room",
     '$ ABLY_API_KEY="YOUR_API_KEY" ably rooms occupancy get my-room',
     "$ ably rooms occupancy get my-room --json",
     "$ ably rooms occupancy get my-room --pretty-json",
   ];
 
-  static flags = {
-    ...ChatBaseCommand.globalFlags,
+  static override flags = {
+    ...productApiFlags,
   };
 
   private chatClient: ChatClient | null = null;
@@ -83,7 +85,7 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
           ),
         );
       } else {
-        this.log(`Occupancy metrics for room '${roomName}':\n`);
+        this.log(`Occupancy metrics for room ${resource(roomName)}:\n`);
         this.log(`Connections: ${occupancyMetrics.connections ?? 0}`);
 
         this.log(`Presence Members: ${occupancyMetrics.presenceMembers ?? 0}`);

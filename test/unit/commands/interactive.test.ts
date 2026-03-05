@@ -186,9 +186,8 @@ describe("Interactive Command", () => {
         }
       });
 
-      child.stderr.on("data", (data) => {
-        // Log any errors for debugging
-        console.error("STDERR:", data.toString());
+      child.stderr.on("data", () => {
+        // stderr captured but not logged
       });
 
       child.on("exit", (code, signal) => {

@@ -8,6 +8,7 @@ import {
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../../chat-base-command.js";
+import { productApiFlags } from "../../../../flags.js";
 import { resource, success } from "../../../../utils/output.js";
 
 // Map CLI-friendly type names to SDK MessageReactionType values
@@ -54,7 +55,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
   ];
 
   static override flags = {
-    ...ChatBaseCommand.globalFlags,
+    ...productApiFlags,
     type: Flags.string({
       description: "The type of reaction (unique, distinct, or multiple)",
       options: Object.keys(REACTION_TYPE_MAP),
@@ -185,7 +186,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
       } else {
         this.log(
           success(
-            `Removed reaction ${chalk.yellow(reaction)} from message ${resource(messageSerial)} in room ${resource(room)}`,
+            `Removed reaction ${chalk.yellow(reaction)} from message ${resource(messageSerial)} in room ${resource(room)}.`,
           ),
         );
       }

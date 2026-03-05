@@ -82,6 +82,22 @@ export const endpointFlag = {
 };
 
 /**
+ * Shared start/end time range flags.
+ * Accepts ISO 8601, Unix ms, or relative shorthand (e.g., "1h", "30m", "2d").
+ * Parse values with `parseTimestamp()` from `src/utils/time.ts`.
+ */
+export const timeRangeFlags = {
+  end: Flags.string({
+    description:
+      'End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")',
+  }),
+  start: Flags.string({
+    description:
+      'Start time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")',
+  }),
+};
+
+/**
  * Composite: core + hidden product API flags.
  * Use for product API commands (channels, connections, logs, bench, etc.)
  */

@@ -1,7 +1,7 @@
 import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
-import { resource, success } from "../../../utils/output.js";
+import { progress, resource, success } from "../../../utils/output.js";
 
 export default class KeysCreateCommand extends ControlBaseCommand {
   static description = "Create a new API key for an app";
@@ -84,7 +84,11 @@ export default class KeysCreateCommand extends ControlBaseCommand {
 
     try {
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Creating key "${flags.name}" for app ${appId}...`);
+        this.log(
+          progress(
+            `Creating key ${resource(flags.name)} for app ${resource(appId)}`,
+          ),
+        );
       }
 
       const key = await controlApi.createKey(appId, {

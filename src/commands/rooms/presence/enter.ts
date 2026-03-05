@@ -9,7 +9,7 @@ import {
 } from "@ably/chat";
 import { Args, Flags, Interfaces } from "@oclif/core";
 import chalk from "chalk";
-import { clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
@@ -36,7 +36,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
     "$ ably rooms presence enter my-room --duration 30",
   ];
   static override flags = {
-    ...ChatBaseCommand.globalFlags,
+    ...productApiFlags,
     ...clientIdFlag,
 
     "show-others": Flags.boolean({
@@ -44,7 +44,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       description: "Show other presence events while present (default: false)",
     }),
     duration: Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
@@ -95,11 +95,6 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
     }
 
     try {
-      // Always show the readiness signal first, before attempting auth
-      if (!this.shouldOutputJson(flags)) {
-        this.log(listening("Staying present."));
-      }
-
       // Create clients
       this.chatClient = await this.createChatClient(flags);
 

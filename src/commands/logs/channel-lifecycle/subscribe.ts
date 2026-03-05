@@ -24,6 +24,11 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
+    duration: Flags.integer({
+      description: "Automatically exit after N seconds",
+      char: "D",
+      required: false,
+    }),
     rewind: Flags.integer({
       default: 0,
       description: "Number of messages to rewind when subscribing (default: 0)",
@@ -149,7 +154,7 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
       );
 
       this.logCliEvent(flags, "logs", "listening", "Listening for logs...");
-      await waitUntilInterruptedOrTimeout();
+      await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error: unknown) {
       const err = error as Error;
       this.logCliEvent(

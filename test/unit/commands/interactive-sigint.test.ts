@@ -27,7 +27,7 @@ describe("Interactive Mode - SIGINT Handling", () => {
         },
       });
 
-      let _output = "";
+      let capturedOutput = "";
       let errorOutput = "";
       let commandStarted = false;
       let promptSeen = false;
@@ -35,7 +35,7 @@ describe("Interactive Mode - SIGINT Handling", () => {
 
       child.stdout.on("data", (data) => {
         const output = data.toString();
-        _output += output;
+        capturedOutput += output;
 
         // Count prompts
         const promptMatches = output.match(/ably> /g);
@@ -85,7 +85,7 @@ describe("Interactive Mode - SIGINT Handling", () => {
         // Should have returned to prompt (at least 2 prompts)
         expect(promptCount).toBeGreaterThanOrEqual(2);
         // Should show interrupt feedback
-        expect(_output + errorOutput).toContain("↓ Stopping");
+        expect(capturedOutput + errorOutput).toContain("↓ Stopping");
         // Should not have EIO errors
         expect(errorOutput).not.toContain("Error: read EIO");
         expect(errorOutput).not.toContain("setRawMode EIO");
@@ -95,9 +95,8 @@ describe("Interactive Mode - SIGINT Handling", () => {
       // Timeout fallback
       setTimeout(() => {
         if (!commandStarted) {
-          console.error("Test timeout: command never started");
+          child.stdin.write("exit\n");
         }
-        child.stdin.write("exit\n");
       }, timeout - 1000);
     },
     timeout,
@@ -122,12 +121,12 @@ describe("Interactive Mode - SIGINT Handling", () => {
         },
       });
 
-      let _output = "";
+      let capturedOutput = "";
       let sigintSent = false;
       let exitSent = false;
 
       child.stdout.on("data", (data) => {
-        _output += data.toString();
+        capturedOutput += data.toString();
 
         // Wait for initial prompt
         if (
@@ -160,8 +159,8 @@ describe("Interactive Mode - SIGINT Handling", () => {
       child.on("exit", (code) => {
         expect([0, 42]).toContain(code);
         // We should either see ^C or the signal message
-        const hasCtrlC = _output.includes("^C");
-        const hasSignalMessage = _output.includes("Signal received");
+        const hasCtrlC = capturedOutput.includes("^C");
+        const hasSignalMessage = capturedOutput.includes("Signal received");
         expect(hasCtrlC || hasSignalMessage).toBe(true);
         done();
       });
@@ -169,7 +168,6 @@ describe("Interactive Mode - SIGINT Handling", () => {
       // Timeout fallback
       setTimeout(() => {
         if (!exitSent) {
-          console.error("Test timeout: no SIGINT response detected");
           child.stdin.write("exit\n");
         }
       }, timeout - 1000);
@@ -196,11 +194,11 @@ describe("Interactive Mode - SIGINT Handling", () => {
         },
       });
 
-      let _output = "";
+      let capturedOutput = "";
       let commandTyped = false;
 
       child.stdout.on("data", (data) => {
-        _output += data.toString();
+        capturedOutput += data.toString();
 
         if (
           !commandTyped &&
@@ -229,7 +227,7 @@ describe("Interactive Mode - SIGINT Handling", () => {
       child.on("exit", (code) => {
         expect([0, 42]).toContain(code);
         // Should see ^C when canceling partial input
-        expect(_output).toContain("^C");
+        expect(capturedOutput).toContain("^C");
         done();
       });
 

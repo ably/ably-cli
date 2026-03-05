@@ -41,7 +41,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
       description: "Optional JSON data to associate with the presence",
     }),
     duration: Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
@@ -157,10 +157,10 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
               presenceMessage.data !== undefined
             ) {
               if (isJsonData(presenceMessage.data)) {
-                this.log(chalk.green("Data:"));
+                this.log(chalk.dim("Data:"));
                 this.log(JSON.stringify(presenceMessage.data, null, 2));
               } else {
-                this.log(`${chalk.green("Data:")} ${presenceMessage.data}`);
+                this.log(`${chalk.dim("Data:")} ${presenceMessage.data}`);
               }
             }
 

@@ -61,7 +61,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       description: "Enable delta compression for messages",
     }),
     duration: Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
@@ -83,10 +83,10 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(ChannelsSubscribe);
-    const _args = await this.parse(ChannelsSubscribe);
+    const parseResult = await this.parse(ChannelsSubscribe);
 
     // Get all channel names from argv
-    const channelNames = _args.argv as string[];
+    const channelNames = parseResult.argv as string[];
     let channels: Ably.RealtimeChannel[] = [];
 
     try {
@@ -258,7 +258,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       await Promise.all(attachPromises);
 
       // Log the ready signal for E2E tests
-      if (channelNames.length === 1) {
+      if (channelNames.length === 1 && !this.shouldOutputJson(flags)) {
         this.log(`Successfully attached to channel: ${channelNames[0]}`);
       }
 

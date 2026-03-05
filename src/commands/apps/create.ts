@@ -1,7 +1,7 @@
 import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { resource, success } from "../../utils/output.js";
+import { progress, resource, success } from "../../utils/output.js";
 
 export default class AppsCreateCommand extends ControlBaseCommand {
   static description = "Create a new app";
@@ -31,7 +31,7 @@ export default class AppsCreateCommand extends ControlBaseCommand {
 
     try {
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Creating app "${flags.name}"...`);
+        this.log(progress(`Creating app ${resource(flags.name)}`));
       }
 
       const app = await controlApi.createApp({

@@ -2,6 +2,7 @@ import { RoomStatus, ChatClient, RoomStatusChange } from "@ably/chat";
 import { Args, Flags } from "@oclif/core";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { productApiFlags } from "../../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import { listening, resource, success } from "../../../utils/output.js";
 
@@ -34,10 +35,15 @@ export default class TypingKeystroke extends ChatBaseCommand {
   ];
 
   static override flags = {
-    ...ChatBaseCommand.globalFlags,
+    ...productApiFlags,
     "auto-type": Flags.boolean({
       description: "Automatically keep typing indicator active",
       default: false,
+    }),
+    duration: Flags.integer({
+      description: "Automatically exit after N seconds",
+      char: "D",
+      required: false,
     }),
   };
 

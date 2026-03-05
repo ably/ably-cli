@@ -1,8 +1,8 @@
 import type { LocationsEvents } from "@ably/spaces";
-import { Args, Flags as _Flags } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
-import { clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
@@ -50,10 +50,10 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
   ];
 
   static override flags = {
-    ...SpacesBaseCommand.globalFlags,
+    ...productApiFlags,
     ...clientIdFlag,
-    duration: _Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+    duration: Flags.integer({
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
@@ -373,7 +373,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
                 flags,
               );
             } else {
-              this.log(chalk.red(errorMsg));
+              this.logToStderr(errorMsg);
             }
           }
         };
@@ -399,7 +399,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
             flags,
           );
         } else {
-          this.log(chalk.red(errorMsg));
+          this.logToStderr(errorMsg);
         }
       }
 

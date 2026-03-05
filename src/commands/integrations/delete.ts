@@ -54,7 +54,7 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
       const integration = await controlApi.getRule(appId, args.integrationId);
 
       // If not using force flag, prompt for confirmation
-      if (!flags.force) {
+      if (!flags.force && !this.shouldOutputJson(flags)) {
         this.log(`\nYou are about to delete the following integration:`);
         this.log(`Integration ID: ${integration.id}`);
         this.log(`Type: ${integration.ruleType}`);
@@ -76,13 +76,31 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
 
       await controlApi.deleteRule(appId, args.integrationId);
 
-      this.log(
-        success(`Integration rule deleted: ${resource(integration.id)}.`),
-      );
-      this.log(`ID: ${integration.id}`);
-      this.log(`App ID: ${integration.appId}`);
-      this.log(`Type: ${integration.ruleType}`);
-      this.log(`Source Type: ${integration.source.type}`);
+      if (this.shouldOutputJson(flags)) {
+        this.log(
+          this.formatJsonOutput(
+            {
+              integration: {
+                appId: integration.appId,
+                id: integration.id,
+                ruleType: integration.ruleType,
+                sourceType: integration.source.type,
+              },
+              success: true,
+              timestamp: new Date().toISOString(),
+            },
+            flags,
+          ),
+        );
+      } else {
+        this.log(
+          success(`Integration rule deleted: ${resource(integration.id)}.`),
+        );
+        this.log(`ID: ${integration.id}`);
+        this.log(`App ID: ${integration.appId}`);
+        this.log(`Type: ${integration.ruleType}`);
+        this.log(`Source Type: ${integration.source.type}`);
+      }
     } catch (error) {
       this.error(
         `Error deleting integration: ${error instanceof Error ? error.message : String(error)}`,

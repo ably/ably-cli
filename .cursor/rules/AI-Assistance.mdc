@@ -124,14 +124,18 @@ This document provides guidance for AI assistants working with the Ably CLI code
 - **Event types**: `chalk.yellow(eventType)` — for action/event type labels
 - **Warnings**: `chalk.yellow("Warning: ...")` — for non-fatal warnings
 - **Errors**: Use `this.error()` (oclif standard) for fatal errors, not `this.log(chalk.red(...))`
+- **JSON errors**: In catch blocks, emit structured JSON when `--json` is active: `this.formatJsonOutput({ error: errorMsg, success: false }, flags)`. Never silently swallow errors in JSON mode.
+- **History output**: Use `[index] timestamp` ordering: `` `${chalk.dim(`[${index + 1}]`)} ${formatTimestamp(timestamp)}` ``
 - **No app error**: `'No app specified. Use --app flag or select an app with "ably apps switch"'`
 
 ### Flag conventions
 - All flags kebab-case: `--my-flag` (never camelCase)
 - `--app`: `"The app ID or name (defaults to current app)"` (for commands with `resolveAppId`), `"The app ID (defaults to current app)"` (for commands without)
 - `--limit`: `"Maximum number of results to return (default: N)"`
-- `--duration`: `"Automatically exit after N seconds (0 = run indefinitely)"`, alias `-D`
+- `--duration`: `"Automatically exit after N seconds"`, alias `-D`
 - `--rewind`: `"Number of messages to rewind when subscribing (default: 0)"`
+- `--start`/`--end`: Use `timeRangeFlags` from `src/flags.ts` and parse with `parseTimestamp()` from `src/utils/time.ts`. Accepts ISO 8601, Unix ms, or relative (e.g., `"1h"`, `"30m"`, `"2d"`).
+- `--direction`: `"Direction of message retrieval (default: backwards)"` or `"Direction of log retrieval"`, options `["backwards", "forwards"]`.
 - Channels use "publish", Rooms use "send" (matches SDK terminology)
 - Command descriptions: imperative mood, sentence case, no trailing period (e.g., `"Subscribe to presence events on a channel"`)
 
