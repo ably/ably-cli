@@ -3,9 +3,10 @@ import * as Ably from "ably";
 import { randomUUID } from "node:crypto";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { productApiFlags } from "../../flags.js";
 
 export default class IssueAblyTokenCommand extends AblyBaseCommand {
-  static description = "Creates an Ably Token with capabilities";
+  static description = "Create an Ably Token with capabilities";
 
   static examples = [
     "$ ably auth issue-ably-token",
@@ -16,13 +17,13 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
     "$ ably auth issue-ably-token --json",
     "$ ably auth issue-ably-token --pretty-json",
     "$ ably auth issue-ably-token --token-only",
-    '$ ably channels publish --token "$(ably auth issue-ably-token --token-only)" my-channel "Hello"',
+    '$ ABLY_TOKEN="$(ably auth issue-ably-token --token-only)" ably channels publish my-channel "Hello"',
   ];
 
   static flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     app: Flags.string({
-      description: "App ID to use (uses current app if not specified)",
+      description: "The app ID or name (defaults to current app)",
       env: "ABLY_APP_ID",
     }),
     capability: Flags.string({

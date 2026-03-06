@@ -2,8 +2,15 @@ import { type Lock } from "@ably/spaces";
 import { Args, Flags as _Flags } from "@oclif/core";
 import chalk from "chalk";
 
+import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import {
+  listening,
+  progress,
+  resource,
+  formatTimestamp,
+} from "../../../utils/output.js";
 
 export default class SpacesLocksSubscribe extends SpacesBaseCommand {
   static override args = {
@@ -24,9 +31,9 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
 
   static override flags = {
     ...SpacesBaseCommand.globalFlags,
+    ...clientIdFlag,
     duration: _Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -153,7 +160,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
       );
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Connecting to space: ${chalk.cyan(spaceName)}...`);
+        this.log(progress(`Connecting to space: ${resource(spaceName)}`));
       }
 
       // Get current locks
@@ -165,7 +172,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
       );
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          `Fetching current locks for space ${chalk.cyan(spaceName)}...`,
+          progress(`Fetching current locks for space ${resource(spaceName)}`),
         );
       }
 
@@ -229,9 +236,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
         "Subscribing to lock events",
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log(
-          `\n${chalk.dim("Subscribing to lock events. Press Ctrl+C to exit.")}\n`,
-        );
+        this.log(listening("Subscribing to lock events."));
       }
       this.logCliEvent(
         flags,
@@ -268,7 +273,9 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
             this.formatJsonOutput({ success: true, ...eventData }, flags),
           );
         } else {
-          this.log(`[${timestamp}] 🔒 Lock ${chalk.blue(lock.id)} updated`);
+          this.log(
+            `${formatTimestamp(timestamp)} 🔒 Lock ${chalk.blue(lock.id)} updated`,
+          );
           this.log(`  ${chalk.dim("Status:")} ${lock.status}`);
           this.log(
             `  ${chalk.dim("Member:")} ${lock.member?.clientId || "Unknown"}`,

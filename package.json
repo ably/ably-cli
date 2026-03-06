@@ -85,6 +85,21 @@
       "aliases"
     ],
     "helpClass": "./dist/src/help.js",
+    "theme": {
+      "alias": "cyan",
+      "bin": "cyan",
+      "command": "cyan",
+      "commandSummary": "whiteBright",
+      "dollarSign": "green",
+      "flag": "whiteBright",
+      "flagDefaultValue": "yellow",
+      "flagOptions": "yellow",
+      "flagRequired": "red",
+      "flagSeparator": "dim",
+      "sectionHeader": "bold",
+      "topic": "cyan",
+      "version": "green"
+    },
     "warn-if-update-available": {
       "timeoutInDays": 7,
       "message": "📦 Update available: <%= config.name %> <%= chalk.yellow(config.version) %> → <%= chalk.greenBright(latest) %>\nRun <%= chalk.cyan('npm install -g @ably/cli') %> to update.",

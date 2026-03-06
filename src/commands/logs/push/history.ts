@@ -2,7 +2,9 @@ import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
+import { productApiFlags } from "../../../flags.js";
 import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
+import { formatTimestamp } from "../../../utils/output.js";
 
 export default class LogsPushHistory extends AblyBaseCommand {
   static override description = "Retrieve push notification log history";
@@ -16,7 +18,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     direction: Flags.string({
       default: "backwards",
       description: "Direction of log retrieval",
@@ -24,7 +26,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
     }),
     limit: Flags.integer({
       default: 100,
-      description: "Maximum number of logs to retrieve",
+      description: "Maximum number of results to return (default: 100)",
     }),
   };
 
@@ -129,7 +131,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
 
           // Format the log output
           this.log(
-            `${chalk.dim(`[${timestamp}]`)} Channel: ${chalk.cyan(channelName)} | Event: ${eventColor(event)}`,
+            `${formatTimestamp(timestamp)} Channel: ${chalk.cyan(channelName)} | Event: ${eventColor(event)}`,
           );
           if (message.data) {
             this.log("Data:");

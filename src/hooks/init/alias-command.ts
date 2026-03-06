@@ -16,7 +16,7 @@ const singularToPluralMap: Record<string, string> = {
 
 /**
  * This hook intercepts command execution and redirects singular command forms to their plural equivalents
- * This allows commands like 'ably account stats' to work as an alias for 'ably accounts stats'
+ * This allows commands like 'ably account list' to work as an alias for 'ably accounts list'
  * without requiring separate alias files for each command
  */
 const hook: Hook<"init"> = async function () {

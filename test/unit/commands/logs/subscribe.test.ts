@@ -61,7 +61,7 @@ describe("logs:subscribe command", () => {
     it("should subscribe to log channel and show initial message", async () => {
       const { stdout } = await runCommand(["logs:subscribe"], import.meta.url);
 
-      expect(stdout).toContain("Subscribing to app logs");
+      expect(stdout).toContain("Subscribed to app logs");
       expect(stdout).toContain("Press Ctrl+C to exit");
     });
 

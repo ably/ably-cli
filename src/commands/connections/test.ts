@@ -3,6 +3,8 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { clientIdFlag, productApiFlags } from "../../flags.js";
+import { progress, success as successMsg } from "../../utils/output.js";
 
 export default class ConnectionsTest extends AblyBaseCommand {
   static override description = "Test connection to Ably";
@@ -14,7 +16,8 @@ export default class ConnectionsTest extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
+    ...clientIdFlag,
     transport: Flags.string({
       default: "all",
       description:
@@ -167,9 +170,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
           const partialSuccess = wsSuccess || xhrSuccess;
 
           if (allSuccess) {
-            this.log(
-              `${chalk.green("✓")} All connection tests passed successfully`,
-            );
+            this.log(successMsg("All connection tests passed successfully."));
           } else if (partialSuccess) {
             this.log(
               `${chalk.yellow("!")} Some connection tests succeeded, but others failed`,
@@ -184,7 +185,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
         case "ws": {
           if (wsSuccess) {
             this.log(
-              `${chalk.green("✓")} WebSocket connection test passed successfully`,
+              successMsg("WebSocket connection test passed successfully."),
             );
           } else {
             this.log(`${chalk.red("✗")} WebSocket connection test failed`);
@@ -195,9 +196,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
 
         case "xhr": {
           if (xhrSuccess) {
-            this.log(
-              `${chalk.green("✓")} HTTP connection test passed successfully`,
-            );
+            this.log(successMsg("HTTP connection test passed successfully."));
           } else {
             this.log(`${chalk.red("✗")} HTTP connection test failed`);
           }
@@ -223,7 +222,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
       "Testing WebSocket connection...",
     );
     if (!this.shouldOutputJson(flags)) {
-      this.log("Testing WebSocket connection to Ably...");
+      this.log(progress("Testing WebSocket connection to Ably"));
     }
 
     try {
@@ -271,7 +270,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
             { connectionId: client.connection.id },
           );
           if (!this.shouldOutputJson(flags)) {
-            this.log(`${chalk.green("✓")} WebSocket connection successful`);
+            this.log(successMsg("WebSocket connection successful."));
             this.log(
               `  Connection ID: ${chalk.cyan(client.connection.id || "unknown")}`,
             );
@@ -333,7 +332,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
       "Testing HTTP connection...",
     );
     if (!this.shouldOutputJson(flags)) {
-      this.log("Testing HTTP connection to Ably...");
+      this.log(progress("Testing HTTP connection to Ably"));
     }
 
     try {
@@ -380,7 +379,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
             { connectionId: client.connection.id },
           );
           if (!this.shouldOutputJson(flags)) {
-            this.log(`${chalk.green("✓")} HTTP connection successful`);
+            this.log(successMsg("HTTP connection successful."));
             this.log(
               `  Connection ID: ${chalk.cyan(client.connection.id || "unknown")}`,
             );

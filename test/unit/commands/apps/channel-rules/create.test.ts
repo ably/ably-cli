@@ -29,7 +29,7 @@ describe("apps:channel-rules:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Channel rule created successfully");
+      expect(stdout).toContain("Channel rule created.");
       expect(stdout).toContain(mockRuleId);
     });
 
@@ -59,7 +59,7 @@ describe("apps:channel-rules:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Channel rule created successfully");
+      expect(stdout).toContain("Channel rule created.");
       expect(stdout).toContain("Persisted: Yes");
     });
 
@@ -89,7 +89,7 @@ describe("apps:channel-rules:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Channel rule created successfully");
+      expect(stdout).toContain("Channel rule created.");
       expect(stdout).toContain("Push Enabled: Yes");
     });
 

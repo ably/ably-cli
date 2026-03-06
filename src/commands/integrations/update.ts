@@ -34,7 +34,7 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
   static flags = {
     ...ControlBaseCommand.globalFlags,
     app: Flags.string({
-      description: "App ID or name of the app containing the integration rule",
+      description: "The app ID or name (defaults to current app)",
       required: false,
     }),
     "channel-filter": Flags.string({

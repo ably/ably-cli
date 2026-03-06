@@ -1,11 +1,12 @@
 import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
-import { StatsDisplay } from "../../../services/stats-display.js";
-import { ControlBaseCommand } from "../../../control-base-command.js";
-import type { BaseFlags } from "../../../types/cli.js";
-import type { ControlApi } from "../../../services/control-api.js";
 
-export default class AppsStatsCommand extends ControlBaseCommand {
+import { ControlBaseCommand } from "../../control-base-command.js";
+import { StatsDisplay } from "../../services/stats-display.js";
+import type { BaseFlags } from "../../types/cli.js";
+import type { ControlApi } from "../../services/control-api.js";
+
+export default class StatsAppCommand extends ControlBaseCommand {
   static args = {
     id: Args.string({
       description: "App ID to get stats for (uses default app if not provided)",
@@ -16,17 +17,17 @@ export default class AppsStatsCommand extends ControlBaseCommand {
   static description = "Get app stats with optional live updates";
 
   static examples = [
-    "$ ably apps stats",
-    "$ ably apps stats app-id",
-    "$ ably apps stats --unit hour",
-    "$ ably apps stats app-id --unit hour",
-    "$ ably apps stats app-id --start 1618005600000 --end 1618091999999",
-    "$ ably apps stats app-id --limit 10",
-    "$ ably apps stats app-id --json",
-    "$ ably apps stats app-id --pretty-json",
-    "$ ably apps stats --live",
-    "$ ably apps stats app-id --live",
-    "$ ably apps stats --live --interval 15",
+    "$ ably stats app",
+    "$ ably stats app app-id",
+    "$ ably stats app --unit hour",
+    "$ ably stats app app-id --unit hour",
+    "$ ably stats app app-id --start 1618005600000 --end 1618091999999",
+    "$ ably stats app app-id --limit 10",
+    "$ ably stats app app-id --json",
+    "$ ably stats app app-id --pretty-json",
+    "$ ably stats app --live",
+    "$ ably stats app app-id --live",
+    "$ ably stats app --live --interval 15",
   ];
 
   static flags = {
@@ -44,7 +45,7 @@ export default class AppsStatsCommand extends ControlBaseCommand {
     }),
     limit: Flags.integer({
       default: 10,
-      description: "Maximum number of stats records to return",
+      description: "Maximum number of results to return (default: 10)",
     }),
 
     live: Flags.boolean({
@@ -66,7 +67,7 @@ export default class AppsStatsCommand extends ControlBaseCommand {
   private statsDisplay: StatsDisplay | null = null; // Track when we're already fetching stats
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(AppsStatsCommand);
+    const { args, flags } = await this.parse(StatsAppCommand);
 
     // Use provided app ID or fall back to default app ID
     const appId = args.id || this.configManager.getCurrentAppId();
@@ -139,7 +140,7 @@ export default class AppsStatsCommand extends ControlBaseCommand {
     try {
       this.isPolling = true;
       if (flags.debug) {
-        console.log(
+        this.log(
           chalk.dim(`\n[${new Date().toISOString()}] Polling for new stats...`),
         );
       }
@@ -147,7 +148,7 @@ export default class AppsStatsCommand extends ControlBaseCommand {
       await this.fetchAndDisplayStats(appId, flags, controlApi);
     } catch (error) {
       if (flags.debug) {
-        console.error(
+        this.logToStderr(
           chalk.red(
             `Error during stats polling: ${error instanceof Error ? error.message : String(error)}`,
           ),
@@ -190,7 +191,7 @@ export default class AppsStatsCommand extends ControlBaseCommand {
             this.pollStats(appId, flags, controlApi);
           } else if (flags.debug) {
             // Only show this message if debug flag is enabled
-            console.log(
+            this.log(
               chalk.yellow(
                 "Skipping poll - previous request still in progress",
               ),

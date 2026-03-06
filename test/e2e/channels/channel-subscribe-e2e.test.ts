@@ -74,7 +74,7 @@ describe("Channel Subscribe E2E Tests", () => {
       return;
     }
 
-    const readySignal = "Successfully attached to channel"; // Wait for channel to be fully attached
+    const readySignal = "Subscribed to channel"; // Wait for channel to be fully attached
 
     // Start the subscribe process, waiting for the ready signal
     subscribeProcessInfo = await runLongRunningBackgroundProcess(

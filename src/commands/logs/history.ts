@@ -3,6 +3,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { productApiFlags } from "../../flags.js";
 import { formatJson, isJsonData } from "../../utils/json-formatter.js";
 
 export default class LogsHistory extends AblyBaseCommand {
@@ -17,7 +18,7 @@ export default class LogsHistory extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     direction: Flags.string({
       default: "backwards",
       description: "Direction of log retrieval",
@@ -25,7 +26,7 @@ export default class LogsHistory extends AblyBaseCommand {
     }),
     limit: Flags.integer({
       default: 100,
-      description: "Maximum number of logs to retrieve",
+      description: "Maximum number of results to return (default: 100)",
     }),
   };
 

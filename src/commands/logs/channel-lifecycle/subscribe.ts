@@ -3,8 +3,15 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
+import { productApiFlags } from "../../../flags.js";
 import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import {
+  listening,
+  resource,
+  success,
+  formatTimestamp,
+} from "../../../utils/output.js";
 
 export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
   static override description =
@@ -16,14 +23,10 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
-    json: Flags.boolean({
-      default: false,
-      description: "Output results as JSON",
-    }),
+    ...productApiFlags,
     rewind: Flags.integer({
       default: 0,
-      description: "Number of messages to rewind when subscribing",
+      description: "Number of messages to rewind when subscribing (default: 0)",
     }),
   };
 
@@ -78,8 +81,8 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
         `Subscribing to ${channelName}...`,
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Subscribing to ${chalk.cyan(channelName)}...`);
-        this.log("Press Ctrl+C to exit");
+        this.log(success(`Subscribed to ${resource(channelName)}.`));
+        this.log(listening("Listening for channel lifecycle logs."));
         this.log("");
       }
 
@@ -124,7 +127,7 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
 
         // Format the log output with consistent styling
         this.log(
-          `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`Channel: ${channelName}`)} | ${eventColor(`Event: ${event}`)}`,
+          `${formatTimestamp(timestamp)} ${chalk.cyan(`Channel: ${channelName}`)} | ${eventColor(`Event: ${event}`)}`,
         );
 
         if (message.data) {
@@ -142,7 +145,7 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
         flags,
         "logs",
         "subscribed",
-        `Successfully subscribed to ${channelName}`,
+        `Subscribed to ${channelName}`,
       );
 
       this.logCliEvent(flags, "logs", "listening", "Listening for logs...");

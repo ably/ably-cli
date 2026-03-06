@@ -1,7 +1,7 @@
 import { Args, Flags } from "@oclif/core";
-import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { resource, success } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class IntegrationsDeleteCommand extends ControlBaseCommand {
@@ -23,7 +23,7 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
   static flags = {
     ...ControlBaseCommand.globalFlags,
     app: Flags.string({
-      description: "App ID or name to delete the integration from",
+      description: "The app ID or name (defaults to current app)",
       required: false,
     }),
     force: Flags.boolean({
@@ -76,7 +76,9 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
 
       await controlApi.deleteRule(appId, args.integrationId);
 
-      this.log(chalk.green("✓ Integration deleted successfully!"));
+      this.log(
+        success(`Integration rule deleted: ${resource(integration.id)}.`),
+      );
       this.log(`ID: ${integration.id}`);
       this.log(`App ID: ${integration.appId}`);
       this.log(`Type: ${integration.ruleType}`);

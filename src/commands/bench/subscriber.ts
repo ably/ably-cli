@@ -4,7 +4,9 @@ import chalk from "chalk";
 import Table from "cli-table3";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { productApiFlags } from "../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
+import { progress, resource, success } from "../../utils/output.js";
 
 interface TestMetrics {
   endToEndLatencies: number[]; // Publisher -> Subscriber
@@ -30,11 +32,10 @@ export default class BenchSubscriber extends AblyBaseCommand {
   static override examples = ["$ ably bench subscriber my-channel"];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     duration: Flags.integer({
-      char: "d",
-      description:
-        "Duration to subscribe for in seconds (default: indefinite until Ctrl+C)",
+      char: "D",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
     }),
   };
 
@@ -90,7 +91,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
       // Show initial status
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Attaching to channel: ${chalk.cyan(args.channel)}...`);
+        this.log(progress(`Attaching to channel: ${resource(args.channel)}`));
       }
 
       await this.handlePresence(channel, metrics, flags);
@@ -111,8 +112,8 @@ export default class BenchSubscriber extends AblyBaseCommand {
       // Show success message
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          chalk.green(
-            `✓ Subscribed to channel: ${chalk.cyan(args.channel)}. Waiting for benchmark messages...`,
+          success(
+            `Subscribed to channel: ${resource(args.channel)}. Waiting for benchmark messages.`,
           ),
         );
       }

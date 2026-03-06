@@ -1,7 +1,7 @@
 import { Flags } from "@oclif/core";
-import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { resource, success } from "../../utils/output.js";
 
 // Interface for basic integration data structure
 interface IntegrationData {
@@ -26,7 +26,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
   static flags = {
     ...ControlBaseCommand.globalFlags,
     app: Flags.string({
-      description: "App ID or name to create the integration in",
+      description: "The app ID or name (defaults to current app)",
       required: false,
     }),
     "channel-filter": Flags.string({
@@ -155,7 +155,11 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
           this.formatJsonOutput({ integration: createdIntegration }, flags),
         );
       } else {
-        this.log(chalk.green("✓ Integration created successfully!"));
+        this.log(
+          success(
+            `Integration rule created: ${resource(createdIntegration.id)}.`,
+          ),
+        );
         this.log(`ID: ${createdIntegration.id}`);
         this.log(`App ID: ${createdIntegration.appId}`);
         this.log(`Type: ${createdIntegration.ruleType}`);

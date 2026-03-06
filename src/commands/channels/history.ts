@@ -3,7 +3,9 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { productApiFlags } from "../../flags.js";
 import { formatJson, isJsonData } from "../../utils/json-formatter.js";
+import { resource } from "../../utils/output.js";
 
 export default class ChannelsHistory extends AblyBaseCommand {
   static override args = {
@@ -25,7 +27,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     cipher: Flags.string({
       description: "Decryption key for encrypted messages (AES-128)",
     }),
@@ -40,7 +42,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
     }),
     limit: Flags.integer({
       default: 50,
-      description: "Maximum number of messages to retrieve (default: 50)",
+      description: "Maximum number of results to return (default: 50)",
     }),
     start: Flags.string({
       description: "Start time for the history query (ISO 8601 format)",
@@ -101,7 +103,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
         }
 
         this.log(
-          `Found ${chalk.cyan(messages.length.toString())} messages in the history of channel ${chalk.green(channelName)}:`,
+          `Found ${chalk.cyan(messages.length.toString())} ${messages.length === 1 ? "message" : "messages"} in the history of channel: ${resource(channelName)}`,
         );
         this.log("");
 
@@ -111,13 +113,17 @@ export default class ChannelsHistory extends AblyBaseCommand {
             : "Unknown timestamp";
 
           this.log(chalk.dim(`[${index + 1}] ${timestamp}`));
-          this.log(`Event: ${chalk.yellow(message.name || "(none)")}`);
+          this.log(
+            `${chalk.dim("Event:")} ${chalk.yellow(message.name || "(none)")}`,
+          );
 
           if (message.clientId) {
-            this.log(`Client ID: ${chalk.blue(message.clientId)}`);
+            this.log(
+              `${chalk.dim("Client ID:")} ${chalk.blue(message.clientId)}`,
+            );
           }
 
-          this.log("Data:");
+          this.log(chalk.dim("Data:"));
           if (isJsonData(message.data)) {
             this.log(formatJson(message.data));
           } else {

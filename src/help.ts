@@ -116,52 +116,7 @@ export default class CustomHelp extends Help {
     // For topic commands, we need to add the COMMANDS section manually
     const output = this.formatCommand(command);
     const cleanedOutput = this.removeTrailingWhitespace(output);
-    console.log(this.formatHelpOutput(cleanedOutput));
-
-    // Check if this is a topic command by looking for subcommands
-    const topicPrefix = `${command.id}:`;
-    const subcommands = this.config.commands.filter(
-      (cmd) =>
-        cmd.id.startsWith(topicPrefix) &&
-        !cmd.hidden &&
-        !cmd.id.slice(topicPrefix.length).includes(":"),
-    );
-
-    if (subcommands.length > 0 && !output.includes("COMMANDS")) {
-      // This is a topic command without a COMMANDS section, add it
-      console.log("\nCOMMANDS");
-
-      const commandsList = await Promise.all(
-        subcommands.map(async (cmd) => {
-          try {
-            const loaded = await cmd.load();
-            const formattedId = cmd.id.replaceAll(":", " ");
-            const binPrefix = this.interactiveMode ? "" : `${this.config.bin} `;
-            return {
-              name: `${binPrefix}${formattedId}`,
-              description: loaded.description || "",
-            };
-          } catch {
-            return null;
-          }
-        }),
-      );
-
-      const validCommands = commandsList.filter(
-        (cmd) => cmd !== null,
-      ) as Array<{ name: string; description: string }>;
-
-      if (validCommands.length > 0) {
-        const maxLength = Math.max(
-          ...validCommands.map((cmd) => cmd.name.length),
-        );
-
-        validCommands.forEach((cmd) => {
-          const paddedName = cmd.name.padEnd(maxLength + 2);
-          console.log(`  ${paddedName}${cmd.description}`);
-        });
-      }
-    }
+    this.log(this.formatHelpOutput(cleanedOutput));
 
     // Only exit if not in interactive mode
     if (process.env.ABLY_INTERACTIVE_MODE !== "true") {
@@ -191,7 +146,7 @@ export default class CustomHelp extends Help {
     const output = this.formatCommand(command);
     const cleanedOutput = this.removeTrailingWhitespace(output);
     // Apply stripAnsi when needed
-    console.log(this.formatHelpOutput(cleanedOutput));
+    this.log(this.formatHelpOutput(cleanedOutput));
 
     // Only exit if not in interactive mode
     if (process.env.ABLY_INTERACTIVE_MODE !== "true") {
@@ -205,7 +160,7 @@ export default class CustomHelp extends Help {
     const output = this.formatRoot();
     const cleanedOutput = this.removeTrailingWhitespace(output);
     // Apply stripAnsi when needed
-    console.log(this.formatHelpOutput(cleanedOutput));
+    this.log(this.formatHelpOutput(cleanedOutput));
 
     // Only exit if not in interactive mode
     if (process.env.ABLY_INTERACTIVE_MODE !== "true") {
@@ -267,7 +222,7 @@ export default class CustomHelp extends Help {
       formatReleaseStatus(config.version, true),
       "",
       `${chalk.bold("USAGE")}`,
-      `  ${this.interactiveMode ? "ably> " : "$ " + config.bin + " "}[COMMAND]`,
+      `  ${this.interactiveMode ? "ably> " : chalk.green("$") + " " + chalk.cyan(config.bin) + " "}[COMMAND]`,
       "",
       chalk.bold("COMMANDS"), // Use the desired single heading
     ];
@@ -314,7 +269,9 @@ export default class CustomHelp extends Help {
         combined.map((c) => {
           const description =
             c.description && this.render(c.description.split("\n")[0]);
-          const descString = description ? chalk.dim(description) : undefined;
+          const descString = description
+            ? chalk.whiteBright(description)
+            : undefined;
           return [chalk.cyan(c.id), descString];
         }),
         { indentation: 2, spacer: "\n" }, // Adjust spacing if needed
@@ -406,7 +363,7 @@ export default class CustomHelp extends Help {
     // Display commands with proper alignment
     commands.forEach(([cmd, desc]) => {
       const paddedCmd = cmd.padEnd(maxCmdLength + 2);
-      lines.push(`  ${chalk.cyan(paddedCmd)}${desc}`);
+      lines.push(`  ${chalk.cyan(paddedCmd)}${chalk.whiteBright(desc)}`);
     });
 
     // Always show help instruction
@@ -447,13 +404,24 @@ export default class CustomHelp extends Help {
 
     if (subcommands.length > 0 && !output.includes("COMMANDS")) {
       // Add COMMANDS section for topic commands
-      const commandsLines: string[] = ["\n\nCOMMANDS"];
+      const commandsLines: string[] = [`\n\n${chalk.bold("COMMANDS")}`];
 
-      subcommands.forEach((cmd) => {
+      const entries = subcommands.map((cmd) => {
         const formattedId = cmd.id.replaceAll(":", " ");
         const binPrefix = this.interactiveMode ? "" : `${this.config.bin} `;
-        const paddedId = `${binPrefix}${formattedId}`.padEnd(30);
-        commandsLines.push(`  ${paddedId}${cmd.description || ""}`);
+        return {
+          name: `${binPrefix}${formattedId}`,
+          description: cmd.description || "",
+        };
+      });
+
+      const maxLength = Math.max(...entries.map((e) => e.name.length));
+
+      entries.forEach((entry) => {
+        const paddedName = entry.name.padEnd(maxLength + 2);
+        commandsLines.push(
+          `  ${chalk.cyan(paddedName)}${chalk.whiteBright(entry.description)}`,
+        );
       });
 
       output += commandsLines.join("\n");
@@ -588,7 +556,7 @@ export default class CustomHelp extends Help {
             c.description && this.render(c.description.split("\n")[0]);
           return [
             chalk.cyan(c.id),
-            description ? chalk.dim(description) : undefined,
+            description ? chalk.whiteBright(description) : undefined,
           ];
         }),
         { indentation: 2 },
@@ -618,7 +586,7 @@ export default class CustomHelp extends Help {
             c.description && this.render(c.description.split("\n")[0]);
           return [
             chalk.cyan(c.name),
-            description ? chalk.dim(description) : undefined,
+            description ? chalk.whiteBright(description) : undefined,
           ];
         })
         .map(([left, right]) =>

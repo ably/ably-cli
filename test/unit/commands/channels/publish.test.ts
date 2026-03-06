@@ -28,7 +28,7 @@ describe("ChannelsPublish", function () {
     expect(restMock.channels.get).toHaveBeenCalledWith("test-channel");
     expect(channel.publish).toHaveBeenCalledOnce();
     expect(channel.publish.mock.calls[0][0]).toEqual({ data: "hello" });
-    expect(stdout).toContain("Message published successfully");
+    expect(stdout).toContain("Message published to channel");
   });
 
   it("should publish a message using Realtime successfully", async function () {
@@ -51,7 +51,7 @@ describe("ChannelsPublish", function () {
     expect(channel.publish.mock.calls[0][0]).toEqual({
       data: "realtime hello",
     });
-    expect(stdout).toContain("Message published successfully");
+    expect(stdout).toContain("Message published to channel");
   });
 
   it("should handle API errors during REST publish", async function () {
@@ -141,7 +141,7 @@ describe("ChannelsPublish", function () {
     );
 
     expect(channel.publish).toHaveBeenCalledTimes(3);
-    expect(stdout).toContain("messages published successfully");
+    expect(stdout).toContain("messages published to channel");
   });
 
   it("should output JSON when requested", async function () {
@@ -397,6 +397,84 @@ describe("ChannelsPublish", function () {
       expect(stdout).toContain("4/5");
       expect(stdout).toContain("1");
       expect(stdout).toMatch(/error/i);
+    });
+  });
+
+  describe("should publish a message with data and extras", function () {
+    it("should include extras.push when provided in message data", async function () {
+      const restMock = getMockAblyRest();
+      const channel = restMock.channels._getChannel("test-channel");
+
+      await runCommand(
+        [
+          "channels:publish",
+          "test-channel",
+          '{"data":"hello","extras":{"push":{"notification":{"title":"Test","body":"Push notification"}}}}',
+          "--transport",
+          "rest",
+        ],
+        import.meta.url,
+      );
+
+      expect(channel.publish).toHaveBeenCalledOnce();
+      const publishArgs = channel.publish.mock.calls[0][0];
+      expect(publishArgs).toHaveProperty("data", "hello");
+      expect(publishArgs).toHaveProperty("extras");
+      expect(publishArgs.extras).toHaveProperty("push");
+      expect(publishArgs.extras.push).toEqual({
+        notification: { title: "Test", body: "Push notification" },
+      });
+    });
+
+    it("should publish a message when only extras is provided without data", async function () {
+      const restMock = getMockAblyRest();
+      const channel = restMock.channels._getChannel("test-channel");
+
+      await runCommand(
+        [
+          "channels:publish",
+          "test-channel",
+          '{"extras":{"push":{"notification":{"title":"Extras only","body":"No data field"}}}}',
+          "--transport",
+          "rest",
+        ],
+        import.meta.url,
+      );
+
+      expect(channel.publish).toHaveBeenCalledOnce();
+      const publishArgs = channel.publish.mock.calls[0][0];
+      expect(publishArgs).toHaveProperty("extras");
+      expect(publishArgs.extras).toHaveProperty("push");
+      expect(publishArgs.extras.push).toEqual({
+        notification: { title: "Extras only", body: "No data field" },
+      });
+      expect(publishArgs).not.toHaveProperty("data");
+    });
+
+    it("should preserve name when extras is provided without data", async function () {
+      const restMock = getMockAblyRest();
+      const channel = restMock.channels._getChannel("test-channel");
+
+      await runCommand(
+        [
+          "channels:publish",
+          "test-channel",
+          '{"name":"eventName","extras":{"push":{"notification":{"title":"With name","body":"No data field"}}}}',
+          "--transport",
+          "rest",
+        ],
+        import.meta.url,
+      );
+
+      expect(channel.publish).toHaveBeenCalledOnce();
+      const publishArgs = channel.publish.mock.calls[0][0];
+      expect(publishArgs).toHaveProperty("name", "eventName");
+      expect(publishArgs).toHaveProperty("extras");
+      expect(publishArgs.extras).toHaveProperty("push");
+      expect(publishArgs.extras.push).toEqual({
+        notification: { title: "With name", body: "No data field" },
+      });
+      expect(publishArgs).not.toHaveProperty("data");
     });
   });
 });

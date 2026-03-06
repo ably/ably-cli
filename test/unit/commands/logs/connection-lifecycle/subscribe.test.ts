@@ -42,7 +42,7 @@ describe("LogsConnectionLifecycleSubscribe", function () {
       undefined,
     );
     expect(channel.subscribe).toHaveBeenCalled();
-    expect(stdout).toContain("Subscribing");
+    expect(stdout).toContain("Subscribed to connection lifecycle logs");
   });
 
   it("should handle rewind parameter", async function () {

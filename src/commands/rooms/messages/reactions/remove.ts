@@ -8,6 +8,7 @@ import {
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../../chat-base-command.js";
+import { resource, success } from "../../../../utils/output.js";
 
 // Map CLI-friendly type names to SDK MessageReactionType values
 const REACTION_TYPE_MAP: Record<string, MessageReactionType> = {
@@ -47,7 +48,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
 
   static override examples = [
     "$ ably rooms messages reactions remove my-room message-serial 👍",
-    '$ ably rooms messages reactions remove --api-key "YOUR_API_KEY" my-room message-serial ❤️',
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably rooms messages reactions remove my-room message-serial ❤️',
     "$ ably rooms messages reactions remove my-room message-serial 👍 --type unique",
     "$ ably rooms messages reactions remove my-room message-serial 👍 --json",
   ];
@@ -183,7 +184,9 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
         this.log(this.formatJsonOutput(resultData, flags));
       } else {
         this.log(
-          `${chalk.green("✓")} Removed reaction ${chalk.yellow(reaction)} from message ${chalk.cyan(messageSerial)} in room ${chalk.cyan(room)}`,
+          success(
+            `Removed reaction ${chalk.yellow(reaction)} from message ${resource(messageSerial)} in room ${resource(room)}`,
+          ),
         );
       }
     } catch (error) {

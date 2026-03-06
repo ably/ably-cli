@@ -54,7 +54,7 @@ export default class QueuesListCommand extends ControlBaseCommand {
     ...ControlBaseCommand.globalFlags,
 
     app: Flags.string({
-      description: "App ID or name to list queues for",
+      description: "The app ID or name (defaults to current app)",
       required: false,
     }),
   };

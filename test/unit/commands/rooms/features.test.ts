@@ -46,7 +46,7 @@ describe("rooms feature commands", function () {
 
       expect(room.attach).toHaveBeenCalled();
       expect(room.occupancy.subscribe).toHaveBeenCalled();
-      expect(stdout).toContain("Subscribing");
+      expect(stdout).toContain("Subscribed to occupancy");
     });
 
     it("should display occupancy updates when received", async function () {

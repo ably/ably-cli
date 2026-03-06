@@ -1,3 +1,4 @@
+import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import type { Namespace } from "../../../services/control-api.js";
@@ -27,13 +28,17 @@ export default class ChannelRulesListCommand extends ControlBaseCommand {
 
   static examples = [
     "$ ably apps:channel-rules:list",
-    "$ ably apps:channel-rules:list --app-id my-app-id",
+    "$ ably apps:channel-rules:list --app my-app-id",
     "$ ably apps:channel-rules:list --json",
     "$ ably apps:channel-rules:list --pretty-json",
   ];
 
   static flags = {
     ...ControlBaseCommand.flags,
+    app: Flags.string({
+      description: "The app ID or name (defaults to current app)",
+      required: false,
+    }),
   };
 
   async run(): Promise<void> {
@@ -45,7 +50,7 @@ export default class ChannelRulesListCommand extends ControlBaseCommand {
         this.jsonError(
           {
             error:
-              'No app specified. Use --app-id flag or select an app with "ably apps switch"',
+              'No app specified. Use --app flag or select an app with "ably apps switch"',
             status: "error",
             success: false,
           },
@@ -53,7 +58,7 @@ export default class ChannelRulesListCommand extends ControlBaseCommand {
         );
       } else {
         this.error(
-          'No app specified. Use --app-id flag or select an app with "ably apps switch"',
+          'No app specified. Use --app flag or select an app with "ably apps switch"',
         );
       }
 

@@ -11,8 +11,16 @@ import { Args, Interfaces, Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 
+import { clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import {
+  progress,
+  success,
+  listening,
+  resource,
+  formatTimestamp,
+} from "../../../utils/output.js";
 
 export default class RoomsPresenceSubscribe extends ChatBaseCommand {
   static override args = {
@@ -32,9 +40,9 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
 
   static override flags = {
     ...ChatBaseCommand.globalFlags,
+    ...clientIdFlag,
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -54,10 +62,13 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
     this.roomName = args.room;
 
     try {
-      // Always show the readiness signal first, before attempting auth
+      // Show a progress signal early so E2E harnesses know the command is running
       if (!this.shouldOutputJson(flags)) {
-        // Output the exact signal that E2E tests expect (without ANSI codes)
-        this.log("Subscribing to presence events. Press Ctrl+C to exit.");
+        this.log(
+          progress(
+            `Subscribing to presence in room: ${resource(this.roomName!)}`,
+          ),
+        );
       }
 
       // Try to create clients, but don't fail if auth fails
@@ -151,9 +162,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
           !this.shouldOutputJson(flags) &&
           this.roomName
         ) {
-          this.log(
-            `${chalk.green("Successfully connected to room:")} ${chalk.cyan(this.roomName)}`,
-          );
+          this.log(success(`Connected to room: ${resource(this.roomName)}.`));
         } else if (
           statusChange.current === RoomStatus.Failed &&
           !this.shouldOutputJson(flags)
@@ -166,7 +175,9 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
 
       if (!this.shouldOutputJson(flags) && this.roomName) {
         this.log(
-          `Fetching current presence members for room ${chalk.cyan(this.roomName)}...`,
+          progress(
+            `Fetching current presence members for room ${resource(this.roomName)}`,
+          ),
         );
         const members: PresenceMember[] = await currentRoom.presence.get();
         if (members.length === 0) {
@@ -238,7 +249,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
             actionColor = chalk.yellow;
           }
           this.log(
-            `[${timestamp}] ${actionColor(actionSymbol)} ${chalk.blue(member.clientId || "Unknown")} ${actionColor(event.type)}`,
+            `${formatTimestamp(timestamp)} ${actionColor(actionSymbol)} ${chalk.blue(member.clientId || "Unknown")} ${actionColor(event.type)}`,
           );
           if (
             member.data &&
@@ -259,14 +270,16 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         flags,
         "presence",
         "subscribedToEvents",
-        "Successfully subscribed to presence events",
+        "Subscribed to presence events",
       );
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          // Output the exact signal that E2E tests expect (without ANSI codes)
-          "Subscribing to presence events. Press Ctrl+C to exit.",
+          success(
+            `Subscribed to presence in room: ${resource(this.roomName!)}.`,
+          ),
         );
+        this.log(listening("Listening for presence events."));
       }
 
       // Wait until the user interrupts or the optional duration elapses

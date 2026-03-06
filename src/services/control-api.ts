@@ -353,25 +353,28 @@ export class ControlApi {
     return this.request<AppStats[]>(`/apps/${appId}/stats${queryString}`);
   }
 
-  // Get a specific key by ID or key value
+  // Get a specific key by ID, key value, key name (APP_ID.KEY_ID), or label
   async getKey(appId: string, keyIdOrValue: string): Promise<Key> {
-    // Check if it's a full key (containing colon) or just an ID
-    const isFullKey = keyIdOrValue.includes(":");
+    const keys = await this.listKeys(appId);
 
-    if (isFullKey) {
-      // If it's a full key, we need to list all keys and find the matching one
-      const keys = await this.listKeys(appId);
-      const matchingKey = keys.find((k) => k.key === keyIdOrValue);
+    const matchingKey = keys.find((k) => {
+      // Full key value (contains colon) e.g. "s57drg.3bnE1Q:secretpart"
+      if (keyIdOrValue.includes(":") && k.key === keyIdOrValue) return true;
+      // Full key name e.g. "s57drg.3bnE1Q"
+      if (keyIdOrValue.includes(".") && `${k.appId}.${k.id}` === keyIdOrValue)
+        return true;
+      // Key ID only e.g. "3bnE1Q"
+      if (k.id === keyIdOrValue) return true;
+      // Key label/name e.g. "Root"
+      if (k.name === keyIdOrValue) return true;
+      return false;
+    });
 
-      if (!matchingKey) {
-        throw new Error(`Key "${keyIdOrValue}" not found`);
-      }
-
-      return matchingKey;
+    if (!matchingKey) {
+      throw new Error(`Key "${keyIdOrValue}" not found`);
     }
 
-    // If it's just an ID, we can fetch it directly
-    return this.request<Key>(`/apps/${appId}/keys/${keyIdOrValue}`);
+    return matchingKey;
   }
 
   // Get user and account info
@@ -549,8 +552,10 @@ export class ControlApi {
       if (this.logErrors) {
         console.error("Control API Request Error:", {
           message: errorDetails.message,
+          method,
           response: errorDetails.response || "No response body",
           statusCode: errorDetails.statusCode,
+          url,
         });
       }
 

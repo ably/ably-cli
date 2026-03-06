@@ -4,6 +4,8 @@ import chalk from "chalk";
 import Table from "cli-table3";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { productApiFlags } from "../../flags.js";
+import { success } from "../../utils/output.js";
 
 interface TestMetrics {
   batchCount: number;
@@ -66,7 +68,7 @@ export default class BenchPublisher extends AblyBaseCommand {
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     "message-size": Flags.integer({
       default: 100,
       description: "Size of the message payload in bytes",
@@ -527,7 +529,7 @@ export default class BenchPublisher extends AblyBaseCommand {
         process.stdout.write("\u001B[2J\u001B[0f");
       }
 
-      this.log("\n\n" + chalk.green("Benchmark Complete") + "\n");
+      this.log("\n\n" + success("Benchmark complete.") + "\n");
       const summaryTable = new Table({
         head: [chalk.white("Metric"), chalk.white("Value")],
         style: { border: [], head: [] },

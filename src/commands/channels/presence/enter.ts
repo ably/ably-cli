@@ -3,8 +3,15 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
+import { clientIdFlag, productApiFlags } from "../../../flags.js";
 import { isJsonData } from "../../../utils/json-formatter.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import {
+  listening,
+  resource,
+  success,
+  formatTimestamp,
+} from "../../../utils/output.js";
 
 export default class ChannelsPresenceEnter extends AblyBaseCommand {
   static override args = {
@@ -20,22 +27,21 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
   static override examples = [
     '$ ably channels presence enter my-channel --client-id "client123"',
     '$ ably channels presence enter my-channel --client-id "client123" --data \'{"name":"John","status":"online"}\'',
-    '$ ably channels presence enter my-channel --api-key "YOUR_API_KEY"',
-    '$ ably channels presence enter my-channel --token "YOUR_ABLY_TOKEN"',
     "$ ably channels presence enter my-channel --show-others",
     "$ ably channels presence enter my-channel --json",
     "$ ably channels presence enter my-channel --pretty-json",
     "$ ably channels presence enter my-channel --duration 30",
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably channels presence enter my-channel',
   ];
 
   static override flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
+    ...clientIdFlag,
     data: Flags.string({
       description: "Optional JSON data to associate with the presence",
     }),
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -143,7 +149,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
               ? `${chalk.dim(`[${this.sequenceCounter}]`)}`
               : "";
             this.log(
-              `${chalk.gray(`[${timestamp}]`)}${sequencePrefix} ${chalk.cyan(`Channel: ${channelName}`)} | ${chalk.yellow(`Action: ${presenceMessage.action}`)} | ${chalk.blue(`Client: ${presenceMessage.clientId || "N/A"}`)}`,
+              `${formatTimestamp(timestamp)}${sequencePrefix} ${chalk.cyan(`Channel: ${channelName}`)} | ${chalk.yellow(`Action: ${presenceMessage.action}`)} | ${chalk.blue(`Client: ${presenceMessage.clientId || "N/A"}`)}`,
             );
 
             if (
@@ -185,7 +191,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
         flags,
         "presence",
         "entered",
-        `Successfully entered presence on channel ${channelName}`,
+        `Entered presence on channel ${channelName}`,
         enterEvent,
       );
 
@@ -193,17 +199,13 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
         this.log(this.formatJsonOutput(enterEvent, flags));
       } else {
         this.log(
-          `${chalk.green("✓")} Entered channel ${chalk.cyan(channelName)} as client ${chalk.blue(client.auth.clientId)}`,
+          success(`Entered presence on channel: ${resource(channelName)}.`),
         );
-      }
 
-      if (!this.shouldOutputJson(flags)) {
         if (flags["show-others"]) {
-          this.log(
-            "\nListening for presence events until terminated. Press Ctrl+C to exit.",
-          );
+          this.log(listening("Listening for presence events."));
         } else {
-          this.log("\nStaying present. Press Ctrl+C to exit.");
+          this.log(listening("Staying present."));
         }
       }
 

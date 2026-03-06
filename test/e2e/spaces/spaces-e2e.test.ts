@@ -97,7 +97,7 @@ describe("Spaces E2E Tests", () => {
             `bin/run.js spaces members enter ${testSpaceId} --profile '{"name":"Test User 2","role":"collaborator","department":"E2E Testing"}' --client-id ${client2Id} --duration 12`,
             client2OutputPath,
             {
-              readySignal: "Successfully entered space:",
+              readySignal: "Entered space:",
               timeoutMs: process.env.CI ? 20000 : 15000, // Increased local timeout
               retryCount: 2,
             },
@@ -164,7 +164,7 @@ describe("Spaces E2E Tests", () => {
             `bin/run.js spaces members enter ${testSpaceId} --profile '{"name":"Client 1"}' --client-id ${client1Id} --duration 20`,
             client1OutputPath,
             {
-              readySignal: "Successfully entered space:",
+              readySignal: "Entered space:",
               timeoutMs: process.env.CI ? 20000 : 15000,
               retryCount: 2,
             },
@@ -175,7 +175,7 @@ describe("Spaces E2E Tests", () => {
             `bin/run.js spaces members enter ${testSpaceId} --profile '{"name":"Client 2"}' --client-id ${client2Id} --duration 20`,
             client2OutputPath,
             {
-              readySignal: "Successfully entered space:",
+              readySignal: "Entered space:",
               timeoutMs: process.env.CI ? 20000 : 15000,
               retryCount: 2,
             },
@@ -219,11 +219,9 @@ describe("Spaces E2E Tests", () => {
           // Check for success - either exit code 0 or successful output (even if process was killed after success)
           const isLocationSetSuccessful =
             setLocationResult.exitCode === 0 ||
-            setLocationResult.stdout.includes("Successfully set location");
+            setLocationResult.stdout.includes("Location set in space:");
           expect(isLocationSetSuccessful).toBe(true);
-          expect(setLocationResult.stdout).toContain(
-            "Successfully set location",
-          );
+          expect(setLocationResult.stdout).toContain("Location set in space:");
 
           // Wait for location update to be received by client1
           let locationUpdateReceived = false;
@@ -261,7 +259,7 @@ describe("Spaces E2E Tests", () => {
           // Check for success - either exit code 0 or successful output (even if process was killed after success)
           const isSecondLocationSetSuccessful =
             updateLocationResult.exitCode === 0 ||
-            updateLocationResult.stdout.includes("Successfully set location");
+            updateLocationResult.stdout.includes("Location set in space:");
           expect(isSecondLocationSetSuccessful).toBe(true);
 
           // Wait for second location update
@@ -324,7 +322,7 @@ describe("Spaces E2E Tests", () => {
             `bin/run.js spaces members enter ${testSpaceId} --profile '{"name":"Client 1"}' --client-id ${client1Id} --duration 20`,
             client1OutputPath,
             {
-              readySignal: "Successfully entered space:",
+              readySignal: "Entered space:",
               timeoutMs: process.env.CI ? 20000 : 15000,
               retryCount: 2,
             },
@@ -335,7 +333,7 @@ describe("Spaces E2E Tests", () => {
             `bin/run.js spaces members enter ${testSpaceId} --profile '{"name":"Client 2"}' --client-id ${client2Id} --duration 20`,
             client2OutputPath,
             {
-              readySignal: "Successfully entered space:",
+              readySignal: "Entered space:",
               timeoutMs: process.env.CI ? 20000 : 15000,
               retryCount: 2,
             },
@@ -485,7 +483,7 @@ describe("Spaces E2E Tests", () => {
             `bin/run.js spaces members enter ${testSpaceId} --profile '{"name":"Client 1"}' --client-id ${client1Id} --duration 20`,
             client1OutputPath,
             {
-              readySignal: "Successfully entered space:",
+              readySignal: "Entered space:",
               timeoutMs: process.env.CI ? 20000 : 15000,
               retryCount: 2,
             },
@@ -496,7 +494,7 @@ describe("Spaces E2E Tests", () => {
             `bin/run.js spaces members enter ${testSpaceId} --profile '{"name":"Client 2"}' --client-id ${client2Id} --duration 20`,
             client2OutputPath,
             {
-              readySignal: "Successfully entered space:",
+              readySignal: "Entered space:",
               timeoutMs: process.env.CI ? 20000 : 15000,
               retryCount: 2,
             },
@@ -538,7 +536,7 @@ describe("Spaces E2E Tests", () => {
             `bin/run.js spaces locks acquire ${testSpaceId} ${lockId} --data '${JSON.stringify(lockAttributes)}' --client-id ${client2Id}`,
             lockOutputPath,
             {
-              readySignal: "Successfully acquired lock",
+              readySignal: "Lock acquired:",
               timeoutMs: process.env.CI ? 20000 : 15000,
               retryCount: 2,
             },

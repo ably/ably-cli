@@ -23,8 +23,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
   static flags = {
     ...ControlBaseCommand.globalFlags,
     app: Flags.string({
-      description:
-        "App ID the key belongs to (uses current app if not specified)",
+      description: "The app ID (defaults to current app)",
       env: "ABLY_APP_ID",
     }),
     force: Flags.boolean({

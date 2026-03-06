@@ -3,6 +3,7 @@ import { OrderBy } from "@ably/chat";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { formatTimestamp } from "../../../utils/output.js";
 
 export default class MessagesHistory extends ChatBaseCommand {
   static override args = {
@@ -17,7 +18,7 @@ export default class MessagesHistory extends ChatBaseCommand {
 
   static override examples = [
     "$ ably rooms messages history my-room",
-    '$ ably rooms messages history --api-key "YOUR_API_KEY" my-room',
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably rooms messages history my-room',
     "$ ably rooms messages history --limit 50 my-room",
     "$ ably rooms messages history --show-metadata my-room",
     '$ ably rooms messages history my-room --start "2025-01-01T00:00:00Z"',
@@ -35,7 +36,7 @@ export default class MessagesHistory extends ChatBaseCommand {
     limit: Flags.integer({
       char: "l",
       default: 50,
-      description: "Maximum number of messages to retrieve (default: 50)",
+      description: "Maximum number of results to return (default: 50)",
     }),
     order: Flags.string({
       default: "newestFirst",
@@ -154,7 +155,7 @@ export default class MessagesHistory extends ChatBaseCommand {
             const author = message.clientId || "Unknown";
 
             this.log(
-              `${chalk.gray(`[${timestamp}]`)} ${chalk.cyan(`${author}:`)} ${message.text}`,
+              `${formatTimestamp(timestamp)} ${chalk.cyan(`${author}:`)} ${message.text}`,
             );
 
             // Show metadata if enabled and available

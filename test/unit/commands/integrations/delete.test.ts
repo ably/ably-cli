@@ -48,7 +48,7 @@ describe("integrations:delete command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Integration deleted successfully");
+      expect(stdout).toContain("Integration rule deleted:");
       expect(stdout).toContain(mockRuleId);
     });
 
@@ -219,7 +219,7 @@ describe("integrations:delete command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Integration deleted successfully");
+      expect(stdout).toContain("Integration rule deleted:");
     });
 
     it("should accept --app flag", async () => {
@@ -272,7 +272,7 @@ describe("integrations:delete command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Integration deleted successfully");
+      expect(stdout).toContain("Integration rule deleted:");
     });
   });
 });

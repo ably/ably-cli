@@ -3,8 +3,15 @@ import { Args, Flags as _Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 
+import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import {
+  listening,
+  resource,
+  success,
+  formatTimestamp,
+} from "../../../utils/output.js";
 
 export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
   static override args = {
@@ -25,9 +32,9 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
 
   static override flags = {
     ...SpacesBaseCommand.globalFlags,
+    ...clientIdFlag,
     duration: _Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds (0 = run indefinitely)",
       char: "D",
       required: false,
     }),
@@ -160,7 +167,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
                 ? ` data: ${JSON.stringify(cursorUpdate.data)}`
                 : "";
               this.log(
-                `[${timestamp}] ${chalk.blue(cursorUpdate.clientId)} ${chalk.dim("position:")} ${JSON.stringify(cursorUpdate.position)}${dataString}`,
+                `${formatTimestamp(timestamp)} ${chalk.blue(cursorUpdate.clientId)} ${chalk.dim("position:")} ${JSON.stringify(cursorUpdate.position)}${dataString}`,
               );
             }
           } catch (error) {
@@ -331,11 +338,8 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
 
       // Print success message
       if (!this.shouldOutputJson(flags)) {
-        this.log(
-          chalk.green(
-            `✓ Subscribed to space: ${chalk.cyan(spaceName)}. Listening for cursor movements...`,
-          ),
-        );
+        this.log(success(`Subscribed to space: ${resource(spaceName)}.`));
+        this.log(listening("Listening for cursor movements."));
       }
 
       // Wait until the user interrupts or the optional duration elapses

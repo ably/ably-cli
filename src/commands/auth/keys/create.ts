@@ -1,7 +1,7 @@
 import { Flags } from "@oclif/core";
-import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { resource, success } from "../../../utils/output.js";
 
 export default class KeysCreateCommand extends ControlBaseCommand {
   static description = "Create a new API key for an app";
@@ -21,8 +21,7 @@ export default class KeysCreateCommand extends ControlBaseCommand {
   static flags = {
     ...ControlBaseCommand.globalFlags,
     app: Flags.string({
-      description:
-        "App ID the key belongs to (uses current app if not specified)",
+      description: "The app ID or name (defaults to current app)",
       env: "ABLY_APP_ID",
     }),
     capabilities: Flags.string({
@@ -107,9 +106,8 @@ export default class KeysCreateCommand extends ControlBaseCommand {
           ),
         );
       } else {
-        this.log(chalk.green("✓ Key created successfully!"));
-
         const keyName = `${key.appId}.${key.id}`;
+        this.log(success(`Key created: ${resource(keyName)}.`));
         this.log(`Key Name: ${keyName}`);
         this.log(`Key Label: ${key.name || "Unnamed key"}`);
 

@@ -1,4 +1,5 @@
 import { AblyBaseCommand } from "../base-command.js";
+import { coreGlobalFlags } from "../flags.js";
 import {
   getVersionInfo,
   formatVersionString,
@@ -18,7 +19,7 @@ export default class Version extends AblyBaseCommand {
 
   // Import global flags (like --json and --pretty-json)
   static flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...coreGlobalFlags,
   };
 
   async run(): Promise<void> {

@@ -14,7 +14,7 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
 
   static examples = [
     "$ ably rooms occupancy get my-room",
-    '$ ably rooms occupancy get --api-key "YOUR_API_KEY" my-room',
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably rooms occupancy get my-room',
     "$ ably rooms occupancy get my-room --json",
     "$ ably rooms occupancy get my-room --pretty-json",
   ];

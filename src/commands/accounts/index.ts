@@ -12,6 +12,5 @@ export default class AccountsCommand extends BaseTopicCommand {
     "$ ably accounts current",
     "$ ably accounts logout",
     "$ ably accounts switch my-account",
-    "$ ably accounts stats",
   ];
 }

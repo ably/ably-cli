@@ -1,23 +1,23 @@
 import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
-import { ControlBaseCommand } from "../../../control-base-command.js";
-import { StatsDisplay } from "../../../services/stats-display.js";
-import type { BaseFlags } from "../../../types/cli.js";
-import type { ControlApi } from "../../../services/control-api.js";
+import { ControlBaseCommand } from "../../control-base-command.js";
+import { StatsDisplay } from "../../services/stats-display.js";
+import type { BaseFlags } from "../../types/cli.js";
+import type { ControlApi } from "../../services/control-api.js";
 
-export default class AccountsStatsCommand extends ControlBaseCommand {
+export default class StatsAccountCommand extends ControlBaseCommand {
   static description = "Get account stats with optional live updates";
 
   static examples = [
-    "$ ably accounts stats",
-    "$ ably accounts stats --unit hour",
-    "$ ably accounts stats --start 1618005600000 --end 1618091999999",
-    "$ ably accounts stats --limit 10",
-    "$ ably accounts stats --json",
-    "$ ably accounts stats --pretty-json",
-    "$ ably accounts stats --live",
-    "$ ably accounts stats --live --interval 15",
+    "$ ably stats account",
+    "$ ably stats account --unit hour",
+    "$ ably stats account --start 1618005600000 --end 1618091999999",
+    "$ ably stats account --limit 10",
+    "$ ably stats account --json",
+    "$ ably stats account --pretty-json",
+    "$ ably stats account --live",
+    "$ ably stats account --live --interval 15",
   ];
 
   static flags = {
@@ -35,7 +35,7 @@ export default class AccountsStatsCommand extends ControlBaseCommand {
     }),
     limit: Flags.integer({
       default: 10,
-      description: "Maximum number of stats records to return",
+      description: "Maximum number of results to return (default: 10)",
     }),
 
     live: Flags.boolean({
@@ -57,7 +57,7 @@ export default class AccountsStatsCommand extends ControlBaseCommand {
   private statsDisplay: StatsDisplay | null = null; // Track when we're already fetching stats
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(AccountsStatsCommand);
+    const { flags } = await this.parse(StatsAccountCommand);
 
     // For live stats, enforce minute interval
     if (flags.live && flags.unit !== "minute") {
@@ -119,7 +119,7 @@ export default class AccountsStatsCommand extends ControlBaseCommand {
     try {
       this.isPolling = true;
       if (flags.debug) {
-        console.log(
+        this.log(
           chalk.dim(`\n[${new Date().toISOString()}] Polling for new stats...`),
         );
       }
@@ -127,7 +127,7 @@ export default class AccountsStatsCommand extends ControlBaseCommand {
       await this.fetchAndDisplayStats(flags, controlApi);
     } catch (error) {
       if (flags.debug) {
-        console.error(
+        this.logToStderr(
           chalk.red(
             `Error during stats polling: ${error instanceof Error ? error.message : String(error)}`,
           ),
@@ -173,7 +173,7 @@ export default class AccountsStatsCommand extends ControlBaseCommand {
             this.pollStats(flags, controlApi);
           } else if (flags.debug) {
             // Only show this message if debug flag is enabled
-            console.log(
+            this.log(
               chalk.yellow(
                 "Skipping poll - previous request still in progress",
               ),
@@ -203,6 +203,9 @@ export default class AccountsStatsCommand extends ControlBaseCommand {
     controlApi: ControlApi,
   ): Promise<void> {
     try {
+      const { account } = await controlApi.getMe();
+      this.log(`Fetching stats for account ${account.name} (${account.id})...`);
+
       // If no start/end time provided, use the last 24 hours
       if (!flags.start && !flags.end) {
         const now = new Date();

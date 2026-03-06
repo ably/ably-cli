@@ -254,6 +254,15 @@ export class MockConfigManager implements ConfigManager {
     return "/mock/config/path";
   }
 
+  public getEndpoint(alias?: string): string | undefined {
+    if (alias) {
+      return this.config.accounts[alias]?.endpoint;
+    }
+
+    const currentAccount = this.getCurrentAccount();
+    return currentAccount?.endpoint;
+  }
+
   public getCurrentAccount(): AccountConfig | undefined {
     const currentAlias = this.getCurrentAccountAlias();
     if (!currentAlias) return undefined;
@@ -382,6 +391,16 @@ export class MockConfigManager implements ConfigManager {
     if (!this.config.current || !this.config.current.account) {
       this.config.current = { account: alias };
     }
+  }
+
+  public storeEndpoint(endpoint: string, alias?: string): void {
+    const targetAlias = alias || this.getCurrentAccountAlias() || "default";
+
+    if (!this.config.accounts[targetAlias]) {
+      throw new Error(`Account "${targetAlias}" not found`);
+    }
+
+    this.config.accounts[targetAlias].endpoint = endpoint;
   }
 
   public storeAppInfo(

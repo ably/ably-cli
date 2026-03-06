@@ -1,7 +1,7 @@
 import { Flags } from "@oclif/core";
-import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { resource, success } from "../../utils/output.js";
 
 export default class AppsCreateCommand extends ControlBaseCommand {
   static description = "Create a new app";
@@ -9,7 +9,7 @@ export default class AppsCreateCommand extends ControlBaseCommand {
   static examples = [
     '$ ably apps create --name "My New App"',
     '$ ably apps create --name "My New App" --tls-only',
-    '$ ably apps create --name "My New App" --access-token "YOUR_ACCESS_TOKEN"',
+    '$ ABLY_ACCESS_TOKEN="YOUR_ACCESS_TOKEN" ably apps create --name "My New App"',
   ];
 
   static flags = {
@@ -59,7 +59,7 @@ export default class AppsCreateCommand extends ControlBaseCommand {
           ),
         );
       } else {
-        this.log(chalk.green("✓ App created successfully!"));
+        this.log(success(`App created: ${resource(app.name)} (${app.id}).`));
         this.log(`App ID: ${app.id}`);
         this.log(`Name: ${app.name}`);
         this.log(`Status: ${app.status}`);

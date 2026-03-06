@@ -3,6 +3,7 @@ import * as Ably from "ably";
 import * as https from "node:https";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { productApiFlags } from "../../flags.js";
 
 export default class RevokeTokenCommand extends AblyBaseCommand {
   static args = {
@@ -13,7 +14,7 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
     }),
   };
 
-  static description = "Revokes the token provided";
+  static description = "Revoke a token";
 
   static examples = [
     "$ ably auth revoke-token TOKEN",
@@ -23,9 +24,9 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
   ];
 
   static flags = {
-    ...AblyBaseCommand.globalFlags,
+    ...productApiFlags,
     app: Flags.string({
-      description: "App ID to use (uses current app if not specified)",
+      description: "The app ID or name (defaults to current app)",
       env: "ABLY_APP_ID",
     }),
 

@@ -2,8 +2,15 @@ import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 
+import { clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import {
+  listening,
+  progress,
+  resource,
+  success,
+} from "../../../utils/output.js";
 
 // Define cursor types based on Ably documentation
 interface CursorPosition {
@@ -34,13 +41,14 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
     "$ ably spaces cursors set my-space --simulate --x 500 --y 500",
     '$ ably spaces cursors set my-space --data \'{"position": {"x": 100, "y": 200}}\'',
     '$ ably spaces cursors set my-space --data \'{"position": {"x": 100, "y": 200}, "data": {"name": "John", "color": "#ff0000"}}\'',
-    '$ ably spaces cursors set --api-key "YOUR_API_KEY" my-space --x 100 --y 200',
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably spaces cursors set my-space --x 100 --y 200',
     "$ ably spaces cursors set my-space --x 100 --y 200 --json",
     "$ ably spaces cursors set my-space --x 100 --y 200 --pretty-json",
   ];
 
   static override flags = {
     ...SpacesBaseCommand.globalFlags,
+    ...clientIdFlag,
     data: Flags.string({
       description: "The cursor data to set (as JSON string)",
       required: false,
@@ -58,8 +66,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       required: false,
     }),
     duration: Flags.integer({
-      description:
-        "Automatically exit after the given number of seconds (0 = exit immediately after setting the cursor)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
@@ -208,7 +215,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           stateChange.current === "attached" &&
           !this.shouldOutputJson(flags)
         ) {
-          this.log(`${chalk.green("Entered space:")} ${chalk.cyan(spaceName)}`);
+          this.log(success(`Entered space: ${resource(spaceName)}.`));
         }
       };
 
@@ -365,7 +372,9 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         );
       } else {
         this.log(
-          `${chalk.green("✓")} Set cursor in space ${chalk.cyan(spaceName)} with data: ${chalk.blue(JSON.stringify(cursorForOutput))}`,
+          success(
+            `Set cursor in space ${resource(spaceName)} with data: ${chalk.blue(JSON.stringify(cursorForOutput))}`,
+          ),
         );
       }
 
@@ -389,7 +398,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         );
 
         if (!this.shouldOutputJson(flags)) {
-          this.log("Starting cursor movement simulation every 250ms...");
+          this.log(progress("Starting cursor movement simulation every 250ms"));
         }
 
         this.simulationIntervalId = setInterval(async () => {
@@ -444,7 +453,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         this.log(
           flags.duration
             ? `Waiting ${flags.duration}s before exiting… Press Ctrl+C to exit sooner.`
-            : `Cursor set. Press Ctrl+C to exit.`,
+            : listening("Cursor set."),
         );
       }
 

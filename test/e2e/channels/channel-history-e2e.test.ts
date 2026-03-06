@@ -95,9 +95,8 @@ describe("Channel History E2E Tests", () => {
         );
       }
 
-      expect(publishResult.stdout).toContain(
-        `Message published successfully to channel "${historyChannel}"`,
-      );
+      expect(publishResult.stdout).toContain(`Message published to channel`);
+      expect(publishResult.stdout).toContain(historyChannel);
     }
 
     // Add a delay to ensure messages are stored

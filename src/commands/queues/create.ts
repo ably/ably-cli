@@ -1,7 +1,7 @@
 import { Flags } from "@oclif/core";
-import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { resource, success } from "../../utils/output.js";
 
 export default class QueuesCreateCommand extends ControlBaseCommand {
   static description = "Create a queue";
@@ -15,7 +15,7 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
   static flags = {
     ...ControlBaseCommand.globalFlags,
     app: Flags.string({
-      description: "App ID or name to create the queue in",
+      description: "The app ID or name (defaults to current app)",
       required: false,
     }),
     "max-length": Flags.integer({
@@ -72,7 +72,7 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
           ),
         );
       } else {
-        this.log(chalk.green("✓ Queue created successfully!"));
+        this.log(success(`Queue created: ${resource(createdQueue.name)}.`));
         this.log(`Queue ID: ${createdQueue.id}`);
         this.log(`Name: ${createdQueue.name}`);
         this.log(`Region: ${createdQueue.region}`);

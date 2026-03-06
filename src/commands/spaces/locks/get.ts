@@ -2,6 +2,7 @@ import { Args } from "@oclif/core";
 import chalk from "chalk";
 
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
+import { resource, success } from "../../../utils/output.js";
 
 // interface SpacesClients { // Remove interface
 //   realtimeClient: any;
@@ -62,9 +63,9 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
       // Enter the space first
       // await space.enter() // Use this.space
       await this.space.enter();
-      this.log(
-        `${chalk.green("Successfully entered space:")} ${chalk.cyan(spaceName)}`,
-      );
+      if (!this.shouldOutputJson(flags)) {
+        this.log(success(`Entered space: ${resource(spaceName)}.`));
+      }
 
       // Try to get the lock
       try {

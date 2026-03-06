@@ -243,7 +243,7 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
           { id: "accounts:logout", hidden: false },
           { id: "accounts:switch", hidden: false },
           { id: "accounts:current", hidden: false },
-          { id: "accounts:stats", hidden: false },
+          { id: "stats", hidden: false },
           { id: "auth", hidden: false },
           { id: "auth:keys", hidden: false },
           { id: "auth:keys:switch", hidden: false },
@@ -528,11 +528,17 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
                 description: "Output in colorized JSON format",
                 type: "boolean",
               },
-              "api-key": {
-                name: "api-key",
-                description:
-                  "Overrides any configured API key used for the product APIs",
-                type: "option",
+              verbose: {
+                name: "verbose",
+                char: "v",
+                description: "Enable verbose output",
+                type: "boolean",
+              },
+              "web-cli-help": {
+                name: "web-cli-help",
+                description: "Show help in web CLI mode",
+                type: "boolean",
+                hidden: true,
               },
               help: {
                 name: "help",
@@ -573,7 +579,8 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
       expect(flags).toContain("--spec");
       expect(flags).toContain("--json");
       expect(flags).toContain("--pretty-json");
-      expect(flags).toContain("--api-key");
+      expect(flags).toContain("--verbose");
+      expect(flags).toContain("-v");
       expect(flags).toContain("--help");
       expect(flags).toContain("-h");
     });
@@ -682,12 +689,27 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
       expect(batchPublish.flags).toHaveProperty("name");
       expect(batchPublish.flags).toHaveProperty("spec");
 
-      // Check for global flags
+      // Check for base flags from productApiFlags
       expect(batchPublish.flags).toHaveProperty("json");
       expect(batchPublish.flags).toHaveProperty("pretty-json");
-      expect(batchPublish.flags).toHaveProperty("api-key");
-      expect(batchPublish.flags).toHaveProperty("access-token");
       expect(batchPublish.flags).toHaveProperty("verbose");
+      expect(batchPublish.flags).toHaveProperty("web-cli-help");
+
+      // Check for product API flags (hidden)
+      expect(batchPublish.flags).toHaveProperty("port");
+      expect(batchPublish.flags).toHaveProperty("tls-port");
+      expect(batchPublish.flags).toHaveProperty("tls");
+
+      // Verify removed global flags are no longer present
+      expect(batchPublish.flags).not.toHaveProperty("api-key");
+      expect(batchPublish.flags).not.toHaveProperty("access-token");
+      expect(batchPublish.flags).not.toHaveProperty("token");
+      expect(batchPublish.flags).not.toHaveProperty("client-id");
+      expect(batchPublish.flags).not.toHaveProperty("control-host");
+      expect(batchPublish.flags).not.toHaveProperty("dashboard-host");
+      expect(batchPublish.flags).not.toHaveProperty("env");
+      expect(batchPublish.flags).not.toHaveProperty("host");
+      expect(batchPublish.flags).not.toHaveProperty("endpoint");
 
       // Check flag details
       expect(batchPublish.flags.encoding).toHaveProperty("char", "e");

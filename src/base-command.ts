@@ -1,4 +1,3 @@
-import { Flags } from "@oclif/core";
 import { InteractiveBaseCommand } from "./interactive-base-command.js";
 import * as Ably from "ably";
 import chalk from "chalk";
@@ -10,6 +9,7 @@ import {
   createConfigManager,
 } from "./services/config-manager.js";
 import { ControlApi } from "./services/control-api.js";
+import { coreGlobalFlags } from "./flags.js";
 import { InteractiveHelper } from "./services/interactive-helper.js";
 import { BaseFlags, CommandConfig, ErrorDetails } from "./types/cli.js";
 import { getCliVersion } from "./utils/version.js";
@@ -21,7 +21,7 @@ import isWebCliMode from "./utils/web-mode.js";
 // List of commands not allowed in web CLI mode - EXPORTED
 export const WEB_CLI_RESTRICTED_COMMANDS = [
   // All account login/management commands are not valid in a web env where auth is handled by the website
-  // note accounts:stats is supported
+  // note stats:account and stats:app are restricted via WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS
   "accounts:current",
   "accounts:list",
   "accounts:login",
@@ -64,6 +64,9 @@ export const WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS = [
   // Integrations and queues are not available to anonymous users
   "integrations*",
   "queues*",
+
+  // Stats commands expose account/app usage data
+  "stats*",
 ];
 
 /* Commands not suitable for interactive mode */
@@ -93,78 +96,8 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   private _cachedRestClient: Ably.Rest | null = null;
   private _cachedRealtimeClient: Ably.Realtime | null = null;
 
-  // Add static flags that will be available to all commands
-  static globalFlags = {
-    "access-token": Flags.string({
-      description:
-        "Overrides any configured access token used for the Control API",
-    }),
-    "api-key": Flags.string({
-      description: "Overrides any configured API key used for the product APIs",
-    }),
-    "client-id": Flags.string({
-      description:
-        'Overrides any default client ID when using API authentication. Use "none" to explicitly set no client ID. Not applicable when using token authentication.',
-    }),
-    "control-host": Flags.string({
-      description:
-        "Override the host endpoint for the control API, which defaults to control.ably.net",
-      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
-      env: "ABLY_CONTROL_HOST",
-    }),
-    "dashboard-host": Flags.string({
-      description:
-        "Override the host for the Ably dashboard, which defaults to https://ably.com",
-      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
-      env: "ABLY_DASHBOARD_HOST",
-    }),
-    env: Flags.string({
-      description: "Override the environment for all product API calls",
-      env: "ABLY_CLI_ENV",
-    }),
-    endpoint: Flags.string({
-      description: "Override the endpoint for all product API calls",
-      env: "ABLY_ENDPOINT",
-    }),
-    host: Flags.string({
-      description: "Override the host endpoint for all product API calls",
-    }),
-    port: Flags.integer({
-      description: "Override the port for product API calls",
-      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
-    }),
-    tlsPort: Flags.integer({
-      description: "Override the TLS port for product API calls",
-      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
-    }),
-    tls: Flags.string({
-      description: "Use TLS for product API calls (default is true)",
-      hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
-    }),
-    json: Flags.boolean({
-      description: "Output in JSON format",
-      exclusive: ["pretty-json"], // Cannot use with pretty-json
-    }),
-    "pretty-json": Flags.boolean({
-      description: "Output in colorized JSON format",
-      exclusive: ["json"], // Cannot use with json
-    }),
-    token: Flags.string({
-      description:
-        "Authenticate using an Ably Token or JWT Token instead of an API key",
-    }),
-    verbose: Flags.boolean({
-      char: "v",
-      default: false,
-      description: "Output verbose logs",
-      required: false,
-    }),
-    // Web CLI specific flag, hidden from regular help
-    "web-cli-help": Flags.boolean({
-      description: "Show help formatted for the web CLI",
-      hidden: true, // Hide from regular help output
-    }),
-  };
+  // Core global flags available to all commands (verbose, json, pretty-json, web-cli-help)
+  static globalFlags = { ...coreGlobalFlags };
 
   protected configManager: ConfigManager;
   protected interactiveHelper: InteractiveHelper;
@@ -308,6 +241,8 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           errorMessage = `Integration management requires you to be logged in. Please log in at https://ably.com/login.`;
         } else if (commandId.startsWith("queues")) {
           errorMessage = `Queue management requires you to be logged in. Please log in at https://ably.com/login.`;
+        } else if (commandId.startsWith("stats")) {
+          errorMessage = `Stats commands are only available when logged in. Please log in at https://ably.com/login.`;
         } else {
           errorMessage = `This command is not available in anonymous mode. Please log in at https://ably.com/login.`;
         }
@@ -438,19 +373,21 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       return null;
     }
 
-    // Track whether the user explicitly provided authentication
+    // Track whether the user explicitly provided authentication via env vars
     const hasExplicitAuth = !!(
-      flags.token ||
-      flags["api-key"] ||
-      process.env.ABLY_API_KEY
+      process.env.ABLY_TOKEN || process.env.ABLY_API_KEY
     );
 
-    // If token is provided or API key is in environment, we can skip the ensureAppAndKey step
-    if (!flags.token && !flags["api-key"] && !process.env.ABLY_API_KEY) {
+    // Auth resolution: env vars first, then config via ensureAppAndKey
+    if (process.env.ABLY_TOKEN) {
+      // ABLY_TOKEN env var — skip ensureAppAndKey, use token auth
+    } else if (process.env.ABLY_API_KEY) {
+      // ABLY_API_KEY env var — skip ensureAppAndKey, use key auth
+    } else {
       const appAndKey = await this.ensureAppAndKey(flags);
       if (!appAndKey) {
         this.error(
-          `${chalk.yellow("No app or API key configured for this command")}.\nPlease log in first with "${chalk.cyan("ably accounts login")}" (recommended approach).\nAlternatively you can provide an API key with the ${chalk.cyan("--api-key")} argument or set the ${chalk.cyan("ABLY_API_KEY")} environment variable.`,
+          `${chalk.yellow("No app or API key configured for this command")}.\nPlease log in first with "${chalk.cyan("ably accounts login")}" (recommended approach).\nAlternatively you can set the ${chalk.cyan("ABLY_API_KEY")} environment variable.`,
         );
         return null;
       }
@@ -610,14 +547,13 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             // Get access token for control API
             const currentAccount = this.configManager.getCurrentAccount();
             const accessToken =
-              flags["access-token"] ||
-              process.env.ABLY_ACCESS_TOKEN ||
-              currentAccount?.accessToken;
+              process.env.ABLY_ACCESS_TOKEN || currentAccount?.accessToken;
 
             if (accessToken) {
               const controlApi = new ControlApi({
                 accessToken,
-                controlHost: flags["control-host"],
+                controlHost:
+                  flags["control-host"] || process.env.ABLY_CONTROL_HOST,
               });
               const app = await controlApi.getApp(appId);
               appName = app.name;
@@ -649,12 +585,13 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
         );
 
         // Check auth method - token or API key
-        if (flags.token) {
+        const tokenFromEnv = process.env.ABLY_TOKEN;
+        if (tokenFromEnv) {
           // For token auth, show truncated token
           const truncatedToken =
-            flags.token.length > 20
-              ? `${flags.token.slice(0, 17)}...`
-              : flags.token;
+            tokenFromEnv.length > 20
+              ? `${tokenFromEnv.slice(0, 17)}...`
+              : tokenFromEnv;
           displayParts.push(
             `${chalk.magenta("Auth=")}${chalk.magenta.bold("Token")} ${chalk.gray(`(${truncatedToken})`)}`,
           );
@@ -744,20 +681,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       return { apiKey, appId };
     }
 
-    // If token auth is being used, we don't need an API key
-    if (flags.token) {
-      // For token auth, we still need an app ID for some operations
-      const appId = flags.app || this.configManager.getCurrentAppId();
-      if (appId) {
-        return { apiKey: "", appId };
-      }
-      // If no app ID is provided, we'll try to extract it from the token if it's a JWT
-      // But for now, just return null and let the operation proceed with token auth only
-    }
-
     // Check if we have an app and key from flags or config
     let appId = flags.app || this.configManager.getCurrentAppId();
-    let apiKey = flags["api-key"] || this.configManager.getApiKey(appId);
+    let apiKey = this.configManager.getApiKey(appId);
 
     // If we have both, return them
     if (appId && apiKey) {
@@ -766,16 +692,14 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
 
     // Get access token for control API
     const accessToken =
-      process.env.ABLY_ACCESS_TOKEN ||
-      flags["access-token"] ||
-      this.configManager.getAccessToken();
+      process.env.ABLY_ACCESS_TOKEN || this.configManager.getAccessToken();
     if (!accessToken) {
       return null;
     }
 
     const controlApi = new ControlApi({
       accessToken,
-      controlHost: flags["control-host"],
+      controlHost: flags["control-host"] || process.env.ABLY_CONTROL_HOST,
     });
 
     // If no app is selected, prompt to select one
@@ -890,9 +814,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     const options: Ably.ClientOptions = {};
     const isJsonMode = this.shouldOutputJson(flags);
 
-    // Handle authentication - try token first, then api-key, then environment variable, then config
-    if (flags.token) {
-      options.token = flags.token;
+    // Handle authentication: ABLY_TOKEN env → flags["api-key"] (set by ensureAppAndKey) → ABLY_API_KEY env → config
+    if (process.env.ABLY_TOKEN) {
+      options.token = process.env.ABLY_TOKEN;
 
       // When using token auth, we don't set the clientId as it may conflict
       // with any clientId embedded in the token
@@ -904,53 +828,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
         );
       }
     } else if (flags["api-key"]) {
-      options.key = flags["api-key"];
-
-      // In web CLI mode, validate the API key format
-      if (this.isWebCliMode) {
-        const parsedKey = this.parseApiKey(flags["api-key"]);
-        if (parsedKey) {
-          this.debug(
-            `Using API key with appId=${parsedKey.appId}, keyId=${parsedKey.keyId}`,
-          );
-          // In web CLI mode, we need to explicitly configure the client for Ably.js browser library
-          options.key = flags["api-key"];
-        } else {
-          this.log(
-            chalk.yellow(
-              `Warning: API key format appears to be invalid. Expected format: APP_ID.KEY_ID:KEY_SECRET`,
-            ),
-          );
-        }
-      }
-
-      // Handle client ID for API key auth
-      this.setClientId(options, flags);
+      this.applyApiKeyAuth(options, flags["api-key"], flags);
     } else if (process.env.ABLY_API_KEY) {
-      const apiKey = process.env.ABLY_API_KEY;
-      options.key = apiKey;
-
-      // In web CLI mode, validate the API key format
-      if (this.isWebCliMode) {
-        const parsedKey = this.parseApiKey(apiKey);
-        if (parsedKey) {
-          this.debug(
-            `Using API key with appId=${parsedKey.appId}, keyId=${parsedKey.keyId}`,
-          );
-
-          // Ensure API key is properly formatted for Node.js SDK
-          options.key = apiKey;
-        } else {
-          this.log(
-            chalk.yellow(
-              `Warning: API key format appears to be invalid. Expected format: APP_ID.KEY_ID:KEY_SECRET`,
-            ),
-          );
-        }
-      }
-
-      // Handle client ID for API key auth
-      this.setClientId(options, flags);
+      this.applyApiKeyAuth(options, process.env.ABLY_API_KEY, flags);
     } else {
       const apiKey = this.configManager.getApiKey();
       if (apiKey) {
@@ -961,26 +841,19 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       }
     }
 
-    // Handle host and environment options
-    if (flags.host) {
-      options.realtimeHost = flags.host;
-      options.restHost = flags.host;
-    }
-
-    if (flags.env) {
-      options.environment = flags.env;
-    }
-
-    if (flags.endpoint) {
-      options.endpoint = flags.endpoint;
+    // Endpoint resolution: ABLY_ENDPOINT env → account config
+    const endpoint =
+      process.env.ABLY_ENDPOINT || this.configManager.getEndpoint();
+    if (endpoint) {
+      options.endpoint = endpoint;
     }
 
     if (flags.port) {
       options.port = flags.port;
     }
 
-    if (flags.tlsPort) {
-      options.tlsPort = flags.tlsPort;
+    if (flags["tls-port"]) {
+      options.tlsPort = flags["tls-port"];
     }
 
     if (flags.tls) {
@@ -1295,6 +1168,32 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     }
   }
 
+  private applyApiKeyAuth(
+    options: Ably.ClientOptions,
+    apiKey: string,
+    flags: BaseFlags,
+  ): void {
+    options.key = apiKey;
+
+    // In web CLI mode, validate the API key format
+    if (this.isWebCliMode) {
+      const parsedKey = this.parseApiKey(apiKey);
+      if (parsedKey) {
+        this.debug(
+          `Using API key with appId=${parsedKey.appId}, keyId=${parsedKey.keyId}`,
+        );
+      } else {
+        this.log(
+          chalk.yellow(
+            `Warning: API key format appears to be invalid. Expected format: APP_ID.KEY_ID:KEY_SECRET`,
+          ),
+        );
+      }
+    }
+
+    this.setClientId(options, flags);
+  }
+
   private setClientId(options: Ably.ClientOptions, flags: BaseFlags): void {
     if (flags["client-id"]) {
       // Special case: "none" means explicitly no client ID
@@ -1378,12 +1277,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       return true;
     }
 
-    // Hide account info if explicit auth credentials are provided
+    // Hide account info if explicit auth credentials are provided via env vars
     return (
-      Boolean(flags["api-key"]) ||
-      Boolean(flags.token) ||
-      Boolean(flags["access-token"]) ||
       Boolean(process.env.ABLY_API_KEY) ||
+      Boolean(process.env.ABLY_TOKEN) ||
       Boolean(process.env.ABLY_ACCESS_TOKEN)
     );
   }
