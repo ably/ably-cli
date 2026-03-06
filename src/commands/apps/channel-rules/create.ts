@@ -93,7 +93,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
     let appId: string | undefined;
 
     try {
-      let appId = flags.app;
+      appId = flags.app;
       if (!appId) {
         appId = await this.resolveAppId(flags);
       }
@@ -122,7 +122,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
         authenticated: flags.authenticated,
         batchingEnabled: flags["batching-enabled"],
         batchingInterval: flags["batching-interval"],
-        channelNamespace: flags.name,
+        id: flags.name,
         conflationEnabled: flags["conflation-enabled"],
         conflationInterval: flags["conflation-interval"],
         conflationKey: flags["conflation-key"],
@@ -208,7 +208,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
           );
         }
 
-        if (createdNamespace.batchingInterval !== undefined) {
+        if (typeof createdNamespace.batchingInterval === "number") {
           this.log(
             `Batching Interval: ${chalk.green(createdNamespace.batchingInterval.toString())}`,
           );
@@ -220,7 +220,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
           );
         }
 
-        if (createdNamespace.conflationInterval !== undefined) {
+        if (typeof createdNamespace.conflationInterval === "number") {
           this.log(
             `Conflation Interval: ${chalk.green(createdNamespace.conflationInterval.toString())}`,
           );

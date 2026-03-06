@@ -49,9 +49,9 @@ export interface Namespace {
   appId: string;
   authenticated?: boolean;
   batchingEnabled?: boolean;
-  batchingInterval?: number;
+  batchingInterval?: number | null;
   conflationEnabled?: boolean;
-  conflationInterval?: number;
+  conflationInterval?: number | null;
   conflationKey?: string;
   created: number;
   exposeTimeSerial?: boolean;
@@ -226,7 +226,7 @@ export class ControlApi {
       authenticated?: boolean;
       batchingEnabled?: boolean;
       batchingInterval?: number;
-      channelNamespace: string;
+      id: string;
       conflationEnabled?: boolean;
       conflationInterval?: number;
       conflationKey?: string;
