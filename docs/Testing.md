@@ -5,9 +5,9 @@
 </div>
 
 > **💡 QUICK START:** Run `pnpm test` for all tests or `pnpm test:unit` for faster unit tests.
-> **📋 MANDATORY:** All code changes require related tests. See [Workflow.mdc](mdc:.cursor/rules/Workflow.mdc).
-> **🐛 DEBUGGING:** See [Debugging Guide](mdc:docs/Debugging.md) for troubleshooting tips and the [Debug Test Execution](#-debug-test-execution) section below.
-> **🔍 TROUBLESHOOTING:** See [Troubleshooting Guide](mdc:docs/Troubleshooting.md) for common errors.
+> **📋 MANDATORY:** All code changes require related tests. See [AGENTS.md](../AGENTS.md).
+> **🐛 DEBUGGING:** See [Debugging Guide](Debugging.md) for troubleshooting tips and the [Debug Test Execution](#-debug-test-execution) section below.
+> **🔍 TROUBLESHOOTING:** See [Troubleshooting Guide](Troubleshooting.md) for common errors.
 
 ---
 
@@ -23,7 +23,7 @@
 
 ## 🏃‍♂️ Running Tests
 
-Refer to [.cursor/rules/Workflow.mdc](mdc:.cursor/rules/Workflow.mdc) for the mandatory requirement to run tests.
+Refer to [AGENTS.md](../AGENTS.md) for the mandatory requirement to run tests.
 
 | Test Type | Command | Description |
 |-----------|---------|-------------|
@@ -170,7 +170,7 @@ Everything else (exact countdown rendering, every internal state transition, con
 *   **Value:** Good for testing command sequences (e.g., `config set` then `config get`), authentication flow logic (with mocked credentials), and ensuring different parts of the CLI work together correctly without relying on live Ably infrastructure.
 *   **Tools:** Vitest, `@oclif/test`, `nock`, `execa` (to run the CLI as a subprocess).
 
-Refer to the [Debugging Guide](mdc:docs/Debugging.md) for tips on debugging failed tests, including Playwright and Vitest tests.
+Refer to the [Debugging Guide](Debugging.md) for tips on debugging failed tests, including Playwright and Vitest tests.
 
 ### 🌐 End-to-End (E2E) Tests (`test/e2e`)
 
@@ -249,23 +249,45 @@ describe('channels commands', () => {
 
 ```
 .
-├── src
+├── src/
 │   └── commands/
+├── packages/
+│   └── react-web-cli/          # @ably/react-web-cli (tests co-located with components)
 ├── test/
-│   ├── e2e/                # End-to-End tests (runs against real Ably)
-│   │   ├── core/           # Core CLI functionality E2E tests
-│   │   ├── channels/       # Channel-specific E2E tests
-│   │   └── web-cli/        # Playwright tests for the Web CLI example
-│   │       └── web-cli.test.ts
-│   ├── helpers/            # Test helper functions (e.g., e2e-test-helper.ts)
-│   ├── integration/        # Integration tests (mocked external services)
-│   │   └── core/
-│   ├── unit/               # Unit tests (isolated logic, heavy mocking)
-│   │   ├── base/
-│   │   ├── commands/
-│   │   └── services/
-│   ├── setup.ts            # Full setup for E2E tests (runs in Vitest context)
-│   └── mini-setup.ts       # Minimal setup for Unit/Integration tests
+│   ├── setup.ts                # Global test setup (runs in Vitest context)
+│   ├── root-hooks.ts           # Root hooks for E2E test lifecycle
+│   ├── helpers/                # Shared test utilities
+│   │   ├── cli-runner.ts           # CliRunner class for E2E process management
+│   │   ├── cli-runner-store.ts     # Per-test runner tracking
+│   │   ├── command-helpers.ts      # High-level E2E helpers
+│   │   ├── e2e-test-helper.ts      # E2E setup and teardown
+│   │   ├── mock-ably-*.ts          # Mock SDKs (chat, realtime, rest, spaces)
+│   │   └── mock-config-manager.ts  # MockConfigManager (provides test auth)
+│   ├── unit/                   # Fast, mocked tests
+│   │   ├── base/               # Base command class tests
+│   │   ├── base-command/       # AblyBaseCommand tests
+│   │   ├── commands/           # Command unit tests (mirrors src/commands/)
+│   │   ├── core/               # Core CLI functionality tests
+│   │   ├── help/               # Help system tests
+│   │   ├── hooks/              # Hook tests
+│   │   ├── services/           # Service tests
+│   │   └── utils/              # Utility tests
+│   ├── integration/            # Multi-component tests (mocked external services)
+│   │   ├── commands/           # Command flow integration tests
+│   │   └── interactive-mode.test.ts
+│   ├── e2e/                    # End-to-End tests (runs against real Ably)
+│   │   ├── auth/               # Auth E2E tests
+│   │   ├── bench/              # Benchmark E2E tests
+│   │   ├── channels/           # Channel E2E tests
+│   │   ├── connections/        # Connection E2E tests
+│   │   ├── control/            # Control API E2E tests
+│   │   ├── core/               # Core CLI E2E tests
+│   │   ├── interactive/        # Interactive mode E2E tests
+│   │   ├── rooms/              # Chat rooms E2E tests
+│   │   ├── spaces/             # Spaces E2E tests
+│   │   ├── stats/              # Stats E2E tests
+│   │   └── web-cli/            # Playwright browser tests for Web CLI
+│   └── manual/                 # Manual test scripts
 └── ...
 ```
 
@@ -293,5 +315,5 @@ E2E tests are organized by feature/topic (e.g., `channels-e2e.test.ts`, `presenc
 ---
 
 <div align="center">
-🔍 For detailed troubleshooting help, see the <a href="mdc:docs/Troubleshooting.md">Troubleshooting Guide</a>.
+🔍 For detailed troubleshooting help, see the <a href="Troubleshooting.md">Troubleshooting Guide</a>.
 </div>
