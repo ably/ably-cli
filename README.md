@@ -4064,19 +4064,6 @@ The CLI also supports environment variables to control update notifications:
 
 # Contributing
 
-Please see the documentation in [`.cursor/rules/Workflow.mdc`](.cursor/rules/Workflow.mdc) for details on how to contribute to this project, including our mandatory development workflow, testing requirements, and code quality standards.
+Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for the development workflow, testing requirements, and release process.
 
-## For AI Assistants
-
-**IMPORTANT**: See [`.claude/CLAUDE.md`](./.claude/CLAUDE.md) for mandatory instructions before making any changes.
-If you are an AI assistant, start with [`AI-Assistance.mdc`](.cursor/rules/AI-Assistance.mdc) first.
-
-## Quick Development Validation
-
-Before submitting any changes, run our automated validation script to ensure your code meets all requirements:
-
-```bash
-pnpm validate  # or: ./scripts/pre-push-validation.sh
-```
-
-This script automatically runs all mandatory steps including build, linting, and testing. See [`.cursor/rules/Workflow.mdc`](.cursor/rules/Workflow.mdc) for detailed information about each step.
+For development standards and coding conventions, see [`AGENTS.md`](AGENTS.md).

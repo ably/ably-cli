@@ -4,14 +4,14 @@ Thank you for your interest in contributing to the Ably CLI!
 
 ## Development Workflow
 
-All code changes, whether features or bug fixes, **MUST** follow the mandatory workflow outlined in [.cursor/rules/Workflow.mdc](mdc:.cursor/rules/Workflow.mdc).
+All code changes, whether features or bug fixes, **MUST** follow the mandatory workflow outlined in [AGENTS.md](AGENTS.md).
 
 In summary, this involves:
 
 1.  **Build:** Run `pnpm prepare` to compile, update manifests, and update the README.
 2.  **Lint:** Run `pnpm exec eslint .` and fix all errors/warnings.
 3.  **Test:** Run relevant tests (`pnpm test:unit`, `pnpm test:integration`, `pnpm test:e2e`, `pnpm test:playwright`, or specific files) and ensure they pass. Add new tests or update existing ones as needed.
-4.  **Document:** Update all relevant documentation (`docs/`, `.cursor/rules/`, `README.md`) to reflect your changes.
+4.  **Document:** Update all relevant documentation (`docs/`, `AGENTS.md`, `README.md`) to reflect your changes.
 
 **Pull requests will not be merged unless all these steps are completed and verified.**
 
@@ -21,8 +21,7 @@ Before starting work, please familiarize yourself with:
 
 *   [Project Structure](./docs/Project-Structure.md): Know where different code components live.
 *   [Testing Strategy](./docs/Testing.md): Understand the different types of tests and how to run them.
-*   [Development Rules](mdc:.cursor/rules/Development.mdc): Coding standards, linting, dependency management.
-*   [Ably Rules](mdc:.cursor/rules/Ably.mdc): How to interact with Ably APIs/SDKs.
+*   [AGENTS.md](AGENTS.md): Development standards, coding conventions, and Ably API/SDK guidance.
 
 ## Reporting Issues
 
@@ -54,7 +53,7 @@ This allows testing CLI changes against local server modifications before deploy
 1. Make sure all checks are passing on main
 2. Create a new release branch, in the format `release/<version>` where the version is the SemVer version of the release. In that branch:
     - Update the `package.json` version to the new version.
-    - Run `npx oclif readme` to regenerate the README with updated command documentation.
+    - Run `pnpm exec oclif readme` to regenerate the README with updated command documentation.
     - Update the `CHANGELOG.md` with any user-affecting changes since the last release.
     - Review the generated README.md changes to ensure they're correct.
     - Stage all changes: `git add package.json README.md CHANGELOG.md`
