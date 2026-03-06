@@ -22,13 +22,7 @@ describe("channel-rule:create command (alias)", () => {
         });
 
       const { stdout } = await runCommand(
-        [
-          "channel-rule:create",
-          "--name=test-rule",
-          "--app",
-          appId,
-          "--persisted",
-        ],
+        ["channel-rule:create", "--name=test-rule", "--persisted"],
         import.meta.url,
       );
 
@@ -36,9 +30,8 @@ describe("channel-rule:create command (alias)", () => {
     });
 
     it("should require name flag", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
-        ["channel-rule:create", "--app", appId],
+        ["channel-rule:create"],
         import.meta.url,
       );
 

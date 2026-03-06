@@ -1,6 +1,7 @@
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
+import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { progress, resource, success } from "../../../utils/output.js";
@@ -37,38 +38,12 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksGetAll);
-    this.parsedFlags = flags;
-
     const { space: spaceName } = args;
 
     try {
-      // Create Spaces client using setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceName);
-      this.realtimeClient = setupResult.realtimeClient;
-      this.space = setupResult.space;
-      if (!this.realtimeClient || !this.space) {
-        this.error("Failed to initialize clients or space");
-        return;
-      }
-
-      // Make sure we have a connection before proceeding
-      await new Promise<void>((resolve, reject) => {
-        const checkConnection = () => {
-          const { state } = this.realtimeClient!.connection;
-          if (state === "connected") {
-            resolve();
-          } else if (
-            state === "failed" ||
-            state === "closed" ||
-            state === "suspended"
-          ) {
-            reject(new Error(`Connection failed with state: ${state}`));
-          } else {
-            setTimeout(checkConnection, 100);
-          }
-        };
-
-        checkConnection();
+      await this.initializeSpace(flags, spaceName, {
+        enterSpace: false,
+        setupConnectionLogging: false,
       });
 
       // Get the space
@@ -76,7 +51,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
         this.log(progress(`Connecting to space: ${resource(spaceName)}`));
       }
 
-      await this.space.enter();
+      await this.space!.enter();
 
       // Wait for space to be properly entered before fetching locks
       await new Promise<void>((resolve, reject) => {
@@ -124,7 +99,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
       }
 
       let locks: LockItem[] = [];
-      const result = await this.space.locks.getAll();
+      const result = await this.space!.locks.getAll();
       locks = Array.isArray(result) ? result : [];
 
       const validLocks = locks.filter((lock: LockItem) => {
@@ -172,7 +147,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
             }
           } catch (error) {
             this.log(
-              `- ${chalk.red("Error displaying lock item")}: ${error instanceof Error ? error.message : String(error)}`,
+              `- ${chalk.red("Error displaying lock item")}: ${errorMessage(error)}`,
             );
           }
         });
@@ -181,7 +156,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.jsonError(
           {
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             spaceName: spaceName,
             status: "error",
             success: false,
@@ -189,9 +164,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
           flags,
         );
       } else {
-        this.error(
-          `Error: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Error: ${errorMessage(error)}`);
       }
     }
   }

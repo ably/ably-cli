@@ -1,6 +1,7 @@
 import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { errorMessage } from "../../utils/errors.js";
 import { resource, success } from "../../utils/output.js";
 
 export default class QueuesCreateCommand extends ControlBaseCommand {
@@ -42,19 +43,12 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(QueuesCreateCommand);
 
+    const appId = await this.requireAppId(flags);
+    if (!appId) return;
+
     const controlApi = this.createControlApi(flags);
 
     try {
-      // Get app ID from flags or config
-      const appId = await this.resolveAppId(flags);
-
-      if (!appId) {
-        this.error(
-          'No app specified. Use --app flag or select an app with "ably apps switch"',
-        );
-        return;
-      }
-
       const queueData = {
         maxLength: flags["max-length"],
         name: flags.name,
@@ -90,9 +84,7 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
         this.log(`Destination: ${createdQueue.stomp.destination}`);
       }
     } catch (error) {
-      this.error(
-        `Error creating queue: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.error(`Error creating queue: ${errorMessage(error)}`);
     }
   }
 }

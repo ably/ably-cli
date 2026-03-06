@@ -1,12 +1,17 @@
 import { Flags } from "@oclif/core";
-import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../../flags.js";
-import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
-import { formatTimestamp } from "../../../utils/output.js";
-import { parseTimestamp } from "../../../utils/time.js";
+import { errorMessage } from "../../../utils/errors.js";
+import { formatMessageData } from "../../../utils/json-formatter.js";
+import { buildHistoryParams } from "../../../utils/history.js";
+import {
+  countLabel,
+  formatTimestamp,
+  formatMessageTimestamp,
+  limitWarning,
+} from "../../../utils/output.js";
 
 export default class LogsPushHistory extends AblyBaseCommand {
   static override description = "Retrieve push notification log history";
@@ -49,27 +54,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
       const channel = client.channels.get(channelName);
 
       // Get message history
-      const historyOptions: Ably.RealtimeHistoryParams = {
-        direction: flags.direction as "backwards" | "forwards",
-        limit: flags.limit,
-      };
-
-      // Add time range if specified
-      if (flags.start) {
-        historyOptions.start = parseTimestamp(flags.start, "start");
-      }
-
-      if (flags.end) {
-        historyOptions.end = parseTimestamp(flags.end, "end");
-      }
-
-      if (
-        historyOptions.start !== undefined &&
-        historyOptions.end !== undefined &&
-        historyOptions.start > historyOptions.end
-      ) {
-        this.error("--start must be earlier than or equal to --end");
-      }
+      const historyOptions = buildHistoryParams(flags);
 
       const historyPage = await channel.history(historyOptions);
       const messages = historyPage.items;
@@ -87,9 +72,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
                 encoding: msg.encoding,
                 id: msg.id,
                 name: msg.name,
-                timestamp: msg.timestamp
-                  ? new Date(msg.timestamp).toISOString()
-                  : new Date().toISOString(),
+                timestamp: formatMessageTimestamp(msg.timestamp),
               })),
               success: true,
             },
@@ -102,14 +85,12 @@ export default class LogsPushHistory extends AblyBaseCommand {
           return;
         }
 
-        this.log(
-          `Found ${chalk.cyan(messages.length.toString())} push log messages:`,
-        );
+        this.log(`Found ${countLabel(messages.length, "push log message")}:`);
         this.log("");
 
         for (const [index, message] of messages.entries()) {
           const timestampDisplay = message.timestamp
-            ? formatTimestamp(new Date(message.timestamp).toISOString())
+            ? formatTimestamp(formatMessageTimestamp(message.timestamp))
             : chalk.dim("[Unknown timestamp]");
           const event = message.name || "unknown";
 
@@ -157,36 +138,27 @@ export default class LogsPushHistory extends AblyBaseCommand {
           );
           if (message.data) {
             this.log(chalk.dim("Data:"));
-            if (isJsonData(message.data)) {
-              this.log(formatJson(message.data));
-            } else {
-              this.log(String(message.data));
-            }
+            this.log(formatMessageData(message.data));
           }
 
           this.log("");
         }
 
-        if (messages.length === flags.limit) {
-          this.log(
-            chalk.yellow(
-              `Showing maximum of ${flags.limit} logs. Use --limit to show more.`,
-            ),
-          );
-        }
+        const warning = limitWarning(messages.length, flags.limit, "logs");
+        if (warning) this.log(warning);
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
         this.jsonError(
           {
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             success: false,
           },
           flags,
         );
       } else {
         this.error(
-          `Error retrieving push notification logs: ${error instanceof Error ? error.message : String(error)}`,
+          `Error retrieving push notification logs: ${errorMessage(error)}`,
         );
       }
     }

@@ -38,13 +38,7 @@ describe("apps:channel-rules:update command", () => {
         });
 
       const { stdout } = await runCommand(
-        [
-          "apps:channel-rules:update",
-          mockRuleId,
-          "--app",
-          appId,
-          "--persisted",
-        ],
+        ["apps:channel-rules:update", mockRuleId, "--persisted"],
         import.meta.url,
       );
 
@@ -77,13 +71,7 @@ describe("apps:channel-rules:update command", () => {
         });
 
       const { stdout } = await runCommand(
-        [
-          "apps:channel-rules:update",
-          mockRuleId,
-          "--app",
-          appId,
-          "--push-enabled",
-        ],
+        ["apps:channel-rules:update", mockRuleId, "--push-enabled"],
         import.meta.url,
       );
 
@@ -116,14 +104,7 @@ describe("apps:channel-rules:update command", () => {
         });
 
       const { stdout } = await runCommand(
-        [
-          "apps:channel-rules:update",
-          mockRuleId,
-          "--app",
-          appId,
-          "--persisted",
-          "--json",
-        ],
+        ["apps:channel-rules:update", mockRuleId, "--persisted", "--json"],
         import.meta.url,
       );
 
@@ -137,9 +118,8 @@ describe("apps:channel-rules:update command", () => {
 
   describe("error handling", () => {
     it("should require nameOrId argument", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
-        ["apps:channel-rules:update", "--app", appId, "--persisted"],
+        ["apps:channel-rules:update", "--persisted"],
         import.meta.url,
       );
 
@@ -162,7 +142,7 @@ describe("apps:channel-rules:update command", () => {
         ]);
 
       const { error } = await runCommand(
-        ["apps:channel-rules:update", mockRuleId, "--app", appId],
+        ["apps:channel-rules:update", mockRuleId],
         import.meta.url,
       );
 
@@ -177,13 +157,7 @@ describe("apps:channel-rules:update command", () => {
         .reply(200, []);
 
       const { error } = await runCommand(
-        [
-          "apps:channel-rules:update",
-          "nonexistent",
-          "--app",
-          appId,
-          "--persisted",
-        ],
+        ["apps:channel-rules:update", "nonexistent", "--persisted"],
         import.meta.url,
       );
 
@@ -198,13 +172,7 @@ describe("apps:channel-rules:update command", () => {
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
-        [
-          "apps:channel-rules:update",
-          mockRuleId,
-          "--app",
-          appId,
-          "--persisted",
-        ],
+        ["apps:channel-rules:update", mockRuleId, "--persisted"],
         import.meta.url,
       );
 
@@ -219,13 +187,7 @@ describe("apps:channel-rules:update command", () => {
         .replyWithError("Network error");
 
       const { error } = await runCommand(
-        [
-          "apps:channel-rules:update",
-          mockRuleId,
-          "--app",
-          appId,
-          "--persisted",
-        ],
+        ["apps:channel-rules:update", mockRuleId, "--persisted"],
         import.meta.url,
       );
 

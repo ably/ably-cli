@@ -1,22 +1,11 @@
-import {
-  OccupancyEvent,
-  RoomStatus,
-  RoomStatusChange,
-  ChatClient,
-} from "@ably/chat";
-import { Args, Flags } from "@oclif/core";
+import { OccupancyEvent, ChatClient } from "@ably/chat";
+import { Args } from "@oclif/core";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { clientIdFlag, productApiFlags } from "../../../flags.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import {
-  success,
-  listening,
-  progress,
-  resource,
-  formatTimestamp,
-} from "../../../utils/output.js";
+import { errorMessage } from "../../../utils/errors.js";
+import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
+import { progress, resource, formatTimestamp } from "../../../utils/output.js";
 
 export interface OccupancyMetrics {
   connections?: number;
@@ -43,11 +32,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
   static override flags = {
     ...productApiFlags,
     ...clientIdFlag,
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
   };
 
   private chatClient: ChatClient | null = null;
@@ -99,64 +84,11 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       );
 
       // Subscribe to room status changes
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribingToStatus",
-        "Subscribing to room status changes",
-      );
-      room.onStatusChange((statusChange: RoomStatusChange) => {
-        let reason: Error | null | string | undefined;
-        if (statusChange.current === RoomStatus.Failed) {
-          reason = room.error; // Get reason from room.error on failure
-        }
-
-        const reasonMsg = reason instanceof Error ? reason.message : reason;
-        this.logCliEvent(
-          flags,
-          "room",
-          `status-${statusChange.current}`,
-          `Room status changed to ${statusChange.current}`,
-          { reason: reasonMsg },
-        );
-
-        switch (statusChange.current) {
-          case RoomStatus.Attached: {
-            if (!this.shouldOutputJson(flags)) {
-              this.log(
-                success(
-                  `Subscribed to occupancy in room: ${resource(this.roomName!)}.`,
-                ),
-              );
-            }
-
-            break;
-          }
-
-          case RoomStatus.Detached: {
-            if (!this.shouldOutputJson(flags)) {
-              this.log("Disconnected from Ably");
-            }
-
-            break;
-          }
-
-          case RoomStatus.Failed: {
-            if (!this.shouldOutputJson(flags)) {
-              this.error(`Connection failed: ${reasonMsg || "Unknown error"}`);
-            }
-
-            break;
-          }
-          // No default
-        }
+      this.setupRoomStatusHandler(room, flags, {
+        roomName: this.roomName!,
+        successMessage: `Subscribed to occupancy in room: ${resource(this.roomName!)}.`,
+        listeningMessage: "Listening for occupancy updates.",
       });
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribedToStatus",
-        "Subscribed to room status changes",
-      );
 
       // Attach to the room
       this.logCliEvent(
@@ -167,16 +99,6 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       );
       await room.attach();
       // Successful attach logged by onStatusChange handler
-
-      this.logCliEvent(
-        flags,
-        "occupancy",
-        "listening",
-        "Listening for occupancy updates...",
-      );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(listening("Listening for occupancy updates."));
-      }
 
       // Get the initial occupancy metrics
       this.logCliEvent(
@@ -201,7 +123,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
           true,
         );
       } catch (error) {
-        const errorMsg = `Failed to fetch initial occupancy: ${error instanceof Error ? error.message : String(error)}`;
+        const errorMsg = `Failed to fetch initial occupancy: ${errorMessage(error)}`;
         this.logCliEvent(flags, "occupancy", "getInitialError", errorMsg, {
           error: errorMsg,
         });
@@ -236,21 +158,11 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      await waitUntilInterruptedOrTimeout(flags.duration);
+      await this.waitAndTrackCleanup(flags, "occupancy", flags.duration);
     } catch (error) {
-      const errorMsg = `Error: ${error instanceof Error ? error.message : String(error)}`;
-      this.logCliEvent(flags, "occupancy", "fatalError", errorMsg, {
-        error: errorMsg,
+      this.handleCommandError(error, flags, "occupancy", {
         room: this.roomName,
       });
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          { error: errorMsg, room: this.roomName, success: false },
-          flags,
-        );
-      } else {
-        this.error(errorMsg);
-      }
     }
   }
 

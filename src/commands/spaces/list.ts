@@ -1,7 +1,9 @@
 import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
+import { errorMessage } from "../../utils/errors.js";
 import { productApiFlags } from "../../flags.js";
+import { countLabel, limitWarning } from "../../utils/output.js";
 import { SpacesBaseCommand } from "../../spaces-base-command.js";
 
 interface SpaceMetrics {
@@ -144,9 +146,7 @@ export default class SpacesList extends SpacesBaseCommand {
           return;
         }
 
-        this.log(
-          `Found ${chalk.cyan(limitedSpaces.length.toString())} active spaces:`,
-        );
+        this.log(`Found ${countLabel(limitedSpaces.length, "active space")}:`);
 
         limitedSpaces.forEach((space: SpaceItem) => {
           this.log(`${chalk.green(space.spaceName)}`);
@@ -180,19 +180,18 @@ export default class SpacesList extends SpacesBaseCommand {
           this.log(""); // Add a line break between spaces
         });
 
-        if (spacesList.length > flags.limit) {
-          this.log(
-            chalk.yellow(
-              `Showing ${flags.limit} of ${spacesList.length} spaces. Use --limit to show more.`,
-            ),
-          );
-        }
+        const warning = limitWarning(
+          limitedSpaces.length,
+          flags.limit,
+          "spaces",
+        );
+        if (warning) this.log(warning);
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
         this.jsonError(
           {
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             status: "error",
             success: false,
           },
@@ -200,9 +199,7 @@ export default class SpacesList extends SpacesBaseCommand {
         );
         return;
       } else {
-        this.error(
-          `Error listing spaces: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Error listing spaces: ${errorMessage(error)}`);
       }
     }
   }

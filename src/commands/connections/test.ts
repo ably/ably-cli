@@ -212,145 +212,69 @@ export default class ConnectionsTest extends AblyBaseCommand {
     baseOptions: Ably.ClientOptions,
     flags: Record<string, unknown>,
   ): Promise<{ error: Error | null; success: boolean }> {
-    let success = false;
-    let errorResult: Error | null = null;
-
-    this.logCliEvent(
-      flags,
-      "connectionTest",
-      "wsTestStarting",
-      "Testing WebSocket connection...",
-    );
-    if (!this.shouldOutputJson(flags)) {
-      this.log(progress("Testing WebSocket connection to Ably"));
-    }
-
-    try {
-      const wsOptions: Ably.ClientOptions = {
-        ...baseOptions,
-        transportParams: {
-          disallowXHR: true,
-          preferWebSockets: true,
-        },
-      };
-      this.wsClient = new Ably.Realtime(wsOptions);
-      const client = this.wsClient;
-
-      client.connection.on((stateChange: Ably.ConnectionStateChange) => {
-        this.logCliEvent(
-          flags,
-          "connectionTest",
-          `wsStateChange-${stateChange.current}`,
-          `WS connection state changed to ${stateChange.current}`,
-          { reason: stateChange.reason },
-        );
-      });
-
-      await new Promise<void>((resolve, reject) => {
-        const connectionTimeout = setTimeout(() => {
-          const timeoutError = new Error("Connection timeout after 10 seconds");
-          this.logCliEvent(
-            flags,
-            "connectionTest",
-            "wsTimeout",
-            timeoutError.message,
-            { error: timeoutError.message },
-          );
-          reject(timeoutError);
-        }, 10_000);
-
-        client.connection.once("connected", () => {
-          clearTimeout(connectionTimeout);
-          success = true;
-          this.logCliEvent(
-            flags,
-            "connectionTest",
-            "wsSuccess",
-            "WebSocket connection successful",
-            { connectionId: client.connection.id },
-          );
-          if (!this.shouldOutputJson(flags)) {
-            this.log(successMsg("WebSocket connection successful."));
-            this.log(
-              `  Connection ID: ${chalk.cyan(client.connection.id || "unknown")}`,
-            );
-          }
-
-          resolve();
-        });
-
-        client.connection.once("failed", (stateChange) => {
-          clearTimeout(connectionTimeout);
-          errorResult = stateChange.reason || new Error("Connection failed");
-          this.logCliEvent(
-            flags,
-            "connectionTest",
-            "wsFailed",
-            `WebSocket connection failed: ${errorResult.message}`,
-            { error: errorResult.message, reason: stateChange.reason },
-          );
-          if (!this.shouldOutputJson(flags)) {
-            this.log(
-              `${chalk.red("✗")} WebSocket connection failed: ${errorResult.message}`,
-            );
-          }
-
-          resolve(); // Resolve even on failure to allow summary
-        });
-      });
-    } catch (error) {
-      errorResult = error as Error;
-      this.logCliEvent(
-        flags,
-        "connectionTest",
-        "wsError",
-        `WebSocket connection test caught error: ${errorResult.message}`,
-        { error: errorResult.message },
-      );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          `${chalk.red("✗")} WebSocket connection failed: ${errorResult.message}`,
-        );
-      }
-    }
-    // Client cleanup is handled by command finally() method
-
-    return { error: errorResult, success };
+    const result = await this.testTransport(baseOptions, flags, {
+      displayName: "WebSocket",
+      prefix: "ws",
+      transportParams: { disallowXHR: true, preferWebSockets: true },
+    });
+    this.wsClient = result.client;
+    return { error: result.error, success: result.success };
   }
 
   private async testXhrConnection(
     baseOptions: Ably.ClientOptions,
     flags: Record<string, unknown>,
   ): Promise<{ error: Error | null; success: boolean }> {
+    const result = await this.testTransport(baseOptions, flags, {
+      displayName: "HTTP",
+      prefix: "xhr",
+      transportParams: { disallowWebSockets: true },
+    });
+    this.xhrClient = result.client;
+    return { error: result.error, success: result.success };
+  }
+
+  private async testTransport(
+    baseOptions: Ably.ClientOptions,
+    flags: Record<string, unknown>,
+    config: {
+      displayName: string;
+      prefix: string;
+      transportParams: Record<string, boolean>;
+    },
+  ): Promise<{
+    client: Ably.Realtime | null;
+    error: Error | null;
+    success: boolean;
+  }> {
     let success = false;
     let errorResult: Error | null = null;
 
     this.logCliEvent(
       flags,
       "connectionTest",
-      "xhrTestStarting",
-      "Testing HTTP connection...",
+      `${config.prefix}TestStarting`,
+      `Testing ${config.displayName} connection...`,
     );
     if (!this.shouldOutputJson(flags)) {
-      this.log(progress("Testing HTTP connection to Ably"));
+      this.log(progress(`Testing ${config.displayName} connection to Ably`));
     }
 
+    let client: Ably.Realtime | null = null;
+
     try {
-      const xhrOptions: Ably.ClientOptions = {
+      const options: Ably.ClientOptions = {
         ...baseOptions,
-        transportParams: {
-          disallowWebSockets: true,
-        },
+        transportParams: config.transportParams,
       };
-      this.xhrClient = new Ably.Realtime(xhrOptions);
-      const client = this.xhrClient;
+      client = new Ably.Realtime(options);
 
       client.connection.on((stateChange: Ably.ConnectionStateChange) => {
         this.logCliEvent(
           flags,
           "connectionTest",
-          `xhrStateChange-${stateChange.current}`,
-          `HTTP connection state changed to ${stateChange.current}`,
+          `${config.prefix}StateChange-${stateChange.current}`,
+          `${config.displayName} connection state changed to ${stateChange.current}`,
           { reason: stateChange.reason },
         );
       });
@@ -361,50 +285,50 @@ export default class ConnectionsTest extends AblyBaseCommand {
           this.logCliEvent(
             flags,
             "connectionTest",
-            "xhrTimeout",
+            `${config.prefix}Timeout`,
             timeoutError.message,
             { error: timeoutError.message },
           );
           reject(timeoutError);
         }, 10_000);
 
-        client.connection.once("connected", () => {
+        client!.connection.once("connected", () => {
           clearTimeout(connectionTimeout);
           success = true;
           this.logCliEvent(
             flags,
             "connectionTest",
-            "xhrSuccess",
-            "HTTP connection successful",
-            { connectionId: client.connection.id },
+            `${config.prefix}Success`,
+            `${config.displayName} connection successful`,
+            { connectionId: client!.connection.id },
           );
           if (!this.shouldOutputJson(flags)) {
-            this.log(successMsg("HTTP connection successful."));
             this.log(
-              `  Connection ID: ${chalk.cyan(client.connection.id || "unknown")}`,
+              successMsg(`${config.displayName} connection successful.`),
+            );
+            this.log(
+              `  Connection ID: ${chalk.cyan(client!.connection.id || "unknown")}`,
             );
           }
-
           resolve();
         });
 
-        client.connection.once("failed", (stateChange) => {
+        client!.connection.once("failed", (stateChange) => {
           clearTimeout(connectionTimeout);
           errorResult = stateChange.reason || new Error("Connection failed");
           this.logCliEvent(
             flags,
             "connectionTest",
-            "xhrFailed",
-            `HTTP connection failed: ${errorResult.message}`,
+            `${config.prefix}Failed`,
+            `${config.displayName} connection failed: ${errorResult.message}`,
             { error: errorResult.message, reason: stateChange.reason },
           );
           if (!this.shouldOutputJson(flags)) {
             this.log(
-              `${chalk.red("✗")} HTTP connection failed: ${errorResult.message}`,
+              `${chalk.red("✗")} ${config.displayName} connection failed: ${errorResult.message}`,
             );
           }
-
-          resolve(); // Resolve even on failure
+          resolve();
         });
       });
     } catch (error) {
@@ -412,18 +336,17 @@ export default class ConnectionsTest extends AblyBaseCommand {
       this.logCliEvent(
         flags,
         "connectionTest",
-        "xhrError",
-        `HTTP connection test caught error: ${errorResult.message}`,
+        `${config.prefix}Error`,
+        `${config.displayName} connection test caught error: ${errorResult.message}`,
         { error: errorResult.message },
       );
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          `${chalk.red("✗")} HTTP connection failed: ${errorResult.message}`,
+          `${chalk.red("✗")} ${config.displayName} connection failed: ${errorResult.message}`,
         );
       }
     }
-    // Client cleanup is handled by command finally() method
 
-    return { error: errorResult, success };
+    return { client, error: errorResult, success };
   }
 }

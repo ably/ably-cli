@@ -36,7 +36,7 @@ describe("channel-rule:update command (alias)", () => {
         });
 
       const { stdout } = await runCommand(
-        ["channel-rule:update", mockRuleId, "--app", appId, "--persisted"],
+        ["channel-rule:update", mockRuleId, "--persisted"],
         import.meta.url,
       );
 
@@ -44,9 +44,8 @@ describe("channel-rule:update command (alias)", () => {
     });
 
     it("should require nameOrId argument", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
-        ["channel-rule:update", "--app", appId, "--persisted"],
+        ["channel-rule:update", "--persisted"],
         import.meta.url,
       );
 

@@ -1,6 +1,7 @@
 import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { errorMessage } from "../../utils/errors.js";
 import { resource, success } from "../../utils/output.js";
 
 // Interface for basic integration data structure
@@ -80,19 +81,12 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(IntegrationsCreateCommand);
 
+    const appId = await this.requireAppId(flags);
+    if (!appId) return;
+
     const controlApi = this.createControlApi(flags);
 
     try {
-      // Get app ID from flags or config
-      const appId = await this.resolveAppId(flags);
-
-      if (!appId) {
-        this.error(
-          'No app specified. Use --app flag or select an app with "ably apps switch"',
-        );
-        return;
-      }
-
       // Prepare integration data
       const integrationData: IntegrationData = {
         requestMode: flags["request-mode"] as string,
@@ -173,9 +167,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
         );
       }
     } catch (error) {
-      this.error(
-        `Error creating integration: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.error(`Error creating integration: ${errorMessage(error)}`);
     }
   }
 }

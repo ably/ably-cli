@@ -3,6 +3,7 @@ import * as Ably from "ably";
 import { randomUUID } from "node:crypto";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { errorMessage } from "../../utils/errors.js";
 import { productApiFlags } from "../../flags.js";
 
 export default class IssueAblyTokenCommand extends AblyBaseCommand {
@@ -64,9 +65,7 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
       try {
         capabilities = JSON.parse(flags.capability);
       } catch (error) {
-        this.error(
-          `Invalid capability JSON: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Invalid capability JSON: ${errorMessage(error)}`);
       }
 
       // Create token params
@@ -126,9 +125,7 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
         );
       }
     } catch (error) {
-      this.error(
-        `Error issuing Ably token: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.error(`Error issuing Ably token: ${errorMessage(error)}`);
     }
   }
 }

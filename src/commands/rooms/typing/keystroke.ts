@@ -1,9 +1,8 @@
-import { RoomStatus, ChatClient, RoomStatusChange } from "@ably/chat";
+import { RoomStatus, ChatClient } from "@ably/chat";
 import { Args, Flags } from "@oclif/core";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { clientIdFlag, productApiFlags } from "../../../flags.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import { listening, resource, success } from "../../../utils/output.js";
 
 // The heartbeats are throttled to one every 10 seconds. There's a 2 second
@@ -41,11 +40,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
       description: "Automatically keep typing indicator active",
       default: false,
     }),
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
   };
 
   private chatClient: ChatClient | null = null;
@@ -94,26 +89,19 @@ export default class TypingKeystroke extends ChatBaseCommand {
         `Got room handle for ${roomName}`,
       );
 
-      // Subscribe to room status changes
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribingToStatus",
-        "Subscribing to room status changes",
-      );
-      room.onStatusChange((statusChange: RoomStatusChange) => {
+      // Subscribe to room status changes — combines logging and keystroke trigger
+      room.onStatusChange((statusChange) => {
         let reason: Error | null | string | undefined;
         if (statusChange.current === RoomStatus.Failed) {
-          reason = room.error; // Get reason from room.error on failure
+          reason = room.error;
         }
-
         const reasonMsg = reason instanceof Error ? reason.message : reason;
         this.logCliEvent(
           flags,
           "room",
           `status-${statusChange.current}`,
           `Room status changed to ${statusChange.current}`,
-          { reason: reasonMsg },
+          { reason: reasonMsg, room: roomName },
         );
 
         if (statusChange.current === RoomStatus.Attached) {
@@ -185,16 +173,10 @@ export default class TypingKeystroke extends ChatBaseCommand {
           !this.shouldOutputJson(flags)
         ) {
           this.error(
-            `Failed to attach to room: ${reasonMsg || "Unknown error"}`,
+            `Failed to attach to room ${roomName}: ${reasonMsg || "Unknown error"}`,
           );
         }
       });
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribedToStatus",
-        "Subscribed to room status changes",
-      );
 
       // Attach to the room
       this.logCliEvent(
@@ -214,25 +196,9 @@ export default class TypingKeystroke extends ChatBaseCommand {
       );
 
       // Decide how long to remain connected
-      await waitUntilInterruptedOrTimeout(flags.duration);
+      await this.waitAndTrackCleanup(flags, "typing", flags.duration);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(
-        flags,
-        "typing",
-        "fatalError",
-        `Failed to start typing: ${errorMsg}`,
-        { error: errorMsg, room: args.room },
-      );
-
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          { error: errorMsg, room: args.room, success: false },
-          flags,
-        );
-      } else {
-        this.error(`Failed to start typing: ${errorMsg}`);
-      }
+      this.handleCommandError(error, flags, "typing", { room: args.room });
     }
   }
 }

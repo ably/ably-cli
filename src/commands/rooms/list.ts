@@ -1,7 +1,7 @@
 import { Flags } from "@oclif/core";
 import { ChatBaseCommand } from "../../chat-base-command.js";
 import { productApiFlags } from "../../flags.js";
-import { resource } from "../../utils/output.js";
+import { countLabel, limitWarning, resource } from "../../utils/output.js";
 import chalk from "chalk";
 
 // Add interface definitions at the beginning of the file
@@ -134,7 +134,7 @@ export default class RoomsList extends ChatBaseCommand {
         }
 
         this.log(
-          `Found ${resource(limitedRooms.length.toString())} active chat rooms:`,
+          `Found ${countLabel(limitedRooms.length, "active chat room")}:`,
         );
 
         for (const room of limitedRooms) {
@@ -169,29 +169,11 @@ export default class RoomsList extends ChatBaseCommand {
           this.log(""); // Add a line break between rooms
         }
 
-        if (rooms.length > flags.limit) {
-          this.log(
-            chalk.yellow(
-              `Showing ${flags.limit} of ${rooms.length} rooms. Use --limit to show more.`,
-            ),
-          );
-        }
+        const warning = limitWarning(limitedRooms.length, flags.limit, "rooms");
+        if (warning) this.log(warning);
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error: error instanceof Error ? error.message : String(error),
-            status: "error",
-            success: false,
-          },
-          flags,
-        );
-        return;
-      }
-      this.error(
-        `Error listing rooms: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.handleCommandError(error, flags, "rooms");
     }
   }
 }

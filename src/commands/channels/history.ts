@@ -4,9 +4,16 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../flags.js";
-import { formatJson, isJsonData } from "../../utils/json-formatter.js";
-import { formatTimestamp, resource } from "../../utils/output.js";
-import { parseTimestamp } from "../../utils/time.js";
+import { formatMessageData } from "../../utils/json-formatter.js";
+import { buildHistoryParams } from "../../utils/history.js";
+import { errorMessage } from "../../utils/errors.js";
+import {
+  countLabel,
+  formatTimestamp,
+  formatMessageTimestamp,
+  limitWarning,
+  resource,
+} from "../../utils/output.js";
 
 export default class ChannelsHistory extends AblyBaseCommand {
   static override args = {
@@ -72,27 +79,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
       const channel = client.channels.get(channelName, channelOptions);
 
       // Build history query parameters
-      const historyParams: Ably.RealtimeHistoryParams = {
-        direction: flags.direction as "backwards" | "forwards",
-        limit: flags.limit,
-      };
-
-      // Add time range if specified
-      if (flags.start) {
-        historyParams.start = parseTimestamp(flags.start, "start");
-      }
-
-      if (flags.end) {
-        historyParams.end = parseTimestamp(flags.end, "end");
-      }
-
-      if (
-        historyParams.start !== undefined &&
-        historyParams.end !== undefined &&
-        historyParams.start > historyParams.end
-      ) {
-        this.error("--start must be earlier than or equal to --end");
-      }
+      const historyParams = buildHistoryParams(flags);
 
       // Get history
       const history = await channel.history(historyParams);
@@ -108,13 +95,13 @@ export default class ChannelsHistory extends AblyBaseCommand {
         }
 
         this.log(
-          `Found ${chalk.cyan(messages.length.toString())} ${messages.length === 1 ? "message" : "messages"} in the history of channel: ${resource(channelName)}`,
+          `Found ${countLabel(messages.length, "message")} in the history of channel: ${resource(channelName)}`,
         );
         this.log("");
 
         for (const [index, message] of messages.entries()) {
           const timestampDisplay = message.timestamp
-            ? formatTimestamp(new Date(message.timestamp).toISOString())
+            ? formatTimestamp(formatMessageTimestamp(message.timestamp))
             : chalk.dim("[Unknown timestamp]");
 
           this.log(`${chalk.dim(`[${index + 1}]`)} ${timestampDisplay}`);
@@ -129,25 +116,16 @@ export default class ChannelsHistory extends AblyBaseCommand {
           }
 
           this.log(chalk.dim("Data:"));
-          if (isJsonData(message.data)) {
-            this.log(formatJson(message.data));
-          } else {
-            this.log(String(message.data));
-          }
+          this.log(formatMessageData(message.data));
 
           this.log("");
         }
 
-        if (messages.length === flags.limit) {
-          this.log(
-            chalk.yellow(
-              `Showing maximum of ${flags.limit} messages. Use --limit to show more.`,
-            ),
-          );
-        }
+        const warning = limitWarning(messages.length, flags.limit, "messages");
+        if (warning) this.log(warning);
       }
     } catch (error) {
-      const errorMsg = `Error retrieving channel history: ${error instanceof Error ? error.message : String(error)}`;
+      const errorMsg = `Error retrieving channel history: ${errorMessage(error)}`;
       if (this.shouldOutputJson(flags)) {
         this.jsonError({ error: errorMsg, success: false }, flags);
       } else {

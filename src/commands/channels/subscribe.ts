@@ -3,15 +3,20 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
-import { clientIdFlag, productApiFlags } from "../../flags.js";
-import { formatJson, isJsonData } from "../../utils/json-formatter.js";
-import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
+import {
+  clientIdFlag,
+  durationFlag,
+  productApiFlags,
+  rewindFlag,
+} from "../../flags.js";
+import { formatMessageData } from "../../utils/json-formatter.js";
 import {
   listening,
   progress,
   resource,
   success,
   formatTimestamp,
+  formatMessageTimestamp,
 } from "../../utils/output.js";
 
 export default class ChannelsSubscribe extends AblyBaseCommand {
@@ -41,6 +46,8 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
   static override flags = {
     ...productApiFlags,
     ...clientIdFlag,
+    ...durationFlag,
+    ...rewindFlag,
     "cipher-algorithm": Flags.string({
       default: "aes",
       description: "Encryption algorithm to use (default: aes)",
@@ -60,15 +67,6 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       default: false,
       description: "Enable delta compression for messages",
     }),
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
-    rewind: Flags.integer({
-      default: 0,
-      description: "Number of messages to rewind when subscribing (default: 0)",
-    }),
     "sequence-numbers": Flags.boolean({
       default: false,
       description: "Include sequence numbers in output",
@@ -77,7 +75,6 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
   static override strict = false;
 
-  private cleanupInProgress = false;
   private client: Ably.Realtime | null = null;
   private sequenceCounter = 0;
 
@@ -148,19 +145,13 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
         }
 
         // Configure rewind
-        if (flags.rewind > 0) {
-          channelOptions.params = {
-            ...channelOptions.params,
-            rewind: flags.rewind.toString(),
-          };
-          this.logCliEvent(
-            flags,
-            "subscribe",
-            "rewindEnabled",
-            `Rewind enabled for channel ${channelName}`,
-            { channel: channelName, count: flags.rewind },
-          );
-        }
+        this.configureRewind(
+          channelOptions,
+          flags.rewind,
+          flags,
+          "subscribe",
+          channelName,
+        );
 
         return client!.channels.get(channelName, channelOptions);
       });
@@ -204,9 +195,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
         channel.subscribe((message: Ably.Message) => {
           this.sequenceCounter++;
-          const timestamp = message.timestamp
-            ? new Date(message.timestamp).toISOString()
-            : new Date().toISOString();
+          const timestamp = formatMessageTimestamp(message.timestamp);
           const messageEvent = {
             channel: channel.name,
             clientId: message.clientId,
@@ -242,12 +231,8 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
             );
 
             // Message data with consistent formatting
-            if (isJsonData(message.data)) {
-              this.log(chalk.dim("Data:"));
-              this.log(formatJson(message.data));
-            } else {
-              this.log(`${chalk.dim("Data:")} ${message.data}`);
-            }
+            this.log(chalk.dim("Data:"));
+            this.log(formatMessageData(message.data));
 
             this.log(""); // Empty line for better readability
           }
@@ -283,29 +268,11 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-      this.logCliEvent(flags, "subscribe", "runComplete", "Exiting wait loop", {
-        exitReason,
-      });
-      this.cleanupInProgress = exitReason === "signal";
+      await this.waitAndTrackCleanup(flags, "subscribe", flags.duration);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(
-        flags,
-        "subscribe",
-        "fatalError",
-        `Error during subscription: ${errorMsg}`,
-        { channels: channelNames, error: errorMsg },
-      );
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          { channels: channelNames, error: errorMsg, success: false },
-          flags,
-        );
-        return;
-      } else {
-        this.error(`Error: ${errorMsg}`);
-      }
+      this.handleCommandError(error, flags, "subscribe", {
+        channels: channelNames,
+      });
     }
   }
 }

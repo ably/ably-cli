@@ -2,6 +2,7 @@ import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { errorMessage } from "../../utils/errors.js";
 
 export default class IntegrationsListCommand extends ControlBaseCommand {
   static description = "List all integrations";
@@ -27,34 +28,12 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
     // Display authentication information
     this.showAuthInfoIfNeeded(flags);
 
+    const appId = await this.requireAppId(flags);
+    if (!appId) return;
+
     const controlApi = this.createControlApi(flags);
-    let appId: string | undefined;
 
     try {
-      // Get app ID from flags or config
-      appId = await this.resolveAppId(flags);
-
-      if (!appId) {
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            {
-              error:
-                'No app specified. Use --app flag or select an app with "ably apps switch"',
-              status: "error",
-              success: false,
-            },
-            flags,
-          );
-          return;
-        } else {
-          this.error(
-            'No app specified. Use --app flag or select an app with "ably apps switch"',
-          );
-        }
-
-        return;
-      }
-
       const integrations = await controlApi.listRules(appId);
 
       if (this.shouldOutputJson(flags)) {
@@ -114,7 +93,7 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
         this.jsonError(
           {
             appId,
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             status: "error",
             success: false,
           },
@@ -122,9 +101,7 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
         );
         return;
       } else {
-        this.error(
-          `Error listing integrations: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Error listing integrations: ${errorMessage(error)}`);
       }
     }
   }

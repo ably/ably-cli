@@ -1,16 +1,16 @@
-import { Args, Flags } from "@oclif/core";
+import { Args } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
-import { clientIdFlag, productApiFlags } from "../../../flags.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import {
   listening,
   progress,
   resource,
   success,
   formatTimestamp,
+  formatMessageTimestamp,
 } from "../../../utils/output.js";
 
 export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
@@ -35,14 +35,9 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
   static override flags = {
     ...productApiFlags,
     ...clientIdFlag,
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
   };
 
-  private cleanupInProgress = false;
   private client: Ably.Realtime | null = null;
 
   async run(): Promise<void> {
@@ -86,9 +81,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
       }
 
       channel.presence.subscribe((presenceMessage: Ably.PresenceMessage) => {
-        const timestamp = presenceMessage.timestamp
-          ? new Date(presenceMessage.timestamp).toISOString()
-          : new Date().toISOString();
+        const timestamp = formatMessageTimestamp(presenceMessage.timestamp);
         const event = {
           action: presenceMessage.action,
           channel: channelName,
@@ -146,28 +139,11 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-      this.logCliEvent(flags, "presence", "runComplete", "Exiting wait loop", {
-        exitReason,
-      });
-      this.cleanupInProgress = exitReason === "signal";
+      await this.waitAndTrackCleanup(flags, "presence", flags.duration);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(
-        flags,
-        "presence",
-        "fatalError",
-        `Error during presence subscription: ${errorMsg}`,
-        { channel: args.channel, error: errorMsg },
-      );
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          { channel: args.channel, error: errorMsg, success: false },
-          flags,
-        );
-      } else {
-        this.error(`Error: ${errorMsg}`);
-      }
+      this.handleCommandError(error, flags, "presence", {
+        channel: args.channel,
+      });
     }
   }
 }

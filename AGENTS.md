@@ -98,16 +98,20 @@ Flags are NOT global. Each command explicitly declares only the flags it needs v
 - **`productApiFlags`** — core + hidden product API flags (`port`, `tlsPort`, `tls`). Use for commands that talk to the Ably product API.
 - **`controlApiFlags`** — core + hidden control API flags (`control-host`, `dashboard-host`). Use for commands that talk to the Control API.
 - **`clientIdFlag`** — `--client-id`. Add to any command that creates a realtime connection (publish, subscribe, presence enter/subscribe, spaces enter/get/subscribe, locks acquire/get/subscribe, cursors set/get/subscribe, locations set/get/subscribe, etc.). The rule: if the command calls `space.enter()`, creates a realtime client, or joins a channel, include `clientIdFlag`. Do NOT add globally.
+- **`durationFlag`** — `--duration` / `-D`. Use for long-running subscribe/stream commands that auto-exit after N seconds.
+- **`rewindFlag`** — `--rewind`. Use for subscribe commands that support message replay (default: 0).
 - **`timeRangeFlags`** — `--start`, `--end`. Use for history and stats commands. Parse with `parseTimestamp()` from `src/utils/time.ts`. Accepts ISO 8601, Unix ms, or relative (e.g., `"1h"`, `"30m"`, `"2d"`).
 - **`endpointFlag`** — `--endpoint`. Hidden, only on `accounts login` and `accounts switch`.
 
 **When creating a new command:**
 ```typescript
 // Product API command (channels, spaces, rooms, etc.)
-import { productApiFlags, clientIdFlag } from "../../flags.js";
+import { productApiFlags, clientIdFlag, durationFlag, rewindFlag } from "../../flags.js";
 static override flags = {
   ...productApiFlags,
   ...clientIdFlag,  // Only if command needs client identity
+  ...durationFlag,  // Only if long-running (subscribe/stream commands)
+  ...rewindFlag,    // Only if supports message replay
   // command-specific flags...
 };
 
@@ -181,9 +185,9 @@ pnpm test test/unit/commands/foo.test.ts  # Specific test
 - **Success**: `success("Message published to channel " + resource(name) + ".")` — green checkmark, **must** end with `.` (not `!`). Never use `chalk.green(...)` directly — always use the `success()` helper.
 - **Listening**: `listening("Listening for messages.")` — dim, includes "Press Ctrl+C to exit." Don't combine listening text inside a `success()` call — use a separate `listening()` call.
 - **Resource names**: Always `resource(name)` (cyan), never quoted — including in `logCliEvent` messages.
-- **Timestamps**: `formatTimestamp(ts)` — dim `[timestamp]` for event streams. Exported as `formatTimestamp` to avoid clashing with local `timestamp` variables.
+- **Timestamps**: `formatTimestamp(ts)` — dim `[timestamp]` for event streams. `formatMessageTimestamp(message.timestamp)` — converts Ably message timestamp (number|undefined) to ISO string. Both exported from `src/utils/output.ts`.
 - **JSON guard**: All human-readable output (progress, success, listening messages) must be wrapped in `if (!this.shouldOutputJson(flags))` so it doesn't pollute `--json` output. Only JSON payloads should be emitted when `--json` is active.
-- **JSON errors**: In catch blocks, emit structured JSON when `--json` is active: `this.formatJsonOutput({ error: errorMsg, success: false }, flags)`. Never silently swallow errors in JSON mode — always emit a JSON error object or use `this.jsonError()`.
+- **JSON errors**: In catch blocks, use `this.handleCommandError(error, flags, component, context?)` for consistent error handling. It logs the event, emits JSON error when `--json` is active, and calls `this.error()` for human-readable output. For non-standard error flows, use `this.jsonError()` directly.
 - **History output**: Use `[index] timestamp` ordering: `` `${chalk.dim(`[${index + 1}]`)} ${formatTimestamp(timestamp)}` ``. Consistent across all history commands (channels, logs, connection-lifecycle, push).
 
 ### Additional output patterns (direct chalk, not helpers)
@@ -211,8 +215,8 @@ When adding COMMANDS sections in `src/help.ts`, use `chalk.bold()` for headers, 
 - All flags kebab-case: `--my-flag` (never camelCase)
 - `--app`: `"The app ID or name (defaults to current app)"` (for commands with `resolveAppId`), `"The app ID (defaults to current app)"` (for commands without)
 - `--limit`: `"Maximum number of results to return (default: N)"`
-- `--duration`: `"Automatically exit after N seconds"`, alias `-D`
-- `--rewind`: `"Number of messages to rewind when subscribing (default: 0)"`
+- `--duration`: Use `durationFlag` from `src/flags.ts`. `"Automatically exit after N seconds"`, alias `-D`.
+- `--rewind`: Use `rewindFlag` from `src/flags.ts`. `"Number of messages to rewind when subscribing (default: 0)"`. Apply with `this.configureRewind(channelOptions, flags.rewind, flags, component, channelName)`.
 - `--start`/`--end`: Use `timeRangeFlags` from `src/flags.ts` and parse with `parseTimestamp()` from `src/utils/time.ts`. Accepts ISO 8601, Unix ms, or relative (e.g., `"1h"`, `"30m"`, `"2d"`).
 - `--direction`: `"Direction of message retrieval (default: backwards)"` or `"Direction of log retrieval"`, options `["backwards", "forwards"]`.
 - Channels use "publish", Rooms use "send" (matches SDK terminology)

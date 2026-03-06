@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { errorMessage } from "../../utils/errors.js";
 import { progress, resource, success } from "../../utils/output.js";
 
 export default class AppsSetApnsP12Command extends ControlBaseCommand {
@@ -80,7 +81,7 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      const errorMsg = `Error uploading APNS P12 certificate: ${error instanceof Error ? error.message : String(error)}`;
+      const errorMsg = `Error uploading APNS P12 certificate: ${errorMessage(error)}`;
       if (this.shouldOutputJson(flags)) {
         this.jsonError({ error: errorMsg, success: false }, flags);
       } else {

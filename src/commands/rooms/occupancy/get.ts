@@ -92,20 +92,7 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
         this.log(`Presence Members: ${occupancyMetrics.presenceMembers ?? 0}`);
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error: error instanceof Error ? error.message : String(error),
-            room: args.room,
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(
-          `Error fetching room occupancy: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
+      this.handleCommandError(error, flags, "occupancy", { room: args.room });
     }
   }
 }

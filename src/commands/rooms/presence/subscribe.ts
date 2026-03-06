@@ -1,25 +1,16 @@
-import {
-  PresenceMember,
-  RoomStatus,
-  ChatClient,
-  RoomStatusChange,
-  Room,
-  PresenceEvent,
-  PresenceEventType,
-} from "@ably/chat";
-import { Args, Interfaces, Flags } from "@oclif/core";
-import * as Ably from "ably";
+import { PresenceMember, ChatClient, Room, PresenceEvent } from "@ably/chat";
+import { Args, Interfaces } from "@oclif/core";
 import chalk from "chalk";
 
-import { productApiFlags, clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
   progress,
   success,
   listening,
   resource,
   formatTimestamp,
+  formatPresenceAction,
 } from "../../../utils/output.js";
 
 export default class RoomsPresenceSubscribe extends ChatBaseCommand {
@@ -41,17 +32,12 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
   static override flags = {
     ...productApiFlags,
     ...clientIdFlag,
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
   };
 
   private chatClient: ChatClient | null = null;
   private roomName: string | null = null;
   private room: Room | null = null;
-  private cleanupInProgress: boolean = false;
   private commandFlags: Interfaces.InferredFlags<
     typeof RoomsPresenceSubscribe.flags
   > | null = null;
@@ -91,15 +77,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         }
 
         // Wait for the duration even with auth failures
-        const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-        this.logCliEvent(
-          flags,
-          "presence",
-          "runComplete",
-          "Exiting wait loop (auth exception case)",
-          { exitReason },
-        );
-        this.cleanupInProgress = exitReason === "signal";
+        await this.waitAndTrackCleanup(flags, "presence", flags.duration);
         return;
       }
 
@@ -120,15 +98,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         }
 
         // Wait for the duration even with auth failures
-        const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-        this.logCliEvent(
-          flags,
-          "presence",
-          "runComplete",
-          "Exiting wait loop (auth failed case)",
-          { exitReason },
-        );
-        this.cleanupInProgress = exitReason === "signal";
+        await this.waitAndTrackCleanup(flags, "presence", flags.duration);
         return;
       }
 
@@ -141,34 +111,10 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       this.room = await this.chatClient.rooms.get(this.roomName!);
       const currentRoom = this.room!;
 
-      currentRoom.onStatusChange((statusChange: RoomStatusChange) => {
-        let reasonDetails: string | Ably.ErrorInfo | undefined | null;
-        if (statusChange.current === RoomStatus.Failed) {
-          reasonDetails = currentRoom.error || undefined;
-        }
-        const reasonMsg =
-          reasonDetails instanceof Error
-            ? reasonDetails.message
-            : String(reasonDetails);
-        this.logCliEvent(
-          flags,
-          "room",
-          `status-${statusChange.current}`,
-          `Room status: ${statusChange.current}`,
-          { reason: reasonMsg },
-        );
-        if (
-          statusChange.current === RoomStatus.Attached &&
-          !this.shouldOutputJson(flags) &&
-          this.roomName
-        ) {
-          this.log(success(`Connected to room: ${resource(this.roomName)}.`));
-        } else if (
-          statusChange.current === RoomStatus.Failed &&
-          !this.shouldOutputJson(flags)
-        ) {
-          this.error(`Room connection failed: ${reasonMsg || "Unknown error"}`);
-        }
+      this.setupRoomStatusHandler(currentRoom, flags, {
+        roomName: this.roomName!,
+        successMessage: `Connected to room: ${resource(this.roomName!)}.`,
+        listeningMessage: undefined,
       });
 
       await currentRoom.attach();
@@ -234,20 +180,8 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
             this.formatJsonOutput({ success: true, ...eventData }, flags),
           );
         } else {
-          let actionSymbol = "•";
-          let actionColor = chalk.white;
-          if (event.type === PresenceEventType.Enter) {
-            actionSymbol = "✓";
-            actionColor = chalk.green;
-          }
-          if (event.type === PresenceEventType.Leave) {
-            actionSymbol = "✗";
-            actionColor = chalk.red;
-          }
-          if (event.type === PresenceEventType.Update) {
-            actionSymbol = "⟲";
-            actionColor = chalk.yellow;
-          }
+          const { symbol: actionSymbol, color: actionColor } =
+            formatPresenceAction(event.type);
           this.log(
             `${formatTimestamp(timestamp)} ${actionColor(actionSymbol)} ${chalk.blue(member.clientId || "Unknown")} ${actionColor(event.type)}`,
           );
@@ -283,23 +217,11 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       }
 
       // Wait until the user interrupts or the optional duration elapses
-      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-      this.logCliEvent(flags, "presence", "runComplete", "Exiting wait loop", {
-        exitReason,
-      });
-      this.cleanupInProgress = exitReason === "signal"; // mark if signal so finally knows
+      await this.waitAndTrackCleanup(flags, "presence", flags.duration);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(flags, "presence", "runError", `Error: ${errorMsg}`, {
+      this.handleCommandError(error, flags, "presence", {
         room: this.roomName,
       });
-      if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput({ error: errorMsg, success: false }, flags),
-        );
-      } else {
-        this.error(`Error: ${errorMsg}`);
-      }
     } finally {
       const currentFlags = this.commandFlags || {};
       this.logCliEvent(

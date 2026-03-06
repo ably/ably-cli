@@ -39,7 +39,7 @@ describe("LogsConnectionLifecycleSubscribe", function () {
 
     expect(mock.channels.get).toHaveBeenCalledWith(
       "[meta]connection.lifecycle",
-      undefined,
+      {},
     );
     expect(channel.subscribe).toHaveBeenCalled();
     expect(stdout).toContain("Subscribed to connection lifecycle logs");
