@@ -23,12 +23,22 @@ import { vi, type Mock } from "vitest";
 /**
  * Mock REST channel type with all common methods.
  */
+/**
+ * Mock REST annotations type.
+ */
+export interface MockRestAnnotations {
+  get: Mock;
+  publish: Mock;
+  delete: Mock;
+}
+
 export interface MockRestChannel {
   name: string;
   publish: Mock;
   history: Mock;
   status: Mock;
   presence: MockRestPresence;
+  annotations: MockRestAnnotations;
 }
 
 /**
@@ -111,6 +121,21 @@ function createMockRestPresence(): MockRestPresence {
 }
 
 /**
+ * Create a mock REST annotations object.
+ */
+function createMockRestAnnotations(): MockRestAnnotations {
+  return {
+    get: vi.fn().mockResolvedValue({
+      items: [],
+      hasNext: () => false,
+      isLast: () => true,
+    }),
+    publish: vi.fn().mockImplementation(async () => {}),
+    delete: vi.fn().mockImplementation(async () => {}),
+  };
+}
+
+/**
  * Create a mock REST channel object.
  */
 function createMockRestChannel(name: string): MockRestChannel {
@@ -135,6 +160,7 @@ function createMockRestChannel(name: string): MockRestChannel {
       },
     }),
     presence: createMockRestPresence(),
+    annotations: createMockRestAnnotations(),
   };
 }
 
