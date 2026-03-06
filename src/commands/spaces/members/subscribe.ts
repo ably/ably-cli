@@ -1,11 +1,16 @@
 import type { SpaceMember } from "@ably/spaces";
-import { Args, Flags } from "@oclif/core";
+import { Args } from "@oclif/core";
 import chalk from "chalk";
 
-import { productApiFlags, clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import { listening, progress, formatTimestamp } from "../../../utils/output.js";
+import {
+  listening,
+  progress,
+  formatTimestamp,
+  formatPresenceAction,
+} from "../../../utils/output.js";
 
 export default class SpacesMembersSubscribe extends SpacesBaseCommand {
   static override args = {
@@ -28,18 +33,13 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
   static override flags = {
     ...productApiFlags,
     ...clientIdFlag,
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
   };
 
   private listener: ((member: SpaceMember) => void) | null = null;
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesMembersSubscribe);
-    this.parsedFlags = flags;
     const { space: spaceName } = args;
 
     // Keep track of the last event we've seen for each client to avoid duplicates
@@ -54,44 +54,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
         this.log(progress("Subscribing to member updates"));
       }
 
-      // Create Spaces client using setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceName);
-      this.realtimeClient = setupResult.realtimeClient;
-      this.space = setupResult.space;
-      if (!this.realtimeClient || !this.space) {
-        this.error("Failed to initialize clients or space");
-        return;
-      }
-
-      // Set up connection state logging
-      this.setupConnectionStateLogging(this.realtimeClient!, flags, {
-        includeUserFriendlyMessages: true,
-      });
-
-      // Get the space
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "gettingSpace",
-        `Getting space: ${spaceName}...`,
-      );
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "gotSpace",
-        `Got space handle: ${spaceName}`,
-      );
-
-      // Enter the space to subscribe
-      this.logCliEvent(flags, "spaces", "entering", "Entering space...");
-      if (!this.space) {
-        this.error("Space object is null before entering");
-        return;
-      }
-      await this.space.enter();
-      this.logCliEvent(flags, "spaces", "entered", "Entered space", {
-        clientId: this.realtimeClient!.auth.clientId,
-      });
+      await this.initializeSpace(flags, spaceName, { enterSpace: true });
 
       // Get current members
       this.logCliEvent(
@@ -100,11 +63,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
         "gettingInitial",
         "Fetching initial members",
       );
-      if (!this.space) {
-        this.error("Space object is null before getting members");
-        return;
-      }
-      const members = await this.space.members.getAll();
+      const members = await this.space!.members.getAll();
       const initialMembers = members.map((member) => ({
         clientId: member.clientId,
         connectionId: member.connectionId,
@@ -176,11 +135,6 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
         "subscribing",
         "Subscribing to member updates",
       );
-      if (!this.space) {
-        this.error("Space object is null before subscribing to members");
-        return;
-      }
-
       // Define the listener function
       this.listener = (member: SpaceMember) => {
         const timestamp = new Date().toISOString();
@@ -249,28 +203,8 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
             this.formatJsonOutput({ success: true, ...memberEventData }, flags),
           );
         } else {
-          let actionSymbol = "•";
-          let actionColor = chalk.white;
-
-          switch (action) {
-            case "enter": {
-              actionSymbol = "✓";
-              actionColor = chalk.green;
-              break;
-            }
-
-            case "leave": {
-              actionSymbol = "✗";
-              actionColor = chalk.red;
-              break;
-            }
-
-            case "update": {
-              actionSymbol = "⟲";
-              actionColor = chalk.yellow;
-              break;
-            }
-          }
+          const { symbol: actionSymbol, color: actionColor } =
+            formatPresenceAction(action);
 
           this.log(
             `${formatTimestamp(timestamp)} ${actionColor(actionSymbol)} ${chalk.blue(clientId)} ${actionColor(action)}`,
@@ -296,7 +230,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
       };
 
       // Subscribe using the stored listener
-      await this.space.members.subscribe("update", this.listener);
+      await this.space!.members.subscribe("update", this.listener);
 
       this.logCliEvent(
         flags,

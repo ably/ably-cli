@@ -1,8 +1,8 @@
 import { type Lock } from "@ably/spaces";
-import { Args, Flags } from "@oclif/core";
+import { Args } from "@oclif/core";
 import chalk from "chalk";
 
-import { productApiFlags, clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
@@ -32,18 +32,13 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
   static override flags = {
     ...productApiFlags,
     ...clientIdFlag,
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
   };
 
   private listener: ((lock: Lock) => void) | null = null;
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksSubscribe);
-    this.parsedFlags = flags;
     const { space: spaceName } = args;
     this.logCliEvent(
       flags,
@@ -64,100 +59,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
         "Initial readiness signal logged.",
       );
 
-      // Create Spaces client using setupSpacesClient
-      this.logCliEvent(
-        flags,
-        "subscribe.clientSetup",
-        "attemptingClientCreation",
-        "Attempting to create Spaces and Ably clients.",
-      );
-      const setupResult = await this.setupSpacesClient(flags, spaceName);
-      this.realtimeClient = setupResult.realtimeClient;
-      this.space = setupResult.space;
-      if (!this.realtimeClient || !this.space) {
-        this.logCliEvent(
-          flags,
-          "subscribe.clientSetup",
-          "clientCreationFailed",
-          "Client or space setup failed.",
-        );
-        this.error("Failed to initialize clients or space");
-        return;
-      }
-      this.logCliEvent(
-        flags,
-        "subscribe.clientSetup",
-        "clientCreationSuccess",
-        "Spaces and Ably clients created.",
-      );
-
-      // Add listeners for connection state changes
-      // Set up connection state logging
-      this.setupConnectionStateLogging(this.realtimeClient, flags, {
-        includeUserFriendlyMessages: true,
-      });
-
-      // Make sure we have a connection before proceeding
-      this.logCliEvent(
-        flags,
-        "connection",
-        "waiting",
-        "Waiting for connection to establish...",
-      );
-      await new Promise<void>((resolve, reject) => {
-        const checkConnection = () => {
-          const { state } = this.realtimeClient!.connection;
-          if (state === "connected") {
-            this.logCliEvent(
-              flags,
-              "connection",
-              "connected",
-              "Realtime connection established.",
-            );
-            resolve();
-          } else if (
-            state === "failed" ||
-            state === "closed" ||
-            state === "suspended"
-          ) {
-            const errorMsg = `Connection failed with state: ${state}`;
-            this.logCliEvent(flags, "connection", "failed", errorMsg, {
-              state,
-            });
-            reject(new Error(errorMsg));
-          } else {
-            // Still connecting, check again shortly
-            setTimeout(checkConnection, 100);
-          }
-        };
-
-        checkConnection();
-      });
-
-      // Get the space
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "gettingSpace",
-        `Getting space: ${spaceName}...`,
-      );
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "gotSpace",
-        `Successfully got space handle: ${spaceName}`,
-      );
-
-      // Enter the space
-      this.logCliEvent(flags, "spaces", "entering", "Entering space...");
-      await this.space.enter();
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "entered",
-        "Successfully entered space",
-        { clientId: this.realtimeClient!.auth.clientId },
-      );
+      await this.initializeSpace(flags, spaceName, { enterSpace: true });
 
       if (!this.shouldOutputJson(flags)) {
         this.log(progress(`Connecting to space: ${resource(spaceName)}`));
@@ -176,7 +78,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
         );
       }
 
-      const locks = await this.space.locks.getAll();
+      const locks = await this.space!.locks.getAll();
       this.logCliEvent(
         flags,
         "lock",
@@ -290,7 +192,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
       };
 
       // Subscribe using the stored listener
-      await this.space.locks.subscribe(this.listener);
+      await this.space!.locks.subscribe(this.listener);
 
       this.logCliEvent(
         flags,

@@ -98,6 +98,28 @@ export const timeRangeFlags = {
 };
 
 /**
+ * Duration flag for long-running subscribe/stream commands.
+ * Automatically exits after N seconds.
+ */
+export const durationFlag = {
+  duration: Flags.integer({
+    description: "Automatically exit after N seconds",
+    char: "D",
+    required: false,
+  }),
+};
+
+/**
+ * Rewind flag for subscribe commands that support message replay.
+ */
+export const rewindFlag = {
+  rewind: Flags.integer({
+    default: 0,
+    description: "Number of messages to rewind when subscribing (default: 0)",
+  }),
+};
+
+/**
  * Composite: core + hidden product API flags.
  * Use for product API commands (channels, connections, logs, bench, etc.)
  */

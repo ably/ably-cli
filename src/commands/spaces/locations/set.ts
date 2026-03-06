@@ -3,7 +3,7 @@ import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 
-import { productApiFlags, clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
   success,
@@ -39,11 +39,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       description: "Location data to set (JSON format)",
       required: true,
     }),
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
   };
 
   private subscription: LocationSubscription | null = null;
@@ -76,37 +72,18 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsSet);
-    this.parsedFlags = flags;
     const { space: spaceName } = args;
 
     // Parse location data first
-    let location: Record<string, unknown> | null = null;
-    try {
-      location = JSON.parse(flags.location);
-      this.logCliEvent(
-        flags,
-        "location",
-        "dataParsed",
-        "Location data parsed successfully",
-        { location },
-      );
-    } catch (error) {
-      const errorMsg = `Invalid location JSON: ${error instanceof Error ? error.message : String(error)}`;
-      this.logCliEvent(flags, "location", "dataParseError", errorMsg, {
-        error: errorMsg,
-      });
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, success: false }, flags);
-      } else {
-        this.error(errorMsg);
-      }
-      return;
-    }
-
-    if (!location) {
-      this.error("Failed to parse location data.");
-      return;
-    }
+    const location = this.parseJsonFlag(flags.location, "location", flags);
+    if (!location) return;
+    this.logCliEvent(
+      flags,
+      "location",
+      "dataParsed",
+      "Location data parsed successfully",
+      { location },
+    );
 
     // Check if we should exit immediately (optimized path for E2E tests)
     const shouldExitImmediately =
@@ -183,46 +160,13 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
 
     // Original path for interactive use
     try {
-      // Create Spaces client using setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceName);
-      this.realtimeClient = setupResult.realtimeClient;
-      this.space = setupResult.space;
-      if (!this.realtimeClient || !this.space) {
-        this.error("Failed to initialize clients or space");
-        return;
-      }
-
-      // Set up connection state logging
-      this.setupConnectionStateLogging(this.realtimeClient, flags, {
-        includeUserFriendlyMessages: true,
-      });
-
-      // Get the space
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "gettingSpace",
-        `Getting space: ${spaceName}...`,
-      );
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "gotSpace",
-        `Got space handle: ${spaceName}`,
-      );
-
-      // Enter the space first
-      this.logCliEvent(flags, "spaces", "entering", "Entering space...");
-      await this.space.enter();
-      this.logCliEvent(flags, "spaces", "entered", "Entered space", {
-        clientId: this.realtimeClient!.auth.clientId,
-      });
+      await this.initializeSpace(flags, spaceName, { enterSpace: true });
 
       // Set the location
       this.logCliEvent(flags, "location", "setting", "Setting location", {
         location,
       });
-      await this.space.locations.set(location);
+      await this.space!.locations.set(location);
       this.logCliEvent(flags, "location", "setSuccess", "Set location", {
         location,
       });
@@ -290,7 +234,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       };
 
       // Subscribe to updates
-      this.space.locations.subscribe("update", this.locationHandler);
+      this.space!.locations.subscribe("update", this.locationHandler);
       this.subscription = {
         unsubscribe: () => {
           if (this.locationHandler && this.space) {

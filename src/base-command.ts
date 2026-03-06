@@ -1428,5 +1428,80 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       this.exit(1);
     }
   }
+
+  /**
+   * Parse a JSON string flag value. Returns the parsed object, or null if parsing fails
+   * (after emitting the appropriate error output).
+   */
+  protected parseJsonFlag(
+    value: string,
+    flagName: string,
+    flags: BaseFlags,
+  ): Record<string, unknown> | null {
+    try {
+      return JSON.parse(value.trim());
+    } catch (error) {
+      const errorMsg = `Invalid ${flagName} JSON: ${error instanceof Error ? error.message : String(error)}`;
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
+      return null;
+    }
+  }
+
+  /**
+   * Centralized error handler for command catch blocks.
+   * Logs the error event and outputs either JSON error or human-readable error.
+   *
+   * @param error - The caught error
+   * @param flags - Command flags
+   * @param component - The component name for logCliEvent (e.g., "subscribe", "presence")
+   * @param context - Optional extra fields to include in the JSON error output
+   */
+  protected handleCommandError(
+    error: unknown,
+    flags: BaseFlags,
+    component: string,
+    context?: Record<string, unknown>,
+  ): void {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    this.logCliEvent(flags, component, "fatalError", `Error: ${errorMsg}`, {
+      error: errorMsg,
+      ...context,
+    });
+    if (this.shouldOutputJson(flags)) {
+      this.jsonError({ error: errorMsg, success: false, ...context }, flags);
+    } else {
+      this.error(errorMsg);
+    }
+  }
+
+  /**
+   * Apply rewind configuration to channel options.
+   * Mutates the provided channelOptions.params if rewind > 0.
+   */
+  protected configureRewind(
+    channelOptions: Ably.ChannelOptions,
+    rewind: number,
+    flags: BaseFlags,
+    component: string,
+    channelName: string,
+  ): void {
+    if (rewind > 0) {
+      this.logCliEvent(
+        flags,
+        component,
+        "rewindEnabled",
+        `Rewind enabled for ${channelName}`,
+        { channel: channelName, count: rewind },
+      );
+      channelOptions.params = {
+        ...channelOptions.params,
+        rewind: rewind.toString(),
+      };
+    }
+  }
 }
 export { BaseFlags } from "./types/cli.js";

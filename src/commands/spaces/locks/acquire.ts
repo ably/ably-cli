@@ -2,7 +2,7 @@ import { type LockOptions } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
-import { productApiFlags, clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import { success, listening, resource } from "../../../utils/output.js";
@@ -33,11 +33,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
       description: "Optional data to associate with the lock (JSON format)",
       required: false,
     }),
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
   };
 
   private lockId: null | string = null;
@@ -67,69 +63,31 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksAcquire);
-    this.parsedFlags = flags;
     const { space: spaceName } = args;
     this.lockId = args.lockId;
     const { lockId } = this;
 
     try {
-      // Create Spaces client using setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceName);
-      this.realtimeClient = setupResult.realtimeClient;
-      this.space = setupResult.space;
-      if (!this.realtimeClient || !this.space) {
-        this.error("Failed to initialize clients or space");
-        return;
-      }
-
-      // Set up connection state logging
-      this.setupConnectionStateLogging(this.realtimeClient, flags, {
-        includeUserFriendlyMessages: true,
-      });
+      await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
       // Parse lock data if provided
       let lockData: unknown;
       if (flags.data) {
-        try {
-          lockData = JSON.parse(flags.data);
-          this.logCliEvent(
-            flags,
-            "lock",
-            "dataParsed",
-            "Lock data parsed successfully",
-            { data: lockData },
-          );
-        } catch (error) {
-          const errorMsg = `Invalid lock data JSON: ${error instanceof Error ? error.message : String(error)}`;
-          this.logCliEvent(flags, "lock", "dataParseError", errorMsg, {
-            error: errorMsg,
-          });
-          if (this.shouldOutputJson(flags)) {
-            this.jsonError({ error: errorMsg, success: false }, flags);
-          } else {
-            this.error(errorMsg);
-          }
-          return;
-        }
+        const parsed = this.parseJsonFlag(flags.data, "lock data", flags);
+        if (!parsed) return;
+        lockData = parsed;
+        this.logCliEvent(
+          flags,
+          "lock",
+          "dataParsed",
+          "Lock data parsed successfully",
+          { data: lockData },
+        );
       }
-
-      // Get the space
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "gettingSpace",
-        `Getting space: ${spaceName}...`,
-      );
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "gotSpace",
-        `Got space handle: ${spaceName}`,
-      );
 
       // Enter the space first
       this.logCliEvent(flags, "spaces", "entering", "Entering space...");
-      await this.space.enter();
+      await this.space!.enter();
       this.logCliEvent(flags, "spaces", "entered", "Entered space", {
         clientId: this.realtimeClient!.auth.clientId,
       });
@@ -143,7 +101,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
           `Attempting to acquire lock: ${lockId}`,
           { data: lockData, lockId },
         );
-        const lock = await this.space.locks.acquire(
+        const lock = await this.space!.locks.acquire(
           lockId,
           lockData as LockOptions,
         );
@@ -202,12 +160,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
       // Decide how long to remain connected
       await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, success: false }, flags);
-      } else {
-        this.error(errorMsg);
-      }
+      this.handleCommandError(error, flags, "locks");
     }
   }
 }

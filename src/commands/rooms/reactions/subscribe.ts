@@ -1,17 +1,11 @@
-import { ChatClient, RoomReactionEvent, RoomStatus } from "@ably/chat";
-import { Args, Flags } from "@oclif/core";
+import { ChatClient, RoomReactionEvent } from "@ably/chat";
+import { Args } from "@oclif/core";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { clientIdFlag, productApiFlags } from "../../../flags.js";
+import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import {
-  progress,
-  success,
-  listening,
-  resource,
-  formatTimestamp,
-} from "../../../utils/output.js";
+import { progress, resource, formatTimestamp } from "../../../utils/output.js";
 
 export default class RoomsReactionsSubscribe extends ChatBaseCommand {
   static override args = {
@@ -32,14 +26,9 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
   static override flags = {
     ...productApiFlags,
     ...clientIdFlag,
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
   };
 
-  // private clients: ChatClients | null = null; // Replace with chatClient and ablyClient
   private chatClient: ChatClient | null = null;
 
   async run(): Promise<void> {
@@ -47,7 +36,6 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
 
     try {
       // Create Chat client
-      // this.clients = await this.createChatClient(flags) // Assign to chatClient
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
@@ -55,7 +43,6 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         return;
       }
 
-      // const { chatClient, realtimeClient } = this.clients // Remove deconstruction
       const { room: roomName } = args;
 
       // Set up connection state logging
@@ -93,67 +80,11 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
       );
 
       // Subscribe to room status changes
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribingToStatus",
-        "Subscribing to room status changes",
-      );
-      room.onStatusChange((statusChange) => {
-        let reason: Error | null | string | undefined;
-        if (statusChange.current === RoomStatus.Failed) {
-          reason = room.error; // Get reason from room.error on failure
-        }
-
-        const reasonMsg = reason instanceof Error ? reason.message : reason;
-        this.logCliEvent(
-          flags,
-          "room",
-          `status-${statusChange.current}`,
-          `Room status changed to ${statusChange.current}`,
-          { reason: reasonMsg },
-        );
-
-        switch (statusChange.current) {
-          case RoomStatus.Attached: {
-            if (!this.shouldOutputJson(flags)) {
-              this.log(
-                success(
-                  `Subscribed to reactions in room: ${resource(roomName)}.`,
-                ),
-              );
-              this.log(listening("Listening for reactions."));
-            }
-
-            break;
-          }
-
-          case RoomStatus.Detached: {
-            if (!this.shouldOutputJson(flags)) {
-              this.log(chalk.yellow("Disconnected from Ably"));
-            }
-
-            break;
-          }
-
-          case RoomStatus.Failed: {
-            if (!this.shouldOutputJson(flags)) {
-              this.error(
-                `${chalk.red("Connection failed:")} ${reasonMsg || "Unknown error"}`,
-              );
-            }
-
-            break;
-          }
-          // No default
-        }
+      this.setupRoomStatusHandler(room, flags, {
+        roomName,
+        successMessage: `Subscribed to reactions in room: ${resource(roomName)}.`,
+        listeningMessage: "Listening for reactions.",
       });
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribedToStatus",
-        "Subscribed to room status changes",
-      );
 
       // Attach to the room
       this.logCliEvent(
@@ -224,19 +155,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(flags, "reactions", "fatalError", `Error: ${errorMsg}`, {
-        error: errorMsg,
-        room: args.room,
-      });
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          { error: errorMsg, room: args.room, success: false },
-          flags,
-        );
-      } else {
-        this.error(`Error: ${errorMsg}`);
-      }
+      this.handleCommandError(error, flags, "reactions", { room: args.room });
     }
   }
 }

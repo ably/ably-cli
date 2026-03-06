@@ -1,6 +1,5 @@
 import {
   ChatClient,
-  RoomStatus,
   MessageReactionRawEvent,
   MessageReactionSummaryEvent,
   MessageReactionSummary,
@@ -9,13 +8,15 @@ import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../../chat-base-command.js";
-import { clientIdFlag, productApiFlags } from "../../../../flags.js";
+import {
+  clientIdFlag,
+  durationFlag,
+  productApiFlags,
+} from "../../../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../../../utils/long-running.js";
 import {
-  listening,
   progress,
   resource,
-  success,
   formatTimestamp,
 } from "../../../../utils/output.js";
 
@@ -44,11 +45,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
         "Subscribe to raw individual reaction events instead of summaries",
       default: false,
     }),
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
   };
 
   private chatClient: ChatClient | null = null;
@@ -107,67 +104,11 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
       this.logCliEvent(flags, "room", "gotRoom", `Got room handle for ${room}`);
 
       // Subscribe to room status changes
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribingToStatus",
-        "Subscribing to room status changes",
-      );
-      chatRoom.onStatusChange((statusChange) => {
-        let reason: Error | null | string | undefined;
-        if (statusChange.current === RoomStatus.Failed) {
-          reason = chatRoom.error; // Get reason from chatRoom.error on failure
-        }
-
-        const reasonMsg = reason instanceof Error ? reason.message : reason;
-        this.logCliEvent(
-          flags,
-          "room",
-          `status-${statusChange.current}`,
-          `Room status changed to ${statusChange.current}`,
-          { reason: reasonMsg },
-        );
-
-        switch (statusChange.current) {
-          case RoomStatus.Attached: {
-            if (!this.shouldOutputJson(flags)) {
-              this.log(success("Connected to Ably."));
-              this.log(
-                listening(
-                  `Listening for message reactions in room ${resource(room)}.`,
-                ),
-              );
-            }
-
-            break;
-          }
-
-          case RoomStatus.Detached: {
-            if (!this.shouldOutputJson(flags)) {
-              this.log(chalk.yellow("Disconnected from Ably"));
-            }
-
-            break;
-          }
-
-          case RoomStatus.Failed: {
-            if (!this.shouldOutputJson(flags)) {
-              this.error(
-                `${chalk.red("Connection failed:")} ${reasonMsg || "Unknown error"}`,
-              );
-            }
-
-            break;
-          }
-          // No default
-        }
+      this.setupRoomStatusHandler(chatRoom, flags, {
+        roomName: room,
+        successMessage: "Connected to Ably.",
+        listeningMessage: `Listening for message reactions in room ${resource(room)}.`,
       });
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribedToStatus",
-        "Successfully subscribed to room status changes",
-      );
 
       // Attach to the room
       this.logCliEvent(flags, "room", "attaching", `Attaching to room ${room}`);
@@ -307,19 +248,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(flags, "reactions", "fatalError", `Error: ${errorMsg}`, {
-        error: errorMsg,
-        room: args.room,
-      });
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          { error: errorMsg, room: args.room, success: false },
-          flags,
-        );
-      } else {
-        this.error(`Error: ${errorMsg}`);
-      }
+      this.handleCommandError(error, flags, "reactions", { room: args.room });
     }
   }
 

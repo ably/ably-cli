@@ -32,27 +32,22 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksGet);
-    this.parsedFlags = flags;
-
     const { space: spaceName } = args;
     const { lockId } = args;
 
     try {
-      const setupResult = await this.setupSpacesClient(flags, spaceName);
-      this.realtimeClient = setupResult.realtimeClient;
-      this.space = setupResult.space;
-      if (!this.realtimeClient || !this.space) {
-        this.error("Failed to initialize clients or space");
-        return;
-      }
+      await this.initializeSpace(flags, spaceName, {
+        enterSpace: false,
+        setupConnectionLogging: false,
+      });
 
-      await this.space.enter();
+      await this.space!.enter();
       if (!this.shouldOutputJson(flags)) {
         this.log(success(`Entered space: ${resource(spaceName)}.`));
       }
 
       try {
-        const lock = await this.space.locks.get(lockId);
+        const lock = await this.space!.locks.get(lockId);
 
         if (!lock) {
           if (this.shouldOutputJson(flags)) {

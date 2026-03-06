@@ -1,15 +1,7 @@
-import {
-  ChatClient,
-  Room,
-  RoomStatus,
-  RoomStatusChange,
-  PresenceEvent,
-  PresenceEventType,
-  PresenceData,
-} from "@ably/chat";
+import { ChatClient, Room, PresenceEvent, PresenceData } from "@ably/chat";
 import { Args, Flags, Interfaces } from "@oclif/core";
 import chalk from "chalk";
-import { productApiFlags, clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
@@ -17,6 +9,7 @@ import {
   listening,
   resource,
   formatTimestamp,
+  formatPresenceAction,
 } from "../../../utils/output.js";
 
 export default class RoomsPresenceEnter extends ChatBaseCommand {
@@ -43,11 +36,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       default: false,
       description: "Show other presence events while present (default: false)",
     }),
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
     data: Flags.string({
       description: "Data to include with the member (JSON format)",
       required: false,
@@ -76,25 +65,17 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
 
     const rawData = flags.data;
     if (rawData && rawData !== "{}") {
-      try {
-        let trimmed = rawData.trim();
-        // If the string is wrapped in single or double quotes (common when passed through a shell), remove them first.
-        if (
-          (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
-          (trimmed.startsWith('"') && trimmed.endsWith('"'))
-        ) {
-          trimmed = trimmed.slice(1, -1);
-        }
-        this.data = JSON.parse(trimmed);
-      } catch (error) {
-        const errorMsg = `Invalid data JSON: ${error instanceof Error ? error.message : String(error)}`;
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError({ error: errorMsg, success: false }, flags);
-        } else {
-          this.error(errorMsg);
-        }
-        return; // Exit early if JSON is invalid
+      let trimmed = rawData.trim();
+      // If the string is wrapped in single or double quotes (common when passed through a shell), remove them first.
+      if (
+        (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+        (trimmed.startsWith('"') && trimmed.endsWith('"'))
+      ) {
+        trimmed = trimmed.slice(1, -1);
       }
+      const parsed = this.parseJsonFlag(trimmed, "data", flags);
+      if (!parsed) return;
+      this.data = parsed as PresenceData;
     }
 
     try {
@@ -114,43 +95,13 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       this.room = await this.chatClient.rooms.get(this.roomName);
       const currentRoom = this.room!;
 
-      if (flags["show-others"]) {
-        currentRoom.onStatusChange((statusChange: RoomStatusChange) => {
-          let reasonToLog: string | undefined;
-          if (statusChange.current === RoomStatus.Failed) {
-            const roomError = this.room?.error;
-            reasonToLog =
-              roomError instanceof Error
-                ? roomError.message
-                : String(roomError);
-            this.logCliEvent(
-              flags,
-              "room",
-              `status-failed-detail`,
-              `Room status is FAILED. Error: ${reasonToLog}`,
-              { error: roomError },
-            );
-            if (!this.shouldOutputJson(flags)) {
-              this.error(
-                `Room connection failed: ${reasonToLog || "Unknown error"}`,
-              );
-            }
-          } else if (
-            statusChange.current === RoomStatus.Attached &&
-            !this.shouldOutputJson(flags) &&
-            this.roomName
-          ) {
-            this.log(success(`Connected to room: ${resource(this.roomName)}.`));
-          } else {
-            this.logCliEvent(
-              flags,
-              "room",
-              `status-${statusChange.current}`,
-              `Room status: ${statusChange.current}`,
-            );
-          }
-        });
+      // Subscribe to room status changes
+      this.setupRoomStatusHandler(currentRoom, flags, {
+        roomName: this.roomName,
+        successMessage: `Connected to room: ${resource(this.roomName)}.`,
+      });
 
+      if (flags["show-others"]) {
         currentRoom.presence.subscribe((event: PresenceEvent) => {
           const member = event.member;
           if (member.clientId !== this.chatClient?.clientId) {
@@ -177,20 +128,8 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
                 this.formatJsonOutput({ success: true, ...eventData }, flags),
               );
             } else {
-              let actionSymbol = "•";
-              let actionColor = chalk.white;
-              if (event.type === PresenceEventType.Enter) {
-                actionSymbol = "✓";
-                actionColor = chalk.green;
-              }
-              if (event.type === PresenceEventType.Leave) {
-                actionSymbol = "✗";
-                actionColor = chalk.red;
-              }
-              if (event.type === PresenceEventType.Update) {
-                actionSymbol = "⟲";
-                actionColor = chalk.yellow;
-              }
+              const { symbol: actionSymbol, color: actionColor } =
+                formatPresenceAction(event.type);
               const sequencePrefix = flags["sequence-numbers"]
                 ? `${chalk.dim(`[${this.sequenceCounter}]`)}`
                 : "";
@@ -240,24 +179,9 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       });
       this.cleanupInProgress = exitReason === "signal"; // mark if signal so finally knows
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(
-        flags,
-        "presence",
-        "runError",
-        `Error during command execution: ${errorMsg}`,
-        { errorDetails: error },
-      );
-      if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput({ error: errorMsg, success: false }, flags),
-        );
-      } else {
-        this.error(`Execution Error: ${errorMsg}`);
-      }
-
-      // Don't force exit on errors - let the command handle cleanup naturally
-      return;
+      this.handleCommandError(error, flags, "presence", {
+        room: this.roomName,
+      });
     } finally {
       const currentFlags = this.commandFlags || flags || {};
       this.logCliEvent(

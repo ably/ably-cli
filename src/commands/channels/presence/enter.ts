@@ -3,7 +3,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
-import { clientIdFlag, productApiFlags } from "../../../flags.js";
+import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import { isJsonData } from "../../../utils/json-formatter.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
@@ -11,6 +11,7 @@ import {
   resource,
   success,
   formatTimestamp,
+  formatMessageTimestamp,
 } from "../../../utils/output.js";
 
 export default class ChannelsPresenceEnter extends AblyBaseCommand {
@@ -40,11 +41,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
     data: Flags.string({
       description: "Optional JSON data to associate with the presence",
     }),
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
     "show-others": Flags.boolean({
       default: false,
       description: "Show other presence events while present (default: false)",
@@ -119,9 +116,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
           }
 
           this.sequenceCounter++;
-          const timestamp = presenceMessage.timestamp
-            ? new Date(presenceMessage.timestamp).toISOString()
-            : new Date().toISOString();
+          const timestamp = formatMessageTimestamp(presenceMessage.timestamp);
           const event = {
             action: presenceMessage.action,
             channel: channelName,
@@ -223,22 +218,9 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
       });
       this.cleanupInProgress = exitReason === "signal";
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(
-        flags,
-        "presence",
-        "fatalError",
-        `Error during presence operation: ${errorMsg}`,
-        { channel: args.channel, error: errorMsg },
-      );
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          { channel: args.channel, error: errorMsg, success: false },
-          flags,
-        );
-      } else {
-        this.error(`Error: ${errorMsg}`);
-      }
+      this.handleCommandError(error, flags, "presence", {
+        channel: args.channel,
+      });
     }
   }
 

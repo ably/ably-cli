@@ -37,38 +37,12 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksGetAll);
-    this.parsedFlags = flags;
-
     const { space: spaceName } = args;
 
     try {
-      // Create Spaces client using setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceName);
-      this.realtimeClient = setupResult.realtimeClient;
-      this.space = setupResult.space;
-      if (!this.realtimeClient || !this.space) {
-        this.error("Failed to initialize clients or space");
-        return;
-      }
-
-      // Make sure we have a connection before proceeding
-      await new Promise<void>((resolve, reject) => {
-        const checkConnection = () => {
-          const { state } = this.realtimeClient!.connection;
-          if (state === "connected") {
-            resolve();
-          } else if (
-            state === "failed" ||
-            state === "closed" ||
-            state === "suspended"
-          ) {
-            reject(new Error(`Connection failed with state: ${state}`));
-          } else {
-            setTimeout(checkConnection, 100);
-          }
-        };
-
-        checkConnection();
+      await this.initializeSpace(flags, spaceName, {
+        enterSpace: false,
+        setupConnectionLogging: false,
       });
 
       // Get the space
@@ -76,7 +50,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
         this.log(progress(`Connecting to space: ${resource(spaceName)}`));
       }
 
-      await this.space.enter();
+      await this.space!.enter();
 
       // Wait for space to be properly entered before fetching locks
       await new Promise<void>((resolve, reject) => {
@@ -124,7 +98,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
       }
 
       let locks: LockItem[] = [];
-      const result = await this.space.locks.getAll();
+      const result = await this.space!.locks.getAll();
       locks = Array.isArray(result) ? result : [];
 
       const validLocks = locks.filter((lock: LockItem) => {

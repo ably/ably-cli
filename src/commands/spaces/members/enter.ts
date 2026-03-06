@@ -2,7 +2,7 @@ import type { ProfileData, SpaceMember } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
-import { productApiFlags, clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
@@ -10,6 +10,7 @@ import {
   listening,
   resource,
   formatTimestamp,
+  formatPresenceAction,
 } from "../../../utils/output.js";
 
 export default class SpacesMembersEnter extends SpacesBaseCommand {
@@ -37,18 +38,13 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         "Optional profile data to include with the member (JSON format)",
       required: false,
     }),
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
   };
 
   private cleanupInProgress = false;
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesMembersEnter);
-    this.parsedFlags = flags;
     const { space: spaceName } = args;
 
     // Keep track of the last event we've seen for each client to avoid duplicates
@@ -63,64 +59,22 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         this.log(listening("Entering space."));
       }
 
-      // Create Spaces client using setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceName);
-      this.realtimeClient = setupResult.realtimeClient;
-      this.space = setupResult.space;
-      if (!this.realtimeClient || !this.space) {
-        this.error("Failed to initialize clients or space");
-        return;
-      }
-
-      // Set up connection state logging
-      this.setupConnectionStateLogging(this.realtimeClient, flags, {
-        includeUserFriendlyMessages: true,
-      });
+      await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
       // Parse profile data if provided
       let profileData: ProfileData | undefined;
       if (flags.profile) {
-        try {
-          profileData = JSON.parse(flags.profile);
-          this.logCliEvent(
-            flags,
-            "member",
-            "profileParsed",
-            "Profile data parsed successfully",
-            { profileData },
-          );
-        } catch (error) {
-          const errorMsg = `Invalid profile JSON: ${error instanceof Error ? error.message : String(error)}`;
-          this.logCliEvent(flags, "member", "profileParseError", errorMsg, {
-            error: errorMsg,
-            spaceName,
-          });
-          if (this.shouldOutputJson(flags)) {
-            this.jsonError(
-              { error: errorMsg, spaceName, success: false },
-              flags,
-            );
-          } else {
-            this.error(errorMsg);
-          }
-
-          return;
-        }
+        const parsed = this.parseJsonFlag(flags.profile, "profile", flags);
+        if (!parsed) return;
+        profileData = parsed as ProfileData;
+        this.logCliEvent(
+          flags,
+          "member",
+          "profileParsed",
+          "Profile data parsed successfully",
+          { profileData },
+        );
       }
-
-      // Get the space
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "gettingSpace",
-        `Getting space: ${spaceName}...`,
-      );
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "gotSpace",
-        `Got space handle: ${spaceName}`,
-      );
 
       // Enter the space with optional profile
       this.logCliEvent(
@@ -130,9 +84,9 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         "Attempting to enter space",
         { profileData },
       );
-      await this.space.enter(profileData);
+      await this.space!.enter(profileData);
       const enteredEventData = {
-        connectionId: this.realtimeClient.connection.id,
+        connectionId: this.realtimeClient!.connection.id,
         profile: profileData,
         spaceName,
         status: "connected",
@@ -246,28 +200,8 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
             this.formatJsonOutput({ success: true, ...memberEventData }, flags),
           );
         } else {
-          let actionSymbol = "•";
-          let actionColor = chalk.white;
-
-          switch (action) {
-            case "enter": {
-              actionSymbol = "✓";
-              actionColor = chalk.green;
-              break;
-            }
-
-            case "leave": {
-              actionSymbol = "✗";
-              actionColor = chalk.red;
-              break;
-            }
-
-            case "update": {
-              actionSymbol = "⟲";
-              actionColor = chalk.yellow;
-              break;
-            }
-          }
+          const { symbol: actionSymbol, color: actionColor } =
+            formatPresenceAction(action);
 
           this.log(
             `${formatTimestamp(timestamp)} ${actionColor(actionSymbol)} ${chalk.blue(clientId)} ${actionColor(action)}`,
@@ -317,7 +251,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
       };
 
       // Subscribe using the stored listener
-      await this.space.members.subscribe("update", listener);
+      await this.space!.members.subscribe("update", listener);
 
       this.logCliEvent(
         flags,

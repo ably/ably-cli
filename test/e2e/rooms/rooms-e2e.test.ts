@@ -263,7 +263,7 @@ describe("Rooms E2E Tests", () => {
               "--duration",
               "60",
             ],
-            "Connected to room:",
+            "Subscribed to room:",
             { timeoutMs: process.env.CI ? 45000 : 25000 },
           );
 

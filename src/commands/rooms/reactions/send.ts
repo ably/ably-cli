@@ -1,10 +1,4 @@
-import {
-  RoomStatus,
-  ChatClient,
-  RoomStatusChange,
-  JsonObject,
-  ConnectionStatusChange,
-} from "@ably/chat";
+import { ChatClient, JsonObject } from "@ably/chat";
 import { Args, Flags } from "@oclif/core";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
@@ -88,18 +82,8 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
         return;
       }
 
-      // Add listeners for connection state changes
-      this.chatClient.connection.onStatusChange(
-        (stateChange: ConnectionStatusChange) => {
-          this.logCliEvent(
-            flags,
-            "connection",
-            stateChange.current,
-            `Realtime connection state changed to ${stateChange.current}`,
-            { error: stateChange.error },
-          );
-        },
-      );
+      // Set up connection state logging
+      this.setupConnectionStateLogging(this.chatClient.realtime, flags);
 
       // Get the room
       this.logCliEvent(
@@ -117,42 +101,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
       );
 
       // Subscribe to room status changes
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribingToStatus",
-        "Subscribing to room status changes",
-      );
-      room.onStatusChange((statusChange: RoomStatusChange) => {
-        let reason: Error | null | string | undefined;
-        if (statusChange.current === RoomStatus.Failed) {
-          reason = room.error; // Get reason from room.error on failure
-        }
-
-        const reasonMsg = reason instanceof Error ? reason.message : reason;
-        this.logCliEvent(
-          flags,
-          "room",
-          `status-${statusChange.current}`,
-          `Room status changed to ${statusChange.current}`,
-          { reason: reasonMsg },
-        );
-
-        if (
-          statusChange.current === RoomStatus.Failed &&
-          !this.shouldOutputJson(flags)
-        ) {
-          this.error(
-            `Failed to attach to room: ${reasonMsg || "Unknown error"}`,
-          );
-        }
-      });
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribedToStatus",
-        "Successfully subscribed to room status changes",
-      );
+      this.setupRoomStatusHandler(room, flags, { roomName });
 
       // Attach to the room
       this.logCliEvent(
@@ -204,23 +153,10 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
         );
       }
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(
-        flags,
-        "reaction",
-        "error",
-        `Failed to send reaction: ${errorMsg}`,
-        { error: errorMsg, room: roomName, emoji },
-      );
-
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          { error: errorMsg, room: roomName, emoji, success: false },
-          flags,
-        );
-      } else {
-        this.error(`Failed to send reaction: ${errorMsg}`);
-      }
+      this.handleCommandError(error, flags, "reaction", {
+        room: roomName,
+        emoji,
+      });
     }
   }
 }

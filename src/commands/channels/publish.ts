@@ -5,6 +5,7 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { BaseFlags } from "../../types/cli.js";
+import { interpolateMessage } from "../../utils/message.js";
 import { progress, resource, success } from "../../utils/output.js";
 
 export default class ChannelsPublish extends AblyBaseCommand {
@@ -118,16 +119,6 @@ export default class ChannelsPublish extends AblyBaseCommand {
 
   // --- Original Methods (modified) ---
 
-  private interpolateMessage(message: string, count: number): string {
-    // Replace {{.Count}} with the current count
-    let result = message.replaceAll("{{.Count}}", count.toString());
-
-    // Replace {{.Timestamp}} with the current timestamp
-    result = result.replaceAll("{{.Timestamp}}", Date.now().toString());
-
-    return result;
-  }
-
   private logErrorAndExit(
     message: string,
     flags: Record<string, unknown>,
@@ -190,7 +181,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
     index: number,
   ): Ably.Message {
     // Apply interpolation to the message
-    const interpolatedMessage = this.interpolateMessage(rawMessage, index);
+    const interpolatedMessage = interpolateMessage(rawMessage, index);
 
     // Parse the message
     let messageData;

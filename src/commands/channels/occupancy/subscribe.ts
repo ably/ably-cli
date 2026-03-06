@@ -1,9 +1,9 @@
-import { Args, Flags } from "@oclif/core";
+import { Args } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
-import { productApiFlags } from "../../../flags.js";
+import { durationFlag, productApiFlags } from "../../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
   listening,
@@ -11,6 +11,7 @@ import {
   resource,
   success,
   formatTimestamp,
+  formatMessageTimestamp,
 } from "../../../utils/output.js";
 
 export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
@@ -33,11 +34,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
   };
 
   private cleanupInProgress = false;
@@ -91,9 +88,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
       }
 
       channel.subscribe(occupancyEventName, (message: Ably.Message) => {
-        const timestamp = message.timestamp
-          ? new Date(message.timestamp).toISOString()
-          : new Date().toISOString();
+        const timestamp = formatMessageTimestamp(message.timestamp);
         const event = {
           channel: channelName,
           event: occupancyEventName,
@@ -148,22 +143,9 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
       });
       this.cleanupInProgress = exitReason === "signal";
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(
-        flags,
-        "occupancy",
-        "fatalError",
-        `Error during occupancy subscription: ${errorMsg}`,
-        { channel: args.channel, error: errorMsg },
-      );
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          { channel: args.channel, error: errorMsg, success: false },
-          flags,
-        );
-      } else {
-        this.error(`Error: ${errorMsg}`);
-      }
+      this.handleCommandError(error, flags, "occupancy", {
+        channel: args.channel,
+      });
     }
   }
 }

@@ -178,20 +178,7 @@ export default class RoomsList extends ChatBaseCommand {
         }
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error: error instanceof Error ? error.message : String(error),
-            status: "error",
-            success: false,
-          },
-          flags,
-        );
-        return;
-      }
-      this.error(
-        `Error listing rooms: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.handleCommandError(error, flags, "rooms");
     }
   }
 }

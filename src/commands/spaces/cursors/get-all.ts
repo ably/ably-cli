@@ -41,38 +41,12 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsGetAll);
-    this.parsedFlags = flags;
     const { space: spaceName } = args;
 
     try {
-      // Create Spaces client using setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceName);
-      this.realtimeClient = setupResult.realtimeClient;
-      this.space = setupResult.space;
-      if (!this.realtimeClient || !this.space) {
-        this.error("Failed to initialize clients or space");
-        return;
-      }
-
-      // Make sure we have a connection before proceeding
-      await new Promise<void>((resolve, reject) => {
-        const checkConnection = () => {
-          const { state } = this.realtimeClient!.connection;
-          if (state === "connected") {
-            resolve();
-          } else if (
-            state === "failed" ||
-            state === "closed" ||
-            state === "suspended"
-          ) {
-            reject(new Error(`Connection failed with state: ${state}`));
-          } else {
-            // Still connecting, check again shortly
-            setTimeout(checkConnection, 100);
-          }
-        };
-
-        checkConnection();
+      await this.initializeSpace(flags, spaceName, {
+        enterSpace: false,
+        setupConnectionLogging: false,
       });
 
       // Get the space
@@ -81,7 +55,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
       }
 
       // Enter the space
-      await this.space.enter();
+      await this.space!.enter();
 
       // Wait for space to be properly entered before fetching cursors
       await new Promise<void>((resolve, reject) => {
@@ -171,7 +145,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
       };
 
       try {
-        await this.space.cursors.subscribe("update", cursorUpdateHandler);
+        await this.space!.cursors.subscribe("update", cursorUpdateHandler);
       } catch (error) {
         // If subscription fails, continue anyway
         if (!this.shouldOutputJson(flags)) {
@@ -188,10 +162,10 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
       });
 
       // Unsubscribe from cursor updates
-      this.space.cursors.unsubscribe("update", cursorUpdateHandler);
+      this.space!.cursors.unsubscribe("update", cursorUpdateHandler);
 
       // Ensure connection is stable before calling getAll()
-      if (this.realtimeClient.connection.state !== "connected") {
+      if (this.realtimeClient!.connection.state !== "connected") {
         await new Promise<void>((resolve, reject) => {
           const timeout = setTimeout(() => {
             reject(new Error("Timed out waiting for connection to stabilize"));
@@ -211,7 +185,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
 
       // Now get all cursors (including locally cached ones) and merge with live updates
       try {
-        const allCursors = await this.space.cursors.getAll();
+        const allCursors = await this.space!.cursors.getAll();
 
         // Add any cached cursors that we didn't see in live updates
         if (Array.isArray(allCursors)) {

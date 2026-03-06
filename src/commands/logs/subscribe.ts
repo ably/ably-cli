@@ -3,13 +3,14 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
-import { productApiFlags } from "../../flags.js";
+import { durationFlag, productApiFlags, rewindFlag } from "../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
 import {
   listening,
   resource,
   success,
   formatTimestamp,
+  formatMessageTimestamp,
 } from "../../utils/output.js";
 
 export default class LogsSubscribe extends AblyBaseCommand {
@@ -26,15 +27,8 @@ export default class LogsSubscribe extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
-    rewind: Flags.integer({
-      default: 0,
-      description: "Number of messages to rewind when subscribing (default: 0)",
-    }),
+    ...durationFlag,
+    ...rewindFlag,
     type: Flags.string({
       description: "Filter by log type",
       options: [
@@ -74,19 +68,13 @@ export default class LogsSubscribe extends AblyBaseCommand {
 
       // Configure channel options for rewind if specified
       const channelOptions: Ably.ChannelOptions = {};
-      if (flags.rewind && flags.rewind > 0) {
-        this.logCliEvent(
-          flags,
-          "logs",
-          "rewindEnabled",
-          `Rewind enabled for ${logsChannelName}`,
-          { channel: logsChannelName, count: flags.rewind },
-        );
-        channelOptions.params = {
-          ...channelOptions.params,
-          rewind: flags.rewind.toString(),
-        };
-      }
+      this.configureRewind(
+        channelOptions,
+        flags.rewind,
+        flags,
+        "logs",
+        logsChannelName,
+      );
 
       channel = client.channels.get(logsChannelName, channelOptions);
 
@@ -123,9 +111,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
       // Subscribe to specified log types
       for (const logType of logTypes) {
         channel.subscribe(logType, (message: Ably.Message) => {
-          const timestamp = message.timestamp
-            ? new Date(message.timestamp).toISOString()
-            : new Date().toISOString();
+          const timestamp = formatMessageTimestamp(message.timestamp);
           const event = {
             type: logType,
             timestamp,
@@ -174,19 +160,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
         exitReason,
       });
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(
-        flags,
-        "logs",
-        "fatalError",
-        `Error during logs subscription: ${errorMsg}`,
-        { error: errorMsg },
-      );
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, success: false }, flags);
-      } else {
-        this.error(`Error: ${errorMsg}`);
-      }
+      this.handleCommandError(error, flags, "logs");
     }
   }
 }

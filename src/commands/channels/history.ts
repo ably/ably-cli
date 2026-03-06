@@ -5,8 +5,12 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../flags.js";
 import { formatJson, isJsonData } from "../../utils/json-formatter.js";
-import { formatTimestamp, resource } from "../../utils/output.js";
-import { parseTimestamp } from "../../utils/time.js";
+import { buildHistoryParams } from "../../utils/history.js";
+import {
+  formatTimestamp,
+  formatMessageTimestamp,
+  resource,
+} from "../../utils/output.js";
 
 export default class ChannelsHistory extends AblyBaseCommand {
   static override args = {
@@ -72,27 +76,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
       const channel = client.channels.get(channelName, channelOptions);
 
       // Build history query parameters
-      const historyParams: Ably.RealtimeHistoryParams = {
-        direction: flags.direction as "backwards" | "forwards",
-        limit: flags.limit,
-      };
-
-      // Add time range if specified
-      if (flags.start) {
-        historyParams.start = parseTimestamp(flags.start, "start");
-      }
-
-      if (flags.end) {
-        historyParams.end = parseTimestamp(flags.end, "end");
-      }
-
-      if (
-        historyParams.start !== undefined &&
-        historyParams.end !== undefined &&
-        historyParams.start > historyParams.end
-      ) {
-        this.error("--start must be earlier than or equal to --end");
-      }
+      const historyParams = buildHistoryParams(flags);
 
       // Get history
       const history = await channel.history(historyParams);
@@ -114,7 +98,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
 
         for (const [index, message] of messages.entries()) {
           const timestampDisplay = message.timestamp
-            ? formatTimestamp(new Date(message.timestamp).toISOString())
+            ? formatTimestamp(formatMessageTimestamp(message.timestamp))
             : chalk.dim("[Unknown timestamp]");
 
           this.log(`${chalk.dim(`[${index + 1}]`)} ${timestampDisplay}`);

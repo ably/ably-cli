@@ -1,9 +1,8 @@
-import { Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
-import { productApiFlags } from "../../../flags.js";
+import { durationFlag, productApiFlags, rewindFlag } from "../../../flags.js";
 import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
@@ -11,6 +10,7 @@ import {
   resource,
   success,
   formatTimestamp,
+  formatMessageTimestamp,
 } from "../../../utils/output.js";
 
 export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
@@ -24,15 +24,8 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
-    rewind: Flags.integer({
-      default: 0,
-      description: "Number of messages to rewind when subscribing (default: 0)",
-    }),
+    ...durationFlag,
+    ...rewindFlag,
   };
 
   private client: Ably.Realtime | null = null;
@@ -58,19 +51,13 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
       });
 
       // Configure rewind if specified
-      if (flags.rewind > 0) {
-        this.logCliEvent(
-          flags,
-          "logs",
-          "rewindEnabled",
-          `Rewind enabled for ${channelName}`,
-          { channel: channelName, count: flags.rewind },
-        );
-        channelOptions.params = {
-          ...channelOptions.params,
-          rewind: flags.rewind.toString(),
-        };
-      }
+      this.configureRewind(
+        channelOptions,
+        flags.rewind,
+        flags,
+        "logs",
+        channelName,
+      );
 
       const channel = client.channels.get(channelName, channelOptions);
 
@@ -93,9 +80,7 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
 
       // Subscribe to the channel
       channel.subscribe((message) => {
-        const timestamp = message.timestamp
-          ? new Date(message.timestamp).toISOString()
-          : new Date().toISOString();
+        const timestamp = formatMessageTimestamp(message.timestamp);
         const event = message.name || "unknown";
         const logEvent = {
           channel: channelName,
@@ -156,19 +141,7 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
       this.logCliEvent(flags, "logs", "listening", "Listening for logs...");
       await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error: unknown) {
-      const err = error as Error;
-      this.logCliEvent(
-        flags,
-        "logs",
-        "fatalError",
-        `Error during log subscription: ${err.message}`,
-        { channel: channelName, error: err.message },
-      );
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: err.message, success: false }, flags);
-      } else {
-        this.error(err.message);
-      }
+      this.handleCommandError(error, flags, "logs", { channel: channelName });
     }
     // Client cleanup is handled by command finally() method
   }

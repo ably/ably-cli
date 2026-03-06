@@ -59,42 +59,19 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsGetAll);
-    this.parsedFlags = flags;
     const { space: spaceName } = args;
 
     try {
-      const setupResult = await this.setupSpacesClient(flags, spaceName);
-      this.realtimeClient = setupResult.realtimeClient;
-      this.space = setupResult.space;
-      if (!this.realtimeClient || !this.space) {
-        this.error("Failed to initialize clients or space");
-        return;
-      }
-
-      await new Promise<void>((resolve, reject) => {
-        const checkConnection = () => {
-          const { state } = this.realtimeClient!.connection;
-          if (state === "connected") {
-            resolve();
-          } else if (
-            state === "failed" ||
-            state === "closed" ||
-            state === "suspended"
-          ) {
-            reject(new Error(`Connection failed with state: ${state}`));
-          } else {
-            setTimeout(checkConnection, 100);
-          }
-        };
-
-        checkConnection();
+      await this.initializeSpace(flags, spaceName, {
+        enterSpace: false,
+        setupConnectionLogging: false,
       });
 
       if (!this.shouldOutputJson(flags)) {
         this.log(progress(`Connecting to space: ${resource(spaceName)}`));
       }
 
-      await this.space.enter();
+      await this.space!.enter();
 
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
@@ -144,7 +121,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
       let locations: LocationItem[] = [];
       try {
         const { items: locationsFromSpace } =
-          await this.space.locations.getAll();
+          await this.space!.locations.getAll();
 
         if (locationsFromSpace && typeof locationsFromSpace === "object") {
           if (Array.isArray(locationsFromSpace)) {
@@ -308,7 +285,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
           flags,
         );
       } else {
-        this.error(`Error: ${errorMessage}`);
+        this.error(errorMessage);
       }
     }
   }

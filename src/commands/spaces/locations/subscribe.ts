@@ -1,8 +1,8 @@
 import type { LocationsEvents } from "@ably/spaces";
-import { Args, Flags } from "@oclif/core";
+import { Args } from "@oclif/core";
 import chalk from "chalk";
 
-import { productApiFlags, clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
@@ -52,18 +52,13 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
   static override flags = {
     ...productApiFlags,
     ...clientIdFlag,
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
   };
 
   private cleanupInProgress = false;
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsSubscribe);
-    this.parsedFlags = flags;
     const { space: spaceName } = args;
     this.logCliEvent(
       flags,
@@ -84,103 +79,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
         "Initial readiness signal logged.",
       );
 
-      // Create Spaces client using setupSpacesClient
-      this.logCliEvent(
-        flags,
-        "subscribe.clientSetup",
-        "attemptingClientCreation",
-        "Attempting to create Spaces and Ably clients.",
-      );
-      const setupResult = await this.setupSpacesClient(flags, spaceName);
-      this.realtimeClient = setupResult.realtimeClient;
-      this.space = setupResult.space;
-      if (!this.realtimeClient || !this.space) {
-        this.logCliEvent(
-          flags,
-          "subscribe.clientSetup",
-          "clientCreationFailed",
-          "Client or space setup failed.",
-        );
-        this.error("Failed to initialize clients or space");
-        return;
-      }
-      this.logCliEvent(
-        flags,
-        "subscribe.clientSetup",
-        "clientCreationSuccess",
-        "Spaces and Ably clients created.",
-      );
-
-      // Set up connection state logging
-      this.setupConnectionStateLogging(this.realtimeClient, flags, {
-        includeUserFriendlyMessages: true,
-      });
-
-      // Make sure we have a connection before proceeding
-      this.logCliEvent(
-        flags,
-        "connection",
-        "waiting",
-        "Waiting for connection to establish...",
-      );
-      await new Promise<void>((resolve, reject) => {
-        const checkConnection = () => {
-          const { state } = this.realtimeClient!.connection;
-          if (state === "connected") {
-            this.logCliEvent(
-              flags,
-              "connection",
-              "connected",
-              "Realtime connection established.",
-            );
-            resolve();
-          } else if (
-            state === "failed" ||
-            state === "closed" ||
-            state === "suspended"
-          ) {
-            const errorMsg = `Connection failed with state: ${state}`;
-            this.logCliEvent(flags, "connection", "failed", errorMsg, {
-              state,
-            });
-            reject(new Error(errorMsg));
-          } else {
-            // Still connecting, check again shortly
-            setTimeout(checkConnection, 100);
-          }
-        };
-
-        checkConnection();
-      });
-
-      // Get the space
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "gettingSpace",
-        `Getting space: ${spaceName}...`,
-      );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(progress(`Connecting to space: ${resource(spaceName)}`));
-      }
-
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "gotSpace",
-        `Successfully got space handle: ${spaceName}`,
-      );
-
-      // Enter the space
-      this.logCliEvent(flags, "spaces", "entering", "Entering space...");
-      await this.space.enter();
-      this.logCliEvent(
-        flags,
-        "spaces",
-        "entered",
-        "Successfully entered space",
-        { clientId: this.realtimeClient!.auth.clientId },
-      );
+      await this.initializeSpace(flags, spaceName, { enterSpace: true });
 
       // Get current locations
       this.logCliEvent(
@@ -199,7 +98,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
 
       let locations: LocationItem[] = [];
       try {
-        const result = await this.space.locations.getAll();
+        const result = await this.space!.locations.getAll();
         this.logCliEvent(
           flags,
           "location",
@@ -379,7 +278,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
         };
 
         // Subscribe to location updates
-        this.space.locations.subscribe("update", locationHandler);
+        this.space!.locations.subscribe("update", locationHandler);
 
         this.logCliEvent(
           flags,
@@ -417,22 +316,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
       });
       this.cleanupInProgress = exitReason === "signal";
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(
-        flags,
-        "location",
-        "fatalError",
-        `Failed to subscribe to location updates: ${errorMsg}`,
-        { error: errorMsg, spaceName },
-      );
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          { error: errorMsg, spaceName, status: "error", success: false },
-          flags,
-        );
-      } else {
-        this.error(`Failed to subscribe to location updates: ${errorMsg}`);
-      }
+      this.handleCommandError(error, flags, "location", { spaceName });
     } finally {
       // Wrap all cleanup in a timeout to prevent hanging
       if (!this.shouldOutputJson(flags || {})) {
