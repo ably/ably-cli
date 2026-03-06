@@ -169,10 +169,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
 
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        connection.off("connected", onConnected);
-        connection.off("failed", onFailed);
-        connection.off("closed", onClosed);
-        connection.off("suspended", onSuspended);
+        cleanup();
         reject(new Error("Timeout waiting for connection to establish"));
       }, 10000);
 
@@ -243,6 +240,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
 
     await this.waitForConnection(flags);
 
+    // Store flags for use in cleanup/finally blocks (e.g. SpacesBaseCommand.finally())
     this.parsedFlags = flags;
 
     if (enterSpace) {

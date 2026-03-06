@@ -186,6 +186,8 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
         room,
         messageSerial,
         reaction,
+        ...(flags.type && { type: flags.type }),
+        ...(flags.count && { count: flags.count }),
       });
     }
   }

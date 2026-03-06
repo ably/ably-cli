@@ -120,8 +120,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
 
       let locations: LocationItem[] = [];
       try {
-        const { items: locationsFromSpace } =
-          await this.space!.locations.getAll();
+        const locationsFromSpace = await this.space!.locations.getAll();
 
         if (locationsFromSpace && typeof locationsFromSpace === "object") {
           if (Array.isArray(locationsFromSpace)) {

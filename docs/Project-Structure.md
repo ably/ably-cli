@@ -31,6 +31,7 @@ This document outlines the directory structure of the Ably CLI project.
 │   ├── control-base-command.ts # Base class for Control API commands
 │   ├── interactive-base-command.ts # Base class for interactive/streaming commands
 │   ├── spaces-base-command.ts  # Base class for Ably Spaces commands
+│   ├── stats-base-command.ts   # Base class for stats commands (account/app)
 │   ├── flags.ts                # Composable flag sets (see CLAUDE.md for details)
 │   ├── help.ts                 # Custom help class
 │   ├── index.ts                # Main entry point
@@ -73,6 +74,8 @@ This document outlines the directory structure of the Ably CLI project.
 │       ├── logo.ts                 # ASCII art logo with gradient
 │       ├── long-running.ts         # Long-running command helpers (duration, cleanup)
 │       ├── open-url.ts             # Cross-platform URL opener
+│       ├── history.ts               # History query parameter builder
+│       ├── message.ts              # Message interpolation ({{.Count}}, {{.Timestamp}})
 │       ├── output.ts               # Output helpers (progress, success, resource, etc.)
 │       ├── prompt-confirmation.ts  # Y/N confirmation prompts
 │       ├── readline-helper.ts      # Readline utilities for interactive mode

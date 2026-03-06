@@ -110,26 +110,33 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
         `Room status changed to ${statusChange.current}`,
         { reason: reasonMsg, room: options.roomName },
       );
-      if (statusChange.current === RoomStatus.Attached) {
-        if (!this.shouldOutputJson(flags)) {
-          if (options.successMessage) {
-            this.log(success(options.successMessage));
+      switch (statusChange.current) {
+        case RoomStatus.Attached: {
+          if (!this.shouldOutputJson(flags)) {
+            if (options.successMessage) {
+              this.log(success(options.successMessage));
+            }
+            if (options.listeningMessage) {
+              this.log(listening(options.listeningMessage));
+            }
           }
-          if (options.listeningMessage) {
-            this.log(listening(options.listeningMessage));
+          break;
+        }
+        case RoomStatus.Detached: {
+          if (!this.shouldOutputJson(flags)) {
+            this.log(chalk.yellow("Disconnected from Ably"));
           }
+          break;
         }
-      } else if (statusChange.current === RoomStatus.Detached) {
-        if (!this.shouldOutputJson(flags)) {
-          this.log(chalk.yellow("Disconnected from Ably"));
+        case RoomStatus.Failed: {
+          if (!this.shouldOutputJson(flags)) {
+            this.error(
+              `Failed to attach to room ${options.roomName}: ${reasonMsg || "Unknown error"}`,
+            );
+          }
+          break;
         }
-      } else if (
-        statusChange.current === RoomStatus.Failed &&
-        !this.shouldOutputJson(flags)
-      ) {
-        this.error(
-          `Failed to attach to room ${options.roomName}: ${reasonMsg || "Unknown error"}`,
-        );
+        // No default
       }
     });
   }

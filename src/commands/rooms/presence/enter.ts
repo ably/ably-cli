@@ -95,13 +95,13 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       this.room = await this.chatClient.rooms.get(this.roomName);
       const currentRoom = this.room!;
 
-      // Subscribe to room status changes
-      this.setupRoomStatusHandler(currentRoom, flags, {
-        roomName: this.roomName,
-        successMessage: `Connected to room: ${resource(this.roomName)}.`,
-      });
-
       if (flags["show-others"]) {
+        // Subscribe to room status changes only when showing others
+        this.setupRoomStatusHandler(currentRoom, flags, {
+          roomName: this.roomName,
+          successMessage: `Connected to room: ${resource(this.roomName)}.`,
+        });
+
         currentRoom.presence.subscribe((event: PresenceEvent) => {
           const member = event.member;
           if (member.clientId !== this.chatClient?.clientId) {
