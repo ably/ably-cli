@@ -31,7 +31,7 @@ This document outlines the directory structure of the Ably CLI project.
 │   ├── control-base-command.ts # Base class for Control API commands
 │   ├── interactive-base-command.ts # Base class for interactive/streaming commands
 │   ├── spaces-base-command.ts  # Base class for Ably Spaces commands
-│   ├── flags.ts                # Composable flag sets (see CLAUDE.md for details)
+│   ├── flags.ts                # Composable flag sets (see AGENTS.md for details)
 │   ├── help.ts                 # Custom help class
 │   ├── index.ts                # Main entry point
 │   ├── commands/               # CLI commands (oclif)
