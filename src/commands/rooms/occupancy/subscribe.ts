@@ -8,7 +8,7 @@ import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { productApiFlags } from "../../../flags.js";
+import { clientIdFlag, productApiFlags } from "../../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
   success,
@@ -42,6 +42,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
 
   static override flags = {
     ...productApiFlags,
+    ...clientIdFlag,
     duration: Flags.integer({
       description: "Automatically exit after N seconds",
       char: "D",

@@ -107,7 +107,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
         );
         this.log("");
 
-        for (const message of messages) {
+        for (const [index, message] of messages.entries()) {
           const timestampDisplay = message.timestamp
             ? formatTimestamp(new Date(message.timestamp).toISOString())
             : chalk.dim("[Unknown timestamp]");
@@ -153,10 +153,10 @@ export default class LogsPushHistory extends AblyBaseCommand {
 
           // Format the log output
           this.log(
-            `${timestampDisplay} Channel: ${chalk.cyan(channelName)} | Event: ${eventColor(event)}`,
+            `${chalk.dim(`[${index + 1}]`)} ${timestampDisplay} Channel: ${chalk.cyan(channelName)} | Event: ${eventColor(event)}`,
           );
           if (message.data) {
-            this.log("Data:");
+            this.log(chalk.dim("Data:"));
             if (isJsonData(message.data)) {
               this.log(formatJson(message.data));
             } else {

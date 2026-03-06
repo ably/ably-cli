@@ -248,7 +248,11 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
         `Error during command execution: ${errorMsg}`,
         { errorDetails: error },
       );
-      if (!this.shouldOutputJson(flags)) {
+      if (this.shouldOutputJson(flags)) {
+        this.log(
+          this.formatJsonOutput({ error: errorMsg, success: false }, flags),
+        );
+      } else {
         this.error(`Execution Error: ${errorMsg}`);
       }
 

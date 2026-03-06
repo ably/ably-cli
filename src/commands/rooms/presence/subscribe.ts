@@ -293,7 +293,11 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       this.logCliEvent(flags, "presence", "runError", `Error: ${errorMsg}`, {
         room: this.roomName,
       });
-      if (!this.shouldOutputJson(flags)) {
+      if (this.shouldOutputJson(flags)) {
+        this.log(
+          this.formatJsonOutput({ error: errorMsg, success: false }, flags),
+        );
+      } else {
         this.error(`Error: ${errorMsg}`);
       }
     } finally {

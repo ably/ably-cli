@@ -55,7 +55,7 @@ describe("integrations:update command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Integration Rule Updated Successfully");
+      expect(stdout).toContain("Integration rule updated.");
       expect(stdout).toContain(mockRuleId);
     });
 
@@ -102,7 +102,7 @@ describe("integrations:update command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Integration Rule Updated Successfully");
+      expect(stdout).toContain("Integration rule updated.");
     });
 
     it("should output JSON format when --json flag is used", async () => {
@@ -349,7 +349,7 @@ describe("integrations:update command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Integration Rule Updated Successfully");
+      expect(stdout).toContain("Integration rule updated.");
     });
   });
 });

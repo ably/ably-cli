@@ -251,6 +251,14 @@ export default class StatsAppCommand extends ControlBaseCommand {
         const now = Date.now();
         endMs = now;
         startMs = now - 24 * 60 * 60 * 1000; // 24 hours ago
+      } else if (startMs !== undefined && endMs === undefined) {
+        endMs = Date.now();
+      } else if (startMs === undefined && endMs !== undefined) {
+        startMs = endMs - 24 * 60 * 60 * 1000;
+      }
+
+      if (startMs! > endMs!) {
+        this.error("--start must be earlier than or equal to --end");
       }
 
       const stats = await controlApi.getAppStats(appId, {

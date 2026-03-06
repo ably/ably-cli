@@ -105,7 +105,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
 
           if (message.data !== null && message.data !== undefined) {
             this.log(
-              `${chalk.green("Data:")} ${JSON.stringify(message.data, null, 2)}`,
+              `${chalk.dim("Data:")} ${JSON.stringify(message.data, null, 2)}`,
             );
           }
 

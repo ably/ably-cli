@@ -9,7 +9,7 @@ import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../../chat-base-command.js";
-import { productApiFlags } from "../../../../flags.js";
+import { clientIdFlag, productApiFlags } from "../../../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../../../utils/long-running.js";
 import {
   listening,
@@ -38,6 +38,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
 
   static override flags = {
     ...productApiFlags,
+    ...clientIdFlag,
     raw: Flags.boolean({
       description:
         "Subscribe to raw individual reaction events instead of summaries",

@@ -119,6 +119,14 @@ export default class MessagesHistory extends ChatBaseCommand {
         historyParams.end = parseTimestamp(flags.end, "end");
       }
 
+      if (
+        historyParams.start !== undefined &&
+        historyParams.end !== undefined &&
+        historyParams.start > historyParams.end
+      ) {
+        this.error("--start must be earlier than or equal to --end");
+      }
+
       // Get historical messages
       const messagesResult = await room.messages.history(historyParams);
       const { items } = messagesResult;

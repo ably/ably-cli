@@ -8,7 +8,7 @@ import {
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../../chat-base-command.js";
-import { productApiFlags } from "../../../../flags.js";
+import { clientIdFlag, productApiFlags } from "../../../../flags.js";
 import { resource, success } from "../../../../utils/output.js";
 
 // Map CLI-friendly type names to SDK MessageReactionType values
@@ -56,6 +56,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
 
   static override flags = {
     ...productApiFlags,
+    ...clientIdFlag,
     type: Flags.string({
       description: "The type of reaction (unique, distinct, or multiple)",
       options: Object.keys(REACTION_TYPE_MAP),
