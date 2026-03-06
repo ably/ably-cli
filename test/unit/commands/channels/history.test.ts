@@ -71,9 +71,12 @@ describe("channels:history command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Found");
-      expect(stdout).toContain("2");
-      expect(stdout).toContain("messages");
+      // Should show message fields in the new format
+      expect(stdout).toContain("Timestamp:");
+      expect(stdout).toContain("Channel:");
+      expect(stdout).toContain("test-channel");
+      expect(stdout).toContain("[1]");
+      expect(stdout).toContain("[2]");
       expect(channel.history).toHaveBeenCalled();
     });
 
@@ -83,9 +86,12 @@ describe("channels:history command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("test-event");
+      expect(stdout).toContain("Event: test-event");
       expect(stdout).toContain("Hello world");
+      expect(stdout).toContain("Client ID:");
       expect(stdout).toContain("client-1");
+      expect(stdout).toContain("ID:");
+      expect(stdout).toContain("msg-1");
     });
 
     it("should handle empty history", async () => {
@@ -108,12 +114,14 @@ describe("channels:history command", () => {
       );
 
       const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("messages");
-      expect(result.messages).toHaveLength(2);
-      expect(result.messages[0]).toHaveProperty("id", "msg-1");
-      expect(result.messages[0]).toHaveProperty("name", "test-event");
-      expect(result.messages[0]).toHaveProperty("data");
-      expect(result.messages[0].data).toEqual({ text: "Hello world" });
+      expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveLength(2);
+      expect(result[0]).toHaveProperty("id", "msg-1");
+      expect(result[0]).toHaveProperty("event", "test-event");
+      expect(result[0]).toHaveProperty("channel", "test-channel");
+      expect(result[0]).toHaveProperty("timestamp");
+      expect(result[0]).toHaveProperty("data");
+      expect(result[0].data).toEqual({ text: "Hello world" });
     });
 
     it("should respect --limit flag", async () => {

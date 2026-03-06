@@ -125,9 +125,16 @@ describe("channels:subscribe command", () => {
 
       const { stdout } = await commandPromise;
 
-      // Should have received and displayed the message with channel, event, and data
+      // Should have received and displayed the message with all fields
+      expect(stdout).toContain("Timestamp:");
+      expect(stdout).toContain("Channel:");
       expect(stdout).toContain("test-channel");
       expect(stdout).toContain("Event: test-event");
+      expect(stdout).toContain("ID:");
+      expect(stdout).toContain("msg-123");
+      expect(stdout).toContain("Client ID:");
+      expect(stdout).toContain("publisher-client");
+      expect(stdout).toContain("Data:");
       expect(stdout).toContain("hello world");
     });
 

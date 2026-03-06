@@ -791,7 +791,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   }
 
   protected formatJsonOutput(
-    data: Record<string, unknown>,
+    data: Record<string, unknown> | Record<string, unknown>[],
     flags: BaseFlags,
   ): string {
     if (this.isPrettyJsonOutput(flags)) {
