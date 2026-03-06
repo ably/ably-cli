@@ -4,8 +4,8 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../flags.js";
-import { formatJson, isJsonData } from "../../utils/json-formatter.js";
-import { formatTimestamp, resource } from "../../utils/output.js";
+import { formatMessagesOutput, toMessageJson } from "../../utils/output.js";
+import type { MessageDisplayFields } from "../../utils/output.js";
 import { parseTimestamp } from "../../utils/time.js";
 
 export default class ChannelsHistory extends AblyBaseCommand {
@@ -98,47 +98,42 @@ export default class ChannelsHistory extends AblyBaseCommand {
       const history = await channel.history(historyParams);
       const messages = history.items;
 
+      // Build MessageDisplayFields array from history results
+      const displayMessages: MessageDisplayFields[] = messages.map(
+        (message, index) => ({
+          channel: channelName,
+          clientId: message.clientId,
+          data: message.data,
+          event: message.name || "(none)",
+          id: message.id,
+          indexPrefix: `[${index + 1}]`,
+          serial: (message as Record<string, unknown>).serial as
+            | string
+            | undefined,
+          timestamp: message.timestamp
+            ? new Date(message.timestamp).toISOString()
+            : new Date().toISOString(),
+        }),
+      );
+
       // Display results based on format
       if (this.shouldOutputJson(flags)) {
-        this.log(this.formatJsonOutput({ messages }, flags));
+        this.log(
+          this.formatJsonOutput(
+            displayMessages.map((msg) => toMessageJson(msg)),
+            flags,
+          ),
+        );
       } else {
-        if (messages.length === 0) {
-          this.log("No messages found in the channel history.");
+        if (displayMessages.length === 0) {
+          this.log(formatMessagesOutput([]));
           return;
         }
 
-        this.log(
-          `Found ${chalk.cyan(messages.length.toString())} ${messages.length === 1 ? "message" : "messages"} in the history of channel: ${resource(channelName)}`,
-        );
-        this.log("");
-
-        for (const [index, message] of messages.entries()) {
-          const timestampDisplay = message.timestamp
-            ? formatTimestamp(new Date(message.timestamp).toISOString())
-            : chalk.dim("[Unknown timestamp]");
-
-          this.log(`${chalk.dim(`[${index + 1}]`)} ${timestampDisplay}`);
-          this.log(
-            `${chalk.dim("Event:")} ${chalk.yellow(message.name || "(none)")}`,
-          );
-
-          if (message.clientId) {
-            this.log(
-              `${chalk.dim("Client ID:")} ${chalk.blue(message.clientId)}`,
-            );
-          }
-
-          this.log(chalk.dim("Data:"));
-          if (isJsonData(message.data)) {
-            this.log(formatJson(message.data));
-          } else {
-            this.log(String(message.data));
-          }
-
-          this.log("");
-        }
+        this.log(formatMessagesOutput(displayMessages));
 
         if (messages.length === flags.limit) {
+          this.log("");
           this.log(
             chalk.yellow(
               `Showing maximum of ${flags.limit} messages. Use --limit to show more.`,

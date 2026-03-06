@@ -1,18 +1,18 @@
 import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
-import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
-import { formatJson, isJsonData } from "../../utils/json-formatter.js";
 import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
 import {
+  formatMessagesOutput,
   listening,
   progress,
   resource,
   success,
-  formatTimestamp,
+  toMessageJson,
 } from "../../utils/output.js";
+import type { MessageDisplayFields } from "../../utils/output.js";
 
 export default class ChannelsSubscribe extends AblyBaseCommand {
   static override args = {
@@ -207,48 +207,34 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           const timestamp = message.timestamp
             ? new Date(message.timestamp).toISOString()
             : new Date().toISOString();
-          const messageEvent = {
+
+          const msgFields: MessageDisplayFields = {
             channel: channel.name,
             clientId: message.clientId,
-            connectionId: message.connectionId,
             data: message.data,
-            encoding: message.encoding,
             event: message.name || "(none)",
             id: message.id,
+            serial: (message as Record<string, unknown>).serial as
+              | string
+              | undefined,
+            sequencePrefix: flags["sequence-numbers"]
+              ? `[${this.sequenceCounter}]`
+              : undefined,
             timestamp,
-            ...(flags["sequence-numbers"]
-              ? { sequence: this.sequenceCounter }
-              : {}),
           };
+
           this.logCliEvent(
             flags,
             "subscribe",
             "messageReceived",
             `Received message on channel ${channel.name}`,
-            messageEvent,
+            { ...msgFields },
           );
 
           if (this.shouldOutputJson(flags)) {
-            this.log(this.formatJsonOutput(messageEvent, flags));
+            this.log(this.formatJsonOutput(toMessageJson(msgFields), flags));
           } else {
-            const name = message.name || "(none)";
-            const sequencePrefix = flags["sequence-numbers"]
-              ? `${chalk.dim(`[${this.sequenceCounter}]`)}`
-              : "";
-
-            // Message header with timestamp and channel info
-            this.log(
-              `${formatTimestamp(timestamp)}${sequencePrefix} ${chalk.cyan(`Channel: ${channel.name}`)} | ${chalk.yellow(`Event: ${name}`)}`,
-            );
-
-            // Message data with consistent formatting
-            if (isJsonData(message.data)) {
-              this.log(chalk.dim("Data:"));
-              this.log(formatJson(message.data));
-            } else {
-              this.log(`${chalk.dim("Data:")} ${message.data}`);
-            }
-
+            this.log(formatMessagesOutput([msgFields]));
             this.log(""); // Empty line for better readability
           }
         });
@@ -273,6 +259,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
         }
 
         this.log(listening("Listening for messages."));
+        this.log("");
       }
 
       this.logCliEvent(
