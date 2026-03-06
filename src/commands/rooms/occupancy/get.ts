@@ -1,7 +1,7 @@
 import { Args } from "@oclif/core";
 import { ChatClient, Room, OccupancyData } from "@ably/chat";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { productApiFlags } from "../../../flags.js";
+import { clientIdFlag, productApiFlags } from "../../../flags.js";
 import { resource } from "../../../utils/output.js";
 
 export default class RoomsOccupancyGet extends ChatBaseCommand {
@@ -23,6 +23,7 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
 
   static override flags = {
     ...productApiFlags,
+    ...clientIdFlag,
   };
 
   private chatClient: ChatClient | null = null;

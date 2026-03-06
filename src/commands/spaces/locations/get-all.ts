@@ -162,6 +162,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
         const knownMetaKeys = new Set([
           "clientId",
           "connectionId",
+          "current",
           "id",
           "member",
           "memberId",
@@ -200,16 +201,24 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
             this.formatJsonOutput(
               {
                 locations: validLocations.map((item: LocationItem) => {
+                  const currentMember =
+                    "current" in item &&
+                    item.current &&
+                    typeof item.current === "object"
+                      ? (item.current as LocationWithCurrent["current"]).member
+                      : undefined;
+                  const member = item.member || currentMember;
                   const memberId =
                     item.memberId ||
-                    item.member?.clientId ||
+                    member?.memberId ||
+                    member?.clientId ||
                     item.clientId ||
                     item.id ||
                     item.userId ||
                     "Unknown";
                   const locationData = extractLocationData(item);
                   return {
-                    isCurrentMember: item.member?.isCurrentMember || false,
+                    isCurrentMember: member?.isCurrentMember || false,
                     location: locationData,
                     memberId,
                   };

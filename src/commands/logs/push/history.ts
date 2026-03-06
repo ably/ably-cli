@@ -63,6 +63,14 @@ export default class LogsPushHistory extends AblyBaseCommand {
         historyOptions.end = parseTimestamp(flags.end, "end");
       }
 
+      if (
+        historyOptions.start !== undefined &&
+        historyOptions.end !== undefined &&
+        historyOptions.start > historyOptions.end
+      ) {
+        this.error("--start must be earlier than or equal to --end");
+      }
+
       const historyPage = await channel.history(historyOptions);
       const messages = historyPage.items;
 

@@ -86,6 +86,14 @@ export default class ChannelsHistory extends AblyBaseCommand {
         historyParams.end = parseTimestamp(flags.end, "end");
       }
 
+      if (
+        historyParams.start !== undefined &&
+        historyParams.end !== undefined &&
+        historyParams.start > historyParams.end
+      ) {
+        this.error("--start must be earlier than or equal to --end");
+      }
+
       // Get history
       const history = await channel.history(historyParams);
       const messages = history.items;

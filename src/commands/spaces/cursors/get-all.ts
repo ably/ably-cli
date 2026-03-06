@@ -154,7 +154,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
         if (cursor.connectionId) {
           cursorMap.set(cursor.connectionId, cursor);
 
-          // Show live update on one line
+          // Show live cursor position updates
           if (
             !this.shouldOutputJson(flags) &&
             this.shouldUseTerminalUpdates()

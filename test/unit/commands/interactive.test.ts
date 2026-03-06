@@ -187,7 +187,7 @@ describe("Interactive Command", () => {
       });
 
       child.stderr.on("data", () => {
-        // stderr captured but not logged
+        // Intentionally discarded — stderr is expected but irrelevant to this test
       });
 
       child.on("exit", (code, signal) => {
