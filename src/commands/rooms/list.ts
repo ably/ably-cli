@@ -1,5 +1,7 @@
 import { Flags } from "@oclif/core";
 import { ChatBaseCommand } from "../../chat-base-command.js";
+import { productApiFlags } from "../../flags.js";
+import { resource } from "../../utils/output.js";
 import chalk from "chalk";
 
 // Add interface definitions at the beginning of the file
@@ -41,7 +43,7 @@ export default class RoomsList extends ChatBaseCommand {
   ];
 
   static override flags = {
-    ...ChatBaseCommand.globalFlags,
+    ...productApiFlags,
     limit: Flags.integer({
       default: 100,
       description: "Maximum number of results to return (default: 100)",
@@ -132,11 +134,11 @@ export default class RoomsList extends ChatBaseCommand {
         }
 
         this.log(
-          `Found ${chalk.cyan(limitedRooms.length.toString())} active chat rooms:`,
+          `Found ${resource(limitedRooms.length.toString())} active chat rooms:`,
         );
 
         for (const room of limitedRooms) {
-          this.log(`${chalk.green(room.room)}`);
+          this.log(`${resource(room.room)}`);
 
           // Show occupancy if available
           if (room.status?.occupancy?.metrics) {

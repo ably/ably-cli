@@ -36,7 +36,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
     ...productApiFlags,
     ...clientIdFlag,
     duration: Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
@@ -121,7 +121,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
             presenceMessage.data !== undefined
           ) {
             this.log(
-              `${chalk.green("Data:")} ${JSON.stringify(presenceMessage.data, null, 2)}`,
+              `${chalk.dim("Data:")} ${JSON.stringify(presenceMessage.data, null, 2)}`,
             );
           }
 

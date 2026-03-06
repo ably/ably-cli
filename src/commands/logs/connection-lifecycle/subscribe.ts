@@ -20,18 +20,17 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
   static override flags = {
     ...productApiFlags,
     duration: Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
     rewind: Flags.integer({
-      description: "Number of messages to replay from history when subscribing",
+      description: "Number of messages to rewind when subscribing (default: 0)",
       default: 0,
       required: false,
     }),
   };
 
-  private cleanupInProgress = false;
   private client: Ably.Realtime | null = null;
   private cleanupChannelStateLogging: (() => void) | null = null;
 
@@ -106,7 +105,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
 
           if (message.data !== null && message.data !== undefined) {
             this.log(
-              `${chalk.green("Data:")} ${JSON.stringify(message.data, null, 2)}`,
+              `${chalk.dim("Data:")} ${JSON.stringify(message.data, null, 2)}`,
             );
           }
 
@@ -129,7 +128,6 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
       this.logCliEvent(flags, "logs", "runComplete", "Exiting wait loop", {
         exitReason,
       });
-      this.cleanupInProgress = exitReason === "signal";
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logCliEvent(

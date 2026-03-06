@@ -1,6 +1,7 @@
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { progress, resource, success } from "../../../utils/output.js";
 
@@ -30,7 +31,8 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
   ];
 
   static override flags = {
-    ...SpacesBaseCommand.globalFlags,
+    ...productApiFlags,
+    ...clientIdFlag,
   };
 
   async run(): Promise<void> {

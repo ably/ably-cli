@@ -23,11 +23,6 @@ export class HistoryManager {
       }
 
       if (!fs.existsSync(this.historyFile)) {
-        if (process.env.ABLY_DEBUG_KEYS === "true") {
-          console.error(
-            `[DEBUG] History file does not exist: ${this.historyFile}`,
-          );
-        }
         return;
       }
 
@@ -42,17 +37,7 @@ export class HistoryManager {
       // to populate history in Node.js readline
       const internalRl = rl as readline.Interface & { history?: string[] };
       internalRl.history = history.reverse();
-
-      if (process.env.ABLY_DEBUG_KEYS === "true") {
-        console.error(
-          `[DEBUG] Loaded ${history.length} history items from ${this.historyFile}`,
-        );
-        console.error(`[DEBUG] First few history items:`, history.slice(0, 3));
-      }
-    } catch (error) {
-      if (process.env.ABLY_DEBUG_KEYS === "true") {
-        console.error(`[DEBUG] Error loading history:`, error);
-      }
+    } catch {
       // Silently ignore history load errors
       // History is a nice-to-have feature, shouldn't break the shell
     }

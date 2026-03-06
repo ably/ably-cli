@@ -9,7 +9,7 @@ import {
 } from "@ably/chat";
 import { Args, Flags, Interfaces } from "@oclif/core";
 import chalk from "chalk";
-import { clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
@@ -36,7 +36,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
     "$ ably rooms presence enter my-room --duration 30",
   ];
   static override flags = {
-    ...ChatBaseCommand.globalFlags,
+    ...productApiFlags,
     ...clientIdFlag,
 
     "show-others": Flags.boolean({
@@ -44,7 +44,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       description: "Show other presence events while present (default: false)",
     }),
     duration: Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
@@ -87,19 +87,17 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
         }
         this.data = JSON.parse(trimmed);
       } catch (error) {
-        this.error(
-          `Invalid data JSON: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        const errorMsg = `Invalid data JSON: ${error instanceof Error ? error.message : String(error)}`;
+        if (this.shouldOutputJson(flags)) {
+          this.jsonError({ error: errorMsg, success: false }, flags);
+        } else {
+          this.error(errorMsg);
+        }
         return; // Exit early if JSON is invalid
       }
     }
 
     try {
-      // Always show the readiness signal first, before attempting auth
-      if (!this.shouldOutputJson(flags)) {
-        this.log(listening("Staying present."));
-      }
-
       // Create clients
       this.chatClient = await this.createChatClient(flags);
 
@@ -250,7 +248,11 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
         `Error during command execution: ${errorMsg}`,
         { errorDetails: error },
       );
-      if (!this.shouldOutputJson(flags)) {
+      if (this.shouldOutputJson(flags)) {
+        this.log(
+          this.formatJsonOutput({ error: errorMsg, success: false }, flags),
+        );
+      } else {
         this.error(`Execution Error: ${errorMsg}`);
       }
 

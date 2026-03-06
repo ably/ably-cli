@@ -163,6 +163,54 @@ describe("channels:history command", () => {
       );
     });
 
+    it("should accept Unix ms string for --start", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+
+      await runCommand(
+        ["channels:history", "test-channel", "--start", "1700000000000"],
+        import.meta.url,
+      );
+
+      expect(channel.history).toHaveBeenCalledWith(
+        expect.objectContaining({
+          start: 1700000000000,
+        }),
+      );
+    });
+
+    it("should accept relative time for --start", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+
+      await runCommand(
+        ["channels:history", "test-channel", "--start", "1h"],
+        import.meta.url,
+      );
+
+      // The start value should be approximately 1 hour ago
+      const callArgs = channel.history.mock.calls[0][0];
+      const oneHourAgo = Date.now() - 3_600_000;
+      expect(callArgs.start).toBeGreaterThan(oneHourAgo - 5000);
+      expect(callArgs.start).toBeLessThanOrEqual(oneHourAgo + 5000);
+    });
+
+    it("should accept relative time for --end", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+
+      await runCommand(
+        ["channels:history", "test-channel", "--end", "30m"],
+        import.meta.url,
+      );
+
+      // The end value should be approximately 30 minutes ago
+      const callArgs = channel.history.mock.calls[0][0];
+      const thirtyMinAgo = Date.now() - 30 * 60_000;
+      expect(callArgs.end).toBeGreaterThan(thirtyMinAgo - 5000);
+      expect(callArgs.end).toBeLessThanOrEqual(thirtyMinAgo + 5000);
+    });
+
     it("should handle API errors gracefully", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");

@@ -3,6 +3,7 @@ import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { clientIdFlag, productApiFlags } from "../../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import { success, listening, resource } from "../../../utils/output.js";
 
@@ -25,9 +26,10 @@ export default class TypingSubscribe extends ChatBaseCommand {
   ];
 
   static override flags = {
-    ...ChatBaseCommand.globalFlags,
+    ...productApiFlags,
+    ...clientIdFlag,
     duration: Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),

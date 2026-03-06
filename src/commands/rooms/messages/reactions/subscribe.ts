@@ -9,6 +9,7 @@ import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../../chat-base-command.js";
+import { clientIdFlag, productApiFlags } from "../../../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../../../utils/long-running.js";
 import {
   listening,
@@ -36,14 +37,15 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
   ];
 
   static override flags = {
-    ...ChatBaseCommand.globalFlags,
+    ...productApiFlags,
+    ...clientIdFlag,
     raw: Flags.boolean({
       description:
         "Subscribe to raw individual reaction events instead of summaries",
       default: false,
     }),
     duration: Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
@@ -266,7 +268,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
                 Object.keys(event.reactions.unique).length > 0
               ) {
                 this.log(`  ${chalk.blue("Unique reactions:")}`);
-                this.displayReactionSummary(event.reactions.unique, flags);
+                this.displayReactionSummary(event.reactions.unique);
               }
 
               if (
@@ -274,7 +276,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
                 Object.keys(event.reactions.distinct).length > 0
               ) {
                 this.log(`  ${chalk.blue("Distinct reactions:")}`);
-                this.displayReactionSummary(event.reactions.distinct, flags);
+                this.displayReactionSummary(event.reactions.distinct);
               }
 
               if (
@@ -282,10 +284,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
                 Object.keys(event.reactions.multiple).length > 0
               ) {
                 this.log(`  ${chalk.blue("Multiple reactions:")}`);
-                this.displayMultipleReactionSummary(
-                  event.reactions.multiple,
-                  flags,
-                );
+                this.displayMultipleReactionSummary(event.reactions.multiple);
               }
             }
           },
@@ -326,7 +325,6 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
 
   private displayReactionSummary(
     summary: Record<string, { total: number; clientIds: string[] }>,
-    _flags: { json?: boolean; "pretty-json"?: boolean },
   ): void {
     for (const [reactionName, details] of Object.entries(summary)) {
       this.log(
@@ -340,7 +338,6 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
       string,
       { total: number; clientIds: Record<string, number> }
     >,
-    _flags: { json?: boolean; "pretty-json"?: boolean },
   ): void {
     for (const [reactionName, details] of Object.entries(summary)) {
       const clientList = Object.entries(details.clientIds)

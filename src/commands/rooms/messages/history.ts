@@ -3,7 +3,14 @@ import { OrderBy } from "@ably/chat";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { formatTimestamp } from "../../../utils/output.js";
+import { productApiFlags, timeRangeFlags } from "../../../flags.js";
+import {
+  progress,
+  success,
+  resource,
+  formatTimestamp,
+} from "../../../utils/output.js";
+import { parseTimestamp } from "../../../utils/time.js";
 
 export default class MessagesHistory extends ChatBaseCommand {
   static override args = {
@@ -23,16 +30,15 @@ export default class MessagesHistory extends ChatBaseCommand {
     "$ ably rooms messages history --show-metadata my-room",
     '$ ably rooms messages history my-room --start "2025-01-01T00:00:00Z"',
     '$ ably rooms messages history my-room --start "2025-01-01T00:00:00Z" --end "2025-01-02T00:00:00Z"',
+    "$ ably rooms messages history my-room --start 1h",
     "$ ably rooms messages history my-room --order newestFirst",
     "$ ably rooms messages history my-room --json",
     "$ ably rooms messages history my-room --pretty-json",
   ];
 
   static override flags = {
-    ...ChatBaseCommand.globalFlags,
-    end: Flags.string({
-      description: "End time for the history query (ISO 8601 format)",
-    }),
+    ...productApiFlags,
+    ...timeRangeFlags,
     limit: Flags.integer({
       char: "l",
       default: 50,
@@ -47,9 +53,6 @@ export default class MessagesHistory extends ChatBaseCommand {
     "show-metadata": Flags.boolean({
       default: false,
       description: "Display message metadata if available",
-    }),
-    start: Flags.string({
-      description: "Start time for the history query (ISO 8601 format)",
     }),
   };
 
@@ -86,7 +89,9 @@ export default class MessagesHistory extends ChatBaseCommand {
           );
         } else {
           this.log(
-            `${chalk.green("Fetching")} ${chalk.yellow(flags.limit.toString())} ${chalk.green("most recent messages from room:")} ${chalk.bold(args.room)}`,
+            progress(
+              `Fetching ${flags.limit} most recent messages from room ${resource(args.room)}`,
+            ),
           );
         }
       }
@@ -107,11 +112,19 @@ export default class MessagesHistory extends ChatBaseCommand {
 
       // Add time range if specified
       if (flags.start) {
-        historyParams.start = new Date(flags.start).getTime();
+        historyParams.start = parseTimestamp(flags.start, "start");
       }
 
       if (flags.end) {
-        historyParams.end = new Date(flags.end).getTime();
+        historyParams.end = parseTimestamp(flags.end, "end");
+      }
+
+      if (
+        historyParams.start !== undefined &&
+        historyParams.end !== undefined &&
+        historyParams.start > historyParams.end
+      ) {
+        this.error("--start must be earlier than or equal to --end");
       }
 
       // Get historical messages
@@ -138,9 +151,7 @@ export default class MessagesHistory extends ChatBaseCommand {
         );
       } else {
         // Display messages count
-        this.log(
-          `${chalk.green("Retrieved")} ${chalk.yellow(items.length.toString())} ${chalk.green("messages.")}`,
-        );
+        this.log(success(`Retrieved ${items.length} messages.`));
 
         if (items.length === 0) {
           this.log(chalk.dim("No messages found in this room."));
@@ -155,7 +166,7 @@ export default class MessagesHistory extends ChatBaseCommand {
             const author = message.clientId || "Unknown";
 
             this.log(
-              `${formatTimestamp(timestamp)} ${chalk.cyan(`${author}:`)} ${message.text}`,
+              `${formatTimestamp(timestamp)} ${chalk.blue(`${author}:`)} ${message.text}`,
             );
 
             // Show metadata if enabled and available

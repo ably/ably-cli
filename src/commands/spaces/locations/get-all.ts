@@ -1,6 +1,7 @@
-import { Args, Flags } from "@oclif/core";
+import { Args } from "@oclif/core";
 import chalk from "chalk";
 
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { progress, resource, success } from "../../../utils/output.js";
 
@@ -52,13 +53,8 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
   ];
 
   static override flags = {
-    ...SpacesBaseCommand.globalFlags,
-    format: Flags.string({
-      char: "f",
-      default: "text",
-      description: "Output format",
-      options: ["text", "json"],
-    }),
+    ...productApiFlags,
+    ...clientIdFlag,
   };
 
   async run(): Promise<void> {
@@ -163,27 +159,32 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
           }
         }
 
+        const knownMetaKeys = new Set([
+          "clientId",
+          "connectionId",
+          "current",
+          "id",
+          "member",
+          "memberId",
+          "userId",
+        ]);
+
+        const extractLocationData = (item: LocationItem): unknown => {
+          if (item.location !== undefined) return item.location;
+          if (item.data !== undefined) return item.data;
+          const rest: Record<string, unknown> = {};
+          for (const [key, value] of Object.entries(item)) {
+            if (!knownMetaKeys.has(key)) {
+              rest[key] = value;
+            }
+          }
+          return Object.keys(rest).length > 0 ? rest : null;
+        };
+
         const validLocations = locations.filter((item: LocationItem) => {
           if (item === null || item === undefined) return false;
 
-          let locationData: unknown;
-          if (item.location !== undefined) {
-            locationData = item.location;
-          } else if (item.data === undefined) {
-            const {
-              clientId: _clientId,
-              connectionId: _connectionId,
-              id: _id,
-              member: _member,
-              memberId: _memberId,
-              userId: _userId,
-              ...rest
-            } = item;
-            if (Object.keys(rest).length === 0) return false;
-            locationData = rest;
-          } else {
-            locationData = item.data;
-          }
+          const locationData = extractLocationData(item);
 
           if (locationData === null || locationData === undefined) return false;
           if (
@@ -200,30 +201,24 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
             this.formatJsonOutput(
               {
                 locations: validLocations.map((item: LocationItem) => {
+                  const currentMember =
+                    "current" in item &&
+                    item.current &&
+                    typeof item.current === "object"
+                      ? (item.current as LocationWithCurrent["current"]).member
+                      : undefined;
+                  const member = item.member || currentMember;
                   const memberId =
                     item.memberId ||
-                    item.member?.clientId ||
+                    member?.memberId ||
+                    member?.clientId ||
                     item.clientId ||
                     item.id ||
                     item.userId ||
                     "Unknown";
-                  const locationData =
-                    item.location ||
-                    item.data ||
-                    (() => {
-                      const {
-                        clientId: _clientId,
-                        connectionId: _connectionId,
-                        id: _id,
-                        member: _member,
-                        memberId: _memberId,
-                        userId: _userId,
-                        ...rest
-                      } = item;
-                      return rest;
-                    })();
+                  const locationData = extractLocationData(item);
                   return {
-                    isCurrentMember: item.member?.isCurrentMember || false,
+                    isCurrentMember: member?.isCurrentMember || false,
                     location: locationData,
                     memberId,
                   };
@@ -259,21 +254,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
                 `Member ID: ${chalk.cyan(member.memberId || member.clientId)}`,
               );
               try {
-                const locationData =
-                  location.location ||
-                  location.data ||
-                  (() => {
-                    const {
-                      clientId: _clientId,
-                      connectionId: _connectionId,
-                      id: _id,
-                      member: _member,
-                      memberId: _memberId,
-                      userId: _userId,
-                      ...rest
-                    } = location;
-                    return rest;
-                  })();
+                const locationData = extractLocationData(location);
 
                 this.log(
                   `- ${chalk.blue(member.memberId || member.clientId)}:`,
@@ -317,18 +298,17 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
         }
       }
     } catch (error) {
-      if (error === undefined || error === null) {
-        this.log(
-          chalk.red(
-            "An unknown error occurred (error object is undefined or null)",
-          ),
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : String(error || "Unknown error");
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError(
+          { error: errorMessage, spaceName, status: "error", success: false },
+          flags,
         );
       } else {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : String(error || "Unknown error");
-        this.log(chalk.red(`Error: ${errorMessage}`));
+        this.error(`Error: ${errorMessage}`);
       }
     }
   }

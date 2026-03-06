@@ -1,13 +1,9 @@
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { resource, success } from "../../../utils/output.js";
-
-// interface SpacesClients { // Remove interface
-//   realtimeClient: any;
-//   spacesClient: any;
-// }
 
 export default class SpacesLocksGet extends SpacesBaseCommand {
   static override args = {
@@ -30,46 +26,32 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
   ];
 
   static override flags = {
-    ...SpacesBaseCommand.globalFlags,
+    ...productApiFlags,
+    ...clientIdFlag,
   };
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksGet);
     this.parsedFlags = flags;
 
-    // let clients: SpacesClients | null = null // Remove local variable
-    const { space: spaceName } = args; // Get spaceName earlier
+    const { space: spaceName } = args;
     const { lockId } = args;
 
     try {
-      // Create Spaces client using setupSpacesClient
-      // clients = await this.createSpacesClient(flags) // Replace with setupSpacesClient
       const setupResult = await this.setupSpacesClient(flags, spaceName);
       this.realtimeClient = setupResult.realtimeClient;
       this.space = setupResult.space;
-      // if (!clients) return // Check properties
       if (!this.realtimeClient || !this.space) {
         this.error("Failed to initialize clients or space");
         return;
       }
 
-      // const { spacesClient } = clients // Remove deconstruction
-      // const {spaceName} = args // Moved earlier
-      // const {lockId} = args // Moved earlier
-
-      // Get the space
-      // const space = await spacesClient.get(spaceName) // Already got this.space
-
-      // Enter the space first
-      // await space.enter() // Use this.space
       await this.space.enter();
       if (!this.shouldOutputJson(flags)) {
         this.log(success(`Entered space: ${resource(spaceName)}.`));
       }
 
-      // Try to get the lock
       try {
-        // const lock = await space.locks.get(lockId) // Use this.space
         const lock = await this.space.locks.get(lockId);
 
         if (!lock) {
@@ -80,7 +62,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
           } else {
             this.log(
               chalk.yellow(
-                `Lock '${lockId}' not found in space '${spaceName}'`,
+                `Lock ${resource(lockId)} not found in space ${resource(spaceName)}`,
               ),
             );
           }
@@ -89,23 +71,27 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
         }
 
         if (this.shouldOutputJson(flags)) {
-          // Use structuredClone or similar for formatJsonOutput
           this.log(this.formatJsonOutput(structuredClone(lock), flags));
         } else {
-          // Use structuredClone or similar for formatJsonOutput
           this.log(
             `${chalk.dim("Lock details:")} ${this.formatJsonOutput(structuredClone(lock), flags)}`,
           );
         }
       } catch (error) {
-        this.error(
-          `Failed to get lock: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        const errorMsg = `Failed to get lock: ${error instanceof Error ? error.message : String(error)}`;
+        if (this.shouldOutputJson(flags)) {
+          this.jsonError({ error: errorMsg, success: false }, flags);
+        } else {
+          this.error(errorMsg);
+        }
       }
     } catch (error) {
-      this.error(
-        `Error: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorMsg = `Error: ${error instanceof Error ? error.message : String(error)}`;
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
     }
   }
 }

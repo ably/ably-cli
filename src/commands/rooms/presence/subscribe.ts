@@ -11,7 +11,7 @@ import { Args, Interfaces, Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 
-import { clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
@@ -39,10 +39,10 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
   ];
 
   static override flags = {
-    ...ChatBaseCommand.globalFlags,
+    ...productApiFlags,
     ...clientIdFlag,
     duration: Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
@@ -293,7 +293,11 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       this.logCliEvent(flags, "presence", "runError", `Error: ${errorMsg}`, {
         room: this.roomName,
       });
-      if (!this.shouldOutputJson(flags)) {
+      if (this.shouldOutputJson(flags)) {
+        this.log(
+          this.formatJsonOutput({ error: errorMsg, success: false }, flags),
+        );
+      } else {
         this.error(`Error: ${errorMsg}`);
       }
     } finally {

@@ -43,7 +43,7 @@ describe("apps:set-apns-p12 command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("APNS P12 certificate uploaded successfully");
+      expect(stdout).toContain("APNS P12 certificate uploaded.");
     });
 
     it("should upload certificate with password", async () => {
@@ -67,7 +67,7 @@ describe("apps:set-apns-p12 command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("APNS P12 certificate uploaded successfully");
+      expect(stdout).toContain("APNS P12 certificate uploaded.");
     });
 
     it("should upload certificate for sandbox environment", async () => {
@@ -90,7 +90,7 @@ describe("apps:set-apns-p12 command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("APNS P12 certificate uploaded successfully");
+      expect(stdout).toContain("APNS P12 certificate uploaded.");
       expect(stdout).toContain("Sandbox");
     });
   });

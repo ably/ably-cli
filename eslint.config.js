@@ -32,7 +32,9 @@ export default [
       "packages/react-web-cli/dist/index.mjs",
       "bin/", // Added from .eslintrc.cjs
       "playwright-report/**", // Ignore Playwright report files
-      "vitest.config.ts"
+      "vitest.config.ts",
+      ".claude/worktrees/**",
+      ".claude/skills/**"
     ], // Updated to match all ignorePatterns from .eslintrc.json
   },
   {

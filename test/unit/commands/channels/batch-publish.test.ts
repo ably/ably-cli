@@ -210,15 +210,8 @@ describe("channels:batch-publish command", () => {
 
       expect(error).toBeUndefined();
 
-      // stdout contains "Sending batch publish request..." before JSON
-      expect(stdout).toContain("Sending batch publish request");
-
-      // JSON is pretty-printed across multiple lines - extract it after the first line
-      const lines = stdout.split("\n");
-      const jsonStartIndex = lines.findIndex((line) => line.trim() === "{");
-      expect(jsonStartIndex).toBeGreaterThan(-1);
-      const jsonContent = lines.slice(jsonStartIndex).join("\n");
-      const result = JSON.parse(jsonContent);
+      // In JSON mode, progress messages are suppressed by JSON guard
+      const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("channels");
       expect(result.channels).toEqual(["channel1", "channel2"]);
@@ -265,14 +258,14 @@ describe("channels:batch-publish command", () => {
       );
 
       expect(stdout).toContain("partially successful");
-      // Verify successful channel output
-      expect(stdout).toContain(
-        "Published to channel 'channel1' with messageId: msg-1",
-      );
+      // Verify successful channel output (resource() uses cyan, not quotes)
+      expect(stdout).toContain("Published to channel");
+      expect(stdout).toContain("channel1");
+      expect(stdout).toContain("msg-1");
       // Verify failed channel output with error message and code
-      expect(stdout).toContain(
-        "Failed to publish to channel 'channel2': Invalid channel name (40000)",
-      );
+      expect(stdout).toContain("Failed to publish to channel");
+      expect(stdout).toContain("channel2");
+      expect(stdout).toContain("Invalid channel name (40000)");
     });
 
     it("should handle API errors in JSON mode", async () => {
@@ -293,15 +286,8 @@ describe("channels:batch-publish command", () => {
       // In JSON mode, errors are returned as JSON, not thrown
       expect(error).toBeUndefined();
 
-      // stdout contains "Sending batch publish request..." before JSON
-      expect(stdout).toContain("Sending batch publish request");
-
-      // JSON is pretty-printed across multiple lines - extract it after the first line
-      const lines = stdout.split("\n");
-      const jsonStartIndex = lines.findIndex((line) => line.trim() === "{");
-      expect(jsonStartIndex).toBeGreaterThan(-1);
-      const jsonContent = lines.slice(jsonStartIndex).join("\n");
-      const result = JSON.parse(jsonContent);
+      // In JSON mode, progress messages are suppressed by JSON guard
+      const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error).toContain("Network error");

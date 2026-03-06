@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { progress, resource, success } from "../../utils/output.js";
 
 export default class AppsSetApnsP12Command extends ControlBaseCommand {
   static args = {
@@ -53,7 +54,9 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
         return;
       }
 
-      this.log(`Uploading APNS P12 certificate for app ${args.id}...`);
+      this.log(
+        progress(`Uploading APNS P12 certificate for app ${resource(args.id)}`),
+      );
 
       // Read certificate file and encode as base64
       const certificateData = fs
@@ -68,7 +71,7 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.log(this.formatJsonOutput(result, flags));
       } else {
-        this.log(`\nAPNS P12 certificate uploaded successfully!`);
+        this.log(success("APNS P12 certificate uploaded."));
         this.log(`Certificate ID: ${result.id}`);
         if (flags["use-for-sandbox"]) {
           this.log(`Environment: Sandbox`);
@@ -77,9 +80,12 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      this.error(
-        `Error uploading APNS P12 certificate: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorMsg = `Error uploading APNS P12 certificate: ${error instanceof Error ? error.message : String(error)}`;
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
     }
   }
 }

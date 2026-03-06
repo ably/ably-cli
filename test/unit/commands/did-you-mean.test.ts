@@ -193,13 +193,10 @@ describe("Did You Mean Functionality", () => {
               },
             });
 
-            let _output = "";
             let foundPrompt = false;
             let executedCommand = false;
 
             child.stdout.on("data", (data) => {
-              _output += data.toString();
-
               if (
                 data.toString().includes("Did you mean accounts current?") ||
                 data.toString().includes("(Y/n)")
@@ -211,16 +208,16 @@ describe("Did You Mean Functionality", () => {
               }
 
               // Check for various outputs that indicate the command was executed
-              const output = data.toString();
+              const chunk = data.toString();
               if (
-                output.includes("Account:") ||
-                output.includes("Show the current Ably account") ||
-                output.includes("No access token provided") ||
-                output.includes("accounts current") ||
-                output.includes("No account currently selected") ||
-                output.includes("You are not logged in") ||
-                output.includes("Authentication required") ||
-                output.includes("Error:")
+                chunk.includes("Account:") ||
+                chunk.includes("Show the current Ably account") ||
+                chunk.includes("No access token provided") ||
+                chunk.includes("accounts current") ||
+                chunk.includes("No account currently selected") ||
+                chunk.includes("You are not logged in") ||
+                chunk.includes("Authentication required") ||
+                chunk.includes("Error:")
               ) {
                 executedCommand = true;
 
@@ -232,8 +229,6 @@ describe("Did You Mean Functionality", () => {
             });
 
             child.stderr.on("data", (data) => {
-              _output += data.toString();
-
               const errorOutput = data.toString();
               if (
                 errorOutput.includes("No access token provided") ||
@@ -256,16 +251,7 @@ describe("Did You Mean Functionality", () => {
               child.stdin.write("accounts curren\n");
             }, 1000);
 
-            child.on("exit", (code) => {
-              // Debug output for CI failures
-              if (!foundPrompt || !executedCommand) {
-                console.error("Test failed - Debug output:");
-                console.error("foundPrompt:", foundPrompt);
-                console.error("executedCommand:", executedCommand);
-                console.error("Exit code:", code);
-                console.error("Output received:", _output);
-              }
-
+            child.on("exit", () => {
               expect(foundPrompt).toBe(true);
               expect(executedCommand).toBe(true);
               resolve();

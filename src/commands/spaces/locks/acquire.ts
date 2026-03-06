@@ -2,7 +2,7 @@ import { type LockOptions } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
-import { clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import { success, listening, resource } from "../../../utils/output.js";
@@ -27,10 +27,15 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
   ];
 
   static override flags = {
-    ...SpacesBaseCommand.globalFlags,
+    ...productApiFlags,
     ...clientIdFlag,
     data: Flags.string({
       description: "Optional data to associate with the lock (JSON format)",
+      required: false,
+    }),
+    duration: Flags.integer({
+      description: "Automatically exit after N seconds",
+      char: "D",
       required: false,
     }),
   };
@@ -99,7 +104,11 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
           this.logCliEvent(flags, "lock", "dataParseError", errorMsg, {
             error: errorMsg,
           });
-          this.error(errorMsg);
+          if (this.shouldOutputJson(flags)) {
+            this.jsonError({ error: errorMsg, success: false }, flags);
+          } else {
+            this.error(errorMsg);
+          }
           return;
         }
       }
@@ -193,7 +202,12 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
       // Decide how long to remain connected
       await waitUntilInterruptedOrTimeout(flags.duration);
     } catch (error) {
-      this.error(error instanceof Error ? error.message : String(error));
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
     }
   }
 }

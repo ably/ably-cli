@@ -90,10 +90,10 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
     const { flags } = await this.parse(ChannelRulesCreateCommand);
 
     const controlApi = this.createControlApi(flags);
-    let appId: string | undefined;
+
+    let appId: string | undefined = flags.app;
 
     try {
-      appId = flags.app;
       if (!appId) {
         appId = await this.resolveAppId(flags);
       }

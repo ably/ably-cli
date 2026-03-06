@@ -8,6 +8,7 @@ import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { clientIdFlag, productApiFlags } from "../../../flags.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
   success,
@@ -23,25 +24,27 @@ export interface OccupancyMetrics {
 }
 
 export default class RoomsOccupancySubscribe extends ChatBaseCommand {
-  static args = {
+  static override args = {
     room: Args.string({
       description: "Room to subscribe to occupancy for",
       required: true,
     }),
   };
 
-  static description = "Subscribe to real-time occupancy metrics for a room";
+  static override description =
+    "Subscribe to real-time occupancy metrics for a room";
 
-  static examples = [
+  static override examples = [
     "$ ably rooms occupancy subscribe my-room",
     "$ ably rooms occupancy subscribe my-room --json",
     "$ ably rooms occupancy subscribe --pretty-json my-room",
   ];
 
-  static flags = {
-    ...ChatBaseCommand.globalFlags,
+  static override flags = {
+    ...productApiFlags,
+    ...clientIdFlag,
     duration: Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),

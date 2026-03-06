@@ -1,8 +1,8 @@
 import type { SpaceMember } from "@ably/spaces";
-import { Args, Flags as _Flags } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
-import { clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import { listening, progress, formatTimestamp } from "../../../utils/output.js";
@@ -26,10 +26,10 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
   ];
 
   static override flags = {
-    ...SpacesBaseCommand.globalFlags,
+    ...productApiFlags,
     ...clientIdFlag,
-    duration: _Flags.integer({
-      description: "Automatically exit after N seconds (0 = run indefinitely)",
+    duration: Flags.integer({
+      description: "Automatically exit after N seconds",
       char: "D",
       required: false,
     }),
@@ -319,8 +319,10 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
       this.logCliEvent(flags, "member", "executionError", errorMsg, {
         error: errorMsg,
       });
-      if (!this.shouldOutputJson(flags)) {
-        this.log(chalk.red(errorMsg));
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
       }
     } finally {
       // Cleanup is now handled by base class finally() method

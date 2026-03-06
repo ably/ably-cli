@@ -5,7 +5,7 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { BaseFlags } from "../../types/cli.js";
-import { resource, success } from "../../utils/output.js";
+import { progress, resource, success } from "../../utils/output.js";
 
 export default class ChannelsPublish extends AblyBaseCommand {
   static override args = {
@@ -257,7 +257,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
       { count, delay },
     );
     if (count > 1 && !this.shouldOutputJson(flags)) {
-      this.log(`Publishing ${count} messages with ${delay}ms delay...`);
+      this.log(progress(`Publishing ${count} messages with ${delay}ms delay`));
     }
 
     let publishedCount = 0;

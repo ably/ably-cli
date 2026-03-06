@@ -1,7 +1,6 @@
 import { Args, Flags } from "@oclif/core";
-import chalk from "chalk";
-
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { success } from "../../utils/output.js";
 
 // Interface for rule update data structure (most fields optional)
 interface PartialRuleData {
@@ -118,7 +117,7 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.log(this.formatJsonOutput({ rule: updatedRule }, flags));
       } else {
-        this.log(chalk.green("Integration Rule Updated Successfully:"));
+        this.log(success("Integration rule updated."));
         this.log(`ID: ${updatedRule.id}`);
         this.log(`App ID: ${updatedRule.appId}`);
         this.log(`Rule Type: ${updatedRule.ruleType}`);

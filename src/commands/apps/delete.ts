@@ -2,6 +2,7 @@ import { Args, Flags } from "@oclif/core";
 import * as readline from "node:readline";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { progress, resource } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 import AppsSwitch from "./switch.js";
 
@@ -131,7 +132,7 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
       }
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(`Deleting app ${appIdToDelete}...`);
+        this.log(progress(`Deleting app ${resource(appIdToDelete)}`));
       }
 
       await controlApi.deleteApp(appIdToDelete);

@@ -2,9 +2,12 @@ import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { timeRangeFlags } from "../../flags.js";
 import { StatsDisplay } from "../../services/stats-display.js";
 import type { BaseFlags } from "../../types/cli.js";
 import type { ControlApi } from "../../services/control-api.js";
+import { progress, resource } from "../../utils/output.js";
+import { parseTimestamp } from "../../utils/time.js";
 
 export default class StatsAccountCommand extends ControlBaseCommand {
   static description = "Get account stats with optional live updates";
@@ -12,7 +15,8 @@ export default class StatsAccountCommand extends ControlBaseCommand {
   static examples = [
     "$ ably stats account",
     "$ ably stats account --unit hour",
-    "$ ably stats account --start 1618005600000 --end 1618091999999",
+    '$ ably stats account --start "2023-01-01T00:00:00Z" --end "2023-01-02T00:00:00Z"',
+    "$ ably stats account --start 1h",
     "$ ably stats account --limit 10",
     "$ ably stats account --json",
     "$ ably stats account --pretty-json",
@@ -26,9 +30,7 @@ export default class StatsAccountCommand extends ControlBaseCommand {
       default: false,
       description: "Show debug information for live stats polling",
     }),
-    end: Flags.integer({
-      description: "End time in milliseconds since epoch",
-    }),
+    ...timeRangeFlags,
     interval: Flags.integer({
       default: 6,
       description: "Polling interval in seconds (only used with --live)",
@@ -41,9 +43,6 @@ export default class StatsAccountCommand extends ControlBaseCommand {
     live: Flags.boolean({
       default: false,
       description: "Subscribe to live stats updates (uses minute interval)",
-    }),
-    start: Flags.integer({
-      description: "Start time in milliseconds since epoch",
     }),
     unit: Flags.string({
       default: "minute",
@@ -106,9 +105,12 @@ export default class StatsAccountCommand extends ControlBaseCommand {
         this.statsDisplay!.display(stats[0]);
       }
     } catch (error) {
-      this.error(
-        `Error fetching stats: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorMsg = `Error fetching stats: ${error instanceof Error ? error.message : String(error)}`;
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
     }
   }
 
@@ -145,9 +147,13 @@ export default class StatsAccountCommand extends ControlBaseCommand {
     try {
       // Get account info to display the name
       const { account } = await controlApi.getMe();
-      this.log(
-        `Subscribing to live stats for account ${account.name} (${account.id})...`,
-      );
+      if (!this.shouldOutputJson(flags)) {
+        this.log(
+          progress(
+            `Subscribing to live stats for account ${resource(account.name)} (${account.id})`,
+          ),
+        );
+      }
 
       // Setup graceful shutdown
       const cleanup = () => {
@@ -189,9 +195,12 @@ export default class StatsAccountCommand extends ControlBaseCommand {
         // The process will exit via the SIGINT/SIGTERM handlers
       });
     } catch (error) {
-      this.error(
-        `Error setting up live stats: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorMsg = `Error setting up live stats: ${error instanceof Error ? error.message : String(error)}`;
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
       if (this.pollInterval) {
         clearInterval(this.pollInterval);
       }
@@ -204,24 +213,53 @@ export default class StatsAccountCommand extends ControlBaseCommand {
   ): Promise<void> {
     try {
       const { account } = await controlApi.getMe();
-      this.log(`Fetching stats for account ${account.name} (${account.id})...`);
+      if (!this.shouldOutputJson(flags)) {
+        this.log(
+          progress(
+            `Fetching stats for account ${resource(account.name)} (${account.id})`,
+          ),
+        );
+      }
 
-      // If no start/end time provided, use the last 24 hours
-      if (!flags.start && !flags.end) {
-        const now = new Date();
-        flags.end = now.getTime();
-        flags.start = now.getTime() - 24 * 60 * 60 * 1000; // 24 hours ago
+      // Parse start/end if provided, otherwise default to last 24 hours
+      let startMs: number | undefined;
+      let endMs: number | undefined;
+
+      if (flags.start) {
+        startMs = parseTimestamp(flags.start as string, "start");
+      }
+
+      if (flags.end) {
+        endMs = parseTimestamp(flags.end as string, "end");
+      }
+
+      if (startMs === undefined && endMs === undefined) {
+        const now = Date.now();
+        endMs = now;
+        startMs = now - 24 * 60 * 60 * 1000; // 24 hours ago
+      } else if (startMs !== undefined && endMs === undefined) {
+        endMs = Date.now();
+      } else if (startMs === undefined && endMs !== undefined) {
+        startMs = endMs - 24 * 60 * 60 * 1000;
+      }
+
+      if (startMs! > endMs!) {
+        this.error("--start must be earlier than or equal to --end");
       }
 
       const stats = await controlApi.getAccountStats({
-        end: flags.end as number,
+        end: endMs,
         limit: flags.limit as number,
-        start: flags.start as number,
+        start: startMs,
         unit: flags.unit as string,
       });
 
       if (stats.length === 0) {
-        this.log("No stats found for the specified period");
+        if (this.shouldOutputJson(flags)) {
+          this.log(this.formatJsonOutput({ stats: [], success: true }, flags));
+        } else {
+          this.log("No stats found for the specified period");
+        }
         return;
       }
 
@@ -230,9 +268,12 @@ export default class StatsAccountCommand extends ControlBaseCommand {
         this.statsDisplay!.display(stat);
       }
     } catch (error) {
-      this.error(
-        `Error fetching account stats: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorMsg = `Error fetching account stats: ${error instanceof Error ? error.message : String(error)}`;
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
     }
   }
 }

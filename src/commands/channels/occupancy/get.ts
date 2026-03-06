@@ -1,7 +1,9 @@
 import { Args } from "@oclif/core";
+import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
+import { resource } from "../../../utils/output.js";
 
 interface OccupancyMetrics {
   connections: number;
@@ -13,23 +15,23 @@ interface OccupancyMetrics {
 }
 
 export default class ChannelsOccupancyGet extends AblyBaseCommand {
-  static args = {
+  static override args = {
     channel: Args.string({
       description: "Channel name to get occupancy for",
       required: true,
     }),
   };
 
-  static description = "Get current occupancy metrics for a channel";
+  static override description = "Get current occupancy metrics for a channel";
 
-  static examples = [
+  static override examples = [
     "$ ably channels occupancy get my-channel",
     "$ ably channels occupancy get my-channel --json",
     "$ ably channels occupancy get my-channel --pretty-json",
     '$ ABLY_API_KEY="YOUR_API_KEY" ably channels occupancy get my-channel',
   ];
 
-  static flags = {
+  static override flags = {
     ...productApiFlags,
   };
 
@@ -78,24 +80,32 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
           ),
         );
       } else {
-        this.log(`Occupancy metrics for channel '${channelName}':\n`);
-        this.log(`Connections: ${occupancyMetrics.connections ?? 0}`);
-        this.log(`Publishers: ${occupancyMetrics.publishers ?? 0}`);
-        this.log(`Subscribers: ${occupancyMetrics.subscribers ?? 0}`);
+        this.log(`Occupancy metrics for channel ${resource(channelName)}:\n`);
+        this.log(
+          `${chalk.dim("Connections:")} ${occupancyMetrics.connections ?? 0}`,
+        );
+        this.log(
+          `${chalk.dim("Publishers:")} ${occupancyMetrics.publishers ?? 0}`,
+        );
+        this.log(
+          `${chalk.dim("Subscribers:")} ${occupancyMetrics.subscribers ?? 0}`,
+        );
 
         if (occupancyMetrics.presenceConnections !== undefined) {
           this.log(
-            `Presence Connections: ${occupancyMetrics.presenceConnections}`,
+            `${chalk.dim("Presence Connections:")} ${occupancyMetrics.presenceConnections}`,
           );
         }
 
         if (occupancyMetrics.presenceMembers !== undefined) {
-          this.log(`Presence Members: ${occupancyMetrics.presenceMembers}`);
+          this.log(
+            `${chalk.dim("Presence Members:")} ${occupancyMetrics.presenceMembers}`,
+          );
         }
 
         if (occupancyMetrics.presenceSubscribers !== undefined) {
           this.log(
-            `Presence Subscribers: ${occupancyMetrics.presenceSubscribers}`,
+            `${chalk.dim("Presence Subscribers:")} ${occupancyMetrics.presenceSubscribers}`,
           );
         }
       }

@@ -2,6 +2,7 @@ import { Flags } from "@oclif/core";
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
 import chalk from "chalk";
+import { resource } from "../../utils/output.js";
 
 interface ChannelMetrics {
   connections?: number;
@@ -115,7 +116,7 @@ export default class ChannelsList extends AblyBaseCommand {
         );
 
         for (const channel of channels as ChannelItem[]) {
-          this.log(`${chalk.green(channel.channelId)}`);
+          this.log(`${resource(channel.channelId)}`);
 
           // Show occupancy if available
           if (channel.status?.occupancy?.metrics) {

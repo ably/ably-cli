@@ -1,10 +1,12 @@
 import { Flags } from "@oclif/core";
+import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
-import { productApiFlags } from "../../../flags.js";
+import { productApiFlags, timeRangeFlags } from "../../../flags.js";
 import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
 import { formatTimestamp } from "../../../utils/output.js";
+import { parseTimestamp } from "../../../utils/time.js";
 
 export default class LogsPushHistory extends AblyBaseCommand {
   static override description = "Retrieve push notification log history";
@@ -15,10 +17,13 @@ export default class LogsPushHistory extends AblyBaseCommand {
     "$ ably logs push history --direction forwards",
     "$ ably logs push history --json",
     "$ ably logs push history --pretty-json",
+    '$ ably logs push history --start "2023-01-01T00:00:00Z" --end "2023-01-02T00:00:00Z"',
+    "$ ably logs push history --start 1h",
   ];
 
   static override flags = {
     ...productApiFlags,
+    ...timeRangeFlags,
     direction: Flags.string({
       default: "backwards",
       description: "Direction of log retrieval",
@@ -44,10 +49,27 @@ export default class LogsPushHistory extends AblyBaseCommand {
       const channel = client.channels.get(channelName);
 
       // Get message history
-      const historyOptions = {
+      const historyOptions: Ably.RealtimeHistoryParams = {
         direction: flags.direction as "backwards" | "forwards",
         limit: flags.limit,
       };
+
+      // Add time range if specified
+      if (flags.start) {
+        historyOptions.start = parseTimestamp(flags.start, "start");
+      }
+
+      if (flags.end) {
+        historyOptions.end = parseTimestamp(flags.end, "end");
+      }
+
+      if (
+        historyOptions.start !== undefined &&
+        historyOptions.end !== undefined &&
+        historyOptions.start > historyOptions.end
+      ) {
+        this.error("--start must be earlier than or equal to --end");
+      }
 
       const historyPage = await channel.history(historyOptions);
       const messages = historyPage.items;
@@ -85,10 +107,10 @@ export default class LogsPushHistory extends AblyBaseCommand {
         );
         this.log("");
 
-        for (const message of messages) {
-          const timestamp = message.timestamp
-            ? new Date(message.timestamp).toISOString()
-            : "Unknown timestamp";
+        for (const [index, message] of messages.entries()) {
+          const timestampDisplay = message.timestamp
+            ? formatTimestamp(new Date(message.timestamp).toISOString())
+            : chalk.dim("[Unknown timestamp]");
           const event = message.name || "unknown";
 
           // Color-code different event types based on severity
@@ -131,10 +153,10 @@ export default class LogsPushHistory extends AblyBaseCommand {
 
           // Format the log output
           this.log(
-            `${formatTimestamp(timestamp)} Channel: ${chalk.cyan(channelName)} | Event: ${eventColor(event)}`,
+            `${chalk.dim(`[${index + 1}]`)} ${timestampDisplay} Channel: ${chalk.cyan(channelName)} | Event: ${eventColor(event)}`,
           );
           if (message.data) {
-            this.log("Data:");
+            this.log(chalk.dim("Data:"));
             if (isJsonData(message.data)) {
               this.log(formatJson(message.data));
             } else {

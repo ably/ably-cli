@@ -7,7 +7,7 @@ import { ControlBaseCommand } from "../../control-base-command.js";
 import { endpointFlag } from "../../flags.js";
 import { ControlApi } from "../../services/control-api.js";
 import { displayLogo } from "../../utils/logo.js";
-import { resource, success } from "../../utils/output.js";
+import { progress, resource, success } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 // Moved function definition outside the class
@@ -96,7 +96,7 @@ export default class AccountsLogin extends ControlBaseCommand {
       // Prompt the user to get a token
       if (!flags["no-browser"]) {
         if (!this.shouldOutputJson(flags)) {
-          this.log("Opening browser to get an access token...");
+          this.log(progress("Opening browser to get an access token"));
         }
 
         await this.openBrowser(obtainTokenPath);
@@ -227,7 +227,7 @@ export default class AccountsLogin extends ControlBaseCommand {
             const appName = await this.promptForAppName();
 
             try {
-              this.log(`\nCreating app "${appName}"...`);
+              this.log(`\n${progress(`Creating app ${resource(appName)}`)}`);
 
               const app = await controlApi.createApp({
                 name: appName,

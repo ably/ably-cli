@@ -34,7 +34,7 @@ export default class ChannelRulesListCommand extends ControlBaseCommand {
   ];
 
   static flags = {
-    ...ControlBaseCommand.flags,
+    ...ControlBaseCommand.globalFlags,
     app: Flags.string({
       description: "The app ID or name (defaults to current app)",
       required: false,

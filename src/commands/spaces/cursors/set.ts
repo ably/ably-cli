@@ -2,7 +2,7 @@ import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 
-import { clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
@@ -47,7 +47,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
   ];
 
   static override flags = {
-    ...SpacesBaseCommand.globalFlags,
+    ...productApiFlags,
     ...clientIdFlag,
     data: Flags.string({
       description: "The cursor data to set (as JSON string)",
@@ -107,9 +107,13 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
             const additionalData = JSON.parse(flags.data);
             cursorData.data = additionalData;
           } catch {
-            this.error(
-              'Invalid JSON in --data flag. Expected format: {"name":"value",...}',
-            );
+            const errorMsg =
+              'Invalid JSON in --data flag. Expected format: {"name":"value",...}';
+            if (this.shouldOutputJson(flags)) {
+              this.jsonError({ error: errorMsg, success: false }, flags);
+            } else {
+              this.error(errorMsg);
+            }
             return;
           }
         }
@@ -125,9 +129,13 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
             const additionalData = JSON.parse(flags.data);
             cursorData.data = additionalData;
           } catch {
-            this.error(
-              'Invalid JSON in --data flag when used with --x and --y. Expected format: {"name":"value",...}',
-            );
+            const errorMsg =
+              'Invalid JSON in --data flag when used with --x and --y. Expected format: {"name":"value",...}';
+            if (this.shouldOutputJson(flags)) {
+              this.jsonError({ error: errorMsg, success: false }, flags);
+            } else {
+              this.error(errorMsg);
+            }
             return;
           }
         }
@@ -136,9 +144,13 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         try {
           cursorData = JSON.parse(flags.data);
         } catch {
-          this.error(
-            'Invalid JSON in --data flag. Expected format: {"position":{"x":number,"y":number},"data":{...}}',
-          );
+          const errorMsg =
+            'Invalid JSON in --data flag. Expected format: {"position":{"x":number,"y":number},"data":{...}}';
+          if (this.shouldOutputJson(flags)) {
+            this.jsonError({ error: errorMsg, success: false }, flags);
+          } else {
+            this.error(errorMsg);
+          }
           return;
         }
 
@@ -373,7 +385,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       } else {
         this.log(
           success(
-            `Set cursor in space ${resource(spaceName)} with data: ${chalk.blue(JSON.stringify(cursorForOutput))}`,
+            `Set cursor in space ${resource(spaceName)} with data: ${chalk.blue(JSON.stringify(cursorForOutput))}.`,
           ),
         );
       }

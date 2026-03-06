@@ -382,5 +382,62 @@ describe("rooms messages commands", function () {
         }),
       );
     });
+
+    it("should respect --start and --end flags with ISO 8601", async function () {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.messages.history = vi.fn().mockResolvedValue({ items: [] });
+
+      const start = "2025-01-01T00:00:00Z";
+      const end = "2025-01-02T00:00:00Z";
+
+      await runCommand(
+        ["rooms:messages:history", "test-room", "--start", start, "--end", end],
+        import.meta.url,
+      );
+
+      expect(room.messages.history).toHaveBeenCalledWith(
+        expect.objectContaining({
+          start: new Date(start).getTime(),
+          end: new Date(end).getTime(),
+        }),
+      );
+    });
+
+    it("should accept Unix ms string for --start", async function () {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.messages.history = vi.fn().mockResolvedValue({ items: [] });
+
+      await runCommand(
+        ["rooms:messages:history", "test-room", "--start", "1700000000000"],
+        import.meta.url,
+      );
+
+      expect(room.messages.history).toHaveBeenCalledWith(
+        expect.objectContaining({
+          start: 1700000000000,
+        }),
+      );
+    });
+
+    it("should accept relative time for --start", async function () {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.messages.history = vi.fn().mockResolvedValue({ items: [] });
+
+      await runCommand(
+        ["rooms:messages:history", "test-room", "--start", "1h"],
+        import.meta.url,
+      );
+
+      const callArgs = room.messages.history.mock.calls[0][0];
+      const oneHourAgo = Date.now() - 3_600_000;
+      expect(callArgs.start).toBeGreaterThan(oneHourAgo - 5000);
+      expect(callArgs.start).toBeLessThanOrEqual(oneHourAgo + 5000);
+    });
   });
 });

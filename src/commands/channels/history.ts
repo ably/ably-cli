@@ -3,9 +3,10 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
-import { productApiFlags } from "../../flags.js";
+import { productApiFlags, timeRangeFlags } from "../../flags.js";
 import { formatJson, isJsonData } from "../../utils/json-formatter.js";
-import { resource } from "../../utils/output.js";
+import { formatTimestamp, resource } from "../../utils/output.js";
+import { parseTimestamp } from "../../utils/time.js";
 
 export default class ChannelsHistory extends AblyBaseCommand {
   static override args = {
@@ -22,6 +23,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
     "$ ably channels history my-channel --json",
     "$ ably channels history my-channel --pretty-json",
     '$ ably channels history my-channel --start "2023-01-01T00:00:00Z" --end "2023-01-02T00:00:00Z"',
+    "$ ably channels history my-channel --start 1h",
     "$ ably channels history my-channel --limit 100",
     "$ ably channels history my-channel --direction forward",
   ];
@@ -37,15 +39,10 @@ export default class ChannelsHistory extends AblyBaseCommand {
       options: ["backwards", "forwards"],
     }),
 
-    end: Flags.string({
-      description: "End time for the history query (ISO 8601 format)",
-    }),
+    ...timeRangeFlags,
     limit: Flags.integer({
       default: 50,
       description: "Maximum number of results to return (default: 50)",
-    }),
-    start: Flags.string({
-      description: "Start time for the history query (ISO 8601 format)",
     }),
   };
 
@@ -82,11 +79,19 @@ export default class ChannelsHistory extends AblyBaseCommand {
 
       // Add time range if specified
       if (flags.start) {
-        historyParams.start = new Date(flags.start).getTime();
+        historyParams.start = parseTimestamp(flags.start, "start");
       }
 
       if (flags.end) {
-        historyParams.end = new Date(flags.end).getTime();
+        historyParams.end = parseTimestamp(flags.end, "end");
+      }
+
+      if (
+        historyParams.start !== undefined &&
+        historyParams.end !== undefined &&
+        historyParams.start > historyParams.end
+      ) {
+        this.error("--start must be earlier than or equal to --end");
       }
 
       // Get history
@@ -108,11 +113,11 @@ export default class ChannelsHistory extends AblyBaseCommand {
         this.log("");
 
         for (const [index, message] of messages.entries()) {
-          const timestamp = message.timestamp
-            ? new Date(message.timestamp).toISOString()
-            : "Unknown timestamp";
+          const timestampDisplay = message.timestamp
+            ? formatTimestamp(new Date(message.timestamp).toISOString())
+            : chalk.dim("[Unknown timestamp]");
 
-          this.log(chalk.dim(`[${index + 1}] ${timestamp}`));
+          this.log(`${chalk.dim(`[${index + 1}]`)} ${timestampDisplay}`);
           this.log(
             `${chalk.dim("Event:")} ${chalk.yellow(message.name || "(none)")}`,
           );
@@ -142,10 +147,12 @@ export default class ChannelsHistory extends AblyBaseCommand {
         }
       }
     } catch (error) {
-      // Restore standard error handling
-      this.error(
-        `Error retrieving channel history: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorMsg = `Error retrieving channel history: ${error instanceof Error ? error.message : String(error)}`;
+      if (this.shouldOutputJson(flags)) {
+        this.jsonError({ error: errorMsg, success: false }, flags);
+      } else {
+        this.error(errorMsg);
+      }
     }
   }
 }

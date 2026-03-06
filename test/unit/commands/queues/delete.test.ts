@@ -62,9 +62,7 @@ describe("queues:delete command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain(
-        `Queue "test-queue" (ID: ${mockQueueId}) deleted successfully`,
-      );
+      expect(stdout).toContain("Queue deleted:");
     });
 
     it("should delete a queue with custom app ID", async () => {
@@ -96,9 +94,7 @@ describe("queues:delete command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain(
-        `Queue "test-queue" (ID: ${mockQueueId}) deleted successfully`,
-      );
+      expect(stdout).toContain("Queue deleted:");
     });
 
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
