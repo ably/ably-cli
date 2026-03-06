@@ -97,7 +97,10 @@ describe("logs:subscribe command", () => {
     it("should set rewind channel param when --rewind > 0", async () => {
       const mock = getMockAblyRealtime();
 
-      await runCommand(["logs:subscribe", "--rewind", "5", "--duration", "0"], import.meta.url);
+      await runCommand(
+        ["logs:subscribe", "--rewind", "5", "--duration", "0"],
+        import.meta.url,
+      );
 
       expect(mock.channels.get).toHaveBeenCalledWith("[meta]log", {
         params: { rewind: "5" },

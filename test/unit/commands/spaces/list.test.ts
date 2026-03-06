@@ -39,6 +39,7 @@ describe("spaces:list command", () => {
 
   beforeEach(() => {
     const mock = getMockAblyRest();
+    mock.request.mockClear();
     mock.request.mockResolvedValue(mockSpaceChannelsResponse);
   });
 

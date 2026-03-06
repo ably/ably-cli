@@ -44,12 +44,15 @@ describe("logs:push:subscribe command", () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("[meta]log:push");
 
-      // Track subscribe calls
-      let subscribeCallback: ((msg: unknown) => void) | null = null;
+      // Track subscribe calls and invoke callback with a test message
       channel.subscribe.mockImplementation(
         (callback: (msg: unknown) => void) => {
-          subscribeCallback = callback;
           channel.state = "attached";
+          callback({
+            name: "push.sent",
+            timestamp: 1700000000000,
+            data: { severity: "warning", message: "Push delivery delayed" },
+          });
         },
       );
 
@@ -58,12 +61,11 @@ describe("logs:push:subscribe command", () => {
         import.meta.url,
       );
 
-      // Verify subscribe was called
+      // Verify subscribe was called and message was rendered
       expect(channel.subscribe).toHaveBeenCalled();
       expect(stdout).toContain("[meta]log:push");
-
-      // Verify subscribe callback was captured
-      expect(subscribeCallback).not.toBeNull();
+      expect(stdout).toContain("push.sent");
+      expect(stdout).toContain("Push delivery delayed");
     });
 
     it("should set rewind channel param when --rewind > 0", async () => {
