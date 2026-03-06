@@ -10,6 +10,7 @@ on:
       - 'pnpm-lock.yaml'
       - 'tsconfig.json'
       - 'scripts/**'
+      - 'examples/**'
       - '.github/workflows/test.yml'
   pull_request:
     branches: [ main ]
@@ -20,6 +21,7 @@ on:
       - 'pnpm-lock.yaml'
       - 'tsconfig.json'
       - 'scripts/**'
+      - 'examples/**'
       - '.github/workflows/test.yml'
 
 jobs:
