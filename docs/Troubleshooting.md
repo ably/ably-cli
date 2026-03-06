@@ -6,7 +6,7 @@ This document provides solutions for common issues encountered when developing o
 
 ## Common Build and Testing Errors
 
-### `.js` vs `.ts` Extension Issues
+### Import Extension Issues
 
 **Problem**: Tests failing with errors about modules not being found or incorrect paths.
 
@@ -16,15 +16,18 @@ Error: Cannot find module '../commands/publish'
 ```
 
 **Solution**:
-- Check import statements and ensure they reference `.ts` files, not `.js` files.
-- When running tests, remember that imports in test files should use the `.ts` extension.
+- This project uses `.js` extensions in all import paths (TypeScript with ES module resolution).
+- Always use `.js` extensions in imports, even when importing `.ts` source files.
 
 ```typescript
-// ❌ INCORRECT
+// INCORRECT — missing extension
 import MyCommand from '../../src/commands/my-command'
 
-// ✅ CORRECT
+// INCORRECT — .ts extension
 import MyCommand from '../../src/commands/my-command.ts'
+
+// CORRECT — .js extension (TypeScript resolves to .ts source)
+import MyCommand from '../../src/commands/my-command.js'
 ```
 
 ---
@@ -151,13 +154,17 @@ afterEach(() => {
 **Problem**: CLI not using the expected configuration.
 
 **Solution**:
-- Check your local configuration with:
+- View your local configuration with:
   ```bash
-  ably config
+  ably config show
+  ```
+- Find the config file location with:
+  ```bash
+  ably config path
   ```
 - Use environment variables to override config for testing:
   ```bash
-  ABLY_API_KEY=your_key ably channels:list
+  ABLY_API_KEY=your_key ably channels list
   ```
 
 ---
@@ -245,4 +252,4 @@ Property 'x' does not exist on type 'Y'
 
 If you find errors in documentation or rules, please update them using the proper workflow and submit a pull request.
 
-See documentation in `.cursor/rules/Workflow.mdc` for more details on the development workflow.
+See `AGENTS.md` for more details on the development workflow.

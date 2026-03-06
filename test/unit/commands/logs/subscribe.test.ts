@@ -93,6 +93,60 @@ describe("logs:subscribe command", () => {
     });
   });
 
+  describe("rewind and type filtering", () => {
+    it("should set rewind channel param when --rewind > 0", async () => {
+      const mock = getMockAblyRealtime();
+
+      await runCommand(["logs:subscribe", "--rewind", "5"], import.meta.url);
+
+      expect(mock.channels.get).toHaveBeenCalledWith("[meta]log", {
+        params: { rewind: "5" },
+      });
+    });
+
+    it("should subscribe only to --type when provided", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("[meta]log");
+
+      await runCommand(
+        ["logs:subscribe", "--type", "channel.presence"],
+        import.meta.url,
+      );
+
+      // Should only subscribe to the specified type
+      expect(channel.subscribe).toHaveBeenCalledWith(
+        "channel.presence",
+        expect.any(Function),
+      );
+      // Should NOT subscribe to other types
+      const subscribeCalls = channel.subscribe.mock.calls.filter(
+        (call: unknown[]) => typeof call[0] === "string",
+      );
+      expect(subscribeCalls).toHaveLength(1);
+      expect(subscribeCalls[0][0]).toBe("channel.presence");
+    });
+
+    it("should subscribe to all log types without --type", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("[meta]log");
+
+      await runCommand(["logs:subscribe"], import.meta.url);
+
+      // Should subscribe to all 5 default log types
+      const subscribeCalls = channel.subscribe.mock.calls.filter(
+        (call: unknown[]) => typeof call[0] === "string",
+      );
+      expect(subscribeCalls.length).toBe(5);
+
+      const subscribedTypes = subscribeCalls.map((call: unknown[]) => call[0]);
+      expect(subscribedTypes).toContain("channel.lifecycle");
+      expect(subscribedTypes).toContain("channel.occupancy");
+      expect(subscribedTypes).toContain("channel.presence");
+      expect(subscribedTypes).toContain("connection.lifecycle");
+      expect(subscribedTypes).toContain("push.publish");
+    });
+  });
+
   describe("error handling", () => {
     it("should handle missing mock client in test mode", async () => {
       // Clear the realtime mock
