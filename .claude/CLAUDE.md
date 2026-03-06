@@ -30,7 +30,7 @@ ls -la .cursor/rules/  # Should show .mdc files
 **MANDATORY - Read these .cursor/rules files before ANY work:**
 
 1. `Workflow.mdc` - The mandatory development workflow
-2. `Development.mdc` - Coding standards  
+2. `Development.mdc` - Coding standards
 3. `AI-Assistance.mdc` - How to work with this codebase
 
 **Finding the rules:**
@@ -253,7 +253,7 @@ When adding COMMANDS sections in `src/help.ts`, use `chalk.bold()` for headers, 
 ## ✓ Before Marking Complete
 
 - [ ] `pnpm prepare` succeeds
-- [ ] `pnpm exec eslint .` shows 0 errors  
+- [ ] `pnpm exec eslint .` shows 0 errors
 - [ ] `pnpm test:unit` passes
 - [ ] No debug artifacts remain
 - [ ] Docs updated if needed
