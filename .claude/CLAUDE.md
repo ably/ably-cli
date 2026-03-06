@@ -51,6 +51,7 @@ cat .cursor/rules/AI-Assistance.mdc
 6. **NODE_ENV** - To check if the CLI is in test mode, use the `isTestMode()` helper function.
 7. **`process.exit`** - When creating a command, use `this.exit()` for consistent test mode handling.
 8. **`console.log` / `console.error`** - In commands, always use `this.log()` (stdout) and `this.logToStderr()` (stderr). `console.*` bypasses oclif and can't be captured by tests.
+9. **Truncate markdown docs** - When fetching `.md` documentation (e.g., via `curl`), do NOT use `| head` or `| tail` to truncate. Fetch the complete markdown content. HTML or other doc formats may be truncated if needed.
 
 ## ✅ Correct Practices
 
