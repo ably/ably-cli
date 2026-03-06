@@ -97,7 +97,7 @@ describe("logs:subscribe command", () => {
     it("should set rewind channel param when --rewind > 0", async () => {
       const mock = getMockAblyRealtime();
 
-      await runCommand(["logs:subscribe", "--rewind", "5"], import.meta.url);
+      await runCommand(["logs:subscribe", "--rewind", "5", "--duration", "0"], import.meta.url);
 
       expect(mock.channels.get).toHaveBeenCalledWith("[meta]log", {
         params: { rewind: "5" },
@@ -109,7 +109,7 @@ describe("logs:subscribe command", () => {
       const channel = mock.channels._getChannel("[meta]log");
 
       await runCommand(
-        ["logs:subscribe", "--type", "channel.presence"],
+        ["logs:subscribe", "--type", "channel.presence", "--duration", "0"],
         import.meta.url,
       );
 
@@ -130,7 +130,7 @@ describe("logs:subscribe command", () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("[meta]log");
 
-      await runCommand(["logs:subscribe"], import.meta.url);
+      await runCommand(["logs:subscribe", "--duration", "0"], import.meta.url);
 
       // Should subscribe to all 5 default log types
       const subscribeCalls = channel.subscribe.mock.calls.filter(
