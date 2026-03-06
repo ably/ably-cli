@@ -4,8 +4,8 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
+import { errorMessage } from "../../../utils/errors.js";
 import { isJsonData } from "../../../utils/json-formatter.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
   listening,
   resource,
@@ -52,7 +52,6 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
     }),
   };
 
-  private cleanupInProgress = false;
   private client: Ably.Realtime | null = null;
   private sequenceCounter = 0;
   private channel: Ably.RealtimeChannel | null = null;
@@ -80,7 +79,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
           }
           data = JSON.parse(trimmed);
         } catch (error) {
-          const errorMsg = `Invalid data JSON: ${error instanceof Error ? error.message : String(error)}`;
+          const errorMsg = `Invalid data JSON: ${errorMessage(error)}`;
           this.logCliEvent(flags, "presence", "parseError", errorMsg, {
             data: flags.data,
             error: errorMsg,
@@ -212,11 +211,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-      this.logCliEvent(flags, "presence", "runComplete", "Exiting wait loop", {
-        exitReason,
-      });
-      this.cleanupInProgress = exitReason === "signal";
+      await this.waitAndTrackCleanup(flags, "presence", flags.duration);
     } catch (error) {
       this.handleCommandError(error, flags, "presence", {
         channel: args.channel,

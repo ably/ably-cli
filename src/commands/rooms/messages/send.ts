@@ -1,6 +1,7 @@
 import { Args, Flags } from "@oclif/core";
 import { ChatClient, JsonObject } from "@ably/chat";
 
+import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { interpolateMessage } from "../../../utils/message.js";
@@ -115,7 +116,7 @@ export default class MessagesSend extends ChatBaseCommand {
             { metadata },
           );
         } catch (error) {
-          const errorMsg = `Invalid metadata JSON: ${error instanceof Error ? error.message : String(error)}`;
+          const errorMsg = `Invalid metadata JSON: ${errorMessage(error)}`;
           this.logCliEvent(flags, "message", "metadataParseError", errorMsg, {
             error: errorMsg,
           });
@@ -259,8 +260,7 @@ export default class MessagesSend extends ChatBaseCommand {
             })
             .catch((error: unknown) => {
               errorCount++;
-              const errorMsg =
-                error instanceof Error ? error.message : String(error);
+              const errorMsg = errorMessage(error);
               const result: MessageResult = {
                 error: errorMsg,
                 index: i + 1,
@@ -383,8 +383,7 @@ export default class MessagesSend extends ChatBaseCommand {
             }
           }
         } catch (error) {
-          const errorMsg =
-            error instanceof Error ? error.message : String(error);
+          const errorMsg = errorMessage(error);
           const result: MessageResult = {
             error: errorMsg,
             room: args.room,

@@ -3,6 +3,7 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
+import { errorMessage } from "../../utils/errors.js";
 import { progress, resource, success } from "../../utils/output.js";
 
 // Define interfaces for the batch-publish command
@@ -118,16 +119,14 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
           if (this.shouldOutputJson(flags)) {
             this.jsonError(
               {
-                error: `Failed to parse spec JSON: ${error instanceof Error ? error.message : String(error)}`,
+                error: `Failed to parse spec JSON: ${errorMessage(error)}`,
                 success: false,
               },
               flags,
             );
             return;
           } else {
-            this.error(
-              `Failed to parse spec JSON: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            this.error(`Failed to parse spec JSON: ${errorMessage(error)}`);
           }
         }
       } else {
@@ -162,7 +161,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
             if (this.shouldOutputJson(flags)) {
               this.jsonError(
                 {
-                  error: `Failed to parse channels-json: ${error instanceof Error ? error.message : String(error)}`,
+                  error: `Failed to parse channels-json: ${errorMessage(error)}`,
                   success: false,
                 },
                 flags,
@@ -170,7 +169,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
               return;
             } else {
               this.error(
-                `Failed to parse channels-json: ${error instanceof Error ? error.message : String(error)}`,
+                `Failed to parse channels-json: ${errorMessage(error)}`,
               );
             }
           }
@@ -425,16 +424,14 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.jsonError(
           {
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             success: false,
           },
           flags,
         );
         return;
       } else {
-        this.error(
-          `Failed to execute batch publish: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Failed to execute batch publish: ${errorMessage(error)}`);
       }
     }
   }

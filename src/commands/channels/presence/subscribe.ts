@@ -4,7 +4,6 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
   listening,
   progress,
@@ -39,7 +38,6 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
     ...durationFlag,
   };
 
-  private cleanupInProgress = false;
   private client: Ably.Realtime | null = null;
 
   async run(): Promise<void> {
@@ -141,11 +139,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-      this.logCliEvent(flags, "presence", "runComplete", "Exiting wait loop", {
-        exitReason,
-      });
-      this.cleanupInProgress = exitReason === "signal";
+      await this.waitAndTrackCleanup(flags, "presence", flags.duration);
     } catch (error) {
       this.handleCommandError(error, flags, "presence", {
         channel: args.channel,

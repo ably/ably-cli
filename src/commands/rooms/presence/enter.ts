@@ -3,7 +3,6 @@ import { Args, Flags, Interfaces } from "@oclif/core";
 import chalk from "chalk";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
   success,
   listening,
@@ -52,7 +51,6 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
   private roomName: string | null = null;
   private data: PresenceData | null = null;
 
-  private cleanupInProgress: boolean = false;
   private commandFlags: Interfaces.InferredFlags<
     typeof RoomsPresenceEnter.flags
   > | null = null;
@@ -173,11 +171,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       }
 
       // Wait until the user interrupts or the optional duration elapses
-      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-      this.logCliEvent(flags, "presence", "runComplete", "Exiting wait loop", {
-        exitReason,
-      });
-      this.cleanupInProgress = exitReason === "signal"; // mark if signal so finally knows
+      await this.waitAndTrackCleanup(flags, "presence", flags.duration);
     } catch (error) {
       this.handleCommandError(error, flags, "presence", {
         room: this.roomName,

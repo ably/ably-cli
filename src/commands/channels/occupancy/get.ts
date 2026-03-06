@@ -3,6 +3,7 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
+import { errorMessage } from "../../../utils/errors.js";
 import { resource } from "../../../utils/output.js";
 
 interface OccupancyMetrics {
@@ -114,15 +115,13 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
         this.jsonError(
           {
             channel: args.channel,
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             success: false,
           },
           flags,
         );
       } else {
-        this.error(
-          `Error fetching channel occupancy: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Error fetching channel occupancy: ${errorMessage(error)}`);
       }
     }
   }

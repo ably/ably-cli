@@ -1,7 +1,9 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { errorMessage } from "../../../utils/errors.js";
 import { ControlApi } from "../../../services/control-api.js";
+import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
 
 export default class KeysSwitchCommand extends ControlBaseCommand {
   static args = {
@@ -37,14 +39,10 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
     let appId = flags.app || this.configManager.getCurrentAppId();
     let keyId: string | undefined = args.keyNameOrValue;
 
-    // If keyNameOrValue includes a period, it might be in the app_id.key_id format
-    if (args.keyNameOrValue && args.keyNameOrValue.includes(".")) {
-      const parts = args.keyNameOrValue.split(".");
-      // If it has exactly one period and no colon, it's likely an app_id.key_id
-      if (parts.length === 2 && !args.keyNameOrValue.includes(":")) {
-        appId = parts[0];
-        keyId = parts[1];
-      }
+    if (args.keyNameOrValue) {
+      const parsed = parseKeyIdentifier(args.keyNameOrValue);
+      if (parsed.appId) appId = parsed.appId;
+      keyId = parsed.keyId;
     }
 
     if (!appId) {
@@ -100,9 +98,7 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
         this.log("Key switch cancelled.");
       }
     } catch (error) {
-      this.error(
-        `Error switching key: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.error(`Error switching key: ${errorMessage(error)}`);
     }
   }
 

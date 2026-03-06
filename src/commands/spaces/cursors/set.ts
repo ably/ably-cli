@@ -1,9 +1,9 @@
 import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
+import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
   listening,
   progress,
@@ -264,7 +264,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
               flags,
               "cursor",
               "simulationError",
-              `Simulation error: ${error instanceof Error ? error.message : String(error)}`,
+              `Simulation error: ${errorMessage(error)}`,
             );
           }
         }, 250);
@@ -287,14 +287,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         );
       }
 
-      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-      this.logCliEvent(
-        flags,
-        "cursor",
-        "waitingComplete",
-        "Exiting wait loop",
-        { exitReason },
-      );
+      await this.waitAndTrackCleanup(flags, "cursor", flags.duration);
 
       // After cleanup (handled in finally), ensure the process exits so user doesn't need multiple Ctrl-C
       this.exit(0);

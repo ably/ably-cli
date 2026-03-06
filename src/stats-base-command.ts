@@ -6,6 +6,7 @@ import { timeRangeFlags } from "./flags.js";
 import { StatsDisplay, StatsDisplayData } from "./services/stats-display.js";
 import type { BaseFlags } from "./types/cli.js";
 import type { ControlApi } from "./services/control-api.js";
+import { errorMessage } from "./utils/errors.js";
 import { progress } from "./utils/output.js";
 import { parseTimestamp } from "./utils/time.js";
 
@@ -120,9 +121,7 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
     } catch (error) {
       if (flags.debug) {
         this.logToStderr(
-          chalk.red(
-            `Error during stats polling: ${error instanceof Error ? error.message : String(error)}`,
-          ),
+          chalk.red(`Error during stats polling: ${errorMessage(error)}`),
         );
       }
     } finally {

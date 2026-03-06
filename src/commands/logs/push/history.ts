@@ -3,11 +3,14 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../../flags.js";
-import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
+import { errorMessage } from "../../../utils/errors.js";
+import { formatMessageData } from "../../../utils/json-formatter.js";
 import { buildHistoryParams } from "../../../utils/history.js";
 import {
+  countLabel,
   formatTimestamp,
   formatMessageTimestamp,
+  limitWarning,
 } from "../../../utils/output.js";
 
 export default class LogsPushHistory extends AblyBaseCommand {
@@ -82,9 +85,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
           return;
         }
 
-        this.log(
-          `Found ${chalk.cyan(messages.length.toString())} push log messages:`,
-        );
+        this.log(`Found ${countLabel(messages.length, "push log message")}:`);
         this.log("");
 
         for (const [index, message] of messages.entries()) {
@@ -137,36 +138,27 @@ export default class LogsPushHistory extends AblyBaseCommand {
           );
           if (message.data) {
             this.log(chalk.dim("Data:"));
-            if (isJsonData(message.data)) {
-              this.log(formatJson(message.data));
-            } else {
-              this.log(String(message.data));
-            }
+            this.log(formatMessageData(message.data));
           }
 
           this.log("");
         }
 
-        if (messages.length === flags.limit) {
-          this.log(
-            chalk.yellow(
-              `Showing maximum of ${flags.limit} logs. Use --limit to show more.`,
-            ),
-          );
-        }
+        const warning = limitWarning(messages.length, flags.limit, "logs");
+        if (warning) this.log(warning);
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
         this.jsonError(
           {
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             success: false,
           },
           flags,
         );
       } else {
         this.error(
-          `Error retrieving push notification logs: ${error instanceof Error ? error.message : String(error)}`,
+          `Error retrieving push notification logs: ${errorMessage(error)}`,
         );
       }
     }

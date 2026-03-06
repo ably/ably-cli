@@ -4,7 +4,6 @@ import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import { progress, resource, formatTimestamp } from "../../../utils/output.js";
 
 export default class RoomsReactionsSubscribe extends ChatBaseCommand {
@@ -153,7 +152,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      await waitUntilInterruptedOrTimeout(flags.duration);
+      await this.waitAndTrackCleanup(flags, "reactions", flags.duration);
     } catch (error) {
       this.handleCommandError(error, flags, "reactions", { room: args.room });
     }

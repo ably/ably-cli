@@ -1,17 +1,10 @@
 import { Args, Flags } from "@oclif/core";
-import { MessageReactionType } from "@ably/chat";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../../chat-base-command.js";
 import { clientIdFlag, productApiFlags } from "../../../../flags.js";
 import { resource, success } from "../../../../utils/output.js";
-
-// Map CLI-friendly type names to SDK MessageReactionType values
-const REACTION_TYPE_MAP: Record<string, MessageReactionType> = {
-  unique: MessageReactionType.Unique,
-  distinct: MessageReactionType.Distinct,
-  multiple: MessageReactionType.Multiple,
-};
+import { REACTION_TYPE_MAP } from "../../../../utils/chat-constants.js";
 
 interface MessageReactionResult {
   [key: string]: unknown;

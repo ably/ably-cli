@@ -3,8 +3,8 @@ import { Args } from "@oclif/core";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { errorMessage } from "../../../utils/errors.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import { progress, resource, formatTimestamp } from "../../../utils/output.js";
 
 export interface OccupancyMetrics {
@@ -123,7 +123,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
           true,
         );
       } catch (error) {
-        const errorMsg = `Failed to fetch initial occupancy: ${error instanceof Error ? error.message : String(error)}`;
+        const errorMsg = `Failed to fetch initial occupancy: ${errorMessage(error)}`;
         this.logCliEvent(flags, "occupancy", "getInitialError", errorMsg, {
           error: errorMsg,
         });
@@ -158,7 +158,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      await waitUntilInterruptedOrTimeout(flags.duration);
+      await this.waitAndTrackCleanup(flags, "occupancy", flags.duration);
     } catch (error) {
       this.handleCommandError(error, flags, "occupancy", {
         room: this.roomName,

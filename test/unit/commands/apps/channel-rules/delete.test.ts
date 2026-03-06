@@ -32,7 +32,7 @@ describe("apps:channel-rules:delete command", () => {
         .reply(204);
 
       const { stdout } = await runCommand(
-        ["apps:channel-rules:delete", mockRuleId, "--app", appId, "--force"],
+        ["apps:channel-rules:delete", mockRuleId, "--force"],
         import.meta.url,
       );
 
@@ -58,14 +58,7 @@ describe("apps:channel-rules:delete command", () => {
         .reply(204);
 
       const { stdout } = await runCommand(
-        [
-          "apps:channel-rules:delete",
-          mockRuleId,
-          "--app",
-          appId,
-          "--force",
-          "--json",
-        ],
+        ["apps:channel-rules:delete", mockRuleId, "--force", "--json"],
         import.meta.url,
       );
 
@@ -78,9 +71,8 @@ describe("apps:channel-rules:delete command", () => {
 
   describe("error handling", () => {
     it("should require nameOrId argument", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
-        ["apps:channel-rules:delete", "--app", appId],
+        ["apps:channel-rules:delete"],
         import.meta.url,
       );
 
@@ -95,7 +87,7 @@ describe("apps:channel-rules:delete command", () => {
         .reply(200, []);
 
       const { error } = await runCommand(
-        ["apps:channel-rules:delete", "nonexistent", "--app", appId, "--force"],
+        ["apps:channel-rules:delete", "nonexistent", "--force"],
         import.meta.url,
       );
 
@@ -110,7 +102,7 @@ describe("apps:channel-rules:delete command", () => {
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
-        ["apps:channel-rules:delete", mockRuleId, "--app", appId, "--force"],
+        ["apps:channel-rules:delete", mockRuleId, "--force"],
         import.meta.url,
       );
 
@@ -125,7 +117,7 @@ describe("apps:channel-rules:delete command", () => {
         .replyWithError("Network error");
 
       const { error } = await runCommand(
-        ["apps:channel-rules:delete", mockRuleId, "--app", appId, "--force"],
+        ["apps:channel-rules:delete", mockRuleId, "--force"],
         import.meta.url,
       );
 

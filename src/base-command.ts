@@ -15,6 +15,10 @@ import { BaseFlags, CommandConfig, ErrorDetails } from "./types/cli.js";
 import { getCliVersion } from "./utils/version.js";
 import Spaces from "@ably/spaces";
 import { ChatClient } from "@ably/chat";
+import {
+  waitUntilInterruptedOrTimeout,
+  type ExitReason,
+} from "./utils/long-running.js";
 import isTestMode from "./utils/test-mode.js";
 import isWebCliMode from "./utils/web-mode.js";
 
@@ -93,6 +97,7 @@ const SKIP_AUTH_INFO_COMMANDS = [
 
 export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   protected _authInfoShown = false;
+  protected cleanupInProgress = false;
   private _cachedRestClient: Ably.Rest | null = null;
   private _cachedRealtimeClient: Ably.Realtime | null = null;
 
@@ -1476,6 +1481,23 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     } else {
       this.error(errorMsg);
     }
+  }
+
+  /**
+   * Wait for interrupt/timeout, log the exit reason, and set cleanupInProgress.
+   * Replaces the repeated 3-line pattern in subscribe commands.
+   */
+  protected async waitAndTrackCleanup(
+    flags: BaseFlags,
+    component: string,
+    duration?: number,
+  ): Promise<ExitReason> {
+    const exitReason = await waitUntilInterruptedOrTimeout(duration);
+    this.logCliEvent(flags, component, "runComplete", "Exiting wait loop", {
+      exitReason,
+    });
+    this.cleanupInProgress = exitReason === "signal";
+    return exitReason;
   }
 
   /**

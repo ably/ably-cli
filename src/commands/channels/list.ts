@@ -2,7 +2,8 @@ import { Flags } from "@oclif/core";
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
 import chalk from "chalk";
-import { resource } from "../../utils/output.js";
+import { errorMessage } from "../../utils/errors.js";
+import { countLabel, limitWarning, resource } from "../../utils/output.js";
 
 interface ChannelMetrics {
   connections?: number;
@@ -111,9 +112,7 @@ export default class ChannelsList extends AblyBaseCommand {
           return;
         }
 
-        this.log(
-          `Found ${chalk.cyan(channels.length.toString())} active channels:`,
-        );
+        this.log(`Found ${countLabel(channels.length, "active channel")}:`);
 
         for (const channel of channels as ChannelItem[]) {
           this.log(`${resource(channel.channelId)}`);
@@ -147,19 +146,14 @@ export default class ChannelsList extends AblyBaseCommand {
           this.log(""); // Add a line break between channels
         }
 
-        if (channels.length === flags.limit) {
-          this.log(
-            chalk.yellow(
-              `Showing maximum of ${flags.limit} channels. Use --limit to show more.`,
-            ),
-          );
-        }
+        const warning = limitWarning(channels.length, flags.limit, "channels");
+        if (warning) this.log(warning);
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
         this.jsonError(
           {
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             status: "error",
             success: false,
           },
@@ -167,9 +161,7 @@ export default class ChannelsList extends AblyBaseCommand {
         );
         return;
       } else {
-        this.error(
-          `Error listing channels: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Error listing channels: ${errorMessage(error)}`);
       }
     }
   }

@@ -3,8 +3,7 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { durationFlag, productApiFlags, rewindFlag } from "../../../flags.js";
-import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
+import { formatMessageData } from "../../../utils/json-formatter.js";
 import {
   listening,
   resource,
@@ -121,12 +120,8 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
         );
 
         if (message.data) {
-          if (isJsonData(message.data)) {
-            this.log(chalk.blue("Data:"));
-            this.log(formatJson(message.data));
-          } else {
-            this.log(`${chalk.blue("Data:")} ${message.data}`);
-          }
+          this.log(chalk.blue("Data:"));
+          this.log(formatMessageData(message.data));
         }
 
         this.log(""); // Empty line for better readability
@@ -139,7 +134,7 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
       );
 
       this.logCliEvent(flags, "logs", "listening", "Listening for logs...");
-      await waitUntilInterruptedOrTimeout(flags.duration);
+      await this.waitAndTrackCleanup(flags, "logs", flags.duration);
     } catch (error: unknown) {
       this.handleCommandError(error, flags, "logs", { channel: channelName });
     }

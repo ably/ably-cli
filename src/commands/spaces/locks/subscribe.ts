@@ -2,9 +2,9 @@ import { type Lock } from "@ably/spaces";
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
+import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
   listening,
   progress,
@@ -209,9 +209,9 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      await waitUntilInterruptedOrTimeout(flags.duration);
+      await this.waitAndTrackCleanup(flags, "lock", flags.duration);
     } catch (error) {
-      const errorMsg = `Error during execution: ${error instanceof Error ? error.message : String(error)}`;
+      const errorMsg = `Error during execution: ${errorMessage(error)}`;
       this.logCliEvent(flags, "lock", "executionError", errorMsg, {
         error: errorMsg,
       });

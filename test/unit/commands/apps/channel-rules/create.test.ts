@@ -25,7 +25,7 @@ describe("apps:channel-rules:create command", () => {
         });
 
       const { stdout } = await runCommand(
-        ["apps:channel-rules:create", "--name", mockRuleName, "--app", appId],
+        ["apps:channel-rules:create", "--name", mockRuleName],
         import.meta.url,
       );
 
@@ -48,14 +48,7 @@ describe("apps:channel-rules:create command", () => {
         });
 
       const { stdout } = await runCommand(
-        [
-          "apps:channel-rules:create",
-          "--name",
-          mockRuleName,
-          "--app",
-          appId,
-          "--persisted",
-        ],
+        ["apps:channel-rules:create", "--name", mockRuleName, "--persisted"],
         import.meta.url,
       );
 
@@ -78,14 +71,7 @@ describe("apps:channel-rules:create command", () => {
         });
 
       const { stdout } = await runCommand(
-        [
-          "apps:channel-rules:create",
-          "--name",
-          mockRuleName,
-          "--app",
-          appId,
-          "--push-enabled",
-        ],
+        ["apps:channel-rules:create", "--name", mockRuleName, "--push-enabled"],
         import.meta.url,
       );
 
@@ -108,14 +94,7 @@ describe("apps:channel-rules:create command", () => {
         .reply(201, mockRule);
 
       const { stdout } = await runCommand(
-        [
-          "apps:channel-rules:create",
-          "--name",
-          mockRuleName,
-          "--app",
-          appId,
-          "--json",
-        ],
+        ["apps:channel-rules:create", "--name", mockRuleName, "--json"],
         import.meta.url,
       );
 
@@ -128,9 +107,8 @@ describe("apps:channel-rules:create command", () => {
 
   describe("error handling", () => {
     it("should require name parameter", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
-        ["apps:channel-rules:create", "--app", appId],
+        ["apps:channel-rules:create"],
         import.meta.url,
       );
 
@@ -145,7 +123,7 @@ describe("apps:channel-rules:create command", () => {
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
-        ["apps:channel-rules:create", "--name", mockRuleName, "--app", appId],
+        ["apps:channel-rules:create", "--name", mockRuleName],
         import.meta.url,
       );
 
@@ -160,7 +138,7 @@ describe("apps:channel-rules:create command", () => {
         .reply(400, { error: "Validation failed" });
 
       const { error } = await runCommand(
-        ["apps:channel-rules:create", "--name", mockRuleName, "--app", appId],
+        ["apps:channel-rules:create", "--name", mockRuleName],
         import.meta.url,
       );
 
@@ -175,7 +153,7 @@ describe("apps:channel-rules:create command", () => {
         .replyWithError("Network error");
 
       const { error } = await runCommand(
-        ["apps:channel-rules:create", "--name", mockRuleName, "--app", appId],
+        ["apps:channel-rules:create", "--name", mockRuleName],
         import.meta.url,
       );
 

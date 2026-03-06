@@ -4,6 +4,8 @@ import chalk from "chalk";
 import type { Namespace } from "../../../services/control-api.js";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
+import { errorMessage } from "../../../utils/errors.js";
 
 interface ChannelRuleOutput {
   authenticated: boolean;
@@ -43,30 +45,11 @@ export default class ChannelRulesListCommand extends ControlBaseCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(ChannelRulesListCommand);
-    const appId = await this.resolveAppId(flags);
-
-    if (!appId) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error:
-              'No app specified. Use --app flag or select an app with "ably apps switch"',
-            status: "error",
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(
-          'No app specified. Use --app flag or select an app with "ably apps switch"',
-        );
-      }
-
-      return;
-    }
+    const appId = await this.requireAppId(flags);
+    if (!appId) return;
 
     try {
-      const controlApi = await this.createControlApi(flags);
+      const controlApi = this.createControlApi(flags);
       const namespaces = await controlApi.listNamespaces(appId);
 
       if (this.shouldOutputJson(flags)) {
@@ -111,86 +94,15 @@ export default class ChannelRulesListCommand extends ControlBaseCommand {
 
         namespaces.forEach((namespace: Namespace) => {
           this.log(chalk.bold(`Channel Rule ID: ${namespace.id}`));
-          this.log(
-            `  Persisted: ${namespace.persisted ? chalk.bold.green("✓ Yes") : "No"}`,
-          );
-          this.log(
-            `  Push Enabled: ${namespace.pushEnabled ? chalk.bold.green("✓ Yes") : "No"}`,
-          );
-          if (namespace.authenticated !== undefined) {
-            this.log(
-              `  Authenticated: ${namespace.authenticated ? chalk.bold.green("✓ Yes") : "No"}`,
-            );
+          for (const line of formatChannelRuleDetails(namespace, {
+            bold: true,
+            formatDate: (t) => this.formatDate(t),
+            indent: "  ",
+            showTimestamps: true,
+          })) {
+            this.log(line);
           }
 
-          if (namespace.persistLast !== undefined) {
-            this.log(
-              `  Persist Last Message: ${namespace.persistLast ? chalk.bold.green("✓ Yes") : "No"}`,
-            );
-          }
-
-          if (namespace.exposeTimeSerial !== undefined) {
-            this.log(
-              `  Expose Time Serial: ${namespace.exposeTimeSerial ? chalk.bold.green("✓ Yes") : "No"}`,
-            );
-          }
-
-          if (namespace.populateChannelRegistry !== undefined) {
-            this.log(
-              `  Populate Channel Registry: ${namespace.populateChannelRegistry ? chalk.bold.green("✓ Yes") : "No"}`,
-            );
-          }
-
-          if (namespace.batchingEnabled !== undefined) {
-            this.log(
-              `  Batching Enabled: ${namespace.batchingEnabled ? chalk.bold.green("✓ Yes") : "No"}`,
-            );
-          }
-
-          if (
-            namespace.batchingInterval !== undefined &&
-            namespace.batchingInterval !== null &&
-            namespace.batchingInterval !== 0
-          ) {
-            this.log(
-              `  Batching Interval: ${chalk.bold.green(`✓ ${namespace.batchingInterval}`)}`,
-            );
-          }
-
-          if (namespace.conflationEnabled !== undefined) {
-            this.log(
-              `  Conflation Enabled: ${namespace.conflationEnabled ? chalk.bold.green("✓ Yes") : "No"}`,
-            );
-          }
-
-          if (
-            namespace.conflationInterval !== undefined &&
-            namespace.conflationInterval !== null &&
-            namespace.conflationInterval !== 0
-          ) {
-            this.log(
-              `  Conflation Interval: ${chalk.bold.green(`✓ ${namespace.conflationInterval}`)}`,
-            );
-          }
-
-          if (
-            namespace.conflationKey !== undefined &&
-            namespace.conflationKey &&
-            namespace.conflationKey !== ""
-          ) {
-            this.log(
-              `  Conflation Key: ${chalk.bold.green(`✓ ${namespace.conflationKey}`)}`,
-            );
-          }
-
-          if (namespace.tlsOnly !== undefined) {
-            this.log(
-              `  TLS Only: ${namespace.tlsOnly ? chalk.bold.green("✓ Yes") : "No"}`,
-            );
-          }
-
-          this.log(`  Created: ${this.formatDate(namespace.created)}`);
-          this.log(`  Updated: ${this.formatDate(namespace.modified)}`);
           this.log(""); // Add a blank line between rules
         });
       }
@@ -199,16 +111,14 @@ export default class ChannelRulesListCommand extends ControlBaseCommand {
         this.jsonError(
           {
             appId,
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             status: "error",
             success: false,
           },
           flags,
         );
       } else {
-        this.error(
-          `Error listing channel rules: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Error listing channel rules: ${errorMessage(error)}`);
       }
     }
   }

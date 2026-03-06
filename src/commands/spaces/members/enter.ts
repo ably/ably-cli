@@ -2,9 +2,9 @@ import type { ProfileData, SpaceMember } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
+import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
   success,
   listening,
@@ -40,8 +40,6 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
     }),
     ...durationFlag,
   };
-
-  private cleanupInProgress = false;
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesMembersEnter);
@@ -268,13 +266,9 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-      this.logCliEvent(flags, "member", "runComplete", "Exiting wait loop", {
-        exitReason,
-      });
-      this.cleanupInProgress = exitReason === "signal";
+      await this.waitAndTrackCleanup(flags, "member", flags.duration);
     } catch (error) {
-      const errorMsg = `Error: ${error instanceof Error ? error.message : String(error)}`;
+      const errorMsg = `Error: ${errorMessage(error)}`;
       this.logCliEvent(flags, "error", "unhandledError", errorMsg, {
         error: errorMsg,
       });

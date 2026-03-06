@@ -1,6 +1,7 @@
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
+import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { resource, success } from "../../../utils/output.js";
@@ -73,7 +74,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
           );
         }
       } catch (error) {
-        const errorMsg = `Failed to get lock: ${error instanceof Error ? error.message : String(error)}`;
+        const errorMsg = `Failed to get lock: ${errorMessage(error)}`;
         if (this.shouldOutputJson(flags)) {
           this.jsonError({ error: errorMsg, success: false }, flags);
         } else {
@@ -81,7 +82,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
         }
       }
     } catch (error) {
-      const errorMsg = `Error: ${error instanceof Error ? error.message : String(error)}`;
+      const errorMsg = `Error: ${errorMessage(error)}`;
       if (this.shouldOutputJson(flags)) {
         this.jsonError({ error: errorMsg, success: false }, flags);
       } else {

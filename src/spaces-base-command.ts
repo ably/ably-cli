@@ -3,6 +3,7 @@ import Spaces, { type Space, type SpaceOptions } from "@ably/spaces";
 import { AblyBaseCommand } from "./base-command.js";
 import { productApiFlags } from "./flags.js";
 import { BaseFlags } from "./types/cli.js";
+import { errorMessage } from "./utils/errors.js";
 import isTestMode from "./utils/test-mode.js";
 
 // Dynamic import to handle module structure issues
@@ -278,7 +279,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
         "channelCreationAttempted",
         "Attempted to create cursors channel",
         {
-          error: error instanceof Error ? error.message : String(error),
+          error: errorMessage(error),
         },
       );
     }

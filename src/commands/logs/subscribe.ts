@@ -4,7 +4,6 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { durationFlag, productApiFlags, rewindFlag } from "../../flags.js";
-import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
 import {
   listening,
   resource,
@@ -155,10 +154,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
       }
 
       // Wait until the user interrupts or the optional duration elapses
-      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-      this.logCliEvent(flags, "logs", "runComplete", "Exiting wait loop", {
-        exitReason,
-      });
+      await this.waitAndTrackCleanup(flags, "logs", flags.duration);
     } catch (error) {
       this.handleCommandError(error, flags, "logs");
     }

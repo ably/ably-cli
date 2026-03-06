@@ -1,6 +1,7 @@
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
+import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { progress, resource, success } from "../../../utils/output.js";
@@ -146,7 +147,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
             }
           } catch (error) {
             this.log(
-              `- ${chalk.red("Error displaying lock item")}: ${error instanceof Error ? error.message : String(error)}`,
+              `- ${chalk.red("Error displaying lock item")}: ${errorMessage(error)}`,
             );
           }
         });
@@ -155,7 +156,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.jsonError(
           {
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             spaceName: spaceName,
             status: "error",
             success: false,
@@ -163,9 +164,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
           flags,
         );
       } else {
-        this.error(
-          `Error: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Error: ${errorMessage(error)}`);
       }
     }
   }

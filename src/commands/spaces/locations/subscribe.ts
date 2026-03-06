@@ -2,9 +2,9 @@ import type { LocationsEvents } from "@ably/spaces";
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
+import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
   listening,
   progress,
@@ -54,8 +54,6 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
     ...clientIdFlag,
     ...durationFlag,
   };
-
-  private cleanupInProgress = false;
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsSubscribe);
@@ -175,7 +173,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
           }
         }
       } catch (error) {
-        const errorMsg = `Error fetching locations: ${error instanceof Error ? error.message : String(error)}`;
+        const errorMsg = `Error fetching locations: ${errorMessage(error)}`;
         this.logCliEvent(flags, "location", "getInitialError", errorMsg, {
           error: errorMsg,
           spaceName,
@@ -253,7 +251,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
               );
             }
           } catch (error) {
-            const errorMsg = `Error processing location update: ${error instanceof Error ? error.message : String(error)}`;
+            const errorMsg = `Error processing location update: ${errorMessage(error)}`;
             this.logCliEvent(
               flags,
               "location",
@@ -287,7 +285,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
           "Successfully subscribed to location updates",
         );
       } catch (error) {
-        const errorMsg = `Error subscribing to location updates: ${error instanceof Error ? error.message : String(error)}`;
+        const errorMsg = `Error subscribing to location updates: ${errorMessage(error)}`;
         this.logCliEvent(flags, "location", "subscribeError", errorMsg, {
           error: errorMsg,
           spaceName,
@@ -310,11 +308,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-      this.logCliEvent(flags, "location", "runComplete", "Exiting wait loop", {
-        exitReason,
-      });
-      this.cleanupInProgress = exitReason === "signal";
+      await this.waitAndTrackCleanup(flags, "location", flags.duration);
     } catch (error) {
       this.handleCommandError(error, flags, "location", { spaceName });
     } finally {

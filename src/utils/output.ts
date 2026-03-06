@@ -33,6 +33,36 @@ export function formatMessageTimestamp(
     : new Date(timestamp).toISOString();
 }
 
+/**
+ * Format a count with a singular/plural label.
+ * E.g. countLabel(3, "message") → "3 messages" (with cyan count)
+ */
+export function countLabel(
+  count: number,
+  singular: string,
+  plural?: string,
+): string {
+  const label = count === 1 ? singular : plural || singular + "s";
+  return `${chalk.cyan(count.toString())} ${label}`;
+}
+
+/**
+ * Show a limit warning when results may be truncated.
+ * Returns null if count < limit.
+ */
+export function limitWarning(
+  count: number,
+  limit: number,
+  resourceName: string,
+): string | null {
+  if (count >= limit) {
+    return chalk.yellow(
+      `Showing maximum of ${limit} ${resourceName}. Use --limit to show more.`,
+    );
+  }
+  return null;
+}
+
 export function formatPresenceAction(action: string): {
   symbol: string;
   color: ChalkInstance;

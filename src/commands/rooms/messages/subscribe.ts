@@ -4,7 +4,6 @@ import chalk from "chalk";
 
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
   progress,
   resource,
@@ -61,7 +60,6 @@ export default class MessagesSubscribe extends ChatBaseCommand {
 
   private chatClient: ChatClient | null = null;
   private roomNames: string[] = [];
-  private cleanupInProgress: boolean = false;
   private sequenceCounter = 0;
 
   private async subscribeToRoom(
@@ -258,11 +256,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-      this.logCliEvent(flags, "subscribe", "runComplete", "Exiting wait loop", {
-        exitReason,
-      });
-      this.cleanupInProgress = exitReason === "signal"; // mark if signal so finally knows
+      await this.waitAndTrackCleanup(flags, "subscribe", flags.duration);
     } catch (error) {
       this.handleCommandError(error, flags, "subscribe", {
         rooms: this.roomNames,

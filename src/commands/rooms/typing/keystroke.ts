@@ -3,7 +3,6 @@ import { Args, Flags } from "@oclif/core";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import { listening, resource, success } from "../../../utils/output.js";
 
 // The heartbeats are throttled to one every 10 seconds. There's a 2 second
@@ -197,7 +196,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
       );
 
       // Decide how long to remain connected
-      await waitUntilInterruptedOrTimeout(flags.duration);
+      await this.waitAndTrackCleanup(flags, "typing", flags.duration);
     } catch (error) {
       this.handleCommandError(error, flags, "typing", { room: args.room });
     }

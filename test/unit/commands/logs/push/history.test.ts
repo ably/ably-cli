@@ -72,7 +72,7 @@ describe("logs:push:history command", () => {
 
       expect(stdout).toContain("Found");
       expect(stdout).toContain("1");
-      expect(stdout).toContain("push log messages");
+      expect(stdout).toContain("push log message");
       expect(stdout).toContain("push.delivered");
       expect(channel.history).toHaveBeenCalled();
     });

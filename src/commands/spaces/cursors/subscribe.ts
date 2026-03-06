@@ -2,9 +2,9 @@ import { type CursorUpdate } from "@ably/spaces";
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
+import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
   listening,
   resource,
@@ -90,7 +90,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
               );
             }
           } catch (error) {
-            const errorMsg = `Error processing cursor update: ${error instanceof Error ? error.message : String(error)}`;
+            const errorMsg = `Error processing cursor update: ${errorMessage(error)}`;
             this.logCliEvent(flags, "cursor", "updateProcessError", errorMsg, {
               error: errorMsg,
               spaceName,
@@ -124,7 +124,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
           "Successfully subscribed to cursor updates",
         );
       } catch (error) {
-        const errorMsg = `Error subscribing to cursor updates: ${error instanceof Error ? error.message : String(error)}`;
+        const errorMsg = `Error subscribing to cursor updates: ${errorMessage(error)}`;
         this.logCliEvent(flags, "cursor", "subscribeError", errorMsg, {
           error: errorMsg,
           spaceName,
@@ -162,7 +162,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
       }
 
       // Wait until the user interrupts or the optional duration elapses
-      await waitUntilInterruptedOrTimeout(flags.duration);
+      await this.waitAndTrackCleanup(flags, "cursor", flags.duration);
     } catch (error) {
       this.handleCommandError(error, flags, "cursor", { spaceName });
     } finally {

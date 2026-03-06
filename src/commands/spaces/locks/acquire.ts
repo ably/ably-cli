@@ -2,9 +2,9 @@ import { type LockOptions } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
+import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import { success, listening, resource } from "../../../utils/output.js";
 
 export default class SpacesLocksAcquire extends SpacesBaseCommand {
@@ -51,7 +51,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
           "finalReleaseError",
           "Error in final lock release",
           {
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             lockId: this.lockId,
           },
         );
@@ -137,7 +137,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
           this.log(`\n${listening("Holding lock.")}`);
         }
       } catch (error) {
-        const errorMsg = `Failed to acquire lock: ${error instanceof Error ? error.message : String(error)}`;
+        const errorMsg = `Failed to acquire lock: ${errorMessage(error)}`;
         this.logCliEvent(flags, "lock", "acquireFailed", errorMsg, {
           error: errorMsg,
           lockId,
@@ -158,7 +158,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
         `Holding lock ${lockId}. Press Ctrl+C to release.`,
       );
       // Decide how long to remain connected
-      await waitUntilInterruptedOrTimeout(flags.duration);
+      await this.waitAndTrackCleanup(flags, "locks", flags.duration);
     } catch (error) {
       this.handleCommandError(error, flags, "locks");
     }

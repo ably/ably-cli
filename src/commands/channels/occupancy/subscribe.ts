@@ -4,7 +4,6 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { durationFlag, productApiFlags } from "../../../flags.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
   listening,
   progress,
@@ -37,7 +36,6 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
     ...durationFlag,
   };
 
-  private cleanupInProgress = false;
   private client: Ably.Realtime | null = null;
 
   async run(): Promise<void> {
@@ -137,11 +135,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-      this.logCliEvent(flags, "occupancy", "runComplete", "Exiting wait loop", {
-        exitReason,
-      });
-      this.cleanupInProgress = exitReason === "signal";
+      await this.waitAndTrackCleanup(flags, "occupancy", flags.duration);
     } catch (error) {
       this.handleCommandError(error, flags, "occupancy", {
         channel: args.channel,

@@ -4,11 +4,14 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../flags.js";
-import { formatJson, isJsonData } from "../../utils/json-formatter.js";
+import { formatMessageData } from "../../utils/json-formatter.js";
 import { buildHistoryParams } from "../../utils/history.js";
+import { errorMessage } from "../../utils/errors.js";
 import {
+  countLabel,
   formatTimestamp,
   formatMessageTimestamp,
+  limitWarning,
   resource,
 } from "../../utils/output.js";
 
@@ -92,7 +95,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
         }
 
         this.log(
-          `Found ${chalk.cyan(messages.length.toString())} ${messages.length === 1 ? "message" : "messages"} in the history of channel: ${resource(channelName)}`,
+          `Found ${countLabel(messages.length, "message")} in the history of channel: ${resource(channelName)}`,
         );
         this.log("");
 
@@ -113,25 +116,16 @@ export default class ChannelsHistory extends AblyBaseCommand {
           }
 
           this.log(chalk.dim("Data:"));
-          if (isJsonData(message.data)) {
-            this.log(formatJson(message.data));
-          } else {
-            this.log(String(message.data));
-          }
+          this.log(formatMessageData(message.data));
 
           this.log("");
         }
 
-        if (messages.length === flags.limit) {
-          this.log(
-            chalk.yellow(
-              `Showing maximum of ${flags.limit} messages. Use --limit to show more.`,
-            ),
-          );
-        }
+        const warning = limitWarning(messages.length, flags.limit, "messages");
+        if (warning) this.log(warning);
       }
     } catch (error) {
-      const errorMsg = `Error retrieving channel history: ${error instanceof Error ? error.message : String(error)}`;
+      const errorMsg = `Error retrieving channel history: ${errorMessage(error)}`;
       if (this.shouldOutputJson(flags)) {
         this.jsonError({ error: errorMsg, success: false }, flags);
       } else {

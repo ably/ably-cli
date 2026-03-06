@@ -25,6 +25,13 @@ export function formatJson(data: unknown): string {
 }
 
 /**
+ * Format message data for display: uses colorized JSON for objects, String() for primitives.
+ */
+export function formatMessageData(data: unknown): string {
+  return isJsonData(data) ? formatJson(data) : String(data);
+}
+
+/**
  * Determine if data is likely to be JSON
  * @param data The data to check
  * @returns True if the data is a JSON object or array

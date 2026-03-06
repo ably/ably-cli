@@ -4,6 +4,7 @@ import { AblyBaseCommand } from "./base-command.js";
 import { controlApiFlags } from "./flags.js";
 import { ControlApi, App } from "./services/control-api.js";
 import { BaseFlags, ErrorDetails } from "./types/cli.js";
+import { errorMessage } from "./utils/errors.js";
 
 export abstract class ControlBaseCommand extends AblyBaseCommand {
   // Control API commands get core + hidden control API flags
@@ -36,6 +37,24 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
       accessToken,
       controlHost: flags["control-host"],
     });
+  }
+
+  /**
+   * Resolve app ID or emit a standard error (JSON-aware). Returns null if no app found.
+   */
+  protected async requireAppId(flags: BaseFlags): Promise<string | null> {
+    const appId = await this.resolveAppId(flags);
+    if (!appId) {
+      this.handleCommandError(
+        new Error(
+          'No app specified. Use --app flag or select an app with "ably apps switch"',
+        ),
+        flags,
+        "app",
+      );
+      return null;
+    }
+    return appId;
   }
 
   protected formatDate(timestamp: number): string {
@@ -93,7 +112,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
     } catch (error) {
       this.error(
         chalk.red(
-          `Failed to look up app "${appNameOrId}": ${error instanceof Error ? error.message : String(error)}`,
+          `Failed to look up app "${appNameOrId}": ${errorMessage(error)}`,
         ),
       );
     }
@@ -129,11 +148,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
 
       return app.id;
     } catch (error) {
-      this.error(
-        chalk.red(
-          `Failed to get apps: ${error instanceof Error ? error.message : String(error)}`,
-        ),
-      );
+      this.error(chalk.red(`Failed to get apps: ${errorMessage(error)}`));
     }
 
     return ""; // This will never be reached, but TypeScript needs a return
@@ -155,7 +170,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
   protected async runControlCommand<T>(
     flags: BaseFlags,
     apiCall: (api: ControlApi) => Promise<T>,
-    errorMessage = "Error executing command",
+    errorPrefix = "Error executing command",
   ): Promise<T | null> {
     try {
       // Display account info at start of command
@@ -167,7 +182,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
     } catch (error: unknown) {
       const isJsonMode = this.shouldOutputJson(flags);
       // Safely get the error message
-      const errorMessageText = `${errorMessage}: ${error instanceof Error ? error.message : String(error)}`;
+      const errorMessageText = `${errorPrefix}: ${errorMessage(error)}`;
 
       if (isJsonMode) {
         // Pass the error object itself as details

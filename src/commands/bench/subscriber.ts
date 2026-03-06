@@ -5,6 +5,7 @@ import Table from "cli-table3";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
+import { errorMessage } from "../../utils/errors.js";
 import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
 import { progress, resource, success } from "../../utils/output.js";
 
@@ -124,12 +125,10 @@ export default class BenchSubscriber extends AblyBaseCommand {
         flags,
         "benchmark",
         "testError",
-        `Benchmark failed: ${error instanceof Error ? error.message : String(error)}`,
+        `Benchmark failed: ${errorMessage(error)}`,
         { error: error instanceof Error ? error.stack : String(error) },
       );
-      this.error(
-        `Benchmark failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.error(`Benchmark failed: ${errorMessage(error)}`);
     } finally {
       // Cleanup is handled by the overridden finally method
     }

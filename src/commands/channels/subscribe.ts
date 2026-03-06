@@ -9,8 +9,7 @@ import {
   productApiFlags,
   rewindFlag,
 } from "../../flags.js";
-import { formatJson, isJsonData } from "../../utils/json-formatter.js";
-import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
+import { formatMessageData } from "../../utils/json-formatter.js";
 import {
   listening,
   progress,
@@ -76,7 +75,6 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
   static override strict = false;
 
-  private cleanupInProgress = false;
   private client: Ably.Realtime | null = null;
   private sequenceCounter = 0;
 
@@ -233,12 +231,8 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
             );
 
             // Message data with consistent formatting
-            if (isJsonData(message.data)) {
-              this.log(chalk.dim("Data:"));
-              this.log(formatJson(message.data));
-            } else {
-              this.log(`${chalk.dim("Data:")} ${message.data}`);
-            }
+            this.log(chalk.dim("Data:"));
+            this.log(formatMessageData(message.data));
 
             this.log(""); // Empty line for better readability
           }
@@ -274,11 +268,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-      this.logCliEvent(flags, "subscribe", "runComplete", "Exiting wait loop", {
-        exitReason,
-      });
-      this.cleanupInProgress = exitReason === "signal";
+      await this.waitAndTrackCleanup(flags, "subscribe", flags.duration);
     } catch (error) {
       this.handleCommandError(error, flags, "subscribe", {
         channels: channelNames,

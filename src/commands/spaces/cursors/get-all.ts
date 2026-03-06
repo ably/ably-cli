@@ -1,6 +1,7 @@
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
+import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import isTestMode from "../../../utils/test-mode.js";
@@ -358,11 +359,10 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
       }
     } catch (error) {
       // Check if this is a connection closed error
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMsg = errorMessage(error);
       const isConnectionError =
-        errorMessage.includes("Connection closed") ||
-        errorMessage.includes("connection") ||
+        errorMsg.includes("Connection closed") ||
+        errorMsg.includes("connection") ||
         (error as Error & { code?: number })?.code === 80017;
 
       if (this.shouldOutputJson(flags)) {
@@ -370,7 +370,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
           {
             error: isConnectionError
               ? "Connection was closed before operation completed. Please try again."
-              : `Error getting cursors: ${errorMessage}`,
+              : `Error getting cursors: ${errorMsg}`,
             spaceName,
             status: "error",
             success: false,
@@ -381,7 +381,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
       } else {
         const message = isConnectionError
           ? "Connection was closed before operation completed. Please try again."
-          : `Error getting cursors: ${errorMessage}`;
+          : `Error getting cursors: ${errorMsg}`;
         this.error(message);
       }
     }

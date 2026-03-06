@@ -69,8 +69,13 @@ This document outlines the directory structure of the Ably CLI project.
 │   ├── types/
 │   │   └── cli.ts              # General CLI type definitions
 │   └── utils/
+│       ├── channel-rule-display.ts # Channel rule human-readable display
+│       ├── chat-constants.ts       # Shared Chat SDK constants (REACTION_TYPE_MAP)
+│       ├── errors.ts               # Error utilities (errorMessage)
 │       ├── interrupt-feedback.ts   # Ctrl+C feedback messages
-│       ├── json-formatter.ts       # JSON output formatting
+│       ├── json-formatter.ts       # JSON output formatting (formatJson, formatMessageData)
+│       ├── key-display.ts          # Key capability formatting
+│       ├── key-parsing.ts          # Key identifier parsing (APP_ID.KEY_ID)
 │       ├── logo.ts                 # ASCII art logo with gradient
 │       ├── long-running.ts         # Long-running command helpers (duration, cleanup)
 │       ├── open-url.ts             # Cross-platform URL opener

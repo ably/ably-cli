@@ -3,11 +3,14 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../../flags.js";
-import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
+import { formatMessageData } from "../../../utils/json-formatter.js";
+import { errorMessage } from "../../../utils/errors.js";
 import { buildHistoryParams } from "../../../utils/history.js";
 import {
+  countLabel,
   formatTimestamp,
   formatMessageTimestamp,
+  limitWarning,
 } from "../../../utils/output.js";
 
 export default class LogsConnectionLifecycleHistory extends AblyBaseCommand {
@@ -83,7 +86,7 @@ export default class LogsConnectionLifecycleHistory extends AblyBaseCommand {
         }
 
         this.log(
-          `Found ${chalk.cyan(messages.length.toString())} connection lifecycle logs:`,
+          `Found ${countLabel(messages.length, "connection lifecycle log")}:`,
         );
         this.log("");
 
@@ -124,36 +127,27 @@ export default class LogsConnectionLifecycleHistory extends AblyBaseCommand {
           // Display message data
           if (message.data) {
             this.log("Data:");
-            if (isJsonData(message.data)) {
-              this.log(formatJson(message.data));
-            } else {
-              this.log(String(message.data));
-            }
+            this.log(formatMessageData(message.data));
           }
 
           this.log("");
         }
 
-        if (messages.length === flags.limit) {
-          this.log(
-            chalk.yellow(
-              `Showing maximum of ${flags.limit} logs. Use --limit to show more.`,
-            ),
-          );
-        }
+        const warning = limitWarning(messages.length, flags.limit, "logs");
+        if (warning) this.log(warning);
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
         this.jsonError(
           {
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             success: false,
           },
           flags,
         );
       } else {
         this.error(
-          `Error retrieving connection lifecycle logs: ${error instanceof Error ? error.message : String(error)}`,
+          `Error retrieving connection lifecycle logs: ${errorMessage(error)}`,
         );
       }
     }

@@ -6,6 +6,7 @@ import open from "open";
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { endpointFlag } from "../../flags.js";
 import { ControlApi } from "../../services/control-api.js";
+import { errorMessage } from "../../utils/errors.js";
 import { displayLogo } from "../../utils/logo.js";
 import { progress, resource, success } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
@@ -254,9 +255,7 @@ export default class AccountsLogin extends ControlBaseCommand {
       } catch (error) {
         // Don't fail login if app fetching fails, just log for debugging
         if (!this.shouldOutputJson(flags)) {
-          this.warn(
-            `Could not fetch apps: ${error instanceof Error ? error.message : String(error)}`,
-          );
+          this.warn(`Could not fetch apps: ${errorMessage(error)}`);
         }
       }
 
@@ -384,7 +383,7 @@ export default class AccountsLogin extends ControlBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.jsonError(
           {
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             success: false,
           },
           flags,

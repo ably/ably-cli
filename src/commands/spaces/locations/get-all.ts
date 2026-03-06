@@ -1,6 +1,7 @@
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
+import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { progress, resource, success } from "../../../utils/output.js";
@@ -244,7 +245,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
                 }
               } catch (error) {
                 this.log(
-                  `- ${chalk.red("Error displaying location item")}: ${error instanceof Error ? error.message : String(error)}`,
+                  `- ${chalk.red("Error displaying location item")}: ${errorMessage(error)}`,
                 );
               }
             } else {
@@ -260,7 +261,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
         if (this.shouldOutputJson(flags)) {
           this.jsonError(
             {
-              error: error instanceof Error ? error.message : String(error),
+              error: errorMessage(error),
               spaceName,
               status: "error",
               success: false,
@@ -268,23 +269,18 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
             flags,
           );
         } else {
-          this.error(
-            `Error: ${error instanceof Error ? error.message : String(error)}`,
-          );
+          this.error(`Error: ${errorMessage(error)}`);
         }
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : String(error || "Unknown error");
+      const errorMsg = errorMessage(error);
       if (this.shouldOutputJson(flags)) {
         this.jsonError(
-          { error: errorMessage, spaceName, status: "error", success: false },
+          { error: errorMsg, spaceName, status: "error", success: false },
           flags,
         );
       } else {
-        this.error(errorMessage);
+        this.error(errorMsg);
       }
     }
   }

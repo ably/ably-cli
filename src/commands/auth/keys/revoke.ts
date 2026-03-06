@@ -1,6 +1,9 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { errorMessage } from "../../../utils/errors.js";
+import { formatCapabilities } from "../../../utils/key-display.js";
+import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
 
 export default class KeysRevokeCommand extends ControlBaseCommand {
   static args = {
@@ -40,15 +43,9 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
     let appId = flags.app || this.configManager.getCurrentAppId();
     let keyId = args.keyName;
 
-    // If keyName includes a period, it might be in the app_id.key_id format
-    if (args.keyName.includes(".")) {
-      const parts = args.keyName.split(".");
-      // If it has exactly one period and no colon, it's likely an app_id.key_id
-      if (parts.length === 2 && !args.keyName.includes(":")) {
-        appId = parts[0];
-        keyId = parts[1];
-      }
-    }
+    const parsed = parseKeyIdentifier(args.keyName);
+    if (parsed.appId) appId = parsed.appId;
+    keyId = parsed.keyId;
 
     if (!appId) {
       if (this.shouldOutputJson(flags)) {
@@ -81,26 +78,10 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
         this.log(`Key Label: ${key.name || "Unnamed key"}`);
         this.log(`Full key: ${key.key}`);
 
-        // Format the capabilities
-        if (key.capability) {
-          const capEntries = Object.entries(key.capability);
-          if (capEntries.length === 0) {
-            this.log(`Capabilities: None`);
-          } else if (capEntries.length === 1) {
-            const [scope, privileges] = capEntries[0];
-            this.log(
-              `Capabilities: ${scope} → ${Array.isArray(privileges) ? privileges.join(", ") : privileges}`,
-            );
-          } else {
-            this.log(`Capabilities:`);
-            for (const [scope, privileges] of capEntries) {
-              this.log(
-                `  • ${scope} → ${Array.isArray(privileges) ? privileges.join(", ") : privileges}`,
-              );
-            }
-          }
-        } else {
-          this.log(`Capabilities: None`);
+        for (const line of formatCapabilities(
+          key.capability as Record<string, string[] | string>,
+        )) {
+          this.log(line);
         }
 
         this.log("");
@@ -168,16 +149,14 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
         this.jsonError(
           {
             appId,
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             keyId,
             success: false,
           },
           flags,
         );
       } else {
-        this.error(
-          `Error revoking key: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Error revoking key: ${errorMessage(error)}`);
       }
     }
   }
