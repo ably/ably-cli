@@ -62,7 +62,7 @@ describe("rooms:presence:enter command", () => {
     const room = mock.rooms._getRoom("test-room");
 
     await runCommand(
-      ["rooms:presence:enter", "test-room", "--show-others"],
+      ["rooms:presence:enter", "test-room", "--show-others", "--duration", "0"],
       import.meta.url,
     );
 
@@ -85,7 +85,7 @@ describe("rooms:presence:enter command", () => {
     });
 
     const commandPromise = runCommand(
-      ["rooms:presence:enter", "test-room", "--show-others"],
+      ["rooms:presence:enter", "test-room", "--show-others", "--duration", "0"],
       import.meta.url,
     );
 
@@ -140,7 +140,7 @@ describe("rooms:presence:enter command", () => {
     });
 
     const commandPromise = runCommand(
-      ["rooms:presence:enter", "test-room", "--show-others", "--json"],
+      ["rooms:presence:enter", "test-room", "--show-others", "--json", "--duration", "0"],
       import.meta.url,
     );
 

@@ -1,9 +1,16 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import chalk from "chalk";
 import { formatJson, isJsonData } from "../../../src/utils/json-formatter.js";
 
+let originalChalkLevel: chalk.Level;
+
 beforeAll(() => {
+  originalChalkLevel = chalk.level;
   chalk.level = 1;
+});
+
+afterAll(() => {
+  chalk.level = originalChalkLevel;
 });
 
 describe("isJsonData", () => {
