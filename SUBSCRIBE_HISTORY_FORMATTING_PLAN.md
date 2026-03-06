@@ -47,8 +47,8 @@ Client ID: ably-cli-d6d6be45
 Data:
 hello
 ```
-- Starts with arbitrary index `[1]` — not useful, not a message field
-- Timestamp on same line as index, not in `[brackets]` like subscribe
+- Index `[1]` is useful for ordering per CLAUDE.md convention — keep it
+- Timestamp on same line as index, not as a separate labeled field
 - Missing fields: `channel`, `id`, `serial`
 - Data value is on a separate line from the `Data:` label (inconsistent with subscribe where simple data is inline)
 
@@ -99,8 +99,9 @@ Each field on its own line, all at the same level. Coloring follows CLAUDE.md co
 - **Event types**: `chalk.yellow(eventType)`
 - **Client IDs**: `chalk.blue(clientId)`
 - **Data**: For simple values, inline on same line as label. For JSON objects/arrays, label on its own line then formatted JSON below.
+- **Index prefix (history only)**: Per CLAUDE.md convention, history output uses `[index]` prefix on the first line. Subscribe output does not include index numbers (but supports `--sequence-numbers` flag for optional sequence prefix).
 
-Single message:
+Single message (subscribe):
 ```
 Timestamp: 2026-03-06T05:13:09.160Z
 Channel: test
@@ -111,7 +112,19 @@ Serial: 01826232064561-001@e]GBiqkIkBnR52:001
 Data: hello world
 ```
 
-For JSON data:
+Single message (history):
+```
+[1]
+Timestamp: 2026-03-06T05:13:09.160Z
+Channel: test
+Event: greeting
+ID: msg-123
+Client ID: publisher-client
+Serial: 01826232064561-001@e]GBiqkIkBnR52:001
+Data: hello world
+```
+
+For JSON data (subscribe):
 ```
 Timestamp: 2026-03-06T05:13:09.160Z
 Channel: test
@@ -125,7 +138,31 @@ Data:
 }
 ```
 
-Multiple messages (history or subscribe stream), separated by blank lines:
+Multiple messages (history), separated by blank lines:
+```
+[1]
+Timestamp: 2026-03-06T05:13:09.160Z
+Channel: test
+Event: greeting
+ID: msg-123
+Client ID: publisher-client
+Serial: 01826232064561-001@e]GBiqkIkBnR52:001
+Data: hello world
+
+[2]
+Timestamp: 2026-03-06T05:13:10.200Z
+Channel: test
+Event: update
+ID: msg-124
+Client ID: another-client
+Serial: 01826232064562-001@e]GBiqkIkBnR52:002
+Data:
+{
+  "status": "active"
+}
+```
+
+Multiple messages (subscribe stream), separated by blank lines:
 ```
 Timestamp: 2026-03-06T05:13:09.160Z
 Channel: test
@@ -205,13 +242,14 @@ Changes from current:
 - **Each field on its own line** — consistent, scannable, easy to grep
 - **Timestamp is a regular field** — `Timestamp:` label like all others, not a special `[brackets]` header
 - **No indentation** — all fields at the same level, no nesting
-- **Field order**: Timestamp → Channel → Event → ID → Client ID → Serial → Data
+- **Field order**: (Index for history) → Timestamp → Channel → Event → ID → Client ID → Serial → Data
 - **Missing values**: `(none)` for missing event name. Omit fields entirely if not available (e.g. if `clientId` is undefined, don't show the Client ID line). Exception: Event always shown, using `(none)` as fallback.
-- **No index numbers**: History currently shows `[1]`, `[2]` — remove. Timestamp + serial provide ordering.
+- **Index numbers (history only)**: Per CLAUDE.md convention, history output keeps `[1]`, `[2]` index prefix on its own line before each message. Subscribe does not use index numbers (but supports `--sequence-numbers` flag).
 - **Coloring**: Applied per CLAUDE.md conventions listed above. No unnecessary coloring on plain values (id, serial, data strings).
 - **Blank line separator**: Between messages in multi-message output.
 - **JSON consistency**: Both commands use the same field names (`event` not `name`), same timestamp format (ISO 8601), same field set.
 - **History JSON is a plain array**: No `{ messages: [...] }` wrapper — just the array directly, which is simpler and more consistent with subscribe's per-message objects.
+- **Sequence numbers (subscribe only)**: When `--sequence-numbers` flag is used, a sequence prefix `[N]` is prepended to the first line. This is handled via the `sequencePrefix` field in `MessageDisplayFields`.
 
 ## Implementation Steps
 
@@ -226,8 +264,9 @@ export interface MessageDisplayFields {
   data: unknown;
   event: string;
   id?: string;
+  indexPrefix?: string;      // For history: "[1]", "[2]", etc.
+  sequencePrefix?: string;   // For subscribe with --sequence-numbers: "[1]", "[2]", etc.
   serial?: string;
-  sequencePrefix?: string;
   timestamp: string;
 }
 
@@ -242,7 +281,8 @@ export function formatMessagesOutput(messages: MessageDisplayFields[]): string
 The function:
 - Returns `"No messages found."` for empty arrays
 - For each message, builds lines:
-  - `${chalk.dim("Timestamp:")} ${timestamp}` + optional sequencePrefix
+  - (if indexPrefix) `${chalk.dim(indexPrefix)}` on its own line
+  - `${sequencePrefix || ""}${chalk.dim("Timestamp:")} ${timestamp}`
   - `${chalk.dim("Channel:")} ${resource(channel)}`
   - `${chalk.dim("Event:")} ${chalk.yellow(event)}`
   - (if id) `${chalk.dim("ID:")} ${id}`
@@ -298,22 +338,24 @@ Returns:
   - `event` from `message.name || "(none)"`
   - `serial` from `message.serial`
   - `timestamp` as ISO string (convert from milliseconds)
+  - `indexPrefix` as `[${index + 1}]` (per CLAUDE.md convention for history output)
 - Human output: `this.log(formatMessagesOutput(displayMessages))`
   - The "No messages found" case is handled by `formatMessagesOutput` returning the appropriate string
-  - Remove the `[index]` prefix, the for-loop, and the "Found N messages" header
+  - Remove the for-loop and the "Found N messages" header (index is now part of `MessageDisplayFields`)
 - JSON output: `this.log(this.formatJsonOutput(displayMessages.map(toMessageJson), flags))`
   - Output a plain array instead of `{ messages: [...] }` wrapper
 
 ### 5. Update `.claude/CLAUDE.md`
 
-Add a "Message display" subsection under "CLI Output & Flag Conventions":
+Add a "Message display" subsection under "CLI Output & Flag Conventions". Note: The existing "History output" convention (line 219) with `[index] timestamp` ordering is preserved — history commands continue to use index prefixes.
 
 ```markdown
 ### Message display (channels subscribe, channels history, etc.)
 - Use `formatMessagesOutput()` from `src/utils/output.ts` for all message rendering
 - Use `toMessageJson()` for consistent JSON output shape; for arrays use `.map(toMessageJson)`
 - Each field on its own line, no indentation — all fields at the same level
-- Field order: Timestamp → Channel → Event → ID → Client ID → Serial → Data
+- Field order: (Index for history) → Timestamp → Channel → Event → ID → Client ID → Serial → Data
+- History output includes `[index]` prefix per existing convention; subscribe does not (but supports `--sequence-numbers`)
 - Omit optional fields (ID, Client ID, Serial) if the value is undefined/null
 - Event always shown; use `(none)` when message has no event name
 - Data: inline for simple values, block for JSON objects/arrays
@@ -329,19 +371,19 @@ Add a "Message display" subsection under "CLI Output & Flag Conventions":
   - Update JSON test if needed (serial field added, connectionId/encoding removed)
 
 - `test/unit/commands/channels/history.test.ts`:
-  - Remove assertion for `[1]` index format
+  - Keep assertion for `[1]` index format (per CLAUDE.md convention)
   - Update to match new field layout: "Timestamp:", "Channel:", "Event:", "ID:", "Serial:"
   - Update JSON test: now expects a plain array instead of `{ messages: [...] }`, with `event` instead of `name`, ISO timestamp instead of milliseconds
 
 ### 7. Verify E2E compatibility
 
-The E2E test (`channel-subscribe-e2e.test.ts`) only checks `output.includes("Subscribe E2E Test")` — unaffected by format changes.
+The E2E test (`test/e2e/channels/channel-subscribe-e2e.test.ts`) only checks `output.includes("Subscribe E2E Test")` — unaffected by format changes.
 
 ## Files Changed
 
 1. `src/utils/output.ts` — Add `formatMessagesOutput`, `toMessageJson`, and `MessageDisplayFields`
 2. `src/commands/channels/subscribe.ts` — Use `formatMessagesOutput([msg])` + `toMessageJson(msg)`, add serial
-3. `src/commands/channels/history.ts` — Use `formatMessagesOutput(messages)` + `messages.map(toMessageJson)`, add channel/serial, remove index, plain array JSON
-4. `.claude/CLAUDE.md` — Document message display conventions
+3. `src/commands/channels/history.ts` — Use `formatMessagesOutput(messages)` + `messages.map(toMessageJson)`, add channel/serial/indexPrefix, plain array JSON
+4. `.claude/CLAUDE.md` — Document message display conventions (note: existing history output convention with `[index]` is preserved)
 5. `test/unit/commands/channels/subscribe.test.ts` — Update assertions for new format
 6. `test/unit/commands/channels/history.test.ts` — Update assertions for new format + JSON structure
