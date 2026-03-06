@@ -107,28 +107,28 @@ describe("accounts:current command", () => {
     });
   });
 
-  describe("JSON output", () => {
-    it("should output JSON format on success in web-cli mode", async () => {
-      // The normal (non-web-cli) mode doesn't have JSON output for this command.
-      // We test that the command runs without error with valid config.
-      const mock = getMockConfigManager();
-      const accessToken = mock.getAccessToken()!;
+  describe("web-cli mode restriction", () => {
+    let originalWebCliMode: string | undefined;
 
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .matchHeader("authorization", `Bearer ${accessToken}`)
-        .reply(200, {
-          account: { id: mockAccountId, name: mockAccountName },
-          user: { email: mockUserEmail },
-        });
+    beforeEach(() => {
+      originalWebCliMode = process.env.ABLY_WEB_CLI_MODE;
+    });
 
-      const { stdout } = await runCommand(
-        ["accounts:current"],
-        import.meta.url,
-      );
+    afterEach(() => {
+      if (originalWebCliMode === undefined) {
+        delete process.env.ABLY_WEB_CLI_MODE;
+      } else {
+        process.env.ABLY_WEB_CLI_MODE = originalWebCliMode;
+      }
+    });
 
-      expect(stdout).toContain(mockAccountName);
-      expect(stdout).toContain(mockUserEmail);
+    it("should be restricted in web-cli mode", async () => {
+      process.env.ABLY_WEB_CLI_MODE = "true";
+
+      const { error } = await runCommand(["accounts:current"], import.meta.url);
+
+      expect(error).toBeDefined();
+      expect(error!.message).toContain("not available in the web CLI");
     });
   });
 });

@@ -125,6 +125,9 @@ describe("accounts:switch command", () => {
       const combined = stdout + stderr;
       expect(combined).toMatch(/expired|invalid/i);
       expect(combined).toContain("ably accounts login");
+
+      // Verify the account was actually switched despite the 401
+      expect(mock.getCurrentAccountAlias()).toBe("expired-acct");
     });
   });
 });

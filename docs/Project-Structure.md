@@ -4,7 +4,7 @@ This document outlines the directory structure of the Ably CLI project.
 
 > **Note:** The terminal server has been moved to a separate repository ([cli-terminal-server](https://github.com/ably/cli-terminal-server)). The `server/` directory contains only a `REMOVED.md` tombstone.
 
-```
+```text
 /
 ├── assets/                     # Static assets (e.g. CLI screenshot)
 ├── bin/                        # Executable scripts

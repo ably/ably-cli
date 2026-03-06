@@ -140,7 +140,14 @@ describe("rooms:presence:enter command", () => {
     });
 
     const commandPromise = runCommand(
-      ["rooms:presence:enter", "test-room", "--show-others", "--json", "--duration", "0"],
+      [
+        "rooms:presence:enter",
+        "test-room",
+        "--show-others",
+        "--json",
+        "--duration",
+        "0",
+      ],
       import.meta.url,
     );
 
