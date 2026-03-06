@@ -100,9 +100,9 @@ export default class LogsPushHistory extends AblyBaseCommand {
         this.log("");
 
         for (const message of messages) {
-          const timestamp = message.timestamp
-            ? new Date(message.timestamp).toISOString()
-            : "Unknown timestamp";
+          const timestampDisplay = message.timestamp
+            ? formatTimestamp(new Date(message.timestamp).toISOString())
+            : chalk.dim("[Unknown timestamp]");
           const event = message.name || "unknown";
 
           // Color-code different event types based on severity
@@ -145,7 +145,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
 
           // Format the log output
           this.log(
-            `${formatTimestamp(timestamp)} Channel: ${chalk.cyan(channelName)} | Event: ${eventColor(event)}`,
+            `${timestampDisplay} Channel: ${chalk.cyan(channelName)} | Event: ${eventColor(event)}`,
           );
           if (message.data) {
             this.log("Data:");

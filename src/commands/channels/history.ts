@@ -105,13 +105,11 @@ export default class ChannelsHistory extends AblyBaseCommand {
         this.log("");
 
         for (const [index, message] of messages.entries()) {
-          const timestamp = message.timestamp
-            ? new Date(message.timestamp).toISOString()
-            : "Unknown timestamp";
+          const timestampDisplay = message.timestamp
+            ? formatTimestamp(new Date(message.timestamp).toISOString())
+            : chalk.dim("[Unknown timestamp]");
 
-          this.log(
-            `${chalk.dim(`[${index + 1}]`)} ${formatTimestamp(timestamp)}`,
-          );
+          this.log(`${chalk.dim(`[${index + 1}]`)} ${timestampDisplay}`);
           this.log(
             `${chalk.dim("Event:")} ${chalk.yellow(message.name || "(none)")}`,
           );
