@@ -1,7 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { runCommand } from "@oclif/test";
-import jwt from "jsonwebtoken";
+import { jwtVerify } from "jose";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+
+async function verifyToken(token: string, secret: string) {
+  const secretBytes = new TextEncoder().encode(secret);
+  const { payload } = await jwtVerify(token, secretBytes, {
+    algorithms: ["HS256"],
+  });
+  return payload as Record<string, unknown>;
+}
 
 describe("auth:issue-jwt-token command", () => {
   describe("successful JWT token issuance", () => {
@@ -37,9 +45,7 @@ describe("auth:issue-jwt-token command", () => {
       expect(token).toBeTruthy();
 
       // Verify the token is a valid JWT
-      const decoded = jwt.verify(token, mockKeySecret, {
-        algorithms: ["HS256"],
-      });
+      const decoded = await verifyToken(token, mockKeySecret);
       expect(decoded).toHaveProperty("x-ably-appId", appId);
       expect(decoded).toHaveProperty("x-ably-capability");
     });
@@ -60,13 +66,15 @@ describe("auth:issue-jwt-token command", () => {
       );
 
       const token = stdout.trim();
-      const decoded = jwt.verify(token, mockKeySecret, {
-        algorithms: ["HS256"],
-      }) as any;
+      const decoded = await verifyToken(token, mockKeySecret);
 
       expect(decoded["x-ably-capability"]).toHaveProperty("chat:*");
-      expect(decoded["x-ably-capability"]["chat:*"]).toContain("publish");
-      expect(decoded["x-ably-capability"]["chat:*"]).toContain("subscribe");
+      expect(
+        (decoded["x-ably-capability"] as Record<string, string[]>)["chat:*"],
+      ).toContain("publish");
+      expect(
+        (decoded["x-ably-capability"] as Record<string, string[]>)["chat:*"],
+      ).toContain("subscribe");
     });
 
     it("should issue a token with custom TTL", async () => {
@@ -80,12 +88,10 @@ describe("auth:issue-jwt-token command", () => {
       );
 
       const token = stdout.trim();
-      const decoded = jwt.verify(token, mockKeySecret, {
-        algorithms: ["HS256"],
-      }) as any;
+      const decoded = await verifyToken(token, mockKeySecret);
 
       // Check that exp - iat equals TTL
-      expect(decoded.exp - decoded.iat).toBe(ttl);
+      expect((decoded.exp as number) - (decoded.iat as number)).toBe(ttl);
     });
 
     it("should issue a token with custom client ID", async () => {
@@ -99,9 +105,7 @@ describe("auth:issue-jwt-token command", () => {
       );
 
       const token = stdout.trim();
-      const decoded = jwt.verify(token, mockKeySecret, {
-        algorithms: ["HS256"],
-      }) as any;
+      const decoded = await verifyToken(token, mockKeySecret);
 
       expect(decoded["x-ably-clientId"]).toBe(customClientId);
     });
@@ -115,9 +119,7 @@ describe("auth:issue-jwt-token command", () => {
       );
 
       const token = stdout.trim();
-      const decoded = jwt.verify(token, mockKeySecret, {
-        algorithms: ["HS256"],
-      }) as any;
+      const decoded = await verifyToken(token, mockKeySecret);
 
       expect(decoded["x-ably-clientId"]).toBeUndefined();
     });
@@ -160,12 +162,12 @@ describe("auth:issue-jwt-token command", () => {
       );
 
       const token = stdout.trim();
-      const decoded = jwt.verify(token, mockKeySecret, {
-        algorithms: ["HS256"],
-      }) as any;
+      const decoded = await verifyToken(token, mockKeySecret);
 
       expect(decoded["x-ably-capability"]).toHaveProperty("*");
-      expect(decoded["x-ably-capability"]["*"]).toContain("*");
+      expect(
+        (decoded["x-ably-capability"] as Record<string, string[]>)["*"],
+      ).toContain("*");
     });
 
     it("should generate token with default TTL of 1 hour", async () => {
@@ -177,12 +179,10 @@ describe("auth:issue-jwt-token command", () => {
       );
 
       const token = stdout.trim();
-      const decoded = jwt.verify(token, mockKeySecret, {
-        algorithms: ["HS256"],
-      }) as any;
+      const decoded = await verifyToken(token, mockKeySecret);
 
       // Default TTL is 3600 seconds (1 hour)
-      expect(decoded.exp - decoded.iat).toBe(3600);
+      expect((decoded.exp as number) - (decoded.iat as number)).toBe(3600);
     });
   });
 
