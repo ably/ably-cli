@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-03-08
+
+### Added
+
+- `channels inspect` command to open the channel dashboard
+- Channel push notification support via `extras` in message data
+- Unified `--start` and `--end` flags for all history commands (ISO 8601, Unix ms, or relative e.g. `"1h"`, `"30m"`)
+
+### Changed
+
+- `stats` command moved to top-level (was under `apps`)
+- Streamlined flag architecture and unified output formatting across all commands
+- **BREAKING:** Auth flags (`--api-key`, `--token`, `--access-token`) removed — use `ably login` or environment variables (`ABLY_API_KEY`, `ABLY_TOKEN`, `ABLY_ACCESS_TOKEN`) instead
+
+### Fixed
+
+- Various quality-of-life improvements including better error messages, corrected help examples, and more reliable channel rule handling
+
+### Removed
+
+- Built-in MCP server
+
 ## [0.16.0] - 2026-01-19
 
 ### Added

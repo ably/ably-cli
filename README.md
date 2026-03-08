@@ -24,7 +24,7 @@ $ npm install -g @ably/cli
 $ ably COMMAND
 running command...
 $ ably (--version)
-@ably/cli/0.16.0 darwin-arm64 node-v24.4.1
+@ably/cli/0.17.0 darwin-arm64 node-v24.4.1
 $ ably --help [COMMAND]
 USAGE
   $ ably COMMAND
@@ -224,7 +224,7 @@ COMMANDS
   ably accounts switch   Switch to a different Ably account
 ```
 
-_See code: [src/commands/accounts/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/accounts/index.ts)_
+_See code: [src/commands/accounts/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/accounts/index.ts)_
 
 ## `ably accounts current`
 
@@ -250,7 +250,7 @@ EXAMPLES
   $ ably accounts current --pretty-json
 ```
 
-_See code: [src/commands/accounts/current.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/accounts/current.ts)_
+_See code: [src/commands/accounts/current.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/accounts/current.ts)_
 
 ## `ably accounts list`
 
@@ -276,7 +276,7 @@ EXAMPLES
   $ ably accounts list --pretty-json
 ```
 
-_See code: [src/commands/accounts/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/accounts/list.ts)_
+_See code: [src/commands/accounts/list.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/accounts/list.ts)_
 
 ## `ably accounts login [TOKEN]`
 
@@ -309,7 +309,7 @@ EXAMPLES
   $ ably accounts login --pretty-json
 ```
 
-_See code: [src/commands/accounts/login.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/accounts/login.ts)_
+_See code: [src/commands/accounts/login.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/accounts/login.ts)_
 
 ## `ably accounts logout [ALIAS]`
 
@@ -341,7 +341,7 @@ EXAMPLES
   $ ably accounts logout --pretty-json
 ```
 
-_See code: [src/commands/accounts/logout.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/accounts/logout.ts)_
+_See code: [src/commands/accounts/logout.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/accounts/logout.ts)_
 
 ## `ably accounts switch [ALIAS]`
 
@@ -372,7 +372,7 @@ EXAMPLES
   $ ably accounts switch --pretty-json
 ```
 
-_See code: [src/commands/accounts/switch.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/accounts/switch.ts)_
+_See code: [src/commands/accounts/switch.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/accounts/switch.ts)_
 
 ## `ably apps`
 
@@ -411,7 +411,7 @@ COMMANDS
   ably apps update         Update an app
 ```
 
-_See code: [src/commands/apps/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/index.ts)_
+_See code: [src/commands/apps/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/index.ts)_
 
 ## `ably apps channel-rules`
 
@@ -434,7 +434,7 @@ EXAMPLES
   $ ably apps channel-rules delete chat
 ```
 
-_See code: [src/commands/apps/channel-rules/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/channel-rules/index.ts)_
+_See code: [src/commands/apps/channel-rules/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/channel-rules/index.ts)_
 
 ## `ably apps channel-rules create`
 
@@ -477,7 +477,7 @@ EXAMPLES
   $ ably apps channel-rules create --name "notifications" --persisted --push-enabled --app "My App"
 ```
 
-_See code: [src/commands/apps/channel-rules/create.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/channel-rules/create.ts)_
+_See code: [src/commands/apps/channel-rules/create.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/channel-rules/create.ts)_
 
 ## `ably apps channel-rules delete NAMEORID`
 
@@ -512,7 +512,7 @@ EXAMPLES
   $ ably apps channel-rules delete chat --pretty-json
 ```
 
-_See code: [src/commands/apps/channel-rules/delete.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/channel-rules/delete.ts)_
+_See code: [src/commands/apps/channel-rules/delete.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/channel-rules/delete.ts)_
 
 ## `ably apps channel-rules list`
 
@@ -520,10 +520,13 @@ List channel rules for an app
 
 ```
 USAGE
-  $ ably apps channel-rules list [--app <value>]
+  $ ably apps channel-rules list [-v] [--json | --pretty-json] [--app <value>]
 
 FLAGS
-  --app=<value>  The app ID or name (defaults to current app)
+  -v, --verbose      Output verbose logs
+      --app=<value>  The app ID or name (defaults to current app)
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   List channel rules for an app
@@ -538,7 +541,7 @@ EXAMPLES
   $ ably apps:channel-rules:list --pretty-json
 ```
 
-_See code: [src/commands/apps/channel-rules/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/channel-rules/list.ts)_
+_See code: [src/commands/apps/channel-rules/list.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/channel-rules/list.ts)_
 
 ## `ably apps channel-rules update NAMEORID`
 
@@ -583,7 +586,7 @@ EXAMPLES
   $ ably apps channel-rules update notifications --persisted --push-enabled --app "My App"
 ```
 
-_See code: [src/commands/apps/channel-rules/update.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/channel-rules/update.ts)_
+_See code: [src/commands/apps/channel-rules/update.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/channel-rules/update.ts)_
 
 ## `ably apps create`
 
@@ -611,7 +614,7 @@ EXAMPLES
   $ ABLY_ACCESS_TOKEN="YOUR_ACCESS_TOKEN" ably apps create --name "My New App"
 ```
 
-_See code: [src/commands/apps/create.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/create.ts)_
+_See code: [src/commands/apps/create.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/create.ts)_
 
 ## `ably apps current`
 
@@ -637,7 +640,7 @@ EXAMPLES
   $ ably apps current --pretty-json
 ```
 
-_See code: [src/commands/apps/current.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/current.ts)_
+_See code: [src/commands/apps/current.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/current.ts)_
 
 ## `ably apps delete [APPID]`
 
@@ -676,7 +679,7 @@ EXAMPLES
   $ ably apps delete app-id --pretty-json
 ```
 
-_See code: [src/commands/apps/delete.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/delete.ts)_
+_See code: [src/commands/apps/delete.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/delete.ts)_
 
 ## `ably apps list`
 
@@ -702,7 +705,7 @@ EXAMPLES
   $ ably apps list --pretty-json
 ```
 
-_See code: [src/commands/apps/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/list.ts)_
+_See code: [src/commands/apps/list.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/list.ts)_
 
 ## `ably apps set-apns-p12 ID`
 
@@ -735,7 +738,7 @@ EXAMPLES
   $ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --use-for-sandbox
 ```
 
-_See code: [src/commands/apps/set-apns-p12.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/set-apns-p12.ts)_
+_See code: [src/commands/apps/set-apns-p12.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/set-apns-p12.ts)_
 
 ## `ably apps switch [APPID]`
 
@@ -762,7 +765,7 @@ EXAMPLES
   $ ably apps switch
 ```
 
-_See code: [src/commands/apps/switch.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/switch.ts)_
+_See code: [src/commands/apps/switch.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/switch.ts)_
 
 ## `ably apps update ID`
 
@@ -795,7 +798,7 @@ EXAMPLES
   $ ABLY_ACCESS_TOKEN="YOUR_ACCESS_TOKEN" ably apps update app-id --name "Updated App Name"
 ```
 
-_See code: [src/commands/apps/update.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/apps/update.ts)_
+_See code: [src/commands/apps/update.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/update.ts)_
 
 ## `ably auth`
 
@@ -822,7 +825,7 @@ COMMANDS
   ably auth revoke-token      Revoke a token
 ```
 
-_See code: [src/commands/auth/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/index.ts)_
+_See code: [src/commands/auth/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/auth/index.ts)_
 
 ## `ably auth issue-ably-token`
 
@@ -867,7 +870,7 @@ EXAMPLES
   $ ABLY_TOKEN="$(ably auth issue-ably-token --token-only)" ably channels publish my-channel "Hello"
 ```
 
-_See code: [src/commands/auth/issue-ably-token.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/issue-ably-token.ts)_
+_See code: [src/commands/auth/issue-ably-token.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/auth/issue-ably-token.ts)_
 
 ## `ably auth issue-jwt-token`
 
@@ -910,7 +913,7 @@ EXAMPLES
   $ ABLY_TOKEN="$(ably auth issue-jwt-token --token-only)" ably channels publish my-channel "Hello"
 ```
 
-_See code: [src/commands/auth/issue-jwt-token.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/issue-jwt-token.ts)_
+_See code: [src/commands/auth/issue-jwt-token.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/auth/issue-jwt-token.ts)_
 
 ## `ably auth keys`
 
@@ -937,7 +940,7 @@ EXAMPLES
   $ ably auth keys switch KEY_ID
 ```
 
-_See code: [src/commands/auth/keys/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/keys/index.ts)_
+_See code: [src/commands/auth/keys/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/auth/keys/index.ts)_
 
 ## `ably auth keys create`
 
@@ -979,7 +982,7 @@ EXAMPLES
   $ ably auth keys create --name "My New Key" --capabilities '{"channel1":["publish","subscribe"],"channel2":["history"]}'
 ```
 
-_See code: [src/commands/auth/keys/create.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/keys/create.ts)_
+_See code: [src/commands/auth/keys/create.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/auth/keys/create.ts)_
 
 ## `ably auth keys current`
 
@@ -1008,7 +1011,7 @@ EXAMPLES
   $ ably auth keys current --pretty-json
 ```
 
-_See code: [src/commands/auth/keys/current.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/keys/current.ts)_
+_See code: [src/commands/auth/keys/current.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/auth/keys/current.ts)_
 
 ## `ably auth keys get KEYNAMEORVALUE`
 
@@ -1040,7 +1043,7 @@ EXAMPLES
   $ ably auth keys get APP_ID.KEY_ID --json
 ```
 
-_See code: [src/commands/auth/keys/get.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/keys/get.ts)_
+_See code: [src/commands/auth/keys/get.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/auth/keys/get.ts)_
 
 ## `ably auth keys list`
 
@@ -1069,7 +1072,7 @@ EXAMPLES
   $ ably auth keys list --pretty-json
 ```
 
-_See code: [src/commands/auth/keys/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/keys/list.ts)_
+_See code: [src/commands/auth/keys/list.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/auth/keys/list.ts)_
 
 ## `ably auth keys revoke KEYNAME`
 
@@ -1104,7 +1107,7 @@ EXAMPLES
   $ ably auth keys revoke APP_ID.KEY_ID --pretty-json
 ```
 
-_See code: [src/commands/auth/keys/revoke.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/keys/revoke.ts)_
+_See code: [src/commands/auth/keys/revoke.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/auth/keys/revoke.ts)_
 
 ## `ably auth keys switch [KEYNAMEORVALUE]`
 
@@ -1134,7 +1137,7 @@ EXAMPLES
   $ ably auth keys switch KEY_ID --app APP_ID
 ```
 
-_See code: [src/commands/auth/keys/switch.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/keys/switch.ts)_
+_See code: [src/commands/auth/keys/switch.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/auth/keys/switch.ts)_
 
 ## `ably auth keys update KEYNAME`
 
@@ -1167,7 +1170,7 @@ EXAMPLES
   $ ably auth keys update APP_ID.KEY_ID --name "New Name" --capabilities "publish,subscribe"
 ```
 
-_See code: [src/commands/auth/keys/update.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/keys/update.ts)_
+_See code: [src/commands/auth/keys/update.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/auth/keys/update.ts)_
 
 ## `ably auth revoke-token TOKEN`
 
@@ -1201,7 +1204,7 @@ EXAMPLES
   $ ably auth revoke-token TOKEN --pretty-json
 ```
 
-_See code: [src/commands/auth/revoke-token.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/auth/revoke-token.ts)_
+_See code: [src/commands/auth/revoke-token.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/auth/revoke-token.ts)_
 
 ## `ably autocomplete [SHELL]`
 
@@ -1255,7 +1258,7 @@ COMMANDS
   ably bench subscriber  Run a subscriber benchmark test
 ```
 
-_See code: [src/commands/bench/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/bench/index.ts)_
+_See code: [src/commands/bench/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/bench/index.ts)_
 
 ## `ably bench publisher CHANNEL`
 
@@ -1291,7 +1294,7 @@ EXAMPLES
   $ ably bench publisher --transport realtime my-channel
 ```
 
-_See code: [src/commands/bench/publisher.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/bench/publisher.ts)_
+_See code: [src/commands/bench/publisher.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/bench/publisher.ts)_
 
 ## `ably bench subscriber CHANNEL`
 
@@ -1305,7 +1308,7 @@ ARGUMENTS
   CHANNEL  The channel name to subscribe to
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after N seconds (0 = run indefinitely)
+  -D, --duration=<value>  Automatically exit after N seconds
   -v, --verbose           Output verbose logs
       --json              Output in JSON format
       --pretty-json       Output in colorized JSON format
@@ -1317,7 +1320,7 @@ EXAMPLES
   $ ably bench subscriber my-channel
 ```
 
-_See code: [src/commands/bench/subscriber.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/bench/subscriber.ts)_
+_See code: [src/commands/bench/subscriber.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/bench/subscriber.ts)_
 
 ## `ably channels`
 
@@ -1348,7 +1351,7 @@ COMMANDS
   ably channels subscribe      Subscribe to messages published on one or more Ably channels
 ```
 
-_See code: [src/commands/channels/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/index.ts)_
+_See code: [src/commands/channels/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/index.ts)_
 
 ## `ably channels batch-publish [MESSAGE]`
 
@@ -1393,7 +1396,7 @@ EXAMPLES
   $ ably channels batch-publish --channels channel1,channel2 '{"data":"Message"}' --pretty-json
 ```
 
-_See code: [src/commands/channels/batch-publish.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/batch-publish.ts)_
+_See code: [src/commands/channels/batch-publish.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/batch-publish.ts)_
 
 ## `ably channels history CHANNEL`
 
@@ -1402,7 +1405,7 @@ Retrieve message history for a channel
 ```
 USAGE
   $ ably channels history CHANNEL [-v] [--json | --pretty-json] [--cipher <value>] [--direction backwards|forwards]
-    [--end <value>] [--limit <value>] [--start <value>]
+    [--end <value>] [--start <value>] [--limit <value>]
 
 ARGUMENTS
   CHANNEL  Channel name to retrieve history for
@@ -1412,11 +1415,11 @@ FLAGS
       --cipher=<value>      Decryption key for encrypted messages (AES-128)
       --direction=<option>  [default: backwards] Direction of message retrieval (default: backwards)
                             <options: backwards|forwards>
-      --end=<value>         End time for the history query (ISO 8601 format)
+      --end=<value>         End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --json                Output in JSON format
       --limit=<value>       [default: 50] Maximum number of results to return (default: 50)
       --pretty-json         Output in colorized JSON format
-      --start=<value>       Start time for the history query (ISO 8601 format)
+      --start=<value>       Start time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
 
 DESCRIPTION
   Retrieve message history for a channel
@@ -1430,12 +1433,14 @@ EXAMPLES
 
   $ ably channels history my-channel --start "2023-01-01T00:00:00Z" --end "2023-01-02T00:00:00Z"
 
+  $ ably channels history my-channel --start 1h
+
   $ ably channels history my-channel --limit 100
 
   $ ably channels history my-channel --direction forward
 ```
 
-_See code: [src/commands/channels/history.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/history.ts)_
+_See code: [src/commands/channels/history.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/history.ts)_
 
 ## `ably channels inspect CHANNEL`
 
@@ -1461,7 +1466,7 @@ EXAMPLES
   $ ably channels inspect my-channel
 ```
 
-_See code: [src/commands/channels/inspect.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/inspect.ts)_
+_See code: [src/commands/channels/inspect.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/inspect.ts)_
 
 ## `ably channels list`
 
@@ -1493,7 +1498,7 @@ EXAMPLES
   $ ably channels list --pretty-json
 ```
 
-_See code: [src/commands/channels/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/list.ts)_
+_See code: [src/commands/channels/list.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/list.ts)_
 
 ## `ably channels occupancy`
 
@@ -1512,7 +1517,7 @@ EXAMPLES
   $ ably channels occupancy subscribe my-channel
 ```
 
-_See code: [src/commands/channels/occupancy.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/occupancy.ts)_
+_See code: [src/commands/channels/occupancy.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/occupancy.ts)_
 
 ## `ably channels occupancy get CHANNEL`
 
@@ -1543,7 +1548,7 @@ EXAMPLES
   $ ABLY_API_KEY="YOUR_API_KEY" ably channels occupancy get my-channel
 ```
 
-_See code: [src/commands/channels/occupancy/get.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/occupancy/get.ts)_
+_See code: [src/commands/channels/occupancy/get.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/occupancy/get.ts)_
 
 ## `ably channels occupancy subscribe CHANNEL`
 
@@ -1557,7 +1562,7 @@ ARGUMENTS
   CHANNEL  Channel name to subscribe to occupancy events
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after N seconds (0 = run indefinitely)
+  -D, --duration=<value>  Automatically exit after N seconds
   -v, --verbose           Output verbose logs
       --json              Output in JSON format
       --pretty-json       Output in colorized JSON format
@@ -1577,7 +1582,7 @@ EXAMPLES
   $ ABLY_API_KEY="YOUR_API_KEY" ably channels occupancy subscribe my-channel
 ```
 
-_See code: [src/commands/channels/occupancy/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/occupancy/subscribe.ts)_
+_See code: [src/commands/channels/occupancy/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/occupancy/subscribe.ts)_
 
 ## `ably channels presence`
 
@@ -1596,7 +1601,7 @@ EXAMPLES
   $ ably channels presence subscribe my-channel
 ```
 
-_See code: [src/commands/channels/presence.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/presence.ts)_
+_See code: [src/commands/channels/presence.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/presence.ts)_
 
 ## `ably channels presence enter CHANNEL`
 
@@ -1611,7 +1616,7 @@ ARGUMENTS
   CHANNEL  Channel to enter presence on
 
 FLAGS
-  -D, --duration=<value>   Automatically exit after N seconds (0 = run indefinitely)
+  -D, --duration=<value>   Automatically exit after N seconds
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
@@ -1640,7 +1645,7 @@ EXAMPLES
   $ ABLY_API_KEY="YOUR_API_KEY" ably channels presence enter my-channel
 ```
 
-_See code: [src/commands/channels/presence/enter.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/presence/enter.ts)_
+_See code: [src/commands/channels/presence/enter.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/presence/enter.ts)_
 
 ## `ably channels presence subscribe CHANNEL`
 
@@ -1654,7 +1659,7 @@ ARGUMENTS
   CHANNEL  Channel name to subscribe to presence events
 
 FLAGS
-  -D, --duration=<value>   Automatically exit after N seconds (0 = run indefinitely)
+  -D, --duration=<value>   Automatically exit after N seconds
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
@@ -1678,7 +1683,7 @@ EXAMPLES
   $ ABLY_API_KEY="YOUR_API_KEY" ably channels presence subscribe my-channel
 ```
 
-_See code: [src/commands/channels/presence/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/presence/subscribe.ts)_
+_See code: [src/commands/channels/presence/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/presence/subscribe.ts)_
 
 ## `ably channels publish CHANNEL MESSAGE`
 
@@ -1733,7 +1738,7 @@ EXAMPLES
   $ ABLY_API_KEY="YOUR_API_KEY" ably channels publish my-channel '{"data":"Simple message"}'
 ```
 
-_See code: [src/commands/channels/publish.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/publish.ts)_
+_See code: [src/commands/channels/publish.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/publish.ts)_
 
 ## `ably channels subscribe CHANNELS`
 
@@ -1741,15 +1746,15 @@ Subscribe to messages published on one or more Ably channels
 
 ```
 USAGE
-  $ ably channels subscribe CHANNELS... [-v] [--json | --pretty-json] [--client-id <value>] [--cipher-algorithm <value>]
-    [--cipher-key <value>] [--cipher-key-length <value>] [--cipher-mode <value>] [--delta] [-D <value>] [--rewind
-    <value>] [--sequence-numbers]
+  $ ably channels subscribe CHANNELS... [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>] [--rewind
+    <value>] [--cipher-algorithm <value>] [--cipher-key <value>] [--cipher-key-length <value>] [--cipher-mode <value>]
+    [--delta] [--sequence-numbers]
 
 ARGUMENTS
   CHANNELS...  Channel name(s) to subscribe to
 
 FLAGS
-  -D, --duration=<value>           Automatically exit after N seconds (0 = run indefinitely)
+  -D, --duration=<value>           Automatically exit after N seconds
   -v, --verbose                    Output verbose logs
       --cipher-algorithm=<value>   [default: aes] Encryption algorithm to use (default: aes)
       --cipher-key=<value>         Encryption key for decrypting messages (hex-encoded)
@@ -1786,7 +1791,7 @@ EXAMPLES
   $ ABLY_API_KEY="YOUR_API_KEY" ably channels subscribe my-channel
 ```
 
-_See code: [src/commands/channels/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/channels/subscribe.ts)_
+_See code: [src/commands/channels/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/subscribe.ts)_
 
 ## `ably config`
 
@@ -1814,7 +1819,7 @@ COMMANDS
   ably config show  Display the contents of the Ably CLI config file
 ```
 
-_See code: [src/commands/config/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/config/index.ts)_
+_See code: [src/commands/config/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/config/index.ts)_
 
 ## `ably config path`
 
@@ -1842,7 +1847,7 @@ EXAMPLES
   vim $(ably config path)
 ```
 
-_See code: [src/commands/config/path.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/config/path.ts)_
+_See code: [src/commands/config/path.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/config/path.ts)_
 
 ## `ably config show`
 
@@ -1866,7 +1871,7 @@ EXAMPLES
   $ ably config show --json
 ```
 
-_See code: [src/commands/config/show.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/config/show.ts)_
+_See code: [src/commands/config/show.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/config/show.ts)_
 
 ## `ably connections`
 
@@ -1888,7 +1893,7 @@ COMMANDS
   ably connections test  Test connection to Ably
 ```
 
-_See code: [src/commands/connections/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/connections/index.ts)_
+_See code: [src/commands/connections/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/connections/index.ts)_
 
 ## `ably connections test`
 
@@ -1918,7 +1923,7 @@ EXAMPLES
   $ ably connections test --transport xhr
 ```
 
-_See code: [src/commands/connections/test.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/connections/test.ts)_
+_See code: [src/commands/connections/test.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/connections/test.ts)_
 
 ## `ably help [COMMANDS]`
 
@@ -1942,7 +1947,7 @@ EXAMPLES
   $ ably help channels publish
 ```
 
-_See code: [src/commands/help.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/help.ts)_
+_See code: [src/commands/help.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/help.ts)_
 
 ## `ably integrations`
 
@@ -1970,7 +1975,7 @@ COMMANDS
   ably integrations update  Update an integration rule
 ```
 
-_See code: [src/commands/integrations/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/integrations/index.ts)_
+_See code: [src/commands/integrations/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/integrations/index.ts)_
 
 ## `ably integrations create`
 
@@ -2008,7 +2013,7 @@ EXAMPLES
   $ ably integrations create --rule-type "amqp" --source-type "channel.message" --channel-filter "chat:*"
 ```
 
-_See code: [src/commands/integrations/create.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/integrations/create.ts)_
+_See code: [src/commands/integrations/create.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/integrations/create.ts)_
 
 ## `ably integrations delete INTEGRATIONID`
 
@@ -2039,7 +2044,7 @@ EXAMPLES
   $ ably integrations delete integration123 --force
 ```
 
-_See code: [src/commands/integrations/delete.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/integrations/delete.ts)_
+_See code: [src/commands/integrations/delete.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/integrations/delete.ts)_
 
 ## `ably integrations get RULEID`
 
@@ -2069,7 +2074,7 @@ EXAMPLES
   $ ably integrations get rule123 --app "My App" --pretty-json
 ```
 
-_See code: [src/commands/integrations/get.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/integrations/get.ts)_
+_See code: [src/commands/integrations/get.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/integrations/get.ts)_
 
 ## `ably integrations list`
 
@@ -2096,7 +2101,7 @@ EXAMPLES
   $ ably integrations list --app "My App" --pretty-json
 ```
 
-_See code: [src/commands/integrations/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/integrations/list.ts)_
+_See code: [src/commands/integrations/list.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/integrations/list.ts)_
 
 ## `ably integrations update RULEID`
 
@@ -2134,7 +2139,7 @@ EXAMPLES
   $ ably integrations update rule123 --target-url "https://new-example.com/webhook"
 ```
 
-_See code: [src/commands/integrations/update.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/integrations/update.ts)_
+_See code: [src/commands/integrations/update.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/integrations/update.ts)_
 
 ## `ably login [TOKEN]`
 
@@ -2163,7 +2168,7 @@ EXAMPLES
   $ ably login --alias mycompany
 ```
 
-_See code: [src/commands/login.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/login.ts)_
+_See code: [src/commands/login.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/login.ts)_
 
 ## `ably logs`
 
@@ -2191,7 +2196,7 @@ COMMANDS
   ably logs subscribe             Subscribe to live app logs
 ```
 
-_See code: [src/commands/logs/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/index.ts)_
+_See code: [src/commands/logs/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/logs/index.ts)_
 
 ## `ably logs channel-lifecycle`
 
@@ -2210,7 +2215,7 @@ EXAMPLES
   $ ably logs channel-lifecycle subscribe --rewind 10
 ```
 
-_See code: [src/commands/logs/channel-lifecycle/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/channel-lifecycle/index.ts)_
+_See code: [src/commands/logs/channel-lifecycle/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/logs/channel-lifecycle/index.ts)_
 
 ## `ably logs channel-lifecycle subscribe`
 
@@ -2218,13 +2223,14 @@ Stream logs from [meta]channel.lifecycle meta channel
 
 ```
 USAGE
-  $ ably logs channel-lifecycle subscribe [-v] [--json | --pretty-json] [--rewind <value>]
+  $ ably logs channel-lifecycle subscribe [-v] [--json | --pretty-json] [-D <value>] [--rewind <value>]
 
 FLAGS
-  -v, --verbose         Output verbose logs
-      --json            Output in JSON format
-      --pretty-json     Output in colorized JSON format
-      --rewind=<value>  Number of messages to rewind when subscribing (default: 0)
+  -D, --duration=<value>  Automatically exit after N seconds
+  -v, --verbose           Output verbose logs
+      --json              Output in JSON format
+      --pretty-json       Output in colorized JSON format
+      --rewind=<value>    Number of messages to rewind when subscribing (default: 0)
 
 DESCRIPTION
   Stream logs from [meta]channel.lifecycle meta channel
@@ -2235,7 +2241,7 @@ EXAMPLES
   $ ably logs channel-lifecycle subscribe --rewind 10
 ```
 
-_See code: [src/commands/logs/channel-lifecycle/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/channel-lifecycle/subscribe.ts)_
+_See code: [src/commands/logs/channel-lifecycle/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/logs/channel-lifecycle/subscribe.ts)_
 
 ## `ably logs connection-lifecycle`
 
@@ -2254,7 +2260,7 @@ EXAMPLES
   $ ably logs connection-lifecycle subscribe --rewind 10
 ```
 
-_See code: [src/commands/logs/connection-lifecycle/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/connection-lifecycle/index.ts)_
+_See code: [src/commands/logs/connection-lifecycle/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/logs/connection-lifecycle/index.ts)_
 
 ## `ably logs connection-lifecycle history`
 
@@ -2262,16 +2268,18 @@ Retrieve connection lifecycle log history
 
 ```
 USAGE
-  $ ably logs connection-lifecycle history [-v] [--json | --pretty-json] [--direction backwards|forwards] [--limit
-  <value>]
+  $ ably logs connection-lifecycle history [-v] [--json | --pretty-json] [--end <value>] [--start <value>] [--direction
+    backwards|forwards] [--limit <value>]
 
 FLAGS
   -v, --verbose             Output verbose logs
       --direction=<option>  [default: backwards] Direction of log retrieval
                             <options: backwards|forwards>
+      --end=<value>         End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --json                Output in JSON format
       --limit=<value>       [default: 100] Maximum number of results to return (default: 100)
       --pretty-json         Output in colorized JSON format
+      --start=<value>       Start time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
 
 DESCRIPTION
   Retrieve connection lifecycle log history
@@ -2286,9 +2294,13 @@ EXAMPLES
   $ ably logs connection-lifecycle history --json
 
   $ ably logs connection-lifecycle history --pretty-json
+
+  $ ably logs connection-lifecycle history --start "2023-01-01T00:00:00Z" --end "2023-01-02T00:00:00Z"
+
+  $ ably logs connection-lifecycle history --start 1h
 ```
 
-_See code: [src/commands/logs/connection-lifecycle/history.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/connection-lifecycle/history.ts)_
+_See code: [src/commands/logs/connection-lifecycle/history.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/logs/connection-lifecycle/history.ts)_
 
 ## `ably logs connection-lifecycle subscribe`
 
@@ -2299,11 +2311,11 @@ USAGE
   $ ably logs connection-lifecycle subscribe [-v] [--json | --pretty-json] [-D <value>] [--rewind <value>]
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after N seconds (0 = run indefinitely)
+  -D, --duration=<value>  Automatically exit after N seconds
   -v, --verbose           Output verbose logs
       --json              Output in JSON format
       --pretty-json       Output in colorized JSON format
-      --rewind=<value>    Number of messages to replay from history when subscribing
+      --rewind=<value>    Number of messages to rewind when subscribing (default: 0)
 
 DESCRIPTION
   Subscribe to live connection lifecycle logs
@@ -2318,7 +2330,7 @@ EXAMPLES
   $ ably logs connection-lifecycle subscribe --duration 30
 ```
 
-_See code: [src/commands/logs/connection-lifecycle/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/connection-lifecycle/subscribe.ts)_
+_See code: [src/commands/logs/connection-lifecycle/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/logs/connection-lifecycle/subscribe.ts)_
 
 ## `ably logs history`
 
@@ -2326,15 +2338,18 @@ Retrieve application log history
 
 ```
 USAGE
-  $ ably logs history [-v] [--json | --pretty-json] [--direction backwards|forwards] [--limit <value>]
+  $ ably logs history [-v] [--json | --pretty-json] [--end <value>] [--start <value>] [--direction
+    backwards|forwards] [--limit <value>]
 
 FLAGS
   -v, --verbose             Output verbose logs
       --direction=<option>  [default: backwards] Direction of log retrieval
                             <options: backwards|forwards>
+      --end=<value>         End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --json                Output in JSON format
       --limit=<value>       [default: 100] Maximum number of results to return (default: 100)
       --pretty-json         Output in colorized JSON format
+      --start=<value>       Start time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
 
 DESCRIPTION
   Retrieve application log history
@@ -2349,9 +2364,13 @@ EXAMPLES
   $ ably logs history --json
 
   $ ably logs history --pretty-json
+
+  $ ably logs history --start "2023-01-01T00:00:00Z" --end "2023-01-02T00:00:00Z"
+
+  $ ably logs history --start 1h
 ```
 
-_See code: [src/commands/logs/history.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/history.ts)_
+_See code: [src/commands/logs/history.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/logs/history.ts)_
 
 ## `ably logs push`
 
@@ -2372,7 +2391,7 @@ EXAMPLES
   $ ably logs push history
 ```
 
-_See code: [src/commands/logs/push/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/push/index.ts)_
+_See code: [src/commands/logs/push/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/logs/push/index.ts)_
 
 ## `ably logs push history`
 
@@ -2380,15 +2399,18 @@ Retrieve push notification log history
 
 ```
 USAGE
-  $ ably logs push history [-v] [--json | --pretty-json] [--direction backwards|forwards] [--limit <value>]
+  $ ably logs push history [-v] [--json | --pretty-json] [--end <value>] [--start <value>] [--direction
+    backwards|forwards] [--limit <value>]
 
 FLAGS
   -v, --verbose             Output verbose logs
       --direction=<option>  [default: backwards] Direction of log retrieval
                             <options: backwards|forwards>
+      --end=<value>         End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --json                Output in JSON format
       --limit=<value>       [default: 100] Maximum number of results to return (default: 100)
       --pretty-json         Output in colorized JSON format
+      --start=<value>       Start time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
 
 DESCRIPTION
   Retrieve push notification log history
@@ -2403,9 +2425,13 @@ EXAMPLES
   $ ably logs push history --json
 
   $ ably logs push history --pretty-json
+
+  $ ably logs push history --start "2023-01-01T00:00:00Z" --end "2023-01-02T00:00:00Z"
+
+  $ ably logs push history --start 1h
 ```
 
-_See code: [src/commands/logs/push/history.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/push/history.ts)_
+_See code: [src/commands/logs/push/history.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/logs/push/history.ts)_
 
 ## `ably logs push subscribe`
 
@@ -2413,13 +2439,14 @@ Stream logs from the push notifications meta channel [meta]log:push
 
 ```
 USAGE
-  $ ably logs push subscribe [-v] [--json | --pretty-json] [--rewind <value>]
+  $ ably logs push subscribe [-v] [--json | --pretty-json] [-D <value>] [--rewind <value>]
 
 FLAGS
-  -v, --verbose         Output verbose logs
-      --json            Output in JSON format
-      --pretty-json     Output in colorized JSON format
-      --rewind=<value>  Number of messages to rewind when subscribing (default: 0)
+  -D, --duration=<value>  Automatically exit after N seconds
+  -v, --verbose           Output verbose logs
+      --json              Output in JSON format
+      --pretty-json       Output in colorized JSON format
+      --rewind=<value>    Number of messages to rewind when subscribing (default: 0)
 
 DESCRIPTION
   Stream logs from the push notifications meta channel [meta]log:push
@@ -2430,7 +2457,7 @@ EXAMPLES
   $ ably logs push subscribe --rewind 10
 ```
 
-_See code: [src/commands/logs/push/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/push/subscribe.ts)_
+_See code: [src/commands/logs/push/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/logs/push/subscribe.ts)_
 
 ## `ably logs subscribe`
 
@@ -2442,7 +2469,7 @@ USAGE
     channel.lifecycle|channel.occupancy|channel.presence|connection.lifecycle|push.publish]
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after N seconds (0 = run indefinitely)
+  -D, --duration=<value>  Automatically exit after N seconds
   -v, --verbose           Output verbose logs
       --json              Output in JSON format
       --pretty-json       Output in colorized JSON format
@@ -2468,7 +2495,7 @@ EXAMPLES
   $ ably logs subscribe --duration 30
 ```
 
-_See code: [src/commands/logs/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/logs/subscribe.ts)_
+_See code: [src/commands/logs/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/logs/subscribe.ts)_
 
 ## `ably queues`
 
@@ -2494,7 +2521,7 @@ COMMANDS
   ably queues list    List all queues
 ```
 
-_See code: [src/commands/queues/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/queues/index.ts)_
+_See code: [src/commands/queues/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/queues/index.ts)_
 
 ## `ably queues create`
 
@@ -2526,7 +2553,7 @@ EXAMPLES
   $ ably queues create --name "my-queue" --region "eu-west-1-a" --app "My App"
 ```
 
-_See code: [src/commands/queues/create.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/queues/create.ts)_
+_See code: [src/commands/queues/create.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/queues/create.ts)_
 
 ## `ably queues delete QUEUEID`
 
@@ -2557,7 +2584,7 @@ EXAMPLES
   $ ably queues delete appAbc:us-east-1-a:foo --force
 ```
 
-_See code: [src/commands/queues/delete.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/queues/delete.ts)_
+_See code: [src/commands/queues/delete.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/queues/delete.ts)_
 
 ## `ably queues list`
 
@@ -2584,7 +2611,7 @@ EXAMPLES
   $ ably queues list --app "My App" --pretty-json
 ```
 
-_See code: [src/commands/queues/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/queues/list.ts)_
+_See code: [src/commands/queues/list.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/queues/list.ts)_
 
 ## `ably rooms`
 
@@ -2613,7 +2640,7 @@ COMMANDS
   ably rooms typing     Commands for working with typing indicators in chat rooms
 ```
 
-_See code: [src/commands/rooms/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/index.ts)_
+_See code: [src/commands/rooms/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/index.ts)_
 
 ## `ably rooms list`
 
@@ -2645,7 +2672,7 @@ EXAMPLES
   $ ably rooms list --pretty-json
 ```
 
-_See code: [src/commands/rooms/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/list.ts)_
+_See code: [src/commands/rooms/list.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/list.ts)_
 
 ## `ably rooms messages`
 
@@ -2668,7 +2695,7 @@ EXAMPLES
   $ ably rooms messages reactions add my-room "message-id" "👍"
 ```
 
-_See code: [src/commands/rooms/messages/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/messages/index.ts)_
+_See code: [src/commands/rooms/messages/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/messages/index.ts)_
 
 ## `ably rooms messages history ROOM`
 
@@ -2676,8 +2703,8 @@ Get historical messages from an Ably Chat room
 
 ```
 USAGE
-  $ ably rooms messages history ROOM [-v] [--json | --pretty-json] [--end <value>] [-l <value>] [--order
-    oldestFirst|newestFirst] [--show-metadata] [--start <value>]
+  $ ably rooms messages history ROOM [-v] [--json | --pretty-json] [--end <value>] [--start <value>] [-l <value>] [--order
+    oldestFirst|newestFirst] [--show-metadata]
 
 ARGUMENTS
   ROOM  The room to get message history from
@@ -2685,13 +2712,13 @@ ARGUMENTS
 FLAGS
   -l, --limit=<value>   [default: 50] Maximum number of results to return (default: 50)
   -v, --verbose         Output verbose logs
-      --end=<value>     End time for the history query (ISO 8601 format)
+      --end=<value>     End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --json            Output in JSON format
       --order=<option>  [default: newestFirst] Query direction: oldestFirst or newestFirst (default: newestFirst)
                         <options: oldestFirst|newestFirst>
       --pretty-json     Output in colorized JSON format
       --show-metadata   Display message metadata if available
-      --start=<value>   Start time for the history query (ISO 8601 format)
+      --start=<value>   Start time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
 
 DESCRIPTION
   Get historical messages from an Ably Chat room
@@ -2709,6 +2736,8 @@ EXAMPLES
 
   $ ably rooms messages history my-room --start "2025-01-01T00:00:00Z" --end "2025-01-02T00:00:00Z"
 
+  $ ably rooms messages history my-room --start 1h
+
   $ ably rooms messages history my-room --order newestFirst
 
   $ ably rooms messages history my-room --json
@@ -2716,7 +2745,7 @@ EXAMPLES
   $ ably rooms messages history my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/messages/history.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/messages/history.ts)_
+_See code: [src/commands/rooms/messages/history.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/messages/history.ts)_
 
 ## `ably rooms messages reactions`
 
@@ -2737,7 +2766,7 @@ EXAMPLES
   $ ably rooms messages reactions remove my-room "message-id" "👍"
 ```
 
-_See code: [src/commands/rooms/messages/reactions/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/messages/reactions/index.ts)_
+_See code: [src/commands/rooms/messages/reactions/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/messages/reactions/index.ts)_
 
 ## `ably rooms messages reactions remove ROOM MESSAGESERIAL REACTION`
 
@@ -2745,8 +2774,8 @@ Remove a reaction from a message in a chat room
 
 ```
 USAGE
-  $ ably rooms messages reactions remove ROOM MESSAGESERIAL REACTION [-v] [--json | --pretty-json] [--type
-  unique|distinct|multiple]
+  $ ably rooms messages reactions remove ROOM MESSAGESERIAL REACTION [-v] [--json | --pretty-json] [--client-id <value>] [--type
+    unique|distinct|multiple]
 
 ARGUMENTS
   ROOM           The room where the message is located
@@ -2754,11 +2783,13 @@ ARGUMENTS
   REACTION       The reaction to remove (e.g. 👍, ❤️, 😂)
 
 FLAGS
-  -v, --verbose        Output verbose logs
-      --json           Output in JSON format
-      --pretty-json    Output in colorized JSON format
-      --type=<option>  The type of reaction (unique, distinct, or multiple)
-                       <options: unique|distinct|multiple>
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+      --type=<option>      The type of reaction (unique, distinct, or multiple)
+                           <options: unique|distinct|multiple>
 
 DESCRIPTION
   Remove a reaction from a message in a chat room
@@ -2773,7 +2804,7 @@ EXAMPLES
   $ ably rooms messages reactions remove my-room message-serial 👍 --json
 ```
 
-_See code: [src/commands/rooms/messages/reactions/remove.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/messages/reactions/remove.ts)_
+_See code: [src/commands/rooms/messages/reactions/remove.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/messages/reactions/remove.ts)_
 
 ## `ably rooms messages reactions send ROOM MESSAGESERIAL REACTION`
 
@@ -2781,8 +2812,8 @@ Send a reaction to a message in a chat room
 
 ```
 USAGE
-  $ ably rooms messages reactions send ROOM MESSAGESERIAL REACTION [-v] [--json | --pretty-json] [--count <value> --type
-    unique|distinct|multiple]
+  $ ably rooms messages reactions send ROOM MESSAGESERIAL REACTION [-v] [--json | --pretty-json] [--client-id <value>] [--count
+    <value> --type unique|distinct|multiple]
 
 ARGUMENTS
   ROOM           The room where the message is located
@@ -2790,12 +2821,14 @@ ARGUMENTS
   REACTION       The reaction to send (e.g. 👍, ❤️, 😂)
 
 FLAGS
-  -v, --verbose        Output verbose logs
-      --count=<value>  Count value for Multiple type reactions
-      --json           Output in JSON format
-      --pretty-json    Output in colorized JSON format
-      --type=<option>  The type of reaction (unique, distinct, or multiple)
-                       <options: unique|distinct|multiple>
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --count=<value>      Count value for Multiple type reactions
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+      --type=<option>      The type of reaction (unique, distinct, or multiple)
+                           <options: unique|distinct|multiple>
 
 DESCRIPTION
   Send a reaction to a message in a chat room
@@ -2812,7 +2845,7 @@ EXAMPLES
   $ ably rooms messages reactions send my-room message-serial 👍 --json
 ```
 
-_See code: [src/commands/rooms/messages/reactions/send.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/messages/reactions/send.ts)_
+_See code: [src/commands/rooms/messages/reactions/send.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/messages/reactions/send.ts)_
 
 ## `ably rooms messages reactions subscribe ROOM`
 
@@ -2820,17 +2853,20 @@ Subscribe to message reactions in a chat room
 
 ```
 USAGE
-  $ ably rooms messages reactions subscribe ROOM [-v] [--json | --pretty-json] [--raw] [-D <value>]
+  $ ably rooms messages reactions subscribe ROOM [-v] [--json | --pretty-json] [--client-id <value>] [--raw] [-D
+  <value>]
 
 ARGUMENTS
   ROOM  Room to subscribe to message reactions in
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after N seconds (0 = run indefinitely)
-  -v, --verbose           Output verbose logs
-      --json              Output in JSON format
-      --pretty-json       Output in colorized JSON format
-      --raw               Subscribe to raw individual reaction events instead of summaries
+  -D, --duration=<value>   Automatically exit after N seconds
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+      --raw                Subscribe to raw individual reaction events instead of summaries
 
 DESCRIPTION
   Subscribe to message reactions in a chat room
@@ -2845,7 +2881,7 @@ EXAMPLES
   $ ably rooms messages reactions subscribe my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/messages/reactions/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/messages/reactions/subscribe.ts)_
+_See code: [src/commands/rooms/messages/reactions/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/messages/reactions/subscribe.ts)_
 
 ## `ably rooms messages send ROOM TEXT`
 
@@ -2889,7 +2925,7 @@ EXAMPLES
   $ ably rooms messages send my-room "Hello World!" --pretty-json
 ```
 
-_See code: [src/commands/rooms/messages/send.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/messages/send.ts)_
+_See code: [src/commands/rooms/messages/send.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/messages/send.ts)_
 
 ## `ably rooms messages subscribe ROOMS`
 
@@ -2904,7 +2940,7 @@ ARGUMENTS
   ROOMS...  Room name(s) to subscribe to messages from
 
 FLAGS
-  -D, --duration=<value>   Automatically exit after N seconds (0 = run indefinitely)
+  -D, --duration=<value>   Automatically exit after N seconds
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
@@ -2932,7 +2968,7 @@ EXAMPLES
   $ ably rooms messages subscribe my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/messages/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/messages/subscribe.ts)_
+_See code: [src/commands/rooms/messages/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/messages/subscribe.ts)_
 
 ## `ably rooms occupancy`
 
@@ -2951,7 +2987,7 @@ EXAMPLES
   $ ably rooms occupancy subscribe my-room
 ```
 
-_See code: [src/commands/rooms/occupancy/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/occupancy/index.ts)_
+_See code: [src/commands/rooms/occupancy/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/occupancy/index.ts)_
 
 ## `ably rooms occupancy get ROOM`
 
@@ -2959,15 +2995,17 @@ Get current occupancy metrics for a room
 
 ```
 USAGE
-  $ ably rooms occupancy get ROOM [-v] [--json | --pretty-json]
+  $ ably rooms occupancy get ROOM [-v] [--json | --pretty-json] [--client-id <value>]
 
 ARGUMENTS
   ROOM  Room to get occupancy for
 
 FLAGS
-  -v, --verbose      Output verbose logs
-      --json         Output in JSON format
-      --pretty-json  Output in colorized JSON format
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Get current occupancy metrics for a room
@@ -2982,7 +3020,7 @@ EXAMPLES
   $ ably rooms occupancy get my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/occupancy/get.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/occupancy/get.ts)_
+_See code: [src/commands/rooms/occupancy/get.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/occupancy/get.ts)_
 
 ## `ably rooms occupancy subscribe ROOM`
 
@@ -2990,16 +3028,18 @@ Subscribe to real-time occupancy metrics for a room
 
 ```
 USAGE
-  $ ably rooms occupancy subscribe ROOM [-v] [--json | --pretty-json] [-D <value>]
+  $ ably rooms occupancy subscribe ROOM [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
   ROOM  Room to subscribe to occupancy for
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after N seconds (0 = run indefinitely)
-  -v, --verbose           Output verbose logs
-      --json              Output in JSON format
-      --pretty-json       Output in colorized JSON format
+  -D, --duration=<value>   Automatically exit after N seconds
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to real-time occupancy metrics for a room
@@ -3012,7 +3052,7 @@ EXAMPLES
   $ ably rooms occupancy subscribe --pretty-json my-room
 ```
 
-_See code: [src/commands/rooms/occupancy/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/occupancy/subscribe.ts)_
+_See code: [src/commands/rooms/occupancy/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/occupancy/subscribe.ts)_
 
 ## `ably rooms presence`
 
@@ -3031,7 +3071,7 @@ EXAMPLES
   $ ably rooms presence subscribe my-room
 ```
 
-_See code: [src/commands/rooms/presence/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/presence/index.ts)_
+_See code: [src/commands/rooms/presence/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/presence/index.ts)_
 
 ## `ably rooms presence enter ROOM`
 
@@ -3046,7 +3086,7 @@ ARGUMENTS
   ROOM  Room to enter presence on
 
 FLAGS
-  -D, --duration=<value>   Automatically exit after N seconds (0 = run indefinitely)
+  -D, --duration=<value>   Automatically exit after N seconds
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
@@ -3069,7 +3109,7 @@ EXAMPLES
   $ ably rooms presence enter my-room --duration 30
 ```
 
-_See code: [src/commands/rooms/presence/enter.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/presence/enter.ts)_
+_See code: [src/commands/rooms/presence/enter.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/presence/enter.ts)_
 
 ## `ably rooms presence subscribe ROOM`
 
@@ -3083,7 +3123,7 @@ ARGUMENTS
   ROOM  Room to subscribe to presence for
 
 FLAGS
-  -D, --duration=<value>   Automatically exit after N seconds (0 = run indefinitely)
+  -D, --duration=<value>   Automatically exit after N seconds
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
@@ -3101,7 +3141,7 @@ EXAMPLES
   $ ably rooms presence subscribe my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/presence/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/presence/subscribe.ts)_
+_See code: [src/commands/rooms/presence/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/presence/subscribe.ts)_
 
 ## `ably rooms reactions`
 
@@ -3120,7 +3160,7 @@ EXAMPLES
   $ ably rooms reactions subscribe my-room
 ```
 
-_See code: [src/commands/rooms/reactions/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/reactions/index.ts)_
+_See code: [src/commands/rooms/reactions/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/reactions/index.ts)_
 
 ## `ably rooms reactions send ROOM EMOJI`
 
@@ -3128,17 +3168,19 @@ Send a reaction in a chat room
 
 ```
 USAGE
-  $ ably rooms reactions send ROOM EMOJI [-v] [--json | --pretty-json] [--metadata <value>]
+  $ ably rooms reactions send ROOM EMOJI [-v] [--json | --pretty-json] [--client-id <value>] [--metadata <value>]
 
 ARGUMENTS
   ROOM   The room to send the reaction to
   EMOJI  The emoji reaction to send (e.g. 👍, ❤️, 😂)
 
 FLAGS
-  -v, --verbose           Output verbose logs
-      --json              Output in JSON format
-      --metadata=<value>  Additional metadata to send with the reaction (as JSON string)
-      --pretty-json       Output in colorized JSON format
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --metadata=<value>   Additional metadata to send with the reaction (as JSON string)
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Send a reaction in a chat room
@@ -3153,7 +3195,7 @@ EXAMPLES
   $ ably rooms reactions send my-room 😂 --pretty-json
 ```
 
-_See code: [src/commands/rooms/reactions/send.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/reactions/send.ts)_
+_See code: [src/commands/rooms/reactions/send.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/reactions/send.ts)_
 
 ## `ably rooms reactions subscribe ROOM`
 
@@ -3161,16 +3203,18 @@ Subscribe to reactions in a chat room
 
 ```
 USAGE
-  $ ably rooms reactions subscribe ROOM [-v] [--json | --pretty-json] [-D <value>]
+  $ ably rooms reactions subscribe ROOM [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
   ROOM  Room to subscribe to reactions in
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after N seconds (0 = run indefinitely)
-  -v, --verbose           Output verbose logs
-      --json              Output in JSON format
-      --pretty-json       Output in colorized JSON format
+  -D, --duration=<value>   Automatically exit after N seconds
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to reactions in a chat room
@@ -3183,7 +3227,7 @@ EXAMPLES
   $ ably rooms reactions subscribe my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/reactions/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/reactions/subscribe.ts)_
+_See code: [src/commands/rooms/reactions/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/reactions/subscribe.ts)_
 
 ## `ably rooms typing`
 
@@ -3202,7 +3246,7 @@ EXAMPLES
   $ ably rooms typing keystroke my-room
 ```
 
-_See code: [src/commands/rooms/typing/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/typing/index.ts)_
+_See code: [src/commands/rooms/typing/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/typing/index.ts)_
 
 ## `ably rooms typing keystroke ROOM`
 
@@ -3210,16 +3254,19 @@ Send a typing indicator in an Ably Chat room (use --auto-type to keep typing aut
 
 ```
 USAGE
-  $ ably rooms typing keystroke ROOM [-v] [--json | --pretty-json] [--auto-type]
+  $ ably rooms typing keystroke ROOM [-v] [--json | --pretty-json] [--client-id <value>] [--auto-type] [-D <value>]
 
 ARGUMENTS
   ROOM  The room to start typing in
 
 FLAGS
-  -v, --verbose      Output verbose logs
-      --auto-type    Automatically keep typing indicator active
-      --json         Output in JSON format
-      --pretty-json  Output in colorized JSON format
+  -D, --duration=<value>   Automatically exit after N seconds
+  -v, --verbose            Output verbose logs
+      --auto-type          Automatically keep typing indicator active
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Send a typing indicator in an Ably Chat room (use --auto-type to keep typing automatically until terminated)
@@ -3236,7 +3283,7 @@ EXAMPLES
   $ ably rooms typing keystroke my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/typing/keystroke.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/typing/keystroke.ts)_
+_See code: [src/commands/rooms/typing/keystroke.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/typing/keystroke.ts)_
 
 ## `ably rooms typing subscribe ROOM`
 
@@ -3244,16 +3291,18 @@ Subscribe to typing indicators in an Ably Chat room
 
 ```
 USAGE
-  $ ably rooms typing subscribe ROOM [-v] [--json | --pretty-json] [-D <value>]
+  $ ably rooms typing subscribe ROOM [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
   ROOM  The room to subscribe to typing indicators from
 
 FLAGS
-  -D, --duration=<value>  Automatically exit after N seconds (0 = run indefinitely)
-  -v, --verbose           Output verbose logs
-      --json              Output in JSON format
-      --pretty-json       Output in colorized JSON format
+  -D, --duration=<value>   Automatically exit after N seconds
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Subscribe to typing indicators in an Ably Chat room
@@ -3268,7 +3317,7 @@ EXAMPLES
   $ ably rooms typing subscribe my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/typing/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/rooms/typing/subscribe.ts)_
+_See code: [src/commands/rooms/typing/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/typing/subscribe.ts)_
 
 ## `ably spaces`
 
@@ -3296,7 +3345,7 @@ COMMANDS
   ably spaces members    Commands for managing members in Ably Spaces
 ```
 
-_See code: [src/commands/spaces/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/index.ts)_
+_See code: [src/commands/spaces/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/index.ts)_
 
 ## `ably spaces cursors`
 
@@ -3320,7 +3369,7 @@ EXAMPLES
   $ ably spaces cursors get-all my-space
 ```
 
-_See code: [src/commands/spaces/cursors/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/cursors/index.ts)_
+_See code: [src/commands/spaces/cursors/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/cursors/index.ts)_
 
 ## `ably spaces cursors get-all SPACE`
 
@@ -3351,7 +3400,7 @@ EXAMPLES
   $ ably spaces cursors get-all my-space --pretty-json
 ```
 
-_See code: [src/commands/spaces/cursors/get-all.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/cursors/get-all.ts)_
+_See code: [src/commands/spaces/cursors/get-all.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/cursors/get-all.ts)_
 
 ## `ably spaces cursors set SPACE`
 
@@ -3366,7 +3415,7 @@ ARGUMENTS
   SPACE  The space to set cursor in
 
 FLAGS
-  -D, --duration=<value>   Automatically exit after N seconds (0 = set and exit immediately)
+  -D, --duration=<value>   Automatically exit after N seconds
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
@@ -3400,7 +3449,7 @@ EXAMPLES
   $ ably spaces cursors set my-space --x 100 --y 200 --pretty-json
 ```
 
-_See code: [src/commands/spaces/cursors/set.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/cursors/set.ts)_
+_See code: [src/commands/spaces/cursors/set.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/cursors/set.ts)_
 
 ## `ably spaces cursors subscribe SPACE`
 
@@ -3414,7 +3463,7 @@ ARGUMENTS
   SPACE  Space to subscribe to cursors for
 
 FLAGS
-  -D, --duration=<value>   Automatically exit after N seconds (0 = run indefinitely)
+  -D, --duration=<value>   Automatically exit after N seconds
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
@@ -3434,7 +3483,7 @@ EXAMPLES
   $ ably spaces cursors subscribe my-space --duration 30
 ```
 
-_See code: [src/commands/spaces/cursors/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/cursors/subscribe.ts)_
+_See code: [src/commands/spaces/cursors/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/cursors/subscribe.ts)_
 
 ## `ably spaces list`
 
@@ -3466,7 +3515,7 @@ EXAMPLES
   $ ably spaces list --pretty-json
 ```
 
-_See code: [src/commands/spaces/list.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/list.ts)_
+_See code: [src/commands/spaces/list.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/list.ts)_
 
 ## `ably spaces locations`
 
@@ -3485,7 +3534,7 @@ DESCRIPTION
   Spaces Locations API commands (Ably Spaces client-to-client location sharing)
 ```
 
-_See code: [src/commands/spaces/locations/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locations/index.ts)_
+_See code: [src/commands/spaces/locations/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locations/index.ts)_
 
 ## `ably spaces locations get-all SPACE`
 
@@ -3493,17 +3542,17 @@ Get all current locations in a space
 
 ```
 USAGE
-  $ ably spaces locations get-all SPACE [-v] [--json | --pretty-json] [-f text|json]
+  $ ably spaces locations get-all SPACE [-v] [--json | --pretty-json] [--client-id <value>]
 
 ARGUMENTS
   SPACE  Space to get locations from
 
 FLAGS
-  -f, --format=<option>  [default: text] Output format
-                         <options: text|json>
-  -v, --verbose          Output verbose logs
-      --json             Output in JSON format
-      --pretty-json      Output in colorized JSON format
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Get all current locations in a space
@@ -3516,7 +3565,7 @@ EXAMPLES
   $ ably spaces locations get-all my-space --pretty-json
 ```
 
-_See code: [src/commands/spaces/locations/get-all.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locations/get-all.ts)_
+_See code: [src/commands/spaces/locations/get-all.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locations/get-all.ts)_
 
 ## `ably spaces locations set SPACE`
 
@@ -3530,7 +3579,7 @@ ARGUMENTS
   SPACE  Space to set location in
 
 FLAGS
-  -D, --duration=<value>   Automatically exit after N seconds (0 = set and exit immediately)
+  -D, --duration=<value>   Automatically exit after N seconds
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
@@ -3547,7 +3596,7 @@ EXAMPLES
   $ ably spaces locations set my-space --location '{"sectionId":"section1"}'
 ```
 
-_See code: [src/commands/spaces/locations/set.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locations/set.ts)_
+_See code: [src/commands/spaces/locations/set.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locations/set.ts)_
 
 ## `ably spaces locations subscribe SPACE`
 
@@ -3561,7 +3610,7 @@ ARGUMENTS
   SPACE  Space to subscribe to locations for
 
 FLAGS
-  -D, --duration=<value>   Automatically exit after N seconds (0 = run indefinitely)
+  -D, --duration=<value>   Automatically exit after N seconds
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
@@ -3581,7 +3630,7 @@ EXAMPLES
   $ ably spaces locations subscribe my-space --duration 30
 ```
 
-_See code: [src/commands/spaces/locations/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locations/subscribe.ts)_
+_See code: [src/commands/spaces/locations/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locations/subscribe.ts)_
 
 ## `ably spaces locks`
 
@@ -3604,7 +3653,7 @@ EXAMPLES
   $ ably spaces locks get-all my-space
 ```
 
-_See code: [src/commands/spaces/locks/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locks/index.ts)_
+_See code: [src/commands/spaces/locks/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locks/index.ts)_
 
 ## `ably spaces locks acquire SPACE LOCKID`
 
@@ -3612,13 +3661,15 @@ Acquire a lock in a space
 
 ```
 USAGE
-  $ ably spaces locks acquire SPACE LOCKID [-v] [--json | --pretty-json] [--client-id <value>] [--data <value>]
+  $ ably spaces locks acquire SPACE LOCKID [-v] [--json | --pretty-json] [--client-id <value>] [--data <value>] [-D
+    <value>]
 
 ARGUMENTS
   SPACE   Space to acquire lock in
   LOCKID  ID of the lock to acquire
 
 FLAGS
+  -D, --duration=<value>   Automatically exit after N seconds
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
@@ -3635,7 +3686,7 @@ EXAMPLES
   $ ably spaces locks acquire my-space my-lock-id --data '{"type":"editor"}'
 ```
 
-_See code: [src/commands/spaces/locks/acquire.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locks/acquire.ts)_
+_See code: [src/commands/spaces/locks/acquire.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locks/acquire.ts)_
 
 ## `ably spaces locks get SPACE LOCKID`
 
@@ -3643,16 +3694,18 @@ Get a lock in a space
 
 ```
 USAGE
-  $ ably spaces locks get SPACE LOCKID [-v] [--json | --pretty-json]
+  $ ably spaces locks get SPACE LOCKID [-v] [--json | --pretty-json] [--client-id <value>]
 
 ARGUMENTS
   SPACE   Space to get lock from
   LOCKID  Lock ID to get
 
 FLAGS
-  -v, --verbose      Output verbose logs
-      --json         Output in JSON format
-      --pretty-json  Output in colorized JSON format
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Get a lock in a space
@@ -3665,7 +3718,7 @@ EXAMPLES
   $ ably spaces locks get my-space my-lock --pretty-json
 ```
 
-_See code: [src/commands/spaces/locks/get.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locks/get.ts)_
+_See code: [src/commands/spaces/locks/get.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locks/get.ts)_
 
 ## `ably spaces locks get-all SPACE`
 
@@ -3673,15 +3726,17 @@ Get all current locks in a space
 
 ```
 USAGE
-  $ ably spaces locks get-all SPACE [-v] [--json | --pretty-json]
+  $ ably spaces locks get-all SPACE [-v] [--json | --pretty-json] [--client-id <value>]
 
 ARGUMENTS
   SPACE  Space to get locks from
 
 FLAGS
-  -v, --verbose      Output verbose logs
-      --json         Output in JSON format
-      --pretty-json  Output in colorized JSON format
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
   Get all current locks in a space
@@ -3694,7 +3749,7 @@ EXAMPLES
   $ ably spaces locks get-all my-space --pretty-json
 ```
 
-_See code: [src/commands/spaces/locks/get-all.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locks/get-all.ts)_
+_See code: [src/commands/spaces/locks/get-all.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locks/get-all.ts)_
 
 ## `ably spaces locks subscribe SPACE`
 
@@ -3708,7 +3763,7 @@ ARGUMENTS
   SPACE  Space to subscribe to locks for
 
 FLAGS
-  -D, --duration=<value>   Automatically exit after N seconds (0 = run indefinitely)
+  -D, --duration=<value>   Automatically exit after N seconds
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
@@ -3728,7 +3783,7 @@ EXAMPLES
   $ ably spaces locks subscribe my-space --duration 30
 ```
 
-_See code: [src/commands/spaces/locks/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/locks/subscribe.ts)_
+_See code: [src/commands/spaces/locks/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locks/subscribe.ts)_
 
 ## `ably spaces members`
 
@@ -3747,7 +3802,7 @@ EXAMPLES
   $ ably spaces members enter my-space
 ```
 
-_See code: [src/commands/spaces/members/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/members/index.ts)_
+_See code: [src/commands/spaces/members/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/members/index.ts)_
 
 ## `ably spaces members enter SPACE`
 
@@ -3761,7 +3816,7 @@ ARGUMENTS
   SPACE  Space to enter
 
 FLAGS
-  -D, --duration=<value>   Automatically exit after N seconds (0 = run indefinitely)
+  -D, --duration=<value>   Automatically exit after N seconds
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
@@ -3780,7 +3835,7 @@ EXAMPLES
   $ ably spaces members enter my-space --duration 30
 ```
 
-_See code: [src/commands/spaces/members/enter.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/members/enter.ts)_
+_See code: [src/commands/spaces/members/enter.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/members/enter.ts)_
 
 ## `ably spaces members subscribe SPACE`
 
@@ -3794,7 +3849,7 @@ ARGUMENTS
   SPACE  Space to subscribe to members for
 
 FLAGS
-  -D, --duration=<value>   Automatically exit after N seconds (0 = run indefinitely)
+  -D, --duration=<value>   Automatically exit after N seconds
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
@@ -3814,7 +3869,7 @@ EXAMPLES
   $ ably spaces members subscribe my-space --duration 30
 ```
 
-_See code: [src/commands/spaces/members/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/spaces/members/subscribe.ts)_
+_See code: [src/commands/spaces/members/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/members/subscribe.ts)_
 
 ## `ably stats`
 
@@ -3845,7 +3900,7 @@ COMMANDS
   ably stats app      Get app stats with optional live updates
 ```
 
-_See code: [src/commands/stats/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/stats/index.ts)_
+_See code: [src/commands/stats/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/stats/index.ts)_
 
 ## `ably stats account`
 
@@ -3853,19 +3908,19 @@ Get account stats with optional live updates
 
 ```
 USAGE
-  $ ably stats account [-v] [--json | --pretty-json] [--debug] [--end <value>] [--interval <value>] [--limit
-    <value>] [--live] [--start <value>] [--unit minute|hour|day|month]
+  $ ably stats account [-v] [--json | --pretty-json] [--debug] [--end <value>] [--start <value>] [--interval
+    <value>] [--limit <value>] [--live] [--unit minute|hour|day|month]
 
 FLAGS
   -v, --verbose           Output verbose logs
       --debug             Show debug information for live stats polling
-      --end=<value>       End time in milliseconds since epoch
+      --end=<value>       End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --interval=<value>  [default: 6] Polling interval in seconds (only used with --live)
       --json              Output in JSON format
       --limit=<value>     [default: 10] Maximum number of results to return (default: 10)
       --live              Subscribe to live stats updates (uses minute interval)
       --pretty-json       Output in colorized JSON format
-      --start=<value>     Start time in milliseconds since epoch
+      --start=<value>     Start time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --unit=<option>     [default: minute] Time unit for stats
                           <options: minute|hour|day|month>
 
@@ -3877,7 +3932,9 @@ EXAMPLES
 
   $ ably stats account --unit hour
 
-  $ ably stats account --start 1618005600000 --end 1618091999999
+  $ ably stats account --start "2023-01-01T00:00:00Z" --end "2023-01-02T00:00:00Z"
+
+  $ ably stats account --start 1h
 
   $ ably stats account --limit 10
 
@@ -3890,7 +3947,7 @@ EXAMPLES
   $ ably stats account --live --interval 15
 ```
 
-_See code: [src/commands/stats/account.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/stats/account.ts)_
+_See code: [src/commands/stats/account.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/stats/account.ts)_
 
 ## `ably stats app [ID]`
 
@@ -3898,8 +3955,8 @@ Get app stats with optional live updates
 
 ```
 USAGE
-  $ ably stats app [ID] [-v] [--json | --pretty-json] [--debug] [--end <value>] [--interval <value>] [--limit
-    <value>] [--live] [--start <value>] [--unit minute|hour|day|month]
+  $ ably stats app [ID] [-v] [--json | --pretty-json] [--debug] [--end <value>] [--start <value>] [--interval
+    <value>] [--limit <value>] [--live] [--unit minute|hour|day|month]
 
 ARGUMENTS
   ID  App ID to get stats for (uses default app if not provided)
@@ -3907,13 +3964,13 @@ ARGUMENTS
 FLAGS
   -v, --verbose           Output verbose logs
       --debug             Show debug information for live stats polling
-      --end=<value>       End time in milliseconds since epoch
+      --end=<value>       End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --interval=<value>  [default: 6] Polling interval in seconds (only used with --live)
       --json              Output in JSON format
       --limit=<value>     [default: 10] Maximum number of results to return (default: 10)
       --live              Subscribe to live stats updates (uses minute interval)
       --pretty-json       Output in colorized JSON format
-      --start=<value>     Start time in milliseconds since epoch
+      --start=<value>     Start time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --unit=<option>     [default: minute] Time unit for stats
                           <options: minute|hour|day|month>
 
@@ -3929,7 +3986,9 @@ EXAMPLES
 
   $ ably stats app app-id --unit hour
 
-  $ ably stats app app-id --start 1618005600000 --end 1618091999999
+  $ ably stats app app-id --start "2023-01-01T00:00:00Z" --end "2023-01-02T00:00:00Z"
+
+  $ ably stats app app-id --start 1h
 
   $ ably stats app app-id --limit 10
 
@@ -3944,7 +4003,7 @@ EXAMPLES
   $ ably stats app --live --interval 15
 ```
 
-_See code: [src/commands/stats/app.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/stats/app.ts)_
+_See code: [src/commands/stats/app.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/stats/app.ts)_
 
 ## `ably status`
 
@@ -3965,7 +4024,7 @@ EXAMPLES
   $ ably status
 ```
 
-_See code: [src/commands/status.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/status.ts)_
+_See code: [src/commands/status.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/status.ts)_
 
 ## `ably support`
 
@@ -3990,7 +4049,7 @@ COMMANDS
   ably support contact  Contact Ably for assistance
 ```
 
-_See code: [src/commands/support/index.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/support/index.ts)_
+_See code: [src/commands/support/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/support/index.ts)_
 
 ## `ably support ask QUESTION`
 
@@ -4021,7 +4080,7 @@ EXAMPLES
   $ ably support ask --continue "Can you explain more about token capabilities?"
 ```
 
-_See code: [src/commands/support/ask.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/support/ask.ts)_
+_See code: [src/commands/support/ask.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/support/ask.ts)_
 
 ## `ably support contact`
 
@@ -4041,7 +4100,7 @@ EXAMPLES
   $ ably support contact
 ```
 
-_See code: [src/commands/support/contact.ts](https://github.com/ably/ably-cli/blob/v0.16.0/src/commands/support/contact.ts)_
+_See code: [src/commands/support/contact.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/support/contact.ts)_
 <!-- commandsstop -->
 
 ## Environment Variables
