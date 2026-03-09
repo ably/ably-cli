@@ -1,6 +1,6 @@
 ---
 name: ably-new-command
-description: "Scaffold new CLI commands with tests for the Ably CLI (oclif + TypeScript). Use when creating, adding, or migrating any command or subcommand."
+description: "Scaffold new CLI commands with tests for the Ably CLI (oclif + TypeScript). Use this skill whenever creating a new command, adding a subcommand, migrating a command, or scaffolding a command with its test file — even if described casually (e.g., 'I need an ably X Y command', 'can you build ably rooms typing subscribe', 'we should add a purge command to queues'). Do NOT use for modifying existing commands, fixing bugs, or adding tests to existing commands."
 ---
 
 # Ably CLI New Command
@@ -208,14 +208,15 @@ Rules:
 - `formatLabel(text)` — dim with colon, for field labels
 - `formatHeading(text)` — bold, for record headings in lists
 - `formatIndex(n)` — dim bracketed number, for history ordering
-- Use `this.error()` for fatal errors, never `this.log(chalk.red(...))`
+- Use `this.handleCommandError()` for all errors (see Error handling below), never `this.log(chalk.red(...))`
 - Never use `console.log` or `console.error` — always `this.log()` or `this.logToStderr()`
 
 ### Error handling
 
-**Always use `handleCommandError` in catch blocks** — it's the single canonical pattern for error handling in commands. It logs the CLI event, emits JSON error when `--json` is active, and calls `this.error()` for human-readable output.
+**Use `handleCommandError` for all errors.** It's the single error function for commands — it logs the CLI event, emits JSON error when `--json` is active, and calls `this.error()` for human-readable output. It accepts an `Error` object or a plain string message.
 
 ```typescript
+// In catch blocks — pass the error object
 try {
   // command logic
 } catch (error) {
@@ -226,19 +227,19 @@ try {
     { channel: args.channel },  // optional context for logging
   );
 }
-```
 
-For simple Control API errors where you don't need event logging:
-```typescript
-try {
-  const result = await controlApi.someMethod(appId, data);
-  // handle result
-} catch (error) {
-  this.error(`Error creating resource: ${error instanceof Error ? error.message : String(error)}`);
+// For validation / early exit — pass a string message
+if (!appId) {
+  this.handleCommandError(
+    'No app specified. Use --app flag or select an app with "ably apps switch"',
+    flags,
+    "AppResolve",
+  );
+  return;
 }
 ```
 
-**`this.jsonError(data, flags)`** exists as an escape hatch for non-standard error flows where `handleCommandError` doesn't fit (e.g., `set-apns-p12.ts` where the error format differs). New commands should not need it — use `handleCommandError` instead. Existing uses of `jsonError` should be migrated to `handleCommandError` over time.
+**Do NOT use `this.error()` or `this.jsonError()` directly** — they are internal implementation details. Calling `this.error()` directly skips event logging and doesn't respect `--json` mode. Calling `this.jsonError()` directly skips event logging and doesn't handle the non-JSON case.
 
 ### Pattern-specific implementation
 
@@ -315,7 +316,7 @@ pnpm test:unit      # Run tests
 - [ ] Output helpers used correctly (`formatProgress`, `formatSuccess`, `formatListening`, `formatResource`, `formatTimestamp`, `formatClientId`, `formatEventType`, `formatLabel`, `formatHeading`, `formatIndex`)
 - [ ] `success()` messages end with `.` (period)
 - [ ] Resource names use `resource(name)`, never quoted
-- [ ] Error handling uses `this.handleCommandError()` or `this.error()`, not `this.log(chalk.red(...))`
+- [ ] Error handling uses `this.handleCommandError()` exclusively, not `this.error()`, `this.jsonError()`, or `this.log(chalk.red(...))`
 - [ ] Test file at matching path under `test/unit/commands/`
 - [ ] Tests use correct mock helper (`getMockAblyRealtime`, `getMockAblyRest`, `nock`)
 - [ ] Tests don't pass auth flags — `MockConfigManager` handles auth

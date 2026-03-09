@@ -189,7 +189,7 @@ async run(): Promise<void> {
     try {
       presenceData = JSON.parse(flags.data);
     } catch {
-      this.error("Invalid JSON data provided");
+      this.handleCommandError("Invalid JSON data provided", flags, "PresenceEnter");
       return;
     }
   }
@@ -264,7 +264,11 @@ async run(): Promise<void> {
   const appId = await this.resolveAppId(flags);
 
   if (!appId) {
-    this.error('No app specified. Use --app flag or select an app with "ably apps switch"');
+    this.handleCommandError(
+      'No app specified. Use --app flag or select an app with "ably apps switch"',
+      flags,
+      "ListItems",
+    );
     return;
   }
 
@@ -284,7 +288,7 @@ async run(): Promise<void> {
       }
     }
   } catch (error) {
-    this.error(`Error listing items: ${error instanceof Error ? error.message : String(error)}`);
+    this.handleCommandError(error, flags, "ListItems");
   }
 }
 ```
@@ -307,7 +311,11 @@ async run(): Promise<void> {
   const appId = await this.resolveAppId(flags);
 
   if (!appId) {
-    this.error('No app specified. Use --app flag or select an app with "ably apps switch"');
+    this.handleCommandError(
+      'No app specified. Use --app flag or select an app with "ably apps switch"',
+      flags,
+      "CreateResource",
+    );
     return;
   }
 
@@ -321,7 +329,7 @@ async run(): Promise<void> {
       // Display additional fields
     }
   } catch (error) {
-    this.error(`Error creating resource: ${error instanceof Error ? error.message : String(error)}`);
+    this.handleCommandError(error, flags, "CreateResource");
   }
 }
 ```
