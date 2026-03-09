@@ -4,8 +4,8 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { durationFlag, productApiFlags, rewindFlag } from "../../../flags.js";
 import {
-  listening,
-  success,
+  formatListening,
+  formatSuccess,
   formatTimestamp,
   formatMessageTimestamp,
 } from "../../../utils/output.js";
@@ -74,7 +74,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
       );
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(success("Subscribed to connection lifecycle logs."));
+        this.log(formatSuccess("Subscribed to connection lifecycle logs."));
       }
 
       // Subscribe to connection lifecycle logs
@@ -118,7 +118,9 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
         "Listening for connection lifecycle log events. Press Ctrl+C to exit.",
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log(listening("Listening for connection lifecycle log events."));
+        this.log(
+          formatListening("Listening for connection lifecycle log events."),
+        );
       }
 
       // Wait until the user interrupts or the optional duration elapses

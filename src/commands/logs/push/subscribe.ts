@@ -5,9 +5,9 @@ import { AblyBaseCommand } from "../../../base-command.js";
 import { durationFlag, productApiFlags, rewindFlag } from "../../../flags.js";
 import { formatMessageData } from "../../../utils/json-formatter.js";
 import {
-  listening,
-  resource,
-  success,
+  formatListening,
+  formatResource,
+  formatSuccess,
   formatTimestamp,
   formatMessageTimestamp,
 } from "../../../utils/output.js";
@@ -145,8 +145,10 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
       });
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(success(`Subscribed to ${resource(channelName)}.`));
-        this.log(listening("Listening for push logs."));
+        this.log(
+          formatSuccess(`Subscribed to ${formatResource(channelName)}.`),
+        );
+        this.log(formatListening("Listening for push logs."));
         this.log("");
       }
 

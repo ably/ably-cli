@@ -5,7 +5,11 @@ import chalk from "chalk";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { errorMessage } from "../../../utils/errors.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
-import { progress, resource, formatTimestamp } from "../../../utils/output.js";
+import {
+  formatProgress,
+  formatResource,
+  formatTimestamp,
+} from "../../../utils/output.js";
 
 export interface OccupancyMetrics {
   connections?: number;
@@ -50,7 +54,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         "Connecting to Ably...",
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log(progress("Connecting to Ably"));
+        this.log(formatProgress("Connecting to Ably"));
       }
 
       // Create Chat client
@@ -86,7 +90,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       // Subscribe to room status changes
       this.setupRoomStatusHandler(room, flags, {
         roomName: this.roomName!,
-        successMessage: `Subscribed to occupancy in room: ${resource(this.roomName!)}.`,
+        successMessage: `Subscribed to occupancy in room: ${formatResource(this.roomName!)}.`,
         listeningMessage: "Listening for occupancy updates.",
       });
 
@@ -195,7 +199,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
     } else {
       const prefix = isInitial ? "Initial occupancy" : "Occupancy update";
       this.log(
-        `${formatTimestamp(timestamp)} ${prefix} for room ${resource(roomName)}`,
+        `${formatTimestamp(timestamp)} ${prefix} for room ${formatResource(roomName)}`,
       );
       // Type guard to handle both OccupancyMetrics and OccupancyEvent
       const connections =

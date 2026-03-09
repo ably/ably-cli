@@ -5,9 +5,9 @@ import chalk from "chalk";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../../flags.js";
 import {
-  progress,
-  success,
-  resource,
+  formatProgress,
+  formatSuccess,
+  formatResource,
   formatTimestamp,
   formatMessageTimestamp,
 } from "../../../utils/output.js";
@@ -90,8 +90,8 @@ export default class MessagesHistory extends ChatBaseCommand {
           );
         } else {
           this.log(
-            progress(
-              `Fetching ${flags.limit} most recent messages from room ${resource(args.room)}`,
+            formatProgress(
+              `Fetching ${flags.limit} most recent messages from room ${formatResource(args.room)}`,
             ),
           );
         }
@@ -152,7 +152,7 @@ export default class MessagesHistory extends ChatBaseCommand {
         );
       } else {
         // Display messages count
-        this.log(success(`Retrieved ${items.length} messages.`));
+        this.log(formatSuccess(`Retrieved ${items.length} messages.`));
 
         if (items.length === 0) {
           this.log(chalk.dim("No messages found in this room."));

@@ -4,7 +4,7 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
 import { errorMessage } from "../../../utils/errors.js";
-import { resource } from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 
 interface OccupancyMetrics {
   connections: number;
@@ -81,7 +81,9 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
           ),
         );
       } else {
-        this.log(`Occupancy metrics for channel ${resource(channelName)}:\n`);
+        this.log(
+          `Occupancy metrics for channel ${formatResource(channelName)}:\n`,
+        );
         this.log(
           `${chalk.dim("Connections:")} ${occupancyMetrics.connections ?? 0}`,
         );

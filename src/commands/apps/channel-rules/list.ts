@@ -1,11 +1,10 @@
 import { Flags } from "@oclif/core";
-import chalk from "chalk";
-
 import type { Namespace } from "../../../services/control-api.js";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
 import { errorMessage } from "../../../utils/errors.js";
+import { formatHeading } from "../../../utils/output.js";
 
 interface ChannelRuleOutput {
   authenticated: boolean;
@@ -93,7 +92,7 @@ export default class ChannelRulesListCommand extends ControlBaseCommand {
         this.log(`Found ${namespaces.length} channel rules:\n`);
 
         namespaces.forEach((namespace: Namespace) => {
-          this.log(chalk.bold(`Channel Rule ID: ${namespace.id}`));
+          this.log(formatHeading(`Channel Rule ID: ${namespace.id}`));
           for (const line of formatChannelRuleDetails(namespace, {
             bold: true,
             formatDate: (t) => this.formatDate(t),

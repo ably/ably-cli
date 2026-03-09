@@ -6,10 +6,12 @@ import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
-  listening,
-  resource,
-  success,
+  formatListening,
+  formatResource,
+  formatSuccess,
   formatTimestamp,
+  formatClientId,
+  formatLabel,
 } from "../../../utils/output.js";
 
 export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
@@ -86,7 +88,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
                 ? ` data: ${JSON.stringify(cursorUpdate.data)}`
                 : "";
               this.log(
-                `${formatTimestamp(timestamp)} ${chalk.blue(cursorUpdate.clientId)} ${chalk.dim("position:")} ${JSON.stringify(cursorUpdate.position)}${dataString}`,
+                `${formatTimestamp(timestamp)} ${formatClientId(cursorUpdate.clientId)} ${formatLabel("position")} ${JSON.stringify(cursorUpdate.position)}${dataString}`,
               );
             }
           } catch (error) {
@@ -157,8 +159,10 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
 
       // Print success message
       if (!this.shouldOutputJson(flags)) {
-        this.log(success(`Subscribed to space: ${resource(spaceName)}.`));
-        this.log(listening("Listening for cursor movements."));
+        this.log(
+          formatSuccess(`Subscribed to space: ${formatResource(spaceName)}.`),
+        );
+        this.log(formatListening("Listening for cursor movements."));
       }
 
       // Wait until the user interrupts or the optional duration elapses

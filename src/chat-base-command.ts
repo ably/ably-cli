@@ -5,7 +5,7 @@ import { productApiFlags } from "./flags.js";
 import { BaseFlags } from "./types/cli.js";
 import chalk from "chalk";
 
-import { success, listening } from "./utils/output.js";
+import { formatSuccess, formatListening } from "./utils/output.js";
 import isTestMode from "./utils/test-mode.js";
 
 export abstract class ChatBaseCommand extends AblyBaseCommand {
@@ -114,10 +114,10 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
         case RoomStatus.Attached: {
           if (!this.shouldOutputJson(flags)) {
             if (options.successMessage) {
-              this.log(success(options.successMessage));
+              this.log(formatSuccess(options.successMessage));
             }
             if (options.listeningMessage) {
-              this.log(listening(options.listeningMessage));
+              this.log(formatListening(options.listeningMessage));
             }
           }
           break;

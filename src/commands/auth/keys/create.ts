@@ -3,7 +3,11 @@ import { Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { errorMessage } from "../../../utils/errors.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
-import { progress, resource, success } from "../../../utils/output.js";
+import {
+  formatProgress,
+  formatResource,
+  formatSuccess,
+} from "../../../utils/output.js";
 
 export default class KeysCreateCommand extends ControlBaseCommand {
   static description = "Create a new API key for an app";
@@ -87,8 +91,8 @@ export default class KeysCreateCommand extends ControlBaseCommand {
     try {
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          progress(
-            `Creating key ${resource(flags.name)} for app ${resource(appId)}`,
+          formatProgress(
+            `Creating key ${formatResource(flags.name)} for app ${formatResource(appId)}`,
           ),
         );
       }
@@ -113,7 +117,7 @@ export default class KeysCreateCommand extends ControlBaseCommand {
         );
       } else {
         const keyName = `${key.appId}.${key.id}`;
-        this.log(success(`Key created: ${resource(keyName)}.`));
+        this.log(formatSuccess(`Key created: ${formatResource(keyName)}.`));
         this.log(`Key Name: ${keyName}`);
         this.log(`Key Label: ${key.name || "Unnamed key"}`);
 

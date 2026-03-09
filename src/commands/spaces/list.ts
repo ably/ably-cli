@@ -3,7 +3,7 @@ import chalk from "chalk";
 
 import { errorMessage } from "../../utils/errors.js";
 import { productApiFlags } from "../../flags.js";
-import { countLabel, limitWarning } from "../../utils/output.js";
+import { formatCountLabel, formatLimitWarning } from "../../utils/output.js";
 import { SpacesBaseCommand } from "../../spaces-base-command.js";
 
 interface SpaceMetrics {
@@ -146,7 +146,9 @@ export default class SpacesList extends SpacesBaseCommand {
           return;
         }
 
-        this.log(`Found ${countLabel(limitedSpaces.length, "active space")}:`);
+        this.log(
+          `Found ${formatCountLabel(limitedSpaces.length, "active space")}:`,
+        );
 
         limitedSpaces.forEach((space: SpaceItem) => {
           this.log(`${chalk.green(space.spaceName)}`);
@@ -180,7 +182,7 @@ export default class SpacesList extends SpacesBaseCommand {
           this.log(""); // Add a line break between spaces
         });
 
-        const warning = limitWarning(
+        const warning = formatLimitWarning(
           limitedSpaces.length,
           flags.limit,
           "spaces",

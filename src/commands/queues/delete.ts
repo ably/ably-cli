@@ -2,7 +2,7 @@ import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
-import { resource, success } from "../../utils/output.js";
+import { formatResource, formatSuccess } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class QueuesDeleteCommand extends ControlBaseCommand {
@@ -105,7 +105,9 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
         );
       } else {
         this.log(
-          success(`Queue deleted: ${resource(queue.name)} (${queue.id}).`),
+          formatSuccess(
+            `Queue deleted: ${formatResource(queue.name)} (${queue.id}).`,
+          ),
         );
       }
     } catch (error) {

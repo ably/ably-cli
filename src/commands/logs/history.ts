@@ -7,10 +7,11 @@ import { formatMessageData } from "../../utils/json-formatter.js";
 import { errorMessage } from "../../utils/errors.js";
 import { buildHistoryParams } from "../../utils/history.js";
 import {
-  countLabel,
+  formatCountLabel,
+  formatIndex,
   formatTimestamp,
   formatMessageTimestamp,
-  limitWarning,
+  formatLimitWarning,
 } from "../../utils/output.js";
 
 export default class LogsHistory extends AblyBaseCommand {
@@ -85,7 +86,9 @@ export default class LogsHistory extends AblyBaseCommand {
           return;
         }
 
-        this.log(`Found ${countLabel(messages.length, "application log")}:`);
+        this.log(
+          `Found ${formatCountLabel(messages.length, "application log")}:`,
+        );
         this.log("");
 
         for (const [index, message] of messages.entries()) {
@@ -93,7 +96,7 @@ export default class LogsHistory extends AblyBaseCommand {
             ? formatTimestamp(formatMessageTimestamp(message.timestamp))
             : chalk.dim("[Unknown timestamp]");
 
-          this.log(`${chalk.dim(`[${index + 1}]`)} ${timestampDisplay}`);
+          this.log(`${formatIndex(index + 1)} ${timestampDisplay}`);
 
           // Event name
           if (message.name) {
@@ -110,7 +113,11 @@ export default class LogsHistory extends AblyBaseCommand {
           this.log("");
         }
 
-        const warning = limitWarning(messages.length, flags.limit, "logs");
+        const warning = formatLimitWarning(
+          messages.length,
+          flags.limit,
+          "logs",
+        );
         if (warning) this.log(warning);
       }
     } catch (error) {

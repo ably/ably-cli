@@ -2,7 +2,11 @@ import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
-import { progress, resource, success } from "../../utils/output.js";
+import {
+  formatProgress,
+  formatResource,
+  formatSuccess,
+} from "../../utils/output.js";
 
 export default class AppsCreateCommand extends ControlBaseCommand {
   static description = "Create a new app";
@@ -32,7 +36,7 @@ export default class AppsCreateCommand extends ControlBaseCommand {
 
     try {
       if (!this.shouldOutputJson(flags)) {
-        this.log(progress(`Creating app ${resource(flags.name)}`));
+        this.log(formatProgress(`Creating app ${formatResource(flags.name)}`));
       }
 
       const app = await controlApi.createApp({
@@ -60,7 +64,11 @@ export default class AppsCreateCommand extends ControlBaseCommand {
           ),
         );
       } else {
-        this.log(success(`App created: ${resource(app.name)} (${app.id}).`));
+        this.log(
+          formatSuccess(
+            `App created: ${formatResource(app.name)} (${app.id}).`,
+          ),
+        );
         this.log(`App ID: ${app.id}`);
         this.log(`Name: ${app.name}`);
         this.log(`Status: ${app.status}`);

@@ -2,7 +2,7 @@ import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
-import { resource, success } from "../../utils/output.js";
+import { formatResource, formatSuccess } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class IntegrationsDeleteCommand extends ControlBaseCommand {
@@ -101,7 +101,9 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
         );
       } else {
         this.log(
-          success(`Integration rule deleted: ${resource(integration.id)}.`),
+          formatSuccess(
+            `Integration rule deleted: ${formatResource(integration.id)}.`,
+          ),
         );
         this.log(`ID: ${integration.id}`);
         this.log(`App ID: ${integration.appId}`);

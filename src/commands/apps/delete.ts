@@ -3,7 +3,7 @@ import * as readline from "node:readline";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
-import { progress, resource } from "../../utils/output.js";
+import { formatProgress, formatResource } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 import AppsSwitch from "./switch.js";
 
@@ -133,7 +133,9 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
       }
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(progress(`Deleting app ${resource(appIdToDelete)}`));
+        this.log(
+          formatProgress(`Deleting app ${formatResource(appIdToDelete)}`),
+        );
       }
 
       await controlApi.deleteApp(appIdToDelete);

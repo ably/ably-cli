@@ -5,9 +5,9 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../base-command.js";
 import { durationFlag, productApiFlags, rewindFlag } from "../../flags.js";
 import {
-  listening,
-  resource,
-  success,
+  formatListening,
+  formatResource,
+  formatSuccess,
   formatTimestamp,
   formatMessageTimestamp,
 } from "../../utils/output.js";
@@ -103,7 +103,9 @@ export default class LogsSubscribe extends AblyBaseCommand {
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          success(`Subscribed to app logs: ${resource(logTypes.join(", "))}.`),
+          formatSuccess(
+            `Subscribed to app logs: ${formatResource(logTypes.join(", "))}.`,
+          ),
         );
       }
 
@@ -150,7 +152,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
         "Listening for log events. Press Ctrl+C to exit.",
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log(listening("Listening for log events."));
+        this.log(formatListening("Listening for log events."));
       }
 
       // Wait until the user interrupts or the optional duration elapses

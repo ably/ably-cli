@@ -2,7 +2,7 @@ import { StatsBaseCommand } from "../../stats-base-command.js";
 import type { StatsDisplayData } from "../../services/stats-display.js";
 import type { BaseFlags } from "../../types/cli.js";
 import type { ControlApi } from "../../services/control-api.js";
-import { resource } from "../../utils/output.js";
+import { formatResource } from "../../utils/output.js";
 
 export default class StatsAccountCommand extends StatsBaseCommand {
   static description = "Get account stats with optional live updates";
@@ -40,7 +40,7 @@ export default class StatsAccountCommand extends StatsBaseCommand {
   ): Promise<string> {
     if (!this.accountLabel) {
       const { account } = await controlApi.getMe();
-      this.accountLabel = `account ${resource(account.name)} (${account.id})`;
+      this.accountLabel = `account ${formatResource(account.name)} (${account.id})`;
     }
 
     return this.accountLabel;

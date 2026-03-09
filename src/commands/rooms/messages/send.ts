@@ -5,7 +5,11 @@ import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { interpolateMessage } from "../../../utils/message.js";
-import { progress, success, resource } from "../../../utils/output.js";
+import {
+  formatProgress,
+  formatSuccess,
+  formatResource,
+} from "../../../utils/output.js";
 
 // Define interfaces for the message send command
 interface MessageToSend {
@@ -185,7 +189,9 @@ export default class MessagesSend extends ChatBaseCommand {
         { count, delay },
       );
       if (count > 1 && !this.shouldOutputJson(flags)) {
-        this.log(progress(`Sending ${count} messages with ${delay}ms delay`));
+        this.log(
+          formatProgress(`Sending ${count} messages with ${delay}ms delay`),
+        );
       }
 
       // Track send progress
@@ -337,8 +343,8 @@ export default class MessagesSend extends ChatBaseCommand {
               );
             }
             this.log(
-              success(
-                `${sentCount}/${count} messages sent to room ${resource(args.room)} (${errorCount} errors).`,
+              formatSuccess(
+                `${sentCount}/${count} messages sent to room ${formatResource(args.room)} (${errorCount} errors).`,
               ),
             );
           }
@@ -379,7 +385,11 @@ export default class MessagesSend extends ChatBaseCommand {
             if (this.shouldOutputJson(flags)) {
               this.log(this.formatJsonOutput(result, flags));
             } else {
-              this.log(success(`Message sent to room ${resource(args.room)}.`));
+              this.log(
+                formatSuccess(
+                  `Message sent to room ${formatResource(args.room)}.`,
+                ),
+              );
             }
           }
         } catch (error) {

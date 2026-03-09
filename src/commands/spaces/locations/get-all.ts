@@ -4,7 +4,13 @@ import chalk from "chalk";
 import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { progress, resource, success } from "../../../utils/output.js";
+import {
+  formatProgress,
+  formatResource,
+  formatSuccess,
+  formatLabel,
+  formatClientId,
+} from "../../../utils/output.js";
 
 interface LocationData {
   [key: string]: unknown;
@@ -69,7 +75,9 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
       });
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(progress(`Connecting to space: ${resource(spaceName)}`));
+        this.log(
+          formatProgress(`Connecting to space: ${formatResource(spaceName)}`),
+        );
       }
 
       await this.space!.enter();
@@ -85,7 +93,9 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
               clearTimeout(timeout);
               if (!this.shouldOutputJson(flags)) {
                 this.log(
-                  success(`Connected to space: ${resource(spaceName)}.`),
+                  formatSuccess(
+                    `Connected to space: ${formatResource(spaceName)}.`,
+                  ),
                 );
               }
 
@@ -115,7 +125,9 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          progress(`Fetching locations for space ${resource(spaceName)}`),
+          formatProgress(
+            `Fetching locations for space ${formatResource(spaceName)}`,
+          ),
         );
       }
 
@@ -234,10 +246,10 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
                 const locationData = extractLocationData(location);
 
                 this.log(
-                  `- ${chalk.blue(member.memberId || member.clientId)}:`,
+                  `- ${formatClientId(member.memberId || member.clientId || "Unknown")}:`,
                 );
                 this.log(
-                  `  ${chalk.dim("Location:")} ${JSON.stringify(locationData, null, 2)}`,
+                  `  ${formatLabel("Location")} ${JSON.stringify(locationData, null, 2)}`,
                 );
 
                 if (member.isCurrentMember) {
@@ -250,9 +262,9 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
               }
             } else {
               // Simpler display if location doesn't have expected structure
-              this.log(`- ${chalk.blue("Member")}:`);
+              this.log(`- ${formatClientId("Member")}:`);
               this.log(
-                `  ${chalk.dim("Location:")} ${JSON.stringify(location, null, 2)}`,
+                `  ${formatLabel("Location")} ${JSON.stringify(location, null, 2)}`,
               );
             }
           }

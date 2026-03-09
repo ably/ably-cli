@@ -7,7 +7,11 @@ import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { BaseFlags } from "../../types/cli.js";
 import { interpolateMessage } from "../../utils/message.js";
 import { errorMessage } from "../../utils/errors.js";
-import { progress, resource, success } from "../../utils/output.js";
+import {
+  formatProgress,
+  formatResource,
+  formatSuccess,
+} from "../../utils/output.js";
 
 export default class ChannelsPublish extends AblyBaseCommand {
   static override args = {
@@ -160,14 +164,14 @@ export default class ChannelsPublish extends AblyBaseCommand {
         this.log(this.formatJsonOutput(finalResult, flags));
       } else if (total > 1) {
         this.log(
-          success(
-            `${published}/${total} messages published to channel: ${resource(args.channel as string)}${errors > 0 ? ` (${chalk.red(errors)} errors)` : ""}.`,
+          formatSuccess(
+            `${published}/${total} messages published to channel: ${formatResource(args.channel as string)}${errors > 0 ? ` (${chalk.red(errors)} errors)` : ""}.`,
           ),
         );
       } else if (errors === 0) {
         this.log(
-          success(
-            `Message published to channel: ${resource(args.channel as string)}.`,
+          formatSuccess(
+            `Message published to channel: ${formatResource(args.channel as string)}.`,
           ),
         );
       } else {
@@ -249,7 +253,9 @@ export default class ChannelsPublish extends AblyBaseCommand {
       { count, delay },
     );
     if (count > 1 && !this.shouldOutputJson(flags)) {
-      this.log(progress(`Publishing ${count} messages with ${delay}ms delay`));
+      this.log(
+        formatProgress(`Publishing ${count} messages with ${delay}ms delay`),
+      );
     }
 
     let publishedCount = 0;
@@ -299,8 +305,8 @@ export default class ChannelsPublish extends AblyBaseCommand {
           count > 1 // Only show individual success messages when publishing multiple messages
         ) {
           this.log(
-            success(
-              `Message ${messageIndex} published to channel: ${resource(args.channel as string)}.`,
+            formatSuccess(
+              `Message ${messageIndex} published to channel: ${formatResource(args.channel as string)}.`,
             ),
           );
         }

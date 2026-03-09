@@ -2,7 +2,7 @@ import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
-import { resource, success } from "../../utils/output.js";
+import { formatResource, formatSuccess } from "../../utils/output.js";
 
 // Interface for basic integration data structure
 interface IntegrationData {
@@ -150,8 +150,8 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
         );
       } else {
         this.log(
-          success(
-            `Integration rule created: ${resource(createdIntegration.id)}.`,
+          formatSuccess(
+            `Integration rule created: ${formatResource(createdIntegration.id)}.`,
           ),
         );
         this.log(`ID: ${createdIntegration.id}`);

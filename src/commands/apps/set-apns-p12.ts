@@ -4,7 +4,11 @@ import * as path from "node:path";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
-import { progress, resource, success } from "../../utils/output.js";
+import {
+  formatProgress,
+  formatResource,
+  formatSuccess,
+} from "../../utils/output.js";
 
 export default class AppsSetApnsP12Command extends ControlBaseCommand {
   static args = {
@@ -56,7 +60,9 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
       }
 
       this.log(
-        progress(`Uploading APNS P12 certificate for app ${resource(args.id)}`),
+        formatProgress(
+          `Uploading APNS P12 certificate for app ${formatResource(args.id)}`,
+        ),
       );
 
       // Read certificate file and encode as base64
@@ -72,7 +78,7 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.log(this.formatJsonOutput(result, flags));
       } else {
-        this.log(success("APNS P12 certificate uploaded."));
+        this.log(formatSuccess("APNS P12 certificate uploaded."));
         this.log(`Certificate ID: ${result.id}`);
         if (flags["use-for-sandbox"]) {
           this.log(`Environment: Sandbox`);

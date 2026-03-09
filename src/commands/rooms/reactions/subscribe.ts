@@ -4,7 +4,11 @@ import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
-import { progress, resource, formatTimestamp } from "../../../utils/output.js";
+import {
+  formatProgress,
+  formatResource,
+  formatTimestamp,
+} from "../../../utils/output.js";
 
 export default class RoomsReactionsSubscribe extends ChatBaseCommand {
   static override args = {
@@ -57,8 +61,8 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
       );
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          progress(
-            `Connecting to Ably and subscribing to reactions in room ${resource(roomName)}`,
+          formatProgress(
+            `Connecting to Ably and subscribing to reactions in room ${formatResource(roomName)}`,
           ),
         );
       }
@@ -81,7 +85,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
       // Subscribe to room status changes
       this.setupRoomStatusHandler(room, flags, {
         roomName,
-        successMessage: `Subscribed to reactions in room: ${resource(roomName)}.`,
+        successMessage: `Subscribed to reactions in room: ${formatResource(roomName)}.`,
         listeningMessage: "Listening for reactions.",
       });
 

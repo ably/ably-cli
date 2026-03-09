@@ -6,11 +6,12 @@ import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
-  success,
-  listening,
-  resource,
+  formatSuccess,
+  formatListening,
+  formatResource,
   formatTimestamp,
   formatPresenceAction,
+  formatClientId,
 } from "../../../utils/output.js";
 
 export default class SpacesMembersEnter extends SpacesBaseCommand {
@@ -54,7 +55,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
     try {
       // Always show the readiness signal first, before attempting auth
       if (!this.shouldOutputJson(flags)) {
-        this.log(listening("Entering space."));
+        this.log(formatListening("Entering space."));
       }
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
@@ -102,7 +103,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
           this.formatJsonOutput({ success: true, ...enteredEventData }, flags),
         );
       } else {
-        this.log(success(`Entered space: ${resource(spaceName)}.`));
+        this.log(formatSuccess(`Entered space: ${formatResource(spaceName)}.`));
         if (profileData) {
           this.log(
             `${chalk.dim("Profile:")} ${JSON.stringify(profileData, null, 2)}`,
@@ -126,7 +127,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         "Subscribing to member updates",
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log(`\n${listening("Watching for other members.")}\n`);
+        this.log(`\n${formatListening("Watching for other members.")}\n`);
       }
 
       // Define the listener function
@@ -202,7 +203,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
             formatPresenceAction(action);
 
           this.log(
-            `${formatTimestamp(timestamp)} ${actionColor(actionSymbol)} ${chalk.blue(clientId)} ${actionColor(action)}`,
+            `${formatTimestamp(timestamp)} ${actionColor(actionSymbol)} ${formatClientId(clientId)} ${actionColor(action)}`,
           );
 
           const hasProfileData =

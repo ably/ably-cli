@@ -3,7 +3,7 @@ import { Args } from "@oclif/core";
 import { StatsBaseCommand } from "../../stats-base-command.js";
 import type { StatsDisplayData } from "../../services/stats-display.js";
 import type { ControlApi } from "../../services/control-api.js";
-import { resource } from "../../utils/output.js";
+import { formatResource } from "../../utils/output.js";
 
 export default class StatsAppCommand extends StatsBaseCommand {
   static args = {
@@ -42,7 +42,7 @@ export default class StatsAppCommand extends StatsBaseCommand {
   }
 
   protected async getStatsLabel(): Promise<string> {
-    return `app ${resource(this.appId)}`;
+    return `app ${formatResource(this.appId)}`;
   }
 
   async run(): Promise<void> {

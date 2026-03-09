@@ -5,12 +5,14 @@ import chalk from "chalk";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import {
-  progress,
-  success,
-  listening,
-  resource,
+  formatProgress,
+  formatSuccess,
+  formatListening,
+  formatResource,
   formatTimestamp,
   formatPresenceAction,
+  formatClientId,
+  formatLabel,
 } from "../../../utils/output.js";
 
 export default class RoomsPresenceSubscribe extends ChatBaseCommand {
@@ -51,8 +53,8 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       // Show a progress signal early so E2E harnesses know the command is running
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          progress(
-            `Subscribing to presence in room: ${resource(this.roomName!)}`,
+          formatProgress(
+            `Subscribing to presence in room: ${formatResource(this.roomName!)}`,
           ),
         );
       }
@@ -113,7 +115,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
 
       this.setupRoomStatusHandler(currentRoom, flags, {
         roomName: this.roomName!,
-        successMessage: `Connected to room: ${resource(this.roomName!)}.`,
+        successMessage: `Connected to room: ${formatResource(this.roomName!)}.`,
         listeningMessage: undefined,
       });
 
@@ -121,8 +123,8 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
 
       if (!this.shouldOutputJson(flags) && this.roomName) {
         this.log(
-          progress(
-            `Fetching current presence members for room ${resource(this.roomName)}`,
+          formatProgress(
+            `Fetching current presence members for room ${formatResource(this.roomName)}`,
           ),
         );
         const members: PresenceMember[] = await currentRoom.presence.get();
@@ -135,7 +137,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
             `\n${chalk.cyan("Current presence members")} (${chalk.bold(members.length.toString())}):\n`,
           );
           for (const member of members) {
-            this.log(`- ${chalk.blue(member.clientId || "Unknown")}`);
+            this.log(`- ${formatClientId(member.clientId || "Unknown")}`);
             if (
               member.data &&
               typeof member.data === "object" &&
@@ -143,10 +145,10 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
             ) {
               const profile = member.data as { name?: string };
               if (profile.name) {
-                this.log(`  ${chalk.dim("Name:")} ${profile.name}`);
+                this.log(`  ${formatLabel("Name")} ${profile.name}`);
               }
               this.log(
-                `  ${chalk.dim("Full Profile Data:")} ${this.formatJsonOutput({ data: member.data }, flags)}`,
+                `  ${formatLabel("Full Profile Data")} ${this.formatJsonOutput({ data: member.data }, flags)}`,
               );
             }
           }
@@ -183,7 +185,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
           const { symbol: actionSymbol, color: actionColor } =
             formatPresenceAction(event.type);
           this.log(
-            `${formatTimestamp(timestamp)} ${actionColor(actionSymbol)} ${chalk.blue(member.clientId || "Unknown")} ${actionColor(event.type)}`,
+            `${formatTimestamp(timestamp)} ${actionColor(actionSymbol)} ${formatClientId(member.clientId || "Unknown")} ${actionColor(event.type)}`,
           );
           if (
             member.data &&
@@ -192,10 +194,10 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
           ) {
             const profile = member.data as { name?: string };
             if (profile.name) {
-              this.log(`  ${chalk.dim("Name:")} ${profile.name}`);
+              this.log(`  ${formatLabel("Name")} ${profile.name}`);
             }
             this.log(
-              `  ${chalk.dim("Full Data:")} ${this.formatJsonOutput({ data: member.data }, flags)}`,
+              `  ${formatLabel("Full Data")} ${this.formatJsonOutput({ data: member.data }, flags)}`,
             );
           }
         }
@@ -209,11 +211,11 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          success(
-            `Subscribed to presence in room: ${resource(this.roomName!)}.`,
+          formatSuccess(
+            `Subscribed to presence in room: ${formatResource(this.roomName!)}.`,
           ),
         );
-        this.log(listening("Listening for presence events."));
+        this.log(formatListening("Listening for presence events."));
       }
 
       // Wait until the user interrupts or the optional duration elapses

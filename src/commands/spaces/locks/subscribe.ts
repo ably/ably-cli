@@ -6,10 +6,11 @@ import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
-  listening,
-  progress,
-  resource,
+  formatListening,
+  formatProgress,
+  formatResource,
   formatTimestamp,
+  formatLabel,
 } from "../../../utils/output.js";
 
 export default class SpacesLocksSubscribe extends SpacesBaseCommand {
@@ -62,7 +63,9 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
       await this.initializeSpace(flags, spaceName, { enterSpace: true });
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(progress(`Connecting to space: ${resource(spaceName)}`));
+        this.log(
+          formatProgress(`Connecting to space: ${formatResource(spaceName)}`),
+        );
       }
 
       // Get current locks
@@ -74,7 +77,9 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
       );
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          progress(`Fetching current locks for space ${resource(spaceName)}`),
+          formatProgress(
+            `Fetching current locks for space ${formatResource(spaceName)}`,
+          ),
         );
       }
 
@@ -117,7 +122,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
 
         for (const lock of locks) {
           this.log(`- Lock ID: ${chalk.blue(lock.id)}`);
-          this.log(`  ${chalk.dim("Status:")} ${lock.status}`);
+          this.log(`  ${formatLabel("Status")} ${lock.status}`);
           this.log(
             `  ${chalk.dim("Member:")} ${lock.member?.clientId || "Unknown"}`,
           );
@@ -138,7 +143,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
         "Subscribing to lock events",
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log(listening("Subscribing to lock events."));
+        this.log(formatListening("Subscribing to lock events."));
       }
       this.logCliEvent(
         flags,
@@ -178,7 +183,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
           this.log(
             `${formatTimestamp(timestamp)} Lock ${chalk.blue(lock.id)} updated`,
           );
-          this.log(`  ${chalk.dim("Status:")} ${lock.status}`);
+          this.log(`  ${formatLabel("Status")} ${lock.status}`);
           this.log(
             `  ${chalk.dim("Member:")} ${lock.member?.clientId || "Unknown"}`,
           );

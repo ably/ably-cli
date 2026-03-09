@@ -4,7 +4,7 @@ import { Args, Flags } from "@oclif/core";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { errorMessage } from "../../../utils/errors.js";
 import { clientIdFlag, productApiFlags } from "../../../flags.js";
-import { resource, success } from "../../../utils/output.js";
+import { formatResource, formatSuccess } from "../../../utils/output.js";
 
 export default class RoomsReactionsSend extends ChatBaseCommand {
   static override args = {
@@ -150,7 +150,9 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
         this.log(this.formatJsonOutput(resultData, flags));
       } else {
         this.log(
-          success(`Sent reaction ${emoji} in room ${resource(roomName)}.`),
+          formatSuccess(
+            `Sent reaction ${emoji} in room ${formatResource(roomName)}.`,
+          ),
         );
       }
     } catch (error) {

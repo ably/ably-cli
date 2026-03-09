@@ -6,10 +6,11 @@ import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
-  success,
-  listening,
-  resource,
+  formatSuccess,
+  formatListening,
+  formatResource,
   formatTimestamp,
+  formatClientId,
 } from "../../../utils/output.js";
 
 // Define the type for location subscription
@@ -139,7 +140,11 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
             ),
           );
         } else {
-          this.log(success(`Location set in space: ${resource(spaceName)}.`));
+          this.log(
+            formatSuccess(
+              `Location set in space: ${formatResource(spaceName)}.`,
+            ),
+          );
         }
       } catch {
         // If an error occurs in E2E mode, just exit cleanly after showing what we can
@@ -171,7 +176,9 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
         location,
       });
       if (!this.shouldOutputJson(flags)) {
-        this.log(success(`Location set in space: ${resource(spaceName)}.`));
+        this.log(
+          formatSuccess(`Location set in space: ${formatResource(spaceName)}.`),
+        );
       }
 
       // Subscribe to location updates from other users
@@ -182,7 +189,9 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
         "Watching for other location changes...",
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log(`\n${listening("Watching for other location changes.")}\n`);
+        this.log(
+          `\n${formatListening("Watching for other location changes.")}\n`,
+        );
       }
 
       // Store subscription handlers
@@ -225,7 +234,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
           const action = "update";
 
           this.log(
-            `${formatTimestamp(timestamp)} ${chalk.blue(member.clientId || "Unknown")} ${actionColor(action)}d location:`,
+            `${formatTimestamp(timestamp)} ${formatClientId(member.clientId || "Unknown")} ${actionColor(action)}d location:`,
           );
           this.log(
             `  ${chalk.dim("Location:")} ${JSON.stringify(currentLocation, null, 2)}`,

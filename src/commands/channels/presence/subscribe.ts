@@ -1,16 +1,17 @@
 import { Args } from "@oclif/core";
 import * as Ably from "ably";
-import chalk from "chalk";
-
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import {
-  listening,
-  progress,
-  resource,
-  success,
+  formatListening,
+  formatProgress,
+  formatResource,
+  formatSuccess,
   formatTimestamp,
   formatMessageTimestamp,
+  formatLabel,
+  formatClientId,
+  formatEventType,
 } from "../../../utils/output.js";
 
 export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
@@ -74,8 +75,8 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          progress(
-            `Subscribing to presence events on channel: ${resource(channelName)}`,
+          formatProgress(
+            `Subscribing to presence events on channel: ${formatResource(channelName)}`,
           ),
         );
       }
@@ -106,7 +107,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
           const clientId = presenceMessage.clientId || "Unknown";
 
           this.log(
-            `${formatTimestamp(timestamp)} ${chalk.cyan(`Channel: ${channelName}`)} | ${chalk.yellow(`Action: ${action}`)} | ${chalk.blue(`Client: ${clientId}`)}`,
+            `${formatTimestamp(timestamp)} ${formatResource(`Channel: ${channelName}`)} | Action: ${formatEventType(action)} | Client: ${formatClientId(clientId)}`,
           );
 
           if (
@@ -114,7 +115,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
             presenceMessage.data !== undefined
           ) {
             this.log(
-              `${chalk.dim("Data:")} ${JSON.stringify(presenceMessage.data, null, 2)}`,
+              `${formatLabel("Data")} ${JSON.stringify(presenceMessage.data, null, 2)}`,
             );
           }
 
@@ -124,11 +125,11 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          success(
-            `Subscribed to presence on channel: ${resource(channelName)}.`,
+          formatSuccess(
+            `Subscribed to presence on channel: ${formatResource(channelName)}.`,
           ),
         );
-        this.log(listening("Listening for presence events."));
+        this.log(formatListening("Listening for presence events."));
       }
 
       this.logCliEvent(

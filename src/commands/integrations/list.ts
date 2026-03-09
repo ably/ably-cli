@@ -1,8 +1,7 @@
 import { Flags } from "@oclif/core";
-import chalk from "chalk";
-
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
+import { formatHeading } from "../../utils/output.js";
 
 export default class IntegrationsListCommand extends ControlBaseCommand {
   static description = "List all integrations";
@@ -71,7 +70,7 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
         this.log(`Found ${integrations.length} integrations:\n`);
 
         for (const integration of integrations) {
-          this.log(chalk.bold(`Integration ID: ${integration.id}`));
+          this.log(formatHeading(`Integration ID: ${integration.id}`));
           this.log(`  App ID: ${integration.appId}`);
           this.log(`  Type: ${integration.ruleType}`);
           this.log(`  Request Mode: ${integration.requestMode}`);

@@ -4,7 +4,10 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
-import { progress, success as successMsg } from "../../utils/output.js";
+import {
+  formatProgress,
+  formatSuccess as successMsg,
+} from "../../utils/output.js";
 
 export default class ConnectionsTest extends AblyBaseCommand {
   static override description = "Test connection to Ably";
@@ -257,7 +260,9 @@ export default class ConnectionsTest extends AblyBaseCommand {
       `Testing ${config.displayName} connection...`,
     );
     if (!this.shouldOutputJson(flags)) {
-      this.log(progress(`Testing ${config.displayName} connection to Ably`));
+      this.log(
+        formatProgress(`Testing ${config.displayName} connection to Ably`),
+      );
     }
 
     let client: Ably.Realtime | null = null;
