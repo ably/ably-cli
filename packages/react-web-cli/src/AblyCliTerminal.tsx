@@ -346,6 +346,16 @@ const AblyCliTerminalInner = (
         debugLog(
           "[AblyCLITerminal] terminateSession called - closing with code 4001",
         );
+        if (resumeOnReload && globalThis.window !== undefined) {
+          const urlDomain = new URL(websocketUrl).host;
+          globalThis.sessionStorage.removeItem(
+            `ably.cli.sessionId.${urlDomain}`,
+          );
+          globalThis.sessionStorage.removeItem(
+            `ably.cli.credentialHash.${urlDomain}`,
+          );
+          setSessionId(null);
+        }
         if (
           socketReference.current &&
           socketReference.current.readyState < WebSocket.CLOSING
@@ -366,6 +376,8 @@ const AblyCliTerminalInner = (
       handleCloseSplit,
       isSplit,
       splitPosition,
+      resumeOnReload,
+      websocketUrl,
     ],
   );
 
@@ -2422,7 +2434,7 @@ const AblyCliTerminalInner = (
       grSetMaxAttempts(maxReconnectAttempts);
     }
 
-    grResetState();
+    grResetState({ resetCancellation: true });
     clearPtyBuffer();
     connectWebSocket();
   }, [

@@ -30,17 +30,16 @@ export function getBackoffDelay(attempt: number): number {
 /**
  * Reset the reconnection state
  */
-export function resetState(): void {
+export function resetState(options?: { resetCancellation?: boolean }): void {
   console.log(
-    `[GlobalReconnect] resetState called. Current attempts (before potential reset): ${attempts}, isCancelled: ${isCancelled}`,
+    `[GlobalReconnect] resetState called. Current attempts (before potential reset): ${attempts}, isCancelled: ${isCancelled}, resetCancellation: ${Boolean(options?.resetCancellation)}`,
   );
   // ATTEMPTS ARE NO LONGER RESET HERE. They should be reset by a successful connection
   // or an explicit action to start a new connection sequence like cancelReconnect.
   // attempts = 0;
 
-  // Only clear timers if fully cancelling. If just a transient reset before a new schedule,
-  // scheduleReconnect will handle its own timer. isCancelled drives this.
-  if (isCancelled) {
+  // Clear timers when cancelled, or when explicitly resetting cancellation for a fresh connection sequence.
+  if (isCancelled || options?.resetCancellation) {
     if (countdownTimer) {
       console.log(
         "[GlobalReconnect] resetState: Clearing countdownTimer because isCancelled=true",
@@ -57,7 +56,11 @@ export function resetState(): void {
     }
   }
   remainingTimeMs = 0;
-  // isCancelled is NOT reset here. It's reset by successfulConnectionReset or explicitly by scheduleReconnect if not at max attempts.
+  // isCancelled is NOT reset by default. It's reset by successfulConnectionReset,
+  // explicitly by scheduleReconnect if not at max attempts, or via resetCancellation.
+  if (options?.resetCancellation) {
+    isCancelled = false;
+  }
 }
 
 /**
