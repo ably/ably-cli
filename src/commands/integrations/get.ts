@@ -2,6 +2,7 @@ import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { errorMessage } from "../../utils/errors.js";
 
 export default class IntegrationsGetCommand extends ControlBaseCommand {
   static args = {
@@ -34,19 +35,12 @@ export default class IntegrationsGetCommand extends ControlBaseCommand {
     // Display authentication information
     this.showAuthInfoIfNeeded(flags);
 
+    const appId = await this.requireAppId(flags);
+    if (!appId) return;
+
     const controlApi = this.createControlApi(flags);
 
     try {
-      // Get app ID from flags or config
-      const appId = await this.resolveAppId(flags);
-
-      if (!appId) {
-        this.error(
-          'No app specified. Use --app flag or select an app with "ably apps switch"',
-        );
-        return;
-      }
-
       const rule = await controlApi.getRule(appId, args.ruleId);
 
       if (this.shouldOutputJson(flags)) {
@@ -72,9 +66,7 @@ export default class IntegrationsGetCommand extends ControlBaseCommand {
         this.log(`Updated: ${this.formatDate(rule.modified)}`);
       }
     } catch (error) {
-      this.error(
-        `Error getting integration rule: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.error(`Error getting integration rule: ${errorMessage(error)}`);
     }
   }
 }

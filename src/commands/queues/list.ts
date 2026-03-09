@@ -2,6 +2,7 @@ import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { errorMessage } from "../../utils/errors.js";
 
 interface QueueStats {
   acknowledgementRate: null | number;
@@ -62,17 +63,12 @@ export default class QueuesListCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(QueuesListCommand);
 
+    const appId = await this.requireAppId(flags);
+    if (!appId) return;
+
     const controlApi = this.createControlApi(flags);
-    const appId = await this.resolveAppId(flags);
 
     try {
-      if (!appId) {
-        this.error(
-          'No app specified. Use --app flag or select an app with "ably apps switch"',
-        );
-        return;
-      }
-
       const queues = await controlApi.listQueues(appId);
 
       if (this.shouldOutputJson(flags)) {
@@ -164,7 +160,7 @@ export default class QueuesListCommand extends ControlBaseCommand {
         this.jsonError(
           {
             appId,
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             status: "error",
             success: false,
           },
@@ -172,9 +168,7 @@ export default class QueuesListCommand extends ControlBaseCommand {
         );
         return;
       } else {
-        this.error(
-          `Error listing queues: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Error listing queues: ${errorMessage(error)}`);
       }
     }
   }

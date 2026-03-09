@@ -2,89 +2,153 @@
 
 This document outlines the directory structure of the Ably CLI project.
 
-> **Note:** The terminal server functionality has been moved to a separate repository (`cli-terminal-server`). For information about the server architecture, please refer to the [cli-terminal-server repository](https://github.com/ably/cli-terminal-server).
+> **Note:** The terminal server has been moved to a separate repository ([cli-terminal-server](https://github.com/ably/cli-terminal-server)). The `server/` directory contains only a `REMOVED.md` tombstone.
 
+```text
 /
-├── assets/                 # Static assets like images.
-│   └── cli-screenshot.png  # Screenshot of the CLI.
-├── bin/                    # Executable scripts for running the CLI.
-│   ├── dev.cmd             # Development run script (Windows).
-│   ├── development.js      # Development run script (Unix).
-│   ├── run.cmd             # Production run script (Windows).
-│   └── run.js              # Production run script (Unix).
-├── docs/                   # Project documentation.
-│   ├── Project-Structure.md  # This file, outlining the project structure.
-│   └── Testing.md          # Testing strategy and policy.
-├── examples/               # Example usage of the CLI or related components.
-│   └── web-cli/            # Example implementation of the web-based CLI.
-├── packages/               # Internal packages used by the project.
-│   └── react-web-cli/      # React component for the web-based CLI.
-├── scripts/                # Utility scripts for development and deployment.
-│   ├── postinstall-welcome.ts # Post-installation welcome message.
-│   └── pre-push-validation.sh # Pre-push validation checks.
-├── src/                    # Source code for the CLI.
-│   ├── base-command.ts     # Base class for all CLI commands, containing common logic.
-│   ├── chat-base-command.ts # Base class specific to Ably Chat commands.
-│   ├── commands/           # oclif commands implementation.
-│   │   ├── accounts/       # Commands related to Ably account management.
-│   │   ├── apps/           # Commands related to Ably app management.
-│   │   ├── auth/           # Commands related to authentication (keys, tokens).
-│   │   ├── bench/          # Commands for benchmarking Ably features.
-│   │   ├── channel-rule/   # Commands for managing channel rules (namespaces).
-│   │   ├── channels/       # Commands for interacting with Ably Pub/Sub channels.
-│   │   ├── config.ts       # Command to open the CLI configuration file.
-│   │   ├── connections/    # Commands related to client connections.
-│   │   ├── help/           # Commands for getting help (AI agent, contact).
-│   │   ├── integrations/   # Commands for managing Ably integrations (rules).
-│   │   ├── login.ts        # Alias command for `accounts login`.
-│   │   ├── logs/           # Commands for subscribing to various log streams.
-│   │   ├── queues/         # Commands for managing Ably Queues.
-│   │   ├── rooms/          # Commands for interacting with Ably Chat rooms.
-│   │   └── spaces/         # Commands for interacting with Ably Spaces.
-│   ├── control-base-command.ts # Base class for commands interacting with the Control API.
-│   ├── help.ts             # Custom help class implementation.
-│   ├── hooks/              # oclif lifecycle hooks.
-│   │   ├── command_not_found/ # Hook for handling unknown commands.
-│   │   └── init/           # Hook executed at CLI initialization.
-│   ├── index.ts            # Main entry point for the CLI source.
-│   ├── services/           # Core services used across commands.
-│   │   ├── config-manager.ts # Service for managing CLI configuration.
-│   │   ├── control-api.ts  # Service for interacting with the Ably Control API.
-│   │   ├── interactive-helper.ts # Helper for interactive CLI prompts.
-│   │   └── stats-display.ts  # Service for displaying stats information.
-│   ├── spaces-base-command.ts # Base class specific to Ably Spaces commands.
-│   ├── types/              # TypeScript type definitions.
-│   │   └── cli.ts          # General CLI type definitions.
-│   └── utils/              # Utility functions.
-│       ├── json-formatter.ts # Utility for formatting JSON output.
-│       └── logo.ts         # Utility for displaying the Ably logo ASCII art.
-├── test/                   # Automated tests.
-│   ├── commands/           # Tests for specific CLI commands.
-│   ├── e2e/                # End-to-end tests that run CLI commands in real environment.
-│   │   └── core/           # Core e2e tests for basic CLI functionality.
-│   ├── hooks/              # Tests for oclif hooks.
-│   │   └── command_not_found/ # Tests for the command_not_found hook.
-│   ├── integration/        # Integration tests for testing command flows.
-│   │   └── core/           # Core integration tests.
-│   ├── unit/               # Unit tests for internal components.
-│   │   ├── base/           # Tests for base command classes.
-│   │   └── services/       # Tests for service components.
-│   └── tsconfig.json       # TypeScript configuration specific to tests.
-├── .cursor/                # Cursor AI configuration and rules.
-│   └── rules/
-│       ├── project.mdc     # Rules specific to the overall project context.
-│       └── ably.mdc        # Rules specific to Ably concepts and APIs.
-│       └── development.mdc # Rules specific to development practices (Node, TS, oclif).
-├── .env.example            # Example environment variables file.
-├── .eslintignore           # Files/patterns ignored by ESLint.
-├── .eslintrc.js            # ESLint configuration file.
-├── .gitignore              # Files/patterns ignored by Git.
-├── .prettierrc.json        # Prettier code formatter configuration.
-├── CHANGELOG.md            # Log of changes across versions.
-├── README.md               # Main project README file.
-├── oclif.manifest.json     # oclif manifest file, generated during build.
-├── package.json            # Node.js project manifest (dependencies, scripts).
-├── pnpm-lock.yaml          # pnpm lock file for deterministic installs.
-├── pnpm-workspace.yaml     # Defines the pnpm workspace configuration.
-└── tsconfig.json           # Main TypeScript configuration file.
-└── vitest.config.ts        # Config for vitest
+├── assets/                     # Static assets (e.g. CLI screenshot)
+├── bin/                        # Executable scripts
+│   ├── ably-interactive        # Bash wrapper for interactive mode (restarts on Ctrl+C)
+│   ├── ably-interactive.ps1    # PowerShell equivalent for Windows
+│   ├── dev.cmd                 # Development run script (Windows)
+│   ├── development.js          # Development run script (Unix)
+│   ├── run.cmd                 # Production run script (Windows)
+│   └── run.js                  # Production run script (Unix)
+├── docs/                       # Project documentation
+├── examples/
+│   └── web-cli/                # Example web-based CLI app (uses @ably/react-web-cli)
+├── packages/
+│   └── react-web-cli/          # @ably/react-web-cli React component (published to npm)
+├── scripts/
+│   ├── postinstall-welcome.ts  # Post-installation welcome message
+│   └── pre-push-validation.sh  # Pre-push validation checks
+├── server/
+│   └── REMOVED.md              # Tombstone — server moved to cli-terminal-server repo
+├── src/                        # CLI source code
+│   ├── base-command.ts         # Base class for all CLI commands
+│   ├── base-topic-command.ts   # Base class for topic (group) commands
+│   ├── chat-base-command.ts    # Base class for Ably Chat commands
+│   ├── control-base-command.ts # Base class for Control API commands
+│   ├── interactive-base-command.ts # Base class for interactive/streaming commands
+│   ├── spaces-base-command.ts  # Base class for Ably Spaces commands
+│   ├── stats-base-command.ts   # Base class for stats commands (account/app)
+│   ├── flags.ts                # Composable flag sets (see CLAUDE.md for details)
+│   ├── help.ts                 # Custom help class
+│   ├── index.ts                # Main entry point
+│   ├── commands/               # CLI commands (oclif)
+│   │   ├── accounts/           # Account management (login, logout, list, switch, current)
+│   │   ├── apps/               # App management (create, list, delete, switch, current, etc.)
+│   │   ├── auth/               # Authentication (keys, tokens)
+│   │   ├── bench/              # Benchmarking (publisher, subscriber)
+│   │   ├── channel-rule/       # Channel rules / namespaces
+│   │   ├── channels/           # Pub/Sub channels (publish, subscribe, presence, history, etc.)
+│   │   ├── config/             # CLI config management (show, path)
+│   │   ├── connections/        # Client connections (test)
+│   │   ├── integrations/       # Integration rules
+│   │   ├── logs/               # Log streams (subscribe, history, push subscribe)
+│   │   ├── queues/             # Queue management
+│   │   ├── rooms/              # Ably Chat rooms (send, subscribe, presence, reactions, typing, etc.)
+│   │   ├── spaces/             # Ably Spaces (members, cursors, locations, locks)
+│   │   ├── stats/              # Usage statistics
+│   │   ├── support/            # Support contact info
+│   │   ├── test/               # Diagnostic test commands
+│   │   ├── help.ts             # Help command
+│   │   ├── interactive.ts      # Interactive REPL mode
+│   │   ├── login.ts            # Alias for `accounts login`
+│   │   ├── status.ts           # Ably service status
+│   │   └── version.ts          # CLI version info
+│   ├── hooks/                  # oclif lifecycle hooks
+│   │   ├── command_not_found/  # Fuzzy-match suggestions for unknown commands
+│   │   └── init/               # CLI initialization
+│   ├── services/               # Business logic
+│   │   ├── config-manager.ts   # CLI configuration (accounts, apps, API keys)
+│   │   ├── control-api.ts      # Ably Control API HTTP client
+│   │   ├── history-manager.ts  # Interactive mode command history persistence
+│   │   ├── interactive-helper.ts # Interactive prompts (confirm, select account/app)
+│   │   └── stats-display.ts    # Stats formatting and display
+│   ├── types/
+│   │   └── cli.ts              # General CLI type definitions
+│   └── utils/
+│       ├── channel-rule-display.ts # Channel rule human-readable display
+│       ├── chat-constants.ts       # Shared Chat SDK constants (REACTION_TYPE_MAP)
+│       ├── errors.ts               # Error utilities (errorMessage)
+│       ├── interrupt-feedback.ts   # Ctrl+C feedback messages
+│       ├── json-formatter.ts       # JSON output formatting (formatJson, formatMessageData)
+│       ├── key-display.ts          # Key capability formatting
+│       ├── key-parsing.ts          # Key identifier parsing (APP_ID.KEY_ID)
+│       ├── logo.ts                 # ASCII art logo with gradient
+│       ├── long-running.ts         # Long-running command helpers (duration, cleanup)
+│       ├── open-url.ts             # Cross-platform URL opener
+│       ├── history.ts               # History query parameter builder
+│       ├── message.ts              # Message interpolation ({{.Count}}, {{.Timestamp}})
+│       ├── output.ts               # Output helpers (progress, success, resource, etc.)
+│       ├── prompt-confirmation.ts  # Y/N confirmation prompts
+│       ├── readline-helper.ts      # Readline utilities for interactive mode
+│       ├── sigint-exit.ts          # SIGINT/Ctrl+C handling (exit code 130)
+│       ├── string-distance.ts      # Levenshtein distance for fuzzy matching
+│       ├── terminal-diagnostics.ts # Terminal capability detection
+│       ├── test-mode.ts            # isTestMode() helper
+│       ├── version.ts              # Version string utilities
+│       └── web-mode.ts             # Web CLI mode detection
+├── test/                       # Automated tests
+│   ├── setup.ts                # Global test setup (runs in Vitest context)
+│   ├── root-hooks.ts           # Mocha-compatible root hooks for E2E
+│   ├── tsconfig.json           # Test-specific TypeScript config
+│   ├── helpers/                # Shared test utilities
+│   │   ├── cli-runner.ts           # CliRunner class for E2E process management
+│   │   ├── cli-runner-store.ts     # Per-test CLI runner tracking
+│   │   ├── command-helpers.ts      # High-level E2E helpers (startSubscribeCommand, etc.)
+│   │   ├── e2e-test-helper.ts      # E2E test setup and teardown
+│   │   ├── mock-ably-chat.ts       # Mock Ably Chat SDK
+│   │   ├── mock-ably-realtime.ts   # Mock Ably Realtime SDK
+│   │   ├── mock-ably-rest.ts       # Mock Ably REST SDK
+│   │   ├── mock-ably-spaces.ts     # Mock Ably Spaces SDK
+│   │   ├── mock-config-manager.ts  # MockConfigManager (provides test auth)
+│   │   ├── mock-control-api-keys.ts # Mock Control API key responses
+│   │   └── ably-event-emitter.ts   # Event emitter helper for mock SDKs
+│   ├── unit/                   # Fast, mocked tests
+│   │   ├── setup.ts            # Unit test setup
+│   │   ├── base/               # Base command class tests
+│   │   ├── base-command/       # AblyBaseCommand tests
+│   │   ├── commands/           # Command-level unit tests (mirrors src/commands/)
+│   │   ├── core/               # Core CLI functionality tests
+│   │   ├── help/               # Help system tests
+│   │   ├── hooks/              # Hook tests
+│   │   ├── services/           # Service tests
+│   │   └── utils/              # Utility tests
+│   ├── integration/            # Multi-component tests (mocked external services)
+│   │   ├── commands/           # Command flow integration tests
+│   │   └── interactive-mode.test.ts # Interactive REPL integration tests
+│   ├── e2e/                    # End-to-end tests against real Ably
+│   │   ├── auth/               # Auth E2E tests
+│   │   ├── bench/              # Benchmark E2E tests
+│   │   ├── channels/           # Channel E2E tests
+│   │   ├── connections/        # Connection E2E tests
+│   │   ├── control/            # Control API E2E tests
+│   │   ├── core/               # Core CLI E2E tests
+│   │   ├── interactive/        # Interactive mode E2E tests
+│   │   ├── rooms/              # Chat rooms E2E tests
+│   │   ├── spaces/             # Spaces E2E tests
+│   │   ├── stats/              # Stats E2E tests
+│   │   └── web-cli/            # Playwright browser tests for Web CLI
+│   └── manual/                 # Manual test scripts
+├── .claude/                    # Claude Code AI configuration
+├── .github/                    # GitHub Actions workflows and config
+├── .env.example                # Example environment variables
+├── .gitignore
+├── .npmrc
+├── .prettierrc.json            # Prettier config
+├── eslint.config.js            # ESLint v9 flat config
+├── tsconfig.json               # Main TypeScript config
+├── tsconfig.eslint.json        # TypeScript config for ESLint
+├── tsconfig.test.json          # TypeScript config for tests
+├── vitest.config.ts            # Vitest config
+├── pnpm-workspace.yaml         # pnpm workspace config
+├── pnpm-lock.yaml
+├── package.json
+├── AGENTS.md                   # AI agent instructions
+├── CONTRIBUTING.md             # Contribution guidelines
+├── CHANGELOG.md
+├── LICENSE
+└── README.md
+```

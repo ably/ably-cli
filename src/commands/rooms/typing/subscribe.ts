@@ -1,11 +1,10 @@
-import { ChatClient, RoomStatus, RoomStatusChange } from "@ably/chat";
-import { Args, Flags } from "@oclif/core";
+import { ChatClient } from "@ably/chat";
+import { Args } from "@oclif/core";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { clientIdFlag, productApiFlags } from "../../../flags.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
-import { success, listening, resource } from "../../../utils/output.js";
+import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
+import { resource } from "../../../utils/output.js";
 
 export default class TypingSubscribe extends ChatBaseCommand {
   static override args = {
@@ -28,11 +27,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
   static override flags = {
     ...productApiFlags,
     ...clientIdFlag,
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
   };
 
   private chatClient: ChatClient | null = null;
@@ -71,49 +66,11 @@ export default class TypingSubscribe extends ChatBaseCommand {
       );
 
       // Subscribe to room status changes
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribingToStatus",
-        "Subscribing to room status changes",
-      );
-      room.onStatusChange((statusChange: RoomStatusChange) => {
-        let reason: Error | null | string | undefined;
-        if (statusChange.current === RoomStatus.Failed) {
-          reason = room.error; // Get reason from room.error on failure
-        }
-
-        const reasonMsg = reason instanceof Error ? reason.message : reason;
-        this.logCliEvent(
-          flags,
-          "room",
-          `status-${statusChange.current}`,
-          `Room status changed to ${statusChange.current}`,
-          { reason: reasonMsg },
-        );
-
-        if (statusChange.current === RoomStatus.Attached) {
-          if (!this.shouldOutputJson(flags)) {
-            this.log(
-              success(`Subscribed to typing in room: ${resource(roomName)}.`),
-            );
-            this.log(listening("Listening for typing indicators."));
-          }
-        } else if (
-          statusChange.current === RoomStatus.Failed &&
-          !this.shouldOutputJson(flags)
-        ) {
-          this.error(
-            `Failed to attach to room: ${reasonMsg || "Unknown error"}`,
-          );
-        }
+      this.setupRoomStatusHandler(room, flags, {
+        roomName,
+        successMessage: `Subscribed to typing in room: ${resource(roomName)}.`,
+        listeningMessage: "Listening for typing indicators.",
       });
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribedToStatus",
-        "Subscribed to room status changes",
-      );
 
       // Set up typing indicators
       this.logCliEvent(
@@ -196,25 +153,9 @@ export default class TypingSubscribe extends ChatBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      await waitUntilInterruptedOrTimeout(flags.duration);
+      await this.waitAndTrackCleanup(flags, "typing", flags.duration);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(
-        flags,
-        "typing",
-        "fatalError",
-        `Failed to subscribe to typing indicators: ${errorMsg}`,
-        { error: errorMsg, room: args.room },
-      );
-
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          { error: errorMsg, room: args.room, success: false },
-          flags,
-        );
-      } else {
-        this.error(`Failed to subscribe to typing indicators: ${errorMsg}`);
-      }
+      this.handleCommandError(error, flags, "typing", { room: args.room });
     }
   }
 }

@@ -30,7 +30,7 @@ describe("channel-rule:delete command (alias)", () => {
         .reply(200, {});
 
       const { stdout } = await runCommand(
-        ["channel-rule:delete", mockRuleId, "--app", appId, "--force"],
+        ["channel-rule:delete", mockRuleId, "--force"],
         import.meta.url,
       );
 
@@ -38,9 +38,8 @@ describe("channel-rule:delete command (alias)", () => {
     });
 
     it("should require nameOrId argument", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
       const { error } = await runCommand(
-        ["channel-rule:delete", "--app", appId, "--force"],
+        ["channel-rule:delete", "--force"],
         import.meta.url,
       );
 

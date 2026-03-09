@@ -1,8 +1,10 @@
 import { Args, Flags } from "@oclif/core";
-import { ChatClient, ConnectionStatusChange, JsonObject } from "@ably/chat";
+import { ChatClient, JsonObject } from "@ably/chat";
 
+import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { interpolateMessage } from "../../../utils/message.js";
 import { progress, success, resource } from "../../../utils/output.js";
 
 // Define interfaces for the message send command
@@ -89,10 +91,6 @@ export default class MessagesSend extends ChatBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesSend);
 
-    if (!args.room) {
-      throw new Error("Room ID is required");
-    }
-
     try {
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);
@@ -102,18 +100,8 @@ export default class MessagesSend extends ChatBaseCommand {
         return;
       }
 
-      // Add listeners for connection state changes
-      this.chatClient.connection.onStatusChange(
-        (stateChange: ConnectionStatusChange) => {
-          this.logCliEvent(
-            flags,
-            "connection",
-            stateChange.current,
-            `Realtime connection state changed to ${stateChange.current}`,
-            { error: stateChange.error },
-          );
-        },
-      );
+      // Set up connection state logging
+      this.setupConnectionStateLogging(this.chatClient.realtime, flags);
 
       // Parse metadata if provided
       let metadata;
@@ -128,7 +116,7 @@ export default class MessagesSend extends ChatBaseCommand {
             { metadata },
           );
         } catch (error) {
-          const errorMsg = `Invalid metadata JSON: ${error instanceof Error ? error.message : String(error)}`;
+          const errorMsg = `Invalid metadata JSON: ${errorMessage(error)}`;
           this.logCliEvent(flags, "message", "metadataParseError", errorMsg, {
             error: errorMsg,
           });
@@ -230,7 +218,7 @@ export default class MessagesSend extends ChatBaseCommand {
 
         for (let i = 0; i < count; i++) {
           // Apply interpolation to the message
-          const interpolatedText = this.interpolateMessage(args.text, i + 1);
+          const interpolatedText = interpolateMessage(args.text, i + 1);
           const messageToSend: MessageToSend = {
             text: interpolatedText,
             ...(metadata ? { metadata } : {}),
@@ -272,8 +260,7 @@ export default class MessagesSend extends ChatBaseCommand {
             })
             .catch((error: unknown) => {
               errorCount++;
-              const errorMsg =
-                error instanceof Error ? error.message : String(error);
+              const errorMsg = errorMessage(error);
               const result: MessageResult = {
                 error: errorMsg,
                 index: i + 1,
@@ -360,7 +347,7 @@ export default class MessagesSend extends ChatBaseCommand {
         // Single message
         try {
           // Apply interpolation to the message
-          const interpolatedText = this.interpolateMessage(args.text, 1);
+          const interpolatedText = interpolateMessage(args.text, 1);
           const messageToSend: MessageToSend = {
             text: interpolatedText,
             ...(metadata ? { metadata } : {}),
@@ -396,8 +383,7 @@ export default class MessagesSend extends ChatBaseCommand {
             }
           }
         } catch (error) {
-          const errorMsg =
-            error instanceof Error ? error.message : String(error);
+          const errorMsg = errorMessage(error);
           const result: MessageResult = {
             error: errorMsg,
             room: args.room,
@@ -419,29 +405,7 @@ export default class MessagesSend extends ChatBaseCommand {
         }
       }
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(
-        flags,
-        "message",
-        "fatalError",
-        `Failed to send message: ${errorMsg}`,
-        { error: errorMsg },
-      );
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, success: false }, flags);
-      } else {
-        this.error(`Failed to send message: ${errorMsg}`);
-      }
+      this.handleCommandError(error, flags, "message");
     }
-  }
-
-  private interpolateMessage(message: string, count: number): string {
-    // Replace {{.Count}} with the current count
-    let result = message.replaceAll("{{.Count}}", count.toString());
-
-    // Replace {{.Timestamp}} with the current timestamp
-    result = result.replaceAll("{{.Timestamp}}", Date.now().toString());
-
-    return result;
   }
 }

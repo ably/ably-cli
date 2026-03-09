@@ -1,6 +1,8 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { errorMessage } from "../../../utils/errors.js";
+import { formatCapabilities } from "../../../utils/key-display.js";
 
 export default class KeysGetCommand extends ControlBaseCommand {
   static args = {
@@ -94,26 +96,10 @@ export default class KeysGetCommand extends ControlBaseCommand {
         this.log(`Key Name: ${keyName}`);
         this.log(`Key Label: ${key.name || "Unnamed key"}`);
 
-        // Format the capabilities
-        if (key.capability) {
-          const capEntries = Object.entries(key.capability);
-          if (capEntries.length === 0) {
-            this.log(`Capabilities: None`);
-          } else if (capEntries.length === 1) {
-            const [scope, privileges] = capEntries[0];
-            this.log(
-              `Capabilities: ${scope} → ${Array.isArray(privileges) ? privileges.join(", ") : privileges}`,
-            );
-          } else {
-            this.log(`Capabilities:`);
-            for (const [scope, privileges] of capEntries) {
-              this.log(
-                `  • ${scope} → ${Array.isArray(privileges) ? privileges.join(", ") : privileges}`,
-              );
-            }
-          }
-        } else {
-          this.log(`Capabilities: None`);
+        for (const line of formatCapabilities(
+          key.capability as Record<string, string[] | string>,
+        )) {
+          this.log(line);
         }
 
         this.log(`Created: ${this.formatDate(key.created)}`);
@@ -125,16 +111,14 @@ export default class KeysGetCommand extends ControlBaseCommand {
         this.jsonError(
           {
             appId,
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             keyIdentifier,
             success: false,
           },
           flags,
         );
       } else {
-        this.error(
-          `Error getting key details: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Error getting key details: ${errorMessage(error)}`);
       }
     }
   }

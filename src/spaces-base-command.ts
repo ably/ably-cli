@@ -3,6 +3,7 @@ import Spaces, { type Space, type SpaceOptions } from "@ably/spaces";
 import { AblyBaseCommand } from "./base-command.js";
 import { productApiFlags } from "./flags.js";
 import { BaseFlags } from "./types/cli.js";
+import { errorMessage } from "./utils/errors.js";
 import isTestMode from "./utils/test-mode.js";
 
 // Dynamic import to handle module structure issues
@@ -134,6 +135,217 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
       space: this.space!,
       spacesClient: this.spaces!,
     };
+  }
+
+  protected async waitForConnection(flags: BaseFlags): Promise<void> {
+    this.logCliEvent(
+      flags,
+      "connection",
+      "waiting",
+      "Waiting for connection to establish...",
+    );
+    const connection = this.realtimeClient!.connection;
+
+    if (connection.state === "connected") {
+      this.logCliEvent(
+        flags,
+        "connection",
+        "connected",
+        "Realtime connection established.",
+      );
+      return;
+    }
+
+    if (
+      connection.state === "failed" ||
+      connection.state === "closed" ||
+      connection.state === "suspended"
+    ) {
+      const errorMsg = `Connection failed with state: ${connection.state}`;
+      this.logCliEvent(flags, "connection", "failed", errorMsg, {
+        state: connection.state,
+      });
+      throw new Error(errorMsg);
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error("Timeout waiting for connection to establish"));
+      }, 10000);
+
+      const cleanup = () => {
+        clearTimeout(timeout);
+        connection.off("connected", onConnected);
+        connection.off("failed", onFailed);
+        connection.off("closed", onClosed);
+        connection.off("suspended", onSuspended);
+      };
+
+      const onConnected = () => {
+        cleanup();
+        this.logCliEvent(
+          flags,
+          "connection",
+          "connected",
+          "Realtime connection established.",
+        );
+        resolve();
+      };
+
+      const onFailed = (stateChange: Ably.ConnectionStateChange) => {
+        cleanup();
+        const errorMsg = `Connection failed: ${stateChange.reason?.message || "Unknown error"}`;
+        this.logCliEvent(flags, "connection", "failed", errorMsg, {
+          state: "failed",
+        });
+        reject(new Error(errorMsg));
+      };
+
+      const onClosed = () => {
+        cleanup();
+        reject(new Error("Connection closed unexpectedly"));
+      };
+
+      const onSuspended = () => {
+        cleanup();
+        reject(new Error("Connection suspended"));
+      };
+
+      connection.on("connected", onConnected);
+      connection.on("failed", onFailed);
+      connection.on("closed", onClosed);
+      connection.on("suspended", onSuspended);
+    });
+  }
+
+  protected async initializeSpace(
+    flags: BaseFlags,
+    spaceName: string,
+    options: { enterSpace?: boolean; setupConnectionLogging?: boolean } = {},
+  ): Promise<void> {
+    const { enterSpace = false, setupConnectionLogging = true } = options;
+
+    const setupResult = await this.setupSpacesClient(flags, spaceName);
+    this.realtimeClient = setupResult.realtimeClient;
+    this.space = setupResult.space;
+    if (!this.realtimeClient || !this.space) {
+      this.error("Failed to initialize clients or space");
+    }
+
+    if (setupConnectionLogging) {
+      this.setupConnectionStateLogging(this.realtimeClient!, flags, {
+        includeUserFriendlyMessages: true,
+      });
+    }
+
+    await this.waitForConnection(flags);
+
+    // Store flags for use in cleanup/finally blocks (e.g. SpacesBaseCommand.finally())
+    this.parsedFlags = flags;
+
+    if (enterSpace) {
+      this.logCliEvent(flags, "spaces", "entering", "Entering space...");
+      await this.space!.enter();
+      this.logCliEvent(flags, "spaces", "entered", "Entered space", {
+        clientId: this.realtimeClient!.auth.clientId,
+      });
+    }
+  }
+
+  protected async waitForCursorsChannelAttachment(
+    flags: BaseFlags,
+  ): Promise<void> {
+    this.logCliEvent(
+      flags,
+      "cursor",
+      "waitingForChannelAttachment",
+      "Waiting for cursors channel to attach before subscribing",
+    );
+
+    // Trigger channel creation by accessing the cursors API
+    try {
+      await this.space!.cursors.getAll();
+      this.logCliEvent(
+        flags,
+        "cursor",
+        "channelCreated",
+        "Cursors channel created via getAll()",
+      );
+    } catch (error) {
+      this.logCliEvent(
+        flags,
+        "cursor",
+        "channelCreationAttempted",
+        "Attempted to create cursors channel",
+        {
+          error: errorMessage(error),
+        },
+      );
+    }
+
+    // Wait for the channel to be attached
+    if (this.space!.cursors.channel) {
+      await new Promise<void>((resolve, reject) => {
+        const channel = this.space!.cursors.channel;
+        if (!channel) {
+          reject(new Error("Cursors channel is not available"));
+          return;
+        }
+        if (channel.state === "attached") {
+          this.logCliEvent(
+            flags,
+            "cursor",
+            "channelAlreadyAttached",
+            "Cursors channel already attached",
+          );
+          resolve();
+          return;
+        }
+        const timeout = setTimeout(() => {
+          channel.off("attached", onAttached);
+          channel.off("failed", onFailed);
+          reject(new Error("Timeout waiting for cursors channel to attach"));
+        }, 10000);
+        const onAttached = () => {
+          clearTimeout(timeout);
+          channel.off("attached", onAttached);
+          channel.off("failed", onFailed);
+          this.logCliEvent(
+            flags,
+            "cursor",
+            "channelAttached",
+            "Cursors channel attached successfully",
+          );
+          resolve();
+        };
+        const onFailed = (stateChange: Ably.ChannelStateChange) => {
+          clearTimeout(timeout);
+          channel.off("attached", onAttached);
+          channel.off("failed", onFailed);
+          reject(
+            new Error(
+              `Cursors channel failed to attach: ${stateChange.reason?.message || "Unknown error"}`,
+            ),
+          );
+        };
+        channel.on("attached", onAttached);
+        channel.on("failed", onFailed);
+        this.logCliEvent(
+          flags,
+          "cursor",
+          "waitingForAttachment",
+          `Cursors channel state: ${channel.state}, waiting for attachment`,
+        );
+      });
+    } else {
+      this.logCliEvent(
+        flags,
+        "cursor",
+        "channelNotAvailable",
+        "Warning: cursors channel not available after creation attempt",
+      );
+    }
   }
 
   protected async createSpacesClient(

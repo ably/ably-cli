@@ -1,7 +1,8 @@
 import { Flags } from "@oclif/core";
-import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
+import { errorMessage } from "../../../utils/errors.js";
 import { success } from "../../../utils/output.js";
 
 export default class ChannelRulesCreateCommand extends ControlBaseCommand {
@@ -89,35 +90,12 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(ChannelRulesCreateCommand);
 
+    const appId = await this.requireAppId(flags);
+    if (!appId) return;
+
     const controlApi = this.createControlApi(flags);
 
-    let appId: string | undefined = flags.app;
-
     try {
-      if (!appId) {
-        appId = await this.resolveAppId(flags);
-      }
-
-      if (!appId) {
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            {
-              error:
-                'No app specified. Use --app flag or select an app with "ably apps switch"',
-              status: "error",
-              success: false,
-            },
-            flags,
-          );
-        } else {
-          this.error(
-            'No app specified. Use --app flag or select an app with "ably apps switch"',
-          );
-        }
-
-        return;
-      }
-
       const namespaceData = {
         authenticated: flags.authenticated,
         batchingEnabled: flags["batching-enabled"],
@@ -171,90 +149,25 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
       } else {
         this.log(success("Channel rule created."));
         this.log(`ID: ${createdNamespace.id}`);
-        this.log(
-          `Persisted: ${createdNamespace.persisted ? chalk.green("Yes") : "No"}`,
-        );
-        this.log(
-          `Push Enabled: ${createdNamespace.pushEnabled ? chalk.green("Yes") : "No"}`,
-        );
-
-        if (createdNamespace.authenticated !== undefined) {
-          this.log(
-            `Authenticated: ${createdNamespace.authenticated ? chalk.green("Yes") : "No"}`,
-          );
+        for (const line of formatChannelRuleDetails(createdNamespace, {
+          formatDate: (t) => this.formatDate(t),
+        })) {
+          this.log(line);
         }
-
-        if (createdNamespace.persistLast !== undefined) {
-          this.log(
-            `Persist Last: ${createdNamespace.persistLast ? chalk.green("Yes") : "No"}`,
-          );
-        }
-
-        if (createdNamespace.exposeTimeSerial !== undefined) {
-          this.log(
-            `Expose Time Serial: ${createdNamespace.exposeTimeSerial ? chalk.green("Yes") : "No"}`,
-          );
-        }
-
-        if (createdNamespace.populateChannelRegistry !== undefined) {
-          this.log(
-            `Populate Channel Registry: ${createdNamespace.populateChannelRegistry ? chalk.green("Yes") : "No"}`,
-          );
-        }
-
-        if (createdNamespace.batchingEnabled !== undefined) {
-          this.log(
-            `Batching Enabled: ${createdNamespace.batchingEnabled ? chalk.green("Yes") : "No"}`,
-          );
-        }
-
-        if (typeof createdNamespace.batchingInterval === "number") {
-          this.log(
-            `Batching Interval: ${chalk.green(createdNamespace.batchingInterval.toString())}`,
-          );
-        }
-
-        if (createdNamespace.conflationEnabled !== undefined) {
-          this.log(
-            `Conflation Enabled: ${createdNamespace.conflationEnabled ? chalk.green("Yes") : "No"}`,
-          );
-        }
-
-        if (typeof createdNamespace.conflationInterval === "number") {
-          this.log(
-            `Conflation Interval: ${chalk.green(createdNamespace.conflationInterval.toString())}`,
-          );
-        }
-
-        if (createdNamespace.conflationKey !== undefined) {
-          this.log(
-            `Conflation Key: ${chalk.green(createdNamespace.conflationKey)}`,
-          );
-        }
-
-        if (createdNamespace.tlsOnly !== undefined) {
-          this.log(
-            `TLS Only: ${createdNamespace.tlsOnly ? chalk.green("Yes") : "No"}`,
-          );
-        }
-
-        this.log(`Created: ${this.formatDate(createdNamespace.created)}`);
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
         this.jsonError(
           {
             appId,
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             status: "error",
             success: false,
           },
           flags,
         );
       } else {
-        this.error(
-          `Error creating channel rule: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Error creating channel rule: ${errorMessage(error)}`);
       }
     }
   }

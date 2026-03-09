@@ -1,6 +1,7 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { errorMessage } from "../../utils/errors.js";
 import { resource, success } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
@@ -37,19 +38,12 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(QueuesDeleteCommand);
 
+    const appId = await this.requireAppId(flags);
+    if (!appId) return;
+
     const controlApi = this.createControlApi(flags);
 
     try {
-      // Get app ID from flags or config
-      const appId = await this.resolveAppId(flags);
-
-      if (!appId) {
-        this.error(
-          'No app specified. Use --app flag or select an app with "ably apps switch"',
-        );
-        return;
-      }
-
       // Get all queues and find the one we want to delete by ID
       const queues = await controlApi.listQueues(appId);
       const queue = queues.find((q) => q.id === args.queueId);
@@ -115,7 +109,7 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
         );
       }
     } catch (error) {
-      const errorMsg = `Error deleting queue: ${error instanceof Error ? error.message : String(error)}`;
+      const errorMsg = `Error deleting queue: ${errorMessage(error)}`;
       if (this.shouldOutputJson(flags)) {
         this.jsonError({ error: errorMsg, success: false }, flags);
       } else {

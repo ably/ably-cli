@@ -72,7 +72,7 @@ describe("logs:connection-lifecycle:history command", () => {
 
       expect(stdout).toContain("Found");
       expect(stdout).toContain("1");
-      expect(stdout).toContain("connection lifecycle logs");
+      expect(stdout).toContain("connection lifecycle log");
       expect(stdout).toContain("connection.opened");
       expect(channel.history).toHaveBeenCalled();
     });

@@ -1,5 +1,6 @@
 import { Args, Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { errorMessage } from "../../utils/errors.js";
 import { success } from "../../utils/output.js";
 
 // Interface for rule update data structure (most fields optional)
@@ -66,19 +67,12 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(IntegrationsUpdateCommand);
 
+    const appId = await this.requireAppId(flags);
+    if (!appId) return;
+
     const controlApi = this.createControlApi(flags);
 
     try {
-      // Get app ID from flags or config
-      const appId = await this.resolveAppId(flags);
-
-      if (!appId) {
-        this.error(
-          'No app specified. Use --app flag or select an app with "ably apps switch"',
-        );
-        return;
-      }
-
       // Get current rule to preserve existing fields
       const existingRule = await controlApi.getRule(appId, args.ruleId);
 
@@ -139,9 +133,7 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
         );
       }
     } catch (error) {
-      this.error(
-        `Error updating integration rule: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.error(`Error updating integration rule: ${errorMessage(error)}`);
     }
   }
 }

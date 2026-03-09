@@ -1,6 +1,7 @@
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
+import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { progress, resource, success } from "../../../utils/output.js";
@@ -59,42 +60,19 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsGetAll);
-    this.parsedFlags = flags;
     const { space: spaceName } = args;
 
     try {
-      const setupResult = await this.setupSpacesClient(flags, spaceName);
-      this.realtimeClient = setupResult.realtimeClient;
-      this.space = setupResult.space;
-      if (!this.realtimeClient || !this.space) {
-        this.error("Failed to initialize clients or space");
-        return;
-      }
-
-      await new Promise<void>((resolve, reject) => {
-        const checkConnection = () => {
-          const { state } = this.realtimeClient!.connection;
-          if (state === "connected") {
-            resolve();
-          } else if (
-            state === "failed" ||
-            state === "closed" ||
-            state === "suspended"
-          ) {
-            reject(new Error(`Connection failed with state: ${state}`));
-          } else {
-            setTimeout(checkConnection, 100);
-          }
-        };
-
-        checkConnection();
+      await this.initializeSpace(flags, spaceName, {
+        enterSpace: false,
+        setupConnectionLogging: false,
       });
 
       if (!this.shouldOutputJson(flags)) {
         this.log(progress(`Connecting to space: ${resource(spaceName)}`));
       }
 
-      await this.space.enter();
+      await this.space!.enter();
 
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
@@ -143,8 +121,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
 
       let locations: LocationItem[] = [];
       try {
-        const { items: locationsFromSpace } =
-          await this.space.locations.getAll();
+        const locationsFromSpace = await this.space!.locations.getAll();
 
         if (locationsFromSpace && typeof locationsFromSpace === "object") {
           if (Array.isArray(locationsFromSpace)) {
@@ -268,7 +245,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
                 }
               } catch (error) {
                 this.log(
-                  `- ${chalk.red("Error displaying location item")}: ${error instanceof Error ? error.message : String(error)}`,
+                  `- ${chalk.red("Error displaying location item")}: ${errorMessage(error)}`,
                 );
               }
             } else {
@@ -284,7 +261,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
         if (this.shouldOutputJson(flags)) {
           this.jsonError(
             {
-              error: error instanceof Error ? error.message : String(error),
+              error: errorMessage(error),
               spaceName,
               status: "error",
               success: false,
@@ -292,23 +269,18 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
             flags,
           );
         } else {
-          this.error(
-            `Error: ${error instanceof Error ? error.message : String(error)}`,
-          );
+          this.error(`Error: ${errorMessage(error)}`);
         }
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : String(error || "Unknown error");
+      const errorMsg = errorMessage(error);
       if (this.shouldOutputJson(flags)) {
         this.jsonError(
-          { error: errorMessage, spaceName, status: "error", success: false },
+          { error: errorMsg, spaceName, status: "error", success: false },
           flags,
         );
       } else {
-        this.error(`Error: ${errorMessage}`);
+        this.error(errorMsg);
       }
     }
   }

@@ -2,15 +2,13 @@ import { Args, Flags } from "@oclif/core";
 import { ChatMessageEvent, ChatClient } from "@ably/chat"; // Import ChatClient and StatusSubscription
 import chalk from "chalk";
 
-import { productApiFlags, clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
   progress,
-  success,
-  listening,
   resource,
   formatTimestamp,
+  formatMessageTimestamp,
 } from "../../../utils/output.js";
 
 // Define message interface
@@ -19,17 +17,6 @@ interface ChatMessage {
   text: string;
   timestamp: number | Date; // Support both timestamp types
   metadata?: Record<string, unknown>;
-  [key: string]: unknown;
-}
-
-// Define status change interface
-interface StatusChange {
-  current: string;
-  reason?: {
-    message?: string;
-    code?: number;
-    [key: string]: unknown;
-  };
   [key: string]: unknown;
 }
 
@@ -62,11 +49,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       default: false,
       description: "Display message metadata if available",
     }),
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
     "sequence-numbers": Flags.boolean({
       default: false,
       description: "Include sequence numbers in output",
@@ -77,7 +60,6 @@ export default class MessagesSubscribe extends ChatBaseCommand {
 
   private chatClient: ChatClient | null = null;
   private roomNames: string[] = [];
-  private cleanupInProgress: boolean = false;
   private sequenceCounter = 0;
 
   private async subscribeToRoom(
@@ -139,7 +121,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         );
       } else {
         // Format message with timestamp, author and content
-        const timestamp = new Date(message.timestamp).toISOString();
+        const timestamp = formatMessageTimestamp(message.timestamp);
         const author = message.clientId || "Unknown";
 
         // Prefix with room name when multiple rooms
@@ -172,50 +154,11 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       `Subscribed to messages in room ${roomName}`,
     );
 
-    // Subscribe to room status changes
-    this.logCliEvent(
-      flags,
-      "room",
-      "subscribingToStatus",
-      `Subscribing to status changes for room ${roomName}`,
-    );
-    room.onStatusChange((statusChange: unknown) => {
-      const change = statusChange as StatusChange;
-      this.logCliEvent(
-        flags,
-        "room",
-        `status-${change.current}`,
-        `Room status changed to ${change.current}`,
-        { reason: change.reason, room: roomName },
-      );
-      if (change.current === "attached") {
-        this.logCliEvent(
-          flags,
-          "room",
-          "statusAttached",
-          `Room ${roomName} status is ATTACHED.`,
-        );
-        // Log the ready signal for E2E tests
-        this.log(`Connected to room: ${roomName}`);
-        if (!this.shouldOutputJson(flags)) {
-          this.log(success(`Subscribed to room: ${resource(roomName)}.`));
-          this.log(listening("Listening for messages."));
-        }
-      } else if (change.current === "failed") {
-        const errorMsg = room.error?.message || "Unknown error";
-        if (this.shouldOutputJson(flags)) {
-          // Logged via logCliEvent
-        } else {
-          this.error(`Failed to attach to room ${roomName}: ${errorMsg}`);
-        }
-      }
+    this.setupRoomStatusHandler(room, flags, {
+      roomName,
+      successMessage: `Subscribed to room: ${resource(roomName)}.`,
+      listeningMessage: "Listening for messages.",
     });
-    this.logCliEvent(
-      flags,
-      "room",
-      "subscribedToStatus",
-      `Subscribed to status changes for room ${roomName}`,
-    );
 
     // Attach to the room
     this.logCliEvent(
@@ -313,29 +256,11 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-      this.logCliEvent(flags, "subscribe", "runComplete", "Exiting wait loop", {
-        exitReason,
-      });
-      this.cleanupInProgress = exitReason === "signal"; // mark if signal so finally knows
+      await this.waitAndTrackCleanup(flags, "subscribe", flags.duration);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(
-        flags,
-        "subscribe",
-        "fatalError",
-        `Failed to subscribe to messages: ${errorMsg}`,
-        { error: errorMsg, rooms: this.roomNames },
-      );
-
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          { error: errorMsg, rooms: this.roomNames, success: false },
-          flags,
-        );
-      } else {
-        this.error(`Failed to subscribe to messages: ${errorMsg}`);
-      }
+      this.handleCommandError(error, flags, "subscribe", {
+        rooms: this.roomNames,
+      });
     }
   }
 }

@@ -9,6 +9,7 @@ import {
   success,
   resource,
   formatTimestamp,
+  formatMessageTimestamp,
 } from "../../../utils/output.js";
 import { parseTimestamp } from "../../../utils/time.js";
 
@@ -162,7 +163,7 @@ export default class MessagesHistory extends ChatBaseCommand {
           const messagesInOrder = [...items];
           for (const message of messagesInOrder) {
             // Format message with timestamp, author and content
-            const timestamp = new Date(message.timestamp).toISOString();
+            const timestamp = formatMessageTimestamp(message.timestamp);
             const author = message.clientId || "Unknown";
 
             this.log(
@@ -179,20 +180,7 @@ export default class MessagesHistory extends ChatBaseCommand {
         }
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error: error instanceof Error ? error.message : String(error),
-            room: args.room,
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(
-          `Failed to get messages: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
+      this.handleCommandError(error, flags, "messages", { room: args.room });
     }
   }
 }

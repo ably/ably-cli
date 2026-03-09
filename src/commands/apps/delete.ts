@@ -2,6 +2,7 @@ import { Args, Flags } from "@oclif/core";
 import * as readline from "node:readline";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { errorMessage } from "../../utils/errors.js";
 import { progress, resource } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 import AppsSwitch from "./switch.js";
@@ -168,7 +169,7 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
         this.jsonError(
           {
             appId: appIdToDelete,
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             status: "error",
             success: false,
           },
@@ -176,9 +177,7 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
         );
         return;
       } else {
-        this.error(
-          `Error deleting app: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Error deleting app: ${errorMessage(error)}`);
       }
     }
   }

@@ -1,6 +1,9 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { errorMessage } from "../../../utils/errors.js";
+import { formatCapabilityInline } from "../../../utils/key-display.js";
+import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
 
 export default class KeysUpdateCommand extends ControlBaseCommand {
   static args = {
@@ -42,15 +45,9 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
     let appId = flags.app || this.configManager.getCurrentAppId();
     let keyId = args.keyName;
 
-    // If keyName includes a period, it might be in the app_id.key_id format
-    if (args.keyName.includes(".")) {
-      const parts = args.keyName.split(".");
-      // If it has exactly one period and no colon, it's likely an app_id.key_id
-      if (parts.length === 2 && !args.keyName.includes(":")) {
-        appId = parts[0];
-        keyId = parts[1];
-      }
-    }
+    const parsed = parseKeyIdentifier(args.keyName);
+    if (parsed.appId) appId = parsed.appId;
+    keyId = parsed.keyId;
 
     if (!appId) {
       this.error(
@@ -92,9 +89,7 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
             "*": capabilityArray,
           };
         } catch (error) {
-          this.error(
-            `Invalid capabilities format: ${error instanceof Error ? error.message : String(error)}`,
-          );
+          this.error(`Invalid capabilities format: ${errorMessage(error)}`);
         }
       }
 
@@ -113,35 +108,14 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
       if (flags.capabilities) {
         this.log(`Capabilities:`);
         this.log(
-          `  Before: ${this.formatCapability(originalKey.capability as Record<string, string[]>)}`,
+          `  Before: ${formatCapabilityInline(originalKey.capability as Record<string, string[]>)}`,
         );
         this.log(
-          `  After:  ${this.formatCapability(updatedKey.capability as Record<string, string[]>)}`,
+          `  After:  ${formatCapabilityInline(updatedKey.capability as Record<string, string[]>)}`,
         );
       }
     } catch (error) {
-      this.error(
-        `Error updating key: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.error(`Error updating key: ${errorMessage(error)}`);
     }
-  }
-
-  // Helper function to format capabilities
-  private formatCapability(
-    capability: Record<string, string[] | string> | undefined,
-  ): string {
-    if (!capability) return "None";
-
-    const capEntries = Object.entries(capability);
-    if (capEntries.length === 0) {
-      return "None";
-    }
-
-    return capEntries
-      .map(
-        ([scope, privileges]) =>
-          `${scope} → ${Array.isArray(privileges) ? privileges.join(", ") : privileges}`,
-      )
-      .join("\n    ");
   }
 }

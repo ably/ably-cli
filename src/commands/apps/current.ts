@@ -1,6 +1,7 @@
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { errorMessage } from "../../utils/errors.js";
 
 export default class AppsCurrent extends ControlBaseCommand {
   static override description = "Show the currently selected app";
@@ -111,9 +112,7 @@ export default class AppsCurrent extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      this.error(
-        `Error retrieving app information: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.error(`Error retrieving app information: ${errorMessage(error)}`);
     }
   }
 
@@ -207,7 +206,7 @@ export default class AppsCurrent extends ControlBaseCommand {
         );
         this.log(`${chalk.yellow("API Key:")} ${chalk.yellow.bold(keyId)}`);
         this.log(
-          `${chalk.red("Error:")} Could not fetch additional app details: ${error instanceof Error ? error.message : String(error)}`,
+          `${chalk.red("Error:")} Could not fetch additional app details: ${errorMessage(error)}`,
         );
         this.log(
           `${chalk.magenta("Mode:")} ${chalk.magenta.bold("Web CLI")} ${chalk.dim("(using environment variables)")}`,

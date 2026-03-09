@@ -6,11 +6,11 @@ This guide provides tips for debugging common issues when developing the Ably CL
 
 *   **Check Logs:** Look for errors or relevant messages in the CLI output, test runner output, server logs (for Web CLI tests), or browser console (for Web CLI tests).
 *   **Isolate the Issue:** Try to reproduce the problem with the simplest possible command or test case. Comment out parts of the code or test to narrow down the source of the error.
-*   **Consult Documentation:** Review relevant project docs (`docs/`, `.cursor/rules/`) and Ably documentation (<https://ably.com/docs>).
+*   **Consult Documentation:** Review relevant project docs (`docs/`, `AGENTS.md`) and Ably documentation (<https://ably.com/docs>).
 
 ## Debugging Tests
 
-Refer to [docs/Testing.md](mdc:docs/Testing.md) for how to run specific tests.
+Refer to [Testing.md](Testing.md) for how to run specific tests.
 
 ### Vitest Tests (Unit, Integration, E2E)
 
@@ -55,4 +55,4 @@ Refer to [docs/Testing.md](mdc:docs/Testing.md) for how to run specific tests.
     ```bash
     DEBUG=oclif* bin/run.js [command]
     ```
-*   **Check Configuration:** Use `ably config` (opens the config file) to verify stored credentials or settings.
+*   **Check Configuration:** Use `ably config show` to view stored credentials or `ably config path` to find the config file location.

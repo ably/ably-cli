@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { randomUUID } from "node:crypto";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { errorMessage } from "../../utils/errors.js";
 import { productApiFlags } from "../../flags.js";
 
 interface JwtPayload {
@@ -79,9 +80,7 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
       try {
         capabilities = JSON.parse(flags.capability);
       } catch (error) {
-        this.error(
-          `Invalid capability JSON: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Invalid capability JSON: ${errorMessage(error)}`);
       }
 
       // Create JWT payload
@@ -153,9 +152,7 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
         this.log(`Capability: ${this.formatJsonOutput(capabilities, flags)}`);
       }
     } catch (error) {
-      this.error(
-        `Error issuing JWT token: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.error(`Error issuing JWT token: ${errorMessage(error)}`);
     }
   }
 }

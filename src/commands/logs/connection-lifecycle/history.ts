@@ -1,12 +1,17 @@
 import { Flags } from "@oclif/core";
-import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../../flags.js";
-import { formatJson, isJsonData } from "../../../utils/json-formatter.js";
-import { formatTimestamp } from "../../../utils/output.js";
-import { parseTimestamp } from "../../../utils/time.js";
+import { formatMessageData } from "../../../utils/json-formatter.js";
+import { errorMessage } from "../../../utils/errors.js";
+import { buildHistoryParams } from "../../../utils/history.js";
+import {
+  countLabel,
+  formatTimestamp,
+  formatMessageTimestamp,
+  limitWarning,
+} from "../../../utils/output.js";
 
 export default class LogsConnectionLifecycleHistory extends AblyBaseCommand {
   static override description = "Retrieve connection lifecycle log history";
@@ -49,27 +54,7 @@ export default class LogsConnectionLifecycleHistory extends AblyBaseCommand {
       const channel = client.channels.get("[meta]connection.lifecycle");
 
       // Build history query parameters
-      const historyParams: Ably.RealtimeHistoryParams = {
-        direction: flags.direction as "backwards" | "forwards",
-        limit: flags.limit,
-      };
-
-      // Add time range if specified
-      if (flags.start) {
-        historyParams.start = parseTimestamp(flags.start, "start");
-      }
-
-      if (flags.end) {
-        historyParams.end = parseTimestamp(flags.end, "end");
-      }
-
-      if (
-        historyParams.start !== undefined &&
-        historyParams.end !== undefined &&
-        historyParams.start > historyParams.end
-      ) {
-        this.error("--start must be earlier than or equal to --end");
-      }
+      const historyParams = buildHistoryParams(flags);
 
       // Get history
       const history = await channel.history(historyParams);
@@ -87,9 +72,7 @@ export default class LogsConnectionLifecycleHistory extends AblyBaseCommand {
                 encoding: msg.encoding,
                 id: msg.id,
                 name: msg.name,
-                timestamp: msg.timestamp
-                  ? new Date(msg.timestamp).toISOString()
-                  : new Date().toISOString(),
+                timestamp: formatMessageTimestamp(msg.timestamp),
               })),
               success: true,
             },
@@ -103,13 +86,13 @@ export default class LogsConnectionLifecycleHistory extends AblyBaseCommand {
         }
 
         this.log(
-          `Found ${chalk.cyan(messages.length.toString())} connection lifecycle logs:`,
+          `Found ${countLabel(messages.length, "connection lifecycle log")}:`,
         );
         this.log("");
 
         for (const [index, message] of messages.entries()) {
           const timestampDisplay = message.timestamp
-            ? formatTimestamp(new Date(message.timestamp).toISOString())
+            ? formatTimestamp(formatMessageTimestamp(message.timestamp))
             : chalk.dim("[Unknown timestamp]");
 
           this.log(`${chalk.dim(`[${index + 1}]`)} ${timestampDisplay}`);
@@ -144,36 +127,27 @@ export default class LogsConnectionLifecycleHistory extends AblyBaseCommand {
           // Display message data
           if (message.data) {
             this.log("Data:");
-            if (isJsonData(message.data)) {
-              this.log(formatJson(message.data));
-            } else {
-              this.log(String(message.data));
-            }
+            this.log(formatMessageData(message.data));
           }
 
           this.log("");
         }
 
-        if (messages.length === flags.limit) {
-          this.log(
-            chalk.yellow(
-              `Showing maximum of ${flags.limit} logs. Use --limit to show more.`,
-            ),
-          );
-        }
+        const warning = limitWarning(messages.length, flags.limit, "logs");
+        if (warning) this.log(warning);
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
         this.jsonError(
           {
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             success: false,
           },
           flags,
         );
       } else {
         this.error(
-          `Error retrieving connection lifecycle logs: ${error instanceof Error ? error.message : String(error)}`,
+          `Error retrieving connection lifecycle logs: ${errorMessage(error)}`,
         );
       }
     }

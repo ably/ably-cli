@@ -1,14 +1,15 @@
-import { ChatClient } from "@ably/chat";
-import * as Ably from "ably";
+import { ChatClient, Room, RoomStatus } from "@ably/chat";
 
 import { AblyBaseCommand } from "./base-command.js";
 import { productApiFlags } from "./flags.js";
 import { BaseFlags } from "./types/cli.js";
+import chalk from "chalk";
+
+import { success, listening } from "./utils/output.js";
 import isTestMode from "./utils/test-mode.js";
 
 export abstract class ChatBaseCommand extends AblyBaseCommand {
   static globalFlags = { ...productApiFlags };
-  protected _chatRealtimeClient: Ably.Realtime | null = null;
   private _chatClient: ChatClient | null = null;
   private _cleanupTimeout: NodeJS.Timeout | undefined;
 
@@ -70,9 +71,6 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
       return null;
     }
 
-    // Store the realtime client for access by subclasses
-    this._chatRealtimeClient = realtimeClient;
-
     if (isTestMode()) {
       this.debug(`Running in test mode, using mock Ably Chat client`);
       const mockChat = this.getMockAblyChat();
@@ -88,5 +86,58 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
 
     // Use the Ably client to create the Chat client
     return (this._chatClient = new ChatClient(realtimeClient));
+  }
+
+  protected setupRoomStatusHandler(
+    room: Room,
+    flags: Record<string, unknown>,
+    options: {
+      roomName: string;
+      successMessage?: string;
+      listeningMessage?: string;
+    },
+  ): void {
+    room.onStatusChange((statusChange) => {
+      let reason: Error | null | string | undefined;
+      if (statusChange.current === RoomStatus.Failed) {
+        reason = room.error;
+      }
+      const reasonMsg = reason instanceof Error ? reason.message : reason;
+      this.logCliEvent(
+        flags,
+        "room",
+        `status-${statusChange.current}`,
+        `Room status changed to ${statusChange.current}`,
+        { reason: reasonMsg, room: options.roomName },
+      );
+      switch (statusChange.current) {
+        case RoomStatus.Attached: {
+          if (!this.shouldOutputJson(flags)) {
+            if (options.successMessage) {
+              this.log(success(options.successMessage));
+            }
+            if (options.listeningMessage) {
+              this.log(listening(options.listeningMessage));
+            }
+          }
+          break;
+        }
+        case RoomStatus.Detached: {
+          if (!this.shouldOutputJson(flags)) {
+            this.log(chalk.yellow("Disconnected from Ably"));
+          }
+          break;
+        }
+        case RoomStatus.Failed: {
+          if (!this.shouldOutputJson(flags)) {
+            this.error(
+              `Failed to attach to room ${options.roomName}: ${reasonMsg || "Unknown error"}`,
+            );
+          }
+          break;
+        }
+        // No default
+      }
+    });
   }
 }

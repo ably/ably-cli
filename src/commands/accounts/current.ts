@@ -1,6 +1,7 @@
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { errorMessage } from "../../utils/errors.js";
 import { ControlApi } from "../../services/control-api.js";
 
 export default class AccountsCurrent extends ControlBaseCommand {
@@ -180,16 +181,14 @@ export default class AccountsCurrent extends ControlBaseCommand {
         this.log(
           this.formatJsonOutput(
             {
-              error: error instanceof Error ? error.message : String(error),
+              error: errorMessage(error),
               mode: "web-cli",
             },
             flags,
           ),
         );
       } else {
-        this.log(
-          `${chalk.red("Error:")} ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.log(`${chalk.red("Error:")} ${errorMessage(error)}`);
         this.log(
           `${chalk.yellow("Info:")} Your access token may have expired or is invalid.`,
         );

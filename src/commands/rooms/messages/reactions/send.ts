@@ -1,23 +1,11 @@
 import { Args, Flags } from "@oclif/core";
-import {
-  ChatClient,
-  RoomStatus,
-  RoomStatusChange,
-  MessageReactionType,
-  ConnectionStatusChange,
-} from "@ably/chat";
+import { ChatClient, MessageReactionType } from "@ably/chat";
 import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../../chat-base-command.js";
 import { clientIdFlag, productApiFlags } from "../../../../flags.js";
 import { resource, success } from "../../../../utils/output.js";
-
-// Map CLI-friendly type names to SDK MessageReactionType values
-const REACTION_TYPE_MAP: Record<string, MessageReactionType> = {
-  unique: MessageReactionType.Unique,
-  distinct: MessageReactionType.Distinct,
-  multiple: MessageReactionType.Multiple,
-};
+import { REACTION_TYPE_MAP } from "../../../../utils/chat-constants.js";
 
 interface MessageReactionResult {
   [key: string]: unknown;
@@ -104,18 +92,8 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
         return;
       }
 
-      // Add listeners for connection state changes
-      this.chatClient.connection.onStatusChange(
-        (stateChange: ConnectionStatusChange) => {
-          this.logCliEvent(
-            flags,
-            "connection",
-            stateChange.current,
-            `Realtime connection state changed to ${stateChange.current}`,
-            { error: stateChange.error },
-          );
-        },
-      );
+      // Set up connection state logging
+      this.setupConnectionStateLogging(this.chatClient.realtime, flags);
 
       // Get the room
       this.logCliEvent(
@@ -128,42 +106,7 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
       this.logCliEvent(flags, "room", "gotRoom", `Got room handle for ${room}`);
 
       // Subscribe to room status changes
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribingToStatus",
-        "Subscribing to room status changes",
-      );
-      chatRoom.onStatusChange((statusChange: RoomStatusChange) => {
-        let reason: Error | null | string | undefined;
-        if (statusChange.current === RoomStatus.Failed) {
-          reason = chatRoom.error; // Get reason from chatRoom.error on failure
-        }
-
-        const reasonMsg = reason instanceof Error ? reason.message : reason;
-        this.logCliEvent(
-          flags,
-          "room",
-          `status-${statusChange.current}`,
-          `Room status changed to ${statusChange.current}`,
-          { reason: reasonMsg },
-        );
-
-        if (
-          statusChange.current === RoomStatus.Failed &&
-          !this.shouldOutputJson(flags)
-        ) {
-          this.error(
-            `Failed to attach to room: ${reasonMsg || "Unknown error"}`,
-          );
-        }
-      });
-      this.logCliEvent(
-        flags,
-        "room",
-        "subscribedToStatus",
-        "Successfully subscribed to room status changes",
-      );
+      this.setupRoomStatusHandler(chatRoom, flags, { roomName: room });
 
       // Attach to the room
       this.logCliEvent(flags, "room", "attaching", `Attaching to room ${room}`);
@@ -233,31 +176,13 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
         );
       }
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(
-        flags,
-        "reaction",
-        "error",
-        `Failed to send reaction: ${errorMsg}`,
-        { error: errorMsg, room, messageSerial, reaction },
-      );
-
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error: errorMsg,
-            room,
-            messageSerial,
-            reaction,
-            success: false,
-            ...(flags.type && { type: flags.type }),
-            ...(flags.count && { count: flags.count }),
-          },
-          flags,
-        );
-      } else {
-        this.error(`Failed to send reaction: ${errorMsg}`);
-      }
+      this.handleCommandError(error, flags, "reaction", {
+        room,
+        messageSerial,
+        reaction,
+        ...(flags.type && { type: flags.type }),
+        ...(flags.count && { count: flags.count }),
+      });
     }
   }
 }

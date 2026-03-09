@@ -1,7 +1,8 @@
 import { Args, Flags } from "@oclif/core";
-import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
+import { errorMessage } from "../../../utils/errors.js";
 
 export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
   static args = {
@@ -98,35 +99,12 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelRulesUpdateCommand);
 
+    const appId = await this.requireAppId(flags);
+    if (!appId) return;
+
     const controlApi = this.createControlApi(flags);
-    let appId: string | undefined;
 
     try {
-      appId = flags.app;
-      if (!appId) {
-        appId = await this.resolveAppId(flags);
-      }
-
-      if (!appId) {
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            {
-              error:
-                'No app specified. Use --app flag or select an app with "ably apps switch"',
-              status: "error",
-              success: false,
-            },
-            flags,
-          );
-        } else {
-          this.error(
-            'No app specified. Use --app flag or select an app with "ably apps switch"',
-          );
-        }
-
-        return;
-      }
-
       // Find the namespace by name or ID
       const namespaces = await controlApi.listNamespaces(appId);
       const namespace = namespaces.find((n) => n.id === args.nameOrId);
@@ -262,91 +240,26 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
       } else {
         this.log("Channel rule updated successfully:");
         this.log(`ID: ${updatedNamespace.id}`);
-        this.log(
-          `Persisted: ${updatedNamespace.persisted ? chalk.green("Yes") : "No"}`,
-        );
-        this.log(
-          `Push Enabled: ${updatedNamespace.pushEnabled ? chalk.green("Yes") : "No"}`,
-        );
-
-        if (updatedNamespace.authenticated !== undefined) {
-          this.log(
-            `Authenticated: ${updatedNamespace.authenticated ? chalk.green("Yes") : "No"}`,
-          );
+        for (const line of formatChannelRuleDetails(updatedNamespace, {
+          formatDate: (t) => this.formatDate(t),
+          showTimestamps: true,
+        })) {
+          this.log(line);
         }
-
-        if (updatedNamespace.persistLast !== undefined) {
-          this.log(
-            `Persist Last: ${updatedNamespace.persistLast ? chalk.green("Yes") : "No"}`,
-          );
-        }
-
-        if (updatedNamespace.exposeTimeSerial !== undefined) {
-          this.log(
-            `Expose Time Serial: ${updatedNamespace.exposeTimeSerial ? chalk.green("Yes") : "No"}`,
-          );
-        }
-
-        if (updatedNamespace.populateChannelRegistry !== undefined) {
-          this.log(
-            `Populate Channel Registry: ${updatedNamespace.populateChannelRegistry ? chalk.green("Yes") : "No"}`,
-          );
-        }
-
-        if (updatedNamespace.batchingEnabled !== undefined) {
-          this.log(
-            `Batching Enabled: ${updatedNamespace.batchingEnabled ? chalk.green("Yes") : "No"}`,
-          );
-        }
-
-        if (typeof updatedNamespace.batchingInterval === "number") {
-          this.log(
-            `Batching Interval: ${chalk.green(updatedNamespace.batchingInterval.toString())}`,
-          );
-        }
-
-        if (updatedNamespace.conflationEnabled !== undefined) {
-          this.log(
-            `Conflation Enabled: ${updatedNamespace.conflationEnabled ? chalk.green("Yes") : "No"}`,
-          );
-        }
-
-        if (typeof updatedNamespace.conflationInterval === "number") {
-          this.log(
-            `Conflation Interval: ${chalk.green(updatedNamespace.conflationInterval.toString())}`,
-          );
-        }
-
-        if (updatedNamespace.conflationKey !== undefined) {
-          this.log(
-            `Conflation Key: ${chalk.green(updatedNamespace.conflationKey)}`,
-          );
-        }
-
-        if (updatedNamespace.tlsOnly !== undefined) {
-          this.log(
-            `TLS Only: ${updatedNamespace.tlsOnly ? chalk.green("Yes") : "No"}`,
-          );
-        }
-
-        this.log(`Created: ${this.formatDate(updatedNamespace.created)}`);
-        this.log(`Updated: ${this.formatDate(updatedNamespace.modified)}`);
       }
     } catch (error) {
       if (this.shouldOutputJson(flags)) {
         this.jsonError(
           {
             appId,
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             status: "error",
             success: false,
           },
           flags,
         );
       } else {
-        this.error(
-          `Error updating channel rule: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Error updating channel rule: ${errorMessage(error)}`);
       }
     }
   }

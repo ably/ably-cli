@@ -1,10 +1,9 @@
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
 import chalk from "chalk";
 
-import { productApiFlags, clientIdFlag } from "../../../flags.js";
+import { errorMessage } from "../../../utils/errors.js";
+import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { waitUntilInterruptedOrTimeout } from "../../../utils/long-running.js";
 import {
   listening,
   progress,
@@ -65,11 +64,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       description: "Simulate cursor movement every 250ms with random positions",
       required: false,
     }),
-    duration: Flags.integer({
-      description: "Automatically exit after N seconds",
-      char: "D",
-      required: false,
-    }),
+    ...durationFlag,
   };
 
   private simulationIntervalId: NodeJS.Timeout | null = null;
@@ -86,7 +81,6 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsSet);
-    this.parsedFlags = flags;
     const { space: spaceName } = args;
 
     try {
@@ -173,83 +167,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         return;
       }
 
-      // Create Spaces client using setupSpacesClient
-      const setupResult = await this.setupSpacesClient(flags, spaceName);
-      this.realtimeClient = setupResult.realtimeClient;
-      this.space = setupResult.space;
-
-      if (!this.realtimeClient || !this.space) {
-        const errorMsg = "Failed to create Spaces client";
-        this.logCliEvent(flags, "spaces", "clientCreationFailed", errorMsg, {
-          error: errorMsg,
-          spaceName,
-        });
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError({ error: errorMsg, spaceName, success: false }, flags);
-          return;
-        } // Error already logged by createSpacesClient
-
-        return;
-      }
-
-      // Add listeners for connection state changes
-      this.realtimeClient.connection.on(
-        (stateChange: Ably.ConnectionStateChange) => {
-          this.logCliEvent(
-            flags,
-            "connection",
-            stateChange.current,
-            `Realtime connection state changed to ${stateChange.current}`,
-            { reason: stateChange.reason },
-          );
-        },
-      );
-
-      // Monitor the space by watching the channel state instead
-      this.logCliEvent(
-        flags,
-        "space",
-        "monitoringChannel",
-        "Monitoring space channel state",
-      );
-      const channelStateListener = (stateChange: Ably.ChannelStateChange) => {
-        this.logCliEvent(
-          flags,
-          "space",
-          `channel-${stateChange.current}`,
-          `Space channel state: ${stateChange.current}`,
-          {
-            reason: stateChange.reason?.message,
-          },
-        );
-
-        if (
-          stateChange.current === "attached" &&
-          !this.shouldOutputJson(flags)
-        ) {
-          this.log(success(`Entered space: ${resource(spaceName)}.`));
-        }
-      };
-
-      if (this.space.channel) {
-        this.space.channel.on(channelStateListener);
-      }
-
-      // Enter the space
-      this.logCliEvent(
-        flags,
-        "space",
-        "entering",
-        `Entering space ${spaceName}`,
-      );
-      await this.space.enter();
-      this.logCliEvent(
-        flags,
-        "space",
-        "entered",
-        "Successfully entered space",
-        { clientId: this.realtimeClient!.auth.clientId },
-      );
+      await this.initializeSpace(flags, spaceName, { enterSpace: true });
 
       const { position, data } = cursorData as {
         position: CursorPosition;
@@ -259,110 +177,10 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       const cursorForOutput = { position, ...(data ? { data } : {}) };
 
       // Workaround for known SDK issue: cursors.set() fails if the underlying ::$cursors channel is not attached
-      // This will be fixed upstream in the Spaces SDK - see https://github.com/ably/spaces/pull/339
-      this.logCliEvent(
-        flags,
-        "cursor",
-        "waitingForChannelAttachment",
-        "Waiting for cursors channel to attach",
-      );
-
-      // First, trigger channel creation by accessing the cursors API
-      // This ensures the channel exists before we try to wait for it to attach
-      try {
-        await this.space.cursors.getAll();
-        this.logCliEvent(
-          flags,
-          "cursor",
-          "channelCreated",
-          "Cursors channel created via getAll()",
-        );
-      } catch (error) {
-        // getAll() might fail if no cursors exist yet, but it should still create the channel
-        this.logCliEvent(
-          flags,
-          "cursor",
-          "channelCreationAttempted",
-          "Attempted to create cursors channel",
-          {
-            error: error instanceof Error ? error.message : String(error),
-          },
-        );
-      }
-
-      // Now wait for the channel to be attached
-      if (this.space.cursors.channel) {
-        await new Promise<void>((resolve, reject) => {
-          const channel = this.space!.cursors.channel;
-
-          if (!channel) {
-            reject(new Error("Cursors channel is not available"));
-            return;
-          }
-
-          if (channel.state === "attached") {
-            this.logCliEvent(
-              flags,
-              "cursor",
-              "channelAlreadyAttached",
-              "Cursors channel already attached",
-            );
-            resolve();
-            return;
-          }
-
-          const timeout = setTimeout(() => {
-            channel.off("attached", onAttached);
-            channel.off("failed", onFailed);
-            reject(new Error("Timeout waiting for cursors channel to attach"));
-          }, 10000); // 10 second timeout
-
-          const onAttached = () => {
-            clearTimeout(timeout);
-            channel.off("attached", onAttached);
-            channel.off("failed", onFailed);
-            this.logCliEvent(
-              flags,
-              "cursor",
-              "channelAttached",
-              "Cursors channel attached successfully",
-            );
-            resolve();
-          };
-
-          const onFailed = (stateChange: Ably.ChannelStateChange) => {
-            clearTimeout(timeout);
-            channel.off("attached", onAttached);
-            channel.off("failed", onFailed);
-            reject(
-              new Error(
-                `Cursors channel failed to attach: ${stateChange.reason?.message || "Unknown error"}`,
-              ),
-            );
-          };
-
-          channel.on("attached", onAttached);
-          channel.on("failed", onFailed);
-
-          this.logCliEvent(
-            flags,
-            "cursor",
-            "waitingForAttachment",
-            `Cursors channel state: ${channel.state}, waiting for attachment`,
-          );
-        });
-      } else {
-        // If channel still doesn't exist after getAll(), log a warning but continue
-        this.logCliEvent(
-          flags,
-          "cursor",
-          "channelNotAvailable",
-          "Warning: cursors channel not available after creation attempt",
-        );
-      }
+      await this.waitForCursorsChannelAttachment(flags);
 
       // Set cursor position
-      await this.space.cursors.set(cursorForOutput);
+      await this.space!.cursors.set(cursorForOutput);
 
       this.logCliEvent(
         flags,
@@ -446,7 +264,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
               flags,
               "cursor",
               "simulationError",
-              `Simulation error: ${error instanceof Error ? error.message : String(error)}`,
+              `Simulation error: ${errorMessage(error)}`,
             );
           }
         }, 250);
@@ -469,28 +287,12 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         );
       }
 
-      const exitReason = await waitUntilInterruptedOrTimeout(flags.duration);
-      this.logCliEvent(
-        flags,
-        "cursor",
-        "waitingComplete",
-        "Exiting wait loop",
-        { exitReason },
-      );
+      await this.waitAndTrackCleanup(flags, "cursor", flags.duration);
 
       // After cleanup (handled in finally), ensure the process exits so user doesn't need multiple Ctrl-C
       this.exit(0);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logCliEvent(flags, "cursor", "setError", errorMsg, {
-        error: errorMsg,
-        spaceName,
-      });
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, spaceName, success: false }, flags);
-      } else {
-        this.error(`Failed to set cursor: ${errorMsg}`);
-      }
+      this.handleCommandError(error, flags, "cursor", { spaceName });
     }
   }
 }

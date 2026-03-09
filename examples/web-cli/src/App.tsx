@@ -15,7 +15,7 @@ interface CliWindow extends Window {
 }
 
 // Default WebSocket URL - use public endpoint for production, localhost for development
-const DEFAULT_PRODUCTION_WEBSOCKET_URL = "wss://web-cli.ably.com";
+const DEFAULT_PRODUCTION_WEBSOCKET_URL = "wss://web-cli-terminal.ably.com";
 const DEFAULT_DEVELOPMENT_WEBSOCKET_URL = "wss://web-cli-terminal.ably-dev.com";
 
 // Get WebSocket URL from query parameters only

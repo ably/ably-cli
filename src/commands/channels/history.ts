@@ -4,9 +4,16 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../flags.js";
-import { formatMessagesOutput, toMessageJson } from "../../utils/output.js";
-import type { MessageDisplayFields } from "../../utils/output.js";
-import { parseTimestamp } from "../../utils/time.js";
+import { formatMessageData } from "../../utils/json-formatter.js";
+import { buildHistoryParams } from "../../utils/history.js";
+import { errorMessage } from "../../utils/errors.js";
+import {
+  countLabel,
+  formatTimestamp,
+  formatMessageTimestamp,
+  limitWarning,
+  resource,
+} from "../../utils/output.js";
 
 export default class ChannelsHistory extends AblyBaseCommand {
   static override args = {
@@ -72,77 +79,53 @@ export default class ChannelsHistory extends AblyBaseCommand {
       const channel = client.channels.get(channelName, channelOptions);
 
       // Build history query parameters
-      const historyParams: Ably.RealtimeHistoryParams = {
-        direction: flags.direction as "backwards" | "forwards",
-        limit: flags.limit,
-      };
-
-      // Add time range if specified
-      if (flags.start) {
-        historyParams.start = parseTimestamp(flags.start, "start");
-      }
-
-      if (flags.end) {
-        historyParams.end = parseTimestamp(flags.end, "end");
-      }
-
-      if (
-        historyParams.start !== undefined &&
-        historyParams.end !== undefined &&
-        historyParams.start > historyParams.end
-      ) {
-        this.error("--start must be earlier than or equal to --end");
-      }
+      const historyParams = buildHistoryParams(flags);
 
       // Get history
       const history = await channel.history(historyParams);
       const messages = history.items;
 
-      // Build MessageDisplayFields array from history results
-      const displayMessages: MessageDisplayFields[] = messages.map(
-        (message, index) => ({
-          channel: channelName,
-          clientId: message.clientId,
-          data: message.data,
-          event: message.name || "(none)",
-          id: message.id,
-          indexPrefix: `[${index + 1}]`,
-          serial: (message as Record<string, unknown>).serial as
-            | string
-            | undefined,
-          timestamp: message.timestamp
-            ? new Date(message.timestamp).toISOString()
-            : new Date().toISOString(),
-        }),
-      );
-
       // Display results based on format
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            displayMessages.map((msg) => toMessageJson(msg)),
-            flags,
-          ),
-        );
+        this.log(this.formatJsonOutput({ messages }, flags));
       } else {
-        if (displayMessages.length === 0) {
-          this.log(formatMessagesOutput([]));
+        if (messages.length === 0) {
+          this.log("No messages found in the channel history.");
           return;
         }
 
-        this.log(formatMessagesOutput(displayMessages));
+        this.log(
+          `Found ${countLabel(messages.length, "message")} in the history of channel: ${resource(channelName)}`,
+        );
+        this.log("");
 
-        if (messages.length === flags.limit) {
-          this.log("");
+        for (const [index, message] of messages.entries()) {
+          const timestampDisplay = message.timestamp
+            ? formatTimestamp(formatMessageTimestamp(message.timestamp))
+            : chalk.dim("[Unknown timestamp]");
+
+          this.log(`${chalk.dim(`[${index + 1}]`)} ${timestampDisplay}`);
           this.log(
-            chalk.yellow(
-              `Showing maximum of ${flags.limit} messages. Use --limit to show more.`,
-            ),
+            `${chalk.dim("Event:")} ${chalk.yellow(message.name || "(none)")}`,
           );
+
+          if (message.clientId) {
+            this.log(
+              `${chalk.dim("Client ID:")} ${chalk.blue(message.clientId)}`,
+            );
+          }
+
+          this.log(chalk.dim("Data:"));
+          this.log(formatMessageData(message.data));
+
+          this.log("");
         }
+
+        const warning = limitWarning(messages.length, flags.limit, "messages");
+        if (warning) this.log(warning);
       }
     } catch (error) {
-      const errorMsg = `Error retrieving channel history: ${error instanceof Error ? error.message : String(error)}`;
+      const errorMsg = `Error retrieving channel history: ${errorMessage(error)}`;
       if (this.shouldOutputJson(flags)) {
         this.jsonError({ error: errorMsg, success: false }, flags);
       } else {

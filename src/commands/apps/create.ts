@@ -1,6 +1,7 @@
 import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { errorMessage } from "../../utils/errors.js";
 import { progress, resource, success } from "../../utils/output.js";
 
 export default class AppsCreateCommand extends ControlBaseCommand {
@@ -80,7 +81,7 @@ export default class AppsCreateCommand extends ControlBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.jsonError(
           {
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             status: "error",
             success: false,
           },
@@ -88,9 +89,7 @@ export default class AppsCreateCommand extends ControlBaseCommand {
         );
         return;
       } else {
-        this.error(
-          `Error creating app: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Error creating app: ${errorMessage(error)}`);
       }
     }
   }

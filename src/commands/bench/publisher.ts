@@ -5,6 +5,7 @@ import Table from "cli-table3";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
+import { errorMessage } from "../../utils/errors.js";
 import { success } from "../../utils/output.js";
 
 interface TestMetrics {
@@ -270,12 +271,10 @@ export default class BenchPublisher extends AblyBaseCommand {
         flags,
         "benchmark",
         "testError",
-        `Benchmark failed: ${error instanceof Error ? error.message : String(error)}`,
+        `Benchmark failed: ${errorMessage(error)}`,
         { error: error instanceof Error ? error.stack : String(error) },
       );
-      this.error(
-        `Benchmark failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.error(`Benchmark failed: ${errorMessage(error)}`);
     } finally {
       // Cleanup managed by the finally method override
       if (channel) {
@@ -365,7 +364,7 @@ export default class BenchPublisher extends AblyBaseCommand {
               flags,
               "presence",
               "getPresenceError",
-              `Error getting initial presence: ${error instanceof Error ? error.message : String(error)}`,
+              `Error getting initial presence: ${errorMessage(error)}`,
             );
             // Continue waiting
           });
@@ -730,10 +729,10 @@ export default class BenchPublisher extends AblyBaseCommand {
           })
           .catch((error) => {
             metrics.errors++;
-            const errorMsg = `Error publishing message ${msgIndex}: ${error instanceof Error ? error.message : String(error)}`;
+            const errorMsg = `Error publishing message ${msgIndex}: ${errorMessage(error)}`;
             this.addLogToBuffer(chalk.red(errorMsg));
             this.logCliEvent(flags, "benchmark", "publishError", errorMsg, {
-              error: error instanceof Error ? error.message : String(error),
+              error: errorMessage(error),
               msgIndex,
             });
           });
@@ -840,10 +839,10 @@ export default class BenchPublisher extends AblyBaseCommand {
           })
           .catch((error) => {
             metrics.errors++;
-            const errorMsg = `Error publishing message ${msgIndex}: ${error instanceof Error ? error.message : String(error)}`;
+            const errorMsg = `Error publishing message ${msgIndex}: ${errorMessage(error)}`;
             this.addLogToBuffer(chalk.red(errorMsg));
             this.logCliEvent(flags, "benchmark", "publishError", errorMsg, {
-              error: error instanceof Error ? error.message : String(error),
+              error: errorMessage(error),
               msgIndex,
             });
           });

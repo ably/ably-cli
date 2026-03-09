@@ -1,6 +1,7 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { errorMessage } from "../../utils/errors.js";
 import { progress, resource } from "../../utils/output.js";
 
 export default class AppsUpdateCommand extends ControlBaseCommand {
@@ -117,7 +118,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
         this.jsonError(
           {
             appId: args.id,
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             status: "error",
             success: false,
           },
@@ -125,9 +126,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
         );
         return;
       } else {
-        this.error(
-          `Error updating app: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        this.error(`Error updating app: ${errorMessage(error)}`);
       }
     }
   }
