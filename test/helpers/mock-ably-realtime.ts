@@ -44,10 +44,30 @@ export interface MockRealtimeChannel {
   once: Mock;
   setOptions: Mock;
   presence: MockPresence;
+  annotations: MockAnnotations;
   // Internal emitter for simulating events
   _emitter: AblyEventEmitter;
   // Helper to emit message events
   _emit: (message: Message) => void;
+}
+
+/**
+ * Mock annotations type.
+ */
+export interface MockAnnotations {
+  publish: Mock;
+  delete: Mock;
+  subscribe: Mock;
+  unsubscribe: Mock;
+  get: Mock;
+  // Internal emitter for simulating events
+  _emitter: AblyEventEmitter;
+  // Helper to emit annotation events (emits on annotation.type, not annotation.action)
+  _emit: (annotation: {
+    type?: string;
+    action?: string;
+    [key: string]: unknown;
+  }) => void;
 }
 
 /**
@@ -162,6 +182,44 @@ function createMockPresence(): MockPresence {
 }
 
 /**
+ * Create a mock annotations object.
+ */
+function createMockAnnotations(): MockAnnotations {
+  const emitter = new EventEmitter();
+
+  const annotations: MockAnnotations = {
+    publish: vi.fn().mockImplementation(async () => {}),
+    delete: vi.fn().mockImplementation(async () => {}),
+    subscribe: vi.fn((typeOrCallback, callback?) => {
+      const cb = callback ?? typeOrCallback;
+      const event = callback ? typeOrCallback : null;
+      emitter.on(event, cb);
+    }),
+    unsubscribe: vi.fn((typeOrCallback?, callback?) => {
+      if (!typeOrCallback) {
+        emitter.off();
+      } else if (typeof typeOrCallback === "function") {
+        emitter.off(null, typeOrCallback);
+      } else if (callback) {
+        emitter.off(typeOrCallback, callback);
+      }
+    }),
+    get: vi.fn().mockResolvedValue({
+      items: [],
+      hasNext: () => false,
+      isLast: () => true,
+    }),
+    _emitter: emitter,
+    // Note: SDK emits on annotation.type, not annotation.action
+    _emit: (annotation) => {
+      emitter.emit(annotation.type || "", annotation);
+    },
+  };
+
+  return annotations;
+}
+
+/**
  * Create a mock channel object.
  *
  * The `state` setter automatically emits state change events, so custom
@@ -242,6 +300,7 @@ function createMockChannel(name: string): MockRealtimeChannel {
     }),
     setOptions: vi.fn().mockImplementation(async () => {}),
     presence: createMockPresence(),
+    annotations: createMockAnnotations(),
     _emitter: emitter,
     _emit: (message: Message) => {
       emitter.emit(message.name || "", message);

@@ -29,6 +29,15 @@ export interface MockRestChannel {
   history: Mock;
   status: Mock;
   presence: MockRestPresence;
+  annotations: MockRestAnnotations;
+}
+
+/**
+ * Mock REST annotations type.
+ */
+export interface MockRestAnnotations {
+  publish: Mock;
+  get: Mock;
 }
 
 /**
@@ -111,6 +120,20 @@ function createMockRestPresence(): MockRestPresence {
 }
 
 /**
+ * Create a mock REST annotations object.
+ */
+function createMockRestAnnotations(): MockRestAnnotations {
+  return {
+    publish: vi.fn().mockImplementation(async () => {}),
+    get: vi.fn().mockResolvedValue({
+      items: [],
+      hasNext: () => false,
+      isLast: () => true,
+    }),
+  };
+}
+
+/**
  * Create a mock REST channel object.
  */
 function createMockRestChannel(name: string): MockRestChannel {
@@ -135,6 +158,7 @@ function createMockRestChannel(name: string): MockRestChannel {
       },
     }),
     presence: createMockRestPresence(),
+    annotations: createMockRestAnnotations(),
   };
 }
 
