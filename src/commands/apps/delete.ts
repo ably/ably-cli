@@ -3,7 +3,11 @@ import * as readline from "node:readline";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
-import { formatProgress, formatResource } from "../../utils/output.js";
+import {
+  formatLabel,
+  formatProgress,
+  formatResource,
+} from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 import AppsSwitch from "./switch.js";
 
@@ -81,11 +85,11 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
       // If not using force flag or JSON mode, get app details and prompt for confirmation
       if (!flags.force && !this.shouldOutputJson(flags)) {
         this.log(`\nYou are about to delete the following app:`);
-        this.log(`App ID: ${app.id}`);
-        this.log(`Name: ${app.name}`);
-        this.log(`Status: ${app.status}`);
-        this.log(`Account ID: ${app.accountId}`);
-        this.log(`Created: ${this.formatDate(app.created)}`);
+        this.log(`${formatLabel("App ID")} ${app.id}`);
+        this.log(`${formatLabel("Name")} ${app.name}`);
+        this.log(`${formatLabel("Status")} ${app.status}`);
+        this.log(`${formatLabel("Account ID")} ${app.accountId}`);
+        this.log(`${formatLabel("Created")} ${this.formatDate(app.created)}`);
 
         // For additional confirmation, prompt user to enter the app name
         const nameConfirmed = await this.promptForAppName(app.name);

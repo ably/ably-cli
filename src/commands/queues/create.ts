@@ -2,7 +2,11 @@ import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
-import { formatResource, formatSuccess } from "../../utils/output.js";
+import {
+  formatLabel,
+  formatResource,
+  formatSuccess,
+} from "../../utils/output.js";
 
 export default class QueuesCreateCommand extends ControlBaseCommand {
   static description = "Create a queue";
@@ -69,21 +73,25 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
         this.log(
           formatSuccess(`Queue created: ${formatResource(createdQueue.name)}.`),
         );
-        this.log(`Queue ID: ${createdQueue.id}`);
-        this.log(`Name: ${createdQueue.name}`);
-        this.log(`Region: ${createdQueue.region}`);
-        this.log(`TTL: ${createdQueue.ttl} seconds`);
-        this.log(`Max Length: ${createdQueue.maxLength} messages`);
-        this.log(`State: ${createdQueue.state}`);
+        this.log(`${formatLabel("Queue ID")} ${createdQueue.id}`);
+        this.log(`${formatLabel("Name")} ${createdQueue.name}`);
+        this.log(`${formatLabel("Region")} ${createdQueue.region}`);
+        this.log(`${formatLabel("TTL")} ${createdQueue.ttl} seconds`);
+        this.log(
+          `${formatLabel("Max Length")} ${createdQueue.maxLength} messages`,
+        );
+        this.log(`${formatLabel("State")} ${createdQueue.state}`);
 
         this.log(`\nAMQP Connection Details:`);
-        this.log(`URI: ${createdQueue.amqp.uri}`);
-        this.log(`Queue Name: ${createdQueue.amqp.queueName}`);
+        this.log(`${formatLabel("URI")} ${createdQueue.amqp.uri}`);
+        this.log(`${formatLabel("Queue Name")} ${createdQueue.amqp.queueName}`);
 
         this.log(`\nSTOMP Connection Details:`);
-        this.log(`URI: ${createdQueue.stomp.uri}`);
-        this.log(`Host: ${createdQueue.stomp.host}`);
-        this.log(`Destination: ${createdQueue.stomp.destination}`);
+        this.log(`${formatLabel("URI")} ${createdQueue.stomp.uri}`);
+        this.log(`${formatLabel("Host")} ${createdQueue.stomp.host}`);
+        this.log(
+          `${formatLabel("Destination")} ${createdQueue.stomp.destination}`,
+        );
       }
     } catch (error) {
       this.error(`Error creating queue: ${errorMessage(error)}`);

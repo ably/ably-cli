@@ -1,6 +1,6 @@
 ---
 name: ably-new-command
-description: "Scaffold new CLI commands with tests for the Ably CLI (oclif + TypeScript). Use this skill whenever creating a new command, adding a new subcommand, migrating/moving a command to a new group, or scaffolding a command with its test file. Triggers on: 'new command', 'add command', 'create command', 'scaffold command', 'add subcommand', 'implement command', or any request to build a new `ably <topic> <action>` command. IMPORTANT: This skill MUST be used any time the user wants to create, build, or implement ANY new CLI command or subcommand — even if they describe it casually (e.g., 'I need an ably X Y command', 'can you build ably rooms typing subscribe', 'we should add a purge command to queues'). Also use when moving or restructuring existing commands to new locations. Do NOT use for modifying existing commands, fixing bugs, debugging, adding tests to existing commands, or refactoring — only for creating net-new command files."
+description: "Scaffold new CLI commands with tests for the Ably CLI (oclif + TypeScript). Use when creating, adding, or migrating any command or subcommand."
 ---
 
 # Ably CLI New Command
@@ -213,13 +213,8 @@ Rules:
 
 ### Error handling
 
-Use these patterns for error handling in commands:
+**Always use `handleCommandError` in catch blocks** — it's the single canonical pattern for error handling in commands. It logs the CLI event, emits JSON error when `--json` is active, and calls `this.error()` for human-readable output.
 
-- **`this.error(message)`** — Fatal errors (oclif standard). Throws, so no `return` needed after it.
-- **`this.handleCommandError(error, flags, component, context?)`** — Use in catch blocks. Logs the CLI event, emits JSON error when `--json` is active, and calls `this.error()` for human-readable output.
-- **`this.jsonError(data, flags)`** — JSON-specific error output for non-standard error flows.
-
-Catch block template:
 ```typescript
 try {
   // command logic
@@ -242,6 +237,8 @@ try {
   this.error(`Error creating resource: ${error instanceof Error ? error.message : String(error)}`);
 }
 ```
+
+**`this.jsonError(data, flags)`** exists as an escape hatch for non-standard error flows where `handleCommandError` doesn't fit (e.g., `set-apns-p12.ts` where the error format differs). New commands should not need it — use `handleCommandError` instead. Existing uses of `jsonError` should be migrated to `handleCommandError` over time.
 
 ### Pattern-specific implementation
 

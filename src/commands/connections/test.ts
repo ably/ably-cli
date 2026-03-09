@@ -4,10 +4,7 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
-import {
-  formatProgress,
-  formatSuccess as successMsg,
-} from "../../utils/output.js";
+import { formatProgress, formatSuccess } from "../../utils/output.js";
 
 export default class ConnectionsTest extends AblyBaseCommand {
   static override description = "Test connection to Ably";
@@ -173,7 +170,9 @@ export default class ConnectionsTest extends AblyBaseCommand {
           const partialSuccess = wsSuccess || xhrSuccess;
 
           if (allSuccess) {
-            this.log(successMsg("All connection tests passed successfully."));
+            this.log(
+              formatSuccess("All connection tests passed successfully."),
+            );
           } else if (partialSuccess) {
             this.log(
               `${chalk.yellow("!")} Some connection tests succeeded, but others failed`,
@@ -188,7 +187,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
         case "ws": {
           if (wsSuccess) {
             this.log(
-              successMsg("WebSocket connection test passed successfully."),
+              formatSuccess("WebSocket connection test passed successfully."),
             );
           } else {
             this.log(`${chalk.red("✗")} WebSocket connection test failed`);
@@ -199,7 +198,9 @@ export default class ConnectionsTest extends AblyBaseCommand {
 
         case "xhr": {
           if (xhrSuccess) {
-            this.log(successMsg("HTTP connection test passed successfully."));
+            this.log(
+              formatSuccess("HTTP connection test passed successfully."),
+            );
           } else {
             this.log(`${chalk.red("✗")} HTTP connection test failed`);
           }
@@ -309,7 +310,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
           );
           if (!this.shouldOutputJson(flags)) {
             this.log(
-              successMsg(`${config.displayName} connection successful.`),
+              formatSuccess(`${config.displayName} connection successful.`),
             );
             this.log(
               `  Connection ID: ${chalk.cyan(client!.connection.id || "unknown")}`,

@@ -183,13 +183,12 @@ import {
   resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
 
-describe("topic:action E2E", { timeout: 60_000 }, () => {
+describe.skipIf(SHOULD_SKIP_E2E)("topic:action E2E", { timeout: 60_000 }, () => {
   let subscribeChannel: string;
   let outputPath: string;
   let subscribeProcessInfo: { pid: number; outputPath: string } | null = null;
 
   beforeAll(() => {
-    if (SHOULD_SKIP_E2E) return;
     const handler = () => { cleanupTrackedResources(); process.exit(1); };
     process.on("SIGINT", handler);
     return () => { process.removeListener("SIGINT", handler); };
@@ -212,7 +211,7 @@ describe("topic:action E2E", { timeout: 60_000 }, () => {
     await cleanupTrackedResources();
   });
 
-  it.skipIf(SHOULD_SKIP_E2E)("should subscribe and receive messages", async () => {
+  it("should subscribe and receive messages", async () => {
     setupTestFailureHandler("topic:action subscribe");
 
     subscribeProcessInfo = await runLongRunningBackgroundProcess(
@@ -240,14 +239,14 @@ import {
   cleanupTrackedResources,
 } from "../../helpers/e2e-test-helper.js";
 
-describe("topic:action CRUD E2E", { timeout: 30_000 }, () => {
+describe.skipIf(SHOULD_SKIP_E2E)("topic:action CRUD E2E", { timeout: 30_000 }, () => {
   const cliPath = "./bin/run.js";
 
   afterAll(async () => {
     await cleanupTrackedResources();
   });
 
-  it.skipIf(SHOULD_SKIP_E2E)("should create and list resources", () => {
+  it("should create and list resources", () => {
     const createOutput = execSync(
       `node ${cliPath} topic:action create --name test-resource`,
       { env: { ...process.env, ABLY_ACCESS_TOKEN: process.env.ABLY_ACCESS_TOKEN! } },

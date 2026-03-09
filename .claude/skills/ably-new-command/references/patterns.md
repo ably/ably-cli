@@ -38,6 +38,8 @@ async run(): Promise<void> {
   this.configureRewind(channelOptions, flags.rewind, flags, "MySubscribe", args.channel);
 
   const channel = client.channels.get(args.channel, channelOptions);
+  // Shared helper that monitors channel state changes and logs them (verbose mode).
+  // Returns a cleanup function, but cleanup is handled automatically by base command.
   this.setupChannelStateLogging(channel, flags);
 
   if (!this.shouldOutputJson(flags)) {
@@ -114,6 +116,13 @@ async run(): Promise<void> {
 ```
 
 For multi-message publish or realtime transport, see `src/commands/channels/publish.ts` as a reference.
+
+**When to use Realtime instead of REST for publishing:**
+- When publishing multiple messages with a count/repeat loop (continuous publishing with delays between messages)
+- When the command also subscribes to the same channel (publish + subscribe in one command)
+- When the command needs to maintain a persistent connection for other reasons
+
+For single-shot publish, REST is preferred (simpler, no connection overhead). See `src/commands/channels/publish.ts` which supports both via a `--transport` flag.
 
 ---
 

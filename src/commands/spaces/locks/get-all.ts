@@ -150,12 +150,12 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
             this.log(`- ${chalk.blue(lock.id)}:`);
             this.log(`  ${formatLabel("Status")} ${lock.status || "unknown"}`);
             this.log(
-              `  ${chalk.dim("Holder:")} ${lock.member?.clientId || "None"}`,
+              `  ${formatLabel("Holder")} ${lock.member?.clientId || "None"}`,
             );
 
             if (lock.attributes && Object.keys(lock.attributes).length > 0) {
               this.log(
-                `  ${chalk.dim("Attributes:")} ${JSON.stringify(lock.attributes, null, 2)}`,
+                `  ${formatLabel("Attributes")} ${JSON.stringify(lock.attributes, null, 2)}`,
               );
             }
           } catch (error) {

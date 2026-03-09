@@ -2,7 +2,11 @@ import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
-import { formatResource, formatSuccess } from "../../utils/output.js";
+import {
+  formatLabel,
+  formatResource,
+  formatSuccess,
+} from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class IntegrationsDeleteCommand extends ControlBaseCommand {
@@ -63,12 +67,12 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
       // If not using force flag, prompt for confirmation
       if (!flags.force && !this.shouldOutputJson(flags)) {
         this.log(`\nYou are about to delete the following integration:`);
-        this.log(`Integration ID: ${integration.id}`);
-        this.log(`Type: ${integration.ruleType}`);
-        this.log(`Request Mode: ${integration.requestMode}`);
-        this.log(`Source Type: ${integration.source.type}`);
+        this.log(`${formatLabel("Integration ID")} ${integration.id}`);
+        this.log(`${formatLabel("Type")} ${integration.ruleType}`);
+        this.log(`${formatLabel("Request Mode")} ${integration.requestMode}`);
+        this.log(`${formatLabel("Source Type")} ${integration.source.type}`);
         this.log(
-          `Channel Filter: ${integration.source.channelFilter || "(none)"}`,
+          `${formatLabel("Channel Filter")} ${integration.source.channelFilter || "(none)"}`,
         );
 
         const confirmed = await promptForConfirmation(
@@ -105,10 +109,10 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
             `Integration rule deleted: ${formatResource(integration.id)}.`,
           ),
         );
-        this.log(`ID: ${integration.id}`);
-        this.log(`App ID: ${integration.appId}`);
-        this.log(`Type: ${integration.ruleType}`);
-        this.log(`Source Type: ${integration.source.type}`);
+        this.log(`${formatLabel("ID")} ${integration.id}`);
+        this.log(`${formatLabel("App ID")} ${integration.appId}`);
+        this.log(`${formatLabel("Type")} ${integration.ruleType}`);
+        this.log(`${formatLabel("Source Type")} ${integration.source.type}`);
       }
     } catch (error) {
       const errorMsg = `Error deleting integration: ${errorMessage(error)}`;

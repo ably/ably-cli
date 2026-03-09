@@ -5,6 +5,7 @@ import * as path from "node:path";
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
 import {
+  formatLabel,
   formatProgress,
   formatResource,
   formatSuccess,
@@ -79,11 +80,11 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
         this.log(this.formatJsonOutput(result, flags));
       } else {
         this.log(formatSuccess("APNS P12 certificate uploaded."));
-        this.log(`Certificate ID: ${result.id}`);
+        this.log(`${formatLabel("Certificate ID")} ${result.id}`);
         if (flags["use-for-sandbox"]) {
-          this.log(`Environment: Sandbox`);
+          this.log(`${formatLabel("Environment")} Sandbox`);
         } else {
-          this.log(`Environment: Production`);
+          this.log(`${formatLabel("Environment")} Production`);
         }
       }
     } catch (error) {
