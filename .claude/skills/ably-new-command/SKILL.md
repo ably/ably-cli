@@ -49,7 +49,7 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags, clientIdFlag } from "../../flags.js";
-import { resource, success, progress, listening, formatTimestamp, clientId, eventType, label, heading, index } from "../../utils/output.js";
+import { formatResource, formatSuccess, formatProgress, formatListening, formatTimestamp, formatClientId, formatEventType, formatLabel, formatHeading, formatIndex } from "../../utils/output.js";
 ```
 
 **Control API commands** (apps, integrations, queues, keys, rules, push config):
@@ -58,7 +58,7 @@ import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { resource, success, label, heading } from "../../utils/output.js";
+import { formatResource, formatSuccess, formatLabel, formatHeading } from "../../utils/output.js";
 ```
 
 **Chat commands** (rooms messages, reactions, typing, occupancy):
@@ -68,7 +68,7 @@ import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../chat-base-command.js";
 import { productApiFlags, clientIdFlag } from "../../flags.js";
-import { resource, success, progress, listening } from "../../utils/output.js";
+import { formatResource, formatSuccess, formatProgress, formatListening } from "../../utils/output.js";
 ```
 
 **Spaces commands** (spaces members, locks, cursors, locations):
@@ -78,7 +78,7 @@ import chalk from "chalk";
 
 import { SpacesBaseCommand } from "../../spaces-base-command.js";
 import { productApiFlags, clientIdFlag } from "../../flags.js";
-import { resource, success, progress, listening, clientId } from "../../utils/output.js";
+import { formatResource, formatSuccess, formatProgress, formatListening, formatClientId } from "../../utils/output.js";
 ```
 
 **Stats commands** (stats app, stats account):
@@ -163,13 +163,13 @@ The CLI has specific output helpers in `src/utils/output.ts`. All human-readable
 ```typescript
 // JSON guard — all human output goes through this
 if (!this.shouldOutputJson(flags)) {
-  this.log(progress("Attaching to channel: " + resource(channelName)));
+  this.log(formatProgress("Attaching to channel: " + formatResource(channelName)));
 }
 
 // After success:
 if (!this.shouldOutputJson(flags)) {
-  this.log(success("Subscribed to channel: " + resource(channelName) + "."));
-  this.log(listening("Listening for messages."));
+  this.log(formatSuccess("Subscribed to channel: " + formatResource(channelName) + "."));
+  this.log(formatListening("Listening for messages."));
 }
 
 // JSON output:
@@ -182,32 +182,32 @@ if (this.shouldOutputJson(flags)) {
 
 | Helper | Usage | Example |
 |--------|-------|---------|
-| `progress(msg)` | Action in progress — appends `...` automatically | `progress("Attaching to channel")` |
-| `success(msg)` | Green checkmark — always end with `.` (period, not `!`) | `success("Subscribed to channel " + resource(name) + ".")` |
-| `listening(msg)` | Dim text — auto-appends "Press Ctrl+C to exit." | `listening("Listening for messages.")` |
-| `resource(name)` | Cyan — for resource names, never use quotes | `resource(channelName)` |
+| `formatProgress(msg)` | Action in progress — appends `...` automatically | `formatProgress("Attaching to channel")` |
+| `formatSuccess(msg)` | Green checkmark — always end with `.` (period, not `!`) | `formatSuccess("Subscribed to channel " + formatResource(name) + ".")` |
+| `formatListening(msg)` | Dim text — auto-appends "Press Ctrl+C to exit." | `formatListening("Listening for messages.")` |
+| `formatResource(name)` | Cyan — for resource names, never use quotes | `formatResource(channelName)` |
 | `formatTimestamp(ts)` | Dim `[timestamp]` — for event streams | `formatTimestamp(isoString)` |
 | `formatMessageTimestamp(ts)` | Converts Ably message timestamp to ISO string | `formatMessageTimestamp(message.timestamp)` |
-| `countLabel(n, singular, plural?)` | Cyan count + pluralized label | `countLabel(3, "message")` → "3 messages" |
-| `limitWarning(count, limit, name)` | Yellow warning if results truncated, null otherwise | `limitWarning(items.length, flags.limit, "items")` |
+| `formatCountLabel(n, singular, plural?)` | Cyan count + pluralized label | `formatCountLabel(3, "message")` → "3 messages" |
+| `formatLimitWarning(count, limit, name)` | Yellow warning if results truncated, null otherwise | `formatLimitWarning(items.length, flags.limit, "items")` |
 | `formatPresenceAction(action)` | Returns `{ symbol, color }` for enter/leave/update | `formatPresenceAction("enter")` → `{ symbol: "✓", color: chalk.green }` |
-| `clientId(id)` | Blue — for client identity display | `clientId(msg.clientId)` |
-| `eventType(type)` | Yellow — for event/action type labels | `eventType("enter")` |
-| `label(text)` | Dim with colon — for field labels in structured output | `label("Platform")` → dim "Platform:" |
-| `heading(text)` | Bold — for record headings in list output | `heading("Device ID: " + id)` |
-| `index(n)` | Dim bracketed number — for history ordering | `index(1)` → dim "[1]" |
+| `formatClientId(id)` | Blue — for client identity display | `formatClientId(msg.clientId)` |
+| `formatEventType(type)` | Yellow — for event/action type labels | `formatEventType("enter")` |
+| `formatLabel(text)` | Dim with colon — for field labels in structured output | `formatLabel("Platform")` → dim "Platform:" |
+| `formatHeading(text)` | Bold — for record headings in list output | `formatHeading("Device ID: " + id)` |
+| `formatIndex(n)` | Dim bracketed number — for history ordering | `formatIndex(1)` → dim "[1]" |
 
 Rules:
-- `progress("Action text")` — appends `...` automatically, never add it manually
-- `success("Completed action.")` — green checkmark, always end with `.` (period, not `!`)
-- `listening("Listening for X.")` — dim text, automatically appends "Press Ctrl+C to exit."
-- `resource(name)` — cyan colored, never use quotes around resource names
+- `formatProgress("Action text")` — appends `...` automatically, never add it manually
+- `formatSuccess("Completed action.")` — green checkmark, always end with `.` (period, not `!`)
+- `formatListening("Listening for X.")` — dim text, automatically appends "Press Ctrl+C to exit."
+- `formatResource(name)` — cyan colored, never use quotes around resource names
 - `formatTimestamp(ts)` — dim `[timestamp]` for event streams
-- `clientId(id)` — blue, for client identity in events (replaces `chalk.blue(id)`)
-- `eventType(type)` — yellow, for event/action labels (replaces `chalk.yellow(type)`)
-- `label(text)` — dim with colon, for field labels (replaces `chalk.dim("Label:")`)
-- `heading(text)` — bold, for record headings in lists (replaces `chalk.bold("Heading")`)
-- `index(n)` — dim bracketed number, for history ordering (replaces `chalk.dim(\`[${n}]\`)`)
+- `formatClientId(id)` — blue, for client identity in events
+- `formatEventType(type)` — yellow, for event/action labels
+- `formatLabel(text)` — dim with colon, for field labels
+- `formatHeading(text)` — bold, for record headings in lists
+- `formatIndex(n)` — dim bracketed number, for history ordering
 - Use `this.error()` for fatal errors, never `this.log(chalk.red(...))`
 - Never use `console.log` or `console.error` — always `this.log()` or `this.logToStderr()`
 
@@ -315,7 +315,7 @@ pnpm test:unit      # Run tests
 - [ ] Correct flag set (`productApiFlags` vs `ControlBaseCommand.globalFlags`)
 - [ ] `clientIdFlag` only if command needs client identity
 - [ ] All human output wrapped in `if (!this.shouldOutputJson(flags))`
-- [ ] Output helpers used correctly (`progress`, `success`, `listening`, `resource`, `formatTimestamp`, `clientId`, `eventType`, `label`, `heading`, `index`)
+- [ ] Output helpers used correctly (`formatProgress`, `formatSuccess`, `formatListening`, `formatResource`, `formatTimestamp`, `formatClientId`, `formatEventType`, `formatLabel`, `formatHeading`, `formatIndex`)
 - [ ] `success()` messages end with `.` (period)
 - [ ] Resource names use `resource(name)`, never quoted
 - [ ] Error handling uses `this.handleCommandError()` or `this.error()`, not `this.log(chalk.red(...))`

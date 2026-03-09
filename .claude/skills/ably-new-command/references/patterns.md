@@ -41,13 +41,13 @@ async run(): Promise<void> {
   this.setupChannelStateLogging(channel, flags);
 
   if (!this.shouldOutputJson(flags)) {
-    this.log(progress("Attaching to channel: " + resource(args.channel)));
+    this.log(formatProgress("Attaching to channel: " + formatResource(args.channel)));
   }
 
   channel.once("attached", () => {
     if (!this.shouldOutputJson(flags)) {
-      this.log(success("Attached to channel: " + resource(args.channel) + "."));
-      this.log(listening("Listening for events."));
+      this.log(formatSuccess("Attached to channel: " + formatResource(args.channel) + "."));
+      this.log(formatListening("Listening for events."));
     }
   });
 
@@ -58,7 +58,7 @@ async run(): Promise<void> {
     if (this.shouldOutputJson(flags)) {
       this.log(this.formatJsonOutput({ /* message data */ }, flags));
     } else {
-      // Human-readable output with formatTimestamp, resource, chalk colors
+      // Human-readable output with formatTimestamp, formatResource, chalk colors
     }
   });
 
@@ -91,7 +91,7 @@ async run(): Promise<void> {
   const channel = rest.channels.get(args.channel);
 
   if (!this.shouldOutputJson(flags)) {
-    this.log(progress("Publishing to channel: " + resource(args.channel)));
+    this.log(formatProgress("Publishing to channel: " + formatResource(args.channel)));
   }
 
   try {
@@ -105,7 +105,7 @@ async run(): Promise<void> {
     if (this.shouldOutputJson(flags)) {
       this.log(this.formatJsonOutput({ success: true, channel: args.channel }, flags));
     } else {
-      this.log(success("Message published to channel: " + resource(args.channel) + "."));
+      this.log(formatSuccess("Message published to channel: " + formatResource(args.channel) + "."));
     }
   } catch (error) {
     this.handleCommandError(error, flags, "Publish", { channel: args.channel });
@@ -141,7 +141,7 @@ async run(): Promise<void> {
   if (this.shouldOutputJson(flags)) {
     this.log(this.formatJsonOutput({ messages }, flags));
   } else {
-    this.log(success(`Found ${messages.length} messages.`));
+    this.log(formatSuccess(`Found ${messages.length} messages.`));
     // Display each message
   }
 }
@@ -186,7 +186,7 @@ async run(): Promise<void> {
   }
 
   if (!this.shouldOutputJson(flags)) {
-    this.log(progress("Entering presence on channel: " + resource(args.channel)));
+    this.log(formatProgress("Entering presence on channel: " + formatResource(args.channel)));
   }
 
   // Optionally subscribe to other members' events before entering
@@ -200,8 +200,8 @@ async run(): Promise<void> {
   await channel.presence.enter(presenceData);
 
   if (!this.shouldOutputJson(flags)) {
-    this.log(success("Entered presence on channel: " + resource(args.channel) + "."));
-    this.log(listening("Present on channel."));
+    this.log(formatSuccess("Entered presence on channel: " + formatResource(args.channel) + "."));
+    this.log(formatListening("Present on channel."));
   }
 
   await waitUntilInterruptedOrTimeout(flags);
@@ -220,27 +220,27 @@ async finally(err: Error | undefined): Promise<void> {
 
 ## List Pattern
 
-List commands query a collection and display results. They don't use `success()` because there's no action to confirm — they just display data.
+List commands query a collection and display results. They don't use `formatSuccess()` because there's no action to confirm — they just display data.
 
-**Simple identifier lists** (e.g., `channels list`, `rooms list`) — use `resource()` for each item:
+**Simple identifier lists** (e.g., `channels list`, `rooms list`) — use `formatResource()` for each item:
 ```typescript
 if (!this.shouldOutputJson(flags)) {
   this.log(`Found ${chalk.cyan(items.length.toString())} active channels:`);
   for (const item of items) {
-    this.log(`${resource(item.id)}`);
+    this.log(`${formatResource(item.id)}`);
   }
 }
 ```
 
-**Structured record lists** (e.g., `queues list`, `integrations list`, `push devices list`) — use `heading()` and `label()` helpers:
+**Structured record lists** (e.g., `queues list`, `integrations list`, `push devices list`) — use `formatHeading()` and `formatLabel()` helpers:
 ```typescript
 if (!this.shouldOutputJson(flags)) {
   this.log(`Found ${items.length} devices:\n`);
   for (const item of items) {
-    this.log(heading(`Device ID: ${item.id}`));
-    this.log(`  ${label("Platform")} ${item.platform}`);
-    this.log(`  ${label("Push State")} ${item.pushState}`);
-    this.log(`  ${label("Client ID")} ${item.clientId || "N/A"}`);
+    this.log(formatHeading(`Device ID: ${item.id}`));
+    this.log(`  ${formatLabel("Platform")} ${item.platform}`);
+    this.log(`  ${formatLabel("Push State")} ${item.pushState}`);
+    this.log(`  ${formatLabel("Client ID")} ${item.clientId || "N/A"}`);
     this.log("");
   }
 }
@@ -268,9 +268,9 @@ async run(): Promise<void> {
     } else {
       this.log(`Found ${limited.length} item${limited.length !== 1 ? "s" : ""}:\n`);
       for (const item of limited) {
-        this.log(heading(`Item ID: ${item.id}`));
-        this.log(`  ${label("Type")} ${item.type}`);
-        this.log(`  ${label("Status")} ${item.status}`);
+        this.log(formatHeading(`Item ID: ${item.id}`));
+        this.log(`  ${formatLabel("Type")} ${item.type}`);
+        this.log(`  ${formatLabel("Status")} ${item.status}`);
         this.log("");
       }
     }
@@ -281,10 +281,10 @@ async run(): Promise<void> {
 ```
 
 Key conventions for list output:
-- `resource()` is for inline resource name references, not for record headings
-- `heading()` is for record heading lines that act as visual separators between multi-field records
-- `label(text)` for field labels in detail lines (automatically appends `:`)
-- `success()` is not used in list commands — it's for confirming an action completed
+- `formatResource()` is for inline resource name references, not for record headings
+- `formatHeading()` is for record heading lines that act as visual separators between multi-field records
+- `formatLabel(text)` for field labels in detail lines (automatically appends `:`)
+- `formatSuccess()` is not used in list commands — it's for confirming an action completed
 
 ---
 
@@ -308,7 +308,7 @@ async run(): Promise<void> {
     if (this.shouldOutputJson(flags)) {
       this.log(this.formatJsonOutput({ result }, flags));
     } else {
-      this.log(success("Resource created: " + resource(result.id) + "."));
+      this.log(formatSuccess("Resource created: " + formatResource(result.id) + "."));
       // Display additional fields
     }
   } catch (error) {
