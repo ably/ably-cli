@@ -121,6 +121,18 @@ describe("channels:subscribe command", () => {
         id: "msg-123",
         clientId: "publisher-client",
         connectionId: "conn-456",
+        version: {
+          serial: "ver-serial-1",
+          timestamp: Date.now(),
+          clientId: "version-client",
+        },
+        annotations: {
+          summary: {
+            "reaction:distinct.v1": {
+              "👍": { total: 2, clientIds: ["c1", "c2"], clipped: false },
+            },
+          },
+        },
       });
 
       const { stdout } = await commandPromise;
@@ -136,6 +148,13 @@ describe("channels:subscribe command", () => {
       expect(stdout).toContain("publisher-client");
       expect(stdout).toContain("Data:");
       expect(stdout).toContain("hello world");
+      // Version fields
+      expect(stdout).toContain("Version:");
+      expect(stdout).toContain("ver-serial-1");
+      expect(stdout).toContain("version-client");
+      // Annotations
+      expect(stdout).toContain("Annotations:");
+      expect(stdout).toContain("reaction:distinct.v1:");
     });
 
     it("should run with --json flag without errors", async () => {
