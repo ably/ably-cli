@@ -116,9 +116,9 @@ static override flags = {
 };
 
 // Control API command (apps, keys, queues, etc.)
-import { controlApiFlags } from "../../flags.js";
-static override flags = {
-  ...controlApiFlags,
+// controlApiFlags come from ControlBaseCommand.globalFlags automatically
+static flags = {
+  ...ControlBaseCommand.globalFlags,
   // command-specific flags...
 };
 ```

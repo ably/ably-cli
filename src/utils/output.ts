@@ -63,6 +63,31 @@ export function limitWarning(
   return null;
 }
 
+/** Client identity display — cyan-blue for client IDs in event output */
+export function clientId(id: string): string {
+  return chalk.blue(id);
+}
+
+/** Event type/action display — yellow for event type labels */
+export function eventType(type: string): string {
+  return chalk.yellow(type);
+}
+
+/** Field label display — dim text with colon for structured output fields */
+export function label(text: string): string {
+  return chalk.dim(`${text}:`);
+}
+
+/** Record heading — bold text for list item headings */
+export function heading(text: string): string {
+  return chalk.bold(text);
+}
+
+/** Index number display — dim bracketed number for history/list ordering */
+export function index(n: number): string {
+  return chalk.dim(`[${n}]`);
+}
+
 export function formatPresenceAction(action: string): {
   symbol: string;
   color: ChalkInstance;

@@ -1,6 +1,6 @@
 ---
 name: ably-new-command
-description: "Scaffold new CLI commands with tests for the Ably CLI (oclif + TypeScript). Use this skill whenever creating a new command, adding a new subcommand, migrating/moving a command to a new group, or scaffolding a command with its test file. Triggers on: 'new command', 'add command', 'create command', 'scaffold command', 'add subcommand', 'implement command', or any request to build a new `ably <topic> <action>` command."
+description: "Scaffold new CLI commands with tests for the Ably CLI (oclif + TypeScript). Use this skill whenever creating a new command, adding a new subcommand, migrating/moving a command to a new group, or scaffolding a command with its test file. Triggers on: 'new command', 'add command', 'create command', 'scaffold command', 'add subcommand', 'implement command', or any request to build a new `ably <topic> <action>` command. IMPORTANT: This skill MUST be used any time the user wants to create, build, or implement ANY new CLI command or subcommand — even if they describe it casually (e.g., 'I need an ably X Y command', 'can you build ably rooms typing subscribe', 'we should add a purge command to queues'). Also use when moving or restructuring existing commands to new locations. Do NOT use for modifying existing commands, fixing bugs, debugging, adding tests to existing commands, or refactoring — only for creating net-new command files."
 ---
 
 # Ably CLI New Command
@@ -21,6 +21,16 @@ Every command in this CLI falls into one of these patterns. Pick the right one b
 | **Enter** | Join presence/space then optionally listen | `AblyBaseCommand` | Realtime | `channels presence enter`, `spaces members enter` |
 | **CRUD** | Create/read/update/delete via Control API | `ControlBaseCommand` | Control API (HTTP) | `integrations create`, `queues delete` |
 
+**Specialized base classes** — some command groups have dedicated base classes that handle common setup (client lifecycle, cleanup, shared flags):
+
+| Pattern | Base class | When to use | Source |
+|---------|-----------|-------------|--------|
+| Chat commands | `ChatBaseCommand` | `rooms messages`, `rooms reactions`, `rooms typing`, `rooms occupancy` | `src/chat-base-command.ts` |
+| Spaces commands | `SpacesBaseCommand` | `spaces members`, `spaces locks`, `spaces cursors`, `spaces locations` | `src/spaces-base-command.ts` |
+| Stats commands | `StatsBaseCommand` | `stats app`, `stats account` | `src/stats-base-command.ts` |
+
+If your command falls into one of these groups, extend the specialized base class instead of `AblyBaseCommand` or `ControlBaseCommand` directly. **Exception:** if your command only needs a REST client (e.g., history queries that don't enter a space or join a room), you may use `AblyBaseCommand` directly — the specialized base class is most valuable when the command needs realtime connections, cleanup lifecycle, or shared setup like `room.attach()` / `space.enter()`.
+
 ## Step 2: Create the command file
 
 ### File location
@@ -39,7 +49,7 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags, clientIdFlag } from "../../flags.js";
-import { resource, success, progress, listening, formatTimestamp } from "../../utils/output.js";
+import { resource, success, progress, listening, formatTimestamp, clientId, eventType, label, heading, index } from "../../utils/output.js";
 ```
 
 **Control API commands** (apps, integrations, queues, keys, rules, push config):
@@ -48,8 +58,37 @@ import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { resource, success } from "../../utils/output.js";
+import { resource, success, label, heading } from "../../utils/output.js";
 ```
+
+**Chat commands** (rooms messages, reactions, typing, occupancy):
+```typescript
+import { Args, Flags } from "@oclif/core";
+import chalk from "chalk";
+
+import { ChatBaseCommand } from "../../chat-base-command.js";
+import { productApiFlags, clientIdFlag } from "../../flags.js";
+import { resource, success, progress, listening } from "../../utils/output.js";
+```
+
+**Spaces commands** (spaces members, locks, cursors, locations):
+```typescript
+import { Args, Flags } from "@oclif/core";
+import chalk from "chalk";
+
+import { SpacesBaseCommand } from "../../spaces-base-command.js";
+import { productApiFlags, clientIdFlag } from "../../flags.js";
+import { resource, success, progress, listening, clientId } from "../../utils/output.js";
+```
+
+**Stats commands** (stats app, stats account):
+```typescript
+import { Args, Flags } from "@oclif/core";
+
+import { StatsBaseCommand } from "../../stats-base-command.js";
+```
+
+**Import depth:** These examples use `../../` which is correct for `src/commands/<topic>/<action>.ts`. For deeper nesting like `src/commands/<topic>/<subtopic>/<action>.ts`, add one more `../` per level (e.g., `../../../base-command.js`). Always count the directory levels from your command file back to `src/`.
 
 ### Flag sets
 
@@ -139,399 +178,78 @@ if (this.shouldOutputJson(flags)) {
 }
 ```
 
+**Output helper reference** — all exported from `src/utils/output.ts`:
+
+| Helper | Usage | Example |
+|--------|-------|---------|
+| `progress(msg)` | Action in progress — appends `...` automatically | `progress("Attaching to channel")` |
+| `success(msg)` | Green checkmark — always end with `.` (period, not `!`) | `success("Subscribed to channel " + resource(name) + ".")` |
+| `listening(msg)` | Dim text — auto-appends "Press Ctrl+C to exit." | `listening("Listening for messages.")` |
+| `resource(name)` | Cyan — for resource names, never use quotes | `resource(channelName)` |
+| `formatTimestamp(ts)` | Dim `[timestamp]` — for event streams | `formatTimestamp(isoString)` |
+| `formatMessageTimestamp(ts)` | Converts Ably message timestamp to ISO string | `formatMessageTimestamp(message.timestamp)` |
+| `countLabel(n, singular, plural?)` | Cyan count + pluralized label | `countLabel(3, "message")` → "3 messages" |
+| `limitWarning(count, limit, name)` | Yellow warning if results truncated, null otherwise | `limitWarning(items.length, flags.limit, "items")` |
+| `formatPresenceAction(action)` | Returns `{ symbol, color }` for enter/leave/update | `formatPresenceAction("enter")` → `{ symbol: "✓", color: chalk.green }` |
+| `clientId(id)` | Blue — for client identity display | `clientId(msg.clientId)` |
+| `eventType(type)` | Yellow — for event/action type labels | `eventType("enter")` |
+| `label(text)` | Dim with colon — for field labels in structured output | `label("Platform")` → dim "Platform:" |
+| `heading(text)` | Bold — for record headings in list output | `heading("Device ID: " + id)` |
+| `index(n)` | Dim bracketed number — for history ordering | `index(1)` → dim "[1]" |
+
 Rules:
 - `progress("Action text")` — appends `...` automatically, never add it manually
 - `success("Completed action.")` — green checkmark, always end with `.` (period, not `!`)
 - `listening("Listening for X.")` — dim text, automatically appends "Press Ctrl+C to exit."
 - `resource(name)` — cyan colored, never use quotes around resource names
 - `formatTimestamp(ts)` — dim `[timestamp]` for event streams
-- `chalk.blue(clientId)` for client IDs
-- `chalk.yellow(eventType)` for event types
-- `chalk.dim("Label:")` for secondary labels
+- `clientId(id)` — blue, for client identity in events (replaces `chalk.blue(id)`)
+- `eventType(type)` — yellow, for event/action labels (replaces `chalk.yellow(type)`)
+- `label(text)` — dim with colon, for field labels (replaces `chalk.dim("Label:")`)
+- `heading(text)` — bold, for record headings in lists (replaces `chalk.bold("Heading")`)
+- `index(n)` — dim bracketed number, for history ordering (replaces `chalk.dim(\`[${n}]\`)`)
 - Use `this.error()` for fatal errors, never `this.log(chalk.red(...))`
 - Never use `console.log` or `console.error` — always `this.log()` or `this.logToStderr()`
 
+### Error handling
+
+Use these patterns for error handling in commands:
+
+- **`this.error(message)`** — Fatal errors (oclif standard). Throws, so no `return` needed after it.
+- **`this.handleCommandError(error, flags, component, context?)`** — Use in catch blocks. Logs the CLI event, emits JSON error when `--json` is active, and calls `this.error()` for human-readable output.
+- **`this.jsonError(data, flags)`** — JSON-specific error output for non-standard error flows.
+
+Catch block template:
+```typescript
+try {
+  // command logic
+} catch (error) {
+  this.handleCommandError(
+    error,
+    flags,
+    "ComponentName",     // e.g., "ChannelPublish", "PresenceEnter"
+    { channel: args.channel },  // optional context for logging
+  );
+}
+```
+
+For simple Control API errors where you don't need event logging:
+```typescript
+try {
+  const result = await controlApi.someMethod(appId, data);
+  // handle result
+} catch (error) {
+  this.error(`Error creating resource: ${error instanceof Error ? error.message : String(error)}`);
+}
+```
+
 ### Pattern-specific implementation
 
-#### Subscribe pattern
-```typescript
-async run(): Promise<void> {
-  const { args, flags } = await this.parse(MySubscribeCommand);
-
-  const client = await this.createAblyRealtimeClient(flags);
-  if (!client) return;
-
-  this.setupConnectionStateLogging(client, flags);
-
-  const channel = client.channels.get(args.channel, channelOptions);
-  this.setupChannelStateLogging(channel, flags);
-
-  if (!this.shouldOutputJson(flags)) {
-    this.log(progress("Attaching to channel: " + resource(args.channel)));
-  }
-
-  channel.once("attached", () => {
-    if (!this.shouldOutputJson(flags)) {
-      this.log(success("Attached to channel: " + resource(args.channel) + "."));
-      this.log(listening("Listening for events."));
-    }
-  });
-
-  let sequenceCounter = 0;
-  await channel.subscribe((message) => {
-    sequenceCounter++;
-    // Format and output the message
-    if (this.shouldOutputJson(flags)) {
-      this.log(this.formatJsonOutput({ /* message data */ }, flags));
-    } else {
-      // Human-readable output with formatTimestamp, resource, chalk colors
-    }
-  });
-
-  await waitUntilInterruptedOrTimeout(flags);
-}
-```
-
-Import `waitUntilInterruptedOrTimeout` from `../../utils/long-running.js`.
-
-#### CRUD / Control API pattern
-```typescript
-async run(): Promise<void> {
-  const { args, flags } = await this.parse(MyControlCommand);
-
-  const controlApi = this.createControlApi(flags);
-  const appId = await this.resolveAppId(flags);
-
-  if (!appId) {
-    this.error('No app specified. Use --app flag or select an app with "ably apps switch"');
-    return;
-  }
-
-  try {
-    const result = await controlApi.someMethod(appId, data);
-
-    if (this.shouldOutputJson(flags)) {
-      this.log(this.formatJsonOutput({ result }, flags));
-    } else {
-      this.log(success("Resource created: " + resource(result.id) + "."));
-      // Display additional fields
-    }
-  } catch (error) {
-    this.error(`Error creating resource: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-```
-
-#### List pattern (Control API or Product API)
-
-List commands query a collection and display results. They don't use `success()` because there's no action to confirm — they just display data. The output format depends on whether items are simple identifiers or structured multi-field records.
-
-**Simple identifier lists** (e.g., `channels list`, `rooms list`) — use `resource()` for each item:
-```typescript
-if (!this.shouldOutputJson(flags)) {
-  this.log(`Found ${chalk.cyan(items.length.toString())} active channels:`);
-  for (const item of items) {
-    this.log(`${resource(item.id)}`);
-  }
-}
-```
-
-**Structured record lists** (e.g., `queues list`, `integrations list`, `push devices list`) — use `chalk.bold()` as a record heading with detail fields below:
-```typescript
-if (!this.shouldOutputJson(flags)) {
-  this.log(`Found ${items.length} devices:\n`);
-  for (const item of items) {
-    this.log(chalk.bold(`Device ID: ${item.id}`));
-    this.log(`  ${chalk.dim("Platform:")} ${item.platform}`);
-    this.log(`  ${chalk.dim("Push State:")} ${item.pushState}`);
-    this.log(`  ${chalk.dim("Client ID:")} ${item.clientId || "N/A"}`);
-    this.log("");
-  }
-}
-```
-
-Full Control API list command template:
-```typescript
-async run(): Promise<void> {
-  const { flags } = await this.parse(MyListCommand);
-
-  const controlApi = this.createControlApi(flags);
-  const appId = await this.resolveAppId(flags);
-
-  if (!appId) {
-    this.error('No app specified. Use --app flag or select an app with "ably apps switch"');
-    return;
-  }
-
-  try {
-    const items = await controlApi.listThings(appId);
-    const limited = flags.limit ? items.slice(0, flags.limit) : items;
-
-    if (this.shouldOutputJson(flags)) {
-      this.log(this.formatJsonOutput({ items: limited, total: limited.length, appId }, flags));
-    } else {
-      this.log(`Found ${limited.length} item${limited.length !== 1 ? "s" : ""}:\n`);
-      for (const item of limited) {
-        this.log(chalk.bold(`Item ID: ${item.id}`));
-        this.log(`  ${chalk.dim("Type:")} ${item.type}`);
-        this.log(`  ${chalk.dim("Status:")} ${item.status}`);
-        this.log("");
-      }
-    }
-  } catch (error) {
-    this.error(`Error listing items: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-```
-
-Key conventions for list output:
-- `resource()` is for inline resource name references (e.g., in simple identifier lists or "Attaching to channel: " + resource(name)), not for record headings
-- `chalk.bold()` is for record heading lines that act as visual separators between multi-field records
-- `chalk.dim("Label:")` for field labels in detail lines
-- `success()` is not used in list commands — it's for confirming an action completed
-
-#### Enter/Presence pattern
-```typescript
-async run(): Promise<void> {
-  const { args, flags } = await this.parse(MyEnterCommand);
-
-  const client = await this.createAblyRealtimeClient(flags);
-  if (!client) return;
-
-  this.setupConnectionStateLogging(client, flags);
-
-  const channel = client.channels.get(args.channel);
-  this.setupChannelStateLogging(channel, flags);
-
-  // Parse optional JSON data (handle shell quote stripping)
-  let presenceData;
-  if (flags.data) {
-    try {
-      presenceData = JSON.parse(flags.data);
-    } catch {
-      this.error("Invalid JSON data provided");
-      return;
-    }
-  }
-
-  if (!this.shouldOutputJson(flags)) {
-    this.log(progress("Entering presence on channel: " + resource(args.channel)));
-  }
-
-  // Optionally subscribe to other members' events before entering
-  if (flags["show-others"]) {
-    await channel.presence.subscribe((msg) => {
-      if (msg.clientId === client.auth.clientId) return; // filter self
-      // Display presence event
-    });
-  }
-
-  await channel.presence.enter(presenceData);
-
-  if (!this.shouldOutputJson(flags)) {
-    this.log(success("Entered presence on channel: " + resource(args.channel) + "."));
-    this.log(listening("Present on channel."));
-  }
-
-  await waitUntilInterruptedOrTimeout(flags);
-}
-
-// Clean up in finally — leave presence
-async finally(err: Error | undefined): Promise<void> {
-  // Leave presence before closing connection
-  return super.finally(err);
-}
-```
-
-Key flags for enter commands: `--data` (JSON), `--show-others` (boolean), `--duration` / `-D`, `--sequence-numbers`.
-
-#### History pattern
-```typescript
-async run(): Promise<void> {
-  const { args, flags } = await this.parse(MyHistoryCommand);
-
-  const rest = await this.createAblyRestClient(flags);
-  if (!rest) return;
-
-  const channel = rest.channels.get(args.channel);
-
-  const historyParams = {
-    direction: flags.direction,
-    limit: flags.limit,
-    ...(flags.start && { start: parseTimestamp(flags.start) }),
-    ...(flags.end && { end: parseTimestamp(flags.end) }),
-  };
-
-  const history = await channel.history(historyParams);
-  const messages = history.items;
-
-  if (this.shouldOutputJson(flags)) {
-    this.log(this.formatJsonOutput({ messages }, flags));
-  } else {
-    this.log(success(`Found ${messages.length} messages.`));
-    // Display each message
-  }
-}
-```
+Read `references/patterns.md` for the full implementation template matching your pattern (Subscribe, Publish/Send, History, Enter/Presence, List, CRUD/Control API). Each template includes the correct flags, `run()` method structure, and output conventions.
 
 ## Step 3: Create the test file
 
-Test files go at `test/unit/commands/<path-matching-command>.test.ts`.
-
-### Product API test (Realtime mock)
-
-```typescript
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { runCommand } from "@oclif/test";
-import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
-
-describe("topic:action command", () => {
-  let mockCallback: ((event: unknown) => void) | null = null;
-
-  beforeEach(() => {
-    mockCallback = null;
-    const mock = getMockAblyRealtime();
-    const channel = mock.channels._getChannel("test-channel");
-
-    // Configure subscribe to capture the callback
-    channel.subscribe.mockImplementation((callback: (msg: unknown) => void) => {
-      mockCallback = callback;
-    });
-
-    // Auto-connect
-    mock.connection.once.mockImplementation((event: string, cb: () => void) => {
-      if (event === "connected") cb();
-    });
-
-    // Auto-attach
-    channel.once.mockImplementation((event: string, cb: () => void) => {
-      if (event === "attached") {
-        channel.state = "attached";
-        cb();
-      }
-    });
-  });
-
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should require channel argument", async () => {
-      const { error } = await runCommand(["topic:action"], import.meta.url);
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/channel|required|argument/i);
-    });
-  });
-
-  describe("functionality", () => {
-    it("should subscribe and display events", async () => {
-      const commandPromise = runCommand(["topic:action", "test-channel"], import.meta.url);
-
-      await vi.waitFor(() => { expect(mockCallback).not.toBeNull(); });
-
-      mockCallback!({
-        name: "test-event",
-        data: "hello",
-        timestamp: Date.now(),
-      });
-
-      const { stdout } = await commandPromise;
-      expect(stdout).toContain("test-channel");
-    });
-  });
-});
-```
-
-### Product API test (REST mock)
-
-```typescript
-import { describe, it, expect, beforeEach } from "vitest";
-import { runCommand } from "@oclif/test";
-import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
-
-describe("topic:action command", () => {
-  beforeEach(() => {
-    const mock = getMockAblyRest();
-    const channel = mock.channels._getChannel("test-channel");
-    channel.history.mockResolvedValue({
-      items: [
-        { id: "msg-1", name: "event", data: "hello", timestamp: 1700000000000 },
-      ],
-    });
-  });
-
-  it("should retrieve history", async () => {
-    const { stdout } = await runCommand(
-      ["topic:action", "test-channel"],
-      import.meta.url,
-    );
-    expect(stdout).toContain("1");
-    expect(stdout).toContain("messages");
-  });
-});
-```
-
-### Control API test (nock)
-
-```typescript
-import { describe, it, expect, afterEach } from "vitest";
-import { runCommand } from "@oclif/test";
-import nock from "nock";
-import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
-
-describe("topic:action command", () => {
-  afterEach(() => {
-    nock.cleanAll();
-  });
-
-  it("should create resource", async () => {
-    const appId = getMockConfigManager().getCurrentAppId()!;
-    nock("https://control.ably.net")
-      .post(`/v1/apps/${appId}/resources`)
-      .reply(201, { id: "res-123", appId });
-
-    const { stdout } = await runCommand(
-      ["topic:action", "--flag", "value"],
-      import.meta.url,
-    );
-
-    expect(stdout).toContain("created");
-  });
-
-  it("should handle API errors", async () => {
-    const appId = getMockConfigManager().getCurrentAppId()!;
-    nock("https://control.ably.net")
-      .post(`/v1/apps/${appId}/resources`)
-      .reply(400, { error: "Bad request" });
-
-    const { error } = await runCommand(
-      ["topic:action", "--flag", "value"],
-      import.meta.url,
-    );
-
-    expect(error).toBeDefined();
-  });
-});
-```
-
-### Auth in tests
-
-- **Unit tests**: Auth is automatic via `MockConfigManager`. Never set `ABLY_API_KEY` env var unless testing env var override behavior.
-- **Never pass auth flags**: No `--api-key`, `--token`, or `--access-token` in runCommand calls.
-- Use `getMockConfigManager().getCurrentAppId()!` to get the test app ID for nock URLs.
-
-### Test structure
-
-Always include these describe blocks:
-1. `help` — verify `--help` shows USAGE, key flags, and EXAMPLES
-2. `argument validation` — verify required args produce errors when missing
-3. `functionality` — core behavior tests
-4. `flags` — verify key flags are accepted and configured
-5. `error handling` — API errors, invalid input
+Read `references/testing.md` for the full test scaffold matching your command type (Realtime mock, REST mock, Control API with nock, E2E subscribe, E2E CRUD). Test files go at `test/unit/commands/<path-matching-command>.test.ts`.
 
 ## Step 4: Create index files if needed
 
@@ -593,15 +311,17 @@ pnpm test:unit      # Run tests
 ## Checklist
 
 - [ ] Command file at correct path under `src/commands/`
-- [ ] Correct base class (`AblyBaseCommand` vs `ControlBaseCommand`)
+- [ ] Correct base class (`AblyBaseCommand`, `ControlBaseCommand`, `ChatBaseCommand`, `SpacesBaseCommand`, or `StatsBaseCommand`)
 - [ ] Correct flag set (`productApiFlags` vs `ControlBaseCommand.globalFlags`)
 - [ ] `clientIdFlag` only if command needs client identity
 - [ ] All human output wrapped in `if (!this.shouldOutputJson(flags))`
-- [ ] Output helpers used correctly (`progress`, `success`, `listening`, `resource`, `formatTimestamp`)
+- [ ] Output helpers used correctly (`progress`, `success`, `listening`, `resource`, `formatTimestamp`, `clientId`, `eventType`, `label`, `heading`, `index`)
 - [ ] `success()` messages end with `.` (period)
 - [ ] Resource names use `resource(name)`, never quoted
+- [ ] Error handling uses `this.handleCommandError()` or `this.error()`, not `this.log(chalk.red(...))`
 - [ ] Test file at matching path under `test/unit/commands/`
 - [ ] Tests use correct mock helper (`getMockAblyRealtime`, `getMockAblyRest`, `nock`)
 - [ ] Tests don't pass auth flags — `MockConfigManager` handles auth
+- [ ] Subscribe tests use `--duration` flag to auto-exit
 - [ ] Index file created if new topic/subtopic
 - [ ] `pnpm prepare && pnpm exec eslint . && pnpm test:unit` passes
