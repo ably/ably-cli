@@ -1,19 +1,18 @@
 import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
-import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../flags.js";
-import { formatMessageData } from "../../utils/json-formatter.js";
 import { buildHistoryParams } from "../../utils/history.js";
 import { errorMessage } from "../../utils/errors.js";
 import {
-  countLabel,
+  formatMessagesOutput,
   formatTimestamp,
   formatMessageTimestamp,
   limitWarning,
-  resource,
+  toMessageJson,
 } from "../../utils/output.js";
+import type { MessageDisplayFields } from "../../utils/output.js";
 
 export default class ChannelsHistory extends AblyBaseCommand {
   static override args = {
@@ -85,41 +84,30 @@ export default class ChannelsHistory extends AblyBaseCommand {
       const history = await channel.history(historyParams);
       const messages = history.items;
 
+      // Build display fields from history results
+      const displayMessages: MessageDisplayFields[] = messages.map(
+        (message, index) => ({
+          channel: channelName,
+          clientId: message.clientId,
+          data: message.data,
+          event: message.name || "(none)",
+          id: message.id,
+          indexPrefix: `[${index + 1}] ${formatTimestamp(formatMessageTimestamp(message.timestamp))}`,
+          serial: message.serial,
+          timestamp: message.timestamp ?? Date.now(),
+        }),
+      );
+
       // Display results based on format
       if (this.shouldOutputJson(flags)) {
-        this.log(this.formatJsonOutput({ messages }, flags));
-      } else {
-        if (messages.length === 0) {
-          this.log("No messages found in the channel history.");
-          return;
-        }
-
         this.log(
-          `Found ${countLabel(messages.length, "message")} in the history of channel: ${resource(channelName)}`,
+          this.formatJsonOutput(
+            displayMessages.map((msg) => toMessageJson(msg)),
+            flags,
+          ),
         );
-        this.log("");
-
-        for (const [index, message] of messages.entries()) {
-          const timestampDisplay = message.timestamp
-            ? formatTimestamp(formatMessageTimestamp(message.timestamp))
-            : chalk.dim("[Unknown timestamp]");
-
-          this.log(`${chalk.dim(`[${index + 1}]`)} ${timestampDisplay}`);
-          this.log(
-            `${chalk.dim("Event:")} ${chalk.yellow(message.name || "(none)")}`,
-          );
-
-          if (message.clientId) {
-            this.log(
-              `${chalk.dim("Client ID:")} ${chalk.blue(message.clientId)}`,
-            );
-          }
-
-          this.log(chalk.dim("Data:"));
-          this.log(formatMessageData(message.data));
-
-          this.log("");
-        }
+      } else {
+        this.log(formatMessagesOutput(displayMessages));
 
         const warning = limitWarning(messages.length, flags.limit, "messages");
         if (warning) this.log(warning);

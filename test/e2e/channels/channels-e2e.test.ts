@@ -291,7 +291,8 @@ describe("Channel E2E Tests", () => {
       );
     }
 
-    expect(historyResult.stdout).toContain("Found");
+    // New format outputs messages directly with field labels (no "Found" prefix)
+    expect(historyResult.stdout).toContain("Data:");
     expect(historyResult.stdout).toContain("E2E History Test");
 
     // Now verify with SDK in a separate step outside of Oclif's callback
@@ -345,11 +346,11 @@ describe("Channel E2E Tests", () => {
         `Failed to parse JSON history output. Parse error: ${parseError}. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}, Stdout: ${historyResult.stdout}`,
       );
     }
-    expect(result).toHaveProperty("messages");
-    expect(Array.isArray(result.messages)).toBe(true);
-    expect(result.messages.length).toBeGreaterThanOrEqual(1);
+    // JSON output is now a plain array of message objects
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThanOrEqual(1);
 
-    const testMsg = result.messages.find(
+    const testMsg = result.find(
       (msg: any) =>
         msg.data &&
         typeof msg.data === "object" &&
