@@ -21,6 +21,7 @@ import {
 } from "./utils/long-running.js";
 import isTestMode from "./utils/test-mode.js";
 import isWebCliMode from "./utils/web-mode.js";
+import { enhanceErrorMessage, errorMessage } from "./utils/errors.js";
 
 // List of commands not allowed in web CLI mode - EXPORTED
 export const WEB_CLI_RESTRICTED_COMMANDS = [
@@ -805,7 +806,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       } catch (error) {
         // Fallback to regular JSON.stringify
         this.debug(
-          `Error using color-json: ${error instanceof Error ? error.message : String(error)}. Falling back to regular JSON.`,
+          `Error using color-json: ${errorMessage(error)}. Falling back to regular JSON.`,
         );
         return JSON.stringify(data, null, 2);
       }
@@ -1446,7 +1447,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     try {
       return JSON.parse(value.trim());
     } catch (error) {
-      const errorMsg = `Invalid ${flagName} JSON: ${error instanceof Error ? error.message : String(error)}`;
+      const errorMsg = `Invalid ${flagName} JSON: ${errorMessage(error)}`;
       if (this.shouldOutputJson(flags)) {
         this.jsonError({ error: errorMsg, success: false }, flags);
       } else {
@@ -1471,13 +1472,18 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     component: string,
     context?: Record<string, unknown>,
   ): void {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    this.logCliEvent(flags, component, "fatalError", `Error: ${errorMsg}`, {
-      error: errorMsg,
+    const baseErrorMsg = errorMessage(error);
+    // Enhance error message with CLI-specific hints for known Ably error codes
+    const errorMsg = enhanceErrorMessage(error, baseErrorMsg);
+    this.logCliEvent(flags, component, "fatalError", `Error: ${baseErrorMsg}`, {
+      error: baseErrorMsg,
       ...context,
     });
     if (this.shouldOutputJson(flags)) {
-      this.jsonError({ error: errorMsg, success: false, ...context }, flags);
+      this.jsonError(
+        { error: baseErrorMsg, success: false, ...context },
+        flags,
+      );
     } else {
       this.error(errorMsg);
     }

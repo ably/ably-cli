@@ -26,6 +26,7 @@ import {
   cleanupRunners,
 } from "../../helpers/command-helpers.js";
 import { CliRunner } from "../../helpers/cli-runner.js";
+import { errorMessage } from "../../../src/utils/errors.js";
 
 describe("Rooms E2E Tests", () => {
   // Skip all tests if API key not available
@@ -223,7 +224,7 @@ describe("Rooms E2E Tests", () => {
           } catch (error) {
             // Re-throw with additional context
             throw new Error(
-              `Test failed: ${error instanceof Error ? error.message : String(error)}`,
+              `Test failed: ${errorMessage(error)}`,
             );
           }
         } finally {
@@ -354,7 +355,7 @@ describe("Rooms E2E Tests", () => {
         } catch (error) {
           // Re-throw with additional context
           throw new Error(
-            `Test failed: ${error instanceof Error ? error.message : String(error)}`,
+            `Test failed: ${errorMessage(error)}`,
           );
         } finally {
           if (subscribeRunner) {

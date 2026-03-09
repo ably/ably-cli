@@ -12,6 +12,7 @@ import {
 } from "../setup.js";
 import stripAnsi from "strip-ansi";
 import { onTestFailed } from "vitest";
+import { errorMessage } from "../../src/utils/errors.js";
 
 // Constants
 export const E2E_API_KEY = process.env.E2E_ABLY_API_KEY;
@@ -532,12 +533,10 @@ async function attemptProcessStart(
         // Output stream closed
       });
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
       // If we can't create the stream, the process output won't be captured.
       // This will likely lead to readiness timeout or ENOENT later.
       throw new Error(
-        `Failed to create output stream for ${outputPath}: ${errorMessage}`,
+        `Failed to create output stream for ${outputPath}: ${errorMessage(error)}`,
       );
     }
 

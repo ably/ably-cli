@@ -25,6 +25,7 @@ import {
   resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
 import { ChildProcess } from "node:child_process";
+import { errorMessage } from "../../../src/utils/errors.js";
 
 describe("Spaces E2E Tests", () => {
   // Skip all tests if API key not available
@@ -427,7 +428,7 @@ describe("Spaces E2E Tests", () => {
         } catch (error) {
           // Re-throw with additional context
           throw new Error(
-            `Test failed: ${error instanceof Error ? error.message : String(error)}`,
+            `Test failed: ${errorMessage(error)}`,
           );
         } finally {
           if (cursorSetProcess) {
