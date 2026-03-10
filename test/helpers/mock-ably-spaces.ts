@@ -174,7 +174,7 @@ function createMockSpaceLocations(): MockSpaceLocations {
 
   return {
     set: vi.fn().mockImplementation(async () => {}),
-    getAll: vi.fn().mockResolvedValue([]),
+    getAll: vi.fn().mockResolvedValue({}),
     getSelf: vi.fn().mockResolvedValue(null),
     subscribe: vi.fn((eventOrCallback, callback?) => {
       const cb = callback ?? eventOrCallback;
@@ -237,7 +237,7 @@ function createMockSpaceCursors(): MockSpaceCursors {
 
   return {
     set: vi.fn().mockImplementation(async () => {}),
-    getAll: vi.fn().mockResolvedValue([]),
+    getAll: vi.fn().mockResolvedValue({}),
     subscribe: vi.fn((eventOrCallback, callback?) => {
       const cb = callback ?? eventOrCallback;
       const event = callback ? eventOrCallback : null;
