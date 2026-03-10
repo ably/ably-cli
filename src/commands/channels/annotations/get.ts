@@ -87,27 +87,27 @@ export default class ChannelsAnnotationsGet extends AblyBaseCommand {
 
         for (const [index, annotation] of annotations.entries()) {
           const timestamp = formatMessageTimestamp(annotation.timestamp);
-          const actionLabel =
-            annotation.action === "annotation.create"
-              ? chalk.green("CREATE")
-              : chalk.red("DELETE");
-
           this.log(
-            `${chalk.dim(`[${index + 1}]`)} ${formatTimestamp(timestamp)} ${actionLabel}`,
+            `${chalk.dim(`[${index + 1}]`)} ${formatTimestamp(timestamp)}`,
           );
-          this.log(`${chalk.dim("Type:")} ${annotation.type}`);
-          this.log(`${chalk.dim("Name:")} ${annotation.name || "(none)"}`);
-          if (annotation.clientId) {
-            this.log(
-              `${chalk.dim("Client ID:")} ${chalk.blue(annotation.clientId)}`,
-            );
-          }
+          this.log(
+            `  ${chalk.dim("Action:")} ${annotation.action === "annotation.create" ? "ANNOTATION.CREATE" : "ANNOTATION.DELETE"}`,
+          );
+          this.log(`  ${chalk.dim("Type:")} ${annotation.type}`);
+          this.log(`  ${chalk.dim("Name:")} ${annotation.name || "(none)"}`);
+          this.log(
+            `  ${chalk.dim("Client ID:")} ${annotation.clientId ? chalk.blue(annotation.clientId) : "(none)"}`,
+          );
+          this.log(
+            `  ${chalk.dim("Message Serial:")} ${annotation.messageSerial}`,
+          );
+          this.log(`  ${chalk.dim("Timestamp:")} ${annotation.timestamp}`);
           if (annotation.count !== undefined) {
-            this.log(`${chalk.dim("Count:")} ${annotation.count}`);
+            this.log(`  ${chalk.dim("Count:")} ${annotation.count}`);
           }
           if (annotation.data) {
             this.log(
-              `${chalk.dim("Data:")} ${JSON.stringify(annotation.data)}`,
+              `  ${chalk.dim("Data:")} ${JSON.stringify(annotation.data)}`,
             );
           }
           this.log(""); // Blank line between annotations

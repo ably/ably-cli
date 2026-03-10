@@ -223,9 +223,7 @@ describe("Rooms E2E Tests", () => {
             );
           } catch (error) {
             // Re-throw with additional context
-            throw new Error(
-              `Test failed: ${errorMessage(error)}`,
-            );
+            throw new Error(`Test failed: ${errorMessage(error)}`);
           }
         } finally {
           await cleanupRunners(
@@ -354,9 +352,7 @@ describe("Rooms E2E Tests", () => {
           }
         } catch (error) {
           // Re-throw with additional context
-          throw new Error(
-            `Test failed: ${errorMessage(error)}`,
-          );
+          throw new Error(`Test failed: ${errorMessage(error)}`);
         } finally {
           if (subscribeRunner) {
             await subscribeRunner.kill();

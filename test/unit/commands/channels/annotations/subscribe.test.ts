@@ -53,8 +53,12 @@ describe("ChannelsAnnotationsSubscribe", function () {
       import.meta.url,
     );
 
-    expect(stdout).toContain("CREATE");
+    expect(stdout).toContain("ANNOTATION.CREATE");
     expect(stdout).toContain("reactions:flag.v1");
+    expect(stdout).toContain("Message Serial:");
+    expect(stdout).toContain("msg-serial-123");
+    expect(stdout).toContain("Timestamp:");
+    expect(stdout).toContain("1741165200000");
   });
 
   it("should receive annotation.delete event", async function () {
@@ -84,7 +88,7 @@ describe("ChannelsAnnotationsSubscribe", function () {
       import.meta.url,
     );
 
-    expect(stdout).toContain("DELETE");
+    expect(stdout).toContain("ANNOTATION.DELETE");
   });
 
   it("should output JSON when requested", async function () {

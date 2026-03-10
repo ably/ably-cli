@@ -427,9 +427,7 @@ describe("Spaces E2E Tests", () => {
           expect(getAllResult.stdout).toContain("TestUser2");
         } catch (error) {
           // Re-throw with additional context
-          throw new Error(
-            `Test failed: ${errorMessage(error)}`,
-          );
+          throw new Error(`Test failed: ${errorMessage(error)}`);
         } finally {
           if (cursorSetProcess) {
             await killProcess(cursorSetProcess);

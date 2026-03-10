@@ -62,7 +62,7 @@ describe("enhanceErrorMessage", () => {
       );
       expect(enhanced).toContain("Channel rules");
       expect(enhanced).toContain(
-        "https://ably.com/docs/messages/annotations#enable-annotations",
+        "https://ably.com/docs/messages/annotations#enable",
       );
     });
 

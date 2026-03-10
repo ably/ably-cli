@@ -145,10 +145,12 @@ export function formatMessagesOutput(messages: MessageDisplayFields[]): string {
     if (msg.annotations && Object.keys(msg.annotations.summary).length > 0) {
       lines.push(`${chalk.dim("Annotations:")}`);
       for (const [type, entry] of Object.entries(msg.annotations.summary)) {
-        lines.push(
-          `  ${chalk.dim(`${type}:`)}`,
-          `    ${formatMessageData(entry)}`,
-        );
+        const formatted = formatMessageData(entry);
+        const indented = formatted
+          .split("\n")
+          .map((line) => `    ${line}`)
+          .join("\n");
+        lines.push(`  ${chalk.dim(`${type}:`)}`, indented);
       }
     }
 

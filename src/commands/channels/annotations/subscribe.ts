@@ -102,13 +102,19 @@ export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
         if (this.shouldOutputJson(flags)) {
           this.log(this.formatJsonOutput(event, flags));
         } else {
-          const actionLabel =
-            annotation.action === "annotation.create"
-              ? chalk.green("CREATE")
-              : chalk.red("DELETE");
+          this.log(formatTimestamp(timestamp));
           this.log(
-            `${formatTimestamp(timestamp)} ${actionLabel} | ${chalk.dim("Type:")} ${annotation.type} | ${chalk.dim("Name:")} ${annotation.name || "(none)"} | ${chalk.dim("Client:")} ${annotation.clientId ? chalk.blue(annotation.clientId) : "(none)"}`,
+            `  ${chalk.dim("Action:")} ${annotation.action === "annotation.create" ? "ANNOTATION.CREATE" : "ANNOTATION.DELETE"}`,
           );
+          this.log(`  ${chalk.dim("Type:")} ${annotation.type}`);
+          this.log(`  ${chalk.dim("Name:")} ${annotation.name || "(none)"}`);
+          this.log(
+            `  ${chalk.dim("Client ID:")} ${annotation.clientId ? chalk.blue(annotation.clientId) : "(none)"}`,
+          );
+          this.log(
+            `  ${chalk.dim("Message Serial:")} ${annotation.messageSerial}`,
+          );
+          this.log(`  ${chalk.dim("Timestamp:")} ${annotation.timestamp}`);
           if (annotation.data) {
             this.log(
               `  ${chalk.dim("Data:")} ${JSON.stringify(annotation.data)}`,
@@ -126,6 +132,7 @@ export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
           ),
         );
         this.log(listening("Listening for annotation events."));
+        this.log("");
       }
 
       this.logCliEvent(

@@ -91,11 +91,16 @@ describe("ChannelsAnnotationsGet", function () {
     );
 
     expect(stdout).toContain("Annotations for message");
+    expect(stdout).toContain("ANNOTATION.CREATE");
     expect(stdout).toContain("reactions:flag.v1");
     expect(stdout).toContain("reactions:distinct.v1");
     expect(stdout).toContain("thumbsup");
     expect(stdout).toContain("user-123");
     expect(stdout).toContain("user-456");
+    expect(stdout).toContain("Message Serial:");
+    expect(stdout).toContain("msg-serial-123");
+    expect(stdout).toContain("Timestamp:");
+    expect(stdout).toContain("1741165200000");
   });
 
   it("should output JSON when requested", async function () {
