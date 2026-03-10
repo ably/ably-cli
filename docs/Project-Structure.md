@@ -41,7 +41,7 @@ This document outlines the directory structure of the Ably CLI project.
 │   │   ├── auth/               # Authentication (keys, tokens)
 │   │   ├── bench/              # Benchmarking (publisher, subscriber)
 │   │   ├── channel-rule/       # Channel rules / namespaces
-│   │   ├── channels/           # Pub/Sub channels (publish, subscribe, presence, history, etc.)
+│   │   ├── channels/           # Pub/Sub channels (publish, subscribe, presence, history, annotations, etc.)
 │   │   ├── config/             # CLI config management (show, path)
 │   │   ├── connections/        # Client connections (test)
 │   │   ├── integrations/       # Integration rules
@@ -69,6 +69,7 @@ This document outlines the directory structure of the Ably CLI project.
 │   ├── types/
 │   │   └── cli.ts              # General CLI type definitions
 │   └── utils/
+│       ├── annotations.ts          # Annotation type validation utilities
 │       ├── channel-rule-display.ts # Channel rule human-readable display
 │       ├── chat-constants.ts       # Shared Chat SDK constants (REACTION_TYPE_MAP)
 │       ├── errors.ts               # Error utilities (errorMessage)

@@ -15,7 +15,7 @@ const ABLY_ERROR_ENHANCEMENTS: Record<
 > = {
   // Mutable messages feature not enabled (required for annotations, updates, deletes, appends)
   93002: {
-    hint: 'Enable the "Message annotations, updates, deletes, and appends" channel rule:\n  1. Go to your app\'s Settings tab in the Ably dashboard\n  2. Under Channel rules, click "Add new rule"\n  3. Enter the channel namespace (e.g., the part before ":" in your channel name)\n  4. Check "Message annotations, updates, deletes, and appends"\n  5. Click "Create channel rule"',
+    hint: 'Enable the "Message annotations, updates, deletes, and appends" channel rule, Run:\n\n ably apps channel-rules create --name "your-channel-namespace" --mutable-messages',
     helpUrl: "https://ably.com/docs/messages/annotations#enable",
   },
 };
