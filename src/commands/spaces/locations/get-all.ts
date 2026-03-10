@@ -1,47 +1,21 @@
 import { Args } from "@oclif/core";
-import chalk from "chalk";
 
-import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
   formatClientId,
+  formatCountLabel,
   formatHeading,
   formatLabel,
   formatProgress,
   formatResource,
   formatSuccess,
+  formatWarning,
 } from "../../../utils/output.js";
 
-interface LocationData {
-  [key: string]: unknown;
-}
-
-interface Member {
-  clientId?: string;
-  memberId?: string;
-  isCurrentMember?: boolean;
-}
-
-interface LocationWithCurrent {
-  current: {
-    member: Member;
-  };
-  location?: LocationData;
-  data?: LocationData;
-  [key: string]: unknown;
-}
-
-interface LocationItem {
-  [key: string]: unknown;
-  clientId?: string;
-  connectionId?: string;
-  data?: LocationData;
-  id?: string;
-  location?: LocationData;
-  member?: Member;
-  memberId?: string;
-  userId?: string;
+interface LocationEntry {
+  connectionId: string;
+  location: unknown;
 }
 
 export default class SpacesLocationsGetAll extends SpacesBaseCommand {
@@ -132,139 +106,46 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
         );
       }
 
-      let locations: LocationItem[] = [];
       try {
         const locationsFromSpace = await this.space!.locations.getAll();
 
-        if (locationsFromSpace && typeof locationsFromSpace === "object") {
-          if (Array.isArray(locationsFromSpace)) {
-            locations = locationsFromSpace as LocationItem[];
-          } else if (Object.keys(locationsFromSpace).length > 0) {
-            locations = Object.entries(locationsFromSpace).map(
-              ([memberId, locationData]) => ({
-                location: locationData,
-                memberId,
-              }),
-            ) as LocationItem[];
-          }
-        }
-
-        const knownMetaKeys = new Set([
-          "clientId",
-          "connectionId",
-          "current",
-          "id",
-          "member",
-          "memberId",
-          "userId",
-        ]);
-
-        const extractLocationData = (item: LocationItem): unknown => {
-          if (item.location !== undefined) return item.location;
-          if (item.data !== undefined) return item.data;
-          const rest: Record<string, unknown> = {};
-          for (const [key, value] of Object.entries(item)) {
-            if (!knownMetaKeys.has(key)) {
-              rest[key] = value;
-            }
-          }
-          return Object.keys(rest).length > 0 ? rest : null;
-        };
-
-        const validLocations = locations.filter((item: LocationItem) => {
-          if (item === null || item === undefined) return false;
-
-          const locationData = extractLocationData(item);
-
-          if (locationData === null || locationData === undefined) return false;
-          if (
-            typeof locationData === "object" &&
-            Object.keys(locationData as object).length === 0
+        const entries: LocationEntry[] = Object.entries(locationsFromSpace)
+          .filter(
+            ([, loc]) =>
+              loc != null &&
+              !(
+                typeof loc === "object" &&
+                Object.keys(loc as object).length === 0
+              ),
           )
-            return false;
-
-          return true;
-        });
+          .map(([connectionId, loc]) => ({ connectionId, location: loc }));
 
         if (this.shouldOutputJson(flags)) {
           this.logJsonResult(
             {
-              locations: validLocations.map((item: LocationItem) => {
-                const currentMember =
-                  "current" in item &&
-                  item.current &&
-                  typeof item.current === "object"
-                    ? (item.current as LocationWithCurrent["current"]).member
-                    : undefined;
-                const member = item.member || currentMember;
-                const memberId =
-                  item.memberId ||
-                  member?.memberId ||
-                  member?.clientId ||
-                  item.clientId ||
-                  item.id ||
-                  item.userId ||
-                  "Unknown";
-                const locationData = extractLocationData(item);
-                return {
-                  isCurrentMember: member?.isCurrentMember || false,
-                  location: locationData,
-                  memberId,
-                };
-              }),
+              locations: entries.map((entry) => ({
+                connectionId: entry.connectionId,
+                location: entry.location,
+              })),
               spaceName,
               timestamp: new Date().toISOString(),
             },
             flags,
           );
-        } else if (!validLocations || validLocations.length === 0) {
+        } else if (entries.length === 0) {
           this.log(
-            chalk.yellow("No locations are currently set in this space."),
+            formatWarning("No locations are currently set in this space."),
           );
         } else {
-          const locationsCount = validLocations.length;
           this.log(
-            `\n${formatHeading("Current locations")} (${chalk.bold(String(locationsCount))}):\n`,
+            `\n${formatHeading("Current locations")} (${formatCountLabel(entries.length, "location")}):\n`,
           );
 
-          for (const location of validLocations) {
-            // Check if location has 'current' property with expected structure
-            if (
-              "current" in location &&
-              typeof location.current === "object" &&
-              location.current !== null &&
-              "member" in location.current
-            ) {
-              const locationWithCurrent = location as LocationWithCurrent;
-              const { member } = locationWithCurrent.current;
-              this.log(
-                `Member ID: ${formatResource(member.memberId || member.clientId || "Unknown")}`,
-              );
-              try {
-                const locationData = extractLocationData(location);
-
-                this.log(
-                  `- ${formatClientId(member.memberId || member.clientId || "Unknown")}:`,
-                );
-                this.log(
-                  `  ${formatLabel("Location")} ${JSON.stringify(locationData, null, 2)}`,
-                );
-
-                if (member.isCurrentMember) {
-                  this.log(`  ${chalk.dim("(Current member)")}`);
-                }
-              } catch (error) {
-                this.log(
-                  `- ${chalk.red("Error displaying location item")}: ${errorMessage(error)}`,
-                );
-              }
-            } else {
-              // Simpler display if location doesn't have expected structure
-              this.log(`- ${formatClientId("Member")}:`);
-              this.log(
-                `  ${formatLabel("Location")} ${JSON.stringify(location, null, 2)}`,
-              );
-            }
+          for (const entry of entries) {
+            this.log(`- ${formatClientId(entry.connectionId)}:`);
+            this.log(
+              `  ${formatLabel("Location")} ${JSON.stringify(entry.location, null, 2)}`,
+            );
           }
         }
       } catch (error) {
