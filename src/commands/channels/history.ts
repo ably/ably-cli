@@ -95,6 +95,8 @@ export default class ChannelsHistory extends AblyBaseCommand {
           indexPrefix: `[${index + 1}] ${formatTimestamp(formatMessageTimestamp(message.timestamp))}`,
           serial: message.serial,
           timestamp: message.timestamp ?? Date.now(),
+          version: message.version,
+          annotations: message.annotations,
         }),
       );
 

@@ -1,4 +1,5 @@
 import chalk, { type ChalkInstance } from "chalk";
+import type * as Ably from "ably";
 import { formatMessageData, isJsonData } from "./json-formatter.js";
 
 export function progress(message: string): string {
@@ -79,6 +80,8 @@ export interface MessageDisplayFields {
   sequencePrefix?: string;
   serial?: string;
   timestamp: number;
+  version?: Ably.MessageVersion;
+  annotations?: Ably.MessageAnnotations;
 }
 
 /**
@@ -119,6 +122,36 @@ export function formatMessagesOutput(messages: MessageDisplayFields[]): string {
       lines.push(`${chalk.dim("Serial:")} ${msg.serial}`);
     }
 
+    if (
+      msg.version &&
+      Object.keys(msg.version).length > 0 &&
+      msg.version.serial &&
+      msg.version.serial !== msg.serial
+    ) {
+      lines.push(`${chalk.dim("Version:")}`);
+      if (msg.version.serial) {
+        lines.push(`  ${chalk.dim("Serial:")} ${msg.version.serial}`);
+      }
+      if (msg.version.timestamp !== undefined) {
+        lines.push(`  ${chalk.dim("Timestamp:")} ${msg.version.timestamp}`);
+      }
+      if (msg.version.clientId) {
+        lines.push(
+          `  ${chalk.dim("Client ID:")} ${chalk.blue(msg.version.clientId)}`,
+        );
+      }
+    }
+
+    if (msg.annotations && Object.keys(msg.annotations.summary).length > 0) {
+      lines.push(`${chalk.dim("Annotations:")}`);
+      for (const [type, entry] of Object.entries(msg.annotations.summary)) {
+        lines.push(
+          `  ${chalk.dim(`${type}:`)}`,
+          `    ${formatMessageData(entry)}`,
+        );
+      }
+    }
+
     if (isJsonData(msg.data)) {
       lines.push(`${chalk.dim("Data:")}\n${formatMessageData(msg.data)}`);
     } else {
@@ -149,6 +182,8 @@ export function toMessageJson(
     ...(msg.id ? { id: msg.id } : {}),
     ...(msg.clientId ? { clientId: msg.clientId } : {}),
     ...(msg.serial ? { serial: msg.serial } : {}),
+    ...(msg.version ? { version: msg.version } : {}),
+    ...(msg.annotations ? { annotations: msg.annotations } : {}),
     data: msg.data,
   };
 }

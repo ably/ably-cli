@@ -204,6 +204,8 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
             id: message.id,
             serial: message.serial,
             timestamp: message.timestamp ?? Date.now(),
+            version: message.version,
+            annotations: message.annotations,
             ...(flags["sequence-numbers"]
               ? { sequencePrefix: `${chalk.dim(`[${this.sequenceCounter}]`)} ` }
               : {}),

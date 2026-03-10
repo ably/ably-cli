@@ -16,6 +16,22 @@ describe("channels:history command", () => {
           timestamp: 1700000000000,
           clientId: "client-1",
           connectionId: "conn-1",
+          version: {
+            serial: "v1-serial",
+            timestamp: 1700000000000,
+            clientId: "updater-1",
+          },
+          annotations: {
+            summary: {
+              "reaction:distinct.v1": {
+                "👍": {
+                  total: 3,
+                  clientIds: ["c1", "c2", "c3"],
+                  clipped: false,
+                },
+              },
+            },
+          },
         },
         {
           id: "msg-2",
@@ -94,6 +110,27 @@ describe("channels:history command", () => {
       expect(stdout).toContain("msg-1");
     });
 
+    it("should display version fields when present", async () => {
+      const { stdout } = await runCommand(
+        ["channels:history", "test-channel"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Version:");
+      expect(stdout).toContain("v1-serial");
+      expect(stdout).toContain("updater-1");
+    });
+
+    it("should display annotations summary when present", async () => {
+      const { stdout } = await runCommand(
+        ["channels:history", "test-channel"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Annotations:");
+      expect(stdout).toContain("reaction:distinct.v1:");
+    });
+
     it("should handle empty history", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
@@ -122,6 +159,45 @@ describe("channels:history command", () => {
       expect(result[0]).toHaveProperty("timestamp");
       expect(result[0]).toHaveProperty("data");
       expect(result[0].data).toEqual({ text: "Hello world" });
+    });
+
+    it("should include version in JSON output when present", async () => {
+      const { stdout } = await runCommand(
+        ["channels:history", "test-channel", "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result[0]).toHaveProperty("version");
+      expect(result[0].version).toEqual({
+        serial: "v1-serial",
+        timestamp: 1700000000000,
+        clientId: "updater-1",
+      });
+      // Second message has no version
+      expect(result[1]).not.toHaveProperty("version");
+    });
+
+    it("should include annotations in JSON output when present", async () => {
+      const { stdout } = await runCommand(
+        ["channels:history", "test-channel", "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result[0]).toHaveProperty("annotations");
+      expect(result[0].annotations.summary).toHaveProperty(
+        "reaction:distinct.v1",
+      );
+      expect(
+        result[0].annotations.summary["reaction:distinct.v1"]["👍"],
+      ).toEqual({
+        total: 3,
+        clientIds: ["c1", "c2", "c3"],
+        clipped: false,
+      });
+      // Second message has no annotations
+      expect(result[1]).not.toHaveProperty("annotations");
     });
 
     it("should respect --limit flag", async () => {
