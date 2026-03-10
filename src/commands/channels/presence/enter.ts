@@ -1,17 +1,19 @@
 import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
-import chalk from "chalk";
-
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import { errorMessage } from "../../../utils/errors.js";
 import { isJsonData } from "../../../utils/json-formatter.js";
 import {
-  listening,
-  resource,
-  success,
+  formatListening,
+  formatResource,
+  formatSuccess,
   formatTimestamp,
   formatMessageTimestamp,
+  formatIndex,
+  formatLabel,
+  formatClientId,
+  formatEventType,
 } from "../../../utils/output.js";
 
 export default class ChannelsPresenceEnter extends AblyBaseCommand {
@@ -140,10 +142,10 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
             this.log(this.formatJsonOutput(event, flags));
           } else {
             const sequencePrefix = flags["sequence-numbers"]
-              ? `${chalk.dim(`[${this.sequenceCounter}]`)}`
+              ? `${formatIndex(this.sequenceCounter)}`
               : "";
             this.log(
-              `${formatTimestamp(timestamp)}${sequencePrefix} ${chalk.cyan(`Channel: ${channelName}`)} | ${chalk.yellow(`Action: ${presenceMessage.action}`)} | ${chalk.blue(`Client: ${presenceMessage.clientId || "N/A"}`)}`,
+              `${formatTimestamp(timestamp)}${sequencePrefix} ${formatResource(`Channel: ${channelName}`)} | Action: ${formatEventType(String(presenceMessage.action))} | Client: ${formatClientId(presenceMessage.clientId || "N/A")}`,
             );
 
             if (
@@ -151,10 +153,10 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
               presenceMessage.data !== undefined
             ) {
               if (isJsonData(presenceMessage.data)) {
-                this.log(chalk.dim("Data:"));
+                this.log(formatLabel("Data"));
                 this.log(JSON.stringify(presenceMessage.data, null, 2));
               } else {
-                this.log(`${chalk.dim("Data:")} ${presenceMessage.data}`);
+                this.log(`${formatLabel("Data")} ${presenceMessage.data}`);
               }
             }
 
@@ -193,13 +195,15 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
         this.log(this.formatJsonOutput(enterEvent, flags));
       } else {
         this.log(
-          success(`Entered presence on channel: ${resource(channelName)}.`),
+          formatSuccess(
+            `Entered presence on channel: ${formatResource(channelName)}.`,
+          ),
         );
 
         if (flags["show-others"]) {
-          this.log(listening("Listening for presence events."));
+          this.log(formatListening("Listening for presence events."));
         } else {
-          this.log(listening("Staying present."));
+          this.log(formatListening("Staying present."));
         }
       }
 

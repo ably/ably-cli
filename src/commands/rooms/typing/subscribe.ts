@@ -4,7 +4,7 @@ import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
-import { resource } from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 
 export default class TypingSubscribe extends ChatBaseCommand {
   static override args = {
@@ -68,7 +68,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
       // Subscribe to room status changes
       this.setupRoomStatusHandler(room, flags, {
         roomName,
-        successMessage: `Subscribed to typing in room: ${resource(roomName)}.`,
+        successMessage: `Subscribed to typing in room: ${formatResource(roomName)}.`,
         listeningMessage: "Listening for typing indicators.",
       });
 

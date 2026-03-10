@@ -2,7 +2,11 @@ import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
-import { progress, resource } from "../../utils/output.js";
+import {
+  formatLabel,
+  formatProgress,
+  formatResource,
+} from "../../utils/output.js";
 
 export default class AppsUpdateCommand extends ControlBaseCommand {
   static args = {
@@ -61,7 +65,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
 
     try {
       if (!this.shouldOutputJson(flags)) {
-        this.log(progress(`Updating app ${resource(args.id)}`));
+        this.log(formatProgress(`Updating app ${formatResource(args.id)}`));
       }
 
       const updateData: { name?: string; tlsOnly?: boolean } = {};
@@ -100,16 +104,16 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
         );
       } else {
         this.log(`\nApp updated successfully!`);
-        this.log(`App ID: ${app.id}`);
-        this.log(`Name: ${app.name}`);
-        this.log(`Status: ${app.status}`);
-        this.log(`Account ID: ${app.accountId}`);
-        this.log(`TLS Only: ${app.tlsOnly ? "Yes" : "No"}`);
-        this.log(`Created: ${this.formatDate(app.created)}`);
-        this.log(`Updated: ${this.formatDate(app.modified)}`);
+        this.log(`${formatLabel("App ID")} ${app.id}`);
+        this.log(`${formatLabel("Name")} ${app.name}`);
+        this.log(`${formatLabel("Status")} ${app.status}`);
+        this.log(`${formatLabel("Account ID")} ${app.accountId}`);
+        this.log(`${formatLabel("TLS Only")} ${app.tlsOnly ? "Yes" : "No"}`);
+        this.log(`${formatLabel("Created")} ${this.formatDate(app.created)}`);
+        this.log(`${formatLabel("Updated")} ${this.formatDate(app.modified)}`);
         if (app.apnsUsesSandboxCert !== undefined) {
           this.log(
-            `APNS Uses Sandbox Cert: ${app.apnsUsesSandboxCert ? "Yes" : "No"}`,
+            `${formatLabel("APNS Uses Sandbox Cert")} ${app.apnsUsesSandboxCert ? "Yes" : "No"}`,
           );
         }
       }

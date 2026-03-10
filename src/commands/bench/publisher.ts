@@ -6,7 +6,7 @@ import Table from "cli-table3";
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
 import { errorMessage } from "../../utils/errors.js";
-import { success } from "../../utils/output.js";
+import { formatSuccess } from "../../utils/output.js";
 
 interface TestMetrics {
   batchCount: number;
@@ -528,7 +528,7 @@ export default class BenchPublisher extends AblyBaseCommand {
         process.stdout.write("\u001B[2J\u001B[0f");
       }
 
-      this.log("\n\n" + success("Benchmark complete.") + "\n");
+      this.log("\n\n" + formatSuccess("Benchmark complete.") + "\n");
       const summaryTable = new Table({
         head: [chalk.white("Metric"), chalk.white("Value")],
         style: { border: [], head: [] },

@@ -1,8 +1,7 @@
 import { Flags } from "@oclif/core";
-import chalk from "chalk";
-
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
+import { formatHeading } from "../../utils/output.js";
 
 interface QueueStats {
   acknowledgementRate: null | number;
@@ -106,7 +105,7 @@ export default class QueuesListCommand extends ControlBaseCommand {
         this.log(`Found ${queues.length} queues:\n`);
 
         queues.forEach((queue: Queue) => {
-          this.log(chalk.bold(`Queue ID: ${queue.id}`));
+          this.log(formatHeading(`Queue ID: ${queue.id}`));
           this.log(`  Name: ${queue.name}`);
           this.log(`  Region: ${queue.region}`);
           this.log(`  State: ${queue.state}`);

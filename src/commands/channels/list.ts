@@ -1,9 +1,13 @@
 import { Flags } from "@oclif/core";
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
-import chalk from "chalk";
 import { errorMessage } from "../../utils/errors.js";
-import { countLabel, limitWarning, resource } from "../../utils/output.js";
+import {
+  formatCountLabel,
+  formatLabel,
+  formatLimitWarning,
+  formatResource,
+} from "../../utils/output.js";
 
 interface ChannelMetrics {
   connections?: number;
@@ -112,33 +116,35 @@ export default class ChannelsList extends AblyBaseCommand {
           return;
         }
 
-        this.log(`Found ${countLabel(channels.length, "active channel")}:`);
+        this.log(
+          `Found ${formatCountLabel(channels.length, "active channel")}:`,
+        );
 
         for (const channel of channels as ChannelItem[]) {
-          this.log(`${resource(channel.channelId)}`);
+          this.log(`${formatResource(channel.channelId)}`);
 
           // Show occupancy if available
           if (channel.status?.occupancy?.metrics) {
             const { metrics } = channel.status.occupancy;
             this.log(
-              `  ${chalk.dim("Connections:")} ${metrics.connections || 0}`,
+              `  ${formatLabel("Connections")} ${metrics.connections || 0}`,
             );
             this.log(
-              `  ${chalk.dim("Publishers:")} ${metrics.publishers || 0}`,
+              `  ${formatLabel("Publishers")} ${metrics.publishers || 0}`,
             );
             this.log(
-              `  ${chalk.dim("Subscribers:")} ${metrics.subscribers || 0}`,
+              `  ${formatLabel("Subscribers")} ${metrics.subscribers || 0}`,
             );
 
             if (metrics.presenceConnections !== undefined) {
               this.log(
-                `  ${chalk.dim("Presence Connections:")} ${metrics.presenceConnections}`,
+                `  ${formatLabel("Presence Connections")} ${metrics.presenceConnections}`,
               );
             }
 
             if (metrics.presenceMembers !== undefined) {
               this.log(
-                `  ${chalk.dim("Presence Members:")} ${metrics.presenceMembers}`,
+                `  ${formatLabel("Presence Members")} ${metrics.presenceMembers}`,
               );
             }
           }
@@ -146,7 +152,11 @@ export default class ChannelsList extends AblyBaseCommand {
           this.log(""); // Add a line break between channels
         }
 
-        const warning = limitWarning(channels.length, flags.limit, "channels");
+        const warning = formatLimitWarning(
+          channels.length,
+          flags.limit,
+          "channels",
+        );
         if (warning) this.log(warning);
       }
     } catch (error) {

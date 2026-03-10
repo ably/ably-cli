@@ -14,9 +14,11 @@ import {
   productApiFlags,
 } from "../../../../flags.js";
 import {
-  progress,
-  resource,
+  formatProgress,
+  formatResource,
   formatTimestamp,
+  formatClientId,
+  formatEventType,
 } from "../../../../utils/output.js";
 
 export default class MessagesReactionsSubscribe extends ChatBaseCommand {
@@ -76,8 +78,8 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
       );
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          progress(
-            `Connecting to Ably and subscribing to message reactions in room ${resource(room)}`,
+          formatProgress(
+            `Connecting to Ably and subscribing to message reactions in room ${formatResource(room)}`,
           ),
         );
       }
@@ -106,7 +108,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
       this.setupRoomStatusHandler(chatRoom, flags, {
         roomName: room,
         successMessage: "Connected to Ably.",
-        listeningMessage: `Listening for message reactions in room ${resource(room)}.`,
+        listeningMessage: `Listening for message reactions in room ${formatResource(room)}.`,
       });
 
       // Attach to the room
@@ -147,7 +149,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
               );
             } else {
               this.log(
-                `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${chalk.blue(event.reaction.clientId || "Unknown")} [${event.reaction.type}] ${event.type}: ${chalk.yellow(event.reaction.name || "unknown")} to message ${chalk.cyan(event.reaction.messageSerial)}`,
+                `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${formatClientId(event.reaction.clientId || "Unknown")} [${event.reaction.type}] ${event.type}: ${formatEventType(event.reaction.name || "unknown")} to message ${chalk.cyan(event.reaction.messageSerial)}`,
               );
             }
           },
@@ -256,7 +258,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
   ): void {
     for (const [reactionName, details] of Object.entries(summary)) {
       this.log(
-        `    ${chalk.yellow(reactionName)}: ${details.total} (${details.clientIds.join(", ")})`,
+        `    ${formatEventType(reactionName)}: ${details.total} (${details.clientIds.join(", ")})`,
       );
     }
   }
@@ -272,7 +274,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
         .map(([clientId, count]) => `${clientId}(${count})`)
         .join(", ");
       this.log(
-        `    ${chalk.yellow(reactionName)}: ${details.total} (${clientList})`,
+        `    ${formatEventType(reactionName)}: ${details.total} (${clientList})`,
       );
     }
   }

@@ -5,7 +5,11 @@ import chalk from "chalk";
 import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { success, listening, resource } from "../../../utils/output.js";
+import {
+  formatSuccess,
+  formatListening,
+  formatResource,
+} from "../../../utils/output.js";
 
 export default class SpacesLocksAcquire extends SpacesBaseCommand {
   static override args = {
@@ -130,11 +134,11 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
             this.formatJsonOutput({ lock: lockDetails, success: true }, flags),
           );
         } else {
-          this.log(success(`Lock acquired: ${resource(lockId)}.`));
+          this.log(formatSuccess(`Lock acquired: ${formatResource(lockId)}.`));
           this.log(
             `${chalk.dim("Lock details:")} ${this.formatJsonOutput(lockDetails, { ...flags, "pretty-json": true })}`,
           );
-          this.log(`\n${listening("Holding lock.")}`);
+          this.log(`\n${formatListening("Holding lock.")}`);
         }
       } catch (error) {
         const errorMsg = `Failed to acquire lock: ${errorMessage(error)}`;

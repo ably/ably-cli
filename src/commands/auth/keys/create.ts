@@ -3,7 +3,12 @@ import { Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { errorMessage } from "../../../utils/errors.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
-import { progress, resource, success } from "../../../utils/output.js";
+import {
+  formatLabel,
+  formatProgress,
+  formatResource,
+  formatSuccess,
+} from "../../../utils/output.js";
 
 export default class KeysCreateCommand extends ControlBaseCommand {
   static description = "Create a new API key for an app";
@@ -87,8 +92,8 @@ export default class KeysCreateCommand extends ControlBaseCommand {
     try {
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          progress(
-            `Creating key ${resource(flags.name)} for app ${resource(appId)}`,
+          formatProgress(
+            `Creating key ${formatResource(flags.name)} for app ${formatResource(appId)}`,
           ),
         );
       }
@@ -113,9 +118,9 @@ export default class KeysCreateCommand extends ControlBaseCommand {
         );
       } else {
         const keyName = `${key.appId}.${key.id}`;
-        this.log(success(`Key created: ${resource(keyName)}.`));
-        this.log(`Key Name: ${keyName}`);
-        this.log(`Key Label: ${key.name || "Unnamed key"}`);
+        this.log(formatSuccess(`Key created: ${formatResource(keyName)}.`));
+        this.log(`${formatLabel("Key Name")} ${keyName}`);
+        this.log(`${formatLabel("Key Label")} ${key.name || "Unnamed key"}`);
 
         for (const line of formatCapabilities(
           key.capability as Record<string, string[] | string>,
@@ -123,9 +128,9 @@ export default class KeysCreateCommand extends ControlBaseCommand {
           this.log(line);
         }
 
-        this.log(`Created: ${this.formatDate(key.created)}`);
-        this.log(`Updated: ${this.formatDate(key.modified)}`);
-        this.log(`Full key: ${key.key}`);
+        this.log(`${formatLabel("Created")} ${this.formatDate(key.created)}`);
+        this.log(`${formatLabel("Updated")} ${this.formatDate(key.modified)}`);
+        this.log(`${formatLabel("Full key")} ${key.key}`);
 
         // Tell the user how to switch to this key instead of doing it automatically
         this.log(

@@ -4,7 +4,7 @@ import chalk from "chalk";
 import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { resource, success } from "../../../utils/output.js";
+import { formatResource, formatSuccess } from "../../../utils/output.js";
 
 export default class SpacesLocksGet extends SpacesBaseCommand {
   static override args = {
@@ -44,7 +44,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
 
       await this.space!.enter();
       if (!this.shouldOutputJson(flags)) {
-        this.log(success(`Entered space: ${resource(spaceName)}.`));
+        this.log(formatSuccess(`Entered space: ${formatResource(spaceName)}.`));
       }
 
       try {
@@ -58,7 +58,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
           } else {
             this.log(
               chalk.yellow(
-                `Lock ${resource(lockId)} not found in space ${resource(spaceName)}`,
+                `Lock ${formatResource(lockId)} not found in space ${formatResource(spaceName)}`,
               ),
             );
           }

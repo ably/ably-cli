@@ -7,7 +7,11 @@ import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
 import { errorMessage } from "../../utils/errors.js";
 import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
-import { progress, resource, success } from "../../utils/output.js";
+import {
+  formatProgress,
+  formatResource,
+  formatSuccess,
+} from "../../utils/output.js";
 
 interface TestMetrics {
   endToEndLatencies: number[]; // Publisher -> Subscriber
@@ -92,7 +96,11 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
       // Show initial status
       if (!this.shouldOutputJson(flags)) {
-        this.log(progress(`Attaching to channel: ${resource(args.channel)}`));
+        this.log(
+          formatProgress(
+            `Attaching to channel: ${formatResource(args.channel)}`,
+          ),
+        );
       }
 
       await this.handlePresence(channel, metrics, flags);
@@ -113,8 +121,8 @@ export default class BenchSubscriber extends AblyBaseCommand {
       // Show success message
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          success(
-            `Subscribed to channel: ${resource(args.channel)}. Waiting for benchmark messages.`,
+          formatSuccess(
+            `Subscribed to channel: ${formatResource(args.channel)}. Waiting for benchmark messages.`,
           ),
         );
       }

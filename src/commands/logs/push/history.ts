@@ -7,10 +7,11 @@ import { errorMessage } from "../../../utils/errors.js";
 import { formatMessageData } from "../../../utils/json-formatter.js";
 import { buildHistoryParams } from "../../../utils/history.js";
 import {
-  countLabel,
+  formatCountLabel,
+  formatIndex,
   formatTimestamp,
   formatMessageTimestamp,
-  limitWarning,
+  formatLimitWarning,
 } from "../../../utils/output.js";
 
 export default class LogsPushHistory extends AblyBaseCommand {
@@ -85,7 +86,9 @@ export default class LogsPushHistory extends AblyBaseCommand {
           return;
         }
 
-        this.log(`Found ${countLabel(messages.length, "push log message")}:`);
+        this.log(
+          `Found ${formatCountLabel(messages.length, "push log message")}:`,
+        );
         this.log("");
 
         for (const [index, message] of messages.entries()) {
@@ -134,7 +137,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
 
           // Format the log output
           this.log(
-            `${chalk.dim(`[${index + 1}]`)} ${timestampDisplay} Channel: ${chalk.cyan(channelName)} | Event: ${eventColor(event)}`,
+            `${formatIndex(index + 1)} ${timestampDisplay} Channel: ${chalk.cyan(channelName)} | Event: ${eventColor(event)}`,
           );
           if (message.data) {
             this.log(chalk.dim("Data:"));
@@ -144,7 +147,11 @@ export default class LogsPushHistory extends AblyBaseCommand {
           this.log("");
         }
 
-        const warning = limitWarning(messages.length, flags.limit, "logs");
+        const warning = formatLimitWarning(
+          messages.length,
+          flags.limit,
+          "logs",
+        );
         if (warning) this.log(warning);
       }
     } catch (error) {

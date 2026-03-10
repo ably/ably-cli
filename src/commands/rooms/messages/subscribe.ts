@@ -5,10 +5,11 @@ import chalk from "chalk";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import {
-  progress,
-  resource,
+  formatProgress,
+  formatResource,
   formatTimestamp,
   formatMessageTimestamp,
+  formatIndex,
 } from "../../../utils/output.js";
 
 // Define message interface
@@ -129,7 +130,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
           this.roomNames.length > 1 ? `${chalk.magenta(`[${roomName}]`)} ` : "";
 
         const sequencePrefix = flags["sequence-numbers"]
-          ? `${chalk.dim(`[${this.sequenceCounter}]`)}`
+          ? `${formatIndex(this.sequenceCounter)}`
           : "";
 
         // Message content with consistent formatting
@@ -156,7 +157,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
 
     this.setupRoomStatusHandler(room, flags, {
       roomName,
-      successMessage: `Subscribed to room: ${resource(roomName)}.`,
+      successMessage: `Subscribed to room: ${formatResource(roomName)}.`,
       listeningMessage: "Listening for messages.",
     });
 
@@ -223,12 +224,12 @@ export default class MessagesSubscribe extends ChatBaseCommand {
 
       const roomList =
         this.roomNames.length > 1
-          ? this.roomNames.map((r) => resource(r)).join(", ")
-          : resource(this.roomNames[0]);
+          ? this.roomNames.map((r) => formatResource(r)).join(", ")
+          : formatResource(this.roomNames[0]);
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          progress(
+          formatProgress(
             `Attaching to room${this.roomNames.length > 1 ? "s" : ""}: ${roomList}`,
           ),
         );

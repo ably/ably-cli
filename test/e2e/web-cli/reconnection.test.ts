@@ -16,6 +16,7 @@ import {
   waitForSessionActive,
   waitForTerminalStable,
   executeCommandWithRetry,
+  getTerminalContent,
 } from "./wait-helpers.js";
 import { waitForRateLimitLock } from "./rate-limit-lock";
 import { createSignedConfig } from "./helpers/signing-helper";
@@ -79,7 +80,7 @@ async function _waitForPrompt(
     console.log("--- Terminal Debug Info ---");
     console.log("Debug state:", JSON.stringify(debugInfo, null, 2));
 
-    const terminalContent = await page.locator(terminalSelector).textContent();
+    const terminalContent = await getTerminalContent(page);
     console.log(
       "Terminal content:",
       terminalContent?.slice(0, 500) || "No content",
@@ -275,7 +276,7 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
     await executeCommandWithRetry(page, "help", "COMMON COMMANDS");
 
     // 11. Verify session continuity - should see both commands
-    const terminalText = await page.locator(terminalSelector).textContent();
+    const terminalText = await getTerminalContent(page);
     expect(terminalText).toContain("browser-based interactive CLI");
     expect(terminalText).toContain("COMMON COMMANDS");
 
@@ -464,7 +465,7 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
     await executeCommandWithRetry(page, "help", "COMMON COMMANDS");
 
     // Session should be maintained
-    const terminalText = await page.locator(terminalSelector).textContent();
+    const terminalText = await getTerminalContent(page);
     expect(terminalText).toContain("browser-based interactive CLI");
     expect(terminalText).toContain("COMMON COMMANDS");
   });
@@ -545,7 +546,7 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
     await waitForTerminalStable(page, 500);
 
     // Check the terminal content
-    const terminalText = await page.locator(terminalSelector).textContent();
+    const terminalText = await getTerminalContent(page);
     console.log(
       "Terminal content during reconnection:",
       terminalText?.slice(0, 500),

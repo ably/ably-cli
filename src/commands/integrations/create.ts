@@ -2,7 +2,11 @@ import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
-import { resource, success } from "../../utils/output.js";
+import {
+  formatLabel,
+  formatResource,
+  formatSuccess,
+} from "../../utils/output.js";
 
 // Interface for basic integration data structure
 interface IntegrationData {
@@ -150,20 +154,24 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
         );
       } else {
         this.log(
-          success(
-            `Integration rule created: ${resource(createdIntegration.id)}.`,
+          formatSuccess(
+            `Integration rule created: ${formatResource(createdIntegration.id)}.`,
           ),
         );
-        this.log(`ID: ${createdIntegration.id}`);
-        this.log(`App ID: ${createdIntegration.appId}`);
-        this.log(`Type: ${createdIntegration.ruleType}`);
-        this.log(`Request Mode: ${createdIntegration.requestMode}`);
+        this.log(`${formatLabel("ID")} ${createdIntegration.id}`);
+        this.log(`${formatLabel("App ID")} ${createdIntegration.appId}`);
+        this.log(`${formatLabel("Type")} ${createdIntegration.ruleType}`);
         this.log(
-          `Source Channel Filter: ${createdIntegration.source.channelFilter}`,
+          `${formatLabel("Request Mode")} ${createdIntegration.requestMode}`,
         );
-        this.log(`Source Type: ${createdIntegration.source.type}`);
         this.log(
-          `Target: ${this.formatJsonOutput(createdIntegration.target as Record<string, unknown>, flags)}`,
+          `${formatLabel("Source Channel Filter")} ${createdIntegration.source.channelFilter}`,
+        );
+        this.log(
+          `${formatLabel("Source Type")} ${createdIntegration.source.type}`,
+        );
+        this.log(
+          `${formatLabel("Target")} ${this.formatJsonOutput(createdIntegration.target as Record<string, unknown>, flags)}`,
         );
       }
     } catch (error) {

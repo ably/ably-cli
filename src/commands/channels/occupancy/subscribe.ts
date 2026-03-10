@@ -1,16 +1,16 @@
 import { Args } from "@oclif/core";
 import * as Ably from "ably";
-import chalk from "chalk";
-
 import { AblyBaseCommand } from "../../../base-command.js";
 import { durationFlag, productApiFlags } from "../../../flags.js";
 import {
-  listening,
-  progress,
-  resource,
-  success,
+  formatListening,
+  formatProgress,
+  formatResource,
+  formatSuccess,
   formatTimestamp,
   formatMessageTimestamp,
+  formatLabel,
+  formatEventType,
 } from "../../../utils/output.js";
 
 export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
@@ -79,8 +79,8 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          progress(
-            `Subscribing to occupancy events on channel: ${resource(channelName)}`,
+          formatProgress(
+            `Subscribing to occupancy events on channel: ${formatResource(channelName)}`,
           ),
         );
       }
@@ -105,12 +105,12 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
           this.log(this.formatJsonOutput(event, flags));
         } else {
           this.log(
-            `${formatTimestamp(timestamp)} ${chalk.cyan(`Channel: ${channelName}`)} | ${chalk.yellow("Occupancy Update")}`,
+            `${formatTimestamp(timestamp)} ${formatResource(`Channel: ${channelName}`)} | ${formatEventType("Occupancy Update")}`,
           );
 
           if (message.data !== null && message.data !== undefined) {
             this.log(
-              `${chalk.dim("Occupancy Data:")} ${JSON.stringify(message.data, null, 2)}`,
+              `${formatLabel("Occupancy Data")} ${JSON.stringify(message.data, null, 2)}`,
             );
           }
 
@@ -120,11 +120,11 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          success(
-            `Subscribed to occupancy on channel: ${resource(channelName)}.`,
+          formatSuccess(
+            `Subscribed to occupancy on channel: ${formatResource(channelName)}.`,
           ),
         );
-        this.log(listening("Listening for occupancy events."));
+        this.log(formatListening("Listening for occupancy events."));
       }
 
       this.logCliEvent(

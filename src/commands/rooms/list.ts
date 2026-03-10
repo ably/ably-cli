@@ -1,7 +1,11 @@
 import { Flags } from "@oclif/core";
 import { ChatBaseCommand } from "../../chat-base-command.js";
 import { productApiFlags } from "../../flags.js";
-import { countLabel, limitWarning, resource } from "../../utils/output.js";
+import {
+  formatCountLabel,
+  formatLimitWarning,
+  formatResource,
+} from "../../utils/output.js";
 import chalk from "chalk";
 
 // Add interface definitions at the beginning of the file
@@ -134,11 +138,11 @@ export default class RoomsList extends ChatBaseCommand {
         }
 
         this.log(
-          `Found ${countLabel(limitedRooms.length, "active chat room")}:`,
+          `Found ${formatCountLabel(limitedRooms.length, "active chat room")}:`,
         );
 
         for (const room of limitedRooms) {
-          this.log(`${resource(room.room)}`);
+          this.log(`${formatResource(room.room)}`);
 
           // Show occupancy if available
           if (room.status?.occupancy?.metrics) {
@@ -169,7 +173,11 @@ export default class RoomsList extends ChatBaseCommand {
           this.log(""); // Add a line break between rooms
         }
 
-        const warning = limitWarning(limitedRooms.length, flags.limit, "rooms");
+        const warning = formatLimitWarning(
+          limitedRooms.length,
+          flags.limit,
+          "rooms",
+        );
         if (warning) this.log(warning);
       }
     } catch (error) {

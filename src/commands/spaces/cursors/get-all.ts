@@ -5,7 +5,12 @@ import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import isTestMode from "../../../utils/test-mode.js";
-import { progress, success, resource } from "../../../utils/output.js";
+import {
+  formatProgress,
+  formatSuccess,
+  formatResource,
+  formatClientId,
+} from "../../../utils/output.js";
 
 interface CursorPosition {
   x: number;
@@ -52,7 +57,9 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
 
       // Get the space
       if (!this.shouldOutputJson(flags)) {
-        this.log(progress(`Connecting to space: ${resource(spaceName)}`));
+        this.log(
+          formatProgress(`Connecting to space: ${formatResource(spaceName)}`),
+        );
       }
 
       // Enter the space
@@ -83,7 +90,9 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
                   ),
                 );
               } else {
-                this.log(success(`Entered space: ${resource(spaceName)}.`));
+                this.log(
+                  formatSuccess(`Entered space: ${formatResource(spaceName)}.`),
+                );
               }
 
               resolve();
@@ -139,7 +148,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
             const y = cursor.position.y;
 
             this.log(
-              `${chalk.gray("►")} ${chalk.blue(clientDisplay)}: (${chalk.yellow(x)}, ${chalk.yellow(y)})`,
+              `${chalk.gray("►")} ${formatClientId(clientDisplay)}: (${chalk.yellow(x)}, ${chalk.yellow(y)})`,
             );
           }
         }
@@ -321,7 +330,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
 
           this.log(
             chalk.gray("│ ") +
-              chalk.blue(clientId.padEnd(colWidths.client)) +
+              formatClientId(clientId.padEnd(colWidths.client)) +
               chalk.gray(" │ ") +
               chalk.yellow(x.padEnd(colWidths.x)) +
               chalk.gray(" │ ") +
@@ -352,7 +361,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
           this.log(`\n${chalk.bold("Additional Data:")}`);
           cursorsWithData.forEach((cursor: CursorUpdate) => {
             this.log(
-              `  ${chalk.blue(cursor.clientId || "Unknown")}: ${JSON.stringify(cursor.data)}`,
+              `  ${formatClientId(cursor.clientId || "Unknown")}: ${JSON.stringify(cursor.data)}`,
             );
           });
         }

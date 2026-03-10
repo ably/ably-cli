@@ -4,11 +4,14 @@ import chalk from "chalk";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import {
-  success,
-  listening,
-  resource,
+  formatSuccess,
+  formatListening,
+  formatResource,
   formatTimestamp,
   formatPresenceAction,
+  formatIndex,
+  formatClientId,
+  formatLabel,
 } from "../../../utils/output.js";
 
 export default class RoomsPresenceEnter extends ChatBaseCommand {
@@ -97,7 +100,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
         // Subscribe to room status changes only when showing others
         this.setupRoomStatusHandler(currentRoom, flags, {
           roomName: this.roomName,
-          successMessage: `Connected to room: ${resource(this.roomName)}.`,
+          successMessage: `Connected to room: ${formatResource(this.roomName)}.`,
         });
 
         currentRoom.presence.subscribe((event: PresenceEvent) => {
@@ -129,10 +132,10 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
               const { symbol: actionSymbol, color: actionColor } =
                 formatPresenceAction(event.type);
               const sequencePrefix = flags["sequence-numbers"]
-                ? `${chalk.dim(`[${this.sequenceCounter}]`)}`
+                ? `${formatIndex(this.sequenceCounter)}`
                 : "";
               this.log(
-                `${formatTimestamp(timestamp)}${sequencePrefix} ${actionColor(actionSymbol)} ${chalk.blue(member.clientId || "Unknown")} ${actionColor(event.type)}`,
+                `${formatTimestamp(timestamp)}${sequencePrefix} ${actionColor(actionSymbol)} ${formatClientId(member.clientId || "Unknown")} ${actionColor(event.type)}`,
               );
               if (
                 member.data &&
@@ -141,10 +144,10 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
               ) {
                 const profile = member.data as { name?: string };
                 if (profile.name) {
-                  this.log(`  ${chalk.dim("Name:")} ${profile.name}`);
+                  this.log(`  ${formatLabel("Name")} ${profile.name}`);
                 }
                 this.log(
-                  `  ${chalk.dim("Full Data:")} ${this.formatJsonOutput({ data: member.data }, flags)}`,
+                  `  ${formatLabel("Full Data")} ${this.formatJsonOutput({ data: member.data }, flags)}`,
                 );
               }
             }
@@ -161,12 +164,14 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
 
       if (!this.shouldOutputJson(flags) && this.roomName) {
         this.log(
-          success(`Entered presence in room: ${resource(this.roomName)}.`),
+          formatSuccess(
+            `Entered presence in room: ${formatResource(this.roomName)}.`,
+          ),
         );
         if (flags["show-others"]) {
-          this.log(`\n${listening("Listening for presence events.")}`);
+          this.log(`\n${formatListening("Listening for presence events.")}`);
         } else {
-          this.log(`\n${listening("Staying present.")}`);
+          this.log(`\n${formatListening("Staying present.")}`);
         }
       }
 

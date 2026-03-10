@@ -1,18 +1,18 @@
 import chalk, { type ChalkInstance } from "chalk";
 
-export function progress(message: string): string {
+export function formatProgress(message: string): string {
   return `${message}...`;
 }
 
-export function success(message: string): string {
+export function formatSuccess(message: string): string {
   return `${chalk.green("✓")} ${message}`;
 }
 
-export function listening(description: string): string {
+export function formatListening(description: string): string {
   return chalk.dim(`${description} Press Ctrl+C to exit.`);
 }
 
-export function resource(name: string): string {
+export function formatResource(name: string): string {
   return chalk.cyan(name);
 }
 
@@ -37,7 +37,7 @@ export function formatMessageTimestamp(
  * Format a count with a singular/plural label.
  * E.g. countLabel(3, "message") → "3 messages" (with cyan count)
  */
-export function countLabel(
+export function formatCountLabel(
   count: number,
   singular: string,
   plural?: string,
@@ -50,7 +50,7 @@ export function countLabel(
  * Show a limit warning when results may be truncated.
  * Returns null if count < limit.
  */
-export function limitWarning(
+export function formatLimitWarning(
   count: number,
   limit: number,
   resourceName: string,
@@ -61,6 +61,31 @@ export function limitWarning(
     );
   }
   return null;
+}
+
+/** Client identity display — cyan-blue for client IDs in event output */
+export function formatClientId(id: string): string {
+  return chalk.blue(id);
+}
+
+/** Event type/action display — yellow for event type labels */
+export function formatEventType(type: string): string {
+  return chalk.yellow(type);
+}
+
+/** Field label display — dim text with colon for structured output fields */
+export function formatLabel(text: string): string {
+  return chalk.dim(`${text}:`);
+}
+
+/** Record heading — bold text for list item headings */
+export function formatHeading(text: string): string {
+  return chalk.bold(text);
+}
+
+/** Index number display — dim bracketed number for history/list ordering */
+export function formatIndex(n: number): string {
+  return chalk.dim(`[${n}]`);
 }
 
 export function formatPresenceAction(action: string): {

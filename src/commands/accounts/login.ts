@@ -8,7 +8,11 @@ import { endpointFlag } from "../../flags.js";
 import { ControlApi } from "../../services/control-api.js";
 import { errorMessage } from "../../utils/errors.js";
 import { displayLogo } from "../../utils/logo.js";
-import { progress, resource, success } from "../../utils/output.js";
+import {
+  formatProgress,
+  formatResource,
+  formatSuccess,
+} from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 // Moved function definition outside the class
@@ -97,7 +101,7 @@ export default class AccountsLogin extends ControlBaseCommand {
       // Prompt the user to get a token
       if (!flags["no-browser"]) {
         if (!this.shouldOutputJson(flags)) {
-          this.log(progress("Opening browser to get an access token"));
+          this.log(formatProgress("Opening browser to get an access token"));
         }
 
         await this.openBrowser(obtainTokenPath);
@@ -228,7 +232,9 @@ export default class AccountsLogin extends ControlBaseCommand {
             const appName = await this.promptForAppName();
 
             try {
-              this.log(`\n${progress(`Creating app ${resource(appName)}`)}`);
+              this.log(
+                `\n${formatProgress(`Creating app ${formatResource(appName)}`)}`,
+              );
 
               const app = await controlApi.createApp({
                 name: appName,
@@ -242,7 +248,7 @@ export default class AccountsLogin extends ControlBaseCommand {
               this.configManager.setCurrentApp(app.id);
               this.configManager.storeAppInfo(app.id, { appName: app.name });
 
-              this.log(success("App created successfully."));
+              this.log(formatSuccess("App created successfully."));
             } catch (createError) {
               this.warn(
                 `Failed to create app: ${createError instanceof Error ? createError.message : String(createError)}`,
@@ -349,32 +355,32 @@ export default class AccountsLogin extends ControlBaseCommand {
         this.log(this.formatJsonOutput(response, flags));
       } else {
         this.log(
-          `Successfully logged in to ${resource(account.name)} (account ID: ${chalk.greenBright(account.id)})`,
+          `Successfully logged in to ${formatResource(account.name)} (account ID: ${chalk.greenBright(account.id)})`,
         );
         if (alias !== "default") {
           this.log(`Account stored with alias: ${alias}`);
         }
 
-        this.log(`Account ${resource(alias)} is now the current account`);
+        this.log(`Account ${formatResource(alias)} is now the current account`);
 
         if (selectedApp) {
           const message = isAutoSelected
-            ? success(
-                `Automatically selected app: ${resource(selectedApp.name)} (${selectedApp.id})`,
+            ? formatSuccess(
+                `Automatically selected app: ${formatResource(selectedApp.name)} (${selectedApp.id})`,
               )
-            : success(
-                `Selected app: ${resource(selectedApp.name)} (${selectedApp.id})`,
+            : formatSuccess(
+                `Selected app: ${formatResource(selectedApp.name)} (${selectedApp.id})`,
               );
           this.log(message);
         }
 
         if (selectedKey) {
           const keyMessage = isKeyAutoSelected
-            ? success(
-                `Automatically selected API key: ${resource(selectedKey.name || "Unnamed key")} (${selectedKey.id})`,
+            ? formatSuccess(
+                `Automatically selected API key: ${formatResource(selectedKey.name || "Unnamed key")} (${selectedKey.id})`,
               )
-            : success(
-                `Selected API key: ${resource(selectedKey.name || "Unnamed key")} (${selectedKey.id})`,
+            : formatSuccess(
+                `Selected API key: ${formatResource(selectedKey.name || "Unnamed key")} (${selectedKey.id})`,
               );
           this.log(keyMessage);
         }

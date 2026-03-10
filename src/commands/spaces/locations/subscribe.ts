@@ -6,10 +6,12 @@ import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
-  listening,
-  progress,
-  resource,
+  formatListening,
+  formatProgress,
+  formatResource,
   formatTimestamp,
+  formatClientId,
+  formatEventType,
 } from "../../../utils/output.js";
 
 // Define interfaces for location types
@@ -88,8 +90,8 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
       );
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          progress(
-            `Fetching current locations for space ${resource(spaceName)}`,
+          formatProgress(
+            `Fetching current locations for space ${formatResource(spaceName)}`,
           ),
         );
       }
@@ -195,7 +197,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
         "Subscribing to location updates",
       );
       if (!this.shouldOutputJson(flags)) {
-        this.log(listening("Subscribing to location updates."));
+        this.log(formatListening("Subscribing to location updates."));
       }
       this.logCliEvent(
         flags,
@@ -241,7 +243,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
               );
             } else {
               this.log(
-                `${formatTimestamp(timestamp)} ${chalk.blue(update.member.clientId)} ${chalk.yellow("updated")} location:`,
+                `${formatTimestamp(timestamp)} ${formatClientId(update.member.clientId)} ${formatEventType("updated")} location:`,
               );
               this.log(
                 `  ${chalk.dim("Current:")} ${JSON.stringify(update.currentLocation)}`,

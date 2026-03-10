@@ -5,10 +5,10 @@ import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
-  listening,
-  progress,
-  resource,
-  success,
+  formatListening,
+  formatProgress,
+  formatResource,
+  formatSuccess,
 } from "../../../utils/output.js";
 
 // Define cursor types based on Ably documentation
@@ -202,8 +202,8 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         );
       } else {
         this.log(
-          success(
-            `Set cursor in space ${resource(spaceName)} with data: ${chalk.blue(JSON.stringify(cursorForOutput))}.`,
+          formatSuccess(
+            `Set cursor in space ${formatResource(spaceName)} with data: ${chalk.blue(JSON.stringify(cursorForOutput))}.`,
           ),
         );
       }
@@ -228,7 +228,9 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         );
 
         if (!this.shouldOutputJson(flags)) {
-          this.log(progress("Starting cursor movement simulation every 250ms"));
+          this.log(
+            formatProgress("Starting cursor movement simulation every 250ms"),
+          );
         }
 
         this.simulationIntervalId = setInterval(async () => {
@@ -283,7 +285,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         this.log(
           flags.duration
             ? `Waiting ${flags.duration}s before exiting… Press Ctrl+C to exit sooner.`
-            : listening("Cursor set."),
+            : formatListening("Cursor set."),
         );
       }
 

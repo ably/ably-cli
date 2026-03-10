@@ -116,9 +116,9 @@ static override flags = {
 };
 
 // Control API command (apps, keys, queues, etc.)
-import { controlApiFlags } from "../../flags.js";
-static override flags = {
-  ...controlApiFlags,
+// controlApiFlags come from ControlBaseCommand.globalFlags automatically
+static flags = {
+  ...ControlBaseCommand.globalFlags,
   // command-specific flags...
 };
 ```
@@ -181,19 +181,26 @@ pnpm test test/unit/commands/foo.test.ts  # Specific test
 ## CLI Output & Flag Conventions
 
 ### Output patterns (use helpers from src/utils/output.ts)
-- **Progress**: `progress("Attaching to channel: " + resource(name))` — no color on action text, `progress()` appends `...` automatically. Never manually write `"Doing something..."` — always use `progress("Doing something")`.
-- **Success**: `success("Message published to channel " + resource(name) + ".")` — green checkmark, **must** end with `.` (not `!`). Never use `chalk.green(...)` directly — always use the `success()` helper.
-- **Listening**: `listening("Listening for messages.")` — dim, includes "Press Ctrl+C to exit." Don't combine listening text inside a `success()` call — use a separate `listening()` call.
-- **Resource names**: Always `resource(name)` (cyan), never quoted — including in `logCliEvent` messages.
-- **Timestamps**: `formatTimestamp(ts)` — dim `[timestamp]` for event streams. `formatMessageTimestamp(message.timestamp)` — converts Ably message timestamp (number|undefined) to ISO string. Both exported from `src/utils/output.ts`.
+
+All output helpers use the `format` prefix and are exported from `src/utils/output.ts`:
+
+- **Progress**: `formatProgress("Attaching to channel: " + formatResource(name))` — no color on action text, appends `...` automatically. Never manually write `"Doing something..."` — always use `formatProgress("Doing something")`.
+- **Success**: `formatSuccess("Message published to channel " + formatResource(name) + ".")` — green checkmark, **must** end with `.` (not `!`). Never use `chalk.green(...)` directly — always use `formatSuccess()`.
+- **Listening**: `formatListening("Listening for messages.")` — dim, includes "Press Ctrl+C to exit." Don't combine listening text inside a `formatSuccess()` call — use a separate `formatListening()` call.
+- **Resource names**: Always `formatResource(name)` (cyan), never quoted — including in `logCliEvent` messages.
+- **Timestamps**: `formatTimestamp(ts)` — dim `[timestamp]` for event streams. `formatMessageTimestamp(message.timestamp)` — converts Ably message timestamp (number|undefined) to ISO string.
+- **Labels**: `formatLabel("Field Name")` — dim with colon appended, for field names in structured output.
+- **Client IDs**: `formatClientId(id)` — blue, for user/client identifiers in events.
+- **Event types**: `formatEventType(type)` — yellow, for action/event type labels.
+- **Headings**: `formatHeading("Record ID: " + id)` — bold, for record headings in list output.
+- **Index**: `formatIndex(n)` — dim bracketed number `[n]`, for history/list ordering.
+- **Count labels**: `formatCountLabel(n, "message")` — cyan count + pluralized label.
+- **Limit warnings**: `formatLimitWarning(count, limit, "items")` — yellow warning if results truncated.
 - **JSON guard**: All human-readable output (progress, success, listening messages) must be wrapped in `if (!this.shouldOutputJson(flags))` so it doesn't pollute `--json` output. Only JSON payloads should be emitted when `--json` is active.
 - **JSON errors**: In catch blocks, use `this.handleCommandError(error, flags, component, context?)` for consistent error handling. It logs the event, emits JSON error when `--json` is active, and calls `this.error()` for human-readable output. For non-standard error flows, use `this.jsonError()` directly.
-- **History output**: Use `[index] timestamp` ordering: `` `${chalk.dim(`[${index + 1}]`)} ${formatTimestamp(timestamp)}` ``. Consistent across all history commands (channels, logs, connection-lifecycle, push).
+- **History output**: Use `[index] timestamp` ordering: `` `${formatIndex(index + 1)} ${formatTimestamp(timestamp)}` ``. Consistent across all history commands (channels, logs, connection-lifecycle, push).
 
 ### Additional output patterns (direct chalk, not helpers)
-- **Secondary labels**: `chalk.dim("Label:")` — for field names in structured output (e.g., `${chalk.dim("Profile:")} ${value}`)
-- **Client IDs**: `chalk.blue(clientId)` — for user/client identifiers in events
-- **Event types**: `chalk.yellow(eventType)` — for action/event type labels
 - **Warnings**: `chalk.yellow("Warning: ...")` — for non-fatal warnings
 - **Errors**: Use `this.error()` (oclif standard) for fatal errors, not `this.log(chalk.red(...))`
 - **No app error**: `'No app specified. Use --app flag or select an app with "ably apps switch"'`

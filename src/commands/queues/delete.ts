@@ -2,7 +2,11 @@ import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
-import { resource, success } from "../../utils/output.js";
+import {
+  formatLabel,
+  formatResource,
+  formatSuccess,
+} from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class QueuesDeleteCommand extends ControlBaseCommand {
@@ -69,10 +73,10 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
       // If not using force flag, prompt for confirmation
       if (!flags.force && !this.shouldOutputJson(flags)) {
         this.log(`\nYou are about to delete the following queue:`);
-        this.log(`Queue ID: ${queue.id}`);
-        this.log(`Name: ${queue.name}`);
-        this.log(`Region: ${queue.region}`);
-        this.log(`State: ${queue.state}`);
+        this.log(`${formatLabel("Queue ID")} ${queue.id}`);
+        this.log(`${formatLabel("Name")} ${queue.name}`);
+        this.log(`${formatLabel("Region")} ${queue.region}`);
+        this.log(`${formatLabel("State")} ${queue.state}`);
         this.log(
           `Messages: ${queue.messages.total} total (${queue.messages.ready} ready, ${queue.messages.unacknowledged} unacknowledged)`,
         );
@@ -105,7 +109,9 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
         );
       } else {
         this.log(
-          success(`Queue deleted: ${resource(queue.name)} (${queue.id}).`),
+          formatSuccess(
+            `Queue deleted: ${formatResource(queue.name)} (${queue.id}).`,
+          ),
         );
       }
     } catch (error) {

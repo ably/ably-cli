@@ -3,7 +3,11 @@ import { Args, Flags } from "@oclif/core";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
-import { listening, resource, success } from "../../../utils/output.js";
+import {
+  formatListening,
+  formatResource,
+  formatSuccess,
+} from "../../../utils/output.js";
 
 // The heartbeats are throttled to one every 10 seconds. There's a 2 second
 // leeway to send a keystroke/heartbeat after the 10 second mark so the
@@ -106,7 +110,9 @@ export default class TypingKeystroke extends ChatBaseCommand {
 
         if (statusChange.current === RoomStatus.Attached) {
           if (!this.shouldOutputJson(flags)) {
-            this.log(success(`Connected to room: ${resource(roomName)}.`));
+            this.log(
+              formatSuccess(`Connected to room: ${formatResource(roomName)}.`),
+            );
           }
 
           // Start typing immediately
@@ -122,17 +128,19 @@ export default class TypingKeystroke extends ChatBaseCommand {
               this.logCliEvent(flags, "typing", "started", "Started typing");
               if (!this.shouldOutputJson(flags)) {
                 this.log(
-                  success(`Started typing in room: ${resource(roomName)}.`),
+                  formatSuccess(
+                    `Started typing in room: ${formatResource(roomName)}.`,
+                  ),
                 );
                 if (flags["auto-type"]) {
                   this.log(
-                    listening(
+                    formatListening(
                       "Will automatically remain typing until terminated.",
                     ),
                   );
                 } else {
                   this.log(
-                    listening(
+                    formatListening(
                       "Sent a single typing indicator. Use --auto-type to keep typing automatically.",
                     ),
                   );

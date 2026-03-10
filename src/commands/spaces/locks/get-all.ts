@@ -4,7 +4,12 @@ import chalk from "chalk";
 import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { progress, resource, success } from "../../../utils/output.js";
+import {
+  formatProgress,
+  formatResource,
+  formatSuccess,
+  formatLabel,
+} from "../../../utils/output.js";
 
 interface LockItem {
   attributes?: Record<string, unknown>;
@@ -48,7 +53,9 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
 
       // Get the space
       if (!this.shouldOutputJson(flags)) {
-        this.log(progress(`Connecting to space: ${resource(spaceName)}`));
+        this.log(
+          formatProgress(`Connecting to space: ${formatResource(spaceName)}`),
+        );
       }
 
       await this.space!.enter();
@@ -65,7 +72,9 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
               clearTimeout(timeout);
               if (!this.shouldOutputJson(flags)) {
                 this.log(
-                  success(`Connected to space: ${resource(spaceName)}.`),
+                  formatSuccess(
+                    `Connected to space: ${formatResource(spaceName)}.`,
+                  ),
                 );
               }
 
@@ -95,7 +104,11 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
 
       // Get all locks
       if (!this.shouldOutputJson(flags)) {
-        this.log(progress(`Fetching locks for space ${resource(spaceName)}`));
+        this.log(
+          formatProgress(
+            `Fetching locks for space ${formatResource(spaceName)}`,
+          ),
+        );
       }
 
       let locks: LockItem[] = [];
@@ -135,14 +148,14 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
         validLocks.forEach((lock: LockItem) => {
           try {
             this.log(`- ${chalk.blue(lock.id)}:`);
-            this.log(`  ${chalk.dim("Status:")} ${lock.status || "unknown"}`);
+            this.log(`  ${formatLabel("Status")} ${lock.status || "unknown"}`);
             this.log(
-              `  ${chalk.dim("Holder:")} ${lock.member?.clientId || "None"}`,
+              `  ${formatLabel("Holder")} ${lock.member?.clientId || "None"}`,
             );
 
             if (lock.attributes && Object.keys(lock.attributes).length > 0) {
               this.log(
-                `  ${chalk.dim("Attributes:")} ${JSON.stringify(lock.attributes, null, 2)}`,
+                `  ${formatLabel("Attributes")} ${JSON.stringify(lock.attributes, null, 2)}`,
               );
             }
           } catch (error) {

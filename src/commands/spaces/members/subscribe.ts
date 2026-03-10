@@ -6,10 +6,11 @@ import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
-  listening,
-  progress,
+  formatListening,
+  formatProgress,
   formatTimestamp,
   formatPresenceAction,
+  formatClientId,
 } from "../../../utils/output.js";
 
 export default class SpacesMembersSubscribe extends SpacesBaseCommand {
@@ -51,7 +52,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
     try {
       // Always show the readiness signal first, before attempting auth
       if (!this.shouldOutputJson(flags)) {
-        this.log(progress("Subscribing to member updates"));
+        this.log(formatProgress("Subscribing to member updates"));
       }
 
       await this.initializeSpace(flags, spaceName, { enterSpace: true });
@@ -103,7 +104,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
         );
 
         for (const member of members) {
-          this.log(`- ${chalk.blue(member.clientId || "Unknown")}`);
+          this.log(`- ${formatClientId(member.clientId || "Unknown")}`);
 
           if (
             member.profileData &&
@@ -125,7 +126,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
       }
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(`\n${listening("Listening for member events.")}\n`);
+        this.log(`\n${formatListening("Listening for member events.")}\n`);
       }
 
       // Subscribe to member presence events
@@ -207,7 +208,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
             formatPresenceAction(action);
 
           this.log(
-            `${formatTimestamp(timestamp)} ${actionColor(actionSymbol)} ${chalk.blue(clientId)} ${actionColor(action)}`,
+            `${formatTimestamp(timestamp)} ${actionColor(actionSymbol)} ${formatClientId(clientId)} ${actionColor(action)}`,
           );
 
           if (

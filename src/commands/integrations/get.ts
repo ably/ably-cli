@@ -1,8 +1,8 @@
 import { Args, Flags } from "@oclif/core";
-import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
+import { formatHeading, formatLabel } from "../../utils/output.js";
 
 export default class IntegrationsGetCommand extends ControlBaseCommand {
   static args = {
@@ -51,19 +51,21 @@ export default class IntegrationsGetCommand extends ControlBaseCommand {
           ),
         );
       } else {
-        this.log(chalk.green("Integration Rule Details:"));
-        this.log(`ID: ${rule.id}`);
-        this.log(`App ID: ${rule.appId}`);
-        this.log(`Rule Type: ${rule.ruleType}`);
-        this.log(`Request Mode: ${rule.requestMode}`);
-        this.log(`Source Channel Filter: ${rule.source.channelFilter}`);
-        this.log(`Source Type: ${rule.source.type}`);
+        this.log(formatHeading("Integration Rule Details"));
+        this.log(`${formatLabel("ID")} ${rule.id}`);
+        this.log(`${formatLabel("App ID")} ${rule.appId}`);
+        this.log(`${formatLabel("Rule Type")} ${rule.ruleType}`);
+        this.log(`${formatLabel("Request Mode")} ${rule.requestMode}`);
         this.log(
-          `Target: ${this.formatJsonOutput(structuredClone(rule.target) as unknown as Record<string, unknown>, flags).replaceAll("\n", "\n  ")}`,
+          `${formatLabel("Source Channel Filter")} ${rule.source.channelFilter}`,
         );
-        this.log(`Version: ${rule.version}`);
-        this.log(`Created: ${this.formatDate(rule.created)}`);
-        this.log(`Updated: ${this.formatDate(rule.modified)}`);
+        this.log(`${formatLabel("Source Type")} ${rule.source.type}`);
+        this.log(
+          `${formatLabel("Target")} ${this.formatJsonOutput(structuredClone(rule.target) as unknown as Record<string, unknown>, flags).replaceAll("\n", "\n  ")}`,
+        );
+        this.log(`${formatLabel("Version")} ${rule.version}`);
+        this.log(`${formatLabel("Created")} ${this.formatDate(rule.created)}`);
+        this.log(`${formatLabel("Updated")} ${this.formatDate(rule.modified)}`);
       }
     } catch (error) {
       this.error(`Error getting integration rule: ${errorMessage(error)}`);

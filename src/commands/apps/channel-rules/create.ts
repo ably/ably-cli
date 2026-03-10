@@ -3,7 +3,7 @@ import { Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
 import { errorMessage } from "../../../utils/errors.js";
-import { success } from "../../../utils/output.js";
+import { formatSuccess } from "../../../utils/output.js";
 
 export default class ChannelRulesCreateCommand extends ControlBaseCommand {
   static description = "Create a channel rule";
@@ -147,7 +147,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
           ),
         );
       } else {
-        this.log(success("Channel rule created."));
+        this.log(formatSuccess("Channel rule created."));
         this.log(`ID: ${createdNamespace.id}`);
         for (const line of formatChannelRuleDetails(createdNamespace, {
           formatDate: (t) => this.formatDate(t),

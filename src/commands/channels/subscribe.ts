@@ -1,7 +1,5 @@
 import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
-import chalk from "chalk";
-
 import { AblyBaseCommand } from "../../base-command.js";
 import {
   clientIdFlag,
@@ -11,12 +9,15 @@ import {
 } from "../../flags.js";
 import { formatMessageData } from "../../utils/json-formatter.js";
 import {
-  listening,
-  progress,
-  resource,
-  success,
+  formatListening,
+  formatProgress,
+  formatResource,
+  formatSuccess,
   formatTimestamp,
   formatMessageTimestamp,
+  formatIndex,
+  formatLabel,
+  formatEventType,
 } from "../../utils/output.js";
 
 export default class ChannelsSubscribe extends AblyBaseCommand {
@@ -173,7 +174,11 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           { channel: channel.name },
         );
         if (!this.shouldOutputJson(flags)) {
-          this.log(progress(`Attaching to channel: ${resource(channel.name)}`));
+          this.log(
+            formatProgress(
+              `Attaching to channel: ${formatResource(channel.name)}`,
+            ),
+          );
         }
 
         // Set up channel state logging
@@ -222,16 +227,16 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           } else {
             const name = message.name || "(none)";
             const sequencePrefix = flags["sequence-numbers"]
-              ? `${chalk.dim(`[${this.sequenceCounter}]`)}`
+              ? `${formatIndex(this.sequenceCounter)}`
               : "";
 
             // Message header with timestamp and channel info
             this.log(
-              `${formatTimestamp(timestamp)}${sequencePrefix} ${chalk.cyan(`Channel: ${channel.name}`)} | ${chalk.yellow(`Event: ${name}`)}`,
+              `${formatTimestamp(timestamp)}${sequencePrefix} ${formatResource(`Channel: ${channel.name}`)} | Event: ${formatEventType(name)}`,
             );
 
             // Message data with consistent formatting
-            this.log(chalk.dim("Data:"));
+            this.log(formatLabel("Data"));
             this.log(formatMessageData(message.data));
 
             this.log(""); // Empty line for better readability
@@ -251,13 +256,17 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         if (channelNames.length === 1) {
           this.log(
-            success(`Subscribed to channel: ${resource(channelNames[0])}.`),
+            formatSuccess(
+              `Subscribed to channel: ${formatResource(channelNames[0])}.`,
+            ),
           );
         } else {
-          this.log(success(`Subscribed to ${channelNames.length} channels.`));
+          this.log(
+            formatSuccess(`Subscribed to ${channelNames.length} channels.`),
+          );
         }
 
-        this.log(listening("Listening for messages."));
+        this.log(formatListening("Listening for messages."));
       }
 
       this.logCliEvent(

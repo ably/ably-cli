@@ -8,11 +8,15 @@ import { formatMessageData } from "../../utils/json-formatter.js";
 import { buildHistoryParams } from "../../utils/history.js";
 import { errorMessage } from "../../utils/errors.js";
 import {
-  countLabel,
+  formatCountLabel,
   formatTimestamp,
   formatMessageTimestamp,
-  limitWarning,
-  resource,
+  formatIndex,
+  formatLabel,
+  formatClientId,
+  formatEventType,
+  formatLimitWarning,
+  formatResource,
 } from "../../utils/output.js";
 
 export default class ChannelsHistory extends AblyBaseCommand {
@@ -95,7 +99,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
         }
 
         this.log(
-          `Found ${countLabel(messages.length, "message")} in the history of channel: ${resource(channelName)}`,
+          `Found ${formatCountLabel(messages.length, "message")} in the history of channel: ${formatResource(channelName)}`,
         );
         this.log("");
 
@@ -104,24 +108,28 @@ export default class ChannelsHistory extends AblyBaseCommand {
             ? formatTimestamp(formatMessageTimestamp(message.timestamp))
             : chalk.dim("[Unknown timestamp]");
 
-          this.log(`${chalk.dim(`[${index + 1}]`)} ${timestampDisplay}`);
+          this.log(`${formatIndex(index + 1)} ${timestampDisplay}`);
           this.log(
-            `${chalk.dim("Event:")} ${chalk.yellow(message.name || "(none)")}`,
+            `${formatLabel("Event")} ${formatEventType(message.name || "(none)")}`,
           );
 
           if (message.clientId) {
             this.log(
-              `${chalk.dim("Client ID:")} ${chalk.blue(message.clientId)}`,
+              `${formatLabel("Client ID")} ${formatClientId(message.clientId)}`,
             );
           }
 
-          this.log(chalk.dim("Data:"));
+          this.log(formatLabel("Data"));
           this.log(formatMessageData(message.data));
 
           this.log("");
         }
 
-        const warning = limitWarning(messages.length, flags.limit, "messages");
+        const warning = formatLimitWarning(
+          messages.length,
+          flags.limit,
+          "messages",
+        );
         if (warning) this.log(warning);
       }
     } catch (error) {
