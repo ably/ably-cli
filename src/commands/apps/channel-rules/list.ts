@@ -16,6 +16,7 @@ interface ChannelRuleOutput {
   exposeTimeSerial: boolean;
   id: string;
   modified: string;
+  mutableMessages: boolean;
   persistLast: boolean;
   persisted: boolean;
   populateChannelRegistry: boolean;
@@ -65,6 +66,7 @@ export default class ChannelRulesListCommand extends ControlBaseCommand {
                 exposeTimeSerial: rule.exposeTimeSerial || false,
                 id: rule.id,
                 modified: new Date(rule.modified).toISOString(),
+                mutableMessages: rule.mutableMessages || false,
                 persistLast: rule.persistLast || false,
                 persisted: rule.persisted || false,
                 populateChannelRegistry: rule.populateChannelRegistry || false,

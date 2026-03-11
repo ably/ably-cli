@@ -2,13 +2,18 @@ import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
-import { formatSuccess } from "../../../utils/output.js";
+import {
+  formatLabel,
+  formatSuccess,
+  formatWarning,
+} from "../../../utils/output.js";
 
 export default class ChannelRulesCreateCommand extends ControlBaseCommand {
   static description = "Create a channel rule";
 
   static examples = [
     '$ ably apps channel-rules create --name "chat" --persisted',
+    '$ ably apps channel-rules create --name "chat" --mutable-messages',
     '$ ably apps channel-rules create --name "events" --push-enabled',
     '$ ably apps channel-rules create --name "notifications" --persisted --push-enabled --app "My App"',
     '$ ably apps channel-rules create --name "chat" --persisted --json',
@@ -55,6 +60,11 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
         "Whether to expose the time serial for messages on channels matching this rule",
       required: false,
     }),
+    "mutable-messages": Flags.boolean({
+      description:
+        "Whether messages on channels matching this rule can be updated or deleted after publishing. Automatically enables message persistence.",
+      required: false,
+    }),
     name: Flags.string({
       description: "Name of the channel rule",
       required: true,
@@ -94,6 +104,22 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
 
     try {
       const controlApi = this.createControlApi(flags);
+
+      // When mutableMessages is enabled, persisted must also be enabled
+      const mutableMessages = flags["mutable-messages"];
+      let persisted = flags.persisted;
+
+      if (mutableMessages) {
+        persisted = true;
+        if (!this.shouldOutputJson(flags)) {
+          this.logToStderr(
+            formatWarning(
+              "Message persistence is automatically enabled when mutable messages is enabled.",
+            ),
+          );
+        }
+      }
+
       const namespaceData = {
         authenticated: flags.authenticated,
         batchingEnabled: flags["batching-enabled"],
@@ -103,8 +129,9 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
         conflationInterval: flags["conflation-interval"],
         conflationKey: flags["conflation-key"],
         exposeTimeSerial: flags["expose-time-serial"],
+        mutableMessages,
         persistLast: flags["persist-last"],
-        persisted: flags.persisted,
+        persisted,
         populateChannelRegistry: flags["populate-channel-registry"],
         pushEnabled: flags["push-enabled"],
         tlsOnly: flags["tls-only"],
@@ -129,6 +156,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
               created: new Date(createdNamespace.created).toISOString(),
               exposeTimeSerial: createdNamespace.exposeTimeSerial,
               id: createdNamespace.id,
+              mutableMessages: createdNamespace.mutableMessages,
               name: flags.name,
               persistLast: createdNamespace.persistLast,
               persisted: createdNamespace.persisted,
@@ -142,7 +170,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
         );
       } else {
         this.log(formatSuccess("Channel rule created."));
-        this.log(`ID: ${createdNamespace.id}`);
+        this.log(`${formatLabel("ID")} ${createdNamespace.id}`);
         for (const line of formatChannelRuleDetails(createdNamespace, {
           formatDate: (t) => this.formatDate(t),
         })) {

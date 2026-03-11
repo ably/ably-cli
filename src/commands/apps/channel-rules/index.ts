@@ -9,6 +9,7 @@ export default class ChannelRulesIndexCommand extends BaseTopicCommand {
   static examples = [
     "ably apps channel-rules list",
     'ably apps channel-rules create --name "chat" --persisted',
+    "ably apps channel-rules update chat --mutable-messages",
     "ably apps channel-rules update chat --push-enabled",
     "ably apps channel-rules delete chat",
   ];

@@ -43,6 +43,10 @@ export function formatChannelRuleDetails(
     `${indent}Push Enabled: ${bool(rule.pushEnabled)}`,
   );
 
+  if (rule.mutableMessages !== undefined) {
+    lines.push(`${indent}Mutable Messages: ${bool(rule.mutableMessages)}`);
+  }
+
   if (rule.authenticated !== undefined) {
     lines.push(`${indent}Authenticated: ${bool(rule.authenticated)}`);
   }

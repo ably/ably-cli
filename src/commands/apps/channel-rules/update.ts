@@ -2,6 +2,11 @@ import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
+import {
+  formatLabel,
+  formatSuccess,
+  formatWarning,
+} from "../../../utils/output.js";
 
 export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
   static args = {
@@ -15,6 +20,7 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
 
   static examples = [
     "$ ably apps channel-rules update chat --persisted",
+    "$ ably apps channel-rules update chat --mutable-messages",
     "$ ably apps channel-rules update events --push-enabled=false",
     '$ ably apps channel-rules update notifications --persisted --push-enabled --app "My App"',
     "$ ably apps channel-rules update chat --persisted --json",
@@ -63,6 +69,12 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
       allowNo: true,
       description:
         "Whether to expose the time serial for messages on channels matching this rule",
+      required: false,
+    }),
+    "mutable-messages": Flags.boolean({
+      allowNo: true,
+      description:
+        "Whether messages on channels matching this rule can be updated or deleted after publishing. Automatically enables message persistence.",
       required: false,
     }),
     "persist-last": Flags.boolean({
@@ -120,8 +132,37 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
       const updateData: Record<string, boolean | number | string | undefined> =
         {};
 
+      // Validation for mutable-messages flag, checks with supplied/existing mutableMessages flag
+      if (
+        flags.persisted === false &&
+        (flags["mutable-messages"] === true ||
+          (flags["mutable-messages"] === undefined &&
+            namespace.mutableMessages))
+      ) {
+        this.fail(
+          "Cannot disable persistence when mutable messages is enabled. Mutable messages requires message persistence.",
+          flags,
+          "channelRuleUpdate",
+          { appId, ruleId: namespace.id },
+        );
+      }
+
       if (flags.persisted !== undefined) {
         updateData.persisted = flags.persisted;
+      }
+
+      if (flags["mutable-messages"] !== undefined) {
+        updateData.mutableMessages = flags["mutable-messages"];
+        if (flags["mutable-messages"]) {
+          updateData.persisted = true;
+          if (!this.shouldOutputJson(flags)) {
+            this.logToStderr(
+              formatWarning(
+                "Message persistence is automatically enabled when mutable messages is enabled.",
+              ),
+            );
+          }
+        }
       }
 
       if (flags["push-enabled"] !== undefined) {
@@ -199,6 +240,7 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
               exposeTimeSerial: updatedNamespace.exposeTimeSerial,
               id: updatedNamespace.id,
               modified: new Date(updatedNamespace.modified).toISOString(),
+              mutableMessages: updatedNamespace.mutableMessages,
               persistLast: updatedNamespace.persistLast,
               persisted: updatedNamespace.persisted,
               populateChannelRegistry: updatedNamespace.populateChannelRegistry,
@@ -210,8 +252,8 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
           flags,
         );
       } else {
-        this.log("Channel rule updated successfully:");
-        this.log(`ID: ${updatedNamespace.id}`);
+        this.log(formatSuccess("Channel rule updated."));
+        this.log(`${formatLabel("ID")} ${updatedNamespace.id}`);
         for (const line of formatChannelRuleDetails(updatedNamespace, {
           formatDate: (t) => this.formatDate(t),
           showTimestamps: true,
