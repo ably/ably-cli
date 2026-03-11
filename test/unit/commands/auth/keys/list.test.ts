@@ -9,6 +9,7 @@ import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
+  standardControlApiErrorTests,
 } from "../../../../helpers/standard-tests.js";
 
 describe("auth:keys:list command", () => {
@@ -136,28 +137,17 @@ describe("auth:keys:list command", () => {
       expect(error?.message).toMatch(/No app specified/);
     });
 
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl()
-        .get(`/v1/apps/${appId}/keys`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(["auth:keys:list"], import.meta.url);
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
-    });
-
-    it("should handle network errors", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl()
-        .get(`/v1/apps/${appId}/keys`)
-        .replyWithError("Network error");
-
-      const { error } = await runCommand(["auth:keys:list"], import.meta.url);
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Network error/);
+    standardControlApiErrorTests({
+      commandArgs: ["auth:keys:list"],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().get(`/v1/apps/${appId}/keys`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
     });
   });
 });

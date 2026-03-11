@@ -13,6 +13,7 @@ import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
+  standardControlApiErrorTests,
 } from "../../../../helpers/standard-tests.js";
 
 describe("auth:keys:revoke command", () => {
@@ -121,19 +122,17 @@ describe("auth:keys:revoke command", () => {
       expect(error?.message).toMatch(/not found/);
     });
 
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl()
-        .get(`/v1/apps/${appId}/keys`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["auth:keys:revoke", `${appId}.${mockKeyId}`, "--force"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
+    standardControlApiErrorTests({
+      commandArgs: ["auth:keys:revoke", mockKeyId, "--force"],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().get(`/v1/apps/${appId}/keys`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
     });
   });
 });

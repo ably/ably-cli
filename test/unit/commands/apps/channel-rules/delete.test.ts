@@ -9,7 +9,9 @@ import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
+  standardControlApiErrorTests,
 } from "../../../../helpers/standard-tests.js";
+import { mockNamespace } from "../../../../fixtures/control-api.js";
 
 describe("apps:channel-rules:delete command", () => {
   const mockRuleId = "chat";
@@ -24,15 +26,7 @@ describe("apps:channel-rules:delete command", () => {
       // Mock listing namespaces to find the rule
       nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, [
-          {
-            id: mockRuleId,
-            persisted: false,
-            pushEnabled: false,
-            created: Date.now(),
-            modified: Date.now(),
-          },
-        ]);
+        .reply(200, [mockNamespace()]);
 
       // Mock delete endpoint
       nockControl()
@@ -51,15 +45,7 @@ describe("apps:channel-rules:delete command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, [
-          {
-            id: mockRuleId,
-            persisted: false,
-            pushEnabled: false,
-            created: Date.now(),
-            modified: Date.now(),
-          },
-        ]);
+        .reply(200, [mockNamespace()]);
 
       nockControl()
         .delete(`/v1/apps/${appId}/namespaces/${mockRuleId}`)
@@ -84,6 +70,19 @@ describe("apps:channel-rules:delete command", () => {
   standardFlagTests("apps:channel-rules:delete", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
+    standardControlApiErrorTests({
+      commandArgs: ["apps:channel-rules:delete", "chat", "--force"],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().get(`/v1/apps/${appId}/namespaces`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
+    });
+
     it("should require nameOrId argument", async () => {
       const { error } = await runCommand(
         ["apps:channel-rules:delete"],
@@ -105,36 +104,6 @@ describe("apps:channel-rules:delete command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/not found/);
-    });
-
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl()
-        .get(`/v1/apps/${appId}/namespaces`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["apps:channel-rules:delete", mockRuleId, "--force"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
-    });
-
-    it("should handle network errors", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl()
-        .get(`/v1/apps/${appId}/namespaces`)
-        .replyWithError("Network error");
-
-      const { error } = await runCommand(
-        ["apps:channel-rules:delete", mockRuleId, "--force"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Network error/);
     });
   });
 });

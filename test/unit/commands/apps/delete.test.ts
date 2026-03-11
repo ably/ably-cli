@@ -10,6 +10,7 @@ import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 import {
   standardHelpTests,
   standardFlagTests,
+  standardControlApiErrorTests,
 } from "../../../helpers/standard-tests.js";
 
 describe("apps:delete command", () => {
@@ -188,20 +189,53 @@ describe("apps:delete command", () => {
   standardFlagTests("apps:delete", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
-    it("should handle 401 authentication error", async () => {
-      const mock = getMockConfigManager();
-      const appId = mock.getCurrentAppId()!;
-
-      // Mock authentication failure
-      nockControl().get("/v1/me").reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["apps:delete", appId, "--force"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    standardControlApiErrorTests({
+      get commandArgs() {
+        return [
+          "apps:delete",
+          getMockConfigManager().getCurrentAppId()!,
+          "--force",
+        ];
+      },
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        if (scenario === "401") {
+          nockControl().get("/v1/me").reply(401, { error: "Unauthorized" });
+          return;
+        }
+        if (scenario === "network") {
+          nockControl().get("/v1/me").replyWithError("Network error");
+          return;
+        }
+        // 500: need full pre-mock chain, then fail on DELETE
+        const mock = getMockConfigManager();
+        const accountId = mock.getCurrentAccount()!.accountId!;
+        const accountName = mock.getCurrentAccount()!.accountName!;
+        const userEmail = mock.getCurrentAccount()!.userEmail!;
+        const appId = mock.getCurrentAppId()!;
+        nockControl()
+          .get("/v1/me")
+          .reply(200, {
+            account: { id: accountId, name: accountName },
+            user: { email: userEmail },
+          });
+        nockControl()
+          .get(`/v1/accounts/${accountId}/apps`)
+          .reply(200, [
+            {
+              id: appId,
+              accountId: accountId,
+              name: mockAppName,
+              status: "active",
+              created: Date.now(),
+              modified: Date.now(),
+              tlsOnly: false,
+            },
+          ]);
+        nockControl()
+          .delete(`/v1/apps/${appId}`)
+          .reply(500, { error: "Internal Server Error" });
+      },
     });
 
     it("should handle app not found error", async () => {
@@ -228,79 +262,6 @@ describe("apps:delete command", () => {
       );
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/not found/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
-    });
-
-    it("should handle deletion API error", async () => {
-      const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
-      const appId = mock.getCurrentAppId()!;
-
-      // Mock the /me endpoint
-      nockControl()
-        .get("/v1/me")
-        .reply(200, {
-          account: { id: accountId, name: accountName },
-          user: { email: userEmail },
-        });
-
-      // Mock the app listing endpoint
-      nockControl()
-        .get(`/v1/accounts/${accountId}/apps`)
-        .reply(200, [
-          {
-            id: appId,
-            accountId: accountId,
-            name: mockAppName,
-            status: "active",
-            created: Date.now(),
-            modified: Date.now(),
-            tlsOnly: false,
-          },
-        ]);
-
-      // Mock deletion failure
-      nockControl()
-        .delete(`/v1/apps/${appId}`)
-        .reply(500, { error: "Internal Server Error" });
-
-      const { error } = await runCommand(
-        ["apps:delete", appId, "--force"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/500/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
-    });
-
-    it("should handle missing app ID when no current app is set", async () => {
-      // Clear the current app from mock config
-      const mock = getMockConfigManager();
-      mock.setCurrentAppIdForAccount(undefined);
-
-      const { error } = await runCommand(["apps:delete"], import.meta.url);
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(
-        /No app ID provided and no current app selected/,
-      );
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
-    });
-
-    it("should handle network errors", async () => {
-      const mock = getMockConfigManager();
-      const appId = mock.getCurrentAppId()!;
-
-      // Mock network error
-      nockControl().get("/v1/me").replyWithError("Network error");
-
-      const { error } = await runCommand(
-        ["apps:delete", appId, "--force"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Network error/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 

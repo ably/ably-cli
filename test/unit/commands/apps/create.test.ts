@@ -10,6 +10,7 @@ import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 import {
   standardHelpTests,
   standardFlagTests,
+  standardControlApiErrorTests,
 } from "../../../helpers/standard-tests.js";
 
 describe("apps:create command", () => {
@@ -249,17 +250,33 @@ describe("apps:create command", () => {
   standardFlagTests("apps:create", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
-    it("should handle 401 authentication error", async () => {
-      // Mock authentication failure
-      nockControl().get("/v1/me").reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["apps:create", "--name", `"${mockAppName}"`],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    standardControlApiErrorTests({
+      commandArgs: ["apps:create", "--name", `"${mockAppName}"`],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        if (scenario === "401") {
+          nockControl().get("/v1/me").reply(401, { error: "Unauthorized" });
+          return;
+        }
+        if (scenario === "network") {
+          nockControl().get("/v1/me").replyWithError("Network error");
+          return;
+        }
+        // 500: need /v1/me pre-mock, then fail on the actual endpoint
+        const mock = getMockConfigManager();
+        const accountId = mock.getCurrentAccount()!.accountId!;
+        const accountName = mock.getCurrentAccount()!.accountName!;
+        const userEmail = mock.getCurrentAccount()!.userEmail!;
+        nockControl()
+          .get("/v1/me")
+          .reply(200, {
+            account: { id: accountId, name: accountName },
+            user: { email: userEmail },
+          });
+        nockControl()
+          .post(`/v1/accounts/${accountId}/apps`)
+          .reply(500, { error: "Internal Server Error" });
+      },
     });
 
     it("should handle 403 forbidden error", async () => {
@@ -318,51 +335,10 @@ describe("apps:create command", () => {
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
-    it("should handle 500 server error", async () => {
-      const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
-
-      // Mock the /me endpoint
-      nockControl()
-        .get("/v1/me")
-        .reply(200, {
-          account: { id: accountId, name: accountName },
-          user: { email: userEmail },
-        });
-
-      // Mock server error
-      nockControl()
-        .post(`/v1/accounts/${accountId}/apps`)
-        .reply(500, { error: "Internal Server Error" });
-
-      const { error } = await runCommand(
-        ["apps:create", "--name", `"${mockAppName}"`],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/500/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
-    });
-
     it("should require name parameter", async () => {
       const { error } = await runCommand(["apps:create"], import.meta.url);
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/Missing required flag.*name/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
-    });
-
-    it("should handle network errors", async () => {
-      // Mock network error
-      nockControl().get("/v1/me").replyWithError("Network error");
-
-      const { error } = await runCommand(
-        ["apps:create", "--name", `"${mockAppName}"`],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Network error/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 

@@ -8,6 +8,7 @@ import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
+  standardControlApiErrorTests,
 } from "../../../helpers/standard-tests.js";
 
 describe("integrations:update command", () => {
@@ -222,6 +223,26 @@ describe("integrations:update command", () => {
   });
 
   describe("error handling", () => {
+    standardControlApiErrorTests({
+      commandArgs: [
+        "integrations:update",
+        mockRuleId,
+        "--channel-filter",
+        "test:*",
+      ],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().get(
+          `/v1/apps/${appId}/rules/${mockRuleId}`,
+        );
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
+    });
+
     it("should require ruleId argument", async () => {
       const { error } = await runCommand(
         ["integrations:update", "--channel-filter", "test:*"],

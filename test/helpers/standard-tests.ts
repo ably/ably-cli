@@ -2,13 +2,21 @@
  * Shared standard test generators for the 5 required describe blocks.
  *
  * Usage:
- *   import { standardHelpTests, standardArgValidationTests, standardFlagTests } from "../../helpers/standard-tests.js";
+ *   import { standardHelpTests, standardArgValidationTests, standardFlagTests, standardControlApiErrorTests } from "../../helpers/standard-tests.js";
  *
  *   describe("my:command", () => {
  *     standardHelpTests("my:command", import.meta.url);
  *     standardArgValidationTests("my:command", import.meta.url);
  *     standardFlagTests("my:command", import.meta.url, ["--json", "--app"]);
- *     // ... functionality and error handling are command-specific
+ *
+ *     describe("error handling", () => {
+ *       standardControlApiErrorTests({
+ *         commandArgs: ["my:command"],
+ *         importMetaUrl: import.meta.url,
+ *         setupNock: (scenario) => { ... },
+ *       });
+ *       // command-specific error tests...
+ *     });
  *   });
  */
 import { describe, it, expect } from "vitest";
@@ -75,5 +83,46 @@ export function standardFlagTests(
         expect(stdout).toContain(flag);
       });
     }
+  });
+}
+
+/**
+ * Options for standardControlApiErrorTests.
+ */
+interface ControlApiErrorTestOptions {
+  /** Command args for runCommand, e.g., ["apps:create", "--name", "test"] */
+  commandArgs: string[];
+  /** import.meta.url of the test file */
+  importMetaUrl: string;
+  /** Set up nock to return the specified error. Called before runCommand. */
+  setupNock: (scenario: "401" | "500" | "network") => void;
+}
+
+/**
+ * Generate standard 401/500/network error tests for Control API commands.
+ *
+ * Call INSIDE a `describe("error handling", ...)` block — does NOT create
+ * the describe block itself. Command-specific error tests (403, 404, 429,
+ * validation) go alongside these in the same describe.
+ */
+export function standardControlApiErrorTests(
+  opts: ControlApiErrorTestOptions,
+): void {
+  it("should handle 401 authentication error", async () => {
+    opts.setupNock("401");
+    const { error } = await runCommand(opts.commandArgs, opts.importMetaUrl);
+    expect(error).toBeDefined();
+  });
+
+  it("should handle 500 server error", async () => {
+    opts.setupNock("500");
+    const { error } = await runCommand(opts.commandArgs, opts.importMetaUrl);
+    expect(error).toBeDefined();
+  });
+
+  it("should handle network errors", async () => {
+    opts.setupNock("network");
+    const { error } = await runCommand(opts.commandArgs, opts.importMetaUrl);
+    expect(error).toBeDefined();
   });
 }

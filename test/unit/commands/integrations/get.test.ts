@@ -8,6 +8,7 @@ import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
+  standardControlApiErrorTests,
 } from "../../../helpers/standard-tests.js";
 
 describe("integrations:get command", () => {
@@ -225,36 +226,6 @@ describe("integrations:get command", () => {
       expect(error?.message).toMatch(/Error getting integration|404/i);
     });
 
-    it("should handle API errors", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl()
-        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
-        .reply(500, { error: "Internal server error" });
-
-      const { error } = await runCommand(
-        ["integrations:get", mockRuleId],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Error getting integration|500/i);
-    });
-
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl()
-        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["integrations:get", mockRuleId],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
-    });
-
     it("should reject unknown flags", async () => {
       const { error } = await runCommand(
         ["integrations:get", mockRuleId, "--unknown-flag"],
@@ -263,6 +234,19 @@ describe("integrations:get command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+
+    standardControlApiErrorTests({
+      commandArgs: ["integrations:get", "rule-123456"],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().get(`/v1/apps/${appId}/rules/rule-123456`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
     });
   });
 

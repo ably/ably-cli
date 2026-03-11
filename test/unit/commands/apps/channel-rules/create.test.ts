@@ -8,7 +8,9 @@ import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js
 import {
   standardHelpTests,
   standardFlagTests,
+  standardControlApiErrorTests,
 } from "../../../../helpers/standard-tests.js";
+import { mockNamespace } from "../../../../fixtures/control-api.js";
 
 describe("apps:channel-rules:create command", () => {
   const mockRuleName = "chat";
@@ -21,13 +23,9 @@ describe("apps:channel-rules:create command", () => {
   describe("functionality", () => {
     it("should create a channel rule successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl().post(`/v1/apps/${appId}/namespaces`).reply(201, {
-        id: mockRuleId,
-        persisted: false,
-        pushEnabled: false,
-        created: Date.now(),
-        modified: Date.now(),
-      });
+      nockControl()
+        .post(`/v1/apps/${appId}/namespaces`)
+        .reply(201, mockNamespace());
 
       const { stdout } = await runCommand(
         ["apps:channel-rules:create", "--name", mockRuleName],
@@ -44,13 +42,7 @@ describe("apps:channel-rules:create command", () => {
         .post(`/v1/apps/${appId}/namespaces`, (body) => {
           return body.persisted === true;
         })
-        .reply(201, {
-          id: mockRuleId,
-          persisted: true,
-          pushEnabled: false,
-          created: Date.now(),
-          modified: Date.now(),
-        });
+        .reply(201, mockNamespace({ persisted: true }));
 
       const { stdout } = await runCommand(
         ["apps:channel-rules:create", "--name", mockRuleName, "--persisted"],
@@ -67,13 +59,7 @@ describe("apps:channel-rules:create command", () => {
         .post(`/v1/apps/${appId}/namespaces`, (body) => {
           return body.pushEnabled === true;
         })
-        .reply(201, {
-          id: mockRuleId,
-          persisted: false,
-          pushEnabled: true,
-          created: Date.now(),
-          modified: Date.now(),
-        });
+        .reply(201, mockNamespace({ pushEnabled: true }));
 
       const { stdout } = await runCommand(
         ["apps:channel-rules:create", "--name", mockRuleName, "--push-enabled"],
@@ -91,12 +77,8 @@ describe("apps:channel-rules:create command", () => {
           return body.mutableMessages === true && body.persisted === true;
         })
         .reply(201, {
-          id: mockRuleId,
-          persisted: true,
-          pushEnabled: false,
+          ...mockNamespace({ persisted: true }),
           mutableMessages: true,
-          created: Date.now(),
-          modified: Date.now(),
         });
 
       const { stdout, stderr } = await runCommand(
@@ -124,12 +106,8 @@ describe("apps:channel-rules:create command", () => {
           return body.mutableMessages === true && body.persisted === true;
         })
         .reply(201, {
-          id: mockRuleId,
-          persisted: true,
-          pushEnabled: false,
+          ...mockNamespace({ persisted: true }),
           mutableMessages: true,
-          created: Date.now(),
-          modified: Date.now(),
         });
 
       const { stdout, stderr } = await runCommand(
@@ -153,15 +131,10 @@ describe("apps:channel-rules:create command", () => {
 
     it("should output JSON format when --json flag is used", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      const mockRule = {
-        id: mockRuleId,
-        persisted: false,
-        pushEnabled: false,
-        created: Date.now(),
-        modified: Date.now(),
-      };
 
-      nockControl().post(`/v1/apps/${appId}/namespaces`).reply(201, mockRule);
+      nockControl()
+        .post(`/v1/apps/${appId}/namespaces`)
+        .reply(201, mockNamespace());
 
       const { stdout } = await runCommand(
         ["apps:channel-rules:create", "--name", mockRuleName, "--json"],
@@ -192,6 +165,19 @@ describe("apps:channel-rules:create command", () => {
   standardFlagTests("apps:channel-rules:create", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
+    standardControlApiErrorTests({
+      commandArgs: ["apps:channel-rules:create", "--name", "chat"],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().post(`/v1/apps/${appId}/namespaces`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
+    });
+
     it("should require name parameter", async () => {
       const { error } = await runCommand(
         ["apps:channel-rules:create"],
@@ -200,21 +186,6 @@ describe("apps:channel-rules:create command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/Missing required flag.*name/);
-    });
-
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl()
-        .post(`/v1/apps/${appId}/namespaces`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["apps:channel-rules:create", "--name", mockRuleName],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
     });
 
     it("should handle 400 validation error", async () => {
@@ -230,21 +201,6 @@ describe("apps:channel-rules:create command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/400/);
-    });
-
-    it("should handle network errors", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl()
-        .post(`/v1/apps/${appId}/namespaces`)
-        .replyWithError("Network error");
-
-      const { error } = await runCommand(
-        ["apps:channel-rules:create", "--name", mockRuleName],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Network error/);
     });
   });
 });

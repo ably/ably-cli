@@ -9,7 +9,9 @@ import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
+  standardControlApiErrorTests,
 } from "../../../../helpers/standard-tests.js";
+import { mockNamespace } from "../../../../fixtures/control-api.js";
 
 describe("apps:channel-rules:list command", () => {
   afterEach(() => {
@@ -20,20 +22,8 @@ describe("apps:channel-rules:list command", () => {
     it("should list channel rules successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockRules = [
-        {
-          id: "chat",
-          persisted: true,
-          pushEnabled: false,
-          created: Date.now(),
-          modified: Date.now(),
-        },
-        {
-          id: "events",
-          persisted: false,
-          pushEnabled: true,
-          created: Date.now(),
-          modified: Date.now(),
-        },
+        mockNamespace({ persisted: true }),
+        mockNamespace({ id: "events", pushEnabled: true }),
       ];
 
       nockControl().get(`/v1/apps/${appId}/namespaces`).reply(200, mockRules);
@@ -64,13 +54,9 @@ describe("apps:channel-rules:list command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockRules = [
         {
-          id: "chat",
-          persisted: true,
-          pushEnabled: true,
+          ...mockNamespace({ persisted: true, pushEnabled: true }),
           authenticated: true,
           tlsOnly: true,
-          created: Date.now(),
-          modified: Date.now(),
         },
       ];
 
@@ -91,12 +77,8 @@ describe("apps:channel-rules:list command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockRules = [
         {
-          id: "mutable-chat",
-          persisted: true,
-          pushEnabled: false,
+          ...mockNamespace({ id: "mutable-chat", persisted: true }),
           mutableMessages: true,
-          created: Date.now(),
-          modified: Date.now(),
         },
       ];
 
@@ -116,20 +98,10 @@ describe("apps:channel-rules:list command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockRules = [
         {
-          id: "mutable-chat",
-          persisted: true,
-          pushEnabled: false,
+          ...mockNamespace({ id: "mutable-chat", persisted: true }),
           mutableMessages: true,
-          created: Date.now(),
-          modified: Date.now(),
         },
-        {
-          id: "regular-chat",
-          persisted: false,
-          pushEnabled: false,
-          created: Date.now(),
-          modified: Date.now(),
-        },
+        mockNamespace({ id: "regular-chat" }),
       ];
 
       nockControl().get(`/v1/apps/${appId}/namespaces`).reply(200, mockRules);
@@ -152,19 +124,17 @@ describe("apps:channel-rules:list command", () => {
   standardFlagTests("apps:channel-rules:list", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl()
-        .get(`/v1/apps/${appId}/namespaces`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["apps:channel-rules:list"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
+    standardControlApiErrorTests({
+      commandArgs: ["apps:channel-rules:list"],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().get(`/v1/apps/${appId}/namespaces`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
     });
 
     it("should handle 404 not found error", async () => {
@@ -180,21 +150,6 @@ describe("apps:channel-rules:list command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/404/);
-    });
-
-    it("should handle network errors", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl()
-        .get(`/v1/apps/${appId}/namespaces`)
-        .replyWithError("Network error");
-
-      const { error } = await runCommand(
-        ["apps:channel-rules:list"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Network error/);
     });
   });
 });

@@ -12,7 +12,9 @@ import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
+  standardControlApiErrorTests,
 } from "../../../helpers/standard-tests.js";
+import { mockQueue } from "../../../fixtures/control-api.js";
 
 describe("queues:delete command", () => {
   const mockQueueName = "test-queue";
@@ -23,36 +25,12 @@ describe("queues:delete command", () => {
   });
 
   function createMockQueue(appId: string, queueId: string) {
-    return {
+    return mockQueue({
       id: queueId,
       appId,
       name: mockQueueName,
-      region: "us-east-1-a",
-      state: "active",
-      maxLength: 10000,
-      ttl: 60,
-      deadletter: false,
-      deadletterId: "",
-      messages: {
-        ready: 5,
-        total: 10,
-        unacknowledged: 5,
-      },
-      stats: {
-        publishRate: null,
-        deliveryRate: null,
-        acknowledgementRate: null,
-      },
-      amqp: {
-        uri: "amqps://queue.ably.io:5671",
-        queueName: mockQueueName,
-      },
-      stomp: {
-        uri: "stomp://queue.ably.io:61614",
-        host: "queue.ably.io",
-        destination: `/queue/${mockQueueName}`,
-      },
-    };
+      messages: { ready: 5, total: 10, unacknowledged: 5 },
+    });
   }
 
   describe("functionality", () => {
@@ -141,22 +119,24 @@ describe("queues:delete command", () => {
   });
 
   describe("error handling", () => {
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
-
-      nockControl()
-        .get(`/v1/apps/${appId}/queues`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["queues:delete", mockQueueId, "--force"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    standardControlApiErrorTests({
+      get commandArgs() {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        return [
+          "queues:delete",
+          `${appId}:us-east-1-a:${mockQueueName}`,
+          "--force",
+        ];
+      },
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().get(`/v1/apps/${appId}/queues`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
     });
 
     it("should handle 403 forbidden error", async () => {
@@ -192,24 +172,6 @@ describe("queues:delete command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/404/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
-    });
-
-    it("should handle 500 server error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
-
-      nockControl()
-        .get(`/v1/apps/${appId}/queues`)
-        .reply(500, { error: "Internal Server Error" });
-
-      const { error } = await runCommand(
-        ["queues:delete", mockQueueId, "--force"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Queue.*not found|500/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -270,24 +232,6 @@ describe("queues:delete command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/No access token|No app|not logged in/i);
-    });
-
-    it("should handle network errors", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
-
-      nockControl()
-        .get(`/v1/apps/${appId}/queues`)
-        .replyWithError("Network error");
-
-      const { error } = await runCommand(
-        ["queues:delete", mockQueueId, "--force"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Network error/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle when specific queue ID is not found in list", async () => {

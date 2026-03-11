@@ -8,20 +8,20 @@ import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
+  standardControlApiErrorTests,
 } from "../../../helpers/standard-tests.js";
+import { mockStats as mockStatsFactory } from "../../../fixtures/control-api.js";
 
 describe("stats:account command", () => {
   const mockAccessToken = "fake_access_token";
   const mockAccountId = "test-account-id";
-  const mockStats = [
-    {
-      intervalId: "2023-01-01:00:00",
-      unit: "minute",
+  const mockStatsData = [
+    mockStatsFactory({
       all: {
         messages: { count: 200, data: 10000 },
         all: { count: 200, data: 10000 },
       },
-    },
+    }),
   ];
 
   beforeEach(() => {
@@ -60,7 +60,7 @@ describe("stats:account command", () => {
       const scope = nockControl()
         .get(`/v1/accounts/${mockAccountId}/stats`)
         .query(true)
-        .reply(200, mockStats);
+        .reply(200, mockStatsData);
 
       const { stdout, error } = await runCommand(
         ["stats:account", "--start", "1h"],
@@ -77,7 +77,7 @@ describe("stats:account command", () => {
       const scope = nockControl()
         .get(`/v1/accounts/${mockAccountId}/stats`)
         .query(true)
-        .reply(200, mockStats);
+        .reply(200, mockStatsData);
 
       const { stdout } = await runCommand(
         [
@@ -99,7 +99,7 @@ describe("stats:account command", () => {
       const scope = nockControl()
         .get(`/v1/accounts/${mockAccountId}/stats`)
         .query(true)
-        .reply(200, mockStats);
+        .reply(200, mockStatsData);
 
       const { stdout } = await runCommand(
         ["stats:account", "--start", "1h"],
@@ -115,7 +115,7 @@ describe("stats:account command", () => {
       const scope = nockControl()
         .get(`/v1/accounts/${mockAccountId}/stats`)
         .query(true)
-        .reply(200, mockStats);
+        .reply(200, mockStatsData);
 
       const { stdout } = await runCommand(
         ["stats:account", "--start", "1672531200000"],
@@ -128,14 +128,16 @@ describe("stats:account command", () => {
   });
 
   describe("error handling", () => {
-    it("should handle errors gracefully", async () => {
-      nockControl()
-        .get("/v1/me")
-        .times(2)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(["stats:account"], import.meta.url);
-      expect(error).toBeDefined();
+    standardControlApiErrorTests({
+      commandArgs: ["stats:account"],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const scope = nockControl().get("/v1/me").times(2);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
     });
   });
 });

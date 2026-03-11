@@ -246,9 +246,9 @@ apiKey = "${mockApiKey}"
     });
   });
 
-  standardFlagTests("config:show", import.meta.url, ["--json"]);
-
   standardHelpTests("config:show", import.meta.url);
+
+  standardFlagTests("config:show", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
     it("should handle missing config file gracefully", async () => {

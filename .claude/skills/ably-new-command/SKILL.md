@@ -397,5 +397,9 @@ See the "Keeping Skills Up to Date" section in `CLAUDE.md` for the full list of 
 - [ ] Tests use correct mock helper (`getMockAblyRealtime`, `getMockAblyRest`, `nock`)
 - [ ] Tests don't pass auth flags — `MockConfigManager` handles auth
 - [ ] Subscribe tests auto-exit via env var (ABLY_CLI_DEFAULT_DURATION: "0.25" in vitest.config.ts) — do NOT pass --duration to runCommand()
+- [ ] Tests use `standardHelpTests()`, `standardArgValidationTests()`, `standardFlagTests()` from `test/helpers/standard-tests.ts`
+- [ ] Control API tests use `nockControl()`, `controlApiCleanup()` from `test/helpers/control-api-test-helpers.ts`
+- [ ] Control API tests use `standardControlApiErrorTests()` for 401/500/network error tests in the `describe("error handling", ...)` block
+- [ ] Control API response bodies use `mockApp()`, `mockKey()`, `mockRule()`, `mockQueue()`, `mockNamespace()`, `mockStats()` from `test/fixtures/control-api.ts` where applicable
 - [ ] Index file created if new topic/subtopic
 - [ ] `pnpm prepare && pnpm exec eslint . && pnpm test:unit` passes

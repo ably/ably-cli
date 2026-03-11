@@ -11,6 +11,7 @@ import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
+  standardControlApiErrorTests,
 } from "../../../helpers/standard-tests.js";
 
 describe("apps:update command", () => {
@@ -193,6 +194,34 @@ describe("apps:update command", () => {
   standardFlagTests("apps:update", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
+    standardControlApiErrorTests({
+      get commandArgs() {
+        return [
+          "apps:update",
+          getMockConfigManager().getCurrentAppId()!,
+          "--name",
+          "NewName",
+        ];
+      },
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        if (scenario === "401") {
+          nockControl()
+            .patch(`/v1/apps/${appId}`)
+            .reply(401, { error: "Unauthorized" });
+        } else if (scenario === "500") {
+          nockControl()
+            .patch(`/v1/apps/${appId}`)
+            .reply(500, { error: "Internal Server Error" });
+        } else {
+          nockControl()
+            .patch(`/v1/apps/${appId}`)
+            .replyWithError("Network error");
+        }
+      },
+    });
+
     it("should require at least one update parameter", async () => {
       const mock = getMockConfigManager();
       const appId = mock.getCurrentAppId()!;
@@ -233,24 +262,6 @@ describe("apps:update command", () => {
       expect(error?.message).toMatch(/Missing.*required arg/i);
     });
 
-    it("should handle 401 authentication error", async () => {
-      const mock = getMockConfigManager();
-      const appId = mock.getCurrentAppId()!;
-
-      // Mock authentication failure
-      nockControl()
-        .patch(`/v1/apps/${appId}`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["apps:update", appId, "--name", "NewName"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
-    });
-
     it("should handle 403 forbidden error", async () => {
       const mock = getMockConfigManager();
       const appId = mock.getCurrentAppId()!;
@@ -285,40 +296,6 @@ describe("apps:update command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/404/);
-    });
-
-    it("should handle 500 server error", async () => {
-      const mock = getMockConfigManager();
-      const appId = mock.getCurrentAppId()!;
-
-      // Mock server error
-      nockControl()
-        .patch(`/v1/apps/${appId}`)
-        .reply(500, { error: "Internal Server Error" });
-
-      const { error } = await runCommand(
-        ["apps:update", appId, "--name", "NewName"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/500/);
-    });
-
-    it("should handle network errors", async () => {
-      const mock = getMockConfigManager();
-      const appId = mock.getCurrentAppId()!;
-
-      // Mock network error
-      nockControl().patch(`/v1/apps/${appId}`).replyWithError("Network error");
-
-      const { error } = await runCommand(
-        ["apps:update", appId, "--name", "NewName"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Network error/);
     });
 
     it("should handle JSON error output for API errors", async () => {

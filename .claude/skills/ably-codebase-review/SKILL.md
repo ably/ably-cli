@@ -167,8 +167,9 @@ Launch these agents **in parallel**. Each agent gets a focused mandate and uses 
 5. **Grep** for `--api-key`, `--token`, `--access-token` in unit test files — these should not use CLI auth flags
 6. **Check** for use of shared test helpers where applicable:
    - Control API tests should use `nockControl()`, `getControlApiContext()`, `controlApiCleanup()` from `test/helpers/control-api-test-helpers.ts` instead of manual nock setup
-   - Control API tests should use mock factories (`mockApp()`, `mockKey()`, `mockRule()`) from `test/fixtures/control-api.ts` instead of duplicating inline response objects
+   - Control API tests should use mock factories (`mockApp()`, `mockKey()`, `mockRule()`, `mockQueue()`, `mockNamespace()`, `mockStats()`) from `test/fixtures/control-api.ts` instead of duplicating inline response objects
    - Tests with boilerplate help/arg-validation/flags blocks should use `standardHelpTests()`, `standardArgValidationTests()`, `standardFlagTests()` from `test/helpers/standard-tests.ts`
+   - Control API error handling blocks should use `standardControlApiErrorTests()` from `test/helpers/standard-tests.ts` for 401/500/network error tests
 
 **Reasoning guidance:**
 - Missing test files are deviations but may be documented as known gaps

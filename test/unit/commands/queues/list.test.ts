@@ -11,7 +11,9 @@ import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
+  standardControlApiErrorTests,
 } from "../../../helpers/standard-tests.js";
+import { mockQueue, mockApp } from "../../../fixtures/control-api.js";
 
 describe("queues:list command", () => {
   afterEach(() => {
@@ -26,21 +28,11 @@ describe("queues:list command", () => {
       nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [
-          {
+          mockQueue({
             id: "queue-1",
             appId,
             name: "test-queue-1",
-            region: "us-east-1-a",
-            state: "active",
-            maxLength: 10000,
-            ttl: 60,
-            deadletter: false,
-            deadletterId: "",
-            messages: {
-              ready: 5,
-              total: 10,
-              unacknowledged: 5,
-            },
+            messages: { ready: 5, total: 10, unacknowledged: 5 },
             stats: {
               publishRate: 1.5,
               deliveryRate: 1.2,
@@ -55,27 +47,16 @@ describe("queues:list command", () => {
               host: "queue.ably.io",
               destination: "/queue/test-queue-1",
             },
-          },
-          {
+          }),
+          mockQueue({
             id: "queue-2",
             appId,
             name: "test-queue-2",
             region: "eu-west-1-a",
-            state: "active",
             maxLength: 50000,
             ttl: 3600,
             deadletter: true,
             deadletterId: "queue-2-dl",
-            messages: {
-              ready: 0,
-              total: 0,
-              unacknowledged: 0,
-            },
-            stats: {
-              publishRate: null,
-              deliveryRate: null,
-              acknowledgementRate: null,
-            },
             amqp: {
               uri: "amqps://queue.ably.io:5671",
               queueName: "test-queue-2",
@@ -85,7 +66,7 @@ describe("queues:list command", () => {
               host: "queue.ably.io",
               destination: "/queue/test-queue-2",
             },
-          },
+          }),
         ]);
 
       const { stdout } = await runCommand(["queues:list"], import.meta.url);
@@ -130,21 +111,11 @@ describe("queues:list command", () => {
     it("should output JSON format when --json flag is used", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueues = [
-        {
+        mockQueue({
           id: "queue-1",
           appId,
           name: "test-queue-1",
-          region: "us-east-1-a",
-          state: "active",
-          maxLength: 10000,
-          ttl: 60,
-          deadletter: false,
-          deadletterId: "",
-          messages: {
-            ready: 5,
-            total: 10,
-            unacknowledged: 5,
-          },
+          messages: { ready: 5, total: 10, unacknowledged: 5 },
           stats: {
             publishRate: 1.5,
             deliveryRate: 1.2,
@@ -159,7 +130,7 @@ describe("queues:list command", () => {
             host: "queue.ably.io",
             destination: "/queue/test-queue-1",
           },
-        },
+        }),
       ];
 
       nockControl().get(`/v1/apps/${appId}/queues`).reply(200, mockQueues);
@@ -186,15 +157,7 @@ describe("queues:list command", () => {
       const accountId = getMockConfigManager().getCurrentAccount()!.accountId!;
       const customAppId = "custom-app-id";
 
-      const mockAppResponse = {
-        id: customAppId,
-        accountId,
-        name: "Test App",
-        status: "active",
-        created: Date.now(),
-        modified: Date.now(),
-        tlsOnly: false,
-      };
+      const mockAppResponse = mockApp({ id: customAppId, accountId });
 
       nockControl()
         .get("/v1/me")
@@ -214,36 +177,11 @@ describe("queues:list command", () => {
       nockControl()
         .get(`/v1/apps/${customAppId}/queues`)
         .reply(200, [
-          {
+          mockQueue({
             id: "queue-1",
             appId: customAppId,
             name: "test-queue-1",
-            region: "us-east-1-a",
-            state: "active",
-            maxLength: 10000,
-            ttl: 60,
-            deadletter: false,
-            deadletterId: "",
-            messages: {
-              ready: 0,
-              total: 0,
-              unacknowledged: 0,
-            },
-            stats: {
-              publishRate: null,
-              deliveryRate: null,
-              acknowledgementRate: null,
-            },
-            amqp: {
-              uri: "amqps://queue.ably.io:5671",
-              queueName: "test-queue-1",
-            },
-            stomp: {
-              uri: "stomp://queue.ably.io:61614",
-              host: "queue.ably.io",
-              destination: "/queue/test-queue-1",
-            },
-          },
+          }),
         ]);
 
       const { stdout } = await runCommand(
@@ -281,36 +219,7 @@ describe("queues:list command", () => {
       nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [
-          {
-            id: "queue-1",
-            appId,
-            name: "test-queue-1",
-            region: "us-east-1-a",
-            state: "active",
-            maxLength: 10000,
-            ttl: 60,
-            deadletter: false,
-            deadletterId: "",
-            messages: {
-              ready: 0,
-              total: 0,
-              unacknowledged: 0,
-            },
-            stats: {
-              publishRate: null,
-              deliveryRate: null,
-              acknowledgementRate: null,
-            },
-            amqp: {
-              uri: "amqps://queue.ably.io:5671",
-              queueName: "test-queue-1",
-            },
-            stomp: {
-              uri: "stomp://queue.ably.io:61614",
-              host: "queue.ably.io",
-              destination: "/queue/test-queue-1",
-            },
-          },
+          mockQueue({ id: "queue-1", appId, name: "test-queue-1" }),
         ]);
 
       const { stdout } = await runCommand(["queues:list"], import.meta.url);
@@ -323,18 +232,17 @@ describe("queues:list command", () => {
   });
 
   describe("error handling", () => {
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      // Mock authentication failure
-      nockControl()
-        .get(`/v1/apps/${appId}/queues`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(["queues:list"], import.meta.url);
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    standardControlApiErrorTests({
+      commandArgs: ["queues:list"],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().get(`/v1/apps/${appId}/queues`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
     });
 
     it("should handle 403 forbidden error", async () => {
@@ -365,20 +273,6 @@ describe("queues:list command", () => {
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
-    it("should handle 500 server error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      // Mock server error
-      nockControl()
-        .get(`/v1/apps/${appId}/queues`)
-        .reply(500, { error: "Internal Server Error" });
-
-      const { error } = await runCommand(["queues:list"], import.meta.url);
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/500/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
-    });
-
     it("should require app to be specified when not in environment", async () => {
       // Clear all accounts from the mock config to simulate no config
       getMockConfigManager().clearAccounts();
@@ -387,20 +281,6 @@ describe("queues:list command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/No access token|No app|not logged in/i);
-    });
-
-    it("should handle network errors", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      // Mock network error
-      nockControl()
-        .get(`/v1/apps/${appId}/queues`)
-        .replyWithError("Network error");
-
-      const { error } = await runCommand(["queues:list"], import.meta.url);
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Network error/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle errors in JSON format when --json flag is used", async () => {
@@ -443,39 +323,23 @@ describe("queues:list command", () => {
     it("should handle large datasets correctly", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock a large number of queues to test performance
-      const queues: any[] = [];
-      for (let i = 1; i <= 50; i++) {
-        queues.push({
-          id: `queue-${i}`,
+      const queues = Array.from({ length: 50 }, (_, i) =>
+        mockQueue({
+          id: `queue-${i + 1}`,
           appId,
-          name: `test-queue-${i}`,
-          region: "us-east-1-a",
-          state: "active",
-          maxLength: 10000,
-          ttl: 60,
-          deadletter: false,
-          deadletterId: "",
-          messages: {
-            ready: i,
-            total: i * 2,
-            unacknowledged: i,
-          },
-          stats: {
-            publishRate: null,
-            deliveryRate: null,
-            acknowledgementRate: null,
-          },
+          name: `test-queue-${i + 1}`,
+          messages: { ready: i + 1, total: (i + 1) * 2, unacknowledged: i + 1 },
           amqp: {
             uri: "amqps://queue.ably.io:5671",
-            queueName: `test-queue-${i}`,
+            queueName: `test-queue-${i + 1}`,
           },
           stomp: {
             uri: "stomp://queue.ably.io:61614",
             host: "queue.ably.io",
-            destination: `/queue/test-queue-${i}`,
+            destination: `/queue/test-queue-${i + 1}`,
           },
-        });
-      }
+        }),
+      );
 
       nockControl().get(`/v1/apps/${appId}/queues`).reply(200, queues);
 

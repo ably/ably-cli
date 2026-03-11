@@ -9,44 +9,26 @@ import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
+  standardControlApiErrorTests,
 } from "../../../helpers/standard-tests.js";
+import { mockRule } from "../../../fixtures/control-api.js";
 
 describe("integrations:list command", () => {
   const mockIntegrations = [
-    {
+    mockRule({
       id: "rule-001",
       appId: "app-123",
-      ruleType: "http",
-      requestMode: "single",
-      source: {
-        channelFilter: "chat:*",
-        type: "channel.message",
-      },
-      target: {
-        url: "https://example.com/webhook",
-        format: "json",
-      },
-      version: "1.0",
-      created: 1640995200000,
-      modified: 1640995200000,
-    },
-    {
+      source: { channelFilter: "chat:*", type: "channel.message" },
+      target: { url: "https://example.com/webhook", format: "json" },
+    }),
+    mockRule({
       id: "rule-002",
       appId: "app-123",
       ruleType: "amqp",
       requestMode: "batch",
-      source: {
-        channelFilter: "",
-        type: "channel.presence",
-      },
-      target: {
-        exchangeName: "ably",
-        format: "json",
-      },
-      version: "1.0",
-      created: 1640995200000,
-      modified: 1640995200000,
-    },
+      source: { channelFilter: "", type: "channel.presence" },
+      target: { exchangeName: "ably", format: "json" },
+    }),
   ];
 
   afterEach(() => {
@@ -127,49 +109,17 @@ describe("integrations:list command", () => {
   ]);
 
   describe("error handling", () => {
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl()
-        .get(`/v1/apps/${appId}/rules`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["integrations:list"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
-    });
-
-    it("should handle 500 server error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl()
-        .get(`/v1/apps/${appId}/rules`)
-        .reply(500, { error: "Internal Server Error" });
-
-      const { error } = await runCommand(
-        ["integrations:list"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/500/);
-    });
-
-    it("should handle network errors", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl()
-        .get(`/v1/apps/${appId}/rules`)
-        .replyWithError("Network error");
-
-      const { error } = await runCommand(
-        ["integrations:list"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Network error/);
+    standardControlApiErrorTests({
+      commandArgs: ["integrations:list"],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().get(`/v1/apps/${appId}/rules`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
     });
   });
 });

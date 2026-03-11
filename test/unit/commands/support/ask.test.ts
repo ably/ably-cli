@@ -8,6 +8,7 @@ import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
+  standardControlApiErrorTests,
 } from "../../../helpers/standard-tests.js";
 
 describe("support:ask command", () => {
@@ -95,41 +96,6 @@ describe("support:ask command", () => {
   standardFlagTests("support:ask", import.meta.url, ["--continue", "--json"]);
 
   describe("error handling", () => {
-    it("should handle 401 authentication error", async () => {
-      nockControl().post("/v1/help").reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["support:ask", '"What is Ably?"'],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-    });
-
-    it("should handle API errors gracefully", async () => {
-      nockControl()
-        .post("/v1/help")
-        .reply(500, { error: "Internal Server Error" });
-
-      const { error } = await runCommand(
-        ["support:ask", '"What is Ably?"'],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-    });
-
-    it("should handle network errors", async () => {
-      nockControl().post("/v1/help").replyWithError("Network error");
-
-      const { error } = await runCommand(
-        ["support:ask", '"What is Ably?"'],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-    });
-
     it("should reject unknown flags", async () => {
       const { error } = await runCommand(
         ["support:ask", "question", "--unknown-flag"],
@@ -138,6 +104,18 @@ describe("support:ask command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+
+    standardControlApiErrorTests({
+      commandArgs: ["support:ask", '"What is Ably?"'],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const scope = nockControl().post("/v1/help");
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
     });
   });
 });

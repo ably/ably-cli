@@ -11,7 +11,9 @@ import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
+  standardControlApiErrorTests,
 } from "../../../helpers/standard-tests.js";
+import { mockQueue } from "../../../fixtures/control-api.js";
 
 describe("queues:create command", () => {
   const mockQueueName = "test-queue";
@@ -23,36 +25,7 @@ describe("queues:create command", () => {
   });
 
   function createMockQueueResponse(appId: string) {
-    return {
-      id: mockQueueId,
-      appId,
-      name: mockQueueName,
-      region: "us-east-1-a",
-      state: "active",
-      maxLength: 10000,
-      ttl: 60,
-      deadletter: false,
-      deadletterId: "",
-      messages: {
-        ready: 0,
-        total: 0,
-        unacknowledged: 0,
-      },
-      stats: {
-        publishRate: null,
-        deliveryRate: null,
-        acknowledgementRate: null,
-      },
-      amqp: {
-        uri: "amqps://queue.ably.io:5671",
-        queueName: "test-queue",
-      },
-      stomp: {
-        uri: "stomp://queue.ably.io:61614",
-        host: "queue.ably.io",
-        destination: "/queue/test-queue",
-      },
-    };
+    return mockQueue({ id: mockQueueId, appId, name: mockQueueName });
   }
 
   describe("functionality", () => {
@@ -244,30 +217,26 @@ describe("queues:create command", () => {
   });
 
   describe("error handling", () => {
-    it("should handle 401 authentication error", async () => {
-      const mockConfig = getMockConfigManager();
-      const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
-
-      nockControl()
-        .get("/v1/me")
-        .reply(200, {
-          account: { id: accountId, name: "Test Account" },
-          user: { email: "test@example.com" },
-        });
-
-      nockControl()
-        .post(`/v1/apps/${appId}/queues`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["queues:create", "--name", mockQueueName],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    standardControlApiErrorTests({
+      commandArgs: ["queues:create", "--name", mockQueueName],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const mockConfig = getMockConfigManager();
+        const appId = mockConfig.getCurrentAppId()!;
+        const accountId = mockConfig.getCurrentAccount()!.accountId!;
+        // Pre-mock /v1/me (needed for app resolution)
+        nockControl()
+          .get("/v1/me")
+          .reply(200, {
+            account: { id: accountId, name: "Test Account" },
+            user: { email: "test@example.com" },
+          });
+        const scope = nockControl().post(`/v1/apps/${appId}/queues`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
     });
 
     it("should handle 403 forbidden error", async () => {
@@ -322,32 +291,6 @@ describe("queues:create command", () => {
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
-    it("should handle 500 server error", async () => {
-      const mockConfig = getMockConfigManager();
-      const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
-
-      nockControl()
-        .get("/v1/me")
-        .reply(200, {
-          account: { id: accountId, name: "Test Account" },
-          user: { email: "test@example.com" },
-        });
-
-      nockControl()
-        .post(`/v1/apps/${appId}/queues`)
-        .reply(500, { error: "Internal Server Error" });
-
-      const { error } = await runCommand(
-        ["queues:create", "--name", mockQueueName],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/500/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
-    });
-
     it("should require name parameter", async () => {
       const { error } = await runCommand(["queues:create"], import.meta.url);
 
@@ -367,32 +310,6 @@ describe("queues:create command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/No access token|No app|not logged in/i);
-    });
-
-    it("should handle network errors", async () => {
-      const mockConfig = getMockConfigManager();
-      const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
-
-      nockControl()
-        .get("/v1/me")
-        .reply(200, {
-          account: { id: accountId, name: "Test Account" },
-          user: { email: "test@example.com" },
-        });
-
-      nockControl()
-        .post(`/v1/apps/${appId}/queues`)
-        .replyWithError("Network error");
-
-      const { error } = await runCommand(
-        ["queues:create", "--name", mockQueueName],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Network error/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle validation errors from API", async () => {

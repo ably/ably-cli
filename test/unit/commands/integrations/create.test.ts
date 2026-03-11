@@ -9,6 +9,7 @@ import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
+  standardControlApiErrorTests,
 } from "../../../helpers/standard-tests.js";
 
 describe("integrations:create command", () => {
@@ -230,6 +231,29 @@ describe("integrations:create command", () => {
   });
 
   describe("error handling", () => {
+    standardControlApiErrorTests({
+      commandArgs: [
+        "integrations:create",
+        "--rule-type",
+        "http",
+        "--source-type",
+        "channel.message",
+        "--channel-filter",
+        "chat:*",
+        "--target-url",
+        "https://example.com/webhook",
+      ],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().post(`/v1/apps/${appId}/rules`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
+    });
+
     it("should require rule-type flag", async () => {
       const { error } = await runCommand(
         [
@@ -297,31 +321,6 @@ describe("integrations:create command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/400/);
-    });
-
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl()
-        .post(`/v1/apps/${appId}/rules`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        [
-          "integrations:create",
-          "--rule-type",
-          "http",
-          "--source-type",
-          "channel.message",
-          "--channel-filter",
-          "chat:*",
-          "--target-url",
-          "https://example.com/webhook",
-        ],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
     });
 
     it("should reject unknown flags", async () => {
@@ -417,7 +416,7 @@ describe("integrations:create command", () => {
     });
   });
 
-  standardArgValidationTests("integrations:create", import.meta.url);
   standardHelpTests("integrations:create", import.meta.url);
+  standardArgValidationTests("integrations:create", import.meta.url);
   standardFlagTests("integrations:create", import.meta.url, ["--json"]);
 });
