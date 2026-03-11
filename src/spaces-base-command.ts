@@ -116,7 +116,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     // First create an Ably client
     this.realtimeClient = await this.createAblyRealtimeClient(flags);
     if (!this.realtimeClient) {
-      this.error("Failed to create Ably client");
+      this.fail("Failed to create Ably client", flags, "Client");
     }
 
     // Create a Spaces client using the Ably client
@@ -165,7 +165,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
       this.logCliEvent(flags, "connection", "failed", errorMsg, {
         state: connection.state,
       });
-      throw new Error(errorMsg);
+      this.fail(errorMsg, flags, "Connection");
     }
 
     await new Promise<void>((resolve, reject) => {
@@ -230,7 +230,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     this.realtimeClient = setupResult.realtimeClient;
     this.space = setupResult.space;
     if (!this.realtimeClient || !this.space) {
-      this.error("Failed to initialize clients or space");
+      this.fail("Failed to initialize clients or space", flags, "Client");
     }
 
     if (setupConnectionLogging) {
@@ -361,7 +361,11 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
         return mockAblySpaces;
       }
 
-      this.error(`No mock Ably Spaces client available in test mode`);
+      this.fail(
+        "No mock Ably Spaces client available in test mode",
+        {},
+        "client",
+      );
     }
 
     const Spaces = await getSpacesConstructor();

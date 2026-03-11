@@ -69,9 +69,12 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
     await this.showAuthInfoIfNeeded(flags);
 
     this.statsDisplay = new StatsDisplay({
+      command: this.id,
       intervalSeconds: flags.interval as number,
       json: this.shouldOutputJson(flags),
       live: flags.live as boolean,
+      logger: (...args: unknown[]) => this.log(args.map(String).join(" ")),
+      prettyJson: this.isPrettyJsonOutput(flags),
       startTime: flags.live ? new Date() : undefined,
       unit: flags.unit as "day" | "hour" | "minute" | "month",
       ...this.getStatsDisplayOptions(),
@@ -101,7 +104,7 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
         this.statsDisplay!.display(stats[0]);
       }
     } catch (error) {
-      this.handleCommandError(error, flags, "stats");
+      this.fail(error, flags, "Stats");
     }
   }
 
@@ -139,13 +142,16 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
         this.log(formatProgress(`Subscribing to live stats for ${label}`));
       }
 
+      const isJson = this.shouldOutputJson(flags);
       const cleanup = () => {
         if (this.pollInterval) {
           clearInterval(this.pollInterval);
           this.pollInterval = undefined;
         }
 
-        this.log("\nUnsubscribed from live stats");
+        if (!isJson) {
+          this.log("\nUnsubscribed from live stats");
+        }
       };
 
       process.on("SIGINT", cleanup);
@@ -176,7 +182,7 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
         clearInterval(this.pollInterval);
       }
 
-      this.handleCommandError(error, flags, "stats");
+      this.fail(error, flags, "Stats");
     }
   }
 
@@ -212,7 +218,11 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
       }
 
       if (startMs! > endMs!) {
-        this.error("--start must be earlier than or equal to --end");
+        this.fail(
+          "--start must be earlier than or equal to --end",
+          flags,
+          "Stats",
+        );
       }
 
       const stats = await this.fetchStats(controlApi, {
@@ -224,7 +234,7 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
 
       if (stats.length === 0) {
         if (this.shouldOutputJson(flags)) {
-          this.log(this.formatJsonOutput({ stats: [], success: true }, flags));
+          this.logJsonResult({ stats: [] }, flags);
         } else {
           this.log("No stats found for the specified period");
         }
@@ -236,7 +246,7 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
         this.statsDisplay!.display(stat);
       }
     } catch (error) {
-      this.handleCommandError(error, flags, "stats");
+      this.fail(error, flags, "Stats");
     }
   }
 }

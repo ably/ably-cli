@@ -81,7 +81,11 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
         return mockChat;
       }
 
-      this.error(`No mock Ably Chat client available in test mode`);
+      this.fail(
+        "No mock Ably Chat client available in test mode",
+        flags,
+        "client",
+      );
     }
 
     // Use the Ably client to create the Chat client
@@ -129,12 +133,13 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
           break;
         }
         case RoomStatus.Failed: {
-          if (!this.shouldOutputJson(flags)) {
-            this.error(
+          this.fail(
+            new Error(
               `Failed to attach to room ${options.roomName}: ${reasonMsg || "Unknown error"}`,
-            );
-          }
-          break;
+            ),
+            flags as BaseFlags,
+            "room",
+          );
         }
         // No default
       }

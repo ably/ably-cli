@@ -63,7 +63,12 @@ export abstract class InteractiveBaseCommand extends Command {
    */
   exit(code = 0): never {
     if (isTestMode()) {
-      // @ts-expect-error TS2322: suppress type assignment error
+      if (code !== 0) {
+        const error = new Error(`Command exited with code ${code}`);
+        Object.assign(error, { exitCode: code, code: "EEXIT" });
+        throw error;
+      }
+      // @ts-expect-error TS2322: suppress type assignment error — success exit is a no-op in tests
       return;
     }
 
