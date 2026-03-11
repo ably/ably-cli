@@ -141,26 +141,30 @@ For single-shot publish, REST is preferred (simpler, no connection overhead). Se
 async run(): Promise<void> {
   const { args, flags } = await this.parse(MyHistoryCommand);
 
-  const rest = await this.createAblyRestClient(flags);
-  if (!rest) return;
+  try {
+    const rest = await this.createAblyRestClient(flags);
+    if (!rest) return;
 
-  const channel = rest.channels.get(args.channel);
+    const channel = rest.channels.get(args.channel);
 
-  const historyParams = {
-    direction: flags.direction,
-    limit: flags.limit,
-    ...(flags.start && { start: parseTimestamp(flags.start) }),
-    ...(flags.end && { end: parseTimestamp(flags.end) }),
-  };
+    const historyParams = {
+      direction: flags.direction,
+      limit: flags.limit,
+      ...(flags.start && { start: parseTimestamp(flags.start) }),
+      ...(flags.end && { end: parseTimestamp(flags.end) }),
+    };
 
-  const history = await channel.history(historyParams);
-  const messages = history.items;
+    const history = await channel.history(historyParams);
+    const messages = history.items;
 
-  if (this.shouldOutputJson(flags)) {
-    this.logJsonResult({ messages }, flags);
-  } else {
-    this.log(formatSuccess(`Found ${messages.length} messages.`));
-    // Display each message
+    if (this.shouldOutputJson(flags)) {
+      this.logJsonResult({ messages }, flags);
+    } else {
+      this.log(formatSuccess(`Found ${messages.length} messages.`));
+      // Display each message
+    }
+  } catch (error) {
+    this.fail(error, flags, "history", { channel: args.channel });
   }
 }
 ```
@@ -306,15 +310,7 @@ Full Control API list command template:
 async run(): Promise<void> {
   const { flags } = await this.parse(MyListCommand);
 
-  const appId = await this.resolveAppId(flags);
-
-  if (!appId) {
-    this.fail(
-      'No app specified. Use --app flag or select an app with "ably apps switch"',
-      flags,
-      "listItems",
-    );
-  }
+  const appId = await this.requireAppId(flags);
 
   try {
     const controlApi = this.createControlApi(flags);
@@ -352,15 +348,7 @@ Key conventions for list output:
 async run(): Promise<void> {
   const { args, flags } = await this.parse(MyControlCommand);
 
-  const appId = await this.resolveAppId(flags);
-
-  if (!appId) {
-    this.fail(
-      'No app specified. Use --app flag or select an app with "ably apps switch"',
-      flags,
-      "createResource",
-    );
-  }
+  const appId = await this.requireAppId(flags);
 
   try {
     const controlApi = this.createControlApi(flags);

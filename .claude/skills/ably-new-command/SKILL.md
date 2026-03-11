@@ -113,6 +113,10 @@ static flags = {
 };
 ```
 
+**Control API helper methods:**
+- `await this.requireAppId(flags)` — resolves and validates the app ID, returns `Promise<string>` (non-nullable). Calls `this.fail()` internally if no app found — no manual null check needed.
+- `await this.runControlCommand(flags, api => api.method(appId))` — creates the Control API client, executes the call, and handles errors in one step. Returns `Promise<T>` (non-nullable). Useful for single API calls; for multi-step flows, use `this.createControlApi(flags)` directly.
+
 **When to include `clientIdFlag`:** Add `...clientIdFlag` whenever the user might want to control which client identity performs the operation. This includes: presence enter/subscribe, spaces members, typing, cursors, publish, and any mutation where permissions may depend on the client (update, delete, annotate). The reason is that users may want to test auth scenarios — e.g., "can client B update client A's message?" — so they need the ability to set their client ID.
 
 For history commands, also use `timeRangeFlags`:
@@ -295,7 +299,7 @@ if (!appId) {
 }
 ```
 
-**In base class utility methods** (e.g., `createControlApi`, `createAblyRealtimeClient`, `parseJsonFlag`), use `throw new Error()`. These methods return values, so they can't call `fail`. The thrown error is caught by the command's try-catch and routed through `fail`.
+**In base class utility methods** (e.g., `createControlApi`, `createAblyRealtimeClient`, `parseJsonFlag`), use `this.fail()` for fatal errors — the same pattern as in command `run()` methods. The `fail()` method returns `never`, so TypeScript knows execution stops and won't require a return value after the call.
 
 **Do NOT use `this.error()` directly** — it is an internal implementation detail of `fail`. Calling `this.error()` directly skips event logging and doesn't respect `--json` mode.
 
@@ -364,6 +368,15 @@ pnpm exec eslint .  # Lint (must be 0 errors)
 pnpm test:unit      # Run tests
 ```
 
+## Maintaining this skill
+
+This skill is the **source of truth** for command conventions. The review skills (`ably-review`, `ably-codebase-review`) and `CLAUDE.md` reference the same patterns. If you change conventions here — or if the underlying source code changes (base classes, helpers, flags, error handling) — update all three locations:
+1. **This file** (`SKILL.md`) and its `references/` templates
+2. **`ably-review/SKILL.md`** and **`ably-codebase-review/SKILL.md`** — review checks must match current patterns
+3. **`.claude/CLAUDE.md`** — project-level docs that all agents see
+
+See the "Keeping Skills Up to Date" section in `CLAUDE.md` for the full list of triggers.
+
 ## Checklist
 
 - [ ] Command file at correct path under `src/commands/`
@@ -372,8 +385,8 @@ pnpm test:unit      # Run tests
 - [ ] `clientIdFlag` only if command needs client identity
 - [ ] All human output wrapped in `if (!this.shouldOutputJson(flags))`
 - [ ] Output helpers used correctly (`formatProgress`, `formatSuccess`, `formatWarning`, `formatListening`, `formatResource`, `formatTimestamp`, `formatClientId`, `formatEventType`, `formatLabel`, `formatHeading`, `formatIndex`)
-- [ ] `success()` messages end with `.` (period)
-- [ ] Resource names use `resource(name)`, never quoted
+- [ ] `formatSuccess()` messages end with `.` (period)
+- [ ] Resource names use `formatResource(name)`, never quoted
 - [ ] JSON output uses `logJsonResult()` (one-shot) or `logJsonEvent()` (streaming), not direct `formatJsonRecord()`
 - [ ] Subscribe/enter commands use `this.waitAndTrackCleanup(flags, component, flags.duration)` (not `waitUntilInterruptedOrTimeout`)
 - [ ] Error handling uses `this.fail()` exclusively, not `this.error()` or `this.log(chalk.red(...))`
