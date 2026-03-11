@@ -8,6 +8,10 @@ export function formatSuccess(message: string): string {
   return `${chalk.green("✓")} ${message}`;
 }
 
+export function formatWarning(message: string): string {
+  return `${chalk.yellow("⚠")} ${message}`;
+}
+
 export function formatListening(description: string): string {
   return chalk.dim(`${description} Press Ctrl+C to exit.`);
 }

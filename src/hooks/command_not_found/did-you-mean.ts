@@ -3,6 +3,7 @@ import chalk from "chalk";
 import inquirer from "inquirer";
 import pkg from "fast-levenshtein";
 import { runInquirerWithReadlineRestore } from "../../utils/readline-helper.js";
+import { formatWarning } from "../../utils/output.js";
 import * as readline from "node:readline";
 const { get: levenshteinDistance } = pkg;
 
@@ -94,7 +95,7 @@ const hook: Hook<"command_not_found"> = async function (opts) {
     // Warn about command not found and suggest alternative with colored command names
     const warningMessage = `${chalk.cyan(displayOriginal.replaceAll(":", " "))} is not an ably command.`;
     if (isInteractiveMode) {
-      console.log(chalk.yellow(`Warning: ${warningMessage}`));
+      console.log(formatWarning(warningMessage));
     } else {
       this.warn(warningMessage);
     }

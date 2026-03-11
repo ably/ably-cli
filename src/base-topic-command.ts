@@ -3,6 +3,7 @@ import inquirer from "inquirer";
 import pkg from "fast-levenshtein";
 import { InteractiveBaseCommand } from "./interactive-base-command.js";
 import { runInquirerWithReadlineRestore } from "./utils/readline-helper.js";
+import { formatWarning } from "./utils/output.js";
 import * as readline from "node:readline";
 import {
   WEB_CLI_RESTRICTED_COMMANDS,
@@ -104,7 +105,7 @@ export abstract class BaseTopicCommand extends InteractiveBaseCommand {
           // In interactive mode, we need to ensure the message is visible
           // Write directly to stderr to avoid readline interference
           if (isInteractiveMode) {
-            process.stderr.write(chalk.yellow(`Warning: ${warningMessage}\n`));
+            process.stderr.write(`${formatWarning(warningMessage)}\n`);
           } else {
             this.warn(warningMessage);
           }

@@ -16,6 +16,7 @@ import {
   formatMessageTimestamp,
   formatPresenceAction,
   buildJsonRecord,
+  formatWarning,
 } from "../../../src/utils/output.js";
 
 describe("formatProgress", () => {
@@ -35,6 +36,18 @@ describe("formatSuccess", () => {
 
   it("includes the message text", () => {
     expect(formatSuccess("Published.")).toContain("Published.");
+  });
+});
+
+describe("formatWarning", () => {
+  it("prepends a yellow warning symbol", () => {
+    expect(formatWarning("Something happened")).toBe(
+      `${chalk.yellow("⚠")} Something happened`,
+    );
+  });
+
+  it("includes the message text", () => {
+    expect(formatWarning("Check this.")).toContain("Check this.");
   });
 });
 

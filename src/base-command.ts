@@ -13,7 +13,7 @@ import { CommandError } from "./errors/command-error.js";
 import { coreGlobalFlags } from "./flags.js";
 import { InteractiveHelper } from "./services/interactive-helper.js";
 import { BaseFlags, CommandConfig } from "./types/cli.js";
-import { buildJsonRecord } from "./utils/output.js";
+import { buildJsonRecord, formatWarning } from "./utils/output.js";
 import { getCliVersion } from "./utils/version.js";
 import Spaces from "@ably/spaces";
 import { ChatClient } from "@ably/chat";
@@ -1265,7 +1265,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
         // Log timeout only if not in JSON mode
         if (!this.shouldOutputJson({})) {
           // TODO: Pass actual flags here
-          this.log(chalk.yellow("Cleanup operation timed out."));
+          this.log(formatWarning("Cleanup operation timed out."));
         }
         reject(new Error("Cleanup timed out")); // Reject promise on timeout
       }, effectiveTimeout);
@@ -1352,7 +1352,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             break;
           }
           case "disconnected": {
-            this.log(chalk.yellow("! Disconnected from Ably"));
+            this.log(formatWarning("Disconnected from Ably"));
             break;
           }
           case "failed": {
@@ -1364,7 +1364,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             break;
           }
           case "suspended": {
-            this.log(chalk.yellow("! Connection suspended"));
+            this.log(formatWarning("Connection suspended"));
             break;
           }
           case "connecting": {

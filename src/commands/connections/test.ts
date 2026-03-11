@@ -8,6 +8,7 @@ import {
   formatProgress,
   formatResource,
   formatSuccess,
+  formatWarning,
 } from "../../utils/output.js";
 
 export default class ConnectionsTest extends AblyBaseCommand {
@@ -172,7 +173,9 @@ export default class ConnectionsTest extends AblyBaseCommand {
             );
           } else if (partialSuccess) {
             this.log(
-              `${chalk.yellow("!")} Some connection tests succeeded, but others failed`,
+              formatWarning(
+                "Some connection tests succeeded, but others failed",
+              ),
             );
           } else {
             this.log(`${chalk.red("✗")} All connection tests failed`);
