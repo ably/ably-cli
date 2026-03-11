@@ -19,6 +19,7 @@ export default class AskCommand extends ControlBaseCommand {
     '<%= config.bin %> <%= command.id %> "How do I get started with Ably?"',
     '<%= config.bin %> <%= command.id %> "What are the available capabilities for tokens?"',
     '<%= config.bin %> <%= command.id %> --continue "Can you explain more about token capabilities?"',
+    '<%= config.bin %> <%= command.id %> "How do I get started with Ably?" --json',
   ];
 
   static flags = {

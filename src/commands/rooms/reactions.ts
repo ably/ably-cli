@@ -1,19 +1,13 @@
-import { Command } from "@oclif/core";
+import { BaseTopicCommand } from "../../base-topic-command.js";
 
-export default class RoomsReactions extends Command {
+export default class RoomsReactions extends BaseTopicCommand {
+  protected topicName = "rooms:reactions";
+  protected commandGroup = "Room reaction";
+
   static override description = "Manage reactions in Ably chat rooms";
 
   static override examples = [
-    "$ ably rooms reactions send my-room thumbs_up",
-    "$ ably rooms reactions subscribe my-room",
+    "<%= config.bin %> <%= command.id %> send my-room thumbs_up",
+    "<%= config.bin %> <%= command.id %> subscribe my-room",
   ];
-
-  async run(): Promise<void> {
-    this.log(
-      "This is a placeholder. Please use a subcommand: send or subscribe",
-    );
-    this.log("Examples:");
-    this.log("  $ ably rooms reactions send my-room thumbs_up");
-    this.log("  $ ably rooms reactions subscribe my-room");
-  }
 }

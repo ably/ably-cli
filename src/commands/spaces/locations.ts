@@ -1,24 +1,15 @@
-import { Command } from "@oclif/core";
-import chalk from "chalk";
+import { BaseTopicCommand } from "../../base-topic-command.js";
 
-export default class SpacesLocations extends Command {
+export default class SpacesLocations extends BaseTopicCommand {
+  protected topicName = "spaces:locations";
+  protected commandGroup = "Spaces location";
+
   static override description =
-    "Spaces Locations API commands (Ably Spaces client-to-client location sharing)";
+    "Commands for location management in Ably Spaces";
 
-  async run(): Promise<void> {
-    this.log(chalk.bold.cyan("Spaces Locations API Commands:"));
-    this.log("\nAvailable commands:");
-    this.log(
-      "  ably spaces locations get-all    - Get all current locations in a space",
-    );
-    this.log(
-      "  ably spaces locations set        - Set location for a client in the space",
-    );
-    this.log(
-      "  ably spaces locations subscribe  - Subscribe to location updates in a space",
-    );
-    this.log(
-      "  ably spaces locations clear      - Clear location for the current client",
-    );
-  }
+  static override examples = [
+    "<%= config.bin %> <%= command.id %> set my-space",
+    "<%= config.bin %> <%= command.id %> subscribe my-space",
+    "<%= config.bin %> <%= command.id %> get-all my-space",
+  ];
 }

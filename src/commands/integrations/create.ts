@@ -25,6 +25,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
   static examples = [
     '$ ably integrations create --rule-type "http" --source-type "channel.message" --target-url "https://example.com/webhook"',
     '$ ably integrations create --rule-type "amqp" --source-type "channel.message" --channel-filter "chat:*"',
+    '$ ably integrations create --rule-type "http" --source-type "channel.message" --target-url "https://example.com/webhook" --json',
   ];
 
   static flags = {

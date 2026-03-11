@@ -28,6 +28,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
   static override examples = [
     "$ ably spaces locks acquire my-space my-lock-id",
     '$ ably spaces locks acquire my-space my-lock-id --data \'{"type":"editor"}\'',
+    "$ ably spaces locks acquire my-space my-lock-id --json",
   ];
 
   static override flags = {

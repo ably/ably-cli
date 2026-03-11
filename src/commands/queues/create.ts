@@ -14,6 +14,7 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
     '$ ably queues create --name "my-queue"',
     '$ ably queues create --name "my-queue" --ttl 3600 --max-length 100000',
     '$ ably queues create --name "my-queue" --region "eu-west-1-a" --app "My App"',
+    '$ ably queues create --name "my-queue" --json',
   ];
 
   static flags = {

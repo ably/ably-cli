@@ -1,30 +1,15 @@
-import { Command } from "@oclif/core";
+import { BaseTopicCommand } from "../../../base-topic-command.js";
 
-export default class MessagesIndex extends Command {
+export default class MessagesIndex extends BaseTopicCommand {
+  protected topicName = "rooms:messages";
+  protected commandGroup = "Room message";
+
   static override description =
     "Commands for working with chat messages in rooms";
 
   static override examples = [
-    '$ ably rooms messages send my-room "Hello world!"',
-    "$ ably rooms messages subscribe my-room",
-    "$ ably rooms messages history my-room",
-    '$ ably rooms messages reactions add my-room "message-id" "👍"',
+    '<%= config.bin %> <%= command.id %> send my-room "Hello world!"',
+    "<%= config.bin %> <%= command.id %> subscribe my-room",
+    "<%= config.bin %> <%= command.id %> history my-room",
   ];
-
-  async run(): Promise<void> {
-    this.log("Use one of the messages subcommands:");
-    this.log("");
-    this.log(
-      "  ably rooms messages send       - Send a message to a chat room",
-    );
-    this.log(
-      "  ably rooms messages subscribe  - Subscribe to messages in a chat room",
-    );
-    this.log(
-      "  ably rooms messages history    - Get historical messages from a chat room",
-    );
-    this.log(
-      "  ably rooms messages reactions  - Work with message reactions in a chat room",
-    );
-  }
 }

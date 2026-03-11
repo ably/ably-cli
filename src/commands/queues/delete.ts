@@ -22,6 +22,7 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
     "$ ably queues delete appAbc:us-east-1-a:foo",
     '$ ably queues delete appAbc:us-east-1-a:foo --app "My App"',
     "$ ably queues delete appAbc:us-east-1-a:foo --force",
+    "$ ably queues delete appAbc:us-east-1-a:foo --json",
   ];
 
   static flags = {

@@ -1,19 +1,13 @@
-import { Command } from "@oclif/core";
+import { BaseTopicCommand } from "../../base-topic-command.js";
 
-export default class RoomsOccupancy extends Command {
+export default class RoomsOccupancy extends BaseTopicCommand {
+  protected topicName = "rooms:occupancy";
+  protected commandGroup = "Room occupancy";
+
   static override description = "Commands for monitoring room occupancy";
 
   static override examples = [
-    "$ ably rooms occupancy get my-room",
-    "$ ably rooms occupancy subscribe my-room",
+    "<%= config.bin %> <%= command.id %> get my-room",
+    "<%= config.bin %> <%= command.id %> subscribe my-room",
   ];
-
-  async run(): Promise<void> {
-    this.log(
-      "This is a placeholder. Please use a subcommand: get or subscribe",
-    );
-    this.log("Examples:");
-    this.log("  $ ably rooms occupancy get my-room");
-    this.log("  $ ably rooms occupancy subscribe my-room");
-  }
 }

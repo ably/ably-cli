@@ -18,6 +18,7 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
     '$ ably auth keys update APP_ID.KEY_ID --name "New Name"',
     '$ ably auth keys update KEY_ID --app APP_ID --capabilities "publish,subscribe"',
     '$ ably auth keys update APP_ID.KEY_ID --name "New Name" --capabilities "publish,subscribe"',
+    '$ ably auth keys update APP_ID.KEY_ID --name "New Name" --json',
   ];
 
   static flags = {

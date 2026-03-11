@@ -28,6 +28,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
     `$ ably rooms presence enter my-room --data '{"name":"User","status":"active"}'`,
     "$ ably rooms presence enter my-room --show-others",
     "$ ably rooms presence enter my-room --duration 30",
+    "$ ably rooms presence enter my-room --json",
   ];
   static override flags = {
     ...productApiFlags,

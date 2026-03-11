@@ -17,6 +17,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
     "$ ably connections test",
     "$ ably connections test --transport ws",
     "$ ably connections test --transport xhr",
+    "$ ably connections test --json",
   ];
 
   static override flags = {

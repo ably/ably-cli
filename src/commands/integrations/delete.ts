@@ -22,6 +22,7 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
     "$ ably integrations delete integration123",
     '$ ably integrations delete integration123 --app "My App"',
     "$ ably integrations delete integration123 --force",
+    "$ ably integrations delete integration123 --json",
   ];
 
   static flags = {

@@ -1,26 +1,14 @@
-import { Command } from "@oclif/core";
+import { BaseTopicCommand } from "../../../../base-topic-command.js";
 
-export default class MessagesReactionsIndex extends Command {
+export default class MessagesReactionsIndex extends BaseTopicCommand {
+  protected topicName = "rooms:messages:reactions";
+  protected commandGroup = "Message reaction";
+
   static override description =
     "Commands for working with message reactions in chat rooms";
 
   static override examples = [
-    '$ ably rooms messages reactions send my-room "message-id" "👍"',
-    "$ ably rooms messages reactions subscribe my-room",
-    '$ ably rooms messages reactions remove my-room "message-id" "👍"',
+    '<%= config.bin %> <%= command.id %> send my-room "message-id" "\uD83D\uDC4D"',
+    "<%= config.bin %> <%= command.id %> subscribe my-room",
   ];
-
-  async run(): Promise<void> {
-    this.log("Use one of the message reactions subcommands:");
-    this.log("");
-    this.log(
-      "  ably rooms messages reactions send      - Send a reaction to a message",
-    );
-    this.log(
-      "  ably rooms messages reactions subscribe - Subscribe to message reactions in a room",
-    );
-    this.log(
-      "  ably rooms messages reactions remove    - Remove a reaction from a message",
-    );
-  }
 }

@@ -28,6 +28,7 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
     "$ ably integrations update rule123 --status disabled",
     '$ ably integrations update rule123 --channel-filter "chat:*"',
     '$ ably integrations update rule123 --target-url "https://new-example.com/webhook"',
+    "$ ably integrations update rule123 --status disabled --json",
   ];
 
   static flags = {

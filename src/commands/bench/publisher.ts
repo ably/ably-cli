@@ -66,6 +66,7 @@ export default class BenchPublisher extends AblyBaseCommand {
     "$ ably bench publisher my-channel",
     "$ ably bench publisher --messages 5000 --rate 10 my-channel",
     "$ ably bench publisher --transport realtime my-channel",
+    "$ ably bench publisher my-channel --json",
   ];
 
   static override flags = {

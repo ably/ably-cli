@@ -11,6 +11,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
     '$ ably apps channel-rules create --name "chat" --persisted',
     '$ ably apps channel-rules create --name "events" --push-enabled',
     '$ ably apps channel-rules create --name "notifications" --persisted --push-enabled --app "My App"',
+    '$ ably apps channel-rules create --name "chat" --persisted --json',
   ];
 
   static flags = {

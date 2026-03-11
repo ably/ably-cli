@@ -17,6 +17,7 @@ export default class AppsSwitch extends ControlBaseCommand {
   static override examples = [
     "<%= config.bin %> <%= command.id %> APP_ID",
     "<%= config.bin %> <%= command.id %>",
+    "<%= config.bin %> <%= command.id %> APP_ID --json",
   ];
 
   static override flags = {

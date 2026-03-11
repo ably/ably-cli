@@ -17,7 +17,10 @@ interface StatusResponse {
 export default class StatusCommand extends AblyBaseCommand {
   static description = "Check the status of the Ably service";
 
-  static examples = ["<%= config.bin %> <%= command.id %>"];
+  static examples = [
+    "<%= config.bin %> <%= command.id %>",
+    "<%= config.bin %> <%= command.id %> --json",
+  ];
 
   static override flags = {
     ...coreGlobalFlags,

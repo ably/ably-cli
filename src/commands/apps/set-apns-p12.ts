@@ -25,6 +25,7 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
     "$ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12",
     '$ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --password "YOUR_CERTIFICATE_PASSWORD"',
     "$ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --use-for-sandbox",
+    "$ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --json",
   ];
 
   static flags = {

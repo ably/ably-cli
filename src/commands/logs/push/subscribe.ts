@@ -24,6 +24,7 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
   static override examples = [
     "$ ably logs push subscribe",
     "$ ably logs push subscribe --rewind 10",
+    "$ ably logs push subscribe --json",
   ];
 
   static override flags = {

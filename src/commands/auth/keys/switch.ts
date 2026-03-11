@@ -19,6 +19,7 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
     "$ ably auth keys switch",
     "$ ably auth keys switch APP_ID.KEY_ID",
     "$ ably auth keys switch KEY_ID --app APP_ID",
+    "$ ably auth keys switch --json",
   ];
 
   static flags = {

@@ -14,6 +14,7 @@ export default class AppsCreateCommand extends ControlBaseCommand {
   static examples = [
     '$ ably apps create --name "My New App"',
     '$ ably apps create --name "My New App" --tls-only',
+    '$ ably apps create --name "My New App" --json',
     '$ ABLY_ACCESS_TOKEN="YOUR_ACCESS_TOKEN" ably apps create --name "My New App"',
   ];
 

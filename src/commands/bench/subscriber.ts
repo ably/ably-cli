@@ -33,7 +33,10 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
   static override description = "Run a subscriber benchmark test";
 
-  static override examples = ["$ ably bench subscriber my-channel"];
+  static override examples = [
+    "$ ably bench subscriber my-channel",
+    "$ ably bench subscriber my-channel --json",
+  ];
 
   static override flags = {
     ...productApiFlags,

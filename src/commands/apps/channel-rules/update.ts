@@ -17,6 +17,7 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
     "$ ably apps channel-rules update chat --persisted",
     "$ ably apps channel-rules update events --push-enabled=false",
     '$ ably apps channel-rules update notifications --persisted --push-enabled --app "My App"',
+    "$ ably apps channel-rules update chat --persisted --json",
   ];
 
   static flags = {

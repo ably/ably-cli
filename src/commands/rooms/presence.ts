@@ -1,19 +1,13 @@
-import { Command } from "@oclif/core";
+import { BaseTopicCommand } from "../../base-topic-command.js";
 
-export default class RoomsPresence extends Command {
+export default class RoomsPresence extends BaseTopicCommand {
+  protected topicName = "rooms:presence";
+  protected commandGroup = "Room presence";
+
   static override description = "Manage presence on Ably chat rooms";
 
   static override examples = [
-    "$ ably rooms presence enter my-room",
-    "$ ably rooms presence subscribe my-room",
+    "<%= config.bin %> <%= command.id %> enter my-room",
+    "<%= config.bin %> <%= command.id %> subscribe my-room",
   ];
-
-  async run(): Promise<void> {
-    this.log(
-      "This is a placeholder. Please use a subcommand: enter or subscribe",
-    );
-    this.log("Examples:");
-    this.log("  $ ably rooms presence enter my-room");
-    this.log("  $ ably rooms presence subscribe my-room");
-  }
 }

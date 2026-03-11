@@ -25,6 +25,7 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
   static override examples = [
     "$ ably logs channel-lifecycle subscribe",
     "$ ably logs channel-lifecycle subscribe --rewind 10",
+    "$ ably logs channel-lifecycle subscribe --json",
   ];
 
   static override flags = {

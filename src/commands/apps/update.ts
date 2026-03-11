@@ -20,7 +20,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
   static examples = [
     '$ ably apps update app-id --name "Updated App Name"',
     "$ ably apps update app-id --tls-only",
-    '$ ably apps update app-id --name "Updated App Name" --tls-only',
+    '$ ably apps update app-id --name "Updated App Name" --json',
     '$ ABLY_ACCESS_TOKEN="YOUR_ACCESS_TOKEN" ably apps update app-id --name "Updated App Name"',
   ];
 

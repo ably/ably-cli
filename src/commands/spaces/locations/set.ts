@@ -31,6 +31,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
   static override examples = [
     '$ ably spaces locations set my-space --location \'{"x":10,"y":20}\'',
     '$ ably spaces locations set my-space --location \'{"sectionId":"section1"}\'',
+    '$ ably spaces locations set my-space --location \'{"x":10,"y":20}\' --json',
   ];
 
   static override flags = {

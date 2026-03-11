@@ -28,6 +28,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
     "$ ably spaces members enter my-space",
     '$ ably spaces members enter my-space --profile \'{"name":"User","status":"active"}\'',
     "$ ably spaces members enter my-space --duration 30",
+    "$ ably spaces members enter my-space --json",
   ];
 
   static override flags = {
