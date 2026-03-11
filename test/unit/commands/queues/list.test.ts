@@ -9,7 +9,7 @@ describe("queues:list command", () => {
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
-  describe("successful queue listing", () => {
+  describe("functionality", () => {
     it("should list multiple queues successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock the queue listing endpoint with multiple queues
@@ -505,6 +505,37 @@ describe("queues:list command", () => {
       expect(result.queues).toBeInstanceOf(Array);
       expect(result.queues).toHaveLength(0);
       expect(result).toHaveProperty("total", 0);
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["queues:list", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["queues:list", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["queues:list", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 });

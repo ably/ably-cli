@@ -121,9 +121,16 @@ For each changed command file, run the relevant checks. Spawn agents for paralle
 
 ### For changed test files (`test/unit/commands/**/*.ts`)
 
-1. **Grep** for `describe(` to check for required describe blocks: `help`, `argument validation`, `functionality`, `flags`, `error handling`
+1. **Grep** for `describe(` to check for the 5 required describe blocks with EXACT standard names:
+   - `describe("help"` — required in every test file
+   - `describe("argument validation"` — required (test required args OR unknown flag rejection)
+   - `describe("functionality"` — required (core happy-path tests)
+   - `describe("flags"` — required (verify flags exist and work)
+   - `describe("error handling"` — required (API errors, network failures)
+   Flag any non-standard variants: `"command arguments and flags"`, `"command flags"`, `"flag options"`, `"parameter validation"`. These must use the exact standard names above.
+   Exception: `interactive.test.ts`, `interactive-sigint.test.ts`, and `bench/*.test.ts` are exempt (REPL/benchmark tests, not command tests).
 2. **Grep** for `getMockAblyRealtime`, `getMockAblyRest`, `getMockConfigManager` to verify correct mock usage
-3. **Grep** for `--duration` in subscribe test files
+3. **Grep** for `--duration` in unit test `runCommand()` args — should NOT be present (env var handles it). Exceptions: `test:wait` tests, `interactive-sigint` tests, help output checks.
 4. **Grep** for `--api-key`, `--token`, `--access-token` — unit tests should not use CLI auth flags
 
 ### For new command files (added, not modified)

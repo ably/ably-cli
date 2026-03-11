@@ -10,7 +10,7 @@ describe("integrations:update command", () => {
     nock.cleanAll();
   });
 
-  describe("successful integration update", () => {
+  describe("functionality", () => {
     it("should update channel filter", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockIntegration = {
@@ -290,7 +290,7 @@ describe("integrations:update command", () => {
     });
   });
 
-  describe("flag options", () => {
+  describe("flags", () => {
     it("should accept --app flag", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
@@ -356,6 +356,26 @@ describe("integrations:update command", () => {
       );
 
       expect(stdout).toContain("Integration rule updated.");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["integrations:update", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require ruleId argument", async () => {
+      const { error } = await runCommand(
+        ["integrations:update"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/Missing .* required arg/i);
     });
   });
 });

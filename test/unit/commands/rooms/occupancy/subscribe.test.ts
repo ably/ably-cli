@@ -8,7 +8,7 @@ describe("rooms:occupancy:subscribe command", () => {
     getMockAblyChat();
   });
 
-  describe("subscription behavior", () => {
+  describe("functionality", () => {
     it("should display initial occupancy snapshot", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
@@ -18,7 +18,7 @@ describe("rooms:occupancy:subscribe command", () => {
       });
 
       const { stdout } = await runCommand(
-        ["rooms:occupancy:subscribe", "test-room", "--duration", "0"],
+        ["rooms:occupancy:subscribe", "test-room"],
         import.meta.url,
       );
 
@@ -34,7 +34,7 @@ describe("rooms:occupancy:subscribe command", () => {
       room.occupancy.get.mockRejectedValue(new Error("Fetch failed"));
 
       const { stdout } = await runCommand(
-        ["rooms:occupancy:subscribe", "test-room", "--duration", "0"],
+        ["rooms:occupancy:subscribe", "test-room"],
         import.meta.url,
       );
 
@@ -58,7 +58,7 @@ describe("rooms:occupancy:subscribe command", () => {
       });
 
       const commandPromise = runCommand(
-        ["rooms:occupancy:subscribe", "test-room", "--duration", "0"],
+        ["rooms:occupancy:subscribe", "test-room"],
         import.meta.url,
       );
 
@@ -91,13 +91,7 @@ describe("rooms:occupancy:subscribe command", () => {
 
       const allRecords = await captureJsonLogs(async () => {
         await runCommand(
-          [
-            "rooms:occupancy:subscribe",
-            "test-room",
-            "--json",
-            "--duration",
-            "0",
-          ],
+          ["rooms:occupancy:subscribe", "test-room", "--json"],
           import.meta.url,
         );
       });
@@ -112,6 +106,52 @@ describe("rooms:occupancy:subscribe command", () => {
       expect(parsed).toHaveProperty("type", "event");
       expect(parsed).toHaveProperty("eventType", "initialSnapshot");
       expect(parsed).toHaveProperty("room", "test-room");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:occupancy:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require room argument", async () => {
+      const { error } = await runCommand(
+        ["rooms:occupancy:subscribe"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/room|required|Missing/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:occupancy:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.attach.mockRejectedValue(new Error("Connection failed"));
+
+      const { error } = await runCommand(
+        ["rooms:occupancy:subscribe", "test-room"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
     });
   });
 });

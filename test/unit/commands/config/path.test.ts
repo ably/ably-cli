@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { runCommand } from "@oclif/test";
 
 describe("config:path command", () => {
-  describe("successful config path display", () => {
+  describe("functionality", () => {
     it("should display the config path", async () => {
       const { stdout } = await runCommand(["config:path"], import.meta.url);
 
@@ -33,7 +33,18 @@ describe("config:path command", () => {
     });
   });
 
-  describe("command flags", () => {
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["config:path", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
     it("should reject unknown flags", async () => {
       const { error } = await runCommand(
         ["config:path", "--unknown-flag-xyz"],
@@ -42,6 +53,26 @@ describe("config:path command", () => {
 
       expect(error).toBeDefined();
       expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["config:path", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const { error } = await runCommand(
+        ["config:path", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
     });
   });
 });

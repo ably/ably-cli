@@ -9,7 +9,27 @@ describe("spaces:locations:set command", () => {
     getMockAblySpaces();
   });
 
-  describe("command arguments and flags", () => {
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:locations:set", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:locations:set", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("argument validation", () => {
     it("should require space argument", async () => {
       const { error } = await runCommand(
         ["spaces:locations:set"],
@@ -33,7 +53,7 @@ describe("spaces:locations:set command", () => {
     });
   });
 
-  describe("location validation", () => {
+  describe("functionality", () => {
     it("should error on invalid --location JSON", async () => {
       const { error } = await runCommand(
         ["spaces:locations:set", "test-space", "--location", "not-valid-json"],
@@ -113,6 +133,24 @@ describe("spaces:locations:set command", () => {
       const result = JSON.parse(stdout);
       expect(result.success).toBe(false);
       expect(result.error).toContain("Invalid location JSON");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle location set failure gracefully", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.locations.set.mockRejectedValue(
+        new Error("Location service error"),
+      );
+
+      const { error } = await runCommand(
+        ["spaces:locations:set", "test-space", "--location", '{"x":10,"y":20}'],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error!.message).toContain("Location service error");
     });
   });
 });

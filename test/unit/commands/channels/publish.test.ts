@@ -183,7 +183,7 @@ describe("ChannelsPublish", function () {
     expect(publishArgs).toHaveProperty("data", "HelloWorld");
   });
 
-  describe("transport selection", function () {
+  describe("functionality", function () {
     it("should use realtime transport by default when publishing multiple messages", async function () {
       const realtimeMock = getMockAblyRealtime();
       const restMock = getMockAblyRest();
@@ -399,6 +399,41 @@ describe("ChannelsPublish", function () {
       expect(stdout).toContain("4/5");
       expect(stdout).toContain("1");
       expect(stdout).toMatch(/error/i);
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:publish", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require channel argument", async () => {
+      const { error } = await runCommand(["channels:publish"], import.meta.url);
+      expect(error?.message).toMatch(/channel|required|Missing/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:publish", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+
+    it("should accept --transport flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:publish", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--transport");
     });
   });
 

@@ -49,7 +49,7 @@ describe("config:show command", () => {
     }
   });
 
-  describe("when config file exists", () => {
+  describe("functionality", () => {
     beforeEach(() => {
       const configContent = `[current]
 account = "default"
@@ -214,7 +214,7 @@ apiKey = "${mockApiKey}"
     });
   });
 
-  describe("command arguments and flags", () => {
+  describe("argument validation", () => {
     beforeEach(() => {
       const configContent = `[current]\naccount = "default"`;
       writeFileSync(resolve(testConfigDir, "config"), configContent);
@@ -239,6 +239,45 @@ apiKey = "${mockApiKey}"
       // Should not error for missing arguments
       expect(error?.message || "").not.toMatch(/Missing.*required/i);
       expect(stdout).toContain("[current]");
+    });
+  });
+
+  describe("flags", () => {
+    it("should show available flags in help", async () => {
+      const { stdout } = await runCommand(
+        ["config:show", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["config:show", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle missing config file gracefully", async () => {
+      const { error } = await runCommand(["config:show"], import.meta.url);
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/Config file does not exist/i);
+    });
+
+    it("should handle malformed config file gracefully", async () => {
+      const invalidConfig = "[[[this is definitely not valid TOML";
+      writeFileSync(resolve(testConfigDir, "config"), invalidConfig);
+
+      const { error } = await runCommand(["config:show"], import.meta.url);
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/Failed to load|SyntaxError|parse/i);
     });
   });
 });

@@ -26,7 +26,28 @@ describe("spaces commands", () => {
     space.locks.acquire.mockResolvedValue({ id: "lock-1" });
   });
 
-  describe("spaces topic", () => {
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("Interact with Ably Spaces");
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should handle unknown subcommand gracefully", async () => {
+      const { stdout } = await runCommand(
+        ["spaces", "nonexistent"],
+        import.meta.url,
+      );
+      expect(stdout).toBeDefined();
+    });
+  });
+
+  describe("functionality", () => {
     it("should list available spaces subcommands when run without arguments", async () => {
       const { stdout } = await runCommand(["spaces"], import.meta.url);
 
@@ -238,6 +259,26 @@ describe("spaces commands", () => {
       expect(space.cursors.set).toHaveBeenCalledWith({
         position: { x: 50, y: 75 },
       });
+    });
+  });
+
+  describe("flags", () => {
+    it("should display available commands in help output", async () => {
+      const { stdout } = await runCommand(
+        ["spaces", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("COMMANDS");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle unknown flags gracefully", async () => {
+      const { error } = await runCommand(
+        ["spaces:members:enter", "test-space", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
     });
   });
 });

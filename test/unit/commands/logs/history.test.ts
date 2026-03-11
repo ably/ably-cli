@@ -7,7 +7,66 @@ describe("logs:history command", () => {
     getMockAblyRest();
   });
 
-  describe("history retrieval", () => {
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["logs:history", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["logs:history", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["logs:history", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+
+    it("should accept --limit flag", async () => {
+      const { stdout } = await runCommand(
+        ["logs:history", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--limit");
+    });
+
+    it("should accept --direction flag", async () => {
+      const { stdout } = await runCommand(
+        ["logs:history", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--direction");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle API errors gracefully", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("[meta]log");
+      channel.history.mockRejectedValue(new Error("API error"));
+
+      const { error } = await runCommand(["logs:history"], import.meta.url);
+
+      expect(error).toBeDefined();
+    });
+  });
+
+  describe("functionality", () => {
     it("should pass --start to history params", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("[meta]log");

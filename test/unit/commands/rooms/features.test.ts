@@ -7,7 +7,7 @@ describe("rooms feature commands", function () {
     getMockAblyChat();
   });
 
-  describe("rooms occupancy get", function () {
+  describe("functionality", function () {
     it("should get room occupancy metrics", async function () {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
@@ -179,6 +179,160 @@ describe("rooms feature commands", function () {
       expect(room.attach).toHaveBeenCalled();
       expect(room.typing.keystroke).toHaveBeenCalled();
       expect(stdout).toContain("typing");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help for rooms:occupancy:get with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:occupancy:get", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+
+    it("should display help for rooms:occupancy:subscribe with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:occupancy:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+
+    it("should display help for rooms:presence:enter with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:presence:enter", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+
+    it("should display help for rooms:reactions:send with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:reactions:send", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+
+    it("should display help for rooms:typing:keystroke with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:typing:keystroke", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require room argument for occupancy get", async () => {
+      const { error } = await runCommand(
+        ["rooms:occupancy:get"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/room|required|Missing/i);
+    });
+
+    it("should require room argument for occupancy subscribe", async () => {
+      const { error } = await runCommand(
+        ["rooms:occupancy:subscribe"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/room|required|Missing/i);
+    });
+
+    it("should require room argument for presence enter", async () => {
+      const { error } = await runCommand(
+        ["rooms:presence:enter"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/room|required|Missing/i);
+    });
+
+    it("should require room argument for reactions send", async () => {
+      const { error } = await runCommand(
+        ["rooms:reactions:send"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/room|required|Missing/i);
+    });
+
+    it("should require room argument for typing keystroke", async () => {
+      const { error } = await runCommand(
+        ["rooms:typing:keystroke"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/room|required|Missing/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag for occupancy get", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:occupancy:get", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+
+    it("should accept --json flag for presence enter", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:presence:enter", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+
+    it("should accept --json flag for reactions send", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:reactions:send", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle occupancy get failure", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.attach.mockRejectedValue(new Error("Connection failed"));
+
+      const { error } = await runCommand(
+        ["rooms:occupancy:get", "test-room"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+    });
+
+    it("should handle presence enter failure", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.attach.mockRejectedValue(new Error("Connection failed"));
+
+      const { error } = await runCommand(
+        ["rooms:presence:enter", "test-room"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+    });
+
+    it("should handle reactions send failure", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.reactions.send.mockRejectedValue(new Error("Send failed"));
+
+      const { error } = await runCommand(
+        ["rooms:reactions:send", "test-room", "thumbsup"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
     });
   });
 });

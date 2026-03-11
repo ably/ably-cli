@@ -15,7 +15,7 @@ describe("channels:inspect command", () => {
     vi.clearAllMocks();
   });
 
-  describe("normal CLI mode", () => {
+  describe("functionality", () => {
     beforeEach(() => {
       delete process.env.ABLY_WEB_CLI_MODE;
     });
@@ -186,6 +186,51 @@ describe("channels:inspect command", () => {
       expect(stdout).toContain("Open the Ably dashboard to inspect");
       expect(stdout).toContain("USAGE");
       expect(stdout).toContain("ARGUMENTS");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require channel argument", async () => {
+      const { error } = await runCommand(["channels:inspect"], import.meta.url);
+      expect(error?.message).toMatch(/channel|required|Missing/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:inspect", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle missing account gracefully", async () => {
+      const mockConfig = getMockConfigManager();
+      mockConfig.clearAccounts();
+
+      const { error } = await runCommand(
+        ["channels:inspect", "my-channel"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("No account configured");
+    });
+
+    it("should handle missing app gracefully", async () => {
+      const mockConfig = getMockConfigManager();
+      mockConfig.setCurrentAppIdForAccount(undefined);
+
+      const { error } = await runCommand(
+        ["channels:inspect", "my-channel"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("No app selected");
     });
   });
 });

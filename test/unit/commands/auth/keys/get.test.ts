@@ -18,7 +18,7 @@ describe("auth:keys:get command", () => {
     nock.cleanAll();
   });
 
-  describe("successful key retrieval", () => {
+  describe("functionality", () => {
     it("should get key details by full key name (APP_ID.KEY_ID)", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       mockKeysList(appId, [buildMockKey(appId, mockKeyId)]);
@@ -106,6 +106,35 @@ describe("auth:keys:get command", () => {
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("key");
       expect(result.key).toHaveProperty("id", mockKeyId);
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:get", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require keyNameOrValue argument", async () => {
+      const { error } = await runCommand(["auth:keys:get"], import.meta.url);
+
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/Missing 1 required arg/);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:get", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

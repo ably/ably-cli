@@ -63,7 +63,7 @@ describe("rooms:presence:enter command", () => {
     const room = mock.rooms._getRoom("test-room");
 
     await runCommand(
-      ["rooms:presence:enter", "test-room", "--show-others", "--duration", "0"],
+      ["rooms:presence:enter", "test-room", "--show-others"],
       import.meta.url,
     );
 
@@ -86,7 +86,7 @@ describe("rooms:presence:enter command", () => {
     });
 
     const commandPromise = runCommand(
-      ["rooms:presence:enter", "test-room", "--show-others", "--duration", "0"],
+      ["rooms:presence:enter", "test-room", "--show-others"],
       import.meta.url,
     );
 
@@ -137,14 +137,7 @@ describe("rooms:presence:enter command", () => {
 
     const allRecords = await captureJsonLogs(async () => {
       const commandPromise = runCommand(
-        [
-          "rooms:presence:enter",
-          "test-room",
-          "--show-others",
-          "--json",
-          "--duration",
-          "0",
-        ],
+        ["rooms:presence:enter", "test-room", "--show-others", "--json"],
         import.meta.url,
       );
 
@@ -178,5 +171,68 @@ describe("rooms:presence:enter command", () => {
     expect(parsed).toHaveProperty("type", "event");
     expect(parsed).toHaveProperty("eventType", "enter");
     expect(parsed.member).toHaveProperty("clientId", "other-user");
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:presence:enter", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("functionality", () => {
+    it("should successfully enter presence in a room", async () => {
+      const mock = getMockAblyChat();
+      const room = mock.rooms._getRoom("my-room");
+
+      const { error } = await runCommand(
+        ["rooms:presence:enter", "my-room"],
+        import.meta.url,
+      );
+
+      expect(error).toBeUndefined();
+      expect(mock.rooms.get).toHaveBeenCalledWith("my-room");
+      expect(room.attach).toHaveBeenCalled();
+      expect(room.presence.enter).toHaveBeenCalled();
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require room argument", async () => {
+      const { error } = await runCommand(
+        ["rooms:presence:enter"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/room|required|Missing/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:presence:enter", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle presence enter failure gracefully", async () => {
+      const mock = getMockAblyChat();
+      const room = mock.rooms._getRoom("test-room");
+      room.presence.enter.mockRejectedValue(new Error("Service unavailable"));
+
+      const { error } = await runCommand(
+        ["rooms:presence:enter", "test-room"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Service unavailable");
+    });
   });
 });

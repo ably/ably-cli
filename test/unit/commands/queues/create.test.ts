@@ -45,7 +45,7 @@ describe("queues:create command", () => {
     };
   }
 
-  describe("successful queue creation", () => {
+  describe("functionality", () => {
     it("should create a queue successfully with default settings", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
@@ -444,7 +444,7 @@ describe("queues:create command", () => {
     });
   });
 
-  describe("parameter validation", () => {
+  describe("argument validation", () => {
     it("should accept minimum valid parameter values", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
@@ -533,6 +533,43 @@ describe("queues:create command", () => {
       expect(stdout).toContain("Region: ap-southeast-2-a");
       expect(stdout).toContain("TTL: 86400 seconds");
       expect(stdout).toContain("Max Length: 1000000 messages");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["queues:create", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --name flag", async () => {
+      const { stdout } = await runCommand(
+        ["queues:create", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--name");
+    });
+
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["queues:create", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["queues:create", "--name", "test", "--unknown-flag"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
   });
 });

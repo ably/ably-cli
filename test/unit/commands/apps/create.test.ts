@@ -16,7 +16,7 @@ describe("apps:create command", () => {
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
-  describe("successful app creation", () => {
+  describe("functionality", () => {
     it("should create an app successfully", async () => {
       const mock = getMockConfigManager();
       const accountId = mock.getCurrentAccount()!.accountId!;
@@ -229,6 +229,33 @@ describe("apps:create command", () => {
       // Verify the mock config was updated with the new app
       expect(mock.getCurrentAppId()).toBe(newAppId);
       expect(mock.getAppName(newAppId)).toBe(mockAppName);
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:create", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require --name flag", async () => {
+      const { error } = await runCommand(["apps:create"], import.meta.url);
+      expect(error?.message).toMatch(/Missing required flag.*name/);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:create", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

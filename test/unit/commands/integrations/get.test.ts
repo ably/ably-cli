@@ -10,7 +10,7 @@ describe("integrations:get command", () => {
     nock.cleanAll();
   });
 
-  describe("successful integration retrieval", () => {
+  describe("functionality", () => {
     it("should get an integration by ID", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockIntegration = {
@@ -259,7 +259,7 @@ describe("integrations:get command", () => {
     });
   });
 
-  describe("flag options", () => {
+  describe("flags", () => {
     it("should accept --app flag", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
@@ -308,6 +308,23 @@ describe("integrations:get command", () => {
 
       expect(stdout).toContain("Integration Rule Details");
       expect(stdout).toContain(mockRuleId);
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["integrations:get", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require ruleId argument", async () => {
+      const { error } = await runCommand(["integrations:get"], import.meta.url);
+      expect(error?.message).toMatch(/Missing .* required arg/i);
     });
   });
 });

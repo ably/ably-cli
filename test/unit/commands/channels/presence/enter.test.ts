@@ -62,7 +62,7 @@ describe("channels:presence:enter command", () => {
     });
   });
 
-  describe("presence enter functionality", () => {
+  describe("functionality", () => {
     it("should enter presence on a channel", async () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("test-channel");
@@ -173,6 +173,16 @@ describe("channels:presence:enter command", () => {
     });
   });
 
+  describe("argument validation", () => {
+    it("should require channel argument", async () => {
+      const { error } = await runCommand(
+        ["channels:presence:enter"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/channel|required|Missing/i);
+    });
+  });
+
   describe("flags", () => {
     it("should accept --data flag", async () => {
       const { stdout } = await runCommand(
@@ -199,6 +209,23 @@ describe("channels:presence:enter command", () => {
       );
 
       expect(stdout).toContain("--duration");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle presence enter errors gracefully", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("test-channel");
+      channel.presence.enter.mockRejectedValue(
+        new Error("Presence enter failed"),
+      );
+
+      const { error } = await runCommand(
+        ["channels:presence:enter", "test-channel"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
     });
   });
 });

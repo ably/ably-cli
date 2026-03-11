@@ -10,7 +10,7 @@ describe("integrations:create command", () => {
     nock.cleanAll();
   });
 
-  describe("successful integration creation", () => {
+  describe("functionality", () => {
     it("should create an HTTP integration successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
@@ -406,6 +406,37 @@ describe("integrations:create command", () => {
       expect(result).toHaveProperty("command", "integrations:create");
       expect(result).toHaveProperty("success", true);
       expect(result.integration.source.type).toBe("channel.lifecycle");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["integrations:create", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["integrations:create", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["integrations:create", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 });

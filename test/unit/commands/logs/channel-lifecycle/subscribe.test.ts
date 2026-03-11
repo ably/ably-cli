@@ -26,7 +26,28 @@ describe("logs:channel-lifecycle:subscribe command", () => {
     });
   });
 
-  describe("command flags", () => {
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["logs:channel-lifecycle:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["logs:channel-lifecycle:subscribe", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
     it("should reject unknown flags", async () => {
       const { error } = await runCommand(
         ["logs:channel-lifecycle:subscribe", "--unknown-flag-xyz"],
@@ -57,7 +78,7 @@ describe("logs:channel-lifecycle:subscribe command", () => {
     });
   });
 
-  describe("subscription behavior", () => {
+  describe("functionality", () => {
     it("should subscribe to channel lifecycle events and show initial message", async () => {
       const { stdout } = await runCommand(
         ["logs:channel-lifecycle:subscribe"],

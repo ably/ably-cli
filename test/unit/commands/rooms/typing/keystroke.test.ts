@@ -7,7 +7,7 @@ describe("rooms:typing:keystroke command", () => {
     getMockAblyChat();
   });
 
-  describe("typing keystroke", () => {
+  describe("functionality", () => {
     it("should send keystroke and show success", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
@@ -27,13 +27,7 @@ describe("rooms:typing:keystroke command", () => {
       const room = chatMock.rooms._getRoom("test-room");
 
       const { stdout } = await runCommand(
-        [
-          "rooms:typing:keystroke",
-          "test-room",
-          "--auto-type",
-          "--duration",
-          "0",
-        ],
+        ["rooms:typing:keystroke", "test-room", "--auto-type"],
         import.meta.url,
       );
 
@@ -76,6 +70,52 @@ describe("rooms:typing:keystroke command", () => {
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error).toContain("Connection failed");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:typing:keystroke", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require room argument", async () => {
+      const { error } = await runCommand(
+        ["rooms:typing:keystroke"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/room|required|Missing/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:typing:keystroke", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle room attach failure gracefully", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+      room.attach.mockRejectedValue(new Error("Room unavailable"));
+
+      const { error } = await runCommand(
+        ["rooms:typing:keystroke", "test-room"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error!.message).toContain("Room unavailable");
     });
   });
 });

@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
+import { Readable } from "node:stream";
 import nock from "nock";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
@@ -44,7 +45,7 @@ describe("queues:delete command", () => {
     };
   }
 
-  describe("successful queue deletion", () => {
+  describe("functionality", () => {
     it("should delete a queue successfully with --force flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
@@ -365,9 +366,33 @@ describe("queues:delete command", () => {
   });
 
   describe("confirmation prompt handling", () => {
-    it.skip("should cancel deletion when user responds no to confirmation", async () => {
-      // SKIPPED: stdin handling in tests is problematic with runCommand
-      // The runCommand test helper doesn't properly pipe stdin to the spawned process
+    const originalStdin = process.stdin;
+
+    function mockStdinAnswer(answer: string) {
+      const readable = new Readable({ read() {} });
+      Object.defineProperty(process, "stdin", {
+        value: readable,
+        writable: true,
+        configurable: true,
+      });
+      // Push the answer after a microtask so readline has time to attach its listener.
+      // The null signals EOF to the stream, causing readline to process the answer.
+      queueMicrotask(() => {
+        for (const chunk of [`${answer}\n`, null]) readable.push(chunk);
+      });
+    }
+
+    afterEach(() => {
+      Object.defineProperty(process, "stdin", {
+        value: originalStdin,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it("should cancel deletion when user responds no to confirmation", async () => {
+      mockStdinAnswer("n");
+
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
@@ -378,7 +403,6 @@ describe("queues:delete command", () => {
       const { stdout } = await runCommand(
         ["queues:delete", mockQueueId],
         import.meta.url,
-        { stdin: "n\n" },
       );
 
       expect(stdout).toContain("You are about to delete the following queue:");
@@ -392,9 +416,9 @@ describe("queues:delete command", () => {
       expect(stdout).toContain("Deletion cancelled");
     });
 
-    it.skip("should proceed with deletion when user confirms", async () => {
-      // SKIPPED: stdin handling in tests is problematic with runCommand
-      // The runCommand test helper doesn't properly pipe stdin to the spawned process
+    it("should proceed with deletion when user confirms", async () => {
+      mockStdinAnswer("yes");
+
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
@@ -414,12 +438,36 @@ describe("queues:delete command", () => {
       const { stdout } = await runCommand(
         ["queues:delete", mockQueueId],
         import.meta.url,
-        { stdin: "y\n" },
       );
 
-      expect(stdout).toContain("You are about to delete the following queue:");
-      expect(stdout).toContain(`Queue "${mockQueueName}"`);
-      expect(stdout).toContain("deleted successfully");
+      expect(stdout).toContain("Queue deleted:");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["queues:delete", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require queueId argument", async () => {
+      const { error } = await runCommand(["queues:delete"], import.meta.url);
+      expect(error?.message).toMatch(/Missing .* required arg/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["queues:delete", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 });

@@ -10,7 +10,27 @@ describe("spaces:cursors:set command", () => {
     getMockAblySpaces();
   });
 
-  describe("command arguments and flags", () => {
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:cursors:set", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:cursors:set", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("argument validation", () => {
     it("should require space argument", async () => {
       const { error } = await runCommand(
         ["spaces:cursors:set"],
@@ -32,7 +52,7 @@ describe("spaces:cursors:set command", () => {
     });
   });
 
-  describe("cursor data validation", () => {
+  describe("functionality", () => {
     it("should error on invalid --data JSON", async () => {
       const { error } = await runCommand(
         ["spaces:cursors:set", "test-space", "--data", "not-valid-json"],
@@ -153,6 +173,22 @@ describe("spaces:cursors:set command", () => {
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("spaceName", "test-space");
       expect(result!.cursor.position).toEqual({ x: 100, y: 200 });
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle cursor set failure gracefully", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.cursors.set.mockRejectedValue(new Error("Cursor update failed"));
+
+      const { error } = await runCommand(
+        ["spaces:cursors:set", "test-space", "--x", "100", "--y", "200"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error!.message).toContain("Cursor update failed");
     });
   });
 });

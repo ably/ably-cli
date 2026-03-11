@@ -81,4 +81,31 @@ describe("bench publisher control envelopes", function () {
     const lastPayload = publishedPayloads.at(-1);
     expect(lastPayload).toHaveProperty("type", "end");
   }, 15_000); // 15 second timeout
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["bench:publisher", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["bench:publisher", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should require channel argument", async () => {
+      const { error } = await runCommand(["bench:publisher"], import.meta.url);
+      expect(error).toBeDefined();
+    });
+  });
 });

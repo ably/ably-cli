@@ -9,7 +9,27 @@ describe("spaces:members:subscribe command", () => {
     getMockAblySpaces();
   });
 
-  describe("command arguments and flags", () => {
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:members:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:members:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("argument validation", () => {
     it("should require space argument", async () => {
       const { error } = await runCommand(
         ["spaces:members:subscribe"],
@@ -31,7 +51,7 @@ describe("spaces:members:subscribe command", () => {
     });
   });
 
-  describe("initial member display", () => {
+  describe("functionality", () => {
     it("should display current members from getAll()", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
@@ -137,6 +157,21 @@ describe("spaces:members:subscribe command", () => {
       expect(result.success).toBe(true);
       expect(result.members).toHaveLength(1);
       expect(result.members[0].clientId).toBe("user-1");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.enter.mockRejectedValue(new Error("Connection failed"));
+
+      const { error } = await runCommand(
+        ["spaces:members:subscribe", "test-space"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error!.message).toContain("Connection failed");
     });
   });
 });

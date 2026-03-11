@@ -11,7 +11,7 @@ describe("status command", () => {
     nock.cleanAll();
   });
 
-  describe("when Ably services are operational", () => {
+  describe("functionality", () => {
     it("should display operational status", async () => {
       nock("https://ably.com")
         .get("/status/up.json")
@@ -97,6 +97,27 @@ describe("status command", () => {
       expect(stdout).toContain("Check the status of the Ably service");
       expect(stdout).toContain("--open");
       expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["status", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["status", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 });

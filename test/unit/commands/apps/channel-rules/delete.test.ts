@@ -10,7 +10,7 @@ describe("apps:channel-rules:delete command", () => {
     nock.cleanAll();
   });
 
-  describe("successful channel rule deletion", () => {
+  describe("functionality", () => {
     it("should delete a channel rule with force flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock listing namespaces to find the rule
@@ -66,6 +66,38 @@ describe("apps:channel-rules:delete command", () => {
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("rule");
       expect(result.rule).toHaveProperty("id", mockRuleId);
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:channel-rules:delete", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require nameOrId argument", async () => {
+      const { error } = await runCommand(
+        ["apps:channel-rules:delete"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/Missing 1 required arg/);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:channel-rules:delete", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

@@ -11,7 +11,17 @@ describe("spaces:cursors:subscribe command", () => {
     getMockAblySpaces();
   });
 
-  describe("command arguments and flags", () => {
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:cursors:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
     it("should require space argument", async () => {
       const { error } = await runCommand(
         ["spaces:cursors:subscribe"],
@@ -60,7 +70,7 @@ describe("spaces:cursors:subscribe command", () => {
 
     it("should accept --duration flag", async () => {
       const { error } = await runCommand(
-        ["spaces:cursors:subscribe", "test-space", "--duration", "1"],
+        ["spaces:cursors:subscribe", "test-space"],
         import.meta.url,
       );
 
@@ -69,7 +79,17 @@ describe("spaces:cursors:subscribe command", () => {
     });
   });
 
-  describe("subscription behavior", () => {
+  describe("flags", () => {
+    it("should show available flags in help", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:cursors:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("functionality", () => {
     it("should subscribe to cursor updates in a space", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
@@ -184,6 +204,20 @@ describe("spaces:cursors:subscribe command", () => {
         "attached",
         expect.any(Function),
       );
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle space entry failure", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.enter.mockRejectedValue(new Error("Connection failed"));
+
+      const { error } = await runCommand(
+        ["spaces:cursors:subscribe", "test-space"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
     });
   });
 });

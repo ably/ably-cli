@@ -131,4 +131,58 @@ describe("rooms:list command", () => {
     expect(error).toBeDefined();
     expect(error?.message).toContain("Failed to list rooms");
   });
+
+  describe("functionality", () => {
+    it("should list active chat rooms", async () => {
+      const { stdout } = await runCommand(["rooms:list"], import.meta.url);
+
+      expect(stdout).toContain("room1");
+      expect(stdout).toContain("room2");
+      expect(stdout).not.toContain("regular-channel");
+      expect(stdout).toContain("active chat rooms");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:list", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["rooms:list", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:list", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle API request failure gracefully", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockRejectedValue(new Error("Network error"));
+
+      const { error } = await runCommand(["rooms:list"], import.meta.url);
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Network error");
+    });
+  });
 });

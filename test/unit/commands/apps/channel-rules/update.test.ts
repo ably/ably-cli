@@ -10,7 +10,7 @@ describe("apps:channel-rules:update command", () => {
     nock.cleanAll();
   });
 
-  describe("successful channel rule update", () => {
+  describe("functionality", () => {
     it("should update a channel rule with persisted flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock listing namespaces to find the rule
@@ -292,6 +292,38 @@ describe("apps:channel-rules:update command", () => {
       expect(result).toHaveProperty("rule");
       expect(result.rule).toHaveProperty("id", mockRuleId);
       expect(result.rule).toHaveProperty("persisted", true);
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:channel-rules:update", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require nameOrId argument", async () => {
+      const { error } = await runCommand(
+        ["apps:channel-rules:update", "--persisted"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/Missing 1 required arg/);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:channel-rules:update", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

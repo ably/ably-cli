@@ -63,7 +63,18 @@ describe("channels:list command", () => {
     });
   });
 
-  describe("channel listing", () => {
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["channels:list", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("functionality", () => {
     it("should list channels successfully", async () => {
       const mock = getMockAblyRest();
 
@@ -210,6 +221,17 @@ describe("channels:list command", () => {
       );
 
       expect(stdout).toContain("--prefix");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle network errors gracefully", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockRejectedValue(new Error("Network error"));
+
+      const { error } = await runCommand(["channels:list"], import.meta.url);
+
+      expect(error).toBeDefined();
     });
   });
 });

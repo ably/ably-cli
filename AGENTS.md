@@ -5,10 +5,12 @@
 **Run these IN ORDER for EVERY change:**
 
 ```bash
-pnpm prepare        # 1. Build + update manifest/README
-pnpm exec eslint .  # 2. Lint (MUST be 0 errors)
-pnpm test:unit      # 3. Test (at minimum)
-                    # 4. Update docs if needed
+pnpm prepare        # 1. Build + update manifest
+pnpm exec oclif readme  # 2. Regenerate README.md from command metadata
+pnpm exec eslint .  # 3. Lint (MUST be 0 errors)
+pnpm test:unit      # 4. Test (at minimum)
+pnpm test:tty       # 5. TTY tests (local only, skip in CI)
+                    # 6. Update docs if needed
 ```
 
 **If you skip these steps, the work is NOT complete.**
@@ -164,16 +166,35 @@ runCommand(["stats", "account"], {
 });
 ```
 
+**Duration in tests — do NOT use `--duration` in unit/integration tests:**
+Unit and integration tests set `ABLY_CLI_DEFAULT_DURATION: "0.25"` in `vitest.config.ts`, which makes all subscribe/long-running commands auto-exit after 250ms. Do NOT pass `--duration` to `runCommand()` — it overrides the fast 250ms default with a slower explicit value.
+
+Exceptions:
+- `test:wait` command tests — `--duration` is a required flag for that command
+- `interactive-sigint.test.ts` — needs a longer duration for SIGINT testing
+- Help output checks — testing that `--help` mentions `--duration` is fine
+
 **Test structure:**
 - `test/unit/` — Fast, mocked tests. Auth via `MockConfigManager` (automatic). Only set `ABLY_API_KEY` env var when testing env var override behavior.
 - `test/integration/` — Integration tests (e.g., interactive mode). Mocked external services but tests multi-component interaction.
+- `test/tty/` — Interactive mode tests requiring a real pseudo-TTY (e.g., SIGINT/Ctrl+C with readline). Uses `node-pty`. Local only — cannot run in CI.
 - `test/e2e/` — Full scenarios against real Ably. Auth via env vars (`ABLY_API_KEY`, `ABLY_ACCESS_TOKEN`).
 - Helpers in `test/helpers/` — `runCommand()`, `runLongRunningBackgroundProcess()`, `e2e-test-helper.ts`, `mock-config-manager.ts`.
+
+**Required test describe blocks** (exact names — every unit test file must have all 5):
+1. `"help"` — verify `--help` shows USAGE
+2. `"argument validation"` — test required args or unknown flag rejection
+3. `"functionality"` — core happy-path behavior
+4. `"flags"` — verify flags exist and work
+5. `"error handling"` — API errors, network failures
+
+Do NOT use variants like `"command arguments and flags"`, `"command flags"`, `"flag options"`, or `"parameter validation"`. Exempt: `interactive.test.ts`, `interactive-sigint.test.ts`, `bench/*.test.ts`.
 
 **Running tests:**
 ```bash
 pnpm test:unit                    # All unit tests
 pnpm test:integration             # Integration tests
+pnpm test:tty                     # TTY tests (local only, needs real terminal)
 pnpm test:e2e                     # All E2E tests
 pnpm test test/unit/commands/foo.test.ts  # Specific test
 ```

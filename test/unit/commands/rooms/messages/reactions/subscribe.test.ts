@@ -8,7 +8,7 @@ describe("rooms:messages:reactions:subscribe command", () => {
     getMockAblyChat();
   });
 
-  describe("command arguments and flags", () => {
+  describe("argument validation", () => {
     it("should reject unknown flags", async () => {
       const { error } = await runCommand(
         ["rooms:messages:reactions:subscribe", "test-room", "--unknown-flag"],
@@ -30,7 +30,7 @@ describe("rooms:messages:reactions:subscribe command", () => {
     });
   });
 
-  describe("subscription behavior", () => {
+  describe("functionality", () => {
     it("should subscribe to message reactions and display them", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
@@ -148,6 +148,42 @@ describe("rooms:messages:reactions:subscribe command", () => {
       expect(parsed).toHaveProperty("room", "test-room");
       expect(parsed.summary).toHaveProperty("unique");
       expect(parsed.summary.unique).toHaveProperty("heart");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:messages:reactions:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:messages:reactions:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.attach.mockRejectedValue(new Error("Connection failed"));
+
+      const { error } = await runCommand(
+        ["rooms:messages:reactions:subscribe", "test-room"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
     });
   });
 });

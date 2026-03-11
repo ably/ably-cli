@@ -42,7 +42,18 @@ describe("accounts:login command", () => {
     });
   });
 
-  describe("with token argument and --json flag", () => {
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["accounts:login", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("functionality", () => {
     it("should output JSON format when --json flag is used", async () => {
       // Mock the /me endpoint
       nock("https://control.ably.net")
@@ -263,6 +274,16 @@ describe("accounts:login command", () => {
       expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:login", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

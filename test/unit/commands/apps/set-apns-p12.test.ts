@@ -28,7 +28,7 @@ describe("apps:set-apns-p12 command", () => {
     }
   });
 
-  describe("successful certificate upload", () => {
+  describe("functionality", () => {
     it("should upload APNS P12 certificate successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
@@ -92,6 +92,38 @@ describe("apps:set-apns-p12 command", () => {
 
       expect(stdout).toContain("APNS P12 certificate uploaded.");
       expect(stdout).toContain("Sandbox");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:set-apns-p12", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require app ID argument", async () => {
+      const { error } = await runCommand(
+        ["apps:set-apns-p12", "--certificate", testCertFile],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/Missing 1 required arg/);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:set-apns-p12", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

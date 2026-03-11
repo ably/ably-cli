@@ -11,7 +11,17 @@ describe("spaces:cursors:get-all command", () => {
     getMockAblySpaces();
   });
 
-  describe("command arguments and flags", () => {
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:cursors:get-all", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
     it("should require space argument", async () => {
       const { error } = await runCommand(
         ["spaces:cursors:get-all"],
@@ -57,7 +67,17 @@ describe("spaces:cursors:get-all command", () => {
     });
   });
 
-  describe("cursor retrieval", () => {
+  describe("flags", () => {
+    it("should show available flags in help", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:cursors:get-all", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("functionality", () => {
     it("should get all cursors from a space", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");

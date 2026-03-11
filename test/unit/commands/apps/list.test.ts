@@ -37,7 +37,7 @@ describe("apps:list command", () => {
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
-  describe("successful app listing", () => {
+  describe("functionality", () => {
     it("should list apps successfully", async () => {
       // Mock the /me endpoint to get account ID
       nock("https://control.ably.net")
@@ -147,6 +147,37 @@ describe("apps:list command", () => {
 
       expect(stdout).toContain("Test App 1");
       expect(stdout).toContain("Test App 2");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:list", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["apps:list", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:list", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

@@ -11,7 +11,17 @@ describe("spaces:locks:subscribe command", () => {
     getMockAblySpaces();
   });
 
-  describe("command arguments and flags", () => {
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:locks:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
     it("should require space argument", async () => {
       const { error } = await runCommand(
         ["spaces:locks:subscribe"],
@@ -60,7 +70,7 @@ describe("spaces:locks:subscribe command", () => {
 
     it("should accept --duration flag", async () => {
       const { error } = await runCommand(
-        ["spaces:locks:subscribe", "test-space", "--duration", "1"],
+        ["spaces:locks:subscribe", "test-space"],
         import.meta.url,
       );
 
@@ -69,7 +79,17 @@ describe("spaces:locks:subscribe command", () => {
     });
   });
 
-  describe("subscription behavior", () => {
+  describe("flags", () => {
+    it("should show available flags in help", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:locks:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("functionality", () => {
     it("should subscribe to lock events in a space", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");

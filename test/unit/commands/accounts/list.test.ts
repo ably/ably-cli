@@ -7,7 +7,7 @@ describe("accounts:list command", () => {
     // Config is auto-reset by setup.ts
   });
 
-  describe("no accounts", () => {
+  describe("functionality", () => {
     it("should show message when no accounts configured", async () => {
       const mock = getMockConfigManager();
       mock.clearAccounts();
@@ -68,6 +68,47 @@ describe("accounts:list command", () => {
       expect(currentAccount.isCurrent).toBe(true);
       expect(currentAccount).toHaveProperty("alias");
       expect(currentAccount).toHaveProperty("appsConfigured");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:list", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["accounts:list", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:list", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const mock = getMockConfigManager();
+      mock.clearAccounts();
+
+      const { error } = await runCommand(["accounts:list"], import.meta.url);
+      expect(error).toBeDefined();
     });
   });
 });

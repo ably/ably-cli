@@ -16,7 +16,7 @@ describe("accounts:current command", () => {
     nock.cleanAll();
   });
 
-  describe("displays account info", () => {
+  describe("functionality", () => {
     it("should display account info from getMe() API call", async () => {
       const mock = getMockConfigManager();
       const accessToken = mock.getAccessToken()!;
@@ -104,6 +104,37 @@ describe("accounts:current command", () => {
 
       expect(error).toBeDefined();
       expect(error!.message).toMatch(/No account.*currently selected/i);
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:current", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["accounts:current", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:current", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

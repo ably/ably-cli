@@ -66,4 +66,58 @@ describe("ConnectionsTest", function () {
       expect(error?.message ?? "").not.toContain("Expected --transport");
     }
   });
+
+  describe("functionality", () => {
+    it("should output connection test summary", async () => {
+      // The command creates Ably.Realtime directly (not via base-command mock),
+      // so it will fail to connect with mock credentials, but still outputs a summary.
+      const { stdout } = await runCommand(
+        ["connections:test", "--transport", "ws"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Connection Test Summary");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["connections:test", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["connections:test", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["connections:test", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle invalid transport option", async () => {
+      const { error } = await runCommand(
+        ["connections:test", "--transport", "invalid"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+    });
+  });
 });

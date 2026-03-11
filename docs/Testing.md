@@ -31,6 +31,7 @@ Refer to [AGENTS.md](../AGENTS.md) for the mandatory requirement to run tests.
 | **Unit Tests** | `pnpm test:unit` | Fast tests with mocked dependencies |
 | **Integration Tests** | `pnpm test:integration` | Tests with mocked Ably services |
 | **E2E Tests** | `pnpm test:e2e` | Tests against real Ably services |
+| **TTY Tests** | `pnpm run test:tty` | Interactive mode SIGINT tests (requires real TTY, local only) |
 | **Playwright Tests** | `pnpm test:playwright` | Web CLI browser tests |
 
 **Run Specific Files:**
@@ -171,6 +172,18 @@ Everything else (exact countdown rendering, every internal state transition, con
 *   **Tools:** Vitest, `@oclif/test`, `nock`, `execa` (to run the CLI as a subprocess).
 
 Refer to the [Debugging Guide](Debugging.md) for tips on debugging failed tests, including Playwright and Vitest tests.
+
+### 🖥️ TTY Tests (`test/tty`)
+
+*   **Primary Purpose:** Verify interactive mode behavior that depends on a real terminal (pseudo-TTY), such as SIGINT/Ctrl+C handling with readline.
+*   **Dependencies:** Requires `node-pty` (already in devDependencies) to create real pseudo-terminals. Cannot run in CI (GitHub Actions runners have no TTY).
+*   **Speed:** Fast (~2 seconds), but requires native module compilation.
+*   **Value:** Tests SIGINT handling that is fundamentally untestable with piped stdio — readline's signal handling only works in real TTY environments.
+*   **Tools:** Vitest, `node-pty`.
+*   **Location:** `test/tty/` directory.
+*   **Execution:** Run locally with `pnpm run test:tty`. Not included in `pnpm test:unit` or CI pipelines.
+
+> **Note:** If `node-pty` fails to load, rebuild it with `pnpm rebuild node-pty`.
 
 ### 🌐 End-to-End (E2E) Tests (`test/e2e`)
 

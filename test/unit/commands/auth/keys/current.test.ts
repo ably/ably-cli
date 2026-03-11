@@ -3,7 +3,7 @@ import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 
 describe("auth:keys:current command", () => {
-  describe("successful key display", () => {
+  describe("functionality", () => {
     it("should display the current API key", async () => {
       const mockConfig = getMockConfigManager();
       const keyId = mockConfig.getKeyId()!;
@@ -41,6 +41,37 @@ describe("auth:keys:current command", () => {
       expect(result).toHaveProperty("app");
       expect(result).toHaveProperty("key");
       expect(result.key).toHaveProperty("value");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:current", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["auth:keys:current", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:current", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

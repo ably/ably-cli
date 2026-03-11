@@ -10,7 +10,7 @@ describe("integrations:delete command", () => {
     nock.cleanAll();
   });
 
-  describe("successful integration deletion", () => {
+  describe("functionality", () => {
     it("should delete an integration with --force flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockIntegration = {
@@ -183,7 +183,7 @@ describe("integrations:delete command", () => {
     });
   });
 
-  describe("flag options", () => {
+  describe("flags", () => {
     it("should accept -f as shorthand for --force", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockIntegration = {
@@ -273,6 +273,26 @@ describe("integrations:delete command", () => {
       );
 
       expect(stdout).toContain("Integration rule deleted:");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["integrations:delete", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require ruleId argument", async () => {
+      const { error } = await runCommand(
+        ["integrations:delete", "--force"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/required|Missing/i);
     });
   });
 });

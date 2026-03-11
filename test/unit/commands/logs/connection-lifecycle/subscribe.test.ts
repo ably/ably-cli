@@ -27,6 +27,64 @@ describe("LogsConnectionLifecycleSubscribe", function () {
     });
   });
 
+  describe("functionality", () => {
+    it("should subscribe to the meta connection lifecycle channel", async () => {
+      const mock = getMockAblyRealtime();
+
+      const { stdout } = await runCommand(
+        ["logs:connection-lifecycle:subscribe"],
+        import.meta.url,
+      );
+
+      expect(mock.channels.get).toHaveBeenCalledWith(
+        "[meta]connection.lifecycle",
+        {},
+      );
+      const channel = mock.channels._getChannel("[meta]connection.lifecycle");
+      expect(channel.subscribe).toHaveBeenCalled();
+      expect(stdout).toContain("Subscribed to connection lifecycle logs");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["logs:connection-lifecycle:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["logs:connection-lifecycle:subscribe", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["logs:connection-lifecycle:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+
+    it("should accept --rewind flag", async () => {
+      const { stdout } = await runCommand(
+        ["logs:connection-lifecycle:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--rewind");
+    });
+  });
+
   it("should subscribe to [meta]connection.lifecycle channel", async function () {
     const mock = getMockAblyRealtime();
     const channel = mock.channels._getChannel("[meta]connection.lifecycle");
@@ -304,5 +362,23 @@ describe("LogsConnectionLifecycleSubscribe", function () {
 
     expect(error).toBeDefined();
     expect(error?.message).toMatch(/No mock|client/i);
+  });
+
+  describe("error handling", () => {
+    it("should handle channel subscribe failure gracefully", async function () {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("[meta]connection.lifecycle");
+      channel.subscribe.mockImplementation(() => {
+        throw new Error("Channel subscribe failed");
+      });
+
+      const { error } = await runCommand(
+        ["logs:connection-lifecycle:subscribe"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error!.message).toContain("Channel subscribe failed");
+    });
   });
 });

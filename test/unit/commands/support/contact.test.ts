@@ -15,7 +15,7 @@ describe("support:contact command", () => {
     vi.clearAllMocks();
   });
 
-  describe("normal CLI mode", () => {
+  describe("functionality", () => {
     beforeEach(() => {
       delete process.env.ABLY_WEB_CLI_MODE;
     });
@@ -106,6 +106,47 @@ describe("support:contact command", () => {
       expect(stdout).toContain(
         "would open URL in browser: https://ably.com/support",
       );
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["support:contact", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["support:contact", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["support:contact", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--help");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const { error } = await runCommand(
+        ["support:contact", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
     });
   });
 });

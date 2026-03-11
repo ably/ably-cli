@@ -9,7 +9,27 @@ describe("spaces:members:enter command", () => {
     getMockAblySpaces();
   });
 
-  describe("command arguments and flags", () => {
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:members:enter", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:members:enter", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("argument validation", () => {
     it("should require space argument", async () => {
       const { error } = await runCommand(
         ["spaces:members:enter"],
@@ -31,7 +51,7 @@ describe("spaces:members:enter command", () => {
     });
   });
 
-  describe("entering a space", () => {
+  describe("functionality", () => {
     it("should parse --profile JSON and pass to space.enter", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
@@ -120,6 +140,22 @@ describe("spaces:members:enter command", () => {
       expect(stdout).toContain('"success"');
       expect(stdout).toContain("false");
       expect(stdout).toContain("Invalid profile JSON");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle space enter failure gracefully", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.enter.mockRejectedValue(new Error("Space unavailable"));
+
+      const { error } = await runCommand(
+        ["spaces:members:enter", "test-space"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error!.message).toContain("Space unavailable");
     });
   });
 });

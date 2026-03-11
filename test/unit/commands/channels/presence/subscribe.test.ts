@@ -68,7 +68,17 @@ describe("channels:presence:subscribe command", () => {
     });
   });
 
-  describe("presence subscription functionality", () => {
+  describe("argument validation", () => {
+    it("should require channel argument", async () => {
+      const { error } = await runCommand(
+        ["channels:presence:subscribe"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/channel|required|Missing/i);
+    });
+  });
+
+  describe("functionality", () => {
     it("should subscribe to presence events on a channel", async () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("test-channel");
@@ -180,6 +190,22 @@ describe("channels:presence:subscribe command", () => {
       );
 
       expect(stdout).toContain("--duration");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle missing mock client in test mode", async () => {
+      if (globalThis.__TEST_MOCKS__) {
+        delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
+      }
+
+      const { error } = await runCommand(
+        ["channels:presence:subscribe", "test-channel"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/No mock|client/i);
     });
   });
 });

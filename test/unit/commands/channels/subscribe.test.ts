@@ -84,7 +84,7 @@ describe("channels:subscribe command", () => {
     });
   });
 
-  describe("subscription functionality", () => {
+  describe("functionality", () => {
     it("should subscribe to a channel and attach", async () => {
       const mock = getMockAblyRealtime();
 
@@ -247,6 +247,22 @@ describe("channels:subscribe command", () => {
           params: expect.objectContaining({ delta: "vcdiff" }),
         }),
       );
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle missing mock client in test mode", async () => {
+      if (globalThis.__TEST_MOCKS__) {
+        delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
+      }
+
+      const { error } = await runCommand(
+        ["channels:subscribe", "test-channel"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/No mock|client/i);
     });
   });
 });

@@ -8,7 +8,7 @@ describe("apps:channel-rules:list command", () => {
     nock.cleanAll();
   });
 
-  describe("successful channel rules listing", () => {
+  describe("functionality", () => {
     it("should list channel rules successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockRules = [
@@ -146,6 +146,37 @@ describe("apps:channel-rules:list command", () => {
       expect(result.rules).toHaveLength(2);
       expect(result.rules[0]).toHaveProperty("mutableMessages", true);
       expect(result.rules[1]).toHaveProperty("mutableMessages", false);
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:channel-rules:list", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["apps:channel-rules:list", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:channel-rules:list", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

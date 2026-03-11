@@ -15,7 +15,7 @@ describe("apps:delete command", () => {
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
-  describe("successful app deletion", () => {
+  describe("functionality", () => {
     it("should delete app successfully with --force flag", async () => {
       const mock = getMockConfigManager();
       const accountId = mock.getCurrentAccount()!.accountId!;
@@ -160,6 +160,39 @@ describe("apps:delete command", () => {
       );
 
       expect(stdout).toContain("App deleted successfully");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:delete", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should handle missing app ID when no current app is set", async () => {
+      const mock = getMockConfigManager();
+      mock.setCurrentAppIdForAccount(undefined);
+
+      const { error } = await runCommand(["apps:delete"], import.meta.url);
+      expect(error).toBeDefined();
+      expect(error.message).toMatch(
+        /No app ID provided and no current app selected/,
+      );
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:delete", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

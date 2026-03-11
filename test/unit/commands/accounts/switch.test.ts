@@ -16,7 +16,7 @@ describe("accounts:switch command", () => {
     nock.cleanAll();
   });
 
-  describe("switching accounts", () => {
+  describe("functionality", () => {
     it("should switch to existing alias", async () => {
       const mock = getMockConfigManager();
 
@@ -127,6 +127,47 @@ describe("accounts:switch command", () => {
 
       // Verify the account was actually switched
       expect(mock.getCurrentAccountAlias()).toBe("expired-acct");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:switch", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["accounts:switch", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:switch", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should error on nonexistent alias", async () => {
+      const { error } = await runCommand(
+        ["accounts:switch", "nonexistent-alias"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
     });
   });
 });

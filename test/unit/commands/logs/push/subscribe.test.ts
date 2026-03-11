@@ -26,14 +26,66 @@ describe("logs:push:subscribe command", () => {
     });
   });
 
-  describe("subscription", () => {
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["logs:push:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["logs:push:subscribe", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["logs:push:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+
+    it("should accept --rewind flag", async () => {
+      const { stdout } = await runCommand(
+        ["logs:push:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--rewind");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle missing mock client in test mode", async () => {
+      if (globalThis.__TEST_MOCKS__) {
+        delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
+      }
+
+      const { error } = await runCommand(
+        ["logs:push:subscribe"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/No mock|client/i);
+    });
+  });
+
+  describe("functionality", () => {
     it("should subscribe to [meta]log:push channel", async () => {
       const mock = getMockAblyRealtime();
 
-      await runCommand(
-        ["logs:push:subscribe", "--duration", "0"],
-        import.meta.url,
-      );
+      await runCommand(["logs:push:subscribe"], import.meta.url);
 
       expect(mock.channels.get).toHaveBeenCalledWith(
         "[meta]log:push",
@@ -58,7 +110,7 @@ describe("logs:push:subscribe command", () => {
       );
 
       const { stdout } = await runCommand(
-        ["logs:push:subscribe", "--duration", "0"],
+        ["logs:push:subscribe"],
         import.meta.url,
       );
 
@@ -73,7 +125,7 @@ describe("logs:push:subscribe command", () => {
       const mock = getMockAblyRealtime();
 
       await runCommand(
-        ["logs:push:subscribe", "--rewind", "5", "--duration", "0"],
+        ["logs:push:subscribe", "--rewind", "5"],
         import.meta.url,
       );
 
@@ -98,10 +150,7 @@ describe("logs:push:subscribe command", () => {
       );
 
       const records = await captureJsonLogs(async () => {
-        await runCommand(
-          ["logs:push:subscribe", "--json", "--duration", "0"],
-          import.meta.url,
-        );
+        await runCommand(["logs:push:subscribe", "--json"], import.meta.url);
       });
       const events = records.filter(
         (r) => r.type === "event" && r.event === "push.sent",

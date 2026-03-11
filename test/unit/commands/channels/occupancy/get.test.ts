@@ -98,4 +98,65 @@ describe("ChannelsOccupancyGet", function () {
     expect(stdout).toContain("Publishers: 0");
     expect(stdout).toContain("Subscribers: 0");
   });
+
+  describe("functionality", () => {
+    it("should retrieve and display occupancy data for a channel", async () => {
+      const mock = getMockAblyRest();
+
+      const { stdout } = await runCommand(
+        ["channels:occupancy:get", "my-channel"],
+        import.meta.url,
+      );
+
+      expect(mock.request).toHaveBeenCalledOnce();
+      expect(mock.request.mock.calls[0][1]).toBe("/channels/my-channel");
+      expect(stdout).toContain("my-channel");
+      expect(stdout).toContain("Connections: 10");
+      expect(stdout).toContain("Subscribers: 6");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:occupancy:get", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require channel argument", async () => {
+      const { error } = await runCommand(
+        ["channels:occupancy:get"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/channel|required|Missing/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:occupancy:get", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle API errors gracefully", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockRejectedValue(new Error("API error"));
+
+      const { error } = await runCommand(
+        ["channels:occupancy:get", "test-channel"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+    });
+  });
 });

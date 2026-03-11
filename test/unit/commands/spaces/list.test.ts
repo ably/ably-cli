@@ -111,4 +111,59 @@ describe("spaces:list command", () => {
     expect(json.spaces[0]).toHaveProperty("spaceName", "space1");
     expect(json.spaces[1]).toHaveProperty("spaceName", "space2");
   });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:list", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["spaces:list", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("functionality", () => {
+    it("should list active spaces successfully", async () => {
+      const { stdout, error } = await runCommand(
+        ["spaces:list"],
+        import.meta.url,
+      );
+
+      expect(error).toBeUndefined();
+      expect(stdout).toContain("space1");
+      expect(stdout).toContain("space2");
+      expect(stdout).not.toContain("regular-channel");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:list", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockRejectedValue(new Error("API error"));
+
+      const { error } = await runCommand(["spaces:list"], import.meta.url);
+      expect(error).toBeDefined();
+    });
+  });
 });

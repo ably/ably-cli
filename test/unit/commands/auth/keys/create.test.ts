@@ -20,7 +20,7 @@ describe("auth:keys:create command", () => {
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
-  describe("successful key creation", () => {
+  describe("functionality", () => {
     it("should create a key successfully", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       // Mock the key creation endpoint
@@ -171,7 +171,27 @@ describe("auth:keys:create command", () => {
     });
   });
 
-  describe("parameter validation", () => {
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:create", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:create", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("argument validation", () => {
     it("should require name parameter", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       const { error } = await runCommand(

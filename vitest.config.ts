@@ -88,6 +88,28 @@ export default defineConfig({
           },
         },
       },
+      // TTY tests require a real pseudo-terminal (node-pty) — local only, not CI.
+      // Gated behind VITEST_TTY=1 so `pnpm test` doesn't include them.
+      // Run explicitly with: pnpm test:tty
+      ...(process.env.VITEST_TTY === "1"
+        ? [
+            {
+              extends: true,
+              test: {
+                name: "tty",
+                include: ["test/tty/**/*.test.ts"],
+                env: {
+                  ABLY_CLI_TEST_MODE: "true",
+                  ABLY_API_KEY: undefined,
+                },
+                testTimeout: 15000,
+                // TTY tests are slow (real PTY I/O) — run sequentially
+                fileParallelism: false,
+                sequence: { shuffle: false },
+              },
+            },
+          ]
+        : []),
     ],
   },
 });

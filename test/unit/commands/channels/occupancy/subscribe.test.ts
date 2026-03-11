@@ -26,7 +26,7 @@ describe("channels:occupancy:subscribe command", () => {
     });
   });
 
-  describe("command arguments and flags", () => {
+  describe("argument validation", () => {
     it("should require channel argument", async () => {
       const { error } = await runCommand(
         ["channels:occupancy:subscribe"],
@@ -48,7 +48,7 @@ describe("channels:occupancy:subscribe command", () => {
     });
   });
 
-  describe("subscription behavior", () => {
+  describe("functionality", () => {
     it("should subscribe to occupancy events and show initial message", async () => {
       const mock = getMockAblyRealtime();
 
@@ -126,6 +126,26 @@ describe("channels:occupancy:subscribe command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/No mock|client/i);
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:occupancy:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["channels:occupancy:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

@@ -20,7 +20,28 @@ describe("logs:push:history command", () => {
     });
   });
 
-  describe("command flags", () => {
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["logs:push:history", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["logs:push:history", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
     it("should reject unknown flags", async () => {
       const { error } = await runCommand(
         ["logs:push:history", "--unknown-flag-xyz"],
@@ -60,7 +81,7 @@ describe("logs:push:history command", () => {
     });
   });
 
-  describe("history retrieval", () => {
+  describe("functionality", () => {
     it("should retrieve push history and display results", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("[meta]log:push");
@@ -127,6 +148,21 @@ describe("logs:push:history command", () => {
       expect(channel.history).toHaveBeenCalledWith(
         expect.objectContaining({ direction: "forwards" }),
       );
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle API errors gracefully", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("[meta]log:push");
+      channel.history.mockRejectedValue(new Error("API error"));
+
+      const { error } = await runCommand(
+        ["logs:push:history"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
     });
   });
 });

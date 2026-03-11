@@ -7,7 +7,7 @@ describe("rooms:occupancy:get command", () => {
     getMockAblyChat();
   });
 
-  describe("occupancy retrieval", () => {
+  describe("functionality", () => {
     it("should display occupancy metrics", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
@@ -80,6 +80,52 @@ describe("rooms:occupancy:get command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:occupancy:get", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require room argument", async () => {
+      const { error } = await runCommand(
+        ["rooms:occupancy:get"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/room|required|Missing/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:occupancy:get", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle occupancy fetch failure gracefully", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+      room.occupancy.get.mockRejectedValue(new Error("Service unavailable"));
+
+      const { error } = await runCommand(
+        ["rooms:occupancy:get", "test-room"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Service unavailable");
     });
   });
 });

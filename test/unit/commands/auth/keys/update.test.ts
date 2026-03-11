@@ -18,7 +18,7 @@ describe("auth:keys:update command", () => {
     nock.cleanAll();
   });
 
-  describe("successful key update", () => {
+  describe("functionality", () => {
     it("should update key name", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock list keys (getKey now uses list+filter)
@@ -106,6 +106,38 @@ describe("auth:keys:update command", () => {
 
       expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
       expect(stdout).toContain(`Key Label: "OldName" → "UpdatedName"`);
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:update", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require keyName argument", async () => {
+      const { error } = await runCommand(
+        ["auth:keys:update", "--name", "Test"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/Missing 1 required arg/);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:update", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

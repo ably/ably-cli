@@ -12,7 +12,7 @@ describe("auth:keys:list command", () => {
     nock.cleanAll();
   });
 
-  describe("successful key listing", () => {
+  describe("functionality", () => {
     it("should list all keys for the current app", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
@@ -110,6 +110,37 @@ describe("auth:keys:list command", () => {
       expect(result).toHaveProperty("keys");
       expect(result.keys).toHaveLength(1);
       expect(result.keys[0]).toHaveProperty("name", "Test Key");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:list", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["auth:keys:list", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:list", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

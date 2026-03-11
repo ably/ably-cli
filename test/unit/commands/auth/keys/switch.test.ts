@@ -1,0 +1,177 @@
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { runCommand } from "@oclif/test";
+import nock from "nock";
+import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
+
+describe("auth:keys:switch command", () => {
+  const mockKeyId = "key-abc123";
+  const mockKeyName = "Test Key";
+
+  beforeEach(() => {
+    nock.cleanAll();
+  });
+
+  afterEach(() => {
+    nock.cleanAll();
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:switch", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Switch to a different API key");
+      expect(stdout).toContain("USAGE");
+    });
+
+    it("should display examples in help", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:switch", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("EXAMPLES");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should accept optional keyNameOrValue argument", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:switch", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("KEYNAMEORVALUE");
+    });
+  });
+
+  describe("functionality", () => {
+    it("should switch to a key when key ID is provided with app.keyId format", async () => {
+      const mockConfig = getMockConfigManager();
+      const appId = mockConfig.getCurrentAppId()!;
+
+      nock("https://control.ably.net")
+        .get(`/v1/apps/${appId}/keys`)
+        .reply(200, [
+          {
+            id: mockKeyId,
+            appId,
+            name: mockKeyName,
+            key: `${appId}.${mockKeyId}:secret`,
+            capability: { "*": ["*"] },
+            created: 1640995200000,
+            modified: 1640995200000,
+          },
+        ]);
+
+      const { stdout } = await runCommand(
+        ["auth:keys:switch", `${appId}.${mockKeyId}`],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Switched to key");
+      expect(stdout).toContain(mockKeyName);
+    });
+
+    it("should output JSON when --json flag is used", async () => {
+      const mockConfig = getMockConfigManager();
+      const appId = mockConfig.getCurrentAppId()!;
+
+      nock("https://control.ably.net")
+        .get(`/v1/apps/${appId}/keys`)
+        .reply(200, [
+          {
+            id: mockKeyId,
+            appId,
+            name: mockKeyName,
+            key: `${appId}.${mockKeyId}:secret`,
+            capability: { "*": ["*"] },
+            created: 1640995200000,
+            modified: 1640995200000,
+          },
+        ]);
+
+      const { stdout } = await runCommand(
+        ["auth:keys:switch", `${appId}.${mockKeyId}`, "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "auth:keys:switch");
+      expect(result).toHaveProperty("success", true);
+      expect(result).toHaveProperty("appId", appId);
+      expect(result).toHaveProperty("keyLabel", mockKeyName);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --app flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:switch", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("--app");
+    });
+
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:switch", "--help"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle key not found error", async () => {
+      const mockConfig = getMockConfigManager();
+      const appId = mockConfig.getCurrentAppId()!;
+
+      nock("https://control.ably.net")
+        .get(`/v1/apps/${appId}/keys`)
+        .reply(200, []);
+
+      const { error } = await runCommand(
+        ["auth:keys:switch", `${appId}.nonexistent-key`],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/not found|access denied/i);
+    });
+
+    it("should handle no app specified when config has no current app", async () => {
+      const mockConfig = getMockConfigManager();
+      mockConfig.setCurrentAppIdForAccount(undefined);
+
+      const { error } = await runCommand(
+        ["auth:keys:switch", "just-a-key-id"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/No app specified/i);
+    });
+
+    it("should handle 401 authentication error", async () => {
+      const mockConfig = getMockConfigManager();
+      const appId = mockConfig.getCurrentAppId()!;
+
+      nock("https://control.ably.net")
+        .get(`/v1/apps/${appId}/keys`)
+        .reply(401, { error: "Unauthorized" });
+
+      const { error } = await runCommand(
+        ["auth:keys:switch", `${appId}.some-key`],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+    });
+  });
+});

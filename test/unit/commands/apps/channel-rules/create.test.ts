@@ -11,7 +11,7 @@ describe("apps:channel-rules:create command", () => {
     nock.cleanAll();
   });
 
-  describe("successful channel rule creation", () => {
+  describe("functionality", () => {
     it("should create a channel rule successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
@@ -169,6 +169,38 @@ describe("apps:channel-rules:create command", () => {
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("rule");
       expect(result.rule).toHaveProperty("id", mockRuleId);
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:channel-rules:create", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require --name flag", async () => {
+      const { error } = await runCommand(
+        ["apps:channel-rules:create"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/Missing required flag.*name/);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:channel-rules:create", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

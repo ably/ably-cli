@@ -10,7 +10,7 @@ describe("channel-rule:delete command (alias)", () => {
     nock.cleanAll();
   });
 
-  describe("alias behavior", () => {
+  describe("functionality", () => {
     it("should execute the same as apps:channel-rules:delete", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nock("https://control.ably.net")
@@ -45,6 +45,47 @@ describe("channel-rule:delete command (alias)", () => {
 
       expect(error).toBeDefined();
       expect(error!.message).toMatch(/Missing 1 required arg/);
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["channel-rule:delete", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["channel-rule:delete", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["channel-rule:delete", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should require nameOrId argument", async () => {
+      const { error } = await runCommand(
+        ["channel-rule:delete", "--force"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
     });
   });
 });

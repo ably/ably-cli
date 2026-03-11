@@ -11,7 +11,17 @@ describe("spaces:locks:get command", () => {
     getMockAblySpaces();
   });
 
-  describe("command arguments and flags", () => {
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:locks:get", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
     it("should reject unknown flags", async () => {
       const { error } = await runCommand(
         ["spaces:locks:get", "test-space", "my-lock", "--unknown-flag"],
@@ -53,7 +63,17 @@ describe("spaces:locks:get command", () => {
     });
   });
 
-  describe("lock retrieval", () => {
+  describe("flags", () => {
+    it("should show available flags in help", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:locks:get", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("functionality", () => {
     it("should get a specific lock by ID", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
@@ -110,6 +130,20 @@ describe("spaces:locks:get command", () => {
 
       expect(space.locks.get).toHaveBeenCalledWith("nonexistent-lock");
       expect(stdout).toBeDefined();
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.locks.get.mockRejectedValue(new Error("Failed to get lock"));
+
+      const { error } = await runCommand(
+        ["spaces:locks:get", "test-space", "my-lock"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
     });
   });
 });

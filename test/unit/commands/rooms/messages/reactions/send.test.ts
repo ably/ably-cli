@@ -7,7 +7,7 @@ describe("rooms:messages:reactions:send command", () => {
     getMockAblyChat();
   });
 
-  describe("command arguments and flags", () => {
+  describe("argument validation", () => {
     it("should reject unknown flags", async () => {
       const { error } = await runCommand(
         [
@@ -55,7 +55,17 @@ describe("rooms:messages:reactions:send command", () => {
     });
   });
 
-  describe("sending reactions", () => {
+  describe("flags", () => {
+    it("should show available flags in help", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:messages:reactions:send", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("functionality", () => {
     it("should send a reaction to a message", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
@@ -149,6 +159,34 @@ describe("rooms:messages:reactions:send command", () => {
 
       expect(error).toBeDefined();
       expect(error!.message).toContain("Failed to send reaction");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:messages:reactions:send", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle reaction send failure gracefully", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+      room.messages.reactions.send.mockRejectedValue(
+        new Error("Service unavailable"),
+      );
+
+      const { error } = await runCommand(
+        ["rooms:messages:reactions:send", "test-room", "msg-serial-123", "👍"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Service unavailable");
     });
   });
 });

@@ -18,7 +18,7 @@ describe("auth:keys:revoke command", () => {
     nock.cleanAll();
   });
 
-  describe("successful key revocation", () => {
+  describe("functionality", () => {
     it("should display key info before revocation", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock list keys (getKey now uses list+filter)
@@ -77,6 +77,38 @@ describe("auth:keys:revoke command", () => {
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "auth:keys:revoke");
       expect(result).toHaveProperty("success", true);
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:revoke", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require keyName argument", async () => {
+      const { error } = await runCommand(
+        ["auth:keys:revoke", "--force"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(/Missing 1 required arg/);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:keys:revoke", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

@@ -8,7 +8,7 @@ describe("rooms messages commands", function () {
     getMockAblyChat();
   });
 
-  describe("rooms messages send", function () {
+  describe("functionality", function () {
     it("should send a single message successfully", async function () {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
@@ -541,6 +541,84 @@ describe("rooms messages commands", function () {
       expect(record).toHaveProperty("success", true);
       expect(record).toHaveProperty("room", "test-room");
       expect(record).toHaveProperty("messages");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help for rooms:messages:send with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:messages:send", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+
+    it("should display help for rooms:messages:subscribe with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:messages:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+
+    it("should display help for rooms:messages:history with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:messages:history", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require room argument for send", async () => {
+      const { error } = await runCommand(
+        ["rooms:messages:send"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/room|required|Missing/i);
+    });
+
+    it("should require room argument for subscribe", async () => {
+      const { error } = await runCommand(
+        ["rooms:messages:subscribe"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/room|required|Missing/i);
+    });
+
+    it("should require room argument for history", async () => {
+      const { error } = await runCommand(
+        ["rooms:messages:history"],
+        import.meta.url,
+      );
+      expect(error?.message).toMatch(/room|required|Missing/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag for send", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:messages:send", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+
+    it("should accept --json flag for subscribe", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:messages:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+
+    it("should accept --json flag for history", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:messages:history", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 });

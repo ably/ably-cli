@@ -120,6 +120,9 @@ This document outlines the directory structure of the Ably CLI project.
 │   ├── integration/            # Multi-component tests (mocked external services)
 │   │   ├── commands/           # Command flow integration tests
 │   │   └── interactive-mode.test.ts # Interactive REPL integration tests
+│   ├── tty/                    # TTY-dependent tests (node-pty, local only)
+│   │   ├── tty-test-helper.ts     # PTY spawn/wait/write helpers
+│   │   └── commands/              # Interactive SIGINT tests
 │   ├── e2e/                    # End-to-end tests against real Ably
 │   │   ├── auth/               # Auth E2E tests
 │   │   ├── bench/              # Benchmark E2E tests

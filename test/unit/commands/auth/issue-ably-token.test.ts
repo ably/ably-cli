@@ -8,7 +8,7 @@ describe("auth:issue-ably-token command", () => {
     getMockAblyRest();
   });
 
-  describe("successful token issuance", () => {
+  describe("functionality", () => {
     it("should issue an Ably token successfully", async () => {
       const keyId = getMockConfigManager().getKeyId()!;
       const restMock = getMockAblyRest();
@@ -189,6 +189,16 @@ describe("auth:issue-ably-token command", () => {
     });
   });
 
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["auth:issue-ably-token", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
   describe("error handling", () => {
     it("should handle invalid capability JSON", async () => {
       const { error } = await runCommand(
@@ -230,7 +240,7 @@ describe("auth:issue-ably-token command", () => {
     });
   });
 
-  describe("command arguments and flags", () => {
+  describe("argument validation", () => {
     it("should accept --app flag to specify app", async () => {
       const restMock = getMockAblyRest();
       const appId = getMockConfigManager().getCurrentAppId()!;
@@ -261,6 +271,16 @@ describe("auth:issue-ably-token command", () => {
 
       expect(error).toBeDefined();
       expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should show available flags in help", async () => {
+      const { stdout } = await runCommand(
+        ["auth:issue-ably-token", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 });

@@ -15,7 +15,7 @@ describe("apps:update command", () => {
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
-  describe("successful app update", () => {
+  describe("functionality", () => {
     it("should update an app name successfully", async () => {
       const mock = getMockConfigManager();
       const accountId = mock.getCurrentAccount()!.accountId!;
@@ -175,6 +175,38 @@ describe("apps:update command", () => {
       );
 
       expect(stdout).toContain("App updated successfully");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:update", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require app ID argument", async () => {
+      const { error } = await runCommand(
+        ["apps:update", "--name", "NewName"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/Missing.*required arg/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["apps:update", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 

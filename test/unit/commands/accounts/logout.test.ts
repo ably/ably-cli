@@ -25,7 +25,18 @@ describe("accounts:logout command", () => {
     });
   });
 
-  describe("with no logged in accounts", () => {
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["accounts:logout", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("functionality", () => {
     beforeEach(() => {
       // Clear accounts to simulate no logged in state
       const mock = getMockConfigManager();
@@ -192,6 +203,16 @@ describe("accounts:logout command", () => {
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error).toContain("not found");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:logout", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
     });
   });
 });

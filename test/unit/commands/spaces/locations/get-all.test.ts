@@ -11,7 +11,17 @@ describe("spaces:locations:get-all command", () => {
     getMockAblySpaces();
   });
 
-  describe("command arguments and flags", () => {
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:locations:get-all", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
     it("should reject unknown flags", async () => {
       const { error } = await runCommand(
         ["spaces:locations:get-all", "test-space", "--unknown-flag"],
@@ -46,7 +56,17 @@ describe("spaces:locations:get-all command", () => {
     });
   });
 
-  describe("location retrieval", () => {
+  describe("flags", () => {
+    it("should show available flags in help", async () => {
+      const { stdout } = await runCommand(
+        ["spaces:locations:get-all", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("functionality", () => {
     it("should get all locations from a space", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
@@ -107,6 +127,22 @@ describe("spaces:locations:get-all command", () => {
       );
 
       expect(stdout).toContain("locations");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.locations.getAll.mockRejectedValue(
+        new Error("Failed to get locations"),
+      );
+
+      const { error } = await runCommand(
+        ["spaces:locations:get-all", "test-space"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
     });
   });
 });

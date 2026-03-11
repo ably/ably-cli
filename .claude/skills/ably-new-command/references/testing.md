@@ -2,6 +2,8 @@
 
 Test files go at `test/unit/commands/<path-matching-command>.test.ts`.
 
+> **Note:** Do NOT pass `--duration` to `runCommand()` in unit/integration tests. `vitest.config.ts` sets `ABLY_CLI_DEFAULT_DURATION: "0.25"` which makes subscribe commands auto-exit after 250ms. Adding `--duration` overrides this with a slower value.
+
 ## Table of Contents
 - [Product API Test (Realtime Mock)](#product-api-test-realtime-mock)
 - [Product API Test (REST Mock)](#product-api-test-rest-mock)
@@ -62,7 +64,7 @@ describe("topic:action command", () => {
 
   describe("functionality", () => {
     it("should subscribe and display events", async () => {
-      const commandPromise = runCommand(["topic:action", "test-channel", "--duration", "1"], import.meta.url);
+      const commandPromise = runCommand(["topic:action", "test-channel"], import.meta.url);
 
       await vi.waitFor(() => { expect(mockCallback).not.toBeNull(); });
 
@@ -74,6 +76,28 @@ describe("topic:action command", () => {
 
       const { stdout } = await commandPromise;
       expect(stdout).toContain("test-channel");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --duration flag", async () => {
+      const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
+      expect(stdout).toContain("--duration");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle connection failure", async () => {
+      const mock = getMockAblyRealtime();
+      mock.connection.once.mockImplementation((event: string, cb: (stateChange: unknown) => void) => {
+        if (event === "failed") cb({ reason: new Error("Connection failed") });
+      });
+
+      const { error } = await runCommand(
+        ["topic:action", "test-channel"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
     });
   });
 });
@@ -99,13 +123,50 @@ describe("topic:action command", () => {
     });
   });
 
-  it("should retrieve history", async () => {
-    const { stdout } = await runCommand(
-      ["topic:action", "test-channel"],
-      import.meta.url,
-    );
-    expect(stdout).toContain("1");
-    expect(stdout).toContain("messages");
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should require channel argument", async () => {
+      const { error } = await runCommand(["topic:action"], import.meta.url);
+      expect(error?.message).toMatch(/Missing .* required arg/i);
+    });
+  });
+
+  describe("functionality", () => {
+    it("should retrieve history", async () => {
+      const { stdout } = await runCommand(
+        ["topic:action", "test-channel"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("1");
+      expect(stdout).toContain("messages");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle API errors", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+      channel.history.mockRejectedValue(new Error("API error"));
+
+      const { error } = await runCommand(
+        ["topic:action", "test-channel"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+    });
   });
 });
 ```
@@ -125,32 +186,61 @@ describe("topic:action command", () => {
     nock.cleanAll();
   });
 
-  it("should create resource", async () => {
-    const appId = getMockConfigManager().getCurrentAppId()!;
-    nock("https://control.ably.net")
-      .post(`/v1/apps/${appId}/resources`)
-      .reply(201, { id: "res-123", appId });
-
-    const { stdout } = await runCommand(
-      ["topic:action", "--flag", "value"],
-      import.meta.url,
-    );
-
-    expect(stdout).toContain("created");
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
+      expect(stdout).toContain("USAGE");
+    });
   });
 
-  it("should handle API errors", async () => {
-    const appId = getMockConfigManager().getCurrentAppId()!;
-    nock("https://control.ably.net")
-      .post(`/v1/apps/${appId}/resources`)
-      .reply(400, { error: "Bad request" });
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["topic:action", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
 
-    const { error } = await runCommand(
-      ["topic:action", "--flag", "value"],
-      import.meta.url,
-    );
+  describe("functionality", () => {
+    it("should create resource", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${appId}/resources`)
+        .reply(201, { id: "res-123", appId });
 
-    expect(error).toBeDefined();
+      const { stdout } = await runCommand(
+        ["topic:action", "--flag", "value"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("created");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle API errors", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${appId}/resources`)
+        .reply(400, { error: "Bad request" });
+
+      const { error } = await runCommand(
+        ["topic:action", "--flag", "value"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+    });
   });
 });
 ```
@@ -266,9 +356,69 @@ describe.skipIf(SHOULD_SKIP_E2E)("topic:action CRUD E2E", { timeout: 30_000 }, (
 
 ## Test Structure
 
-Always include these describe blocks:
-1. `help` — verify `--help` shows USAGE, key flags, and EXAMPLES
-2. `argument validation` — verify required args produce errors when missing
-3. `functionality` — core behavior tests
-4. `flags` — verify key flags are accepted and configured
-5. `error handling` — API errors, invalid input
+Every test file MUST include all 5 of these describe blocks (exact names — no variants):
+
+1. **`help`** — verify `--help` shows USAGE, key flags, and EXAMPLES
+2. **`argument validation`** — verify required args produce errors when missing. For commands with no required args, test that unknown flags are rejected.
+3. **`functionality`** — core happy-path behavior tests. This is where the main command logic is tested.
+4. **`flags`** — verify key flags are accepted and configured (check help output contains flag names, test flag behavior)
+5. **`error handling`** — API errors, invalid input, network failures
+
+### Block naming rules
+- Use EXACTLY these names: `"help"`, `"argument validation"`, `"functionality"`, `"flags"`, `"error handling"`
+- Do NOT use variants like `"command arguments and flags"`, `"command flags"`, `"flag options"`, `"parameter validation"`, or domain-specific names like `"subscription behavior"`
+- Additional describe blocks beyond the 5 required ones are fine (e.g., `"JSON output"`, `"cleanup behavior"`)
+
+### What goes in each block
+
+**`argument validation`** for commands WITH required args:
+```typescript
+describe("argument validation", () => {
+  it("should require channel argument", async () => {
+    const { error } = await runCommand(["topic:action"], import.meta.url);
+    expect(error?.message).toMatch(/Missing .* required arg/i);
+  });
+});
+```
+
+**`argument validation`** for commands WITHOUT required args:
+```typescript
+describe("argument validation", () => {
+  it("should reject unknown flags", async () => {
+    const { error } = await runCommand(
+      ["topic:action", "--unknown-flag-xyz"],
+      import.meta.url,
+    );
+    expect(error).toBeDefined();
+    expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+  });
+});
+```
+
+**`argument validation`** for topic commands (that route to subcommands):
+```typescript
+describe("argument validation", () => {
+  it("should handle unknown subcommand gracefully", async () => {
+    const { stdout } = await runCommand(["topic", "nonexistent"], import.meta.url);
+    expect(stdout).toBeDefined();
+  });
+});
+```
+
+**`flags`** block pattern:
+```typescript
+describe("flags", () => {
+  it("should show available flags in help", async () => {
+    const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
+    expect(stdout).toContain("--json");
+  });
+
+  it("should reject unknown flags", async () => {
+    const { error } = await runCommand(
+      ["topic:action", "test-arg", "--unknown-flag"],
+      import.meta.url,
+    );
+    expect(error).toBeDefined();
+  });
+});
+```

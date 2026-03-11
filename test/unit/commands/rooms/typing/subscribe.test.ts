@@ -5,7 +5,7 @@ import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
 import { captureJsonLogs } from "../../../../helpers/ndjson.js";
 
 describe("rooms:typing:subscribe command", () => {
-  describe("command arguments and flags", () => {
+  describe("argument validation", () => {
     it("should reject unknown flags", async () => {
       const { error } = await runCommand(
         ["rooms:typing:subscribe", "test-room", "--unknown-flag"],
@@ -27,7 +27,7 @@ describe("rooms:typing:subscribe command", () => {
     });
   });
 
-  describe("subscription behavior", () => {
+  describe("functionality", () => {
     it("should subscribe to typing events and display them", async () => {
       const mock = getMockAblyChat();
       const room = mock.rooms._getRoom("test-room");
@@ -136,6 +136,42 @@ describe("rooms:typing:subscribe command", () => {
       expect(parsed).toHaveProperty("command");
       expect(parsed).toHaveProperty("type", "event");
       expect(parsed.currentlyTyping).toContain("user1");
+    });
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:typing:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(
+        ["rooms:typing:subscribe", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const mock = getMockAblyChat();
+      const room = mock.rooms._getRoom("test-room");
+
+      room.attach.mockRejectedValue(new Error("Connection failed"));
+
+      const { error } = await runCommand(
+        ["rooms:typing:subscribe", "test-room"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
     });
   });
 });
