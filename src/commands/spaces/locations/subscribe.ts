@@ -2,16 +2,18 @@ import type { LocationsEvents } from "@ably/spaces";
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
-import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
+  formatClientId,
+  formatEventType,
+  formatHeading,
   formatListening,
   formatProgress,
   formatResource,
+  formatSuccess,
   formatTimestamp,
-  formatClientId,
-  formatEventType,
+  formatLabel,
 } from "../../../utils/output.js";
 
 // Define interfaces for location types
@@ -142,20 +144,17 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
         }
 
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                locations: locations.map((item) => ({
-                  // Map to a simpler structure for output if needed
-                  connectionId: item.member.connectionId,
-                  location: item.location,
-                })),
-                spaceName,
-                success: true,
-                type: "locations_snapshot",
-              },
-              flags,
-            ),
+          this.logJsonResult(
+            {
+              locations: locations.map((item) => ({
+                // Map to a simpler structure for output if needed
+                connectionId: item.member.connectionId,
+                location: item.location,
+              })),
+              spaceName,
+              eventType: "locations_snapshot",
+            },
+            flags,
           );
         } else if (locations.length === 0) {
           this.log(
@@ -163,31 +162,21 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
           );
         } else {
           this.log(
-            `\n${chalk.cyan("Current locations")} (${chalk.bold(locations.length.toString())}):\n`,
+            `\n${formatHeading("Current locations")} (${chalk.bold(locations.length.toString())}):\n`,
           );
           for (const item of locations) {
             this.log(
               `- Connection ID: ${chalk.blue(item.member.connectionId || "Unknown")}`,
             ); // Use connectionId as key
             this.log(
-              `  ${chalk.dim("Location:")} ${JSON.stringify(item.location)}`,
+              `  ${formatLabel("Location")} ${JSON.stringify(item.location)}`,
             );
           }
         }
       } catch (error) {
-        const errorMsg = `Error fetching locations: ${errorMessage(error)}`;
-        this.logCliEvent(flags, "location", "getInitialError", errorMsg, {
-          error: errorMsg,
+        this.fail(error, flags, "LocationSubscribe", {
           spaceName,
         });
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            { error: errorMsg, spaceName, status: "error", success: false },
-            flags,
-          );
-        } else {
-          this.log(chalk.yellow(errorMsg));
-        }
       }
 
       this.logCliEvent(
@@ -230,50 +219,29 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
             );
 
             if (this.shouldOutputJson(flags)) {
-              this.log(
-                this.formatJsonOutput(
-                  {
-                    spaceName,
-                    success: true,
-                    type: "location_update",
-                    ...eventData,
-                  },
-                  flags,
-                ),
+              this.logJsonEvent(
+                {
+                  spaceName,
+                  eventType: "location_update",
+                  ...eventData,
+                },
+                flags,
               );
             } else {
               this.log(
                 `${formatTimestamp(timestamp)} ${formatClientId(update.member.clientId)} ${formatEventType("updated")} location:`,
               );
               this.log(
-                `  ${chalk.dim("Current:")} ${JSON.stringify(update.currentLocation)}`,
+                `  ${formatLabel("Current")} ${JSON.stringify(update.currentLocation)}`,
               );
               this.log(
-                `  ${chalk.dim("Previous:")} ${JSON.stringify(update.previousLocation)}`,
+                `  ${formatLabel("Previous")} ${JSON.stringify(update.previousLocation)}`,
               );
             }
           } catch (error) {
-            const errorMsg = `Error processing location update: ${errorMessage(error)}`;
-            this.logCliEvent(
-              flags,
-              "location",
-              "updateProcessError",
-              errorMsg,
-              { error: errorMsg, spaceName },
-            );
-            if (this.shouldOutputJson(flags)) {
-              this.jsonError(
-                {
-                  error: errorMsg,
-                  spaceName,
-                  status: "error",
-                  success: false,
-                },
-                flags,
-              );
-            } else {
-              this.logToStderr(errorMsg);
-            }
+            this.fail(error, flags, "LocationSubscribe", {
+              spaceName,
+            });
           }
         };
 
@@ -287,19 +255,9 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
           "Successfully subscribed to location updates",
         );
       } catch (error) {
-        const errorMsg = `Error subscribing to location updates: ${errorMessage(error)}`;
-        this.logCliEvent(flags, "location", "subscribeError", errorMsg, {
-          error: errorMsg,
+        this.fail(error, flags, "LocationSubscribe", {
           spaceName,
         });
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            { error: errorMsg, spaceName, status: "error", success: false },
-            flags,
-          );
-        } else {
-          this.logToStderr(errorMsg);
-        }
       }
 
       this.logCliEvent(
@@ -312,14 +270,16 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "location", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "location", { spaceName });
+      this.fail(error, flags, "LocationSubscribe", { spaceName });
     } finally {
       // Wrap all cleanup in a timeout to prevent hanging
       if (!this.shouldOutputJson(flags || {})) {
         if (this.cleanupInProgress) {
-          this.log(chalk.green("Graceful shutdown complete (user interrupt)."));
+          this.log(formatSuccess("Graceful shutdown complete."));
         } else {
-          this.log(chalk.green("Duration elapsed – command finished cleanly."));
+          this.log(
+            formatSuccess("Duration elapsed, command finished cleanly."),
+          );
         }
       }
     }

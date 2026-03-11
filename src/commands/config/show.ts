@@ -23,20 +23,12 @@ export default class ConfigShow extends AblyBaseCommand {
     const configPath = this.configManager.getConfigPath();
 
     if (!fs.existsSync(configPath)) {
-      if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            { error: "Config file does not exist", path: configPath },
-            flags,
-          ),
-        );
-        this.exit(1);
-        return; // Needed for test mode where exit() doesn't throw
-      } else {
-        this.error(
-          `Config file does not exist at: ${configPath}\nRun "ably accounts login" to create one.`,
-        );
-      }
+      this.fail(
+        `Config file does not exist at: ${configPath}\nRun "ably accounts login" to create one.`,
+        flags,
+        "ConfigShow",
+        { path: configPath },
+      );
     }
 
     const contents = fs.readFileSync(configPath, "utf8");
@@ -45,19 +37,12 @@ export default class ConfigShow extends AblyBaseCommand {
       // Parse the TOML and output as JSON
       try {
         const config = parse(contents);
-        this.log(
-          this.formatJsonOutput(
-            { exists: true, path: configPath, config },
-            flags,
-          ),
-        );
+        this.logJsonResult({ exists: true, path: configPath, config }, flags);
       } catch {
         // If parsing fails, just show raw contents
-        this.log(
-          this.formatJsonOutput(
-            { exists: true, path: configPath, raw: contents },
-            flags,
-          ),
+        this.logJsonResult(
+          { exists: true, path: configPath, raw: contents },
+          flags,
         );
       }
     } else {

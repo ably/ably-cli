@@ -3,7 +3,6 @@ import * as Ably from "ably";
 import { randomUUID } from "node:crypto";
 
 import { AblyBaseCommand } from "../../base-command.js";
-import { errorMessage } from "../../utils/errors.js";
 import { productApiFlags } from "../../flags.js";
 
 export default class IssueAblyTokenCommand extends AblyBaseCommand {
@@ -65,7 +64,9 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
       try {
         capabilities = JSON.parse(flags.capability);
       } catch (error) {
-        this.error(`Invalid capability JSON: ${errorMessage(error)}`);
+        this.fail(error, flags, "IssueAblyToken", {
+          context: "parsing capability JSON",
+        });
       }
 
       // Create token params
@@ -109,8 +110,15 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
       }
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput({ capability: tokenDetails.capability }, flags),
+        this.logJsonResult(
+          {
+            token: tokenDetails.token,
+            issuedAt: new Date(tokenDetails.issued).toISOString(),
+            expiresAt: new Date(tokenDetails.expires).toISOString(),
+            clientId: tokenDetails.clientId || null,
+            capability: tokenDetails.capability,
+          },
+          flags,
         );
       } else {
         this.log("Generated Ably Token:");
@@ -125,7 +133,7 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
         );
       }
     } catch (error) {
-      this.error(`Error issuing Ably token: ${errorMessage(error)}`);
+      this.fail(error, flags, "IssueAblyToken");
     }
   }
 }

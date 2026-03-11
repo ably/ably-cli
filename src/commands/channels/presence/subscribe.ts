@@ -101,7 +101,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.log(this.formatJsonOutput(event, flags));
+          this.logJsonEvent(event, flags);
         } else {
           const action = presenceMessage.action || "unknown";
           const clientId = presenceMessage.clientId || "Unknown";
@@ -142,7 +142,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "presence", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "presence", {
+      this.fail(error, flags, "PresenceSubscribe", {
         channel: args.channel,
       });
     }

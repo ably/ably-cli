@@ -4,7 +4,11 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
-import { formatProgress, formatSuccess } from "../../utils/output.js";
+import {
+  formatProgress,
+  formatResource,
+  formatSuccess,
+} from "../../utils/output.js";
 
 export default class ConnectionsTest extends AblyBaseCommand {
   static override description = "Test connection to Ably";
@@ -75,15 +79,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
 
       this.outputSummary(flags, wsSuccess, xhrSuccess, wsError, xhrError);
     } catch (error: unknown) {
-      const err = error as Error;
-      this.logCliEvent(
-        flags || {},
-        "connectionTest",
-        "fatalError",
-        `Connection test failed: ${err.message}`,
-        { error: err.message },
-      );
-      this.error(err.message);
+      this.fail(error, flags, "ConnectionTest");
     } finally {
       // Ensure clients are closed (handled by the finally override)
     }
@@ -117,7 +113,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
       switch (flags.transport) {
         case "all": {
           jsonOutput = {
-            success: wsSuccess && xhrSuccess,
+            testPassed: wsSuccess && xhrSuccess,
             transport: "all",
             ws: summary.ws,
             xhr: summary.xhr,
@@ -126,7 +122,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
         }
         case "ws": {
           jsonOutput = {
-            success: wsSuccess,
+            testPassed: wsSuccess,
             transport: "ws",
             connectionId: wsSuccess ? this.wsClient?.connection.id : undefined,
             connectionKey: wsSuccess
@@ -138,7 +134,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
         }
         case "xhr": {
           jsonOutput = {
-            success: xhrSuccess,
+            testPassed: xhrSuccess,
             transport: "xhr",
             connectionId: xhrSuccess
               ? this.xhrClient?.connection.id
@@ -152,13 +148,13 @@ export default class ConnectionsTest extends AblyBaseCommand {
         }
         default: {
           jsonOutput = {
-            success: false,
+            testPassed: false,
             error: "Unknown transport",
           };
         }
       }
 
-      this.log(this.formatJsonOutput(jsonOutput, flags));
+      this.logJsonResult(jsonOutput, flags);
     } else {
       this.log("");
       this.log("Connection Test Summary:");
@@ -313,7 +309,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
               formatSuccess(`${config.displayName} connection successful.`),
             );
             this.log(
-              `  Connection ID: ${chalk.cyan(client!.connection.id || "unknown")}`,
+              `  Connection ID: ${formatResource(client!.connection.id || "unknown")}`,
             );
           }
           resolve();

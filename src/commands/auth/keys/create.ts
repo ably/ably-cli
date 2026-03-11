@@ -1,7 +1,6 @@
 import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
-import { errorMessage } from "../../../utils/errors.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
 import {
   formatLabel,
@@ -44,52 +43,29 @@ export default class KeysCreateCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(KeysCreateCommand);
 
-    const controlApi = this.createControlApi(flags);
-
     const appId = flags.app || this.configManager.getCurrentAppId();
 
     if (!appId) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error:
-              'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(
-          'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
-        );
-      }
-
-      return;
+      this.fail(
+        'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
+        flags,
+        "KeyCreate",
+      );
     }
 
     let capabilities;
     try {
       capabilities = JSON.parse(flags.capabilities);
     } catch {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error:
-              "Invalid capabilities JSON format. Please provide a valid JSON string.",
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(
-          "Invalid capabilities JSON format. Please provide a valid JSON string.",
-        );
-      }
-
-      return;
+      this.fail(
+        "Invalid capabilities JSON format. Please provide a valid JSON string.",
+        flags,
+        "KeyCreate",
+      );
     }
 
     try {
+      const controlApi = this.createControlApi(flags);
       if (!this.shouldOutputJson(flags)) {
         this.log(
           formatProgress(
@@ -104,17 +80,14 @@ export default class KeysCreateCommand extends ControlBaseCommand {
       });
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              key: {
-                ...key,
-                keyName: `${key.appId}.${key.id}`,
-              },
-              success: true,
+        this.logJsonResult(
+          {
+            key: {
+              ...key,
+              keyName: `${key.appId}.${key.id}`,
             },
-            flags,
-          ),
+          },
+          flags,
         );
       } else {
         const keyName = `${key.appId}.${key.id}`;
@@ -138,18 +111,7 @@ export default class KeysCreateCommand extends ControlBaseCommand {
         );
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            appId,
-            error: errorMessage(error),
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(`Error creating key: ${errorMessage(error)}`);
-      }
+      this.fail(error, flags, "KeyCreate", { appId });
     }
   }
 }

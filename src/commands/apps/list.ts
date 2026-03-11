@@ -33,7 +33,7 @@ export default class AppsList extends ControlBaseCommand {
             isCurrent: app.id === currentAppId,
           }));
 
-          this.log(this.formatJsonOutput({ apps: appsWithCurrentFlag }, flags));
+          this.logJsonResult({ apps: appsWithCurrentFlag }, flags);
           return;
         }
 

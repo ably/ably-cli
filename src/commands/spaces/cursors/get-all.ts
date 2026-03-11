@@ -1,7 +1,6 @@
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
-import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import isTestMode from "../../../utils/test-mode.js";
@@ -78,16 +77,13 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
             if (this.realtimeClient!.connection.state === "connected") {
               clearTimeout(timeout);
               if (this.shouldOutputJson(flags)) {
-                this.log(
-                  this.formatJsonOutput(
-                    {
-                      connectionId: this.realtimeClient!.connection.id,
-                      spaceName,
-                      status: "connected",
-                      success: true,
-                    },
-                    flags,
-                  ),
+                this.logJsonResult(
+                  {
+                    connectionId: this.realtimeClient!.connection.id,
+                    spaceName,
+                    status: "connected",
+                  },
+                  flags,
                 );
               } else {
                 this.log(
@@ -234,21 +230,18 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
       const cursors = [...cursorMap.values()];
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              cursors: cursors.map((cursor: CursorUpdate) => ({
-                clientId: cursor.clientId,
-                connectionId: cursor.connectionId,
-                data: cursor.data,
-                position: cursor.position,
-              })),
-              spaceName,
-              success: true,
-              cursorUpdateReceived,
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            cursors: cursors.map((cursor: CursorUpdate) => ({
+              clientId: cursor.clientId,
+              connectionId: cursor.connectionId,
+              data: cursor.data,
+              position: cursor.position,
+            })),
+            spaceName,
+            cursorUpdateReceived,
+          },
+          flags,
         );
       } else {
         if (!cursorUpdateReceived && cursors.length === 0) {
@@ -367,32 +360,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
         }
       }
     } catch (error) {
-      // Check if this is a connection closed error
-      const errorMsg = errorMessage(error);
-      const isConnectionError =
-        errorMsg.includes("Connection closed") ||
-        errorMsg.includes("connection") ||
-        (error as Error & { code?: number })?.code === 80017;
-
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error: isConnectionError
-              ? "Connection was closed before operation completed. Please try again."
-              : `Error getting cursors: ${errorMsg}`,
-            spaceName,
-            status: "error",
-            success: false,
-            connectionError: isConnectionError,
-          },
-          flags,
-        );
-      } else {
-        const message = isConnectionError
-          ? "Connection was closed before operation completed. Please try again."
-          : `Error getting cursors: ${errorMsg}`;
-        this.error(message);
-      }
+      this.fail(error, flags, "CursorGetAll", { spaceName });
     }
   }
 }

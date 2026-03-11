@@ -5,6 +5,7 @@ import chalk from "chalk";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../../flags.js";
 import {
+  formatLabel,
   formatProgress,
   formatSuccess,
   formatResource,
@@ -65,8 +66,11 @@ export default class MessagesHistory extends ChatBaseCommand {
       const chatClient = await this.createChatClient(flags);
 
       if (!chatClient) {
-        this.error("Failed to create Chat client");
-        return;
+        this.fail(
+          new Error("Failed to create Chat client"),
+          flags,
+          "RoomMessageHistory",
+        );
       }
 
       // Get the room
@@ -77,16 +81,13 @@ export default class MessagesHistory extends ChatBaseCommand {
 
       if (!this.shouldSuppressOutput(flags)) {
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                limit: flags.limit,
-                room: args.room,
-                status: "fetching",
-                success: true,
-              },
-              flags,
-            ),
+          this.logJsonEvent(
+            {
+              limit: flags.limit,
+              room: args.room,
+              status: "fetching",
+            },
+            flags,
           );
         } else {
           this.log(
@@ -125,7 +126,12 @@ export default class MessagesHistory extends ChatBaseCommand {
         historyParams.end !== undefined &&
         historyParams.start > historyParams.end
       ) {
-        this.error("--start must be earlier than or equal to --end");
+        this.fail(
+          new Error("--start must be earlier than or equal to --end"),
+          flags,
+          "RoomMessageHistory",
+          { room: args.room },
+        );
       }
 
       // Get historical messages
@@ -133,22 +139,19 @@ export default class MessagesHistory extends ChatBaseCommand {
       const { items } = messagesResult;
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              messages: items.map((message) => ({
-                clientId: message.clientId,
-                text: message.text,
-                timestamp: message.timestamp,
-                ...(flags["show-metadata"] && message.metadata
-                  ? { metadata: message.metadata }
-                  : {}),
-              })),
-              room: args.room,
-              success: true,
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            messages: items.map((message) => ({
+              clientId: message.clientId,
+              text: message.text,
+              timestamp: message.timestamp,
+              ...(flags["show-metadata"] && message.metadata
+                ? { metadata: message.metadata }
+                : {}),
+            })),
+            room: args.room,
+          },
+          flags,
         );
       } else {
         // Display messages count
@@ -173,14 +176,14 @@ export default class MessagesHistory extends ChatBaseCommand {
             // Show metadata if enabled and available
             if (flags["show-metadata"] && message.metadata) {
               this.log(
-                `${chalk.gray("  Metadata:")} ${chalk.yellow(this.formatJsonOutput(message.metadata, flags))}`,
+                `  ${formatLabel("Metadata")} ${chalk.yellow(this.formatJsonOutput(message.metadata, flags))}`,
               );
             }
           }
         }
       }
     } catch (error) {
-      this.handleCommandError(error, flags, "messages", { room: args.room });
+      this.fail(error, flags, "RoomMessageHistory", { room: args.room });
     }
   }
 }

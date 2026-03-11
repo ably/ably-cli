@@ -2,9 +2,15 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
-import { durationFlag, productApiFlags, rewindFlag } from "../../../flags.js";
+import {
+  clientIdFlag,
+  durationFlag,
+  productApiFlags,
+  rewindFlag,
+} from "../../../flags.js";
 import { formatMessageData } from "../../../utils/json-formatter.js";
 import {
+  formatLabel,
   formatListening,
   formatResource,
   formatSuccess,
@@ -23,6 +29,7 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
+    ...clientIdFlag,
     ...durationFlag,
     ...rewindFlag,
   };
@@ -98,7 +105,7 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.log(this.formatJsonOutput(logEvent, flags));
+          this.logJsonEvent(logEvent, flags);
           return;
         }
 
@@ -118,11 +125,11 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
 
         // Format the log output with consistent styling
         this.log(
-          `${formatTimestamp(timestamp)} ${chalk.cyan(`Channel: ${channelName}`)} | ${eventColor(`Event: ${event}`)}`,
+          `${formatTimestamp(timestamp)} Channel: ${formatResource(channelName)} | ${eventColor(`Event: ${event}`)}`,
         );
 
         if (message.data) {
-          this.log(chalk.blue("Data:"));
+          this.log(formatLabel("Data"));
           this.log(formatMessageData(message.data));
         }
 
@@ -138,7 +145,9 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
       this.logCliEvent(flags, "logs", "listening", "Listening for logs...");
       await this.waitAndTrackCleanup(flags, "logs", flags.duration);
     } catch (error: unknown) {
-      this.handleCommandError(error, flags, "logs", { channel: channelName });
+      this.fail(error, flags, "ChannelLifecycleSubscribe", {
+        channel: channelName,
+      });
     }
     // Client cleanup is handled by command finally() method
   }

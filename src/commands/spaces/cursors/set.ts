@@ -9,6 +9,7 @@ import {
   formatProgress,
   formatResource,
   formatSuccess,
+  formatLabel,
 } from "../../../utils/output.js";
 
 // Define cursor types based on Ably documentation
@@ -101,14 +102,14 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
             const additionalData = JSON.parse(flags.data);
             cursorData.data = additionalData;
           } catch {
-            const errorMsg =
-              'Invalid JSON in --data flag. Expected format: {"name":"value",...}';
-            if (this.shouldOutputJson(flags)) {
-              this.jsonError({ error: errorMsg, success: false }, flags);
-            } else {
-              this.error(errorMsg);
-            }
-            return;
+            this.fail(
+              new Error(
+                'Invalid JSON in --data flag. Expected format: {"name":"value",...}',
+              ),
+              flags,
+              "CursorSet",
+              { spaceName },
+            );
           }
         }
       } else if (flags.x !== undefined && flags.y !== undefined) {
@@ -123,14 +124,14 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
             const additionalData = JSON.parse(flags.data);
             cursorData.data = additionalData;
           } catch {
-            const errorMsg =
-              'Invalid JSON in --data flag when used with --x and --y. Expected format: {"name":"value",...}';
-            if (this.shouldOutputJson(flags)) {
-              this.jsonError({ error: errorMsg, success: false }, flags);
-            } else {
-              this.error(errorMsg);
-            }
-            return;
+            this.fail(
+              new Error(
+                'Invalid JSON in --data flag when used with --x and --y. Expected format: {"name":"value",...}',
+              ),
+              flags,
+              "CursorSet",
+              { spaceName },
+            );
           }
         }
       } else if (flags.data) {
@@ -138,14 +139,14 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         try {
           cursorData = JSON.parse(flags.data);
         } catch {
-          const errorMsg =
-            'Invalid JSON in --data flag. Expected format: {"position":{"x":number,"y":number},"data":{...}}';
-          if (this.shouldOutputJson(flags)) {
-            this.jsonError({ error: errorMsg, success: false }, flags);
-          } else {
-            this.error(errorMsg);
-          }
-          return;
+          this.fail(
+            new Error(
+              'Invalid JSON in --data flag. Expected format: {"position":{"x":number,"y":number},"data":{...}}',
+            ),
+            flags,
+            "CursorSet",
+            { spaceName },
+          );
         }
 
         // Validate position when using --data
@@ -155,16 +156,24 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
             "number" ||
           typeof (cursorData.position as Record<string, unknown>).y !== "number"
         ) {
-          this.error(
-            'Invalid cursor position in --data. Expected format: {"position":{"x":number,"y":number}}',
+          this.fail(
+            new Error(
+              'Invalid cursor position in --data. Expected format: {"position":{"x":number,"y":number}}',
+            ),
+            flags,
+            "CursorSet",
+            { spaceName },
           );
-          return;
         }
       } else {
-        this.error(
-          "Cursor position is required. Use either --x and --y flags, --data flag with position, or --simulate for random movement.",
+        this.fail(
+          new Error(
+            "Cursor position is required. Use either --x and --y flags, --data flag with position, or --simulate for random movement.",
+          ),
+          flags,
+          "CursorSet",
+          { spaceName },
         );
-        return;
       }
 
       await this.initializeSpace(flags, spaceName, { enterSpace: true });
@@ -190,15 +199,12 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       );
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              cursor: cursorForOutput,
-              spaceName,
-              success: true,
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            cursor: cursorForOutput,
+            spaceName,
+          },
+          flags,
         );
       } else {
         this.log(
@@ -258,7 +264,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
             if (!this.shouldOutputJson(flags)) {
               this.log(
-                `${chalk.dim("Simulated:")} cursor at (${simulatedX}, ${simulatedY})`,
+                `${formatLabel("Simulated")} cursor at (${simulatedX}, ${simulatedY})`,
               );
             }
           } catch (error) {
@@ -294,7 +300,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       // After cleanup (handled in finally), ensure the process exits so user doesn't need multiple Ctrl-C
       this.exit(0);
     } catch (error) {
-      this.handleCommandError(error, flags, "cursor", { spaceName });
+      this.fail(error, flags, "CursorSet", { spaceName });
     }
   }
 }

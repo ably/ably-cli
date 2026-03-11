@@ -1,7 +1,6 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { errorMessage } from "../../utils/errors.js";
 import {
   formatLabel,
   formatProgress,
@@ -40,30 +39,16 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
 
     // Ensure at least one update parameter is provided
     if (flags.name === undefined && flags["tls-only"] === undefined) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            appId: args.id,
-            error:
-              "At least one update parameter (--name or --tls-only) must be provided",
-            status: "error",
-            success: false,
-          },
-          flags,
-        );
-        return;
-      } else {
-        this.error(
-          "At least one update parameter (--name or --tls-only) must be provided",
-        );
-      }
-
-      return;
+      this.fail(
+        "At least one update parameter (--name or --tls-only) must be provided",
+        flags,
+        "AppUpdate",
+        { appId: args.id },
+      );
     }
 
-    const controlApi = this.createControlApi(flags);
-
     try {
+      const controlApi = this.createControlApi(flags);
       if (!this.shouldOutputJson(flags)) {
         this.log(formatProgress(`Updating app ${formatResource(args.id)}`));
       }
@@ -81,26 +66,23 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
       const app = await controlApi.updateApp(args.id, updateData);
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              app: {
-                accountId: app.accountId,
-                created: new Date(app.created).toISOString(),
-                id: app.id,
-                modified: new Date(app.modified).toISOString(),
-                name: app.name,
-                status: app.status,
-                tlsOnly: app.tlsOnly,
-                ...(app.apnsUsesSandboxCert !== undefined && {
-                  apnsUsesSandboxCert: app.apnsUsesSandboxCert,
-                }),
-              },
-              success: true,
-              timestamp: new Date().toISOString(),
+        this.logJsonResult(
+          {
+            app: {
+              accountId: app.accountId,
+              created: new Date(app.created).toISOString(),
+              id: app.id,
+              modified: new Date(app.modified).toISOString(),
+              name: app.name,
+              status: app.status,
+              tlsOnly: app.tlsOnly,
+              ...(app.apnsUsesSandboxCert !== undefined && {
+                apnsUsesSandboxCert: app.apnsUsesSandboxCert,
+              }),
             },
-            flags,
-          ),
+            timestamp: new Date().toISOString(),
+          },
+          flags,
         );
       } else {
         this.log(`\nApp updated successfully!`);
@@ -118,20 +100,9 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            appId: args.id,
-            error: errorMessage(error),
-            status: "error",
-            success: false,
-          },
-          flags,
-        );
-        return;
-      } else {
-        this.error(`Error updating app: ${errorMessage(error)}`);
-      }
+      this.fail(error, flags, "AppUpdate", {
+        appId: args.id,
+      });
     }
   }
 }

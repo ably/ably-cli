@@ -3,6 +3,7 @@ import { Args } from "@oclif/core";
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { endpointFlag } from "../../flags.js";
 import { ControlApi } from "../../services/control-api.js";
+import { formatResource } from "../../utils/output.js";
 
 export default class AccountsSwitch extends ControlBaseCommand {
   static override args = {
@@ -33,18 +34,12 @@ export default class AccountsSwitch extends ControlBaseCommand {
     const accounts = this.configManager.listAccounts();
 
     if (accounts.length === 0) {
-      // No accounts configured, proxy to login command
       if (this.shouldOutputJson(flags)) {
-        const error =
-          'No accounts configured. Use "ably accounts login" to add an account.';
-        this.jsonError(
-          {
-            error,
-            success: false,
-          },
+        this.fail(
+          'No accounts configured. Use "ably accounts login" to add an account.',
           flags,
+          "AccountSwitch",
         );
-        return;
       }
 
       // In interactive mode, proxy to login
@@ -61,21 +56,18 @@ export default class AccountsSwitch extends ControlBaseCommand {
 
     // Otherwise, show interactive selection if not in JSON mode
     if (this.shouldOutputJson(flags)) {
-      const error =
-        "No account alias provided. Please specify an account alias to switch to.";
-      this.jsonError(
+      this.fail(
+        "No account alias provided. Please specify an account alias to switch to.",
+        flags,
+        "AccountSwitch",
         {
           availableAccounts: accounts.map(({ account, alias }) => ({
             alias,
             id: account.accountId || "Unknown",
             name: account.accountName || "Unknown",
           })),
-          error,
-          success: false,
         },
-        flags,
       );
-      return;
     }
 
     this.log("Select an account to switch to:");
@@ -100,26 +92,18 @@ export default class AccountsSwitch extends ControlBaseCommand {
     const accountExists = accounts.some((account) => account.alias === alias);
 
     if (!accountExists) {
-      const error = `Account with alias "${alias}" not found. Use "ably accounts list" to see available accounts.`;
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            availableAccounts: accounts.map(({ account, alias }) => ({
-              alias,
-              id: account.accountId || "Unknown",
-              name: account.accountName || "Unknown",
-            })),
-            error,
-            success: false,
-          },
-          flags,
-        );
-        return;
-      } else {
-        this.error(error);
-      }
-
-      return;
+      this.fail(
+        `Account with alias "${alias}" not found. Use "ably accounts list" to see available accounts.`,
+        flags,
+        "AccountSwitch",
+        {
+          availableAccounts: accounts.map(({ account, alias }) => ({
+            alias,
+            id: account.accountId || "Unknown",
+            name: account.accountName || "Unknown",
+          })),
+        },
+      );
     }
 
     // Switch to the account
@@ -134,22 +118,11 @@ export default class AccountsSwitch extends ControlBaseCommand {
     try {
       const accessToken = this.configManager.getAccessToken();
       if (!accessToken) {
-        const error =
-          "No access token found for this account. Please log in again.";
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            {
-              error,
-              success: false,
-            },
-            flags,
-          );
-          return;
-        } else {
-          this.error(error);
-        }
-
-        return;
+        this.fail(
+          "No access token found for this account. Please log in again.",
+          flags,
+          "AccountSwitch",
+        );
       }
 
       const controlApi = new ControlApi({
@@ -160,44 +133,40 @@ export default class AccountsSwitch extends ControlBaseCommand {
       const { account, user } = await controlApi.getMe();
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              account: {
-                alias,
-                id: account.id,
-                name: account.name,
-                user: {
-                  email: user.email,
-                },
-              },
-              success: true,
-            },
-            flags,
-          ),
-        );
-      } else {
-        this.log(`Switched to account: ${account.name} (${account.id})`);
-        this.log(`User: ${user.email}`);
-      }
-    } catch {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
+        this.logJsonResult(
           {
-            account: { alias },
-            error: "Access token may have expired or is invalid.",
-            success: false,
+            account: {
+              alias,
+              id: account.id,
+              name: account.name,
+              user: {
+                email: user.email,
+              },
+            },
           },
           flags,
         );
-        return;
       } else {
-        this.warn(
-          "Switched to account, but the access token may have expired or is invalid.",
-        );
         this.log(
-          `Consider logging in again with "ably accounts login --alias ${alias}".`,
+          `Switched to account: ${formatResource(account.name)} (${account.id})`,
         );
+        this.log(`User: ${user.email}`);
+      }
+    } catch {
+      // The account switch already happened above (line 109), so this is non-fatal.
+      // Warn the user but still report success with a warning field.
+      const warningMessage =
+        "Access token may have expired or is invalid. The account was switched, but token verification failed.";
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonResult(
+          {
+            account: { alias },
+            warning: warningMessage,
+          },
+          flags,
+        );
+      } else {
+        this.warn(warningMessage);
       }
     }
   }

@@ -5,9 +5,11 @@ import chalk from "chalk";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import {
+  formatClientId,
   formatProgress,
   formatResource,
   formatTimestamp,
+  formatLabel,
 } from "../../../utils/output.js";
 
 export default class RoomsReactionsSubscribe extends ChatBaseCommand {
@@ -42,8 +44,11 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
-        this.error("Failed to initialize clients");
-        return;
+        this.fail(
+          new Error("Failed to initialize clients"),
+          flags,
+          "RoomReactionSubscribe",
+        );
       }
 
       const { room: roomName } = args;
@@ -125,18 +130,16 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput({ success: true, ...eventData }, flags),
-          );
+          this.logJsonEvent({ eventType: event.type, ...eventData }, flags);
         } else {
           this.log(
-            `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${chalk.blue(reaction.clientId || "Unknown")} reacted with ${chalk.yellow(reaction.name || "unknown")}`,
+            `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${formatClientId(reaction.clientId || "Unknown")} reacted with ${chalk.yellow(reaction.name || "unknown")}`,
           );
 
           // Show any additional metadata in the reaction
           if (reaction.metadata && Object.keys(reaction.metadata).length > 0) {
             this.log(
-              `  ${chalk.dim("Metadata:")} ${this.formatJsonOutput(reaction.metadata, flags)}`,
+              `  ${formatLabel("Metadata")} ${this.formatJsonOutput(reaction.metadata, flags)}`,
             );
           }
         }
@@ -158,7 +161,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "reactions", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "reactions", { room: args.room });
+      this.fail(error, flags, "RoomReactionSubscribe", { room: args.room });
     }
   }
 }

@@ -5,11 +5,12 @@ import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
+  formatClientId,
+  formatHeading,
+  formatLabel,
   formatProgress,
   formatResource,
   formatSuccess,
-  formatLabel,
-  formatClientId,
 } from "../../../utils/output.js";
 
 interface LocationData {
@@ -186,38 +187,35 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
         });
 
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                locations: validLocations.map((item: LocationItem) => {
-                  const currentMember =
-                    "current" in item &&
-                    item.current &&
-                    typeof item.current === "object"
-                      ? (item.current as LocationWithCurrent["current"]).member
-                      : undefined;
-                  const member = item.member || currentMember;
-                  const memberId =
-                    item.memberId ||
-                    member?.memberId ||
-                    member?.clientId ||
-                    item.clientId ||
-                    item.id ||
-                    item.userId ||
-                    "Unknown";
-                  const locationData = extractLocationData(item);
-                  return {
-                    isCurrentMember: member?.isCurrentMember || false,
-                    location: locationData,
-                    memberId,
-                  };
-                }),
-                spaceName,
-                success: true,
-                timestamp: new Date().toISOString(),
-              },
-              flags,
-            ),
+          this.logJsonResult(
+            {
+              locations: validLocations.map((item: LocationItem) => {
+                const currentMember =
+                  "current" in item &&
+                  item.current &&
+                  typeof item.current === "object"
+                    ? (item.current as LocationWithCurrent["current"]).member
+                    : undefined;
+                const member = item.member || currentMember;
+                const memberId =
+                  item.memberId ||
+                  member?.memberId ||
+                  member?.clientId ||
+                  item.clientId ||
+                  item.id ||
+                  item.userId ||
+                  "Unknown";
+                const locationData = extractLocationData(item);
+                return {
+                  isCurrentMember: member?.isCurrentMember || false,
+                  location: locationData,
+                  memberId,
+                };
+              }),
+              spaceName,
+              timestamp: new Date().toISOString(),
+            },
+            flags,
           );
         } else if (!validLocations || validLocations.length === 0) {
           this.log(
@@ -226,7 +224,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
         } else {
           const locationsCount = validLocations.length;
           this.log(
-            `\n${chalk.cyan("Current locations")} (${chalk.bold(String(locationsCount))}):\n`,
+            `\n${formatHeading("Current locations")} (${chalk.bold(String(locationsCount))}):\n`,
           );
 
           for (const location of validLocations) {
@@ -240,7 +238,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
               const locationWithCurrent = location as LocationWithCurrent;
               const { member } = locationWithCurrent.current;
               this.log(
-                `Member ID: ${chalk.cyan(member.memberId || member.clientId)}`,
+                `Member ID: ${formatResource(member.memberId || member.clientId || "Unknown")}`,
               );
               try {
                 const locationData = extractLocationData(location);
@@ -253,7 +251,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
                 );
 
                 if (member.isCurrentMember) {
-                  this.log(`  ${chalk.green("(Current member)")}`);
+                  this.log(`  ${chalk.dim("(Current member)")}`);
                 }
               } catch (error) {
                 this.log(
@@ -270,30 +268,10 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
           }
         }
       } catch (error) {
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            {
-              error: errorMessage(error),
-              spaceName,
-              status: "error",
-              success: false,
-            },
-            flags,
-          );
-        } else {
-          this.error(`Error: ${errorMessage(error)}`);
-        }
+        this.fail(error, flags, "LocationGetAll", { spaceName });
       }
     } catch (error) {
-      const errorMsg = errorMessage(error);
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          { error: errorMsg, spaceName, status: "error", success: false },
-          flags,
-        );
-      } else {
-        this.error(errorMsg);
-      }
+      this.fail(error, flags, "LocationGetAll", { spaceName });
     }
   }
 }

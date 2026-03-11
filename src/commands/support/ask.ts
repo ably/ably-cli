@@ -33,7 +33,6 @@ export default class AskCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(AskCommand);
 
-    const controlApi = this.createControlApi(flags);
     const isInteractive = process.env.ABLY_INTERACTIVE_MODE === "true";
     const spinner =
       isInteractive || this.shouldOutputJson(flags)
@@ -44,6 +43,7 @@ export default class AskCommand extends ControlBaseCommand {
     }
 
     try {
+      const controlApi = this.createControlApi(flags);
       let response: HelpResponse;
       const existingContext = this.configManager.getHelpContext();
 
@@ -73,15 +73,12 @@ export default class AskCommand extends ControlBaseCommand {
       if (spinner) spinner.stop();
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              answer: response.answer,
-              links: response.links,
-              success: true,
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            answer: response.answer,
+            links: response.links,
+          },
+          flags,
         );
       } else {
         // Display the AI agent's answer
@@ -138,14 +135,8 @@ export default class AskCommand extends ControlBaseCommand {
     } catch (error) {
       if (spinner) {
         spinner.fail("Failed to get a response from the Ably AI agent");
-      } else {
-        this.log(chalk.red("Failed to get a response from the Ably AI agent"));
       }
-      if (error instanceof Error) {
-        this.error(error.message);
-      } else {
-        this.error("An unknown error occurred");
-      }
+      this.fail(error, flags, "SupportAsk");
     }
   }
 }

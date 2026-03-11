@@ -2,7 +2,6 @@ import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
-import { errorMessage } from "../../../utils/errors.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
 
 export default class KeysListCommand extends ControlBaseCommand {
@@ -29,31 +28,19 @@ export default class KeysListCommand extends ControlBaseCommand {
     // Display authentication information
     await this.showAuthInfoIfNeeded(flags);
 
-    const controlApi = this.createControlApi(flags);
-
     // Get app ID from flag or current config
     const appId = flags.app || this.configManager.getCurrentAppId();
 
     if (!appId) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error:
-              'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(
-          'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
-        );
-      }
-
-      return;
+      this.fail(
+        'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
+        flags,
+        "KeyList",
+      );
     }
 
     try {
+      const controlApi = this.createControlApi(flags);
       const keys = await controlApi.listKeys(appId);
 
       // Get the current key name for highlighting (app_id.key_Id)
@@ -75,15 +62,12 @@ export default class KeysListCommand extends ControlBaseCommand {
             keyName, // Add the full key name
           };
         });
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              keys: keysWithCurrent,
-              success: true,
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            appId,
+            keys: keysWithCurrent,
+          },
+          flags,
         );
       } else {
         if (keys.length === 0) {
@@ -117,18 +101,7 @@ export default class KeysListCommand extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            appId,
-            error: errorMessage(error),
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(`Error listing keys: ${errorMessage(error)}`);
-      }
+      this.fail(error, flags, "KeyList", { appId });
     }
   }
 }

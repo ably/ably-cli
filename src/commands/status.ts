@@ -1,7 +1,11 @@
-import { Command, Flags } from "@oclif/core";
+import { Flags } from "@oclif/core";
 import chalk from "chalk";
 import fetch from "node-fetch";
 import ora from "ora";
+
+import { AblyBaseCommand } from "../base-command.js";
+import { coreGlobalFlags } from "../flags.js";
+import { BaseFlags } from "../types/cli.js";
 import openUrl from "../utils/open-url.js";
 import { formatProgress, formatSuccess } from "../utils/output.js";
 import { getCliVersion } from "../utils/version.js";
@@ -10,13 +14,13 @@ interface StatusResponse {
   status: boolean;
 }
 
-export default class StatusCommand extends Command {
+export default class StatusCommand extends AblyBaseCommand {
   static description = "Check the status of the Ably service";
 
   static examples = ["<%= config.bin %> <%= command.id %>"];
 
-  static flags = {
-    help: Flags.help({ char: "h" }),
+  static override flags = {
+    ...coreGlobalFlags,
     open: Flags.boolean({
       char: "o",
       default: false,
@@ -26,12 +30,14 @@ export default class StatusCommand extends Command {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(StatusCommand);
+    const isJson = this.shouldOutputJson(flags);
 
     const isInteractive = process.env.ABLY_INTERACTIVE_MODE === "true";
-    const spinner = isInteractive
-      ? null
-      : ora("Checking Ably service status...").start();
-    if (isInteractive) {
+    const spinner =
+      isInteractive || isJson
+        ? null
+        : ora("Checking Ably service status...").start();
+    if (isInteractive && !isJson) {
       this.log(formatProgress("Checking Ably service status"));
     }
 
@@ -45,13 +51,25 @@ export default class StatusCommand extends Command {
       if (spinner) spinner.stop();
 
       if (data.status === undefined) {
-        this.error(
-          "Invalid response from status endpoint: status attribute is missing",
+        this.fail(
+          new Error(
+            "Invalid response from status endpoint: status attribute is missing",
+          ),
+          flags as BaseFlags,
+          "Status",
+        );
+      }
+
+      if (isJson) {
+        this.logJsonResult(
+          {
+            operational: data.status,
+            statusUrl: "https://status.ably.com",
+          },
+          flags as BaseFlags,
         );
       } else if (data.status) {
-        this.log(
-          formatSuccess(`Ably services are ${chalk.green("operational")}.`),
-        );
+        this.log(formatSuccess("Ably services are operational."));
         this.log("No incidents currently reported");
       } else {
         this.log(
@@ -59,9 +77,11 @@ export default class StatusCommand extends Command {
         );
       }
 
-      this.log(
-        `\nFor detailed status information, visit ${chalk.cyan("https://status.ably.com")}`,
-      );
+      if (!isJson) {
+        this.log(
+          `\nFor detailed status information, visit ${chalk.cyan("https://status.ably.com")}`,
+        );
+      }
 
       if (flags.open) {
         await openUrl("https://status.ably.com", this);
@@ -69,14 +89,9 @@ export default class StatusCommand extends Command {
     } catch (error) {
       if (spinner) {
         spinner.fail("Failed to check Ably service status");
-      } else {
-        this.log(chalk.red("Failed to check Ably service status"));
       }
-      if (error instanceof Error) {
-        this.error(error.message);
-      } else {
-        this.error("An unknown error occurred");
-      }
+
+      this.fail(error, flags as BaseFlags, "Status");
     }
   }
 }

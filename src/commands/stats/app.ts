@@ -50,12 +50,18 @@ export default class StatsAppCommand extends StatsBaseCommand {
 
     this.appId = args.id || this.configManager.getCurrentAppId() || "";
     if (!this.appId) {
-      this.error(
+      this.fail(
         'No app ID provided and no default app selected. Please specify an app ID or select a default app with "ably apps switch".',
+        flags,
+        "StatsApp",
       );
     }
 
-    const controlApi = this.createControlApi(flags);
-    await this.runStats(flags, controlApi);
+    try {
+      const controlApi = this.createControlApi(flags);
+      await this.runStats(flags, controlApi);
+    } catch (error) {
+      this.fail(error, flags, "StatsApp");
+    }
   }
 }

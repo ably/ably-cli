@@ -1,18 +1,11 @@
+import { Command } from "@oclif/core";
 import chalk from "chalk";
 
-import { productApiFlags } from "../../flags.js";
-import { SpacesBaseCommand } from "../../spaces-base-command.js";
-
-export default class SpacesLocations extends SpacesBaseCommand {
+export default class SpacesLocations extends Command {
   static override description =
     "Spaces Locations API commands (Ably Spaces client-to-client location sharing)";
 
-  static override flags = {
-    ...productApiFlags,
-  };
-
   async run(): Promise<void> {
-    await this.parse(SpacesLocations);
     this.log(chalk.bold.cyan("Spaces Locations API Commands:"));
     this.log("\nAvailable commands:");
     this.log(

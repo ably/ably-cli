@@ -2,7 +2,6 @@ import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
-import { errorMessage } from "../../../utils/errors.js";
 import { formatSuccess } from "../../../utils/output.js";
 
 export default class ChannelRulesCreateCommand extends ControlBaseCommand {
@@ -91,11 +90,9 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
     const { flags } = await this.parse(ChannelRulesCreateCommand);
 
     const appId = await this.requireAppId(flags);
-    if (!appId) return;
-
-    const controlApi = this.createControlApi(flags);
 
     try {
+      const controlApi = this.createControlApi(flags);
       const namespaceData = {
         authenticated: flags.authenticated,
         batchingEnabled: flags["batching-enabled"],
@@ -118,33 +115,29 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
       );
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              rule: {
-                authenticated: createdNamespace.authenticated,
-                batchingEnabled: createdNamespace.batchingEnabled,
-                batchingInterval: createdNamespace.batchingInterval,
-                conflationEnabled: createdNamespace.conflationEnabled,
-                conflationInterval: createdNamespace.conflationInterval,
-                conflationKey: createdNamespace.conflationKey,
-                created: new Date(createdNamespace.created).toISOString(),
-                exposeTimeSerial: createdNamespace.exposeTimeSerial,
-                id: createdNamespace.id,
-                name: flags.name,
-                persistLast: createdNamespace.persistLast,
-                persisted: createdNamespace.persisted,
-                populateChannelRegistry:
-                  createdNamespace.populateChannelRegistry,
-                pushEnabled: createdNamespace.pushEnabled,
-                tlsOnly: createdNamespace.tlsOnly,
-              },
-              success: true,
-              timestamp: new Date().toISOString(),
+        this.logJsonResult(
+          {
+            appId,
+            rule: {
+              authenticated: createdNamespace.authenticated,
+              batchingEnabled: createdNamespace.batchingEnabled,
+              batchingInterval: createdNamespace.batchingInterval,
+              conflationEnabled: createdNamespace.conflationEnabled,
+              conflationInterval: createdNamespace.conflationInterval,
+              conflationKey: createdNamespace.conflationKey,
+              created: new Date(createdNamespace.created).toISOString(),
+              exposeTimeSerial: createdNamespace.exposeTimeSerial,
+              id: createdNamespace.id,
+              name: flags.name,
+              persistLast: createdNamespace.persistLast,
+              persisted: createdNamespace.persisted,
+              populateChannelRegistry: createdNamespace.populateChannelRegistry,
+              pushEnabled: createdNamespace.pushEnabled,
+              tlsOnly: createdNamespace.tlsOnly,
             },
-            flags,
-          ),
+            timestamp: new Date().toISOString(),
+          },
+          flags,
         );
       } else {
         this.log(formatSuccess("Channel rule created."));
@@ -156,19 +149,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            appId,
-            error: errorMessage(error),
-            status: "error",
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(`Error creating channel rule: ${errorMessage(error)}`);
-      }
+      this.fail(error, flags, "ChannelRuleCreate", { appId });
     }
   }
 }

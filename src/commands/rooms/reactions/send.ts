@@ -57,21 +57,12 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
             { metadata: this.metadataObj },
           );
         } catch (error) {
-          const errorMsg = `Invalid metadata JSON: ${errorMessage(error)}`;
-          this.logCliEvent(flags, "reaction", "metadataParseError", errorMsg, {
-            error: errorMsg,
-            room: roomName,
-          });
-          if (this.shouldOutputJson(flags)) {
-            this.jsonError(
-              { error: errorMsg, room: roomName, success: false },
-              flags,
-            );
-          } else {
-            this.error(errorMsg);
-          }
-
-          return;
+          this.fail(
+            new Error(`Invalid metadata JSON: ${errorMessage(error)}`),
+            flags,
+            "RoomReactionSend",
+            { room: roomName },
+          );
         }
       }
 
@@ -79,8 +70,12 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
-        this.error("Failed to create Chat client");
-        return;
+        this.fail(
+          new Error("Failed to create Chat client"),
+          flags,
+          "RoomReactionSend",
+          { room: roomName },
+        );
       }
 
       // Set up connection state logging
@@ -138,16 +133,11 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
         `Successfully sent reaction ${emoji}`,
       );
 
-      // Format the response
-      const resultData = {
-        emoji,
-        metadata: this.metadataObj,
-        room: roomName,
-        success: true,
-      };
-
       if (this.shouldOutputJson(flags)) {
-        this.log(this.formatJsonOutput(resultData, flags));
+        this.logJsonResult(
+          { emoji, metadata: this.metadataObj, room: roomName },
+          flags,
+        );
       } else {
         this.log(
           formatSuccess(
@@ -156,7 +146,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
         );
       }
     } catch (error) {
-      this.handleCommandError(error, flags, "reaction", {
+      this.fail(error, flags, "RoomReactionSend", {
         room: roomName,
         emoji,
       });

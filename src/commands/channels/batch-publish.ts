@@ -3,7 +3,6 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
-import { errorMessage } from "../../utils/errors.js";
 import {
   formatProgress,
   formatResource,
@@ -120,18 +119,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
         try {
           batchContent = JSON.parse(flags.spec);
         } catch (error) {
-          if (this.shouldOutputJson(flags)) {
-            this.jsonError(
-              {
-                error: `Failed to parse spec JSON: ${errorMessage(error)}`,
-                success: false,
-              },
-              flags,
-            );
-            return;
-          } else {
-            this.error(`Failed to parse spec JSON: ${errorMessage(error)}`);
-          }
+          this.fail(error, flags, "BatchPublish");
         }
       } else {
         // Build the batch content from flags and args
@@ -143,71 +131,31 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
           try {
             const parsedChannels = JSON.parse(flags["channels-json"]);
             if (!Array.isArray(parsedChannels)) {
-              if (this.shouldOutputJson(flags)) {
-                this.jsonError(
-                  {
-                    error:
-                      "channels-json must be a valid JSON array of channel names",
-                    success: false,
-                  },
-                  flags,
-                );
-                return;
-              } else {
-                this.error(
-                  "channels-json must be a valid JSON array of channel names",
-                );
-              }
+              this.fail(
+                "channels-json must be a valid JSON array of channel names",
+                flags,
+                "BatchPublish",
+              );
             }
 
             channels = parsedChannels;
           } catch (error) {
-            if (this.shouldOutputJson(flags)) {
-              this.jsonError(
-                {
-                  error: `Failed to parse channels-json: ${errorMessage(error)}`,
-                  success: false,
-                },
-                flags,
-              );
-              return;
-            } else {
-              this.error(
-                `Failed to parse channels-json: ${errorMessage(error)}`,
-              );
-            }
+            this.fail(error, flags, "BatchPublish");
           }
         } else {
-          if (this.shouldOutputJson(flags)) {
-            this.jsonError(
-              {
-                error:
-                  "You must specify either --channels, --channels-json, or --spec",
-                success: false,
-              },
-              flags,
-            );
-            return;
-          } else {
-            this.error(
-              "You must specify either --channels, --channels-json, or --spec",
-            );
-          }
+          this.fail(
+            "You must specify either --channels, --channels-json, or --spec",
+            flags,
+            "BatchPublish",
+          );
         }
 
         if (!args.message) {
-          if (this.shouldOutputJson(flags)) {
-            this.jsonError(
-              {
-                error: "Message is required when not using --spec",
-                success: false,
-              },
-              flags,
-            );
-            return;
-          } else {
-            this.error("Message is required when not using --spec");
-          }
+          this.fail(
+            "Message is required when not using --spec",
+            flags,
+            "BatchPublish",
+          );
         }
 
         // Parse the message
@@ -272,23 +220,20 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
 
         if (!this.shouldSuppressOutput(flags)) {
           if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput(
-                {
+            const jsonData = Array.isArray(batchContent)
+              ? { request: batchContent, response: responseItems }
+              : {
                   channels: Array.isArray(batchContentObj.channels)
                     ? batchContentObj.channels
                     : [batchContentObj.channels],
                   message: batchContentObj.messages,
                   response: responseItems,
-                  success: true,
-                },
-                flags,
-              ),
-            );
+                };
+            this.logJsonResult(jsonData, flags);
           } else {
             this.log(formatSuccess("Batch publish successful."));
             this.log(
-              `Response: ${this.formatJsonOutput({ responses: responseItems }, flags)}`,
+              `Response: ${JSON.stringify({ responses: responseItems }, null, 2)}`,
             );
           }
         }
@@ -312,20 +257,14 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
             // This is a partial success with batchResponse field
             if (!this.shouldSuppressOutput(flags)) {
               if (this.shouldOutputJson(flags)) {
-                this.jsonError(
-                  {
-                    channels: Array.isArray(batchContentObj.channels)
-                      ? batchContentObj.channels
-                      : [batchContentObj.channels],
-                    error: errorInfo.error,
-                    message: batchContentObj.messages,
-                    partial: true,
-                    response: errorInfo.batchResponse,
-                    success: false,
-                  },
-                  flags,
-                );
-                return;
+                this.fail(errorInfo.error.message, flags, "BatchPublish", {
+                  channels: Array.isArray(batchContentObj.channels)
+                    ? batchContentObj.channels
+                    : [batchContentObj.channels],
+                  message: batchContentObj.messages,
+                  partial: true,
+                  response: errorInfo.batchResponse,
+                });
               } else {
                 this.log(
                   "Batch publish partially successful (some messages failed).",
@@ -349,51 +288,29 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
             }
           } else {
             // Complete failure
-            const errorMessage = errorInfo.error
+            const errMsg = errorInfo.error
               ? errorInfo.error.message
               : "Unknown error";
             const errorCode = errorInfo.error
               ? errorInfo.error.code
               : response.statusCode;
-            if (this.shouldOutputJson(flags)) {
-              this.jsonError(
-                {
-                  error: {
-                    code: errorCode,
-                    message: errorMessage,
-                  },
-                  success: false,
-                },
-                flags,
-              );
-              return;
-            } else {
-              this.error(
-                `Batch publish failed: ${errorMessage} (${errorCode})`,
-              );
-            }
+            this.fail(
+              `Batch publish failed: ${errMsg} (${errorCode})`,
+              flags,
+              "BatchPublish",
+            );
           }
-        } else if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            {
-              error: {
-                code: response.statusCode,
-                message: `Batch publish failed with status code ${response.statusCode}`,
-              },
-              success: false,
-            },
-            flags,
-          );
-          return;
         } else {
-          this.error(
+          this.fail(
             `Batch publish failed with status code ${response.statusCode}`,
+            flags,
+            "BatchPublish",
           );
         }
       } else {
         // Other error response
         const responseData = response.items;
-        let errorMessage = "Unknown error";
+        let errMsg = "Unknown error";
         let errorCode = response.statusCode;
 
         if (
@@ -403,40 +320,19 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
         ) {
           const errorInfo = responseData as ErrorInfo;
           if (errorInfo.error) {
-            errorMessage = errorInfo.error.message || errorMessage;
+            errMsg = errorInfo.error.message || errMsg;
             errorCode = errorInfo.error.code || errorCode;
           }
         }
 
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            {
-              error: {
-                code: errorCode,
-                message: errorMessage,
-              },
-              success: false,
-            },
-            flags,
-          );
-          return;
-        } else {
-          this.error(`Batch publish failed: ${errorMessage} (${errorCode})`);
-        }
+        this.fail(
+          `Batch publish failed: ${errMsg} (${errorCode})`,
+          flags,
+          "BatchPublish",
+        );
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error: errorMessage(error),
-            success: false,
-          },
-          flags,
-        );
-        return;
-      } else {
-        this.error(`Failed to execute batch publish: ${errorMessage(error)}`);
-      }
+      this.fail(error, flags, "BatchPublish");
     }
   }
 }

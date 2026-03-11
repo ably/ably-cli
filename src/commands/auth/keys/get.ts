@@ -1,7 +1,6 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
-import { errorMessage } from "../../../utils/errors.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
 
 export default class KeysGetCommand extends ControlBaseCommand {
@@ -36,8 +35,6 @@ export default class KeysGetCommand extends ControlBaseCommand {
     // Display authentication information
     await this.showAuthInfoIfNeeded(flags);
 
-    const controlApi = this.createControlApi(flags);
-
     let appId = flags.app || this.configManager.getCurrentAppId();
     const keyIdentifier = args.keyNameOrValue;
 
@@ -54,40 +51,27 @@ export default class KeysGetCommand extends ControlBaseCommand {
     }
 
     if (!appId) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error:
-              'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(
-          'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
-        );
-      }
-
-      return;
+      this.fail(
+        'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
+        flags,
+        "KeyGet",
+      );
     }
 
     try {
+      const controlApi = this.createControlApi(flags);
       const key = await controlApi.getKey(appId, keyIdentifier);
 
       if (this.shouldOutputJson(flags)) {
         // Add the full key name to the JSON output
-        this.log(
-          this.formatJsonOutput(
-            {
-              key: {
-                ...key,
-                keyName: `${key.appId}.${key.id}`,
-              },
-              success: true,
+        this.logJsonResult(
+          {
+            key: {
+              ...key,
+              keyName: `${key.appId}.${key.id}`,
             },
-            flags,
-          ),
+          },
+          flags,
         );
       } else {
         this.log(`Key Details:\n`);
@@ -107,19 +91,7 @@ export default class KeysGetCommand extends ControlBaseCommand {
         this.log(`Full key: ${key.key}`);
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            appId,
-            error: errorMessage(error),
-            keyIdentifier,
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(`Error getting key details: ${errorMessage(error)}`);
-      }
+      this.fail(error, flags, "KeyGet", { appId, keyIdentifier });
     }
   }
 }

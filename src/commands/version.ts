@@ -3,7 +3,6 @@ import { coreGlobalFlags } from "../flags.js";
 import {
   getVersionInfo,
   formatVersionString,
-  formatVersionJson,
   formatReleaseStatus,
 } from "../utils/version.js";
 
@@ -30,7 +29,7 @@ export default class Version extends AblyBaseCommand {
 
     // Check if output should be in JSON format
     if (this.shouldOutputJson(flags)) {
-      this.log(formatVersionJson(versionInfo, Boolean(flags["pretty-json"])));
+      this.logJsonResult(versionInfo, flags);
     } else {
       // Use shared string formatting and display release status
       this.log(formatVersionString(this.config));

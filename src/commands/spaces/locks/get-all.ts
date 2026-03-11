@@ -5,10 +5,11 @@ import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
+  formatHeading,
+  formatLabel,
   formatProgress,
   formatResource,
   formatSuccess,
-  formatLabel,
 } from "../../../utils/output.js";
 
 interface LockItem {
@@ -121,33 +122,30 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
       });
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              locks: validLocks.map((lock) => ({
-                attributes: lock.attributes || {},
-                holder: lock.member?.clientId || null,
-                id: lock.id,
-                status: lock.status || "unknown",
-              })),
-              spaceName,
-              success: true,
-              timestamp: new Date().toISOString(),
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            locks: validLocks.map((lock) => ({
+              attributes: lock.attributes || {},
+              holder: lock.member?.clientId || null,
+              id: lock.id,
+              status: lock.status || "unknown",
+            })),
+            spaceName,
+            timestamp: new Date().toISOString(),
+          },
+          flags,
         );
       } else if (!validLocks || validLocks.length === 0) {
         this.log(chalk.yellow("No locks are currently active in this space."));
       } else {
         const lockCount = validLocks.length;
         this.log(
-          `\n${chalk.cyan("Current locks")} (${chalk.bold(String(lockCount))}):\n`,
+          `\n${formatHeading("Current locks")} (${chalk.bold(String(lockCount))}):\n`,
         );
 
         validLocks.forEach((lock: LockItem) => {
           try {
-            this.log(`- ${chalk.blue(lock.id)}:`);
+            this.log(`- ${formatResource(lock.id)}:`);
             this.log(`  ${formatLabel("Status")} ${lock.status || "unknown"}`);
             this.log(
               `  ${formatLabel("Holder")} ${lock.member?.clientId || "None"}`,
@@ -166,19 +164,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
         });
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error: errorMessage(error),
-            spaceName: spaceName,
-            status: "error",
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(`Error: ${errorMessage(error)}`);
-      }
+      this.fail(error, flags, "LockGetAll", { spaceName });
     }
   }
 }

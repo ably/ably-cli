@@ -1,7 +1,6 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { errorMessage } from "../../utils/errors.js";
 import { formatHeading, formatLabel } from "../../utils/output.js";
 
 export default class IntegrationsGetCommand extends ControlBaseCommand {
@@ -36,19 +35,15 @@ export default class IntegrationsGetCommand extends ControlBaseCommand {
     this.showAuthInfoIfNeeded(flags);
 
     const appId = await this.requireAppId(flags);
-    if (!appId) return;
-
-    const controlApi = this.createControlApi(flags);
 
     try {
+      const controlApi = this.createControlApi(flags);
       const rule = await controlApi.getRule(appId, args.ruleId);
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            structuredClone(rule) as unknown as Record<string, unknown>,
-            flags,
-          ),
+        this.logJsonResult(
+          structuredClone(rule) as unknown as Record<string, unknown>,
+          flags,
         );
       } else {
         this.log(formatHeading("Integration Rule Details"));
@@ -68,7 +63,7 @@ export default class IntegrationsGetCommand extends ControlBaseCommand {
         this.log(`${formatLabel("Updated")} ${this.formatDate(rule.modified)}`);
       }
     } catch (error) {
-      this.error(`Error getting integration rule: ${errorMessage(error)}`);
+      this.fail(error, flags, "IntegrationGet");
     }
   }
 }

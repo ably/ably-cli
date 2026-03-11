@@ -2,7 +2,7 @@ import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
-import { errorMessage } from "../../../utils/errors.js";
+import { formatResource, formatSuccess } from "../../../utils/output.js";
 import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
@@ -41,31 +41,20 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
     const { args, flags } = await this.parse(ChannelRulesDeleteCommand);
 
     const appId = await this.requireAppId(flags);
-    if (!appId) return;
-
-    const controlApi = this.createControlApi(flags);
 
     try {
+      const controlApi = this.createControlApi(flags);
       // Find the namespace by name or ID
       const namespaces = await controlApi.listNamespaces(appId);
       const namespace = namespaces.find((n) => n.id === args.nameOrId);
 
       if (!namespace) {
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            {
-              appId,
-              error: `Channel rule "${args.nameOrId}" not found`,
-              status: "error",
-              success: false,
-            },
-            flags,
-          );
-        } else {
-          this.error(`Channel rule "${args.nameOrId}" not found`);
-        }
-
-        return;
+        this.fail(
+          `Channel rule "${args.nameOrId}" not found`,
+          flags,
+          "ChannelRuleDelete",
+          { appId },
+        );
       }
 
       // If not using force flag or JSON mode, prompt for confirmation
@@ -84,21 +73,9 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
         );
 
         if (!confirmed) {
-          if (this.shouldOutputJson(flags)) {
-            this.jsonError(
-              {
-                appId,
-                error: "Deletion cancelled by user",
-                ruleId: namespace.id,
-                status: "cancelled",
-                success: false,
-              },
-              flags,
-            );
-          } else {
-            this.log("Deletion cancelled");
-          }
-
+          // This branch is only reachable when !shouldOutputJson (see outer condition),
+          // so only human-readable output is needed here.
+          this.log("Deletion cancelled");
           return;
         }
       }
@@ -106,36 +83,25 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
       await controlApi.deleteNamespace(appId, namespace.id);
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              rule: {
-                id: namespace.id,
-              },
-              success: true,
-              timestamp: new Date().toISOString(),
-            },
-            flags,
-          ),
-        );
-      } else {
-        this.log(`Channel rule with ID "${namespace.id}" deleted successfully`);
-      }
-    } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
+        this.logJsonResult(
           {
             appId,
-            error: errorMessage(error),
-            status: "error",
-            success: false,
+            rule: {
+              id: namespace.id,
+            },
+            timestamp: new Date().toISOString(),
           },
           flags,
         );
       } else {
-        this.error(`Error deleting channel rule: ${errorMessage(error)}`);
+        this.log(
+          formatSuccess(
+            `Channel rule ${formatResource(namespace.id)} deleted.`,
+          ),
+        );
       }
+    } catch (error) {
+      this.fail(error, flags, "ChannelRuleDelete", { appId });
     }
   }
 }

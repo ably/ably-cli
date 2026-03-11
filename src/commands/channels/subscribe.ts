@@ -95,18 +95,11 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       const client = this.client;
 
       if (channelNames.length === 0) {
-        const errorMsg = "At least one channel name is required";
-        this.logCliEvent(flags, "subscribe", "validationError", errorMsg, {
-          error: errorMsg,
-        });
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError({ error: errorMsg, success: false }, flags);
-          return;
-        } else {
-          this.error(errorMsg);
-        }
-
-        return;
+        this.fail(
+          "At least one channel name is required",
+          flags,
+          "ChannelSubscribe",
+        );
       }
 
       // Setup channels with appropriate options
@@ -223,7 +216,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           );
 
           if (this.shouldOutputJson(flags)) {
-            this.log(this.formatJsonOutput(messageEvent, flags));
+            this.logJsonEvent(messageEvent, flags);
           } else {
             const name = message.name || "(none)";
             const sequencePrefix = flags["sequence-numbers"]
@@ -279,7 +272,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "subscribe", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "subscribe", {
+      this.fail(error, flags, "ChannelSubscribe", {
         channels: channelNames,
       });
     }

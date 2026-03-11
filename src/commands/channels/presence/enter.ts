@@ -81,18 +81,12 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
           }
           data = JSON.parse(trimmed);
         } catch (error) {
-          const errorMsg = `Invalid data JSON: ${errorMessage(error)}`;
-          this.logCliEvent(flags, "presence", "parseError", errorMsg, {
-            data: flags.data,
-            error: errorMsg,
-          });
-          if (this.shouldOutputJson(flags)) {
-            this.jsonError({ error: errorMsg, success: false }, flags);
-          } else {
-            this.error(errorMsg);
-          }
-
-          return;
+          this.fail(
+            `Invalid data JSON: ${errorMessage(error)}`,
+            flags,
+            "PresenceEnter",
+            { data: flags.data },
+          );
         }
       }
 
@@ -139,7 +133,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
           );
 
           if (this.shouldOutputJson(flags)) {
-            this.log(this.formatJsonOutput(event, flags));
+            this.logJsonEvent(event, flags);
           } else {
             const sequencePrefix = flags["sequence-numbers"]
               ? `${formatIndex(this.sequenceCounter)}`
@@ -192,7 +186,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
       );
 
       if (this.shouldOutputJson(flags)) {
-        this.log(this.formatJsonOutput(enterEvent, flags));
+        this.logJsonResult(enterEvent, flags);
       } else {
         this.log(
           formatSuccess(
@@ -217,7 +211,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "presence", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "presence", {
+      this.fail(error, flags, "PresenceEnter", {
         channel: args.channel,
       });
     }

@@ -313,7 +313,6 @@ export default class AccountsLogin extends ControlBaseCommand {
             name: string;
             user: { email: string };
           };
-          success: boolean;
           app?: {
             id: string;
             name: string;
@@ -333,7 +332,6 @@ export default class AccountsLogin extends ControlBaseCommand {
               email: user.email,
             },
           },
-          success: true,
         };
 
         if (selectedApp) {
@@ -352,7 +350,7 @@ export default class AccountsLogin extends ControlBaseCommand {
           }
         }
 
-        this.log(this.formatJsonOutput(response, flags));
+        this.logJsonResult(response, flags);
       } else {
         this.log(
           `Successfully logged in to ${formatResource(account.name)} (account ID: ${chalk.greenBright(account.id)})`,
@@ -366,10 +364,10 @@ export default class AccountsLogin extends ControlBaseCommand {
         if (selectedApp) {
           const message = isAutoSelected
             ? formatSuccess(
-                `Automatically selected app: ${formatResource(selectedApp.name)} (${selectedApp.id})`,
+                `Automatically selected app: ${formatResource(selectedApp.name)} (${selectedApp.id}).`,
               )
             : formatSuccess(
-                `Selected app: ${formatResource(selectedApp.name)} (${selectedApp.id})`,
+                `Selected app: ${formatResource(selectedApp.name)} (${selectedApp.id}).`,
               );
           this.log(message);
         }
@@ -377,27 +375,16 @@ export default class AccountsLogin extends ControlBaseCommand {
         if (selectedKey) {
           const keyMessage = isKeyAutoSelected
             ? formatSuccess(
-                `Automatically selected API key: ${formatResource(selectedKey.name || "Unnamed key")} (${selectedKey.id})`,
+                `Automatically selected API key: ${formatResource(selectedKey.name || "Unnamed key")} (${selectedKey.id}).`,
               )
             : formatSuccess(
-                `Selected API key: ${formatResource(selectedKey.name || "Unnamed key")} (${selectedKey.id})`,
+                `Selected API key: ${formatResource(selectedKey.name || "Unnamed key")} (${selectedKey.id}).`,
               );
           this.log(keyMessage);
         }
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error: errorMessage(error),
-            success: false,
-          },
-          flags,
-        );
-        return;
-      } else {
-        this.error(`Failed to authenticate: ${error}`);
-      }
+      this.fail(error, flags, "AccountLogin");
     }
   }
 

@@ -1,6 +1,5 @@
 import { type LockOptions } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
-import chalk from "chalk";
 
 import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
@@ -9,6 +8,7 @@ import {
   formatSuccess,
   formatListening,
   formatResource,
+  formatLabel,
 } from "../../../utils/output.js";
 
 export default class SpacesLocksAcquire extends SpacesBaseCommand {
@@ -78,7 +78,6 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
       let lockData: unknown;
       if (flags.data) {
         const parsed = this.parseJsonFlag(flags.data, "lock data", flags);
-        if (!parsed) return;
         lockData = parsed;
         this.logCliEvent(
           flags,
@@ -130,29 +129,18 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput({ lock: lockDetails, success: true }, flags),
-          );
+          this.logJsonResult({ lock: lockDetails }, flags);
         } else {
           this.log(formatSuccess(`Lock acquired: ${formatResource(lockId)}.`));
           this.log(
-            `${chalk.dim("Lock details:")} ${this.formatJsonOutput(lockDetails, { ...flags, "pretty-json": true })}`,
+            `${formatLabel("Lock details")} ${this.formatJsonOutput(lockDetails, { ...flags, "pretty-json": true })}`,
           );
           this.log(`\n${formatListening("Holding lock.")}`);
         }
       } catch (error) {
-        const errorMsg = `Failed to acquire lock: ${errorMessage(error)}`;
-        this.logCliEvent(flags, "lock", "acquireFailed", errorMsg, {
-          error: errorMsg,
+        this.fail(error, flags, "LockAcquire", {
           lockId,
         });
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError({ error: errorMsg, lockId, success: false }, flags);
-        } else {
-          this.error(errorMsg);
-        }
-
-        return; // Exit if lock acquisition fails
       }
 
       this.logCliEvent(
@@ -164,7 +152,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
       // Decide how long to remain connected
       await this.waitAndTrackCleanup(flags, "locks", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "locks");
+      this.fail(error, flags, "LockAcquire");
     }
   }
 }

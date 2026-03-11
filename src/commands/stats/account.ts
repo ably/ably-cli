@@ -48,7 +48,11 @@ export default class StatsAccountCommand extends StatsBaseCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(StatsAccountCommand);
-    const controlApi = this.createControlApi(flags);
-    await this.runStats(flags, controlApi);
+    try {
+      const controlApi = this.createControlApi(flags);
+      await this.runStats(flags, controlApi);
+    } catch (error) {
+      this.fail(error, flags, "StatsAccount");
+    }
   }
 }

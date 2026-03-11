@@ -61,8 +61,11 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
-        this.error("Failed to create Chat client");
-        return;
+        this.fail(
+          new Error("Failed to create Chat client"),
+          flags,
+          "RoomOccupancySubscribe",
+        );
       }
 
       // Set up connection state logging
@@ -164,7 +167,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "occupancy", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "occupancy", {
+      this.fail(error, flags, "RoomOccupancySubscribe", {
         room: this.roomName,
       });
     }
@@ -184,7 +187,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       metrics: occupancyMetrics,
       room: roomName,
       timestamp,
-      type: isInitial ? "initialSnapshot" : "update",
+      eventType: isInitial ? "initialSnapshot" : "update",
     };
     this.logCliEvent(
       flags,
@@ -195,7 +198,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
     );
 
     if (this.shouldOutputJson(flags)) {
-      this.log(this.formatJsonOutput({ success: true, ...logData }, flags));
+      this.logJsonEvent(logData, flags);
     } else {
       const prefix = isInitial ? "Initial occupancy" : "Occupancy update";
       this.log(

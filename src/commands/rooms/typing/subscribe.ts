@@ -39,8 +39,11 @@ export default class TypingSubscribe extends ChatBaseCommand {
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);
       if (!this.chatClient) {
-        this.error("Failed to initialize clients");
-        return;
+        this.fail(
+          new Error("Failed to initialize clients"),
+          flags,
+          "RoomTypingSubscribe",
+        );
       }
 
       const { room: roomName } = args;
@@ -96,8 +99,9 @@ export default class TypingSubscribe extends ChatBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput({ success: true, ...eventData }, flags),
+          this.logJsonEvent(
+            { eventType: typingSetEvent.type, ...eventData },
+            flags,
           );
         } else {
           // Clear-line updates are helpful in an interactive TTY but they make
@@ -155,7 +159,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "typing", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "typing", { room: args.room });
+      this.fail(error, flags, "RoomTypingSubscribe", { room: args.room });
     }
   }
 }

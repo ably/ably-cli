@@ -2,15 +2,15 @@ import { type Lock } from "@ably/spaces";
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
-import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
+  formatHeading,
+  formatLabel,
   formatListening,
   formatProgress,
   formatResource,
   formatTimestamp,
-  formatLabel,
 } from "../../../utils/output.js";
 
 export default class SpacesLocksSubscribe extends SpacesBaseCommand {
@@ -100,36 +100,33 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
           );
         }
       } else if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              locks: locks.map((lock) => ({
-                id: lock.id,
-                member: lock.member,
-                status: lock.status,
-              })),
-              spaceName,
-              status: "connected",
-              success: true,
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            locks: locks.map((lock) => ({
+              id: lock.id,
+              member: lock.member,
+              status: lock.status,
+            })),
+            spaceName,
+            status: "connected",
+          },
+          flags,
         );
       } else {
         this.log(
-          `\n${chalk.cyan("Current locks")} (${chalk.bold(locks.length.toString())}):\n`,
+          `\n${formatHeading("Current locks")} (${chalk.bold(locks.length.toString())}):\n`,
         );
 
         for (const lock of locks) {
-          this.log(`- Lock ID: ${chalk.blue(lock.id)}`);
+          this.log(`- Lock ID: ${formatResource(lock.id)}`);
           this.log(`  ${formatLabel("Status")} ${lock.status}`);
           this.log(
-            `  ${chalk.dim("Member:")} ${lock.member?.clientId || "Unknown"}`,
+            `  ${formatLabel("Member")} ${lock.member?.clientId || "Unknown"}`,
           );
 
           if (lock.member?.connectionId) {
             this.log(
-              `  ${chalk.dim("Connection ID:")} ${lock.member.connectionId}`,
+              `  ${formatLabel("Connection ID")} ${lock.member.connectionId}`,
             );
           }
         }
@@ -164,7 +161,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
           },
           spaceName,
           timestamp,
-          type: "lock_event",
+          eventType: "lock_event",
         };
 
         this.logCliEvent(
@@ -176,21 +173,19 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput({ success: true, ...eventData }, flags),
-          );
+          this.logJsonEvent(eventData, flags);
         } else {
           this.log(
-            `${formatTimestamp(timestamp)} Lock ${chalk.blue(lock.id)} updated`,
+            `${formatTimestamp(timestamp)} Lock ${formatResource(lock.id)} updated`,
           );
           this.log(`  ${formatLabel("Status")} ${lock.status}`);
           this.log(
-            `  ${chalk.dim("Member:")} ${lock.member?.clientId || "Unknown"}`,
+            `  ${formatLabel("Member")} ${lock.member?.clientId || "Unknown"}`,
           );
 
           if (lock.member?.connectionId) {
             this.log(
-              `  ${chalk.dim("Connection ID:")} ${lock.member.connectionId}`,
+              `  ${formatLabel("Connection ID")} ${lock.member.connectionId}`,
             );
           }
         }
@@ -216,15 +211,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "lock", flags.duration);
     } catch (error) {
-      const errorMsg = `Error during execution: ${errorMessage(error)}`;
-      this.logCliEvent(flags, "lock", "executionError", errorMsg, {
-        error: errorMsg,
-      });
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, success: false }, flags);
-      } else {
-        this.error(errorMsg);
-      }
+      this.fail(error, flags, "LockSubscribe");
     } finally {
       // Cleanup is now handled by base class finally() method
     }

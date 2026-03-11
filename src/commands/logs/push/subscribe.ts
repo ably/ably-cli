@@ -2,7 +2,12 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
-import { durationFlag, productApiFlags, rewindFlag } from "../../../flags.js";
+import {
+  clientIdFlag,
+  durationFlag,
+  productApiFlags,
+  rewindFlag,
+} from "../../../flags.js";
 import { formatMessageData } from "../../../utils/json-formatter.js";
 import {
   formatListening,
@@ -23,6 +28,7 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
+    ...clientIdFlag,
     ...durationFlag,
     ...rewindFlag,
   };
@@ -90,7 +96,7 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.log(this.formatJsonOutput(logEvent, flags));
+          this.logJsonEvent(logEvent, flags);
           return;
         }
 
@@ -134,7 +140,7 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
 
         // Format the log output
         this.log(
-          `${formatTimestamp(timestamp)} Channel: ${chalk.cyan(channelName)} | Event: ${eventColor(event)}`,
+          `${formatTimestamp(timestamp)} Channel: ${formatResource(channelName)} | Event: ${eventColor(event)}`,
         );
         if (message.data) {
           this.log("Data:");
@@ -164,7 +170,7 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "logs", flags.duration);
     } catch (error: unknown) {
-      this.handleCommandError(error, flags, "logs");
+      this.fail(error, flags, "PushLogSubscribe");
     }
     // Client cleanup is handled by command finally() method
   }

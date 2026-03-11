@@ -1,7 +1,6 @@
 import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { errorMessage } from "../../utils/errors.js";
 import {
   formatLabel,
   formatResource,
@@ -48,11 +47,9 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
     const { flags } = await this.parse(QueuesCreateCommand);
 
     const appId = await this.requireAppId(flags);
-    if (!appId) return;
-
-    const controlApi = this.createControlApi(flags);
 
     try {
+      const controlApi = this.createControlApi(flags);
       const queueData = {
         maxLength: flags["max-length"],
         name: flags.name,
@@ -63,11 +60,9 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
       const createdQueue = await controlApi.createQueue(appId, queueData);
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            structuredClone(createdQueue) as unknown as Record<string, unknown>,
-            flags,
-          ),
+        this.logJsonResult(
+          structuredClone(createdQueue) as unknown as Record<string, unknown>,
+          flags,
         );
       } else {
         this.log(
@@ -94,7 +89,7 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
         );
       }
     } catch (error) {
-      this.error(`Error creating queue: ${errorMessage(error)}`);
+      this.fail(error, flags, "QueueCreate");
     }
   }
 }

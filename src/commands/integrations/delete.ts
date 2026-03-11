@@ -1,7 +1,6 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { errorMessage } from "../../utils/errors.js";
 import {
   formatLabel,
   formatResource,
@@ -43,25 +42,21 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
     const { args, flags } = await this.parse(IntegrationsDeleteCommand);
 
     const appId = await this.requireAppId(flags);
-    if (!appId) return;
-
-    const controlApi = this.createControlApi(flags);
 
     try {
+      const controlApi = this.createControlApi(flags);
       // Get integration details for confirmation
       const integration = await controlApi.getRule(appId, args.integrationId);
 
       // In JSON mode, require --force to prevent accidental destructive actions
       if (!flags.force && this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error:
-              "The --force flag is required when using --json to confirm deletion",
-            success: false,
-          },
+        this.fail(
+          new Error(
+            "The --force flag is required when using --json to confirm deletion",
+          ),
           flags,
+          "IntegrationDelete",
         );
-        return;
       }
 
       // If not using force flag, prompt for confirmation
@@ -88,20 +83,17 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
       await controlApi.deleteRule(appId, args.integrationId);
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              integration: {
-                appId: integration.appId,
-                id: integration.id,
-                ruleType: integration.ruleType,
-                sourceType: integration.source.type,
-              },
-              success: true,
-              timestamp: new Date().toISOString(),
+        this.logJsonResult(
+          {
+            integration: {
+              appId: integration.appId,
+              id: integration.id,
+              ruleType: integration.ruleType,
+              sourceType: integration.source.type,
             },
-            flags,
-          ),
+            timestamp: new Date().toISOString(),
+          },
+          flags,
         );
       } else {
         this.log(
@@ -115,12 +107,7 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
         this.log(`${formatLabel("Source Type")} ${integration.source.type}`);
       }
     } catch (error) {
-      const errorMsg = `Error deleting integration: ${errorMessage(error)}`;
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, success: false }, flags);
-      } else {
-        this.error(errorMsg);
-      }
+      this.fail(error, flags, "IntegrationDelete");
     }
   }
 }

@@ -1,7 +1,6 @@
 import { Flags } from "@oclif/core";
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
-import { errorMessage } from "../../utils/errors.js";
 import {
   formatCountLabel,
   formatLabel,
@@ -87,28 +86,28 @@ export default class ChannelsList extends AblyBaseCommand {
       );
 
       if (channelsResponse.statusCode !== 200) {
-        this.error(`Failed to list channels: ${channelsResponse.statusCode}`);
-        return;
+        this.fail(
+          `Failed to list channels: ${channelsResponse.statusCode}`,
+          flags,
+          "ChannelList",
+        );
       }
 
       const channels = channelsResponse.items || [];
 
       // Output channels based on format
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              channels: channels.map((channel: ChannelItem) => ({
-                channelId: channel.channelId,
-                metrics: channel.status?.occupancy?.metrics || {},
-              })),
-              hasMore: channels.length === flags.limit,
-              success: true,
-              timestamp: new Date().toISOString(),
-              total: channels.length,
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            channels: channels.map((channel: ChannelItem) => ({
+              channelId: channel.channelId,
+              metrics: channel.status?.occupancy?.metrics || {},
+            })),
+            hasMore: channels.length === flags.limit,
+            timestamp: new Date().toISOString(),
+            total: channels.length,
+          },
+          flags,
         );
       } else {
         if (channels.length === 0) {
@@ -160,19 +159,7 @@ export default class ChannelsList extends AblyBaseCommand {
         if (warning) this.log(warning);
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error: errorMessage(error),
-            status: "error",
-            success: false,
-          },
-          flags,
-        );
-        return;
-      } else {
-        this.error(`Error listing channels: ${errorMessage(error)}`);
-      }
+      this.fail(error, flags, "ChannelList");
     }
   }
 }

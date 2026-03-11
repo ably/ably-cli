@@ -2,15 +2,16 @@ import type { SpaceMember } from "@ably/spaces";
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
-import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
+  formatClientId,
+  formatHeading,
   formatListening,
+  formatPresenceAction,
   formatProgress,
   formatTimestamp,
-  formatPresenceAction,
-  formatClientId,
+  formatLabel,
 } from "../../../utils/output.js";
 
 export default class SpacesMembersSubscribe extends SpacesBaseCommand {
@@ -87,20 +88,17 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
           );
         }
       } else if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              members: initialMembers,
-              spaceName,
-              status: "connected",
-              success: true,
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            members: initialMembers,
+            spaceName,
+            status: "connected",
+          },
+          flags,
         );
       } else {
         this.log(
-          `\n${chalk.cyan("Current members")} (${chalk.bold(members.length.toString())}):\n`,
+          `\n${formatHeading("Current members")} (${chalk.bold(members.length.toString())}):\n`,
         );
 
         for (const member of members) {
@@ -111,16 +109,18 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
             Object.keys(member.profileData).length > 0
           ) {
             this.log(
-              `  ${chalk.dim("Profile:")} ${JSON.stringify(member.profileData, null, 2)}`,
+              `  ${formatLabel("Profile")} ${JSON.stringify(member.profileData, null, 2)}`,
             );
           }
 
           if (member.connectionId) {
-            this.log(`  ${chalk.dim("Connection ID:")} ${member.connectionId}`);
+            this.log(
+              `  ${formatLabel("Connection ID")} ${member.connectionId}`,
+            );
           }
 
           if (member.isConnected === false) {
-            this.log(`  ${chalk.dim("Status:")} Not connected`);
+            this.log(`  ${formatLabel("Status")} Not connected`);
           }
         }
       }
@@ -189,7 +189,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
           },
           spaceName,
           timestamp,
-          type: "member_update",
+          eventType: "member_update",
         };
         this.logCliEvent(
           flags,
@@ -200,9 +200,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput({ success: true, ...memberEventData }, flags),
-          );
+          this.logJsonEvent(memberEventData, flags);
         } else {
           const { symbol: actionSymbol, color: actionColor } =
             formatPresenceAction(action);
@@ -216,16 +214,16 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
             Object.keys(member.profileData).length > 0
           ) {
             this.log(
-              `  ${chalk.dim("Profile:")} ${JSON.stringify(member.profileData, null, 2)}`,
+              `  ${formatLabel("Profile")} ${JSON.stringify(member.profileData, null, 2)}`,
             );
           }
 
           if (connectionId !== "Unknown") {
-            this.log(`  ${chalk.dim("Connection ID:")} ${connectionId}`);
+            this.log(`  ${formatLabel("Connection ID")} ${connectionId}`);
           }
 
           if (member.isConnected === false) {
-            this.log(`  ${chalk.dim("Status:")} Not connected`);
+            this.log(`  ${formatLabel("Status")} Not connected`);
           }
         }
       };
@@ -250,15 +248,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "member", flags.duration);
     } catch (error) {
-      const errorMsg = `Error during execution: ${errorMessage(error)}`;
-      this.logCliEvent(flags, "member", "executionError", errorMsg, {
-        error: errorMsg,
-      });
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, success: false }, flags);
-      } else {
-        this.error(errorMsg);
-      }
+      this.fail(error, flags, "MemberSubscribe");
     } finally {
       // Cleanup is now handled by base class finally() method
     }

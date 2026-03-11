@@ -38,22 +38,11 @@ export default class AccountsLogout extends ControlBaseCommand {
       args.alias || this.configManager.getCurrentAccountAlias();
 
     if (!targetAlias) {
-      const error =
-        'No account is currently selected and no alias provided. Use "ably accounts list" to see available accounts.';
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error,
-            success: false,
-          },
-          flags,
-        );
-        return;
-      } else {
-        this.error(error);
-      }
-
-      return;
+      this.fail(
+        'No account is currently selected and no alias provided. Use "ably accounts list" to see available accounts.',
+        flags,
+        "AccountLogout",
+      );
     }
 
     const accounts = this.configManager.listAccounts();
@@ -62,21 +51,11 @@ export default class AccountsLogout extends ControlBaseCommand {
     );
 
     if (!accountExists) {
-      const error = `Account with alias "${targetAlias}" not found. Use "ably accounts list" to see available accounts.`;
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error,
-            success: false,
-          },
-          flags,
-        );
-        return;
-      } else {
-        this.error(error);
-      }
-
-      return;
+      this.fail(
+        `Account with alias "${targetAlias}" not found. Use "ably accounts list" to see available accounts.`,
+        flags,
+        "AccountLogout",
+      );
     }
 
     // Get confirmation unless force flag is used or in JSON mode
@@ -96,19 +75,16 @@ export default class AccountsLogout extends ControlBaseCommand {
       const remainingAccounts = this.configManager.listAccounts();
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              account: {
-                alias: targetAlias,
-              },
-              remainingAccounts: remainingAccounts.map(
-                (account) => account.alias,
-              ),
-              success: true,
+        this.logJsonResult(
+          {
+            account: {
+              alias: targetAlias,
             },
-            flags,
-          ),
+            remainingAccounts: remainingAccounts.map(
+              (account) => account.alias,
+            ),
+          },
+          flags,
         );
       } else {
         this.log(`Successfully logged out from account ${targetAlias}.`);
@@ -125,19 +101,11 @@ export default class AccountsLogout extends ControlBaseCommand {
         }
       }
     } else {
-      const error = `Failed to log out from account ${targetAlias}.`;
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error,
-            success: false,
-          },
-          flags,
-        );
-        return;
-      } else {
-        this.error(error);
-      }
+      this.fail(
+        `Failed to log out from account ${targetAlias}.`,
+        flags,
+        "AccountLogout",
+      );
     }
   }
 
