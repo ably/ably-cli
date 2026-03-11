@@ -463,7 +463,9 @@ test.describe("Web CLI Authentication E2E Tests", () => {
     // Terminal should still be visible and session should be maintained
     await expect(page.locator(".xterm")).toBeVisible();
     // Verify the help command output is still visible
-    await expect(page.locator(".xterm")).toContainText("COMMANDS");
+    await expect(page.locator(".xterm")).toContainText(
+      "Subscribe to a channel",
+    );
   });
 
   test.skip("should show SERVER DISCONNECT overlay for invalid credentials", async ({

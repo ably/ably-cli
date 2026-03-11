@@ -431,7 +431,7 @@ test.describe("Session Resume E2E Tests", () => {
     expect(resumedSessionId).toBe(originalSessionId);
 
     // Ensure the terminal still works
-    await executeCommandWithRetry(page, "help", "COMMANDS", {
+    await executeCommandWithRetry(page, "help", "Subscribe to a channel", {
       timeout: 30000,
       retries: 3,
       retryDelay: 2000,
