@@ -5,7 +5,11 @@ import { productApiFlags } from "./flags.js";
 import { BaseFlags } from "./types/cli.js";
 import chalk from "chalk";
 
-import { formatSuccess, formatListening } from "./utils/output.js";
+import {
+  formatSuccess,
+  formatListening,
+  formatWarning,
+} from "./utils/output.js";
 import isTestMode from "./utils/test-mode.js";
 
 export abstract class ChatBaseCommand extends AblyBaseCommand {
@@ -128,7 +132,7 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
         }
         case RoomStatus.Detached: {
           if (!this.shouldOutputJson(flags)) {
-            this.log(chalk.yellow("Disconnected from Ably"));
+            this.log(formatWarning("Disconnected from Ably"));
           }
           break;
         }

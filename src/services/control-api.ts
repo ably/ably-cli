@@ -57,6 +57,7 @@ export interface Namespace {
   exposeTimeSerial?: boolean;
   id: string;
   modified: number;
+  mutableMessages?: boolean;
   persistLast?: boolean;
   persisted: boolean;
   populateChannelRegistry?: boolean;
@@ -231,6 +232,7 @@ export class ControlApi {
       conflationInterval?: number;
       conflationKey?: string;
       exposeTimeSerial?: boolean;
+      mutableMessages?: boolean;
       persistLast?: boolean;
       persisted?: boolean;
       populateChannelRegistry?: boolean;
@@ -457,6 +459,7 @@ export class ControlApi {
       conflationInterval?: number;
       conflationKey?: string;
       exposeTimeSerial?: boolean;
+      mutableMessages?: boolean;
       persistLast?: boolean;
       persisted?: boolean;
       populateChannelRegistry?: boolean;

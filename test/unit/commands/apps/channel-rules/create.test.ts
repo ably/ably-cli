@@ -79,6 +79,73 @@ describe("apps:channel-rules:create command", () => {
       expect(stdout).toContain("Push Enabled: Yes");
     });
 
+    it("should create a channel rule with mutable-messages flag and auto-enable persisted", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${appId}/namespaces`, (body) => {
+          return body.mutableMessages === true && body.persisted === true;
+        })
+        .reply(201, {
+          id: mockRuleId,
+          persisted: true,
+          pushEnabled: false,
+          mutableMessages: true,
+          created: Date.now(),
+          modified: Date.now(),
+        });
+
+      const { stdout, stderr } = await runCommand(
+        [
+          "apps:channel-rules:create",
+          "--name",
+          mockRuleName,
+          "--mutable-messages",
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Channel rule created.");
+      expect(stdout).toContain("Persisted: Yes");
+      expect(stdout).toContain("Mutable Messages: Yes");
+      expect(stderr).toContain(
+        "Message persistence is automatically enabled when mutable messages is enabled.",
+      );
+    });
+
+    it("should include mutableMessages in JSON output when --mutable-messages is used", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nock("https://control.ably.net")
+        .post(`/v1/apps/${appId}/namespaces`, (body) => {
+          return body.mutableMessages === true && body.persisted === true;
+        })
+        .reply(201, {
+          id: mockRuleId,
+          persisted: true,
+          pushEnabled: false,
+          mutableMessages: true,
+          created: Date.now(),
+          modified: Date.now(),
+        });
+
+      const { stdout, stderr } = await runCommand(
+        [
+          "apps:channel-rules:create",
+          "--name",
+          mockRuleName,
+          "--mutable-messages",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", true);
+      expect(result.rule).toHaveProperty("mutableMessages", true);
+      expect(result.rule).toHaveProperty("persisted", true);
+      // Warning should not appear in JSON mode
+      expect(stderr).not.toContain("Warning");
+    });
+
     it("should output JSON format when --json flag is used", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockRule = {

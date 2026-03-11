@@ -42,7 +42,7 @@ describe("apps:channel-rules:update command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Channel rule updated successfully");
+      expect(stdout).toContain("Channel rule updated.");
       expect(stdout).toContain("Persisted: Yes");
     });
 
@@ -75,8 +75,187 @@ describe("apps:channel-rules:update command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Channel rule updated successfully");
+      expect(stdout).toContain("Channel rule updated.");
       expect(stdout).toContain("Push Enabled: Yes");
+    });
+
+    it("should update a channel rule with mutable-messages flag and auto-enable persisted", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nock("https://control.ably.net")
+        .get(`/v1/apps/${appId}/namespaces`)
+        .reply(200, [
+          {
+            id: mockRuleId,
+            persisted: false,
+            pushEnabled: false,
+            created: Date.now(),
+            modified: Date.now(),
+          },
+        ]);
+
+      nock("https://control.ably.net")
+        .patch(`/v1/apps/${appId}/namespaces/${mockRuleId}`, (body) => {
+          return body.mutableMessages === true && body.persisted === true;
+        })
+        .reply(200, {
+          id: mockRuleId,
+          persisted: true,
+          pushEnabled: false,
+          mutableMessages: true,
+          created: Date.now(),
+          modified: Date.now(),
+        });
+
+      const { stdout, stderr } = await runCommand(
+        ["apps:channel-rules:update", mockRuleId, "--mutable-messages"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Channel rule updated.");
+      expect(stdout).toContain("Persisted: Yes");
+      expect(stdout).toContain("Mutable Messages: Yes");
+      expect(stderr).toContain(
+        "Message persistence is automatically enabled when mutable messages is enabled.",
+      );
+    });
+
+    it("should error when --mutable-messages is used with --no-persisted", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nock("https://control.ably.net")
+        .get(`/v1/apps/${appId}/namespaces`)
+        .reply(200, [
+          {
+            id: mockRuleId,
+            persisted: true,
+            pushEnabled: false,
+            created: Date.now(),
+            modified: Date.now(),
+          },
+        ]);
+
+      const { error } = await runCommand(
+        [
+          "apps:channel-rules:update",
+          mockRuleId,
+          "--mutable-messages",
+          "--no-persisted",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(
+        /Cannot disable persistence when mutable messages is enabled/,
+      );
+    });
+
+    it("should allow --no-mutable-messages --no-persisted to disable both", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nock("https://control.ably.net")
+        .get(`/v1/apps/${appId}/namespaces`)
+        .reply(200, [
+          {
+            id: mockRuleId,
+            persisted: true,
+            pushEnabled: false,
+            mutableMessages: true,
+            created: Date.now(),
+            modified: Date.now(),
+          },
+        ]);
+
+      nock("https://control.ably.net")
+        .patch(`/v1/apps/${appId}/namespaces/${mockRuleId}`, (body) => {
+          return body.mutableMessages === false && body.persisted === false;
+        })
+        .reply(200, {
+          id: mockRuleId,
+          persisted: false,
+          pushEnabled: false,
+          mutableMessages: false,
+          created: Date.now(),
+          modified: Date.now(),
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "apps:channel-rules:update",
+          mockRuleId,
+          "--no-mutable-messages",
+          "--no-persisted",
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Channel rule updated.");
+      expect(stdout).toContain("Persisted: No");
+    });
+
+    it("should error when --no-persisted is used while existing rule has mutable messages", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nock("https://control.ably.net")
+        .get(`/v1/apps/${appId}/namespaces`)
+        .reply(200, [
+          {
+            id: mockRuleId,
+            persisted: true,
+            pushEnabled: false,
+            mutableMessages: true,
+            created: Date.now(),
+            modified: Date.now(),
+          },
+        ]);
+
+      const { error } = await runCommand(
+        ["apps:channel-rules:update", mockRuleId, "--no-persisted"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error!.message).toMatch(
+        /Cannot disable persistence when mutable messages is enabled/,
+      );
+    });
+
+    it("should include mutableMessages in JSON output when updating", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nock("https://control.ably.net")
+        .get(`/v1/apps/${appId}/namespaces`)
+        .reply(200, [
+          {
+            id: mockRuleId,
+            persisted: false,
+            pushEnabled: false,
+            created: Date.now(),
+            modified: Date.now(),
+          },
+        ]);
+
+      nock("https://control.ably.net")
+        .patch(`/v1/apps/${appId}/namespaces/${mockRuleId}`)
+        .reply(200, {
+          id: mockRuleId,
+          persisted: true,
+          pushEnabled: false,
+          mutableMessages: true,
+          created: Date.now(),
+          modified: Date.now(),
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "apps:channel-rules:update",
+          mockRuleId,
+          "--mutable-messages",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", true);
+      expect(result.rule).toHaveProperty("mutableMessages", true);
+      expect(result.rule).toHaveProperty("persisted", true);
     });
 
     it("should output JSON format when --json flag is used", async () => {

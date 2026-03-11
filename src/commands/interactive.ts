@@ -13,6 +13,7 @@ import {
   INTERACTIVE_UNSUITABLE_COMMANDS,
 } from "../base-command.js";
 import { TerminalDiagnostics } from "../utils/terminal-diagnostics.js";
+import { formatWarning } from "../utils/output.js";
 import "../utils/sigint-exit.js";
 import isWebCliMode from "../utils/web-mode.js";
 
@@ -697,9 +698,7 @@ export default class Interactive extends Command {
     // Warn about unclosed quotes
     if (inDoubleQuote || inSingleQuote) {
       const quoteType = inDoubleQuote ? "double" : "single";
-      console.error(
-        chalk.yellow(`Warning: Unclosed ${quoteType} quote in command`),
-      );
+      console.error(formatWarning(`Unclosed ${quoteType} quote in command`));
     }
 
     return args;

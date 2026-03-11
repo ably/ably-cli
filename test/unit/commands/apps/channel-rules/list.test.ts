@@ -84,6 +84,69 @@ describe("apps:channel-rules:list command", () => {
       expect(stdout).toContain("Persisted: ✓ Yes");
       expect(stdout).toContain("Push Enabled: ✓ Yes");
     });
+
+    it("should display mutableMessages in rule details", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockRules = [
+        {
+          id: "mutable-chat",
+          persisted: true,
+          pushEnabled: false,
+          mutableMessages: true,
+          created: Date.now(),
+          modified: Date.now(),
+        },
+      ];
+
+      nock("https://control.ably.net")
+        .get(`/v1/apps/${appId}/namespaces`)
+        .reply(200, mockRules);
+
+      const { stdout } = await runCommand(
+        ["apps:channel-rules:list"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Found 1 channel rules");
+      expect(stdout).toContain("mutable-chat");
+      expect(stdout).toContain("Mutable Messages: ✓ Yes");
+    });
+
+    it("should include mutableMessages in JSON output", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockRules = [
+        {
+          id: "mutable-chat",
+          persisted: true,
+          pushEnabled: false,
+          mutableMessages: true,
+          created: Date.now(),
+          modified: Date.now(),
+        },
+        {
+          id: "regular-chat",
+          persisted: false,
+          pushEnabled: false,
+          created: Date.now(),
+          modified: Date.now(),
+        },
+      ];
+
+      nock("https://control.ably.net")
+        .get(`/v1/apps/${appId}/namespaces`)
+        .reply(200, mockRules);
+
+      const { stdout } = await runCommand(
+        ["apps:channel-rules:list", "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", true);
+      expect(result.rules).toHaveLength(2);
+      expect(result.rules[0]).toHaveProperty("mutableMessages", true);
+      expect(result.rules[1]).toHaveProperty("mutableMessages", false);
+    });
   });
 
   describe("error handling", () => {

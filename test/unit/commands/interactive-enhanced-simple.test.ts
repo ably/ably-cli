@@ -97,7 +97,7 @@ describe("Interactive Command - Enhanced Features (Simplified)", () => {
 
       parseCommand('echo "unclosed');
       expect(stubs.consoleError).toHaveBeenCalledWith(
-        chalk.yellow("Warning: Unclosed double quote in command"),
+        `${chalk.yellow("⚠")} Unclosed double quote in command`,
       );
     });
 

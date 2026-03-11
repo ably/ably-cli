@@ -55,18 +55,6 @@ export function formatPromptMessage(
 // This file now only contains utility functions if needed,
 // or can be removed if formatPromptMessage is moved/inlined.
 
-// Example of how you might use chalk for other styling if needed:
-// export function formatError(text: string): string {
-//   return chalk.red(text);
-// }
-
-// export function formatWarning(text: string): string {
-//   return chalk.yellow(text);
-// }
-
-// Example utility function using chalk (can be adapted or removed)
 export function formatSuggestion(suggestion: string): string {
   return chalk.blueBright(suggestion);
 }
-
-// You can add other prompt-related utility functions here if needed.

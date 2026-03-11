@@ -189,6 +189,7 @@ if (this.shouldOutputJson(flags)) {
 |--------|-------|---------|
 | `formatProgress(msg)` | Action in progress — appends `...` automatically | `formatProgress("Attaching to channel")` |
 | `formatSuccess(msg)` | Green checkmark — always end with `.` (period, not `!`) | `formatSuccess("Subscribed to channel " + formatResource(name) + ".")` |
+| `formatWarning(msg)` | Yellow `⚠` — for non-fatal warnings. Don't prefix with "Warning:" | `formatWarning("Persistence is automatically enabled.")` |
 | `formatListening(msg)` | Dim text — auto-appends "Press Ctrl+C to exit." | `formatListening("Listening for messages.")` |
 | `formatResource(name)` | Cyan — for resource names, never use quotes | `formatResource(channelName)` |
 | `formatTimestamp(ts)` | Dim `[timestamp]` — for event streams | `formatTimestamp(isoString)` |
@@ -370,7 +371,7 @@ pnpm test:unit      # Run tests
 - [ ] Correct flag set (`productApiFlags` vs `ControlBaseCommand.globalFlags`)
 - [ ] `clientIdFlag` only if command needs client identity
 - [ ] All human output wrapped in `if (!this.shouldOutputJson(flags))`
-- [ ] Output helpers used correctly (`formatProgress`, `formatSuccess`, `formatListening`, `formatResource`, `formatTimestamp`, `formatClientId`, `formatEventType`, `formatLabel`, `formatHeading`, `formatIndex`)
+- [ ] Output helpers used correctly (`formatProgress`, `formatSuccess`, `formatWarning`, `formatListening`, `formatResource`, `formatTimestamp`, `formatClientId`, `formatEventType`, `formatLabel`, `formatHeading`, `formatIndex`)
 - [ ] `success()` messages end with `.` (period)
 - [ ] Resource names use `resource(name)`, never quoted
 - [ ] JSON output uses `logJsonResult()` (one-shot) or `logJsonEvent()` (streaming), not direct `formatJsonRecord()`

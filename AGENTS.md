@@ -186,6 +186,7 @@ All output helpers use the `format` prefix and are exported from `src/utils/outp
 
 - **Progress**: `formatProgress("Attaching to channel: " + formatResource(name))` — no color on action text, appends `...` automatically. Never manually write `"Doing something..."` — always use `formatProgress("Doing something")`.
 - **Success**: `formatSuccess("Message published to channel " + formatResource(name) + ".")` — green checkmark, **must** end with `.` (not `!`). Never use `chalk.green(...)` directly — always use `formatSuccess()`.
+- **Warnings**: `formatWarning("Message text here.")` — yellow `⚠` symbol. Never use `chalk.yellow("Warning: ...")` directly — always use `formatWarning()`. Don't include "Warning:" prefix in the message — the symbol conveys it.
 - **Listening**: `formatListening("Listening for messages.")` — dim, includes "Press Ctrl+C to exit." Don't combine listening text inside a `formatSuccess()` call — use a separate `formatListening()` call.
 - **Resource names**: Always `formatResource(name)` (cyan), never quoted — including in `logCliEvent` messages.
 - **Timestamps**: `formatTimestamp(ts)` — dim `[timestamp]` for event streams. `formatMessageTimestamp(message.timestamp)` — converts Ably message timestamp (number|undefined) to ISO string.
@@ -229,7 +230,6 @@ this.error()         ← oclif exit (ONLY inside fail, nowhere else)
 - **`runControlCommand<T>`** returns `Promise<T>` (not nullable) — calls `this.fail()` internally on error.
 
 ### Additional output patterns (direct chalk, not helpers)
-- **Warnings**: `chalk.yellow("Warning: ...")` — for non-fatal warnings
 - **No app error**: `'No app specified. Use --app flag or select an app with "ably apps switch"'`
 
 ### Help output theme

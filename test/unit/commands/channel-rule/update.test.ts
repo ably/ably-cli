@@ -40,7 +40,7 @@ describe("channel-rule:update command (alias)", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Channel rule updated successfully");
+      expect(stdout).toContain("Channel rule updated.");
     });
 
     it("should require nameOrId argument", async () => {
