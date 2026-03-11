@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
+import { captureJsonLogs } from "../../../../helpers/ndjson.js";
 
 describe("rooms:occupancy:subscribe command", () => {
   beforeEach(() => {
@@ -88,31 +89,28 @@ describe("rooms:occupancy:subscribe command", () => {
         presenceMembers: 0,
       });
 
-      const capturedLogs: string[] = [];
-      const logSpy = vi.spyOn(console, "log").mockImplementation((msg) => {
-        capturedLogs.push(String(msg));
+      const allRecords = await captureJsonLogs(async () => {
+        await runCommand(
+          [
+            "rooms:occupancy:subscribe",
+            "test-room",
+            "--json",
+            "--duration",
+            "0",
+          ],
+          import.meta.url,
+        );
       });
-
-      await runCommand(
-        ["rooms:occupancy:subscribe", "test-room", "--json", "--duration", "0"],
-        import.meta.url,
-      );
-
-      logSpy.mockRestore();
 
       // Find the JSON output with initial snapshot
-      const jsonLines = capturedLogs.filter((line) => {
-        try {
-          const parsed = JSON.parse(line);
-          return parsed.type === "initialSnapshot";
-        } catch {
-          return false;
-        }
-      });
+      const records = allRecords.filter(
+        (r) => r.type === "event" && r.eventType === "initialSnapshot",
+      );
 
-      expect(jsonLines.length).toBeGreaterThan(0);
-      const parsed = JSON.parse(jsonLines[0]);
-      expect(parsed).toHaveProperty("type", "initialSnapshot");
+      expect(records.length).toBeGreaterThan(0);
+      const parsed = records[0];
+      expect(parsed).toHaveProperty("type", "event");
+      expect(parsed).toHaveProperty("eventType", "initialSnapshot");
       expect(parsed).toHaveProperty("room", "test-room");
     });
   });

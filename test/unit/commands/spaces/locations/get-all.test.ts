@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
 
 describe("spaces:locations:get-all command", () => {
   beforeEach(() => {
@@ -65,6 +66,34 @@ describe("spaces:locations:get-all command", () => {
       expect(space.enter).toHaveBeenCalled();
       expect(space.locations.getAll).toHaveBeenCalled();
       expect(stdout).toContain("test-space");
+    });
+
+    it("should output JSON envelope with type and command for location results", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.locations.getAll.mockResolvedValue([
+        {
+          member: { clientId: "user-1", connectionId: "conn-1" },
+          currentLocation: { x: 100, y: 200 },
+          previousLocation: null,
+        },
+      ]);
+
+      const { stdout } = await runCommand(
+        ["spaces:locations:get-all", "test-space", "--json"],
+        import.meta.url,
+      );
+
+      const records = parseNdjsonLines(stdout);
+      const resultRecord = records.find(
+        (r) => r.type === "result" && Array.isArray(r.locations),
+      );
+      expect(resultRecord).toBeDefined();
+      expect(resultRecord).toHaveProperty("type", "result");
+      expect(resultRecord).toHaveProperty("command");
+      expect(resultRecord).toHaveProperty("success", true);
+      expect(resultRecord).toHaveProperty("spaceName", "test-space");
+      expect(resultRecord!.locations).toBeInstanceOf(Array);
     });
 
     it("should handle no locations found", async () => {

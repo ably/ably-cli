@@ -15,6 +15,7 @@ import {
   formatLimitWarning,
   formatMessageTimestamp,
   formatPresenceAction,
+  buildJsonRecord,
 } from "../../../src/utils/output.js";
 
 describe("formatProgress", () => {
@@ -227,5 +228,83 @@ describe("formatPresenceAction", () => {
     expect(formatPresenceAction("ENTER").symbol).toBe("✓");
     expect(formatPresenceAction("Leave").symbol).toBe("✗");
     expect(formatPresenceAction("UPDATE").symbol).toBe("⟲");
+  });
+});
+
+describe("buildJsonRecord", () => {
+  it("adds type and command to all records", () => {
+    const record = buildJsonRecord("event", "channels subscribe", {
+      channel: "test",
+    });
+    expect(record.type).toBe("event");
+    expect(record.command).toBe("channels subscribe");
+    expect(record.channel).toBe("test");
+  });
+
+  it("adds success:true for result type", () => {
+    const record = buildJsonRecord("result", "apps list", { total: 3 });
+    expect(record.success).toBe(true);
+    expect(record.total).toBe(3);
+  });
+
+  it("adds success:false for error type", () => {
+    const record = buildJsonRecord("error", "channels publish", {
+      error: "not found",
+    });
+    expect(record.success).toBe(false);
+    expect(record.error).toBe("not found");
+  });
+
+  it("does not add success for event type", () => {
+    const record = buildJsonRecord("event", "channels subscribe", {});
+    expect(record).not.toHaveProperty("success");
+  });
+
+  it("does not add success for log type", () => {
+    const record = buildJsonRecord("log", "channels subscribe", {
+      component: "subscribe",
+    });
+    expect(record).not.toHaveProperty("success");
+  });
+
+  it("allows data to override success for partial-failure results", () => {
+    const record = buildJsonRecord("result", "channels publish", {
+      success: false,
+      errors: 2,
+      published: 3,
+    });
+    expect(record.success).toBe(false);
+    expect(record.errors).toBe(2);
+  });
+
+  it("spreads all data fields into the record", () => {
+    const record = buildJsonRecord("result", "test", {
+      channels: ["a", "b"],
+      nested: { x: 1 },
+      total: 2,
+    });
+    expect(record.channels).toEqual(["a", "b"]);
+    expect(record.nested).toEqual({ x: 1 });
+    expect(record.total).toBe(2);
+  });
+
+  it("protects reserved envelope keys from data collision", () => {
+    const record = buildJsonRecord("result", "channels:publish", {
+      type: "custom",
+      command: "override",
+      foo: "bar",
+    });
+    expect(record.type).toBe("result");
+    expect(record.command).toBe("channels:publish");
+    expect(record.foo).toBe("bar");
+  });
+
+  it("does not allow data to override success on error type", () => {
+    const record = buildJsonRecord("error", "channels publish", {
+      success: true,
+      error: "something failed",
+    });
+    expect(record.success).toBe(false);
+    expect(record.error).toBe("something failed");
   });
 });

@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { RoomStatus } from "@ably/chat";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
+import { captureJsonLogs } from "../../../../helpers/ndjson.js";
 
 describe("rooms:typing:subscribe command", () => {
   describe("command arguments and flags", () => {
@@ -84,12 +85,6 @@ describe("rooms:typing:subscribe command", () => {
     it("should output JSON format when --json flag is used", async () => {
       const mock = getMockAblyChat();
       const room = mock.rooms._getRoom("test-room");
-      const capturedLogs: string[] = [];
-
-      // Spy on console.log to capture output
-      const logSpy = vi.spyOn(console, "log").mockImplementation((msg) => {
-        capturedLogs.push(String(msg));
-      });
 
       // Capture the typing callback when subscribe is called
       let typingCallback: ((event: unknown) => void) | null = null;
@@ -103,52 +98,43 @@ describe("rooms:typing:subscribe command", () => {
         room.status = RoomStatus.Attached;
       });
 
-      const commandPromise = runCommand(
-        ["rooms:typing:subscribe", "test-room", "--json"],
-        import.meta.url,
-      );
+      const allRecords = await captureJsonLogs(async () => {
+        const commandPromise = runCommand(
+          ["rooms:typing:subscribe", "test-room", "--json"],
+          import.meta.url,
+        );
 
-      await vi.waitFor(
-        () => {
-          expect(room.typing.subscribe).toHaveBeenCalled();
-        },
-        { timeout: 1000 },
-      );
+        await vi.waitFor(
+          () => {
+            expect(room.typing.subscribe).toHaveBeenCalled();
+          },
+          { timeout: 1000 },
+        );
 
-      // Simulate typing event
-      if (typingCallback) {
-        typingCallback({
-          currentlyTyping: new Set(["user1"]),
-        });
-      }
+        // Simulate typing event
+        if (typingCallback) {
+          typingCallback({
+            currentlyTyping: new Set(["user1"]),
+          });
+        }
 
-      // Wait for output to be generated
-
-      await commandPromise;
-
-      // Restore spy
-      logSpy.mockRestore();
+        await commandPromise;
+      });
 
       // Verify subscription was set up
       expect(room.typing.subscribe).toHaveBeenCalled();
       expect(room.attach).toHaveBeenCalled();
 
       // Find the JSON output with typing data from captured logs
-      const typingOutputLines = capturedLogs.filter((line) => {
-        try {
-          const parsed = JSON.parse(line);
-          return (
-            parsed.currentlyTyping && Array.isArray(parsed.currentlyTyping)
-          );
-        } catch {
-          return false;
-        }
-      });
+      const records = allRecords.filter(
+        (r) => r.type === "event" && r.currentlyTyping,
+      );
 
       // Verify that typing event was actually output in JSON format
-      expect(typingOutputLines.length).toBeGreaterThan(0);
-      const parsed = JSON.parse(typingOutputLines[0]);
-      expect(parsed).toHaveProperty("success", true);
+      expect(records.length).toBeGreaterThan(0);
+      const parsed = records[0];
+      expect(parsed).toHaveProperty("command");
+      expect(parsed).toHaveProperty("type", "event");
       expect(parsed.currentlyTyping).toContain("user1");
     });
   });

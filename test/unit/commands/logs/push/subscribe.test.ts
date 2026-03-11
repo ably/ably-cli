@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import { captureJsonLogs } from "../../../../helpers/ndjson.js";
 
 describe("logs:push:subscribe command", () => {
   beforeEach(() => {
@@ -79,6 +80,37 @@ describe("logs:push:subscribe command", () => {
       expect(mock.channels.get).toHaveBeenCalledWith("[meta]log:push", {
         params: { rewind: "5" },
       });
+    });
+
+    it("should emit JSON envelope with type and command for --json events", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("[meta]log:push");
+
+      channel.subscribe.mockImplementation(
+        (callback: (msg: unknown) => void) => {
+          channel.state = "attached";
+          callback({
+            name: "push.sent",
+            timestamp: 1700000000000,
+            data: { severity: "info", message: "Push delivered" },
+          });
+        },
+      );
+
+      const records = await captureJsonLogs(async () => {
+        await runCommand(
+          ["logs:push:subscribe", "--json", "--duration", "0"],
+          import.meta.url,
+        );
+      });
+      const events = records.filter(
+        (r) => r.type === "event" && r.event === "push.sent",
+      );
+      expect(events.length).toBeGreaterThan(0);
+      const record = events[0];
+      expect(record).toHaveProperty("type", "event");
+      expect(record).toHaveProperty("command", "logs:push:subscribe");
+      expect(record).toHaveProperty("channel", "[meta]log:push");
     });
   });
 });

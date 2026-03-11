@@ -379,7 +379,6 @@ describe("queues:list command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/No access token|No app|not logged in/i);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle network errors", async () => {
@@ -408,10 +407,11 @@ describe("queues:list command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain('"success": false');
-      expect(stdout).toContain('"status": "error"');
-      expect(stdout).toContain('"error":');
-      expect(stdout).toContain(`"appId": "${appId}"`);
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "error");
+      expect(result).toHaveProperty("success", false);
+      expect(result).toHaveProperty("error");
+      expect(result).toHaveProperty("appId", appId);
     });
 
     it("should handle 429 rate limit error", async () => {

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../helpers/mock-ably-chat.js";
+import { captureJsonLogs } from "../../../helpers/ndjson.js";
 
 describe("rooms messages commands", function () {
   beforeEach(function () {
@@ -27,6 +28,32 @@ describe("rooms messages commands", function () {
         text: "HelloWorld",
       });
       expect(stdout).toContain("Message sent to room test-room");
+    });
+
+    it("should emit JSON envelope with type result for --json single send", async function () {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.messages.send.mockResolvedValue({
+        serial: "msg-serial",
+        createdAt: Date.now(),
+      });
+
+      const records = await captureJsonLogs(async () => {
+        await runCommand(
+          ["rooms:messages:send", "test-room", "HelloJSON", "--json"],
+          import.meta.url,
+        );
+      });
+      const results = records.filter(
+        (r) => r.type === "result" && r.room === "test-room",
+      );
+      expect(results.length).toBeGreaterThan(0);
+      const record = results[0];
+      expect(record).toHaveProperty("type", "result");
+      expect(record).toHaveProperty("command", "rooms:messages:send");
+      expect(record).toHaveProperty("success", true);
+      expect(record).toHaveProperty("room", "test-room");
     });
 
     it("should send multiple messages with interpolation", async function () {
@@ -321,6 +348,49 @@ describe("rooms messages commands", function () {
       expect(stdout).toContain("sender-client");
       expect(stdout).toContain("Hello from chat");
     });
+
+    it("should emit JSON envelope with type event for --json subscribe", async function () {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      let messageCallback: ((event: unknown) => void) | null = null;
+      room.messages.subscribe.mockImplementation(
+        (callback: (event: unknown) => void) => {
+          messageCallback = callback;
+          return { unsubscribe: vi.fn() };
+        },
+      );
+
+      const records = await captureJsonLogs(async () => {
+        const commandPromise = runCommand(
+          ["rooms:messages:subscribe", "test-room", "--json"],
+          import.meta.url,
+        );
+
+        await vi.waitFor(() => {
+          expect(messageCallback).not.toBeNull();
+        });
+
+        messageCallback!({
+          message: {
+            text: "JSON test msg",
+            clientId: "json-client",
+            timestamp: new Date(),
+            serial: "msg-json",
+          },
+        });
+
+        await commandPromise;
+      });
+      const events = records.filter(
+        (r) => r.type === "event" && r.room === "test-room",
+      );
+      expect(events.length).toBeGreaterThan(0);
+      const record = events[0];
+      expect(record).toHaveProperty("type", "event");
+      expect(record).toHaveProperty("command", "rooms:messages:subscribe");
+      expect(record).toHaveProperty("room", "test-room");
+    });
   });
 
   describe("rooms messages history", function () {
@@ -438,6 +508,39 @@ describe("rooms messages commands", function () {
       const oneHourAgo = Date.now() - 3_600_000;
       expect(callArgs.start).toBeGreaterThan(oneHourAgo - 5000);
       expect(callArgs.start).toBeLessThanOrEqual(oneHourAgo + 5000);
+    });
+
+    it("should emit JSON envelope with type result for --json history", async function () {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.messages.history = vi.fn().mockResolvedValue({
+        items: [
+          {
+            text: "History msg",
+            clientId: "client1",
+            timestamp: new Date(Date.now() - 5000),
+            serial: "msg-h1",
+          },
+        ],
+      });
+
+      const records = await captureJsonLogs(async () => {
+        await runCommand(
+          ["rooms:messages:history", "test-room", "--json"],
+          import.meta.url,
+        );
+      });
+      const results = records.filter(
+        (r) => r.type === "result" && r.room === "test-room",
+      );
+      expect(results.length).toBeGreaterThan(0);
+      const record = results[0];
+      expect(record).toHaveProperty("type", "result");
+      expect(record).toHaveProperty("command", "rooms:messages:history");
+      expect(record).toHaveProperty("success", true);
+      expect(record).toHaveProperty("room", "test-room");
+      expect(record).toHaveProperty("messages");
     });
   });
 });

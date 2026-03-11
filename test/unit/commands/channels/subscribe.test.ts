@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
+import { captureJsonLogs } from "../../../helpers/ndjson.js";
 
 describe("channels:subscribe command", () => {
   let mockSubscribeCallback: ((message: unknown) => void) | null = null;
@@ -142,6 +143,39 @@ describe("channels:subscribe command", () => {
       // In JSON mode, the command should still work (no user-friendly messages)
       // Output may be minimal since duration elapses quickly
       expect(stdout).toBeDefined();
+    });
+
+    it("should emit JSON envelope with type and command for --json events", async () => {
+      const records = await captureJsonLogs(async () => {
+        const commandPromise = runCommand(
+          ["channels:subscribe", "test-channel", "--json"],
+          import.meta.url,
+        );
+
+        await vi.waitFor(() => {
+          expect(mockSubscribeCallback).not.toBeNull();
+        });
+
+        mockSubscribeCallback!({
+          name: "greeting",
+          data: "hi",
+          timestamp: Date.now(),
+          id: "msg-envelope-test",
+          clientId: "client-1",
+          connectionId: "conn-1",
+        });
+
+        await commandPromise;
+      });
+      const events = records.filter(
+        (r) => r.type === "event" && r.channel === "test-channel",
+      );
+      expect(events.length).toBeGreaterThan(0);
+      const record = events[0];
+      expect(record).toHaveProperty("type", "event");
+      expect(record).toHaveProperty("command", "channels:subscribe");
+      expect(record).toHaveProperty("channel", "test-channel");
+      expect(record).toHaveProperty("event", "greeting");
     });
   });
 

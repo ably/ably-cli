@@ -191,7 +191,7 @@ describe("integrations:get command", () => {
       );
 
       expect(stdout).toContain("Target:");
-      expect(stdout).toContain('"url": "https://example.com/webhook"');
+      expect(stdout).toContain("https://example.com/webhook");
     });
   });
 

@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
+import { captureJsonLogs } from "../../../helpers/ndjson.js";
 
 describe("logs:subscribe command", () => {
   beforeEach(() => {
@@ -147,6 +148,58 @@ describe("logs:subscribe command", () => {
       expect(subscribedTypes).toContain("channel.presence");
       expect(subscribedTypes).toContain("connection.lifecycle");
       expect(subscribedTypes).toContain("push.publish");
+    });
+  });
+
+  describe("JSON output", () => {
+    it("should emit JSON envelope with command for --json events", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("[meta]log");
+
+      // Capture the subscribe callback for channel.lifecycle type
+      let logCallback: ((message: unknown) => void) | null = null;
+      channel.subscribe.mockImplementation(
+        (
+          eventOrCallback: string | ((msg: unknown) => void),
+          callback?: (msg: unknown) => void,
+        ) => {
+          if (
+            typeof eventOrCallback === "string" &&
+            eventOrCallback === "channel.lifecycle" &&
+            callback
+          ) {
+            logCallback = callback;
+          }
+        },
+      );
+
+      const records = await captureJsonLogs(async () => {
+        const commandPromise = runCommand(
+          ["logs:subscribe", "--type", "channel.lifecycle", "--json"],
+          import.meta.url,
+        );
+
+        await vi.waitFor(() => {
+          expect(logCallback).not.toBeNull();
+        });
+
+        logCallback!({
+          name: "channel.lifecycle",
+          data: { channelName: "test-ch", state: "attached" },
+          timestamp: Date.now(),
+          id: "log-123",
+        });
+
+        await commandPromise;
+      });
+      const events = records.filter(
+        (r) => r.type === "event" && r.logType === "channel.lifecycle",
+      );
+      expect(events.length).toBeGreaterThan(0);
+      const record = events[0];
+      expect(record).toHaveProperty("type", "event");
+      expect(record).toHaveProperty("command", "logs:subscribe");
+      expect(record).toHaveProperty("logType", "channel.lifecycle");
     });
   });
 

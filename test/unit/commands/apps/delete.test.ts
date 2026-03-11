@@ -326,7 +326,7 @@ describe("apps:delete command", () => {
 
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", false);
-      expect(result).toHaveProperty("status", "error");
+      expect(result).toHaveProperty("type", "error");
       expect(result).toHaveProperty("error");
       expect(result).toHaveProperty("appId", appId);
     });

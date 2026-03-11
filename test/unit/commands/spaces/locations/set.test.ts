@@ -96,7 +96,7 @@ describe("spaces:locations:set command", () => {
     });
 
     it("should output JSON error on invalid location", async () => {
-      const { stdout } = await runCommand(
+      const { stdout, error } = await runCommand(
         [
           "spaces:locations:set",
           "test-space",
@@ -106,6 +106,9 @@ describe("spaces:locations:set command", () => {
         ],
         import.meta.url,
       );
+
+      // fail calls exit(1) which throws in test mode
+      expect(error).toBeDefined();
 
       const result = JSON.parse(stdout);
       expect(result.success).toBe(false);

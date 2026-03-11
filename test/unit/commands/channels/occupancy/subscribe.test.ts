@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import { captureJsonLogs } from "../../../../helpers/ndjson.js";
 
 describe("channels:occupancy:subscribe command", () => {
   beforeEach(() => {
@@ -137,6 +138,50 @@ describe("channels:occupancy:subscribe command", () => {
 
       // No flag-related error should occur
       expect(error?.message || "").not.toMatch(/unknown|Nonexistent flag/i);
+    });
+
+    it("should emit JSON envelope with type and command for occupancy events", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("test-channel");
+
+      // Capture the subscribe callback for [meta]occupancy
+      let occupancyCallback: ((message: unknown) => void) | null = null;
+      channel.subscribe.mockImplementation(
+        (
+          eventOrCallback: string | ((msg: unknown) => void),
+          callback?: (msg: unknown) => void,
+        ) => {
+          if (typeof eventOrCallback === "string" && callback) {
+            occupancyCallback = callback;
+          }
+        },
+      );
+
+      const records = await captureJsonLogs(async () => {
+        const commandPromise = runCommand(
+          ["channels:occupancy:subscribe", "test-channel", "--json"],
+          import.meta.url,
+        );
+
+        await vi.waitFor(() => {
+          expect(occupancyCallback).not.toBeNull();
+        });
+
+        occupancyCallback!({
+          data: { connections: 5, publishers: 2 },
+          timestamp: Date.now(),
+        });
+
+        await commandPromise;
+      });
+      const events = records.filter(
+        (r) => r.type === "event" && r.channel === "test-channel",
+      );
+      expect(events.length).toBeGreaterThan(0);
+      const record = events[0];
+      expect(record).toHaveProperty("type", "event");
+      expect(record).toHaveProperty("command", "channels:occupancy:subscribe");
+      expect(record).toHaveProperty("channel", "test-channel");
     });
   });
 });

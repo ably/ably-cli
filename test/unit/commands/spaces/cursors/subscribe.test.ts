@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
 
 describe("spaces:cursors:subscribe command", () => {
   beforeEach(() => {
@@ -117,6 +118,42 @@ describe("spaces:cursors:subscribe command", () => {
 
       // Verify close was called during cleanup (either by performCleanup or finally block)
       expect(realtimeMock.close).toHaveBeenCalled();
+    });
+  });
+
+  describe("JSON output", () => {
+    it("should output JSON event with envelope when cursor update is received", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.cursors.getAll.mockResolvedValue([]);
+
+      // Fire a cursor event synchronously when subscribe is called
+      space.cursors.subscribe.mockImplementation(
+        (_event: string, callback: (update: unknown) => void) => {
+          // Fire the callback synchronously to produce JSON output
+          callback({
+            clientId: "user-1",
+            connectionId: "conn-1",
+            position: { x: 50, y: 75 },
+            data: { color: "red" },
+          });
+        },
+      );
+
+      const { stdout } = await runCommand(
+        ["spaces:cursors:subscribe", "test-space", "--json"],
+        import.meta.url,
+      );
+
+      const records = parseNdjsonLines(stdout);
+      const eventRecords = records.filter(
+        (r) => r.type === "event" && r.eventType === "cursor_update",
+      );
+      expect(eventRecords.length).toBeGreaterThan(0);
+      const event = eventRecords[0];
+      expect(event).toHaveProperty("command");
+      expect(event).toHaveProperty("spaceName", "test-space");
+      expect(event).toHaveProperty("position");
     });
   });
 

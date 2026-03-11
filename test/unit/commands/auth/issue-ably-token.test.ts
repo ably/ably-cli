@@ -197,7 +197,7 @@ describe("auth:issue-ably-token command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Invalid capability JSON/i);
+      expect(error?.message).toMatch(/is not valid JSON/i);
     });
 
     it("should handle token creation failure", async () => {
@@ -212,7 +212,7 @@ describe("auth:issue-ably-token command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Error issuing Ably token/i);
+      expect(error?.message).toMatch(/Auth failed/i);
     });
 
     it("should not produce token output when app configuration is missing", async () => {

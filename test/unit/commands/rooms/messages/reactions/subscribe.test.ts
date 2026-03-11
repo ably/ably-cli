@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../../helpers/mock-ably-chat.js";
+import { captureJsonLogs } from "../../../../../helpers/ndjson.js";
 
 describe("rooms:messages:reactions:subscribe command", () => {
   beforeEach(() => {
@@ -91,11 +92,6 @@ describe("rooms:messages:reactions:subscribe command", () => {
     it("should output JSON format when --json flag is used", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
-      const capturedLogs: string[] = [];
-
-      const logSpy = vi.spyOn(console, "log").mockImplementation((msg) => {
-        capturedLogs.push(String(msg));
-      });
 
       // Capture the message reactions callback
       let reactionsCallback: ((event: unknown) => void) | null = null;
@@ -104,55 +100,51 @@ describe("rooms:messages:reactions:subscribe command", () => {
         return () => {};
       });
 
-      const commandPromise = runCommand(
-        ["rooms:messages:reactions:subscribe", "test-room", "--json"],
-        import.meta.url,
-      );
+      const allRecords = await captureJsonLogs(async () => {
+        const commandPromise = runCommand(
+          ["rooms:messages:reactions:subscribe", "test-room", "--json"],
+          import.meta.url,
+        );
 
-      await vi.waitFor(
-        () => {
-          expect(room.messages.reactions.subscribe).toHaveBeenCalled();
-        },
-        { timeout: 1000 },
-      );
-
-      // Simulate message reaction summary event
-      if (reactionsCallback) {
-        reactionsCallback({
-          messageSerial: "msg-456",
-          reactions: {
-            unique: {
-              heart: { total: 2, clientIds: ["user1", "user2"] },
-            },
-            distinct: {
-              heart: { total: 2, clientIds: ["user1", "user2"] },
-            },
+        await vi.waitFor(
+          () => {
+            expect(room.messages.reactions.subscribe).toHaveBeenCalled();
           },
-        });
-      }
+          { timeout: 1000 },
+        );
 
-      await commandPromise;
+        // Simulate message reaction summary event
+        if (reactionsCallback) {
+          reactionsCallback({
+            messageSerial: "msg-456",
+            reactions: {
+              unique: {
+                heart: { total: 2, clientIds: ["user1", "user2"] },
+              },
+              distinct: {
+                heart: { total: 2, clientIds: ["user1", "user2"] },
+              },
+            },
+          });
+        }
 
-      logSpy.mockRestore();
+        await commandPromise;
+      });
 
       // Verify subscription was set up
       expect(room.messages.reactions.subscribe).toHaveBeenCalled();
       expect(room.attach).toHaveBeenCalled();
 
       // Find the JSON output with reaction summary data
-      const reactionOutputLines = capturedLogs.filter((line) => {
-        try {
-          const parsed = JSON.parse(line);
-          return parsed.summary && parsed.room;
-        } catch {
-          return false;
-        }
-      });
+      const records = allRecords.filter(
+        (r) => r.type === "event" && r.summary && r.room,
+      );
 
       // Verify that reaction summary was actually output in JSON format
-      expect(reactionOutputLines.length).toBeGreaterThan(0);
-      const parsed = JSON.parse(reactionOutputLines[0]);
-      expect(parsed).toHaveProperty("success", true);
+      expect(records.length).toBeGreaterThan(0);
+      const parsed = records[0];
+      expect(parsed).toHaveProperty("command");
+      expect(parsed).toHaveProperty("type", "event");
       expect(parsed).toHaveProperty("room", "test-room");
       expect(parsed.summary).toHaveProperty("unique");
       expect(parsed.summary.unique).toHaveProperty("heart");

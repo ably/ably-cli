@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
 
 describe("spaces:cursors:set command", () => {
   beforeEach(() => {
@@ -144,11 +145,14 @@ describe("spaces:cursors:set command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain('"success"');
-      expect(stdout).toContain("true");
-      expect(stdout).toContain("test-space");
-      expect(stdout).toContain('"x": 100');
-      expect(stdout).toContain('"y": 200');
+      const records = parseNdjsonLines(stdout);
+      const result = records.find((r) => r.type === "result");
+      expect(result).toBeDefined();
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "spaces:cursors:set");
+      expect(result).toHaveProperty("success", true);
+      expect(result).toHaveProperty("spaceName", "test-space");
+      expect(result!.cursor.position).toEqual({ x: 100, y: 200 });
     });
   });
 });

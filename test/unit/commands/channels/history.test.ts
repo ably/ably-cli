@@ -222,7 +222,7 @@ describe("channels:history command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error?.message).toContain("Error retrieving channel history");
+      expect(error?.message).toContain("API error");
     });
   });
 

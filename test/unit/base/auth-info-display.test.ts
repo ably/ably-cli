@@ -10,8 +10,8 @@ class TestCommand extends AblyBaseCommand {
   }
 
   // For direct testing of shouldHideAccountInfo
-  public testShouldHideAccountInfo(flags: any = {}): boolean {
-    return this.shouldHideAccountInfo(flags);
+  public testShouldHideAccountInfo(): boolean {
+    return this.shouldHideAccountInfo();
   }
 
   // For direct testing of showAuthInfoIfNeeded
@@ -103,27 +103,27 @@ describe("Auth Info Display", function () {
   describe("shouldHideAccountInfo", function () {
     it("should return true when no account is configured", function () {
       configManagerStub.getCurrentAccount.mockReturnValue(undefined as any);
-      expect(command.testShouldHideAccountInfo({})).toBe(true);
+      expect(command.testShouldHideAccountInfo()).toBe(true);
     });
 
     it("should return true when ABLY_API_KEY environment variable is set", function () {
       process.env.ABLY_API_KEY = "app-id.key:secret";
-      expect(command.testShouldHideAccountInfo({})).toBe(true);
+      expect(command.testShouldHideAccountInfo()).toBe(true);
     });
 
     it("should return true when ABLY_TOKEN environment variable is set", function () {
       process.env.ABLY_TOKEN = "some-token";
-      expect(command.testShouldHideAccountInfo({})).toBe(true);
+      expect(command.testShouldHideAccountInfo()).toBe(true);
       delete process.env.ABLY_TOKEN;
     });
 
     it("should return true when ABLY_ACCESS_TOKEN environment variable is set", function () {
       process.env.ABLY_ACCESS_TOKEN = "some-access-token";
-      expect(command.testShouldHideAccountInfo({})).toBe(true);
+      expect(command.testShouldHideAccountInfo()).toBe(true);
     });
 
     it("should return false when account is configured and no auth overrides", function () {
-      expect(command.testShouldHideAccountInfo({})).toBe(false);
+      expect(command.testShouldHideAccountInfo()).toBe(false);
     });
   });
 

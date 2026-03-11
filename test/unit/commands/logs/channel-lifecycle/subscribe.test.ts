@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import { captureJsonLogs } from "../../../../helpers/ndjson.js";
 
 describe("logs:channel-lifecycle:subscribe command", () => {
   beforeEach(() => {
@@ -91,6 +92,50 @@ describe("logs:channel-lifecycle:subscribe command", () => {
           params: { rewind: "5" },
         },
       );
+    });
+  });
+
+  describe("JSON output", () => {
+    it("should emit JSON envelope with type and command for lifecycle events", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("[meta]channel.lifecycle");
+
+      let messageCallback: ((message: unknown) => void) | null = null;
+      channel.subscribe.mockImplementation(
+        (callback: (message: unknown) => void) => {
+          messageCallback = callback;
+        },
+      );
+
+      const records = await captureJsonLogs(async () => {
+        const commandPromise = runCommand(
+          ["logs:channel-lifecycle:subscribe", "--json"],
+          import.meta.url,
+        );
+
+        await vi.waitFor(() => {
+          expect(messageCallback).not.toBeNull();
+        });
+
+        messageCallback!({
+          name: "channel.attached",
+          data: { channelName: "test-ch" },
+          timestamp: Date.now(),
+        });
+
+        await commandPromise;
+      });
+      const events = records.filter(
+        (r) => r.type === "event" && r.event === "channel.attached",
+      );
+      expect(events.length).toBeGreaterThan(0);
+      const record = events[0];
+      expect(record).toHaveProperty("type", "event");
+      expect(record).toHaveProperty(
+        "command",
+        "logs:channel-lifecycle:subscribe",
+      );
+      expect(record).toHaveProperty("event", "channel.attached");
     });
   });
 
