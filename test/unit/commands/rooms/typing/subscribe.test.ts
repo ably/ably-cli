@@ -3,29 +3,18 @@ import { runCommand } from "@oclif/test";
 import { RoomStatus } from "@ably/chat";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
 import { captureJsonLogs } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("rooms:typing:subscribe command", () => {
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["rooms:typing:subscribe", "test-room", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should require room argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:typing:subscribe"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
+  standardHelpTests("rooms:typing:subscribe", import.meta.url);
+  standardArgValidationTests("rooms:typing:subscribe", import.meta.url, {
+    requiredArgs: ["test-room"],
   });
+  standardFlagTests("rooms:typing:subscribe", import.meta.url, ["--json"]);
 
   describe("functionality", () => {
     it("should subscribe to typing events and display them", async () => {
@@ -136,26 +125,6 @@ describe("rooms:typing:subscribe command", () => {
       expect(parsed).toHaveProperty("command");
       expect(parsed).toHaveProperty("type", "event");
       expect(parsed.currentlyTyping).toContain("user1");
-    });
-  });
-
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:typing:subscribe", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:typing:subscribe", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
     });
   });
 

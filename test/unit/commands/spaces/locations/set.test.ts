@@ -2,6 +2,10 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import {
+  standardHelpTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("spaces:locations:set command", () => {
   beforeEach(() => {
@@ -9,25 +13,8 @@ describe("spaces:locations:set command", () => {
     getMockAblySpaces();
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["spaces:locations:set", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["spaces:locations:set", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardHelpTests("spaces:locations:set", import.meta.url);
+  standardFlagTests("spaces:locations:set", import.meta.url, ["--json"]);
 
   describe("argument validation", () => {
     it("should require space argument", async () => {
@@ -37,7 +24,20 @@ describe("spaces:locations:set command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
+      expect(error?.message).toMatch(/Missing .* required arg/);
+    });
+
+    it("should reject unknown flags", async () => {
+      const args = [
+        "spaces:locations:set",
+        "test-space",
+        "--location",
+        '{"x":1}',
+        "--unknown-flag-xyz",
+      ];
+      const { error } = await runCommand(args, import.meta.url);
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
 
     it("should require --location flag", async () => {
@@ -47,7 +47,7 @@ describe("spaces:locations:set command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(
+      expect(error?.message).toMatch(
         /--location.*required|Missing required flag/i,
       );
     });
@@ -61,7 +61,7 @@ describe("spaces:locations:set command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Invalid location JSON");
+      expect(error?.message).toContain("Invalid location JSON");
     });
   });
 
@@ -150,7 +150,7 @@ describe("spaces:locations:set command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Location service error");
+      expect(error?.message).toContain("Location service error");
     });
   });
 });

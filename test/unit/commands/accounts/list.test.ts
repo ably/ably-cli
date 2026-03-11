@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("accounts:list command", () => {
   beforeEach(() => {
@@ -15,8 +20,8 @@ describe("accounts:list command", () => {
       const { error } = await runCommand(["accounts:list"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("No accounts configured");
-      expect(error!.message).toContain("ably accounts login");
+      expect(error?.message).toContain("No accounts configured");
+      expect(error?.message).toContain("ably accounts login");
     });
 
     it("should output JSON error when no accounts with --json", async () => {
@@ -71,36 +76,9 @@ describe("accounts:list command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["accounts:list", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["accounts:list", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["accounts:list", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardHelpTests("accounts:list", import.meta.url);
+  standardArgValidationTests("accounts:list", import.meta.url);
+  standardFlagTests("accounts:list", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
     it("should handle errors gracefully", async () => {

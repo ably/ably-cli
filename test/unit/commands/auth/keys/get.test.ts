@@ -1,21 +1,29 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 import {
   mockKeysList,
   buildMockKey,
 } from "../../../../helpers/mock-control-api-keys.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("auth:keys:get command", () => {
   const mockKeyId = "testkey";
 
   beforeEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   describe("functionality", () => {
@@ -109,41 +117,20 @@ describe("auth:keys:get command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["auth:keys:get", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
+  standardHelpTests("auth:keys:get", import.meta.url);
+
+  standardArgValidationTests("auth:keys:get", import.meta.url, {
+    requiredArgs: ["test-key"],
   });
 
-  describe("argument validation", () => {
-    it("should require keyNameOrValue argument", async () => {
-      const { error } = await runCommand(["auth:keys:get"], import.meta.url);
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing 1 required arg/);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["auth:keys:get", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("auth:keys:get", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
     it("should require keyNameOrValue argument", async () => {
       const { error } = await runCommand(["auth:keys:get"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing 1 required arg/);
+      expect(error?.message).toMatch(/Missing 1 required arg/);
     });
 
     it("should handle key not found", async () => {
@@ -156,12 +143,12 @@ describe("auth:keys:get command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/not found/);
+      expect(error?.message).toMatch(/not found/);
     });
 
     it("should handle 401 authentication error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/keys`)
         .reply(401, { error: "Unauthorized" });
 
@@ -171,7 +158,7 @@ describe("auth:keys:get command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/401/);
+      expect(error?.message).toMatch(/401/);
     });
   });
 });

@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../helpers/control-api-test-helpers.js";
 import { ControlApi } from "../../../src/services/control-api.js";
 
 describe("ControlApi", function () {
@@ -12,12 +16,12 @@ describe("ControlApi", function () {
     api = new ControlApi({ accessToken, controlHost, logErrors: false });
 
     // Ensure all nock interceptors are cleared
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   afterEach(function () {
     // Ensure no pending nock mocks
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   describe("#constructor", function () {
@@ -43,7 +47,7 @@ describe("ControlApi", function () {
       const defaultApi = new ControlApi({ accessToken, logErrors: false });
 
       // Set up nock to intercept request to default host
-      const scope = nock("https://control.ably.net")
+      const scope = nockControl()
         .get("/v1/me")
         .reply(200, { account: { id: "test-account-id" } });
 

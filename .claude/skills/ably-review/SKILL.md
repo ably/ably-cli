@@ -132,6 +132,10 @@ For each changed command file, run the relevant checks. Spawn agents for paralle
 2. **Grep** for `getMockAblyRealtime`, `getMockAblyRest`, `getMockConfigManager` to verify correct mock usage
 3. **Grep** for `--duration` in unit test `runCommand()` args — should NOT be present (env var handles it). Exceptions: `test:wait` tests, `interactive-sigint` tests, help output checks.
 4. **Grep** for `--api-key`, `--token`, `--access-token` — unit tests should not use CLI auth flags
+5. **Check** for use of shared test helpers where applicable:
+   - Control API tests should consider using `nockControl()`, `getControlApiContext()`, `controlApiCleanup()` from `test/helpers/control-api-test-helpers.ts` instead of manual nock setup
+   - Control API tests should consider using mock factories (`mockApp()`, `mockKey()`, `mockRule()`) from `test/fixtures/control-api.ts` instead of inline response objects
+   - Tests with boilerplate help/arg-validation/flags blocks should consider using `standardHelpTests()`, `standardArgValidationTests()`, `standardFlagTests()` from `test/helpers/standard-tests.ts`
 
 ### For new command files (added, not modified)
 

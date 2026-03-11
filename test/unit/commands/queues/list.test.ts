@@ -1,11 +1,21 @@
 import { describe, it, expect, afterEach } from "vitest";
 import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+  CONTROL_HOST,
+} from "../../../helpers/control-api-test-helpers.js";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("queues:list command", () => {
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
@@ -13,7 +23,7 @@ describe("queues:list command", () => {
     it("should list multiple queues successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock the queue listing endpoint with multiple queues
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [
           {
@@ -110,9 +120,7 @@ describe("queues:list command", () => {
     it("should handle empty queue list", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock empty queue list
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/queues`)
-        .reply(200, []);
+      nockControl().get(`/v1/apps/${appId}/queues`).reply(200, []);
 
       const { stdout } = await runCommand(["queues:list"], import.meta.url);
 
@@ -154,9 +162,7 @@ describe("queues:list command", () => {
         },
       ];
 
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/queues`)
-        .reply(200, mockQueues);
+      nockControl().get(`/v1/apps/${appId}/queues`).reply(200, mockQueues);
 
       const { stdout } = await runCommand(
         ["queues:list", "--json"],
@@ -190,22 +196,22 @@ describe("queues:list command", () => {
         tlsOnly: false,
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [mockAppResponse]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [mockAppResponse]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${customAppId}/queues`)
         .reply(200, [
           {
@@ -256,7 +262,7 @@ describe("queues:list command", () => {
 
       process.env.ABLY_ACCESS_TOKEN = customToken;
 
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -272,7 +278,7 @@ describe("queues:list command", () => {
     it("should handle queues with no stats gracefully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock queue with no stats
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [
           {
@@ -320,7 +326,7 @@ describe("queues:list command", () => {
     it("should handle 401 authentication error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock authentication failure
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(401, { error: "Unauthorized" });
 
@@ -334,7 +340,7 @@ describe("queues:list command", () => {
     it("should handle 403 forbidden error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock forbidden response
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(403, { error: "Forbidden" });
 
@@ -348,7 +354,7 @@ describe("queues:list command", () => {
     it("should handle 404 app not found error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock not found response
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(404, { error: "App not found" });
 
@@ -362,7 +368,7 @@ describe("queues:list command", () => {
     it("should handle 500 server error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock server error
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(500, { error: "Internal Server Error" });
 
@@ -386,7 +392,7 @@ describe("queues:list command", () => {
     it("should handle network errors", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock network error
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .replyWithError("Network error");
 
@@ -400,7 +406,7 @@ describe("queues:list command", () => {
     it("should handle errors in JSON format when --json flag is used", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock server error for JSON output
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(500, { error: "Internal Server Error" });
 
@@ -420,12 +426,10 @@ describe("queues:list command", () => {
     it("should handle 429 rate limit error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock rate limit error
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/queues`)
-        .reply(429, {
-          error: "Rate limit exceeded",
-          details: "Too many requests",
-        });
+      nockControl().get(`/v1/apps/${appId}/queues`).reply(429, {
+        error: "Rate limit exceeded",
+        details: "Too many requests",
+      });
 
       const { error } = await runCommand(["queues:list"], import.meta.url);
 
@@ -473,9 +477,7 @@ describe("queues:list command", () => {
         });
       }
 
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/queues`)
-        .reply(200, queues);
+      nockControl().get(`/v1/apps/${appId}/queues`).reply(200, queues);
 
       const { stdout } = await runCommand(["queues:list"], import.meta.url);
 
@@ -487,9 +489,7 @@ describe("queues:list command", () => {
     it("should handle empty list in JSON format", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock empty queue list for JSON output
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/queues`)
-        .reply(200, []);
+      nockControl().get(`/v1/apps/${appId}/queues`).reply(200, []);
 
       const { stdout } = await runCommand(
         ["queues:list", "--json"],
@@ -508,34 +508,7 @@ describe("queues:list command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["queues:list", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["queues:list", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["queues:list", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardHelpTests("queues:list", import.meta.url);
+  standardArgValidationTests("queues:list", import.meta.url);
+  standardFlagTests("queues:list", import.meta.url, ["--json"]);
 });

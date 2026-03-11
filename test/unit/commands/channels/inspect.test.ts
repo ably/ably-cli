@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("channels:inspect command", () => {
   const originalEnv = process.env.ABLY_WEB_CLI_MODE;
@@ -176,35 +181,11 @@ describe("channels:inspect command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:inspect", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("Open the Ably dashboard to inspect");
-      expect(stdout).toContain("USAGE");
-      expect(stdout).toContain("ARGUMENTS");
-    });
+  standardHelpTests("channels:inspect", import.meta.url);
+  standardArgValidationTests("channels:inspect", import.meta.url, {
+    requiredArgs: ["my-channel"],
   });
-
-  describe("argument validation", () => {
-    it("should require channel argument", async () => {
-      const { error } = await runCommand(["channels:inspect"], import.meta.url);
-      expect(error?.message).toMatch(/channel|required|Missing/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:inspect", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("channels:inspect", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
     it("should handle missing account gracefully", async () => {

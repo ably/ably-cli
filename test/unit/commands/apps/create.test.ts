@@ -1,18 +1,27 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+  CONTROL_HOST,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("apps:create command", () => {
   const mockAppName = "TesttApp";
   const newAppId = "new-app-id-12345";
 
   beforeEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
@@ -24,7 +33,7 @@ describe("apps:create command", () => {
       const userEmail = mock.getCurrentAccount()!.userEmail!;
 
       // Mock the /me endpoint to get account ID
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: accountName },
@@ -32,7 +41,7 @@ describe("apps:create command", () => {
         });
 
       // Mock the app creation endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/accounts/${accountId}/apps`, {
           name: mockAppName,
           tlsOnly: false,
@@ -66,7 +75,7 @@ describe("apps:create command", () => {
       const userEmail = mock.getCurrentAccount()!.userEmail!;
 
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: accountName },
@@ -74,7 +83,7 @@ describe("apps:create command", () => {
         });
 
       // Mock the app creation endpoint with TLS only
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/accounts/${accountId}/apps`, {
           name: mockAppName,
           tlsOnly: true,
@@ -116,7 +125,7 @@ describe("apps:create command", () => {
       };
 
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: accountName },
@@ -124,9 +133,7 @@ describe("apps:create command", () => {
         });
 
       // Mock the app creation endpoint
-      nock("https://control.ably.net")
-        .post(`/v1/accounts/${accountId}/apps`)
-        .reply(201, mockApp);
+      nockControl().post(`/v1/accounts/${accountId}/apps`).reply(201, mockApp);
 
       const { stdout } = await runCommand(
         ["apps:create", "--name", `"${mockAppName}"`, "--json"],
@@ -152,7 +159,7 @@ describe("apps:create command", () => {
       process.env.ABLY_ACCESS_TOKEN = customToken;
 
       // Mock the /me endpoint with custom token
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -164,7 +171,7 @@ describe("apps:create command", () => {
         });
 
       // Mock the app creation endpoint
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -196,7 +203,7 @@ describe("apps:create command", () => {
       const userEmail = mock.getCurrentAccount()!.userEmail!;
 
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: accountName },
@@ -204,17 +211,15 @@ describe("apps:create command", () => {
         });
 
       // Mock the app creation endpoint
-      nock("https://control.ably.net")
-        .post(`/v1/accounts/${accountId}/apps`)
-        .reply(201, {
-          id: newAppId,
-          accountId: accountId,
-          name: mockAppName,
-          status: "active",
-          created: Date.now(),
-          modified: Date.now(),
-          tlsOnly: false,
-        });
+      nockControl().post(`/v1/accounts/${accountId}/apps`).reply(201, {
+        id: newAppId,
+        accountId: accountId,
+        name: mockAppName,
+        status: "active",
+        created: Date.now(),
+        modified: Date.now(),
+        tlsOnly: false,
+      });
 
       const { stdout } = await runCommand(
         ["apps:create", "--name", `"${mockAppName}"`],
@@ -232,15 +237,7 @@ describe("apps:create command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["apps:create", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
+  standardHelpTests("apps:create", import.meta.url);
 
   describe("argument validation", () => {
     it("should require --name flag", async () => {
@@ -249,29 +246,19 @@ describe("apps:create command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["apps:create", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("apps:create", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
     it("should handle 401 authentication error", async () => {
       // Mock authentication failure
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .reply(401, { error: "Unauthorized" });
+      nockControl().get("/v1/me").reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
         ["apps:create", "--name", `"${mockAppName}"`],
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/401/);
+      expect(error?.message).toMatch(/401/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -282,7 +269,7 @@ describe("apps:create command", () => {
       const userEmail = mock.getCurrentAccount()!.userEmail!;
 
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: accountName },
@@ -290,7 +277,7 @@ describe("apps:create command", () => {
         });
 
       // Mock forbidden response
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/accounts/${accountId}/apps`)
         .reply(403, { error: "Forbidden" });
 
@@ -299,7 +286,7 @@ describe("apps:create command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/403/);
+      expect(error?.message).toMatch(/403/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -310,7 +297,7 @@ describe("apps:create command", () => {
       const userEmail = mock.getCurrentAccount()!.userEmail!;
 
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: accountName },
@@ -318,7 +305,7 @@ describe("apps:create command", () => {
         });
 
       // Mock not found response
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/accounts/${accountId}/apps`)
         .reply(404, { error: "Not Found" });
 
@@ -327,7 +314,7 @@ describe("apps:create command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/404/);
+      expect(error?.message).toMatch(/404/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -338,7 +325,7 @@ describe("apps:create command", () => {
       const userEmail = mock.getCurrentAccount()!.userEmail!;
 
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: accountName },
@@ -346,7 +333,7 @@ describe("apps:create command", () => {
         });
 
       // Mock server error
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/accounts/${accountId}/apps`)
         .reply(500, { error: "Internal Server Error" });
 
@@ -355,29 +342,27 @@ describe("apps:create command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/500/);
+      expect(error?.message).toMatch(/500/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should require name parameter", async () => {
       const { error } = await runCommand(["apps:create"], import.meta.url);
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/Missing required flag.*name/);
+      expect(error?.message).toMatch(/Missing required flag.*name/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle network errors", async () => {
       // Mock network error
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .replyWithError("Network error");
+      nockControl().get("/v1/me").replyWithError("Network error");
 
       const { error } = await runCommand(
         ["apps:create", "--name", `"${mockAppName}"`],
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/Network error/);
+      expect(error?.message).toMatch(/Network error/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -388,7 +373,7 @@ describe("apps:create command", () => {
       const userEmail = mock.getCurrentAccount()!.userEmail!;
 
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: accountName },
@@ -396,19 +381,17 @@ describe("apps:create command", () => {
         });
 
       // Mock validation error
-      nock("https://control.ably.net")
-        .post(`/v1/accounts/${accountId}/apps`)
-        .reply(400, {
-          error: "Validation failed",
-          details: "App name already exists",
-        });
+      nockControl().post(`/v1/accounts/${accountId}/apps`).reply(400, {
+        error: "Validation failed",
+        details: "App name already exists",
+      });
 
       const { error } = await runCommand(
         ["apps:create", "--name", `"${mockAppName}"`],
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/400/);
+      expect(error?.message).toMatch(/400/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
   });

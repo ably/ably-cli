@@ -20,6 +20,7 @@ import {
   writeTty,
   sendCtrlC,
   killTty,
+  PROMPT_PATTERN,
   type TtyProcess,
 } from "../tty-test-helper.js";
 
@@ -27,9 +28,9 @@ describe("Interactive Mode - SIGINT Handling (TTY)", () => {
   const timeout = 15000;
   let proc: TtyProcess | null = null;
 
-  afterEach(() => {
+  afterEach(async () => {
     if (proc) {
-      killTty(proc);
+      await killTty(proc);
       proc = null;
     }
   });
@@ -40,7 +41,7 @@ describe("Interactive Mode - SIGINT Handling (TTY)", () => {
       proc = spawnTty();
 
       // Wait for the initial prompt
-      await waitForOutput(proc, "ably>");
+      await waitForOutput(proc, PROMPT_PATTERN);
 
       // Send Ctrl+C on the empty prompt
       sendCtrlC(proc);
@@ -62,7 +63,7 @@ describe("Interactive Mode - SIGINT Handling (TTY)", () => {
     async () => {
       proc = spawnTty();
 
-      await waitForOutput(proc, "ably>");
+      await waitForOutput(proc, PROMPT_PATTERN);
 
       // Type a partial command (don't press Enter)
       writeTty(proc, "channels sub");
@@ -90,7 +91,7 @@ describe("Interactive Mode - SIGINT Handling (TTY)", () => {
     async () => {
       proc = spawnTty();
 
-      await waitForOutput(proc, "ably>");
+      await waitForOutput(proc, PROMPT_PATTERN);
 
       // Start a long-running command
       writeTty(proc, "test:wait --duration 30\n");
@@ -127,8 +128,8 @@ describe("Interactive Mode - SIGINT Handling (TTY)", () => {
         NO_COLOR: "1",
       });
 
-      // Wait for the prompt character
-      await waitForOutput(proc, /[$>]/);
+      // Wait for the prompt
+      await waitForOutput(proc, PROMPT_PATTERN);
 
       // Send Ctrl+C character
       sendCtrlC(proc);
@@ -141,6 +142,31 @@ describe("Interactive Mode - SIGINT Handling (TTY)", () => {
 
       const { code } = await proc.exitPromise;
       expect([0, 42]).toContain(code);
+    },
+    timeout,
+  );
+
+  it(
+    "should exit with code 130 on double Ctrl+C (force quit)",
+    async () => {
+      proc = spawnTty();
+      await waitForOutput(proc, PROMPT_PATTERN);
+
+      // Start a long-running command
+      writeTty(proc, "test:wait --duration 30\n");
+      await waitForOutput(proc, "Waiting for");
+
+      // Send Ctrl+C through the terminal, then send SIGINT directly
+      // to the process. The terminal's \x03 → SIGINT conversion and
+      // readline's SIGINT interception make double Ctrl+C unreliable
+      // through the PTY alone, so we use kill(2) for the second signal.
+      sendCtrlC(proc);
+      await new Promise((r) => setTimeout(r, 100));
+      // Send SIGINT directly to the process (bypasses terminal driver)
+      process.kill(proc.pty.pid, "SIGINT");
+
+      const { code } = await proc.exitPromise;
+      expect(code).toBe(130);
     },
     timeout,
   );

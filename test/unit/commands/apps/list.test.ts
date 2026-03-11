@@ -1,6 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+  CONTROL_HOST,
+} from "../../../helpers/control-api-test-helpers.js";
 import { runCommand } from "@oclif/test";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("apps:list command", () => {
   const mockAccessToken = "fake_access_token";
@@ -33,14 +43,14 @@ describe("apps:list command", () => {
 
   afterEach(() => {
     // Clean up nock interceptors
-    nock.cleanAll();
+    controlApiCleanup();
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
   describe("functionality", () => {
     it("should list apps successfully", async () => {
       // Mock the /me endpoint to get account ID
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: mockAccountId, name: "Test Account" },
@@ -48,7 +58,7 @@ describe("apps:list command", () => {
         });
 
       // Mock the apps list endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${mockAccountId}/apps`)
         .reply(200, mockApps);
 
@@ -62,7 +72,7 @@ describe("apps:list command", () => {
 
     it("should output JSON format when --json flag is used", async () => {
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: mockAccountId, name: "Test Account" },
@@ -70,7 +80,7 @@ describe("apps:list command", () => {
         });
 
       // Mock the apps list endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${mockAccountId}/apps`)
         .reply(200, mockApps);
 
@@ -100,7 +110,7 @@ describe("apps:list command", () => {
 
     it("should handle empty apps list", async () => {
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: mockAccountId, name: "Test Account" },
@@ -108,9 +118,7 @@ describe("apps:list command", () => {
         });
 
       // Mock the apps list endpoint with empty response
-      nock("https://control.ably.net")
-        .get(`/v1/accounts/${mockAccountId}/apps`)
-        .reply(200, []);
+      nockControl().get(`/v1/accounts/${mockAccountId}/apps`).reply(200, []);
 
       const { stdout } = await runCommand(["apps:list"], import.meta.url);
 
@@ -123,7 +131,7 @@ describe("apps:list command", () => {
       process.env.ABLY_ACCESS_TOKEN = customToken;
 
       // Mock the /me endpoint with custom token
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -135,7 +143,7 @@ describe("apps:list command", () => {
         });
 
       // Mock the apps list endpoint
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -150,53 +158,24 @@ describe("apps:list command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["apps:list", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["apps:list", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["apps:list", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardHelpTests("apps:list", import.meta.url);
+  standardArgValidationTests("apps:list", import.meta.url);
+  standardFlagTests("apps:list", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
     it("should handle 401 authentication error", async () => {
       // Mock authentication failure
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .reply(401, { error: "Unauthorized" });
+      nockControl().get("/v1/me").reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(["apps:list"], import.meta.url);
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/401/);
+      expect(error?.message).toMatch(/401/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle 403 forbidden error", async () => {
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: mockAccountId, name: "Test Account" },
@@ -204,19 +183,19 @@ describe("apps:list command", () => {
         });
 
       // Mock forbidden response
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${mockAccountId}/apps`)
         .reply(403, { error: "Forbidden" });
 
       const { error } = await runCommand(["apps:list"], import.meta.url);
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/403/);
+      expect(error?.message).toMatch(/403/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle 500 server error", async () => {
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: mockAccountId, name: "Test Account" },
@@ -224,31 +203,29 @@ describe("apps:list command", () => {
         });
 
       // Mock server error
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${mockAccountId}/apps`)
         .reply(500, { error: "Internal Server Error" });
 
       const { error } = await runCommand(["apps:list"], import.meta.url);
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/500/);
+      expect(error?.message).toMatch(/500/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle network errors", async () => {
       // Mock network error
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .replyWithError("Network error");
+      nockControl().get("/v1/me").replyWithError("Network error");
 
       const { error } = await runCommand(["apps:list"], import.meta.url);
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/Network error/);
+      expect(error?.message).toMatch(/Network error/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle rate limit errors", async () => {
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: mockAccountId, name: "Test Account" },
@@ -256,13 +233,13 @@ describe("apps:list command", () => {
         });
 
       // Mock rate limit error
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${mockAccountId}/apps`)
         .reply(429, { error: "Rate limit exceeded" });
 
       const { error } = await runCommand(["apps:list"], import.meta.url);
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/429/);
+      expect(error?.message).toMatch(/429/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
   });
@@ -270,7 +247,7 @@ describe("apps:list command", () => {
   describe("pagination handling", () => {
     it("should handle large lists", async () => {
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: mockAccountId, name: "Test Account" },
@@ -288,7 +265,7 @@ describe("apps:list command", () => {
         tlsOnly: false,
       }));
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${mockAccountId}/apps`)
         .reply(200, largeAppsList, {
           Link: '<https://control.ably.net/v1/accounts/test-account-id/apps?limit=100&offset=100>; rel="next"',

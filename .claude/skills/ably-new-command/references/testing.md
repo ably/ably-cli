@@ -175,6 +175,8 @@ describe("topic:action command", () => {
 
 ## Control API Test (nock)
 
+> **Shared helpers available:** For Control API tests, you can use helpers from `test/helpers/control-api-test-helpers.ts` (`nockControl()`, `getControlApiContext()`, `controlApiCleanup()`) and mock factories from `test/fixtures/control-api.ts` (`mockApp()`, `mockKey()`, `mockRule()`) to reduce boilerplate. See the alternative example after the full scaffold below.
+
 ```typescript
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
@@ -236,6 +238,82 @@ describe("topic:action command", () => {
 
       const { error } = await runCommand(
         ["topic:action", "--flag", "value"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+    });
+  });
+});
+```
+
+---
+
+## Control API Test (using shared helpers)
+
+This is an alternative to the full scaffold above, using the shared helpers to reduce boilerplate:
+
+```typescript
+import { describe, it, expect, afterEach } from "vitest";
+import { runCommand } from "@oclif/test";
+import { nockControl, getControlApiContext, controlApiCleanup } from "../../../helpers/control-api-test-helpers.js";
+import { mockApp } from "../../../fixtures/control-api.js";
+
+describe("topic:action command", () => {
+  afterEach(() => {
+    controlApiCleanup();
+  });
+
+  describe("help", () => {
+    it("should display help with --help flag", async () => {
+      const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
+      expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should reject unknown flags", async () => {
+      const { error } = await runCommand(
+        ["topic:action", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+  });
+
+  describe("functionality", () => {
+    it("should list resources", async () => {
+      const { appId } = getControlApiContext();
+      nockControl()
+        .get(`/v1/apps/${appId}/resources`)
+        .reply(200, [mockApp()]);
+
+      const { stdout } = await runCommand(
+        ["topic:action"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Test App");
+    });
+  });
+
+  describe("flags", () => {
+    it("should accept --json flag", async () => {
+      const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
+      expect(stdout).toContain("--json");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle API errors", async () => {
+      const { appId } = getControlApiContext();
+      nockControl()
+        .get(`/v1/apps/${appId}/resources`)
+        .reply(400, { error: "Bad request" });
+
+      const { error } = await runCommand(
+        ["topic:action"],
         import.meta.url,
       );
 
@@ -351,6 +429,18 @@ describe.skipIf(SHOULD_SKIP_E2E)("topic:action CRUD E2E", { timeout: 30_000 }, (
   });
 });
 ```
+
+---
+
+## Standard Test Generators
+
+For reducing boilerplate, `test/helpers/standard-tests.ts` provides generator functions that produce the standard describe blocks:
+
+- **`standardHelpTests(commandArgs)`** — generates the `"help"` describe block
+- **`standardArgValidationTests(commandArgs)`** — generates the `"argument validation"` block (unknown flag rejection)
+- **`standardFlagTests(commandArgs, expectedFlags)`** — generates the `"flags"` block
+
+Use these as a starting point and add command-specific tests within the same describe blocks. You still need to write `"functionality"` and `"error handling"` blocks manually since those are command-specific.
 
 ---
 

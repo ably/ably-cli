@@ -2,6 +2,11 @@ import { describe, it, expect } from "vitest";
 import { runCommand } from "@oclif/test";
 import jwt from "jsonwebtoken";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("auth:issue-jwt-token command", () => {
   describe("functionality", () => {
@@ -189,15 +194,7 @@ describe("auth:issue-jwt-token command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["auth:issue-jwt-token", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
+  standardHelpTests("auth:issue-jwt-token", import.meta.url);
 
   describe("error handling", () => {
     it("should handle invalid capability JSON", async () => {
@@ -225,37 +222,9 @@ describe("auth:issue-jwt-token command", () => {
     });
   });
 
-  describe("argument validation", () => {
-    it("should accept --app flag to specify app", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      const { stdout } = await runCommand(
-        ["auth:issue-jwt-token", "--app", appId],
-        import.meta.url,
-      );
+  standardArgValidationTests("auth:issue-jwt-token", import.meta.url);
 
-      expect(stdout).toContain("Generated Ably JWT Token");
-    });
-
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["auth:issue-jwt-token", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should show available flags in help", async () => {
-      const { stdout } = await runCommand(
-        ["auth:issue-jwt-token", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("auth:issue-jwt-token", import.meta.url, ["--json"]);
 
   describe("output formatting", () => {
     it("should display TTL in output", async () => {

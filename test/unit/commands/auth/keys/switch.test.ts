@@ -1,58 +1,38 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("auth:keys:switch command", () => {
   const mockKeyId = "key-abc123";
   const mockKeyName = "Test Key";
 
   beforeEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["auth:keys:switch", "--help"],
-        import.meta.url,
-      );
+  standardHelpTests("auth:keys:switch", import.meta.url);
 
-      expect(stdout).toContain("Switch to a different API key");
-      expect(stdout).toContain("USAGE");
-    });
-
-    it("should display examples in help", async () => {
-      const { stdout } = await runCommand(
-        ["auth:keys:switch", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("EXAMPLES");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should accept optional keyNameOrValue argument", async () => {
-      const { stdout } = await runCommand(
-        ["auth:keys:switch", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("KEYNAMEORVALUE");
-    });
-  });
+  standardArgValidationTests("auth:keys:switch", import.meta.url);
 
   describe("functionality", () => {
     it("should switch to a key when key ID is provided with app.keyId format", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/keys`)
         .reply(200, [
           {
@@ -79,7 +59,7 @@ describe("auth:keys:switch command", () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/keys`)
         .reply(200, [
           {
@@ -107,34 +87,14 @@ describe("auth:keys:switch command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should accept --app flag", async () => {
-      const { stdout } = await runCommand(
-        ["auth:keys:switch", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--app");
-    });
-
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["auth:keys:switch", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("auth:keys:switch", import.meta.url, ["--app", "--json"]);
 
   describe("error handling", () => {
     it("should handle key not found error", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
 
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/keys`)
-        .reply(200, []);
+      nockControl().get(`/v1/apps/${appId}/keys`).reply(200, []);
 
       const { error } = await runCommand(
         ["auth:keys:switch", `${appId}.nonexistent-key`],
@@ -162,7 +122,7 @@ describe("auth:keys:switch command", () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/keys`)
         .reply(401, { error: "Unauthorized" });
 

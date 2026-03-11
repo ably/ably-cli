@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("spaces:members:subscribe command", () => {
   beforeEach(() => {
@@ -9,47 +14,11 @@ describe("spaces:members:subscribe command", () => {
     getMockAblySpaces();
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["spaces:members:subscribe", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
+  standardHelpTests("spaces:members:subscribe", import.meta.url);
+  standardArgValidationTests("spaces:members:subscribe", import.meta.url, {
+    requiredArgs: ["test-space"],
   });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["spaces:members:subscribe", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should require space argument", async () => {
-      const { error } = await runCommand(
-        ["spaces:members:subscribe"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["spaces:members:subscribe", "test-space", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
+  standardFlagTests("spaces:members:subscribe", import.meta.url, ["--json"]);
 
   describe("functionality", () => {
     it("should display current members from getAll()", async () => {
@@ -171,7 +140,7 @@ describe("spaces:members:subscribe command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Connection failed");
+      expect(error?.message).toContain("Connection failed");
     });
   });
 });

@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 import { captureJsonLogs } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("channels:occupancy:subscribe command", () => {
   beforeEach(() => {
@@ -26,27 +31,13 @@ describe("channels:occupancy:subscribe command", () => {
     });
   });
 
-  describe("argument validation", () => {
-    it("should require channel argument", async () => {
-      const { error } = await runCommand(
-        ["channels:occupancy:subscribe"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["channels:occupancy:subscribe", "test-channel", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
+  standardHelpTests("channels:occupancy:subscribe", import.meta.url);
+  standardArgValidationTests("channels:occupancy:subscribe", import.meta.url, {
+    requiredArgs: ["test-channel"],
   });
+  standardFlagTests("channels:occupancy:subscribe", import.meta.url, [
+    "--json",
+  ]);
 
   describe("functionality", () => {
     it("should subscribe to occupancy events and show initial message", async () => {
@@ -126,26 +117,6 @@ describe("channels:occupancy:subscribe command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/No mock|client/i);
-    });
-  });
-
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:occupancy:subscribe", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:occupancy:subscribe", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
     });
   });
 

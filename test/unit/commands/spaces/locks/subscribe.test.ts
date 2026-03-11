@@ -3,6 +3,11 @@ import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("spaces:locks:subscribe command", () => {
   beforeEach(() => {
@@ -11,83 +16,11 @@ describe("spaces:locks:subscribe command", () => {
     getMockAblySpaces();
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["spaces:locks:subscribe", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
+  standardHelpTests("spaces:locks:subscribe", import.meta.url);
+  standardArgValidationTests("spaces:locks:subscribe", import.meta.url, {
+    requiredArgs: ["test-space"],
   });
-
-  describe("argument validation", () => {
-    it("should require space argument", async () => {
-      const { error } = await runCommand(
-        ["spaces:locks:subscribe"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["spaces:locks:subscribe", "test-space", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should accept --json flag", async () => {
-      const spacesMock = getMockAblySpaces();
-      const space = spacesMock._getSpace("test-space");
-      space.locks.getAll.mockResolvedValue([]);
-
-      // Emit SIGINT to exit the command
-
-      const { error } = await runCommand(
-        ["spaces:locks:subscribe", "test-space", "--json"],
-        import.meta.url,
-      );
-
-      // Should not have unknown flag error
-      expect(error?.message || "").not.toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should accept --pretty-json flag", async () => {
-      const { error } = await runCommand(
-        ["spaces:locks:subscribe", "test-space", "--pretty-json"],
-        import.meta.url,
-      );
-
-      // Should not have unknown flag error
-      expect(error?.message || "").not.toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should accept --duration flag", async () => {
-      const { error } = await runCommand(
-        ["spaces:locks:subscribe", "test-space"],
-        import.meta.url,
-      );
-
-      // Should not have unknown flag error (command may fail for other reasons without mocks)
-      expect(error?.message || "").not.toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should show available flags in help", async () => {
-      const { stdout } = await runCommand(
-        ["spaces:locks:subscribe", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("spaces:locks:subscribe", import.meta.url, ["--json"]);
 
   describe("functionality", () => {
     it("should subscribe to lock events in a space", async () => {

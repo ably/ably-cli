@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("support:contact command", () => {
   const originalEnv = process.env.ABLY_WEB_CLI_MODE;
@@ -109,36 +114,11 @@ describe("support:contact command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["support:contact", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
+  standardHelpTests("support:contact", import.meta.url);
 
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["support:contact", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
+  standardArgValidationTests("support:contact", import.meta.url);
 
-  describe("flags", () => {
-    it("should accept --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["support:contact", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--help");
-    });
-  });
+  standardFlagTests("support:contact", import.meta.url, ["--help"]);
 
   describe("error handling", () => {
     it("should handle errors gracefully", async () => {

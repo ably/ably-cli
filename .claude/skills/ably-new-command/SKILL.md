@@ -396,6 +396,6 @@ See the "Keeping Skills Up to Date" section in `CLAUDE.md` for the full list of 
 - [ ] Test file at matching path under `test/unit/commands/`
 - [ ] Tests use correct mock helper (`getMockAblyRealtime`, `getMockAblyRest`, `nock`)
 - [ ] Tests don't pass auth flags — `MockConfigManager` handles auth
-- [ ] Subscribe tests use `--duration` flag to auto-exit
+- [ ] Subscribe tests auto-exit via env var (ABLY_CLI_DEFAULT_DURATION: "0.25" in vitest.config.ts) — do NOT pass --duration to runCommand()
 - [ ] Index file created if new topic/subtopic
 - [ ] `pnpm prepare && pnpm exec eslint . && pnpm test:unit` passes

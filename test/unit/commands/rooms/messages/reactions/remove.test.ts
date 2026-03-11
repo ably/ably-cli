@@ -1,69 +1,27 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../../helpers/mock-ably-chat.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../../helpers/standard-tests.js";
 
 describe("rooms:messages:reactions:remove command", () => {
   beforeEach(() => {
     getMockAblyChat();
   });
 
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        [
-          "rooms:messages:reactions:remove",
-          "test-room",
-          "msg-serial",
-          "👍",
-          "--unknown-flag-xyz",
-        ],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should require room argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:reactions:remove"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should require messageSerial argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:reactions:remove", "test-room"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should require reaction argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:reactions:remove", "test-room", "msg-serial"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-  });
-
-  describe("flags", () => {
-    it("should show available flags in help", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:messages:reactions:remove", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardHelpTests("rooms:messages:reactions:remove", import.meta.url);
+  standardArgValidationTests(
+    "rooms:messages:reactions:remove",
+    import.meta.url,
+    { requiredArgs: ["test-room", "msg-serial", "thumbsup"] },
+  );
+  standardFlagTests("rooms:messages:reactions:remove", import.meta.url, [
+    "--json",
+    "--type",
+  ]);
 
   describe("functionality", () => {
     it("should remove a reaction from a message", async () => {
@@ -168,17 +126,7 @@ describe("rooms:messages:reactions:remove command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Failed to remove reaction");
-    });
-  });
-
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:messages:reactions:remove", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
+      expect(error?.message).toContain("Failed to remove reaction");
     });
   });
 

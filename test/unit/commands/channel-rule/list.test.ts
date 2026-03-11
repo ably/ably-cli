@@ -1,17 +1,25 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("channel-rule:list command (alias)", () => {
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   describe("functionality", () => {
     it("should execute the same as apps:channel-rules:list", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
         .reply(200, [
           {
@@ -41,9 +49,7 @@ describe("channel-rule:list command (alias)", () => {
 
     it("should show message when no rules found", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, []);
+      nockControl().get(`/v1/apps/${appId}/namespaces`).reply(200, []);
 
       const { stdout } = await runCommand(
         ["channel-rule:list"],
@@ -54,41 +60,14 @@ describe("channel-rule:list command (alias)", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["channel-rule:list", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["channel-rule:list", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["channel-rule:list", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardHelpTests("channel-rule:list", import.meta.url);
+  standardArgValidationTests("channel-rule:list", import.meta.url);
+  standardFlagTests("channel-rule:list", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
     it("should handle API errors gracefully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
         .reply(401, { error: "Unauthorized" });
 

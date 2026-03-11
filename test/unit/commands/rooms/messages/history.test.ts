@@ -2,44 +2,29 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
 import { captureJsonLogs } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("rooms:messages:history command", () => {
   beforeEach(() => {
     getMockAblyChat();
   });
 
-  describe("help", () => {
-    it("should show usage when --help is passed", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:messages:history", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("USAGE");
-    });
+  standardHelpTests("rooms:messages:history", import.meta.url);
+  standardArgValidationTests("rooms:messages:history", import.meta.url, {
+    requiredArgs: ["test-room"],
   });
-
-  describe("argument validation", () => {
-    it("should require room argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:history"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:history", "test-room", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
+  standardFlagTests("rooms:messages:history", import.meta.url, [
+    "--json",
+    "--limit",
+    "--order",
+    "--start",
+    "--end",
+    "--show-metadata",
+  ]);
 
   describe("functionality", () => {
     it("should retrieve room message history", async () => {
@@ -150,90 +135,6 @@ describe("rooms:messages:history command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should pass limit and order to history query", async () => {
-      const chatMock = getMockAblyChat();
-      const room = chatMock.rooms._getRoom("test-room");
-
-      room.messages.history = vi.fn().mockResolvedValue({ items: [] });
-
-      await runCommand(
-        [
-          "rooms:messages:history",
-          "test-room",
-          "--limit",
-          "25",
-          "--order",
-          "oldestFirst",
-        ],
-        import.meta.url,
-      );
-
-      expect(room.messages.history).toHaveBeenCalledWith(
-        expect.objectContaining({
-          limit: 25,
-        }),
-      );
-    });
-
-    it("should respect --start and --end flags with ISO 8601", async () => {
-      const chatMock = getMockAblyChat();
-      const room = chatMock.rooms._getRoom("test-room");
-
-      room.messages.history = vi.fn().mockResolvedValue({ items: [] });
-
-      const start = "2025-01-01T00:00:00Z";
-      const end = "2025-01-02T00:00:00Z";
-
-      await runCommand(
-        ["rooms:messages:history", "test-room", "--start", start, "--end", end],
-        import.meta.url,
-      );
-
-      expect(room.messages.history).toHaveBeenCalledWith(
-        expect.objectContaining({
-          start: new Date(start).getTime(),
-          end: new Date(end).getTime(),
-        }),
-      );
-    });
-
-    it("should accept Unix ms string for --start", async () => {
-      const chatMock = getMockAblyChat();
-      const room = chatMock.rooms._getRoom("test-room");
-
-      room.messages.history = vi.fn().mockResolvedValue({ items: [] });
-
-      await runCommand(
-        ["rooms:messages:history", "test-room", "--start", "1700000000000"],
-        import.meta.url,
-      );
-
-      expect(room.messages.history).toHaveBeenCalledWith(
-        expect.objectContaining({
-          start: 1_700_000_000_000,
-        }),
-      );
-    });
-
-    it("should accept relative time for --start", async () => {
-      const chatMock = getMockAblyChat();
-      const room = chatMock.rooms._getRoom("test-room");
-
-      room.messages.history = vi.fn().mockResolvedValue({ items: [] });
-
-      await runCommand(
-        ["rooms:messages:history", "test-room", "--start", "1h"],
-        import.meta.url,
-      );
-
-      const callArgs = room.messages.history.mock.calls[0][0];
-      const oneHourAgo = Date.now() - 3_600_000;
-      expect(callArgs.start).toBeGreaterThan(oneHourAgo - 5000);
-      expect(callArgs.start).toBeLessThanOrEqual(oneHourAgo + 5000);
-    });
-  });
-
   describe("error handling", () => {
     it("should handle history API failure", async () => {
       const chatMock = getMockAblyChat();
@@ -249,7 +150,7 @@ describe("rooms:messages:history command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("History fetch failed");
+      expect(error?.message).toContain("History fetch failed");
     });
 
     it("should error when --start is after --end", async () => {
@@ -271,7 +172,7 @@ describe("rooms:messages:history command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain(
+      expect(error?.message).toContain(
         "--start must be earlier than or equal to --end",
       );
     });

@@ -1,11 +1,19 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("apps:channel-rules:list command", () => {
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   describe("functionality", () => {
@@ -28,9 +36,7 @@ describe("apps:channel-rules:list command", () => {
         },
       ];
 
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, mockRules);
+      nockControl().get(`/v1/apps/${appId}/namespaces`).reply(200, mockRules);
 
       const { stdout } = await runCommand(
         ["apps:channel-rules:list"],
@@ -44,9 +50,7 @@ describe("apps:channel-rules:list command", () => {
 
     it("should handle empty rules list", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, []);
+      nockControl().get(`/v1/apps/${appId}/namespaces`).reply(200, []);
 
       const { stdout } = await runCommand(
         ["apps:channel-rules:list"],
@@ -70,9 +74,7 @@ describe("apps:channel-rules:list command", () => {
         },
       ];
 
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, mockRules);
+      nockControl().get(`/v1/apps/${appId}/namespaces`).reply(200, mockRules);
 
       const { stdout } = await runCommand(
         ["apps:channel-rules:list"],
@@ -98,9 +100,7 @@ describe("apps:channel-rules:list command", () => {
         },
       ];
 
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, mockRules);
+      nockControl().get(`/v1/apps/${appId}/namespaces`).reply(200, mockRules);
 
       const { stdout } = await runCommand(
         ["apps:channel-rules:list"],
@@ -132,9 +132,7 @@ describe("apps:channel-rules:list command", () => {
         },
       ];
 
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, mockRules);
+      nockControl().get(`/v1/apps/${appId}/namespaces`).reply(200, mockRules);
 
       const { stdout } = await runCommand(
         ["apps:channel-rules:list", "--json"],
@@ -149,41 +147,14 @@ describe("apps:channel-rules:list command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["apps:channel-rules:list", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["apps:channel-rules:list", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["apps:channel-rules:list", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardHelpTests("apps:channel-rules:list", import.meta.url);
+  standardArgValidationTests("apps:channel-rules:list", import.meta.url);
+  standardFlagTests("apps:channel-rules:list", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
     it("should handle 401 authentication error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
         .reply(401, { error: "Unauthorized" });
 
@@ -193,12 +164,12 @@ describe("apps:channel-rules:list command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/401/);
+      expect(error?.message).toMatch(/401/);
     });
 
     it("should handle 404 not found error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
         .reply(404, { error: "App not found" });
 
@@ -208,12 +179,12 @@ describe("apps:channel-rules:list command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/404/);
+      expect(error?.message).toMatch(/404/);
     });
 
     it("should handle network errors", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
         .replyWithError("Network error");
 
@@ -223,7 +194,7 @@ describe("apps:channel-rules:list command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Network error/);
+      expect(error?.message).toMatch(/Network error/);
     });
   });
 });

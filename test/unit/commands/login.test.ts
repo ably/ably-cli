@@ -1,36 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { runCommand } from "@oclif/test";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../helpers/standard-tests.js";
 
 describe("login command", () => {
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(["login", "--help"], import.meta.url);
-
-      expect(stdout).toContain("Log in to your Ably account");
-      expect(stdout).toContain("USAGE");
-    });
-
-    it("should display examples in help", async () => {
-      const { stdout } = await runCommand(["login", "--help"], import.meta.url);
-
-      expect(stdout).toContain("EXAMPLES");
-    });
-
-    it("should mention it is an alias for accounts login", async () => {
-      const { stdout } = await runCommand(["login", "--help"], import.meta.url);
-
-      expect(stdout).toContain("accounts login");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should accept optional alias argument", async () => {
-      const { stdout } = await runCommand(["login", "--help"], import.meta.url);
-
-      // The login command inherits args from accounts:login
-      expect(stdout).toContain("USAGE");
-    });
-  });
+  standardHelpTests("login", import.meta.url);
+  standardArgValidationTests("login", import.meta.url);
 
   describe("functionality", () => {
     // The login command delegates to accounts:login which is interactive.
@@ -43,13 +21,7 @@ describe("login command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should accept --alias flag from accounts login", async () => {
-      const { stdout } = await runCommand(["login", "--help"], import.meta.url);
-
-      expect(stdout).toContain("--alias");
-    });
-  });
+  standardFlagTests("login", import.meta.url, ["--alias"]);
 
   describe("error handling", () => {
     it("should reject unknown flags", async () => {
@@ -59,7 +31,7 @@ describe("login command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
   });
 });

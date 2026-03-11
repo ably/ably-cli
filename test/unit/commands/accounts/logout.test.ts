@@ -1,40 +1,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("accounts:logout command", () => {
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["accounts:logout", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("Log out from an Ably account");
-      expect(stdout).toContain("USAGE");
-      expect(stdout).toContain("--force");
-    });
-
-    it("should display examples in help", async () => {
-      const { stdout } = await runCommand(
-        ["accounts:logout", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("EXAMPLES");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["accounts:logout", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
+  standardHelpTests("accounts:logout", import.meta.url);
+  standardArgValidationTests("accounts:logout", import.meta.url);
 
   describe("functionality", () => {
     beforeEach(() => {
@@ -206,13 +181,5 @@ describe("accounts:logout command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["accounts:logout", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("accounts:logout", import.meta.url, ["--json"]);
 });

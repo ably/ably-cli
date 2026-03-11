@@ -2,54 +2,27 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
 import { captureJsonLogs } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("rooms:messages:send command", () => {
   beforeEach(() => {
     getMockAblyChat();
   });
 
-  describe("help", () => {
-    it("should show usage when --help is passed", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:messages:send", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("USAGE");
-    });
+  standardHelpTests("rooms:messages:send", import.meta.url);
+  standardArgValidationTests("rooms:messages:send", import.meta.url, {
+    requiredArgs: ["test-room", "hello"],
   });
-
-  describe("argument validation", () => {
-    it("should require room argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:send"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should require text argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:send", "test-room"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:send", "test-room", "hello", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
+  standardFlagTests("rooms:messages:send", import.meta.url, [
+    "--json",
+    "--count",
+    "--delay",
+    "--metadata",
+  ]);
 
   describe("functionality", () => {
     it("should send a single message successfully", async () => {
@@ -159,90 +132,6 @@ describe("rooms:messages:send command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should accept --count flag", async () => {
-      const chatMock = getMockAblyChat();
-      const room = chatMock.rooms._getRoom("test-room");
-
-      room.messages.send.mockResolvedValue({
-        serial: "msg-serial",
-        createdAt: Date.now(),
-      });
-
-      await runCommand(
-        [
-          "rooms:messages:send",
-          "test-room",
-          "TestMsg",
-          "--count",
-          "2",
-          "--delay",
-          "40",
-        ],
-        import.meta.url,
-      );
-
-      expect(room.messages.send).toHaveBeenCalledTimes(2);
-    });
-
-    it("should enforce minimum 40ms delay for multiple messages", async () => {
-      const chatMock = getMockAblyChat();
-      const room = chatMock.rooms._getRoom("test-room");
-
-      room.messages.send.mockResolvedValue({
-        serial: "msg-serial",
-        createdAt: Date.now(),
-      });
-
-      const startTime = Date.now();
-      await runCommand(
-        [
-          "rooms:messages:send",
-          "test-room",
-          "Message{{.Count}}",
-          "--count",
-          "3",
-          "--delay",
-          "10",
-        ],
-        import.meta.url,
-      );
-      const totalTime = Date.now() - startTime;
-
-      expect(room.messages.send).toHaveBeenCalledTimes(3);
-      // Minimum 40ms delay enforced, so at least 80ms for 2 gaps between 3 messages
-      expect(totalTime).toBeGreaterThanOrEqual(80);
-    });
-
-    it("should accept --delay flag", async () => {
-      const chatMock = getMockAblyChat();
-      const room = chatMock.rooms._getRoom("test-room");
-
-      room.messages.send.mockResolvedValue({
-        serial: "msg-serial",
-        createdAt: Date.now(),
-      });
-
-      const startTime = Date.now();
-      await runCommand(
-        [
-          "rooms:messages:send",
-          "test-room",
-          "Message{{.Count}}",
-          "--count",
-          "3",
-          "--delay",
-          "100",
-        ],
-        import.meta.url,
-      );
-      const totalTime = Date.now() - startTime;
-
-      expect(room.messages.send).toHaveBeenCalledTimes(3);
-      expect(totalTime).toBeGreaterThanOrEqual(200);
-    });
-  });
-
   describe("error handling", () => {
     it("should handle invalid metadata JSON", async () => {
       const { error } = await runCommand(
@@ -272,7 +161,7 @@ describe("rooms:messages:send command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Send failed");
+      expect(error?.message).toContain("Send failed");
     });
 
     it("should continue sending remaining messages on error", async () => {

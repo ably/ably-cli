@@ -1,30 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { runCommand } from "@oclif/test";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../helpers/standard-tests.js";
 
 describe("version command", () => {
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["version", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("Display CLI version information");
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["version", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
+  standardHelpTests("version", import.meta.url);
+  standardArgValidationTests("version", import.meta.url);
 
   describe("functionality", () => {
     it("should display version information", async () => {
@@ -60,25 +44,7 @@ describe("version command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["version", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--json");
-    });
-
-    it("should accept --pretty-json flag", async () => {
-      const { stdout } = await runCommand(
-        ["version", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--pretty-json");
-    });
-  });
+  standardFlagTests("version", import.meta.url, ["--json", "--pretty-json"]);
 
   describe("error handling", () => {
     it("should not error when run without arguments", async () => {

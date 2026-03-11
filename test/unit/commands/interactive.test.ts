@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import Interactive from "../../../src/commands/interactive.js";
 import { Config } from "@oclif/core";
 import { fileURLToPath } from "node:url";
@@ -47,13 +47,15 @@ describe("Interactive Command", () => {
         throw new Error("Test complete");
       };
 
-      // Temporarily suppress console.error and stub process.exit
-      const originalConsoleError = console.error;
-      const originalProcessExit = process.exit;
-      console.error = () => {};
-      process.exit = (() => {
-        throw new Error("Process exit called");
-      }) as never;
+      // Suppress console.error and stub process.exit using spies
+      const consoleErrorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      const processExitSpy = vi
+        .spyOn(process, "exit")
+        .mockImplementation((() => {
+          throw new Error("Process exit called");
+        }) as never);
 
       try {
         await cmd.run();
@@ -66,11 +68,10 @@ describe("Interactive Command", () => {
         ) {
           throw err;
         }
+      } finally {
+        consoleErrorSpy.mockRestore();
+        processExitSpy.mockRestore();
       }
-
-      // Restore console.error and process.exit
-      console.error = originalConsoleError;
-      process.exit = originalProcessExit;
 
       expect(process.env.ABLY_INTERACTIVE_MODE).toBe("true");
     });

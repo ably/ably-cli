@@ -2,11 +2,26 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
 import { captureJsonLogs } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("rooms:presence:enter command", () => {
   beforeEach(() => {
     getMockAblyChat();
   });
+
+  standardHelpTests("rooms:presence:enter", import.meta.url);
+  standardArgValidationTests("rooms:presence:enter", import.meta.url, {
+    requiredArgs: ["test-room"],
+  });
+  standardFlagTests("rooms:presence:enter", import.meta.url, [
+    "--json",
+    "--data",
+    "--show-others",
+  ]);
 
   it("should enter presence in room", async () => {
     const mock = getMockAblyChat();
@@ -171,53 +186,6 @@ describe("rooms:presence:enter command", () => {
     expect(parsed).toHaveProperty("type", "event");
     expect(parsed).toHaveProperty("eventType", "enter");
     expect(parsed.member).toHaveProperty("clientId", "other-user");
-  });
-
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:presence:enter", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("functionality", () => {
-    it("should successfully enter presence in a room", async () => {
-      const mock = getMockAblyChat();
-      const room = mock.rooms._getRoom("my-room");
-
-      const { error } = await runCommand(
-        ["rooms:presence:enter", "my-room"],
-        import.meta.url,
-      );
-
-      expect(error).toBeUndefined();
-      expect(mock.rooms.get).toHaveBeenCalledWith("my-room");
-      expect(room.attach).toHaveBeenCalled();
-      expect(room.presence.enter).toHaveBeenCalled();
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should require room argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:presence:enter"],
-        import.meta.url,
-      );
-      expect(error?.message).toMatch(/room|required|Missing/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:presence:enter", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
   });
 
   describe("error handling", () => {

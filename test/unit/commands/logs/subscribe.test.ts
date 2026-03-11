@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
 import { captureJsonLogs } from "../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("logs:subscribe command", () => {
   beforeEach(() => {
@@ -26,58 +31,13 @@ describe("logs:subscribe command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["logs:subscribe", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["logs:subscribe", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["logs:subscribe", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should accept --rewind flag", async () => {
-      // Run with --duration 0 to exit immediately
-      const { error } = await runCommand(
-        ["logs:subscribe", "--rewind", "10"],
-        import.meta.url,
-      );
-
-      // The command might error due to connection issues, but it should accept the flag
-      expect(error?.message || "").not.toMatch(/Unknown flag/);
-    });
-
-    it("should accept --type flag with valid option", async () => {
-      const { error } = await runCommand(
-        ["logs:subscribe", "--type", "channel.lifecycle"],
-        import.meta.url,
-      );
-
-      expect(error?.message || "").not.toMatch(/Unknown flag/);
-    });
-  });
+  standardHelpTests("logs:subscribe", import.meta.url);
+  standardArgValidationTests("logs:subscribe", import.meta.url);
+  standardFlagTests("logs:subscribe", import.meta.url, [
+    "--rewind",
+    "--type",
+    "--json",
+  ]);
 
   describe("functionality", () => {
     it("should subscribe to log channel and show initial message", async () => {

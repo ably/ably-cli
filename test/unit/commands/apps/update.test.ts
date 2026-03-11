@@ -1,17 +1,27 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+  CONTROL_HOST,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("apps:update command", () => {
   const mockAppName = "TestApp";
 
   beforeEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
@@ -23,7 +33,7 @@ describe("apps:update command", () => {
       const updatedName = "UpdatedAppName";
 
       // Mock the app update endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}`, {
           name: updatedName,
         })
@@ -53,7 +63,7 @@ describe("apps:update command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock the app update endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}`, {
           tlsOnly: true,
         })
@@ -83,7 +93,7 @@ describe("apps:update command", () => {
       const updatedName = "UpdatedAppName";
 
       // Mock the app update endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}`, {
           name: updatedName,
           tlsOnly: true,
@@ -125,9 +135,7 @@ describe("apps:update command", () => {
       };
 
       // Mock the app update endpoint
-      nock("https://control.ably.net")
-        .patch(`/v1/apps/${appId}`)
-        .reply(200, mockApp);
+      nockControl().patch(`/v1/apps/${appId}`).reply(200, mockApp);
 
       const { stdout } = await runCommand(
         ["apps:update", appId, "--name", updatedName, "--json"],
@@ -153,7 +161,7 @@ describe("apps:update command", () => {
       process.env.ABLY_ACCESS_TOKEN = customToken;
 
       // Mock the app update endpoint with custom token
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -178,37 +186,11 @@ describe("apps:update command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["apps:update", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
+  standardHelpTests("apps:update", import.meta.url);
+  standardArgValidationTests("apps:update", import.meta.url, {
+    requiredArgs: ["test-app-id"],
   });
-
-  describe("argument validation", () => {
-    it("should require app ID argument", async () => {
-      const { error } = await runCommand(
-        ["apps:update", "--name", "NewName"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Missing.*required arg/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["apps:update", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("apps:update", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
     it("should require at least one update parameter", async () => {
@@ -256,7 +238,7 @@ describe("apps:update command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock authentication failure
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}`)
         .reply(401, { error: "Unauthorized" });
 
@@ -274,7 +256,7 @@ describe("apps:update command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock forbidden response
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}`)
         .reply(403, { error: "Forbidden" });
 
@@ -292,7 +274,7 @@ describe("apps:update command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock not found response
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}`)
         .reply(404, { error: "Not Found" });
 
@@ -310,7 +292,7 @@ describe("apps:update command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock server error
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}`)
         .reply(500, { error: "Internal Server Error" });
 
@@ -328,9 +310,7 @@ describe("apps:update command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock network error
-      nock("https://control.ably.net")
-        .patch(`/v1/apps/${appId}`)
-        .replyWithError("Network error");
+      nockControl().patch(`/v1/apps/${appId}`).replyWithError("Network error");
 
       const { error } = await runCommand(
         ["apps:update", appId, "--name", "NewName"],
@@ -346,7 +326,7 @@ describe("apps:update command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock server error
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}`)
         .reply(500, { error: "Internal Server Error" });
 
@@ -371,7 +351,7 @@ describe("apps:update command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock the app update endpoint with APNS cert info
-      nock("https://control.ably.net").patch(`/v1/apps/${appId}`).reply(200, {
+      nockControl().patch(`/v1/apps/${appId}`).reply(200, {
         id: appId,
         accountId: accountId,
         name: mockAppName,
@@ -396,7 +376,7 @@ describe("apps:update command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock the app update endpoint with APNS cert info
-      nock("https://control.ably.net").patch(`/v1/apps/${appId}`).reply(200, {
+      nockControl().patch(`/v1/apps/${appId}`).reply(200, {
         id: appId,
         accountId: accountId,
         name: mockAppName,

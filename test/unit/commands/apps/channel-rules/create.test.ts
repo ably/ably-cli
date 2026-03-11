@@ -1,28 +1,33 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("apps:channel-rules:create command", () => {
   const mockRuleName = "chat";
   const mockRuleId = "chat";
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   describe("functionality", () => {
     it("should create a channel rule successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .post(`/v1/apps/${appId}/namespaces`)
-        .reply(201, {
-          id: mockRuleId,
-          persisted: false,
-          pushEnabled: false,
-          created: Date.now(),
-          modified: Date.now(),
-        });
+      nockControl().post(`/v1/apps/${appId}/namespaces`).reply(201, {
+        id: mockRuleId,
+        persisted: false,
+        pushEnabled: false,
+        created: Date.now(),
+        modified: Date.now(),
+      });
 
       const { stdout } = await runCommand(
         ["apps:channel-rules:create", "--name", mockRuleName],
@@ -35,7 +40,7 @@ describe("apps:channel-rules:create command", () => {
 
     it("should create a channel rule with persisted flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/namespaces`, (body) => {
           return body.persisted === true;
         })
@@ -58,7 +63,7 @@ describe("apps:channel-rules:create command", () => {
 
     it("should create a channel rule with push-enabled flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/namespaces`, (body) => {
           return body.pushEnabled === true;
         })
@@ -81,7 +86,7 @@ describe("apps:channel-rules:create command", () => {
 
     it("should create a channel rule with mutable-messages flag and auto-enable persisted", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/namespaces`, (body) => {
           return body.mutableMessages === true && body.persisted === true;
         })
@@ -114,7 +119,7 @@ describe("apps:channel-rules:create command", () => {
 
     it("should include mutableMessages in JSON output when --mutable-messages is used", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/namespaces`, (body) => {
           return body.mutableMessages === true && body.persisted === true;
         })
@@ -156,9 +161,7 @@ describe("apps:channel-rules:create command", () => {
         modified: Date.now(),
       };
 
-      nock("https://control.ably.net")
-        .post(`/v1/apps/${appId}/namespaces`)
-        .reply(201, mockRule);
+      nockControl().post(`/v1/apps/${appId}/namespaces`).reply(201, mockRule);
 
       const { stdout } = await runCommand(
         ["apps:channel-rules:create", "--name", mockRuleName, "--json"],
@@ -172,15 +175,7 @@ describe("apps:channel-rules:create command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["apps:channel-rules:create", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
+  standardHelpTests("apps:channel-rules:create", import.meta.url);
 
   describe("argument validation", () => {
     it("should require --name flag", async () => {
@@ -190,19 +185,11 @@ describe("apps:channel-rules:create command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing required flag.*name/);
+      expect(error?.message).toMatch(/Missing required flag.*name/);
     });
   });
 
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["apps:channel-rules:create", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("apps:channel-rules:create", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
     it("should require name parameter", async () => {
@@ -212,12 +199,12 @@ describe("apps:channel-rules:create command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing required flag.*name/);
+      expect(error?.message).toMatch(/Missing required flag.*name/);
     });
 
     it("should handle 401 authentication error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/namespaces`)
         .reply(401, { error: "Unauthorized" });
 
@@ -227,12 +214,12 @@ describe("apps:channel-rules:create command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/401/);
+      expect(error?.message).toMatch(/401/);
     });
 
     it("should handle 400 validation error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/namespaces`)
         .reply(400, { error: "Validation failed" });
 
@@ -242,12 +229,12 @@ describe("apps:channel-rules:create command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/400/);
+      expect(error?.message).toMatch(/400/);
     });
 
     it("should handle network errors", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/namespaces`)
         .replyWithError("Network error");
 
@@ -257,7 +244,7 @@ describe("apps:channel-rules:create command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Network error/);
+      expect(error?.message).toMatch(/Network error/);
     });
   });
 });

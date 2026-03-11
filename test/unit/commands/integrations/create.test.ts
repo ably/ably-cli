@@ -1,19 +1,27 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("integrations:create command", () => {
   const mockRuleId = "rule-123456";
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   describe("functionality", () => {
     it("should create an HTTP integration successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`)
         .reply(201, {
           id: mockRuleId,
@@ -53,7 +61,7 @@ describe("integrations:create command", () => {
 
     it("should create an AMQP integration successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`)
         .reply(201, {
           id: mockRuleId,
@@ -89,7 +97,7 @@ describe("integrations:create command", () => {
 
     it("should create a disabled integration when status is disabled", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`, (body: Record<string, unknown>) => {
           return body.status === "disabled";
         })
@@ -133,7 +141,7 @@ describe("integrations:create command", () => {
 
     it("should create integration with batch request mode", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`, (body: Record<string, unknown>) => {
           return body.requestMode === "batch";
         })
@@ -177,7 +185,7 @@ describe("integrations:create command", () => {
 
     it("should output JSON format when --json flag is used", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`)
         .reply(201, {
           id: mockRuleId,
@@ -268,7 +276,7 @@ describe("integrations:create command", () => {
 
     it("should handle API errors", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`)
         .reply(400, { error: "Invalid configuration" });
 
@@ -293,7 +301,7 @@ describe("integrations:create command", () => {
 
     it("should handle 401 authentication error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`)
         .reply(401, { error: "Unauthorized" });
 
@@ -323,14 +331,14 @@ describe("integrations:create command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
   });
 
   describe("source type options", () => {
     it("should accept channel.presence source type", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`)
         .reply(201, {
           id: mockRuleId,
@@ -370,7 +378,7 @@ describe("integrations:create command", () => {
 
     it("should accept channel.lifecycle source type", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`)
         .reply(201, {
           id: mockRuleId,
@@ -409,34 +417,7 @@ describe("integrations:create command", () => {
     });
   });
 
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["integrations:create", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["integrations:create", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["integrations:create", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardArgValidationTests("integrations:create", import.meta.url);
+  standardHelpTests("integrations:create", import.meta.url);
+  standardFlagTests("integrations:create", import.meta.url, ["--json"]);
 });

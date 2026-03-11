@@ -1,13 +1,20 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("integrations:delete command", () => {
   const mockRuleId = "rule-123456";
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   describe("functionality", () => {
@@ -34,14 +41,12 @@ describe("integrations:delete command", () => {
       };
 
       // Mock GET to fetch integration details
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
       // Mock DELETE endpoint
-      nock("https://control.ably.net")
-        .delete(`/v1/apps/${appId}/rules/${mockRuleId}`)
-        .reply(204);
+      nockControl().delete(`/v1/apps/${appId}/rules/${mockRuleId}`).reply(204);
 
       const { stdout } = await runCommand(
         ["integrations:delete", mockRuleId, "--force"],
@@ -74,13 +79,11 @@ describe("integrations:delete command", () => {
         modified: Date.now(),
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
-      nock("https://control.ably.net")
-        .delete(`/v1/apps/${appId}/rules/${mockRuleId}`)
-        .reply(204);
+      nockControl().delete(`/v1/apps/${appId}/rules/${mockRuleId}`).reply(204);
 
       const { stdout } = await runCommand(
         ["integrations:delete", mockRuleId, "--force"],
@@ -105,7 +108,7 @@ describe("integrations:delete command", () => {
 
     it("should handle integration not found", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(404, { error: "Not found" });
 
@@ -140,11 +143,11 @@ describe("integrations:delete command", () => {
         modified: Date.now(),
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(500, { error: "Internal server error" });
 
@@ -159,7 +162,7 @@ describe("integrations:delete command", () => {
 
     it("should handle 401 authentication error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(401, { error: "Unauthorized" });
 
@@ -179,7 +182,7 @@ describe("integrations:delete command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
   });
 
@@ -206,13 +209,11 @@ describe("integrations:delete command", () => {
         modified: Date.now(),
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
-      nock("https://control.ably.net")
-        .delete(`/v1/apps/${appId}/rules/${mockRuleId}`)
-        .reply(204);
+      nockControl().delete(`/v1/apps/${appId}/rules/${mockRuleId}`).reply(204);
 
       const { stdout } = await runCommand(
         ["integrations:delete", mockRuleId, "-f"],
@@ -247,7 +248,7 @@ describe("integrations:delete command", () => {
       };
 
       // Mock the /me endpoint (needed by listApps in resolveAppIdFromNameOrId)
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
@@ -255,17 +256,15 @@ describe("integrations:delete command", () => {
         });
 
       // Mock the apps list API call for resolveAppIdFromNameOrId
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [{ id: appId, name: "Test App", accountId }]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
-      nock("https://control.ably.net")
-        .delete(`/v1/apps/${appId}/rules/${mockRuleId}`)
-        .reply(204);
+      nockControl().delete(`/v1/apps/${appId}/rules/${mockRuleId}`).reply(204);
 
       const { stdout } = await runCommand(
         ["integrations:delete", mockRuleId, "--app", appId, "--force"],
@@ -276,23 +275,8 @@ describe("integrations:delete command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["integrations:delete", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should require ruleId argument", async () => {
-      const { error } = await runCommand(
-        ["integrations:delete", "--force"],
-        import.meta.url,
-      );
-      expect(error?.message).toMatch(/required|Missing/i);
-    });
+  standardHelpTests("integrations:delete", import.meta.url);
+  standardArgValidationTests("integrations:delete", import.meta.url, {
+    requiredArgs: ["ruleId"],
   });
 });

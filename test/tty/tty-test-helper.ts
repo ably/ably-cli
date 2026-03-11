@@ -15,6 +15,10 @@ const __dirname = path.dirname(__filename);
 
 export const BIN_PATH = path.join(__dirname, "../../bin/development.js");
 
+export const DEFAULT_WAIT_TIMEOUT = 8000;
+
+export const PROMPT_PATTERN = "ably>";
+
 export const DEFAULT_ENV = {
   ...process.env,
   ABLY_INTERACTIVE_MODE: "true",
@@ -51,24 +55,27 @@ export function spawnTty(
     env: childEnv as Record<string, string>,
   });
 
+  let resolveExit: (value: { code: number }) => void;
+  const exitPromise = new Promise<{ code: number }>((resolve) => {
+    resolveExit = resolve;
+  });
+
   const proc: TtyProcess = {
     pty,
     output: "",
     exitCode: null,
     exited: false,
-    exitPromise: null!,
+    exitPromise,
   };
-
-  proc.exitPromise = new Promise<{ code: number }>((resolve) => {
-    pty.onExit(({ exitCode }) => {
-      proc.exitCode = exitCode;
-      proc.exited = true;
-      resolve({ code: exitCode });
-    });
-  });
 
   pty.onData((data: string) => {
     proc.output += data;
+  });
+
+  pty.onExit(({ exitCode }) => {
+    proc.exitCode = exitCode;
+    proc.exited = true;
+    resolveExit({ code: exitCode });
   });
 
   return proc;
@@ -80,7 +87,7 @@ export function spawnTty(
 export async function waitForOutput(
   proc: TtyProcess,
   pattern: string | RegExp,
-  timeoutMs = 8000,
+  timeoutMs = DEFAULT_WAIT_TIMEOUT,
 ): Promise<void> {
   const start = Date.now();
   const matches = (text: string) =>
@@ -117,10 +124,13 @@ export function sendCtrlC(proc: TtyProcess): void {
 
 /**
  * Kill the PTY process. Safe to call multiple times.
+ * Waits briefly for the process to exit after sending kill.
  */
-export function killTty(proc: TtyProcess): void {
+export async function killTty(proc: TtyProcess): Promise<void> {
   if (!proc.exited) {
     proc.pty.kill();
+    // Wait for exit with a short timeout
+    await Promise.race([proc.exitPromise, sleep(2000)]);
   }
 }
 

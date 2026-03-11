@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRest } from "../../../../helpers/mock-ably-rest.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("logs:push:history command", () => {
   beforeEach(() => {
@@ -20,66 +25,13 @@ describe("logs:push:history command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["logs:push:history", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["logs:push:history", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["logs:push:history", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should accept --limit flag", async () => {
-      const { error } = await runCommand(
-        ["logs:push:history", "--limit", "50"],
-        import.meta.url,
-      );
-
-      expect(error?.message || "").not.toMatch(/Unknown flag/);
-    });
-
-    it("should accept --direction flag", async () => {
-      const { error } = await runCommand(
-        ["logs:push:history", "--direction", "forwards"],
-        import.meta.url,
-      );
-
-      expect(error?.message || "").not.toMatch(/Unknown flag/);
-    });
-
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["logs:push:history", "--json"],
-        import.meta.url,
-      );
-
-      // Command should accept --json flag
-      expect(stdout).toBeDefined();
-    });
-  });
+  standardHelpTests("logs:push:history", import.meta.url);
+  standardArgValidationTests("logs:push:history", import.meta.url);
+  standardFlagTests("logs:push:history", import.meta.url, [
+    "--limit",
+    "--direction",
+    "--json",
+  ]);
 
   describe("functionality", () => {
     it("should retrieve push history and display results", async () => {

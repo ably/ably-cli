@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("auth:keys:current command", () => {
   describe("functionality", () => {
@@ -44,36 +49,11 @@ describe("auth:keys:current command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["auth:keys:current", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
+  standardHelpTests("auth:keys:current", import.meta.url);
 
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["auth:keys:current", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
+  standardArgValidationTests("auth:keys:current", import.meta.url);
 
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["auth:keys:current", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("auth:keys:current", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
     it("should reject unknown flags", async () => {
@@ -83,7 +63,7 @@ describe("auth:keys:current command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
 
     it("should accept --app flag to specify a different app", async () => {

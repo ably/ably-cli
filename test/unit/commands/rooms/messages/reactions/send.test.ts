@@ -1,69 +1,25 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../../helpers/mock-ably-chat.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../../helpers/standard-tests.js";
 
 describe("rooms:messages:reactions:send command", () => {
   beforeEach(() => {
     getMockAblyChat();
   });
 
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        [
-          "rooms:messages:reactions:send",
-          "test-room",
-          "msg-serial",
-          "👍",
-          "--unknown-flag-xyz",
-        ],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should require room argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:reactions:send"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should require messageSerial argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:reactions:send", "test-room"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should require reaction argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:reactions:send", "test-room", "msg-serial"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
+  standardHelpTests("rooms:messages:reactions:send", import.meta.url);
+  standardArgValidationTests("rooms:messages:reactions:send", import.meta.url, {
+    requiredArgs: ["test-room", "msg-serial", "thumbsup"],
   });
-
-  describe("flags", () => {
-    it("should show available flags in help", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:messages:reactions:send", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("rooms:messages:reactions:send", import.meta.url, [
+    "--json",
+    "--type",
+  ]);
 
   describe("functionality", () => {
     it("should send a reaction to a message", async () => {
@@ -158,17 +114,7 @@ describe("rooms:messages:reactions:send command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Failed to send reaction");
-    });
-  });
-
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:messages:reactions:send", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
+      expect(error?.message).toContain("Failed to send reaction");
     });
   });
 

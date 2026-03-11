@@ -1,13 +1,20 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("integrations:update command", () => {
   const mockRuleId = "rule-123456";
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   describe("functionality", () => {
@@ -41,12 +48,12 @@ describe("integrations:update command", () => {
       };
 
       // Mock GET to fetch existing integration
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
       // Mock PATCH to update integration
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, updatedIntegration);
 
@@ -89,11 +96,11 @@ describe("integrations:update command", () => {
         },
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, updatedIntegration);
 
@@ -134,11 +141,11 @@ describe("integrations:update command", () => {
         },
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, updatedIntegration);
 
@@ -187,11 +194,11 @@ describe("integrations:update command", () => {
         requestMode: "batch",
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, updatedIntegration);
 
@@ -227,7 +234,7 @@ describe("integrations:update command", () => {
 
     it("should handle integration not found", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(404, { error: "Not found" });
 
@@ -262,11 +269,11 @@ describe("integrations:update command", () => {
         modified: Date.now(),
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(400, { error: "Invalid update" });
 
@@ -286,7 +293,7 @@ describe("integrations:update command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
   });
 
@@ -323,7 +330,7 @@ describe("integrations:update command", () => {
       };
 
       // Mock the /me endpoint (needed by listApps in resolveAppIdFromNameOrId)
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
@@ -331,15 +338,15 @@ describe("integrations:update command", () => {
         });
 
       // Mock the apps list API call for resolveAppIdFromNameOrId
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [{ id: appId, name: "Test App", accountId }]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, updatedIntegration);
 
@@ -359,23 +366,8 @@ describe("integrations:update command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["integrations:update", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should require ruleId argument", async () => {
-      const { error } = await runCommand(
-        ["integrations:update"],
-        import.meta.url,
-      );
-      expect(error?.message).toMatch(/Missing .* required arg/i);
-    });
+  standardHelpTests("integrations:update", import.meta.url);
+  standardArgValidationTests("integrations:update", import.meta.url, {
+    requiredArgs: ["ruleId"],
   });
 });

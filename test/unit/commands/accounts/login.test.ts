@@ -1,62 +1,39 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("accounts:login command", () => {
   const mockAccessToken = "test_access_token_12345";
   const mockAccountId = "test-account-id";
 
   beforeEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
     // Clear accounts so login tests start fresh
     const mock = getMockConfigManager();
     mock.clearAccounts();
   });
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["accounts:login", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("Log in to your Ably account");
-      expect(stdout).toContain("USAGE");
-      expect(stdout).toContain("--alias");
-      expect(stdout).toContain("--no-browser");
-    });
-
-    it("should display examples in help", async () => {
-      const { stdout } = await runCommand(
-        ["accounts:login", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("EXAMPLES");
-      expect(stdout).toContain("accounts login");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["accounts:login", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
+  standardHelpTests("accounts:login", import.meta.url);
+  standardArgValidationTests("accounts:login", import.meta.url);
 
   describe("functionality", () => {
     it("should output JSON format when --json flag is used", async () => {
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: mockAccountId, name: "Test Account" },
@@ -64,9 +41,7 @@ describe("accounts:login command", () => {
         });
 
       // Mock the apps list endpoint
-      nock("https://control.ably.net")
-        .get(`/v1/accounts/${mockAccountId}/apps`)
-        .reply(200, []);
+      nockControl().get(`/v1/accounts/${mockAccountId}/apps`).reply(200, []);
 
       const { stdout } = await runCommand(
         ["accounts:login", mockAccessToken, "--json"],
@@ -97,7 +72,7 @@ describe("accounts:login command", () => {
       const customAlias = "mycompany";
 
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: mockAccountId, name: "Test Account" },
@@ -105,9 +80,7 @@ describe("accounts:login command", () => {
         });
 
       // Mock the apps list endpoint
-      nock("https://control.ably.net")
-        .get(`/v1/accounts/${mockAccountId}/apps`)
-        .reply(200, []);
+      nockControl().get(`/v1/accounts/${mockAccountId}/apps`).reply(200, []);
 
       const { stdout } = await runCommand(
         ["accounts:login", mockAccessToken, "--alias", customAlias, "--json"],
@@ -136,7 +109,7 @@ describe("accounts:login command", () => {
       const mockAppName = "My Only App";
 
       // Mock the /me endpoint twice - once for initial login, once for listApps
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .twice()
         .reply(200, {
@@ -145,7 +118,7 @@ describe("accounts:login command", () => {
         });
 
       // Mock the apps list endpoint with single app
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${mockAccountId}/apps`)
         .reply(200, [
           { id: mockAppId, name: mockAppName, accountId: mockAccountId },
@@ -181,7 +154,7 @@ describe("accounts:login command", () => {
 
     it("should not include app info when multiple apps exist (no interactive selection in JSON mode)", async () => {
       // Mock the /me endpoint twice - once for initial login, once for listApps
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .twice()
         .reply(200, {
@@ -190,7 +163,7 @@ describe("accounts:login command", () => {
         });
 
       // Mock the apps list endpoint with multiple apps
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${mockAccountId}/apps`)
         .reply(200, [
           { id: "app-1", name: "App 1", accountId: mockAccountId },
@@ -220,12 +193,10 @@ describe("accounts:login command", () => {
     });
   });
 
-  describe("error handling with --json flag", () => {
+  describe("error handling", () => {
     it("should output error in JSON format when authentication fails", async () => {
       // Mock authentication failure
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .reply(401, { error: "Unauthorized" });
+      nockControl().get("/v1/me").reply(401, { error: "Unauthorized" });
 
       const { stdout } = await runCommand(
         ["accounts:login", "invalid_token", "--json"],
@@ -241,9 +212,7 @@ describe("accounts:login command", () => {
 
     it("should output error in JSON format when network fails", async () => {
       // Mock network error
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .replyWithError("Network error");
+      nockControl().get("/v1/me").replyWithError("Network error");
 
       const { stdout } = await runCommand(
         ["accounts:login", mockAccessToken, "--json"],
@@ -260,7 +229,7 @@ describe("accounts:login command", () => {
 
     it("should handle 500 server error", async () => {
       // Mock server error
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(500, { error: "Internal Server Error" });
 
@@ -277,15 +246,7 @@ describe("accounts:login command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["accounts:login", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("accounts:login", import.meta.url, ["--json"]);
 
   describe("custom control host", () => {
     it("should use custom control host when --control-host flag is provided", async () => {

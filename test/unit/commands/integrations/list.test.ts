@@ -1,7 +1,15 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("integrations:list command", () => {
   const mockIntegrations = [
@@ -42,48 +50,16 @@ describe("integrations:list command", () => {
   ];
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["integrations:list", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("List all integrations");
-      expect(stdout).toContain("USAGE");
-    });
-
-    it("should display examples in help", async () => {
-      const { stdout } = await runCommand(
-        ["integrations:list", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("EXAMPLES");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["integrations:list", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
+  standardHelpTests("integrations:list", import.meta.url);
+  standardArgValidationTests("integrations:list", import.meta.url);
 
   describe("functionality", () => {
     it("should list integrations successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/rules`)
-        .reply(200, mockIntegrations);
+      nockControl().get(`/v1/apps/${appId}/rules`).reply(200, mockIntegrations);
 
       const { stdout } = await runCommand(
         ["integrations:list"],
@@ -98,9 +74,7 @@ describe("integrations:list command", () => {
 
     it("should handle empty integrations list", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/rules`)
-        .reply(200, []);
+      nockControl().get(`/v1/apps/${appId}/rules`).reply(200, []);
 
       const { stdout } = await runCommand(
         ["integrations:list"],
@@ -112,9 +86,7 @@ describe("integrations:list command", () => {
 
     it("should output JSON when --json flag is used", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/rules`)
-        .reply(200, mockIntegrations);
+      nockControl().get(`/v1/apps/${appId}/rules`).reply(200, mockIntegrations);
 
       const { stdout } = await runCommand(
         ["integrations:list", "--json"],
@@ -133,9 +105,7 @@ describe("integrations:list command", () => {
 
     it("should display integration details in human-readable output", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/rules`)
-        .reply(200, mockIntegrations);
+      nockControl().get(`/v1/apps/${appId}/rules`).reply(200, mockIntegrations);
 
       const { stdout } = await runCommand(
         ["integrations:list"],
@@ -150,39 +120,16 @@ describe("integrations:list command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should accept --app flag", async () => {
-      const { stdout } = await runCommand(
-        ["integrations:list", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--app");
-    });
-
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["integrations:list", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--json");
-    });
-
-    it("should accept --pretty-json flag", async () => {
-      const { stdout } = await runCommand(
-        ["integrations:list", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--pretty-json");
-    });
-  });
+  standardFlagTests("integrations:list", import.meta.url, [
+    "--app",
+    "--json",
+    "--pretty-json",
+  ]);
 
   describe("error handling", () => {
     it("should handle 401 authentication error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules`)
         .reply(401, { error: "Unauthorized" });
 
@@ -197,7 +144,7 @@ describe("integrations:list command", () => {
 
     it("should handle 500 server error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules`)
         .reply(500, { error: "Internal Server Error" });
 
@@ -212,7 +159,7 @@ describe("integrations:list command", () => {
 
     it("should handle network errors", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules`)
         .replyWithError("Network error");
 

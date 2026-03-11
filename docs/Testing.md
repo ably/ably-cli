@@ -182,6 +182,7 @@ Refer to the [Debugging Guide](Debugging.md) for tips on debugging failed tests,
 *   **Tools:** Vitest, `node-pty`.
 *   **Location:** `test/tty/` directory.
 *   **Execution:** Run locally with `pnpm run test:tty`. Not included in `pnpm test:unit` or CI pipelines.
+*   **Helpers:** `test/tty/tty-test-helper.ts` provides `spawnTty()`, `waitForOutput()`, `writeTty()`, `sendCtrlC()`, `killTty()` (async), and constants `PROMPT_PATTERN` (`"ably>"`) and `DEFAULT_WAIT_TIMEOUT` (8000ms). `ABLY_CLI_DEFAULT_DURATION` is intentionally omitted from the TTY vitest config — TTY tests manage their own timing via explicit `--duration` flags and real PTY I/O.
 
 > **Note:** If `node-pty` fails to load, rebuild it with `pnpm rebuild node-pty`.
 
@@ -309,6 +310,60 @@ describe('channels commands', () => {
 E2E tests are organized by feature/topic (e.g., `channels-e2e.test.ts`, `presence-e2e.test.ts`) to improve maintainability and allow targeted runs. They use shared helpers from `test/helpers/e2e-test-helper.ts`.
 
 </details>
+
+---
+
+## 🧩 Shared Test Helpers & Conventions
+
+### Required Describe Block Order
+
+Every unit test file for a command MUST include all 5 of these describe blocks in this canonical order (exact names):
+
+1. **`"help"`** — verify `--help` shows USAGE
+2. **`"argument validation"`** — test required args or unknown flag rejection
+3. **`"functionality"`** — core happy-path behavior
+4. **`"flags"`** — verify flags exist and work
+5. **`"error handling"`** — API errors, network failures
+
+Do NOT use variants like `"command arguments and flags"`, `"command flags"`, `"flag options"`, or `"parameter validation"`. Exempt: `interactive.test.ts`, `interactive-sigint.test.ts`, `bench/*.test.ts`.
+
+### Standard Test Generators
+
+The file `test/helpers/standard-tests.ts` provides generator functions that produce the boilerplate tests for the required describe blocks:
+
+- **`standardHelpTests(commandArgs)`** — generates the `"help"` describe block, verifying `--help` output contains USAGE
+- **`standardArgValidationTests(commandArgs)`** — generates the `"argument validation"` block, testing unknown flag rejection
+- **`standardFlagTests(commandArgs, expectedFlags)`** — generates the `"flags"` block, verifying expected flags appear in help output
+
+These generators reduce duplication and ensure consistent test structure. Use them as a starting point and add command-specific tests within the same describe blocks as needed.
+
+### Control API Test Helpers
+
+The file `test/helpers/control-api-test-helpers.ts` provides shared helpers for testing commands that use the Control API with nock:
+
+- **`nockControl()`** — returns a `nock` scope pre-configured for `https://control.ably.net`
+- **`getControlApiContext()`** — returns common test context (appId, accountId) from `MockConfigManager`
+- **`controlApiCleanup()`** — calls `nock.cleanAll()` for use in `afterEach` hooks
+
+### Mock Factory Functions
+
+The file `test/fixtures/control-api.ts` provides factory functions for building realistic Control API response bodies:
+
+- **`mockApp(overrides?)`** — returns a mock app object with sensible defaults
+- **`mockKey(overrides?)`** — returns a mock API key object
+- **`mockRule(overrides?)`** — returns a mock integration rule object
+
+Each factory accepts an optional `Partial<T>` to override any field, making it easy to create test-specific variations without duplicating boilerplate.
+
+```typescript
+import { mockApp, mockKey } from "../../../fixtures/control-api.js";
+
+// Use defaults
+nock("https://control.ably.net").get(`/v1/apps/${appId}`).reply(200, mockApp());
+
+// Override specific fields
+nock("https://control.ably.net").get(`/v1/apps/${appId}`).reply(200, mockApp({ name: "Custom App", status: "disabled" }));
+```
 
 ---
 

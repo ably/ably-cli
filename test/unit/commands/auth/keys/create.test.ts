@@ -1,7 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+  CONTROL_HOST,
+} from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("auth:keys:create command", () => {
   const mockKeyName = "TestKey";
@@ -9,14 +18,14 @@ describe("auth:keys:create command", () => {
   const mockKeySecret = "test-key-secret";
 
   beforeEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
     // Set up config without currentAppId to test "no app" error
     const mock = getMockConfigManager();
     mock.setCurrentAppIdForAccount(undefined);
   });
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
@@ -24,7 +33,7 @@ describe("auth:keys:create command", () => {
     it("should create a key successfully", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       // Mock the key creation endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/keys`, {
           name: mockKeyName,
           capability: { "*": ["*"] },
@@ -54,7 +63,7 @@ describe("auth:keys:create command", () => {
     it("should create a key with custom capabilities", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       // Mock the key creation endpoint with custom capabilities
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/keys`, {
           name: mockKeyName,
           capability: {
@@ -111,9 +120,7 @@ describe("auth:keys:create command", () => {
       };
 
       // Mock the key creation endpoint
-      nock("https://control.ably.net")
-        .post(`/v1/apps/${appId}/keys`)
-        .reply(201, mockKey);
+      nockControl().post(`/v1/apps/${appId}/keys`).reply(201, mockKey);
 
       const { stdout } = await runCommand(
         [
@@ -144,7 +151,7 @@ describe("auth:keys:create command", () => {
       process.env.ABLY_ACCESS_TOKEN = customToken;
 
       // Mock the key creation endpoint with custom token
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -171,25 +178,9 @@ describe("auth:keys:create command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["auth:keys:create", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
+  standardHelpTests("auth:keys:create", import.meta.url);
 
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["auth:keys:create", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("auth:keys:create", import.meta.url, ["--json"]);
 
   describe("argument validation", () => {
     it("should require name parameter", async () => {
@@ -199,7 +190,7 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing required flag.*name/);
+      expect(error?.message).toMatch(/Missing required flag.*name/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -209,18 +200,16 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/No app specified/);
+      expect(error?.message).toMatch(/No app specified/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle invalid capabilities JSON", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       // Mock the key creation endpoint with invalid capabilities
-      nock("https://control.ably.net")
-        .post(`/v1/apps/${appId}/keys`)
-        .reply(400, {
-          error: "Invalid capabilities format",
-        });
+      nockControl().post(`/v1/apps/${appId}/keys`).reply(400, {
+        error: "Invalid capabilities format",
+      });
 
       const { error } = await runCommand(
         [
@@ -235,7 +224,7 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Invalid capabilities/);
+      expect(error?.message).toMatch(/Invalid capabilities/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
   });
@@ -244,7 +233,7 @@ describe("auth:keys:create command", () => {
     it("should handle 401 authentication error", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       // Mock authentication failure
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/keys`)
         .reply(401, { error: "Unauthorized" });
 
@@ -253,14 +242,14 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/401/);
+      expect(error?.message).toMatch(/401/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle 403 forbidden error", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       // Mock forbidden response
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/keys`)
         .reply(403, { error: "Forbidden" });
 
@@ -269,14 +258,14 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/403/);
+      expect(error?.message).toMatch(/403/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle 404 not found error", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       // Mock not found response (app doesn't exist)
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/keys`)
         .reply(404, { error: "App not found" });
 
@@ -285,14 +274,14 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/404/);
+      expect(error?.message).toMatch(/404/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle 500 server error", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       // Mock server error
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/keys`)
         .reply(500, { error: "Internal Server Error" });
 
@@ -301,14 +290,14 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/500/);
+      expect(error?.message).toMatch(/500/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle network errors", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       // Mock network error
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/keys`)
         .replyWithError("Network error");
 
@@ -317,33 +306,31 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Network error/);
+      expect(error?.message).toMatch(/Network error/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle validation errors from API", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       // Mock validation error
-      nock("https://control.ably.net")
-        .post(`/v1/apps/${appId}/keys`)
-        .reply(400, {
-          error: "Validation failed",
-          details: "Key name already exists",
-        });
+      nockControl().post(`/v1/apps/${appId}/keys`).reply(400, {
+        error: "Validation failed",
+        details: "Key name already exists",
+      });
 
       const { error } = await runCommand(
         ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/400/);
+      expect(error?.message).toMatch(/400/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle rate limit errors", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       // Mock rate limit error
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/keys`)
         .reply(429, { error: "Rate limit exceeded" });
 
@@ -352,7 +339,7 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/429/);
+      expect(error?.message).toMatch(/429/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
   });
@@ -361,7 +348,7 @@ describe("auth:keys:create command", () => {
     it("should create a publish-only key", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       // Mock the key creation endpoint with publish-only capabilities
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/keys`, {
           name: mockKeyName,
           capability: { "channel:*": ["publish"] },
@@ -398,7 +385,7 @@ describe("auth:keys:create command", () => {
     it("should create a key with mixed capabilities", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       // Mock the key creation endpoint with subscribe-only capabilities
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/keys`, {
           name: mockKeyName,
           capability: {

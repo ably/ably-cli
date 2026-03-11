@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRest } from "../../../../helpers/mock-ably-rest.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("logs:connection-lifecycle:history command", () => {
   beforeEach(() => {
@@ -20,66 +25,16 @@ describe("logs:connection-lifecycle:history command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["logs:connection-lifecycle:history", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["logs:connection-lifecycle:history", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["logs:connection-lifecycle:history", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should accept --limit flag", async () => {
-      const { error } = await runCommand(
-        ["logs:connection-lifecycle:history", "--limit", "50"],
-        import.meta.url,
-      );
-
-      expect(error?.message || "").not.toMatch(/Unknown flag/);
-    });
-
-    it("should accept --direction flag", async () => {
-      const { error } = await runCommand(
-        ["logs:connection-lifecycle:history", "--direction", "forwards"],
-        import.meta.url,
-      );
-
-      expect(error?.message || "").not.toMatch(/Unknown flag/);
-    });
-
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["logs:connection-lifecycle:history", "--json"],
-        import.meta.url,
-      );
-
-      // Command should accept --json flag
-      expect(stdout).toBeDefined();
-    });
-  });
+  standardHelpTests("logs:connection-lifecycle:history", import.meta.url);
+  standardArgValidationTests(
+    "logs:connection-lifecycle:history",
+    import.meta.url,
+  );
+  standardFlagTests("logs:connection-lifecycle:history", import.meta.url, [
+    "--limit",
+    "--direction",
+    "--json",
+  ]);
 
   describe("functionality", () => {
     it("should retrieve connection lifecycle history and display results", async () => {

@@ -1,58 +1,44 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("apps:switch command", () => {
-  const mockAccountId = "test-account-id";
-  const mockAppId = "app-123";
+  let mockAccountId: string;
+  let mockAppId: string;
   const mockAppName = "Switched App";
 
+  beforeEach(() => {
+    const mockConfig = getMockConfigManager();
+    mockAccountId = mockConfig.getCurrentAccount()!.accountId!;
+    mockAppId = mockConfig.getCurrentAppId()!;
+  });
+
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["apps:switch", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("Switch to a different Ably app");
-      expect(stdout).toContain("USAGE");
-    });
-
-    it("should display examples in help", async () => {
-      const { stdout } = await runCommand(
-        ["apps:switch", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("EXAMPLES");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should accept optional appId argument", async () => {
-      const { stdout } = await runCommand(
-        ["apps:switch", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("APPID");
-    });
-  });
+  standardHelpTests("apps:switch", import.meta.url);
+  standardArgValidationTests("apps:switch", import.meta.url);
 
   describe("functionality", () => {
     it("should switch to an app when appId is provided", async () => {
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: mockAccountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${mockAccountId}/apps`)
         .reply(200, [
           {
@@ -77,14 +63,14 @@ describe("apps:switch command", () => {
     });
 
     it("should output JSON when --json flag is used", async () => {
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: mockAccountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${mockAccountId}/apps`)
         .reply(200, [
           {
@@ -112,38 +98,21 @@ describe("apps:switch command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["apps:switch", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--json");
-    });
-
-    it("should accept --pretty-json flag", async () => {
-      const { stdout } = await runCommand(
-        ["apps:switch", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--pretty-json");
-    });
-  });
+  standardFlagTests("apps:switch", import.meta.url, [
+    "--json",
+    "--pretty-json",
+  ]);
 
   describe("error handling", () => {
     it("should handle app not found error", async () => {
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: mockAccountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
-        .get(`/v1/accounts/${mockAccountId}/apps`)
-        .reply(200, []);
+      nockControl().get(`/v1/accounts/${mockAccountId}/apps`).reply(200, []);
 
       const { error } = await runCommand(
         ["apps:switch", "nonexistent-app"],
@@ -154,9 +123,7 @@ describe("apps:switch command", () => {
     });
 
     it("should handle 401 authentication error", async () => {
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .reply(401, { error: "Unauthorized" });
+      nockControl().get("/v1/me").reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
         ["apps:switch", mockAppId],
@@ -164,13 +131,11 @@ describe("apps:switch command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/401/);
+      expect(error?.message).toMatch(/401/);
     });
 
     it("should handle network errors", async () => {
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .replyWithError("Network error");
+      nockControl().get("/v1/me").replyWithError("Network error");
 
       const { error } = await runCommand(
         ["apps:switch", mockAppId],
@@ -178,7 +143,7 @@ describe("apps:switch command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/Network error/);
+      expect(error?.message).toMatch(/Network error/);
     });
   });
 });

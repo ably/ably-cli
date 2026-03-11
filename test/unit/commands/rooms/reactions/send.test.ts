@@ -1,11 +1,25 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("rooms:reactions:send command", () => {
   beforeEach(() => {
     getMockAblyChat();
   });
+
+  standardHelpTests("rooms:reactions:send", import.meta.url);
+  standardArgValidationTests("rooms:reactions:send", import.meta.url, {
+    requiredArgs: ["test-room", "thumbsup"],
+  });
+  standardFlagTests("rooms:reactions:send", import.meta.url, [
+    "--json",
+    "--metadata",
+  ]);
 
   describe("functionality", () => {
     it("should send reaction emoji", async () => {
@@ -61,7 +75,7 @@ describe("rooms:reactions:send command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Invalid metadata JSON");
+      expect(error?.message).toContain("Invalid metadata JSON");
     });
 
     it("should output JSON on success", async () => {
@@ -97,36 +111,6 @@ describe("rooms:reactions:send command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:reactions:send", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should require room argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:reactions:send"],
-        import.meta.url,
-      );
-      expect(error?.message).toMatch(/room|required|Missing/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:reactions:send", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
-
   describe("error handling", () => {
     it("should handle reaction send failure gracefully", async () => {
       const chatMock = getMockAblyChat();
@@ -139,7 +123,7 @@ describe("rooms:reactions:send command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Network error");
+      expect(error?.message).toContain("Network error");
     });
   });
 });

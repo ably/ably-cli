@@ -1,11 +1,25 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("rooms:typing:keystroke command", () => {
   beforeEach(() => {
     getMockAblyChat();
   });
+
+  standardHelpTests("rooms:typing:keystroke", import.meta.url);
+  standardArgValidationTests("rooms:typing:keystroke", import.meta.url, {
+    requiredArgs: ["test-room"],
+  });
+  standardFlagTests("rooms:typing:keystroke", import.meta.url, [
+    "--json",
+    "--auto-type",
+  ]);
 
   describe("functionality", () => {
     it("should send keystroke and show success", async () => {
@@ -50,7 +64,7 @@ describe("rooms:typing:keystroke command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Connection failed");
+      expect(error?.message).toContain("Connection failed");
     });
 
     it("should output JSON error on failure", async () => {
@@ -73,36 +87,6 @@ describe("rooms:typing:keystroke command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:typing:keystroke", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should require room argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:typing:keystroke"],
-        import.meta.url,
-      );
-      expect(error?.message).toMatch(/room|required|Missing/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:typing:keystroke", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
-
   describe("error handling", () => {
     it("should handle room attach failure gracefully", async () => {
       const chatMock = getMockAblyChat();
@@ -115,7 +99,7 @@ describe("rooms:typing:keystroke command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Room unavailable");
+      expect(error?.message).toContain("Room unavailable");
     });
   });
 });

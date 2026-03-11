@@ -1,7 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("accounts:current command", () => {
   const mockAccountId = "test-account-id";
@@ -9,11 +17,11 @@ describe("accounts:current command", () => {
   const mockUserEmail = "test@example.com";
 
   beforeEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   describe("functionality", () => {
@@ -21,7 +29,7 @@ describe("accounts:current command", () => {
       const mock = getMockConfigManager();
       const accessToken = mock.getAccessToken()!;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .matchHeader("authorization", `Bearer ${accessToken}`)
         .reply(200, {
@@ -45,7 +53,7 @@ describe("accounts:current command", () => {
       const mock = getMockConfigManager();
       const accessToken = mock.getAccessToken()!;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .matchHeader("authorization", `Bearer ${accessToken}`)
         .reply(200, {
@@ -66,9 +74,7 @@ describe("accounts:current command", () => {
 
   describe("fallback behavior", () => {
     it("should show cached info when API fails", async () => {
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .replyWithError("Network error");
+      nockControl().get("/v1/me").replyWithError("Network error");
 
       const { stdout, stderr } = await runCommand(
         ["accounts:current"],
@@ -81,9 +87,7 @@ describe("accounts:current command", () => {
     });
 
     it("should suggest re-login on failure", async () => {
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .replyWithError("Network error");
+      nockControl().get("/v1/me").replyWithError("Network error");
 
       const { stdout, stderr } = await runCommand(
         ["accounts:current"],
@@ -103,40 +107,13 @@ describe("accounts:current command", () => {
       const { error } = await runCommand(["accounts:current"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/No account.*currently selected/i);
+      expect(error?.message).toMatch(/No account.*currently selected/i);
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["accounts:current", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["accounts:current", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["accounts:current", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardHelpTests("accounts:current", import.meta.url);
+  standardArgValidationTests("accounts:current", import.meta.url);
+  standardFlagTests("accounts:current", import.meta.url, ["--json"]);
 
   describe("web-cli mode restriction", () => {
     let originalWebCliMode: string | undefined;
@@ -159,7 +136,7 @@ describe("accounts:current command", () => {
       const { error } = await runCommand(["accounts:current"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("not available in the web CLI");
+      expect(error?.message).toContain("not available in the web CLI");
     });
   });
 });

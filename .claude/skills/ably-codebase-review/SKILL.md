@@ -165,6 +165,10 @@ Launch these agents **in parallel**. Each agent gets a focused mandate and uses 
 3. **Grep** for `--duration` in unit test `runCommand()` args — should NOT be present (env var handles it). Exceptions: `test:wait` tests, `interactive-sigint` tests, help output checks.
 4. **Grep** for `getMockAblyRealtime`, `getMockAblyRest`, `getMockConfigManager` in test files to verify correct mock usage per command type
 5. **Grep** for `--api-key`, `--token`, `--access-token` in unit test files — these should not use CLI auth flags
+6. **Check** for use of shared test helpers where applicable:
+   - Control API tests should use `nockControl()`, `getControlApiContext()`, `controlApiCleanup()` from `test/helpers/control-api-test-helpers.ts` instead of manual nock setup
+   - Control API tests should use mock factories (`mockApp()`, `mockKey()`, `mockRule()`) from `test/fixtures/control-api.ts` instead of duplicating inline response objects
+   - Tests with boilerplate help/arg-validation/flags blocks should use `standardHelpTests()`, `standardArgValidationTests()`, `standardFlagTests()` from `test/helpers/standard-tests.ts`
 
 **Reasoning guidance:**
 - Missing test files are deviations but may be documented as known gaps

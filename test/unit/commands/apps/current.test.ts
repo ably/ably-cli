@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("apps:current command", () => {
   describe("functionality", () => {
@@ -33,36 +38,9 @@ describe("apps:current command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["apps:current", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["apps:current", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["apps:current", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardHelpTests("apps:current", import.meta.url);
+  standardArgValidationTests("apps:current", import.meta.url);
+  standardFlagTests("apps:current", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
     it("should error when no account is selected", async () => {
@@ -72,7 +50,7 @@ describe("apps:current command", () => {
       const { error } = await runCommand(["apps:current"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/No account selected/);
+      expect(error?.message).toMatch(/No account selected/);
     });
 
     it("should error when no app is selected", async () => {
@@ -82,7 +60,7 @@ describe("apps:current command", () => {
       const { error } = await runCommand(["apps:current"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/No app selected/);
+      expect(error?.message).toMatch(/No app selected/);
     });
   });
 });

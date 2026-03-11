@@ -3,6 +3,11 @@ import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("spaces:locks:get-all command", () => {
   beforeEach(() => {
@@ -11,60 +16,11 @@ describe("spaces:locks:get-all command", () => {
     getMockAblySpaces();
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["spaces:locks:get-all", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
+  standardHelpTests("spaces:locks:get-all", import.meta.url);
+  standardArgValidationTests("spaces:locks:get-all", import.meta.url, {
+    requiredArgs: ["test-space"],
   });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["spaces:locks:get-all", "test-space", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should require space argument", async () => {
-      const { error } = await runCommand(
-        ["spaces:locks:get-all"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should accept --json flag", async () => {
-      const spacesMock = getMockAblySpaces();
-      const space = spacesMock._getSpace("test-space");
-      space.locks.getAll.mockResolvedValue([]);
-
-      const { error } = await runCommand(
-        ["spaces:locks:get-all", "test-space", "--json"],
-        import.meta.url,
-      );
-
-      expect(error?.message || "").not.toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should show available flags in help", async () => {
-      const { stdout } = await runCommand(
-        ["spaces:locks:get-all", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("spaces:locks:get-all", import.meta.url, ["--json"]);
 
   describe("functionality", () => {
     it("should get all locks from a space", async () => {

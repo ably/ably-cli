@@ -3,6 +3,11 @@ import { runCommand } from "@oclif/test";
 import nock from "nock";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("auth:revoke-token command", () => {
   const mockToken = "test-token-12345";
@@ -18,49 +23,10 @@ describe("auth:revoke-token command", () => {
     nock.cleanAll();
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["auth:revoke-token", "--help"],
-        import.meta.url,
-      );
+  standardHelpTests("auth:revoke-token", import.meta.url);
 
-      expect(stdout).toContain("Revoke a token");
-      expect(stdout).toContain("USAGE");
-      expect(stdout).toContain("--client-id");
-    });
-
-    it("should display examples in help", async () => {
-      const { stdout } = await runCommand(
-        ["auth:revoke-token", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("EXAMPLES");
-      expect(stdout).toContain("revoke-token");
-    });
-
-    it("should show token argument is required", async () => {
-      const { stdout } = await runCommand(
-        ["auth:revoke-token", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("TOKEN");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should require token argument", async () => {
-      const { error } = await runCommand(
-        ["auth:revoke-token"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toContain("Missing 1 required arg");
-      expect(error?.message).toContain("token");
-    });
+  standardArgValidationTests("auth:revoke-token", import.meta.url, {
+    requiredArgs: ["test-token"],
   });
 
   describe("token revocation", () => {
@@ -178,24 +144,8 @@ describe("auth:revoke-token command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should accept --client-id flag", async () => {
-      const { stdout } = await runCommand(
-        ["auth:revoke-token", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--client-id");
-      expect(stdout).toContain("Client ID");
-    });
-
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["auth:revoke-token", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("auth:revoke-token", import.meta.url, [
+    "--client-id",
+    "--json",
+  ]);
 });

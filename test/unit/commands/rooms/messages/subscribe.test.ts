@@ -2,44 +2,27 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
 import { captureJsonLogs } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("rooms:messages:subscribe command", () => {
   beforeEach(() => {
     getMockAblyChat();
   });
 
-  describe("help", () => {
-    it("should show usage when --help is passed", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:messages:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("USAGE");
-    });
+  standardHelpTests("rooms:messages:subscribe", import.meta.url);
+  standardArgValidationTests("rooms:messages:subscribe", import.meta.url, {
+    requiredArgs: ["test-room"],
   });
-
-  describe("argument validation", () => {
-    it("should require room argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:subscribe"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing 1 required arg/);
-    });
-
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:subscribe", "test-room", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
+  standardFlagTests("rooms:messages:subscribe", import.meta.url, [
+    "--json",
+    "--duration",
+    "--show-metadata",
+    "--sequence-numbers",
+  ]);
 
   describe("functionality", () => {
     it("should subscribe to room messages", async () => {
@@ -165,70 +148,6 @@ describe("rooms:messages:subscribe command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should accept --duration flag", async () => {
-      const chatMock = getMockAblyChat();
-      const room = chatMock.rooms._getRoom("test-room");
-
-      room.messages.subscribe.mockImplementation(() => {
-        return { unsubscribe: vi.fn() };
-      });
-
-      await runCommand(
-        ["rooms:messages:subscribe", "test-room"],
-        import.meta.url,
-      );
-
-      expect(room.attach).toHaveBeenCalled();
-      expect(room.messages.subscribe).toHaveBeenCalled();
-    });
-
-    it("should accept --show-metadata flag", async () => {
-      const chatMock = getMockAblyChat();
-      const room = chatMock.rooms._getRoom("test-room");
-
-      room.messages.subscribe.mockImplementation(() => {
-        return { unsubscribe: vi.fn() };
-      });
-
-      const { error } = await runCommand(
-        ["rooms:messages:subscribe", "test-room", "--show-metadata"],
-        import.meta.url,
-      );
-
-      expect(error).toBeUndefined();
-    });
-
-    it("should accept --sequence-numbers flag", async () => {
-      const chatMock = getMockAblyChat();
-      const room = chatMock.rooms._getRoom("test-room");
-
-      room.messages.subscribe.mockImplementation(
-        (callback: (event: unknown) => void) => {
-          setTimeout(() => {
-            callback({
-              message: {
-                text: "Numbered msg",
-                clientId: "user1",
-                timestamp: new Date(),
-                serial: "msg-seq",
-              },
-            });
-          }, 50);
-          return { unsubscribe: vi.fn() };
-        },
-      );
-
-      const { stdout } = await runCommand(
-        ["rooms:messages:subscribe", "test-room", "--sequence-numbers"],
-        import.meta.url,
-      );
-
-      // Sequence numbers appear as [1] in output
-      expect(stdout).toContain("[1]");
-    });
-  });
-
   describe("error handling", () => {
     it("should handle chat client creation failure", async () => {
       const chatMock = getMockAblyChat();
@@ -240,7 +159,7 @@ describe("rooms:messages:subscribe command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Failed to get room");
+      expect(error?.message).toContain("Failed to get room");
     });
 
     it("should handle attach failure", async () => {
@@ -260,7 +179,7 @@ describe("rooms:messages:subscribe command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Attach failed");
+      expect(error?.message).toContain("Attach failed");
     });
 
     it("should output JSON error on failure with --json", async () => {

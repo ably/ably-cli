@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRest } from "../../../../helpers/mock-ably-rest.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("ChannelsOccupancyGet", function () {
   beforeEach(function () {
@@ -116,35 +121,11 @@ describe("ChannelsOccupancyGet", function () {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:occupancy:get", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
+  standardHelpTests("channels:occupancy:get", import.meta.url);
+  standardArgValidationTests("channels:occupancy:get", import.meta.url, {
+    requiredArgs: ["test-channel"],
   });
-
-  describe("argument validation", () => {
-    it("should require channel argument", async () => {
-      const { error } = await runCommand(
-        ["channels:occupancy:get"],
-        import.meta.url,
-      );
-      expect(error?.message).toMatch(/channel|required|Missing/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:occupancy:get", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("channels:occupancy:get", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
     it("should handle API errors gracefully", async () => {

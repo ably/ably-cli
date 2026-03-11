@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("spaces:members:enter command", () => {
   beforeEach(() => {
@@ -9,47 +14,11 @@ describe("spaces:members:enter command", () => {
     getMockAblySpaces();
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["spaces:members:enter", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
+  standardHelpTests("spaces:members:enter", import.meta.url);
+  standardArgValidationTests("spaces:members:enter", import.meta.url, {
+    requiredArgs: ["test-space"],
   });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["spaces:members:enter", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should require space argument", async () => {
-      const { error } = await runCommand(
-        ["spaces:members:enter"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["spaces:members:enter", "test-space", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
+  standardFlagTests("spaces:members:enter", import.meta.url, ["--json"]);
 
   describe("functionality", () => {
     it("should parse --profile JSON and pass to space.enter", async () => {
@@ -89,7 +58,7 @@ describe("spaces:members:enter command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Invalid profile JSON");
+      expect(error?.message).toContain("Invalid profile JSON");
     });
   });
 
@@ -155,7 +124,7 @@ describe("spaces:members:enter command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Space unavailable");
+      expect(error?.message).toContain("Space unavailable");
     });
   });
 });

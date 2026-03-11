@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 import { captureJsonLogs } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("LogsConnectionLifecycleSubscribe", function () {
   beforeEach(function () {
@@ -46,44 +51,15 @@ describe("LogsConnectionLifecycleSubscribe", function () {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["logs:connection-lifecycle:subscribe", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["logs:connection-lifecycle:subscribe", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["logs:connection-lifecycle:subscribe", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-
-    it("should accept --rewind flag", async () => {
-      const { stdout } = await runCommand(
-        ["logs:connection-lifecycle:subscribe", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--rewind");
-    });
-  });
+  standardHelpTests("logs:connection-lifecycle:subscribe", import.meta.url);
+  standardArgValidationTests(
+    "logs:connection-lifecycle:subscribe",
+    import.meta.url,
+  );
+  standardFlagTests("logs:connection-lifecycle:subscribe", import.meta.url, [
+    "--json",
+    "--rewind",
+  ]);
 
   it("should subscribe to [meta]connection.lifecycle channel", async function () {
     const mock = getMockAblyRealtime();
@@ -378,7 +354,7 @@ describe("LogsConnectionLifecycleSubscribe", function () {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Channel subscribe failed");
+      expect(error?.message).toContain("Channel subscribe failed");
     });
   });
 });

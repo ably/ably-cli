@@ -1,58 +1,24 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("logs:history command", () => {
   beforeEach(() => {
     getMockAblyRest();
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["logs:history", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["logs:history", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["logs:history", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-
-    it("should accept --limit flag", async () => {
-      const { stdout } = await runCommand(
-        ["logs:history", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--limit");
-    });
-
-    it("should accept --direction flag", async () => {
-      const { stdout } = await runCommand(
-        ["logs:history", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--direction");
-    });
-  });
+  standardHelpTests("logs:history", import.meta.url);
+  standardArgValidationTests("logs:history", import.meta.url);
+  standardFlagTests("logs:history", import.meta.url, [
+    "--json",
+    "--limit",
+    "--direction",
+  ]);
 
   describe("error handling", () => {
     it("should handle API errors gracefully", async () => {
@@ -99,7 +65,7 @@ describe("logs:history command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain(
+      expect(error?.message).toContain(
         "--start must be earlier than or equal to --end",
       );
     });

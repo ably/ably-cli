@@ -101,6 +101,9 @@ export default defineConfig({
                 env: {
                   ABLY_CLI_TEST_MODE: "true",
                   ABLY_API_KEY: undefined,
+                  // ABLY_CLI_DEFAULT_DURATION is intentionally omitted for TTY tests.
+                  // TTY tests manage their own timing via explicit --duration flags
+                  // and real PTY I/O, unlike unit tests that use the 250ms auto-exit.
                 },
                 testTimeout: 15000,
                 // TTY tests are slow (real PTY I/O) — run sequentially

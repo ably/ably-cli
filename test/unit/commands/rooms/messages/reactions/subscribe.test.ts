@@ -2,33 +2,26 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../../helpers/mock-ably-chat.js";
 import { captureJsonLogs } from "../../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../../helpers/standard-tests.js";
 
 describe("rooms:messages:reactions:subscribe command", () => {
   beforeEach(() => {
     getMockAblyChat();
   });
 
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:reactions:subscribe", "test-room", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should require room argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:reactions:subscribe"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-  });
+  standardHelpTests("rooms:messages:reactions:subscribe", import.meta.url);
+  standardArgValidationTests(
+    "rooms:messages:reactions:subscribe",
+    import.meta.url,
+    { requiredArgs: ["test-room"] },
+  );
+  standardFlagTests("rooms:messages:reactions:subscribe", import.meta.url, [
+    "--json",
+  ]);
 
   describe("functionality", () => {
     it("should subscribe to message reactions and display them", async () => {
@@ -148,26 +141,6 @@ describe("rooms:messages:reactions:subscribe command", () => {
       expect(parsed).toHaveProperty("room", "test-room");
       expect(parsed.summary).toHaveProperty("unique");
       expect(parsed.summary.unique).toHaveProperty("heart");
-    });
-  });
-
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:messages:reactions:subscribe", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:messages:reactions:subscribe", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
     });
   });
 

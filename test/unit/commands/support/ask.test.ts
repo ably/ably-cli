@@ -1,62 +1,29 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("support:ask command", () => {
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["support:ask", "--help"],
-        import.meta.url,
-      );
+  standardHelpTests("support:ask", import.meta.url);
 
-      expect(stdout).toContain("Ask a question to the Ably AI agent");
-      expect(stdout).toContain("USAGE");
-    });
-
-    it("should display examples in help", async () => {
-      const { stdout } = await runCommand(
-        ["support:ask", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("EXAMPLES");
-    });
-
-    it("should show question argument in help", async () => {
-      const { stdout } = await runCommand(
-        ["support:ask", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("QUESTION");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should require question argument", async () => {
-      const { error } = await runCommand(["support:ask"], import.meta.url);
-
-      expect(error).toBeDefined();
-      expect(error?.message).toContain("Missing 1 required arg");
-    });
+  standardArgValidationTests("support:ask", import.meta.url, {
+    requiredArgs: ["test-question"],
   });
 
   describe("functionality", () => {
-    beforeEach(() => {
-      process.env.ABLY_ACCESS_TOKEN = "fake_access_token";
-    });
-
-    afterEach(() => {
-      delete process.env.ABLY_ACCESS_TOKEN;
-    });
-
     it("should ask a question and display the answer", async () => {
-      nock("https://control.ably.net")
+      nockControl()
         .post("/v1/help")
         .reply(200, {
           answer: "Ably is a realtime messaging platform.",
@@ -77,7 +44,7 @@ describe("support:ask command", () => {
     });
 
     it("should output JSON when --json flag is used", async () => {
-      nock("https://control.ably.net")
+      nockControl()
         .post("/v1/help")
         .reply(200, {
           answer: "Ably is a realtime messaging platform.",
@@ -103,7 +70,7 @@ describe("support:ask command", () => {
     });
 
     it("should display helpful links when present", async () => {
-      nock("https://control.ably.net")
+      nockControl()
         .post("/v1/help")
         .reply(200, {
           answer: "Here is the answer.",
@@ -125,46 +92,22 @@ describe("support:ask command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should accept --continue flag", async () => {
-      const { stdout } = await runCommand(
-        ["support:ask", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--continue");
-    });
-
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["support:ask", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--json");
-    });
-
-    it("should accept -h flag for help", async () => {
-      const { stdout } = await runCommand(
-        ["support:ask", "-h"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("Ask a question to the Ably AI agent");
-    });
-  });
+  standardFlagTests("support:ask", import.meta.url, ["--continue", "--json"]);
 
   describe("error handling", () => {
-    beforeEach(() => {
-      process.env.ABLY_ACCESS_TOKEN = "fake_access_token";
-    });
+    it("should handle 401 authentication error", async () => {
+      nockControl().post("/v1/help").reply(401, { error: "Unauthorized" });
 
-    afterEach(() => {
-      delete process.env.ABLY_ACCESS_TOKEN;
+      const { error } = await runCommand(
+        ["support:ask", '"What is Ably?"'],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
     });
 
     it("should handle API errors gracefully", async () => {
-      nock("https://control.ably.net")
+      nockControl()
         .post("/v1/help")
         .reply(500, { error: "Internal Server Error" });
 
@@ -177,9 +120,7 @@ describe("support:ask command", () => {
     });
 
     it("should handle network errors", async () => {
-      nock("https://control.ably.net")
-        .post("/v1/help")
-        .replyWithError("Network error");
+      nockControl().post("/v1/help").replyWithError("Network error");
 
       const { error } = await runCommand(
         ["support:ask", '"What is Ably?"'],
@@ -196,7 +137,7 @@ describe("support:ask command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
   });
 });

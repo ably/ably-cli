@@ -1,9 +1,7 @@
-import nock from "nock";
+import { nockControl } from "./control-api-test-helpers.js";
 
 export function mockKeysList(appId: string, keys: Record<string, unknown>[]) {
-  return nock("https://control.ably.net")
-    .get(`/v1/apps/${appId}/keys`)
-    .reply(200, keys);
+  return nockControl().get(`/v1/apps/${appId}/keys`).reply(200, keys);
 }
 
 export function buildMockKey(

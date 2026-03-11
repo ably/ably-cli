@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("channels:history command", () => {
   beforeEach(() => {
@@ -29,39 +34,20 @@ describe("channels:history command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:history", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("Retrieve message history");
-      expect(stdout).toContain("USAGE");
-      expect(stdout).toContain("CHANNEL");
-    });
-
-    it("should display examples in help", async () => {
-      const { stdout } = await runCommand(
-        ["channels:history", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("EXAMPLES");
-      expect(stdout).toContain("history");
-    });
+  standardHelpTests("channels:history", import.meta.url);
+  standardArgValidationTests("channels:history", import.meta.url, {
+    requiredArgs: ["test-channel"],
   });
+  standardFlagTests("channels:history", import.meta.url, [
+    "--json",
+    "--limit",
+    "--direction",
+    "--start",
+    "--end",
+    "--cipher",
+  ]);
 
-  describe("argument validation", () => {
-    it("should require channel argument", async () => {
-      const { error } = await runCommand(["channels:history"], import.meta.url);
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/missing.*channel|required/i);
-    });
-  });
-
-  describe("history retrieval", () => {
+  describe("functionality", () => {
     it("should retrieve channel history successfully", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
@@ -229,7 +215,7 @@ describe("channels:history command", () => {
     });
   });
 
-  describe("flags", () => {
+  describe("cipher behavior", () => {
     it("should pass cipher option to channel when --cipher flag is used", async () => {
       const mock = getMockAblyRest();
 

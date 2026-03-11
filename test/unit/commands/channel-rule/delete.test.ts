@@ -1,19 +1,27 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("channel-rule:delete command (alias)", () => {
   const mockRuleId = "test-rule";
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   describe("functionality", () => {
     it("should execute the same as apps:channel-rules:delete", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
         .reply(200, [
           {
@@ -25,7 +33,7 @@ describe("channel-rule:delete command (alias)", () => {
           },
         ]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${appId}/namespaces/${mockRuleId}`)
         .reply(200, {});
 
@@ -44,40 +52,15 @@ describe("channel-rule:delete command (alias)", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing 1 required arg/);
+      expect(error?.message).toMatch(/Missing 1 required arg/);
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["channel-rule:delete", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
+  standardHelpTests("channel-rule:delete", import.meta.url);
+  standardArgValidationTests("channel-rule:delete", import.meta.url, {
+    requiredArgs: ["nameOrId"],
   });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["channel-rule:delete", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["channel-rule:delete", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("channel-rule:delete", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
     it("should require nameOrId argument", async () => {

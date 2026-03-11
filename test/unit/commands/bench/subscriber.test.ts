@@ -76,6 +76,17 @@ describe("bench:subscriber command", () => {
 
       expect(stdout).toContain("Subscribed to channel");
     }, 10_000);
+
+    it("should suppress human-readable output when --json flag is used", async () => {
+      const { stdout } = await runCommand(
+        ["bench:subscriber", "test-channel", "--json"],
+        import.meta.url,
+      );
+
+      // In JSON mode, human-readable progress/success messages are suppressed
+      expect(stdout).not.toContain("Subscribed to channel");
+      expect(stdout).not.toContain("Attaching to channel");
+    }, 10_000);
   });
 
   describe("flags", () => {
@@ -115,7 +126,7 @@ describe("bench:subscriber command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
   });
 });

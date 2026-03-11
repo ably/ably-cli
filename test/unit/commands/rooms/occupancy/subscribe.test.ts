@@ -2,11 +2,22 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
 import { captureJsonLogs } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("rooms:occupancy:subscribe command", () => {
   beforeEach(() => {
     getMockAblyChat();
   });
+
+  standardHelpTests("rooms:occupancy:subscribe", import.meta.url);
+  standardArgValidationTests("rooms:occupancy:subscribe", import.meta.url, {
+    requiredArgs: ["test-room"],
+  });
+  standardFlagTests("rooms:occupancy:subscribe", import.meta.url, ["--json"]);
 
   describe("functionality", () => {
     it("should display initial occupancy snapshot", async () => {
@@ -106,36 +117,6 @@ describe("rooms:occupancy:subscribe command", () => {
       expect(parsed).toHaveProperty("type", "event");
       expect(parsed).toHaveProperty("eventType", "initialSnapshot");
       expect(parsed).toHaveProperty("room", "test-room");
-    });
-  });
-
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:occupancy:subscribe", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should require room argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:occupancy:subscribe"],
-        import.meta.url,
-      );
-      expect(error?.message).toMatch(/room|required|Missing/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["rooms:occupancy:subscribe", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
     });
   });
 

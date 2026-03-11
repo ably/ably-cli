@@ -175,7 +175,7 @@ describe("bench:publisher command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
 
     it("should reject invalid transport option", async () => {
@@ -185,7 +185,7 @@ describe("bench:publisher command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Expected.*rest.*realtime/i);
+      expect(error?.message).toMatch(/Expected.*rest.*realtime/i);
     });
   });
 });

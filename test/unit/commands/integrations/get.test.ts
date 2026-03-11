@@ -1,13 +1,20 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("integrations:get command", () => {
   const mockRuleId = "rule-123456";
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   describe("functionality", () => {
@@ -33,7 +40,7 @@ describe("integrations:get command", () => {
         modified: Date.now(),
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
@@ -71,7 +78,7 @@ describe("integrations:get command", () => {
         modified: Date.now(),
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
@@ -110,7 +117,7 @@ describe("integrations:get command", () => {
         modified: Date.now(),
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
@@ -147,7 +154,7 @@ describe("integrations:get command", () => {
         modified: Date.now(),
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
@@ -181,7 +188,7 @@ describe("integrations:get command", () => {
         modified: Date.now(),
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
@@ -205,7 +212,7 @@ describe("integrations:get command", () => {
 
     it("should handle integration not found", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(404, { error: "Not found" });
 
@@ -220,7 +227,7 @@ describe("integrations:get command", () => {
 
     it("should handle API errors", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(500, { error: "Internal server error" });
 
@@ -235,7 +242,7 @@ describe("integrations:get command", () => {
 
     it("should handle 401 authentication error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(401, { error: "Unauthorized" });
 
@@ -255,7 +262,7 @@ describe("integrations:get command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
   });
 
@@ -285,7 +292,7 @@ describe("integrations:get command", () => {
       };
 
       // Mock the /me endpoint (needed by listApps in resolveAppIdFromNameOrId)
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
@@ -293,11 +300,11 @@ describe("integrations:get command", () => {
         });
 
       // Mock the apps list API call for resolveAppIdFromNameOrId
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [{ id: appId, name: "Test App", accountId }]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
@@ -311,20 +318,8 @@ describe("integrations:get command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["integrations:get", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should require ruleId argument", async () => {
-      const { error } = await runCommand(["integrations:get"], import.meta.url);
-      expect(error?.message).toMatch(/Missing .* required arg/i);
-    });
+  standardHelpTests("integrations:get", import.meta.url);
+  standardArgValidationTests("integrations:get", import.meta.url, {
+    requiredArgs: ["ruleId"],
   });
 });

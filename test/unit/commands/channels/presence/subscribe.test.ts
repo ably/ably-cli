@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("channels:presence:subscribe command", () => {
   let presenceCallback: ((msg: unknown) => void) | null = null;
@@ -36,47 +41,14 @@ describe("channels:presence:subscribe command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:presence:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("Subscribe to presence events");
-      expect(stdout).toContain("USAGE");
-      expect(stdout).toContain("CHANNEL");
-    });
-
-    it("should display examples in help", async () => {
-      const { stdout } = await runCommand(
-        ["channels:presence:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("EXAMPLES");
-      expect(stdout).toContain("presence subscribe");
-    });
-
-    it("should show channel argument is required", async () => {
-      const { stdout } = await runCommand(
-        ["channels:presence:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("CHANNEL");
-    });
+  standardHelpTests("channels:presence:subscribe", import.meta.url);
+  standardArgValidationTests("channels:presence:subscribe", import.meta.url, {
+    requiredArgs: ["test-channel"],
   });
-
-  describe("argument validation", () => {
-    it("should require channel argument", async () => {
-      const { error } = await runCommand(
-        ["channels:presence:subscribe"],
-        import.meta.url,
-      );
-      expect(error?.message).toMatch(/channel|required|Missing/i);
-    });
-  });
+  standardFlagTests("channels:presence:subscribe", import.meta.url, [
+    "--json",
+    "--duration",
+  ]);
 
   describe("functionality", () => {
     it("should subscribe to presence events on a channel", async () => {
@@ -170,26 +142,6 @@ describe("channels:presence:subscribe command", () => {
 
       // Should have processed multiple events
       expect(stdout).toContain("test-channel");
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:presence:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--json");
-    });
-
-    it("should accept --duration flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:presence:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--duration");
     });
   });
 

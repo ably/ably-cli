@@ -1,14 +1,24 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { Readable } from "node:stream";
 import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+  CONTROL_HOST,
+} from "../../../helpers/control-api-test-helpers.js";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("queues:delete command", () => {
   const mockQueueName = "test-queue";
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
@@ -50,11 +60,11 @@ describe("queues:delete command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [createMockQueue(appId, mockQueueId)]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${appId}/queues/${mockQueueId}`)
         .reply(204);
 
@@ -71,22 +81,22 @@ describe("queues:delete command", () => {
       const customAppId = "custom-app-id";
       const mockQueueId = `${customAppId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [{ id: customAppId, accountId, name: "Test App" }]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${customAppId}/queues`)
         .reply(200, [createMockQueue(customAppId, mockQueueId)]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${customAppId}/queues/${mockQueueId}`)
         .reply(204);
 
@@ -105,7 +115,7 @@ describe("queues:delete command", () => {
 
       process.env.ABLY_ACCESS_TOKEN = customToken;
 
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -113,7 +123,7 @@ describe("queues:delete command", () => {
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [createMockQueue(appId, mockQueueId)]);
 
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -135,7 +145,7 @@ describe("queues:delete command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(401, { error: "Unauthorized" });
 
@@ -153,7 +163,7 @@ describe("queues:delete command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(403, { error: "Forbidden" });
 
@@ -171,7 +181,7 @@ describe("queues:delete command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(404, { error: "App not found" });
 
@@ -189,7 +199,7 @@ describe("queues:delete command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(500, { error: "Internal Server Error" });
 
@@ -207,9 +217,7 @@ describe("queues:delete command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/queues`)
-        .reply(200, []);
+      nockControl().get(`/v1/apps/${appId}/queues`).reply(200, []);
 
       const { error } = await runCommand(
         ["queues:delete", mockQueueId, "--force"],
@@ -225,11 +233,11 @@ describe("queues:delete command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [createMockQueue(appId, mockQueueId)]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${appId}/queues/${mockQueueId}`)
         .reply(500, { error: "Internal Server Error" });
 
@@ -268,7 +276,7 @@ describe("queues:delete command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .replyWithError("Network error");
 
@@ -286,7 +294,7 @@ describe("queues:delete command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [
           {
@@ -333,7 +341,7 @@ describe("queues:delete command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [
           {
@@ -347,7 +355,7 @@ describe("queues:delete command", () => {
           },
         ]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${appId}/queues/${mockQueueId}`)
         .reply(409, {
           error: "Conflict",
@@ -396,7 +404,7 @@ describe("queues:delete command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [createMockQueue(appId, mockQueueId)]);
 
@@ -422,7 +430,7 @@ describe("queues:delete command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [
           {
@@ -431,7 +439,7 @@ describe("queues:delete command", () => {
           },
         ]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${appId}/queues/${mockQueueId}`)
         .reply(204);
 
@@ -444,30 +452,9 @@ describe("queues:delete command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["queues:delete", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
+  standardHelpTests("queues:delete", import.meta.url);
+  standardArgValidationTests("queues:delete", import.meta.url, {
+    requiredArgs: ["test-queue-id"],
   });
-
-  describe("argument validation", () => {
-    it("should require queueId argument", async () => {
-      const { error } = await runCommand(["queues:delete"], import.meta.url);
-      expect(error?.message).toMatch(/Missing .* required arg/i);
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["queues:delete", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("queues:delete", import.meta.url, ["--json"]);
 });

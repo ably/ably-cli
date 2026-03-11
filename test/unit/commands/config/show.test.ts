@@ -3,6 +3,10 @@ import { runCommand } from "@oclif/test";
 import { resolve } from "node:path";
 import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
+import {
+  standardHelpTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("config:show command", () => {
   const mockAccessToken = "fake_access_token";
@@ -227,7 +231,7 @@ apiKey = "${mockApiKey}"
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
 
     it("should not require any arguments", async () => {
@@ -242,25 +246,9 @@ apiKey = "${mockApiKey}"
     });
   });
 
-  describe("flags", () => {
-    it("should show available flags in help", async () => {
-      const { stdout } = await runCommand(
-        ["config:show", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("--json");
-    });
-  });
+  standardFlagTests("config:show", import.meta.url, ["--json"]);
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["config:show", "--help"],
-        import.meta.url,
-      );
-      expect(stdout).toContain("USAGE");
-    });
-  });
+  standardHelpTests("config:show", import.meta.url);
 
   describe("error handling", () => {
     it("should handle missing config file gracefully", async () => {
