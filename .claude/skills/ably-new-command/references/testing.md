@@ -7,97 +7,136 @@ Test files go at `test/unit/commands/<path-matching-command>.test.ts`.
 ## Table of Contents
 - [Product API Test (Realtime Mock)](#product-api-test-realtime-mock)
 - [Product API Test (REST Mock)](#product-api-test-rest-mock)
-- [Control API Test (nock)](#control-api-test-nock)
+- [Control API Test](#control-api-test)
 - [E2E Tests](#e2e-tests)
+- [Standard Test Generators](#standard-test-generators)
 - [Test Structure](#test-structure)
 
 ---
 
 ## Product API Test (Realtime Mock)
 
+For subscribe/realtime commands. Uses `getMockAblyRealtime()` and standard test helpers.
+
 ```typescript
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
+import { captureJsonLogs } from "../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("topic:action command", () => {
-  let mockCallback: ((event: unknown) => void) | null = null;
+  let mockSubscribeCallback: ((message: unknown) => void) | null = null;
 
   beforeEach(() => {
-    mockCallback = null;
+    mockSubscribeCallback = null;
     const mock = getMockAblyRealtime();
     const channel = mock.channels._getChannel("test-channel");
 
     // Configure subscribe to capture the callback
-    channel.subscribe.mockImplementation((callback: (msg: unknown) => void) => {
-      mockCallback = callback;
-    });
+    channel.subscribe.mockImplementation(
+      (callback: (msg: unknown) => void) => {
+        mockSubscribeCallback = callback;
+      },
+    );
 
     // Auto-connect
-    mock.connection.once.mockImplementation((event: string, cb: () => void) => {
-      if (event === "connected") cb();
-    });
+    mock.connection.once.mockImplementation(
+      (event: string, callback: () => void) => {
+        if (event === "connected") callback();
+      },
+    );
 
     // Auto-attach
-    channel.once.mockImplementation((event: string, cb: () => void) => {
+    channel.once.mockImplementation((event: string, callback: () => void) => {
       if (event === "attached") {
         channel.state = "attached";
-        cb();
+        callback();
       }
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
-      expect(stdout).toContain("USAGE");
-    });
+  // Standard helpers generate help, argument validation, and flags blocks
+  standardHelpTests("topic:action", import.meta.url);
+  standardArgValidationTests("topic:action", import.meta.url, {
+    requiredArgs: ["test-channel"],
   });
-
-  describe("argument validation", () => {
-    it("should require channel argument", async () => {
-      const { error } = await runCommand(["topic:action"], import.meta.url);
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/channel|required|argument/i);
-    });
-  });
+  standardFlagTests("topic:action", import.meta.url, [
+    "--rewind",
+    "--json",
+  ]);
 
   describe("functionality", () => {
     it("should subscribe and display events", async () => {
-      const commandPromise = runCommand(["topic:action", "test-channel"], import.meta.url);
+      const commandPromise = runCommand(
+        ["topic:action", "test-channel"],
+        import.meta.url,
+      );
 
-      await vi.waitFor(() => { expect(mockCallback).not.toBeNull(); });
+      await vi.waitFor(() => {
+        expect(mockSubscribeCallback).not.toBeNull();
+      });
 
-      mockCallback!({
+      mockSubscribeCallback!({
         name: "test-event",
         data: "hello",
         timestamp: Date.now(),
+        id: "msg-123",
+        clientId: "client-1",
+        connectionId: "conn-1",
       });
 
       const { stdout } = await commandPromise;
       expect(stdout).toContain("test-channel");
     });
-  });
 
-  describe("flags", () => {
-    it("should accept --duration flag", async () => {
-      const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
-      expect(stdout).toContain("--duration");
+    it("should emit JSON envelope for --json events", async () => {
+      const records = await captureJsonLogs(async () => {
+        const commandPromise = runCommand(
+          ["topic:action", "test-channel", "--json"],
+          import.meta.url,
+        );
+
+        await vi.waitFor(() => {
+          expect(mockSubscribeCallback).not.toBeNull();
+        });
+
+        mockSubscribeCallback!({
+          name: "greeting",
+          data: "hi",
+          timestamp: Date.now(),
+          id: "msg-envelope-test",
+          clientId: "client-1",
+          connectionId: "conn-1",
+        });
+
+        await commandPromise;
+      });
+      const events = records.filter(
+        (r) => r.type === "event" && r.channel === "test-channel",
+      );
+      expect(events.length).toBeGreaterThan(0);
+      expect(events[0]).toHaveProperty("type", "event");
+      expect(events[0]).toHaveProperty("command", "topic:action");
     });
   });
 
   describe("error handling", () => {
-    it("should handle connection failure", async () => {
-      const mock = getMockAblyRealtime();
-      mock.connection.once.mockImplementation((event: string, cb: (stateChange: unknown) => void) => {
-        if (event === "failed") cb({ reason: new Error("Connection failed") });
-      });
+    it("should handle missing mock client in test mode", async () => {
+      if (globalThis.__TEST_MOCKS__) {
+        delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
+      }
 
       const { error } = await runCommand(
         ["topic:action", "test-channel"],
         import.meta.url,
       );
       expect(error).toBeDefined();
+      expect(error?.message).toMatch(/No mock|client/i);
     });
   });
 });
@@ -107,10 +146,17 @@ describe("topic:action command", () => {
 
 ## Product API Test (REST Mock)
 
+For history/get commands. Uses `getMockAblyRest()` and standard test helpers.
+
 ```typescript
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("topic:action command", () => {
   beforeEach(() => {
@@ -118,24 +164,30 @@ describe("topic:action command", () => {
     const channel = mock.channels._getChannel("test-channel");
     channel.history.mockResolvedValue({
       items: [
-        { id: "msg-1", name: "event", data: "hello", timestamp: 1700000000000 },
+        {
+          id: "msg-1",
+          name: "test-event",
+          data: { text: "Hello world" },
+          timestamp: 1700000000000,
+          clientId: "client-1",
+          connectionId: "conn-1",
+        },
       ],
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
-      expect(stdout).toContain("USAGE");
-    });
+  // Standard helpers generate help, argument validation, and flags blocks
+  standardHelpTests("topic:action", import.meta.url);
+  standardArgValidationTests("topic:action", import.meta.url, {
+    requiredArgs: ["test-channel"],
   });
-
-  describe("argument validation", () => {
-    it("should require channel argument", async () => {
-      const { error } = await runCommand(["topic:action"], import.meta.url);
-      expect(error?.message).toMatch(/Missing .* required arg/i);
-    });
-  });
+  standardFlagTests("topic:action", import.meta.url, [
+    "--json",
+    "--limit",
+    "--direction",
+    "--start",
+    "--end",
+  ]);
 
   describe("functionality", () => {
     it("should retrieve history", async () => {
@@ -146,12 +198,18 @@ describe("topic:action command", () => {
       expect(stdout).toContain("1");
       expect(stdout).toContain("messages");
     });
-  });
 
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
-      expect(stdout).toContain("--json");
+    it("should output JSON format when --json flag is used", async () => {
+      const { stdout } = await runCommand(
+        ["topic:action", "test-channel", "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "topic:action");
+      expect(result).toHaveProperty("success", true);
+      expect(result).toHaveProperty("messages");
     });
   });
 
@@ -166,6 +224,7 @@ describe("topic:action command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
+      expect(error?.message).toContain("API error");
     });
   });
 });
@@ -173,151 +232,101 @@ describe("topic:action command", () => {
 
 ---
 
-## Control API Test (nock)
+## Control API Test
 
-> **Shared helpers available:** For Control API tests, you can use helpers from `test/helpers/control-api-test-helpers.ts` (`nockControl()`, `getControlApiContext()`, `controlApiCleanup()`) and mock factories from `test/fixtures/control-api.ts` (`mockApp()`, `mockKey()`, `mockRule()`) to reduce boilerplate. See the alternative example after the full scaffold below.
+For CRUD commands. Uses `nockControl()`, mock factories, and all standard test helpers including `standardControlApiErrorTests()`.
 
 ```typescript
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
-
-describe("topic:action command", () => {
-  afterEach(() => {
-    nock.cleanAll();
-  });
-
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["topic:action", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
-
-  describe("functionality", () => {
-    it("should create resource", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .post(`/v1/apps/${appId}/resources`)
-        .reply(201, { id: "res-123", appId });
-
-      const { stdout } = await runCommand(
-        ["topic:action", "--flag", "value"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("created");
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
-      expect(stdout).toContain("--json");
-    });
-  });
-
-  describe("error handling", () => {
-    it("should handle API errors", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .post(`/v1/apps/${appId}/resources`)
-        .reply(400, { error: "Bad request" });
-
-      const { error } = await runCommand(
-        ["topic:action", "--flag", "value"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-    });
-  });
-});
-```
-
----
-
-## Control API Test (using shared helpers)
-
-This is an alternative to the full scaffold above, using the shared helpers to reduce boilerplate:
-
-```typescript
-import { describe, it, expect, afterEach } from "vitest";
-import { runCommand } from "@oclif/test";
-import { nockControl, getControlApiContext, controlApiCleanup } from "../../../helpers/control-api-test-helpers.js";
-import { mockApp } from "../../../fixtures/control-api.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+  standardControlApiErrorTests,
+} from "../../../helpers/standard-tests.js";
+import { mockQueue } from "../../../fixtures/control-api.js";
 
 describe("topic:action command", () => {
   afterEach(() => {
     controlApiCleanup();
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
-      expect(stdout).toContain("USAGE");
-    });
-  });
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["topic:action", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
+  // Standard helpers generate help, argument validation, and flags blocks
+  standardHelpTests("topic:action", import.meta.url);
+  standardArgValidationTests("topic:action", import.meta.url);
+  standardFlagTests("topic:action", import.meta.url, ["--json"]);
 
   describe("functionality", () => {
     it("should list resources", async () => {
-      const { appId } = getControlApiContext();
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
         .get(`/v1/apps/${appId}/resources`)
-        .reply(200, [mockApp()]);
+        .reply(200, [
+          mockQueue({ id: "res-1", appId, name: "test-resource" }),
+        ]);
 
       const { stdout } = await runCommand(
         ["topic:action"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Test App");
+      expect(stdout).toContain("test-resource");
     });
-  });
 
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(["topic:action", "--help"], import.meta.url);
-      expect(stdout).toContain("--json");
+    it("should output JSON format when --json flag is used", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .get(`/v1/apps/${appId}/resources`)
+        .reply(200, [
+          mockQueue({ id: "res-1", appId, name: "test-resource" }),
+        ]);
+
+      const { stdout } = await runCommand(
+        ["topic:action", "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "topic:action");
+      expect(result).toHaveProperty("success", true);
     });
   });
 
   describe("error handling", () => {
-    it("should handle API errors", async () => {
-      const { appId } = getControlApiContext();
+    // Standard 401/500/network error tests — call INSIDE the describe block
+    standardControlApiErrorTests({
+      commandArgs: ["topic:action"],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().get(`/v1/apps/${appId}/resources`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
+    });
+
+    // Command-specific error tests go alongside the standard ones
+    it("should handle 403 forbidden error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
         .get(`/v1/apps/${appId}/resources`)
-        .reply(400, { error: "Bad request" });
+        .reply(403, { error: "Forbidden" });
 
       const { error } = await runCommand(
         ["topic:action"],
         import.meta.url,
       );
-
       expect(error).toBeDefined();
+      expect(error?.message).toMatch(/403/);
     });
   });
 });
@@ -434,13 +443,42 @@ describe.skipIf(SHOULD_SKIP_E2E)("topic:action CRUD E2E", { timeout: 30_000 }, (
 
 ## Standard Test Generators
 
-For reducing boilerplate, `test/helpers/standard-tests.ts` provides generator functions that produce the standard describe blocks:
+The file `test/helpers/standard-tests.ts` provides generator functions that produce the standard describe blocks, reducing boilerplate:
 
-- **`standardHelpTests(commandArgs)`** — generates the `"help"` describe block
-- **`standardArgValidationTests(commandArgs)`** — generates the `"argument validation"` block (unknown flag rejection)
-- **`standardFlagTests(commandArgs, expectedFlags)`** — generates the `"flags"` block
+- **`standardHelpTests(command, importMetaUrl)`** — generates the `"help"` describe block, verifying `--help` output contains USAGE
+- **`standardArgValidationTests(command, importMetaUrl, options?)`** — generates the `"argument validation"` block. Tests unknown flag rejection. If `options.requiredArgs` is provided, also tests that missing args produce an error.
+- **`standardFlagTests(command, importMetaUrl, flags)`** — generates the `"flags"` block, verifying each flag in the array appears in `--help` output
+- **`standardControlApiErrorTests(opts)`** — generates 401/500/network error tests for Control API commands. Call **inside** a `describe("error handling", ...)` block (does NOT create the describe block itself). Takes `{ commandArgs, importMetaUrl, setupNock }` where `setupNock(scenario)` receives `"401"`, `"500"`, or `"network"`.
 
-Use these as a starting point and add command-specific tests within the same describe blocks. You still need to write `"functionality"` and `"error handling"` blocks manually since those are command-specific.
+Call the generators at describe-block level (not inside nested describes). You still need to write `"functionality"` and `"error handling"` blocks manually since those are command-specific. For Control API commands, combine `standardControlApiErrorTests()` with command-specific error tests inside the same `describe("error handling", ...)` block.
+
+### Control API Test Helpers
+
+The file `test/helpers/control-api-test-helpers.ts` provides shared helpers for nock-based Control API tests:
+
+- **`nockControl()`** — returns a `nock` scope pre-configured for `https://control.ably.net`
+- **`getControlApiContext()`** — returns `{ appId, accountId, mock }` from `MockConfigManager`
+- **`controlApiCleanup()`** — calls `nock.cleanAll()` for use in `afterEach` hooks
+- **`CONTROL_HOST`** — the default Control API host constant (`"https://control.ably.net"`)
+
+### Mock Factory Functions
+
+The file `test/fixtures/control-api.ts` provides factory functions for realistic Control API response bodies. Each accepts an optional `Partial<T>` to override any field:
+
+- **`mockApp(overrides?)`** — mock app object (id, name, status, tlsOnly, etc.)
+- **`mockKey(overrides?)`** — mock API key object (id, key, capability, etc.)
+- **`mockRule(overrides?)`** — mock integration rule object (ruleType, source, target, etc.)
+- **`mockQueue(overrides?)`** — mock queue object (name, region, state, messages, stats, amqp, stomp, etc.)
+- **`mockNamespace(overrides?)`** — mock namespace object (id, persisted, pushEnabled, etc.)
+- **`mockStats(overrides?)`** — mock stats object (intervalId, unit, all.messages, etc.)
+
+### NDJSON Test Helpers
+
+The file `test/helpers/ndjson.ts` provides helpers for testing JSON output:
+
+- **`parseNdjsonLines(stdout)`** — parse stdout containing one JSON object per line into an array of records
+- **`parseLogLines(lines)`** — parse an array of log lines into JSON records (skips non-JSON)
+- **`captureJsonLogs(fn)`** — capture all `console.log` output from an async function and parse as JSON records. Use to verify JSON envelope structure in `--json` mode.
 
 ---
 

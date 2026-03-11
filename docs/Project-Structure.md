@@ -110,7 +110,7 @@ This document outlines the directory structure of the Ably CLI project.
 │   │   ├── standard-tests.ts        # Standard test generators for the 5 required describe blocks
 │   │   └── control-api-test-helpers.ts # Shared helpers for Control API nock tests (nockControl, getControlApiContext)
 │   ├── fixtures/                 # Mock data factories
-│   │   └── control-api.ts           # Mock factory functions for Control API response bodies (mockApp, mockKey, mockRule)
+│   │   └── control-api.ts           # Mock factory functions for Control API response bodies (mockApp, mockKey, mockRule, mockQueue, mockNamespace, mockStats)
 │   ├── unit/                   # Fast, mocked tests
 │   │   ├── setup.ts            # Unit test setup
 │   │   ├── base/               # Base command class tests

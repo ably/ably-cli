@@ -331,39 +331,52 @@ Do NOT use variants like `"command arguments and flags"`, `"command flags"`, `"f
 
 The file `test/helpers/standard-tests.ts` provides generator functions that produce the boilerplate tests for the required describe blocks:
 
-- **`standardHelpTests(commandArgs)`** — generates the `"help"` describe block, verifying `--help` output contains USAGE
-- **`standardArgValidationTests(commandArgs)`** — generates the `"argument validation"` block, testing unknown flag rejection
-- **`standardFlagTests(commandArgs, expectedFlags)`** — generates the `"flags"` block, verifying expected flags appear in help output
+- **`standardHelpTests(command, importMetaUrl)`** — generates the `"help"` describe block, verifying `--help` output contains USAGE
+- **`standardArgValidationTests(command, importMetaUrl, options?)`** — generates the `"argument validation"` block, testing unknown flag rejection. If `options.requiredArgs` is provided, also tests that missing args produce an error.
+- **`standardFlagTests(command, importMetaUrl, flags)`** — generates the `"flags"` block, verifying each flag in the array appears in `--help` output
+- **`standardControlApiErrorTests(opts)`** — generates 401/500/network error tests for Control API commands. Call **inside** a `describe("error handling", ...)` block (does NOT create the describe block itself). Takes `{ commandArgs, importMetaUrl, setupNock }` where `setupNock(scenario)` receives `"401"`, `"500"`, or `"network"`.
 
-These generators reduce duplication and ensure consistent test structure. Use them as a starting point and add command-specific tests within the same describe blocks as needed.
+Call the generators at describe-block level (not inside nested describes). You still need to write `"functionality"` and `"error handling"` blocks manually since those are command-specific. For Control API commands, combine `standardControlApiErrorTests()` with command-specific error tests inside the same `describe("error handling", ...)` block.
 
 ### Control API Test Helpers
 
 The file `test/helpers/control-api-test-helpers.ts` provides shared helpers for testing commands that use the Control API with nock:
 
 - **`nockControl()`** — returns a `nock` scope pre-configured for `https://control.ably.net`
-- **`getControlApiContext()`** — returns common test context (appId, accountId) from `MockConfigManager`
+- **`getControlApiContext()`** — returns `{ appId, accountId, mock }` from `MockConfigManager`
 - **`controlApiCleanup()`** — calls `nock.cleanAll()` for use in `afterEach` hooks
+- **`CONTROL_HOST`** — the default Control API host constant (`"https://control.ably.net"`)
 
 ### Mock Factory Functions
 
-The file `test/fixtures/control-api.ts` provides factory functions for building realistic Control API response bodies:
+The file `test/fixtures/control-api.ts` provides factory functions for building realistic Control API response bodies. Each accepts an optional `Partial<T>` to override any field:
 
-- **`mockApp(overrides?)`** — returns a mock app object with sensible defaults
-- **`mockKey(overrides?)`** — returns a mock API key object
-- **`mockRule(overrides?)`** — returns a mock integration rule object
-
-Each factory accepts an optional `Partial<T>` to override any field, making it easy to create test-specific variations without duplicating boilerplate.
+- **`mockApp(overrides?)`** — mock app object (id, name, status, tlsOnly, etc.)
+- **`mockKey(overrides?)`** — mock API key object (id, key, capability, etc.)
+- **`mockRule(overrides?)`** — mock integration rule object (ruleType, source, target, etc.)
+- **`mockQueue(overrides?)`** — mock queue object (name, region, state, messages, stats, amqp, stomp, etc.)
+- **`mockNamespace(overrides?)`** — mock namespace object (id, persisted, pushEnabled, etc.)
+- **`mockStats(overrides?)`** — mock stats object (intervalId, unit, all.messages, etc.)
 
 ```typescript
-import { mockApp, mockKey } from "../../../fixtures/control-api.js";
+import { mockApp, mockQueue } from "../../../fixtures/control-api.js";
 
 // Use defaults
-nock("https://control.ably.net").get(`/v1/apps/${appId}`).reply(200, mockApp());
+nockControl().get(`/v1/apps/${appId}`).reply(200, mockApp());
 
 // Override specific fields
-nock("https://control.ably.net").get(`/v1/apps/${appId}`).reply(200, mockApp({ name: "Custom App", status: "disabled" }));
+nockControl().get(`/v1/apps/${appId}/queues`).reply(200, [
+  mockQueue({ id: "q-1", appId, name: "my-queue" }),
+]);
 ```
+
+### NDJSON Test Helpers
+
+The file `test/helpers/ndjson.ts` provides helpers for testing JSON output:
+
+- **`parseNdjsonLines(stdout)`** — parse stdout containing one JSON object per line into an array of records
+- **`parseLogLines(lines)`** — parse an array of log lines into JSON records (skips non-JSON)
+- **`captureJsonLogs(fn)`** — capture all `console.log` output from an async function and parse as JSON records. Use to verify JSON envelope structure in `--json` mode.
 
 ---
 
