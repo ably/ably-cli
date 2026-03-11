@@ -2,7 +2,6 @@ import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
-import { errorMessage } from "../../../utils/errors.js";
 
 export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
   static args = {
@@ -18,6 +17,7 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
     "$ ably apps channel-rules update chat --persisted",
     "$ ably apps channel-rules update events --push-enabled=false",
     '$ ably apps channel-rules update notifications --persisted --push-enabled --app "My App"',
+    "$ ably apps channel-rules update chat --persisted --json",
   ];
 
   static flags = {
@@ -100,31 +100,20 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
     const { args, flags } = await this.parse(ChannelRulesUpdateCommand);
 
     const appId = await this.requireAppId(flags);
-    if (!appId) return;
-
-    const controlApi = this.createControlApi(flags);
 
     try {
+      const controlApi = this.createControlApi(flags);
       // Find the namespace by name or ID
       const namespaces = await controlApi.listNamespaces(appId);
       const namespace = namespaces.find((n) => n.id === args.nameOrId);
 
       if (!namespace) {
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            {
-              appId,
-              error: `Channel rule "${args.nameOrId}" not found`,
-              status: "error",
-              success: false,
-            },
-            flags,
-          );
-        } else {
-          this.error(`Channel rule "${args.nameOrId}" not found`);
-        }
-
-        return;
+        this.fail(
+          `Channel rule "${args.nameOrId}" not found`,
+          flags,
+          "channelRuleUpdate",
+          { appId },
+        );
       }
 
       // Prepare update data
@@ -181,25 +170,12 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
 
       // Check if there's anything to update
       if (Object.keys(updateData).length === 0) {
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            {
-              appId,
-              error:
-                "No update parameters provided. Use one of the flag options to update the channel rule.",
-              ruleId: namespace.id,
-              status: "error",
-              success: false,
-            },
-            flags,
-          );
-        } else {
-          this.error(
-            "No update parameters provided. Use one of the flag options to update the channel rule.",
-          );
-        }
-
-        return;
+        this.fail(
+          "No update parameters provided. Use one of the flag options to update the channel rule.",
+          flags,
+          "channelRuleUpdate",
+          { appId, ruleId: namespace.id },
+        );
       }
 
       const updatedNamespace = await controlApi.updateNamespace(
@@ -209,33 +185,29 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
       );
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              rule: {
-                authenticated: updatedNamespace.authenticated,
-                batchingEnabled: updatedNamespace.batchingEnabled,
-                batchingInterval: updatedNamespace.batchingInterval,
-                conflationEnabled: updatedNamespace.conflationEnabled,
-                conflationInterval: updatedNamespace.conflationInterval,
-                conflationKey: updatedNamespace.conflationKey,
-                created: new Date(updatedNamespace.created).toISOString(),
-                exposeTimeSerial: updatedNamespace.exposeTimeSerial,
-                id: updatedNamespace.id,
-                modified: new Date(updatedNamespace.modified).toISOString(),
-                persistLast: updatedNamespace.persistLast,
-                persisted: updatedNamespace.persisted,
-                populateChannelRegistry:
-                  updatedNamespace.populateChannelRegistry,
-                pushEnabled: updatedNamespace.pushEnabled,
-                tlsOnly: updatedNamespace.tlsOnly,
-              },
-              success: true,
-              timestamp: new Date().toISOString(),
+        this.logJsonResult(
+          {
+            appId,
+            rule: {
+              authenticated: updatedNamespace.authenticated,
+              batchingEnabled: updatedNamespace.batchingEnabled,
+              batchingInterval: updatedNamespace.batchingInterval,
+              conflationEnabled: updatedNamespace.conflationEnabled,
+              conflationInterval: updatedNamespace.conflationInterval,
+              conflationKey: updatedNamespace.conflationKey,
+              created: new Date(updatedNamespace.created).toISOString(),
+              exposeTimeSerial: updatedNamespace.exposeTimeSerial,
+              id: updatedNamespace.id,
+              modified: new Date(updatedNamespace.modified).toISOString(),
+              persistLast: updatedNamespace.persistLast,
+              persisted: updatedNamespace.persisted,
+              populateChannelRegistry: updatedNamespace.populateChannelRegistry,
+              pushEnabled: updatedNamespace.pushEnabled,
+              tlsOnly: updatedNamespace.tlsOnly,
             },
-            flags,
-          ),
+            timestamp: new Date().toISOString(),
+          },
+          flags,
         );
       } else {
         this.log("Channel rule updated successfully:");
@@ -248,19 +220,7 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            appId,
-            error: errorMessage(error),
-            status: "error",
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(`Error updating channel rule: ${errorMessage(error)}`);
-      }
+      this.fail(error, flags, "channelRuleUpdate", { appId });
     }
   }
 }

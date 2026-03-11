@@ -1,7 +1,6 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { errorMessage } from "../../utils/errors.js";
 import {
   formatLabel,
   formatResource,
@@ -23,6 +22,7 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
     "$ ably queues delete appAbc:us-east-1-a:foo",
     '$ ably queues delete appAbc:us-east-1-a:foo --app "My App"',
     "$ ably queues delete appAbc:us-east-1-a:foo --force",
+    "$ ably queues delete appAbc:us-east-1-a:foo --json",
   ];
 
   static flags = {
@@ -43,31 +43,28 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
     const { args, flags } = await this.parse(QueuesDeleteCommand);
 
     const appId = await this.requireAppId(flags);
-    if (!appId) return;
-
-    const controlApi = this.createControlApi(flags);
 
     try {
+      const controlApi = this.createControlApi(flags);
       // Get all queues and find the one we want to delete by ID
       const queues = await controlApi.listQueues(appId);
       const queue = queues.find((q) => q.id === args.queueId);
 
       if (!queue) {
-        this.error(`Queue with ID "${args.queueId}" not found`);
-        return;
+        this.fail(
+          `Queue with ID "${args.queueId}" not found`,
+          flags,
+          "queueDelete",
+        );
       }
 
       // In JSON mode, require --force to prevent accidental destructive actions
       if (!flags.force && this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error:
-              "The --force flag is required when using --json to confirm deletion",
-            success: false,
-          },
+        this.fail(
+          "The --force flag is required when using --json to confirm deletion",
           flags,
+          "queueDelete",
         );
-        return;
       }
 
       // If not using force flag, prompt for confirmation
@@ -94,18 +91,15 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
       await controlApi.deleteQueue(appId, queue.id);
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              queue: {
-                id: queue.id,
-                name: queue.name,
-              },
-              success: true,
-              timestamp: new Date().toISOString(),
+        this.logJsonResult(
+          {
+            queue: {
+              id: queue.id,
+              name: queue.name,
             },
-            flags,
-          ),
+            timestamp: new Date().toISOString(),
+          },
+          flags,
         );
       } else {
         this.log(
@@ -115,12 +109,7 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
         );
       }
     } catch (error) {
-      const errorMsg = `Error deleting queue: ${errorMessage(error)}`;
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, success: false }, flags);
-      } else {
-        this.error(errorMsg);
-      }
+      this.fail(error, flags, "queueDelete");
     }
   }
 }

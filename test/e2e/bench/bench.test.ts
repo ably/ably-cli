@@ -374,9 +374,10 @@ describe("E2E: ably bench publisher and subscriber", () => {
         );
       }
 
+      // Look for the "result" envelope from formatJsonRecord
       const publisherSummary = publisherLogEntries.find(
         (entry) =>
-          entry.event === "testCompleted" && entry.component === "benchmark",
+          entry.type === "result" && entry.command === "bench:publisher",
       );
 
       // If we can't find the summary, check for known issues
@@ -392,13 +393,13 @@ describe("E2E: ably bench publisher and subscriber", () => {
       }
 
       expect(publisherSummary).toBeDefined();
-      expect(publisherSummary?.data).toBeDefined();
-      const publisherData = publisherSummary!.data;
-      expect(publisherData.messagesSent).toBe(messageCount);
-      expect(publisherData.messagesEchoed).toBeGreaterThanOrEqual(
+      // With JSON envelope format, data fields are at top level (not nested under .data)
+      expect(publisherSummary?.messagesSent).toBeDefined();
+      expect(publisherSummary!.messagesSent).toBe(messageCount);
+      expect(publisherSummary!.messagesEchoed).toBeGreaterThanOrEqual(
         messageCount * 0.9,
       );
-      expect(publisherData.errors).toBe(0);
+      expect(publisherSummary!.errors).toBe(0);
 
       const subscriberLogEntries = subscriberOutput
         .trim()
@@ -410,16 +411,16 @@ describe("E2E: ably bench publisher and subscriber", () => {
             return {};
           }
         });
+      // Look for the "result" envelope from formatJsonRecord
       const subscriberSummary =
-        subscriberSummaryEntry ??
         subscriberLogEntries.find(
           (entry) =>
-            entry.event === "testFinished" && entry.component === "benchmark",
-        );
+            entry.type === "result" && entry.command === "bench:subscriber",
+        ) ?? subscriberSummaryEntry;
       expect(subscriberSummary).toBeDefined();
-      expect(subscriberSummary?.data?.results).toBeDefined();
-      const subscriberResults = subscriberSummary!.data!.results;
-      expect(subscriberResults.messagesReceived).toBe(messageCount);
+      // With JSON envelope format, data fields are at top level (not nested under .data)
+      expect(subscriberSummary?.messagesReceived).toBeDefined();
+      expect(subscriberSummary!.messagesReceived).toBe(messageCount);
     },
   );
 });

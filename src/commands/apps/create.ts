@@ -1,7 +1,6 @@
 import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { errorMessage } from "../../utils/errors.js";
 import {
   formatLabel,
   formatProgress,
@@ -15,6 +14,7 @@ export default class AppsCreateCommand extends ControlBaseCommand {
   static examples = [
     '$ ably apps create --name "My New App"',
     '$ ably apps create --name "My New App" --tls-only',
+    '$ ably apps create --name "My New App" --json',
     '$ ABLY_ACCESS_TOKEN="YOUR_ACCESS_TOKEN" ably apps create --name "My New App"',
   ];
 
@@ -33,9 +33,8 @@ export default class AppsCreateCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(AppsCreateCommand);
 
-    const controlApi = this.createControlApi(flags);
-
     try {
+      const controlApi = this.createControlApi(flags);
       if (!this.shouldOutputJson(flags)) {
         this.log(formatProgress(`Creating app ${formatResource(flags.name)}`));
       }
@@ -46,23 +45,20 @@ export default class AppsCreateCommand extends ControlBaseCommand {
       });
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              app: {
-                accountId: app.accountId,
-                created: new Date(app.created).toISOString(),
-                id: app.id,
-                modified: new Date(app.modified).toISOString(),
-                name: app.name,
-                status: app.status,
-                tlsOnly: app.tlsOnly,
-              },
-              success: true,
-              timestamp: new Date().toISOString(),
+        this.logJsonResult(
+          {
+            app: {
+              accountId: app.accountId,
+              created: new Date(app.created).toISOString(),
+              id: app.id,
+              modified: new Date(app.modified).toISOString(),
+              name: app.name,
+              status: app.status,
+              tlsOnly: app.tlsOnly,
             },
-            flags,
-          ),
+            timestamp: new Date().toISOString(),
+          },
+          flags,
         );
       } else {
         this.log(
@@ -84,22 +80,12 @@ export default class AppsCreateCommand extends ControlBaseCommand {
       this.configManager.storeAppInfo(app.id, { appName: app.name });
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(`\nAutomatically switched to app: ${app.name} (${app.id})`);
+        this.log(
+          `\nAutomatically switched to app: ${formatResource(app.name)} (${app.id})`,
+        );
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error: errorMessage(error),
-            status: "error",
-            success: false,
-          },
-          flags,
-        );
-        return;
-      } else {
-        this.error(`Error creating app: ${errorMessage(error)}`);
-      }
+      this.fail(error, flags, "appCreate");
     }
   }
 }

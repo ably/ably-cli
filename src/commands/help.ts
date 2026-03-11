@@ -33,7 +33,7 @@ export default class HelpCommand extends Command {
     // If web-cli-help flag is provided, show web CLI help
     if (flags["web-cli-help"]) {
       const output = help.formatWebCliRoot();
-      console.log(output);
+      this.log(output);
       return;
     }
 

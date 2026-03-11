@@ -189,7 +189,7 @@ describe("channels:list command", () => {
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error).toContain("Network error");
-      expect(result).toHaveProperty("status", "error");
+      expect(result).toHaveProperty("type", "error");
     });
   });
 

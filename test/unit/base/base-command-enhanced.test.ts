@@ -9,6 +9,8 @@ import { Config } from "@oclif/core";
 
 // Create a testable implementation of the abstract AblyBaseCommand
 class TestCommand extends AblyBaseCommand {
+  public capturedOutput: string[] = [];
+
   public testShouldOutputJson(flags: BaseFlags): boolean {
     return this.shouldOutputJson(flags);
   }
@@ -36,12 +38,36 @@ class TestCommand extends AblyBaseCommand {
     return this.formatJsonOutput(data, flags);
   }
 
+  public testFormatJsonRecord(
+    type: "error" | "event" | "log" | "result",
+    data: Record<string, unknown>,
+    flags: BaseFlags,
+  ): string {
+    return this.formatJsonRecord(type, data, flags);
+  }
+
+  public testFail(
+    error: unknown,
+    flags: BaseFlags,
+    component: string,
+    context?: Record<string, unknown>,
+  ): never {
+    return this.fail(error, flags, component, context);
+  }
+
   public get testIsWebCliMode(): boolean {
     return this.isWebCliMode;
   }
 
   public set testIsWebCliMode(value: boolean) {
     this.isWebCliMode = value;
+  }
+
+  // Capture log output instead of writing to stdout
+  log(message?: string): void {
+    if (message !== undefined) {
+      this.capturedOutput.push(message);
+    }
   }
 
   async run(): Promise<void> {
@@ -102,7 +128,7 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
       expect(command.testIsPrettyJsonOutput({ json: true })).toBe(false);
     });
 
-    it("should format JSON output correctly", function () {
+    it("should format JSON output as compact single-line for --json", function () {
       const data = { success: true, message: "test" };
       const flags: BaseFlags = { json: true };
 
@@ -112,8 +138,8 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
       const parsed = JSON.parse(output);
       expect(parsed).toEqual(data);
 
-      // The implementation always formats JSON with newlines
-      expect(output).toContain("\n");
+      // --json produces compact single-line output (no newlines)
+      expect(output).not.toContain("\n");
       expect(output).toContain('"success"');
       expect(output).toContain('"message"');
     });
@@ -125,6 +151,67 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
       const output = command.testFormatJsonOutput(data, flags);
       expect(output).toContain("success");
       expect(output).toContain("true");
+    });
+
+    it("should wrap data with type envelope via formatJsonRecord", function () {
+      const data = { channels: ["a", "b"], total: 2 };
+      const flags: BaseFlags = { json: true };
+
+      const output = command.testFormatJsonRecord("result", data, flags);
+      const parsed = JSON.parse(output);
+
+      expect(parsed.type).toBe("result");
+      expect(parsed.command).toBeDefined();
+      expect(parsed.success).toBe(true);
+      expect(parsed.channels).toEqual(["a", "b"]);
+      expect(parsed.total).toBe(2);
+      // Compact single-line
+      expect(output).not.toContain("\n");
+    });
+
+    it("should add success:false for error type in formatJsonRecord", function () {
+      const data = { error: "something went wrong" };
+      const flags: BaseFlags = { json: true };
+
+      const output = command.testFormatJsonRecord("error", data, flags);
+      const parsed = JSON.parse(output);
+
+      expect(parsed.type).toBe("error");
+      expect(parsed.success).toBe(false);
+      expect(parsed.error).toBe("something went wrong");
+    });
+
+    it("should not add success field for event type in formatJsonRecord", function () {
+      const data = { channel: "test", message: "hello" };
+      const flags: BaseFlags = { json: true };
+
+      const output = command.testFormatJsonRecord("event", data, flags);
+      const parsed = JSON.parse(output);
+
+      expect(parsed.type).toBe("event");
+      expect(parsed).not.toHaveProperty("success");
+      expect(parsed.channel).toBe("test");
+    });
+
+    it("should not add success field for log type in formatJsonRecord", function () {
+      const data = { component: "subscribe", event: "messageReceived" };
+      const flags: BaseFlags = { json: true };
+
+      const output = command.testFormatJsonRecord("log", data, flags);
+      const parsed = JSON.parse(output);
+
+      expect(parsed.type).toBe("log");
+      expect(parsed).not.toHaveProperty("success");
+    });
+
+    it("should pretty-print formatJsonRecord when --pretty-json is used", function () {
+      const data = { total: 5 };
+      const flags: BaseFlags = { "pretty-json": true };
+
+      const output = command.testFormatJsonRecord("result", data, flags);
+      // Pretty output contains newlines (from color-json or JSON.stringify indent)
+      expect(output).toContain("type");
+      expect(output).toContain("result");
     });
   });
 
@@ -190,6 +277,128 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
     it("should handle ABLY_ACCESS_TOKEN environment variable", function () {
       process.env.ABLY_ACCESS_TOKEN = "test-access-token";
       expect(process.env.ABLY_ACCESS_TOKEN).toBe("test-access-token");
+    });
+  });
+
+  describe("shouldOutputJson argv fallback", function () {
+    it("should detect --json from argv when flags is empty", function () {
+      const mockConfig = { root: "" } as unknown as Config;
+      const cmd = new TestCommand(["some-arg", "--json"], mockConfig);
+      expect(cmd.testShouldOutputJson({})).toBe(true);
+    });
+
+    it("should detect --pretty-json from argv when flags is empty", function () {
+      const mockConfig = { root: "" } as unknown as Config;
+      const cmd = new TestCommand(["--pretty-json"], mockConfig);
+      expect(cmd.testShouldOutputJson({})).toBe(true);
+    });
+
+    it("should return false from argv fallback when no json flags", function () {
+      const mockConfig = { root: "" } as unknown as Config;
+      const cmd = new TestCommand(["--verbose"], mockConfig);
+      expect(cmd.testShouldOutputJson({})).toBe(false);
+    });
+
+    it("should not use argv fallback when flags has keys", function () {
+      // Even though argv has --json, flags object has keys so argv fallback is skipped
+      const mockConfig = { root: "" } as unknown as Config;
+      const cmd = new TestCommand(["--json"], mockConfig);
+      expect(cmd.testShouldOutputJson({ verbose: true })).toBe(false);
+    });
+  });
+
+  describe("isPrettyJsonOutput argv fallback", function () {
+    it("should detect --pretty-json from argv when flags is empty", function () {
+      const mockConfig = { root: "" } as unknown as Config;
+      const cmd = new TestCommand(["--pretty-json"], mockConfig);
+      expect(cmd.testIsPrettyJsonOutput({})).toBe(true);
+    });
+
+    it("should return false for --json from argv (not pretty)", function () {
+      const mockConfig = { root: "" } as unknown as Config;
+      const cmd = new TestCommand(["--json"], mockConfig);
+      expect(cmd.testIsPrettyJsonOutput({})).toBe(false);
+    });
+  });
+
+  describe("fail", function () {
+    it("should throw for human-readable output (non-JSON)", function () {
+      expect(() => command.testFail("something broke", {}, "test")).toThrow(
+        "something broke",
+      );
+    });
+
+    it("should emit JSON error envelope and throw for --json output", function () {
+      const mockConfig = { root: "" } as unknown as Config;
+      const cmd = new TestCommand(["--json"], mockConfig);
+
+      expect(() =>
+        cmd.testFail("auth failed", { json: true }, "auth"),
+      ).toThrow();
+
+      // Check captured JSON output
+      expect(cmd.capturedOutput.length).toBe(1);
+      const parsed = JSON.parse(cmd.capturedOutput[0]);
+      expect(parsed.type).toBe("error");
+      expect(parsed.success).toBe(false);
+      expect(parsed.error).toBe("auth failed");
+    });
+
+    it("should preserve Ably error codes in JSON output", function () {
+      const mockConfig = { root: "" } as unknown as Config;
+      const cmd = new TestCommand(["--json"], mockConfig);
+      const ablyError = Object.assign(new Error("Unauthorized"), {
+        code: 40100,
+        statusCode: 401,
+      });
+
+      expect(() => cmd.testFail(ablyError, { json: true }, "auth")).toThrow();
+
+      const parsed = JSON.parse(cmd.capturedOutput[0]);
+      expect(parsed.type).toBe("error");
+      expect(parsed.success).toBe(false);
+      expect(parsed.error).toBe("Unauthorized");
+      expect(parsed.code).toBe(40100);
+      expect(parsed.statusCode).toBe(401);
+    });
+
+    it("should include context in JSON error output", function () {
+      const mockConfig = { root: "" } as unknown as Config;
+      const cmd = new TestCommand(["--json"], mockConfig);
+
+      expect(() =>
+        cmd.testFail("queue not found", { json: true }, "queues", {
+          queueName: "my-queue",
+        }),
+      ).toThrow();
+
+      const parsed = JSON.parse(cmd.capturedOutput[0]);
+      expect(parsed.error).toBe("queue not found");
+      expect(parsed.queueName).toBe("my-queue");
+    });
+
+    it("should accept string errors", function () {
+      expect(() => command.testFail("simple string error", {}, "test")).toThrow(
+        "simple string error",
+      );
+    });
+
+    it("should accept Error objects", function () {
+      const err = new Error("wrapped error");
+      expect(() => command.testFail(err, {}, "test")).toThrow("wrapped error");
+    });
+
+    it("should use argv fallback for JSON detection when flags is empty", function () {
+      const mockConfig = { root: "" } as unknown as Config;
+      const cmd = new TestCommand(["--json"], mockConfig);
+
+      expect(() => cmd.testFail("pre-parse error", {}, "parse")).toThrow();
+
+      // Should have produced JSON output via argv fallback
+      expect(cmd.capturedOutput.length).toBe(1);
+      const parsed = JSON.parse(cmd.capturedOutput[0]);
+      expect(parsed.type).toBe("error");
+      expect(parsed.error).toBe("pre-parse error");
     });
   });
 });

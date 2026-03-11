@@ -34,10 +34,6 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
       char: "c",
       description: "Client ID to revoke tokens for",
     }),
-    debug: Flags.boolean({
-      default: false,
-      description: "Show debug information",
-    }),
   };
 
   // Property to store the Ably client
@@ -56,10 +52,6 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
     const { token } = args;
 
     try {
-      if (flags.debug) {
-        this.log(`Debug: Using API key: ${apiKey.replace(/:.+/, ":***")}`);
-      }
-
       // Create Ably Realtime client
       const client = await this.createAblyRealtimeClient(flags);
       if (!client) return;
@@ -82,10 +74,11 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
       // Extract the keyName (appId.keyId) from the API key
       const keyParts = apiKey.split(":");
       if (keyParts.length !== 2) {
-        this.error(
+        this.fail(
           "Invalid API key format. Expected format: appId.keyId:secret",
+          flags,
+          "tokenRevoke",
         );
-        return;
       }
 
       const keyName = keyParts[0]; // This gets the appId.keyId portion
@@ -96,78 +89,36 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
         targets: [`clientId:${clientId}`],
       };
 
-      if (flags.debug) {
-        this.log(
-          `Debug: Sending request to endpoint: /keys/${keyName}/revokeTokens`,
-        );
-        this.log(`Debug: Request body: ${JSON.stringify(requestBody)}`);
-      }
-
       try {
         // Make direct HTTPS request to Ably REST API
         const response = await this.makeHttpRequest(
           keyName,
           secret,
           requestBody,
-          flags.debug,
         );
 
-        if (flags.debug) {
-          this.log(`Debug: Response received:`);
-          this.log(JSON.stringify(response, null, 2));
-        }
-
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              {
-                message: "Token revocation processed successfully",
-                response,
-                success: true,
-              },
-              flags,
-            ),
+          this.logJsonResult(
+            {
+              message: "Token revocation processed successfully",
+              response,
+            },
+            flags,
           );
         } else {
           this.log("Token successfully revoked");
         }
       } catch (requestError: unknown) {
         // Handle specific API errors
-        if (flags.debug) {
-          this.log(`Debug: API Error:`);
-          this.log(JSON.stringify(requestError, null, 2));
-        }
-
         const error = requestError as Error;
         if (error.message && error.message.includes("token_not_found")) {
-          if (this.shouldOutputJson(flags)) {
-            this.jsonError(
-              {
-                error: "Token not found or already revoked",
-                success: false,
-              },
-              flags,
-            );
-            return;
-          } else {
-            this.log("Error: Token not found or already revoked");
-          }
+          this.fail("Token not found or already revoked", flags, "tokenRevoke");
         } else {
           throw requestError;
         }
       }
     } catch (error) {
-      let errorMessage = "Unknown error";
-
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === "string") {
-        errorMessage = error;
-      } else if (error && typeof error === "object") {
-        errorMessage = JSON.stringify(error);
-      }
-
-      this.error(`Error revoking token: ${errorMessage}`);
+      this.fail(error, flags, "tokenRevoke");
     }
     // Client cleanup is handled by base class finally() method
   }
@@ -177,7 +128,6 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
     keyName: string,
     secret: string,
     requestBody: Record<string, unknown>,
-    debug: boolean,
   ): Promise<Record<string, unknown> | string | null> {
     return new Promise((resolve, reject) => {
       const encodedAuth = Buffer.from(`${keyName}:${secret}`).toString(
@@ -195,12 +145,6 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
         path: `/keys/${keyName}/revokeTokens`,
         port: 443,
       };
-
-      if (debug) {
-        this.log(
-          `Debug: Making HTTPS request to: https://${options.hostname}${options.path}`,
-        );
-      }
 
       const req = https.request(options, (res) => {
         let data = "";

@@ -19,6 +19,7 @@ import {
   formatTimestamp,
   formatClientId,
   formatEventType,
+  formatLabel,
 } from "../../../../utils/output.js";
 
 export default class MessagesReactionsSubscribe extends ChatBaseCommand {
@@ -59,8 +60,12 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
-        this.error("Failed to initialize clients");
-        return;
+        this.fail(
+          "Failed to initialize clients",
+          flags,
+          "roomMessageReactionSubscribe",
+          { room: args.room },
+        );
       }
 
       const { room } = args;
@@ -129,7 +134,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
           (event: MessageReactionRawEvent) => {
             const timestamp = new Date().toISOString();
             const eventData = {
-              type: event.type,
+              eventType: event.type,
               serial: event.reaction.messageSerial,
               reaction: event.reaction,
               room,
@@ -144,12 +149,10 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
             );
 
             if (this.shouldOutputJson(flags)) {
-              this.log(
-                this.formatJsonOutput({ success: true, ...eventData }, flags),
-              );
+              this.logJsonEvent(eventData, flags);
             } else {
               this.log(
-                `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${formatClientId(event.reaction.clientId || "Unknown")} [${event.reaction.type}] ${event.type}: ${formatEventType(event.reaction.name || "unknown")} to message ${chalk.cyan(event.reaction.messageSerial)}`,
+                `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${formatClientId(event.reaction.clientId || "Unknown")} [${event.reaction.type}] ${event.type}: ${formatEventType(event.reaction.name || "unknown")} to message ${formatResource(event.reaction.messageSerial)}`,
               );
             }
           },
@@ -188,20 +191,18 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
             );
 
             if (this.shouldOutputJson(flags)) {
-              this.log(
-                this.formatJsonOutput(
-                  {
-                    success: true,
-                    room,
-                    timestamp,
-                    summary: summaryData,
-                  },
-                  flags,
-                ),
+              this.logJsonEvent(
+                {
+                  eventType: event.type,
+                  room,
+                  timestamp,
+                  summary: summaryData,
+                },
+                flags,
               );
             } else {
               this.log(
-                `${formatTimestamp(timestamp)} ${chalk.green("📊")} Reaction summary for message ${chalk.cyan(event.messageSerial)}:`,
+                `${formatTimestamp(timestamp)} ${chalk.green("📊")} Reaction summary for message ${formatResource(event.messageSerial)}:`,
               );
 
               // Display the summaries by type if they exist
@@ -209,7 +210,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
                 event.reactions.unique &&
                 Object.keys(event.reactions.unique).length > 0
               ) {
-                this.log(`  ${chalk.blue("Unique reactions:")}`);
+                this.log(`  ${formatLabel("Unique reactions")}`);
                 this.displayReactionSummary(event.reactions.unique);
               }
 
@@ -217,7 +218,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
                 event.reactions.distinct &&
                 Object.keys(event.reactions.distinct).length > 0
               ) {
-                this.log(`  ${chalk.blue("Distinct reactions:")}`);
+                this.log(`  ${formatLabel("Distinct reactions")}`);
                 this.displayReactionSummary(event.reactions.distinct);
               }
 
@@ -225,7 +226,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
                 event.reactions.multiple &&
                 Object.keys(event.reactions.multiple).length > 0
               ) {
-                this.log(`  ${chalk.blue("Multiple reactions:")}`);
+                this.log(`  ${formatLabel("Multiple reactions")}`);
                 this.displayMultipleReactionSummary(event.reactions.multiple);
               }
             }
@@ -249,7 +250,9 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "reactions", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "reactions", { room: args.room });
+      this.fail(error, flags, "roomMessageReactionSubscribe", {
+        room: args.room,
+      });
     }
   }
 

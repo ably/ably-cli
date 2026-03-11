@@ -207,17 +207,17 @@ describe("Rooms E2E Tests", () => {
               process.env.CI ? 20000 : 15000,
             );
 
-            // Wait for profile data pattern - correct JSON formatting with spaces
+            // Wait for profile data in human-readable output
             await waitForOutput(
               subscribeRunner,
-              `"name": "TestUser2"`,
+              `Name: TestUser2`,
               process.env.CI ? 10000 : 5000,
             );
 
-            // Wait for status in profile data - correct JSON formatting with spaces
+            // Wait for status in compact JSON Full Data output
             await waitForOutput(
               subscribeRunner,
-              `"status": "active"`,
+              `"status":"active"`,
               process.env.CI ? 5000 : 3000,
             );
           } catch (error) {

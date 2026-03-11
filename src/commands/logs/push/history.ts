@@ -3,15 +3,16 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../../flags.js";
-import { errorMessage } from "../../../utils/errors.js";
 import { formatMessageData } from "../../../utils/json-formatter.js";
 import { buildHistoryParams } from "../../../utils/history.js";
 import {
   formatCountLabel,
   formatIndex,
-  formatTimestamp,
-  formatMessageTimestamp,
   formatLimitWarning,
+  formatMessageTimestamp,
+  formatResource,
+  formatTimestamp,
+  formatLabel,
 } from "../../../utils/output.js";
 
 export default class LogsPushHistory extends AblyBaseCommand {
@@ -62,23 +63,20 @@ export default class LogsPushHistory extends AblyBaseCommand {
 
       // Output results based on format
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              messages: messages.map((msg) => ({
-                channel: channelName,
-                clientId: msg.clientId,
-                connectionId: msg.connectionId,
-                data: msg.data,
-                encoding: msg.encoding,
-                id: msg.id,
-                name: msg.name,
-                timestamp: formatMessageTimestamp(msg.timestamp),
-              })),
-              success: true,
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            messages: messages.map((msg) => ({
+              channel: channelName,
+              clientId: msg.clientId,
+              connectionId: msg.connectionId,
+              data: msg.data,
+              encoding: msg.encoding,
+              id: msg.id,
+              name: msg.name,
+              timestamp: formatMessageTimestamp(msg.timestamp),
+            })),
+          },
+          flags,
         );
       } else {
         if (messages.length === 0) {
@@ -137,10 +135,10 @@ export default class LogsPushHistory extends AblyBaseCommand {
 
           // Format the log output
           this.log(
-            `${formatIndex(index + 1)} ${timestampDisplay} Channel: ${chalk.cyan(channelName)} | Event: ${eventColor(event)}`,
+            `${formatIndex(index + 1)} ${timestampDisplay} Channel: ${formatResource(channelName)} | Event: ${eventColor(event)}`,
           );
           if (message.data) {
-            this.log(chalk.dim("Data:"));
+            this.log(formatLabel("Data"));
             this.log(formatMessageData(message.data));
           }
 
@@ -155,19 +153,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
         if (warning) this.log(warning);
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error: errorMessage(error),
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(
-          `Error retrieving push notification logs: ${errorMessage(error)}`,
-        );
-      }
+      this.fail(error, flags, "pushHistory");
     }
   }
 }

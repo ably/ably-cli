@@ -1,9 +1,9 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
-import { errorMessage } from "../../../utils/errors.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
 import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
+import { formatResource } from "../../../utils/output.js";
 
 export default class KeysRevokeCommand extends ControlBaseCommand {
   static args = {
@@ -38,8 +38,6 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(KeysRevokeCommand);
 
-    const controlApi = this.createControlApi(flags);
-
     let appId = flags.app || this.configManager.getCurrentAppId();
     let keyId = args.keyName;
 
@@ -48,25 +46,15 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
     keyId = parsed.keyId;
 
     if (!appId) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error:
-              'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(
-          'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
-        );
-      }
-
-      return;
+      this.fail(
+        'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
+        flags,
+        "keyRevoke",
+      );
     }
 
     try {
+      const controlApi = this.createControlApi(flags);
       // Get the key details first to show info to the user
       const key = await controlApi.getKey(appId, keyId);
 
@@ -97,14 +85,9 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
 
       if (!confirmed) {
         if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            {
-              error: "Revocation cancelled by user",
-              keyName,
-              success: false,
-            },
-            flags,
-          );
+          this.fail("Revocation cancelled by user", flags, "keyRevoke", {
+            keyName,
+          });
         } else {
           this.log("Revocation cancelled.");
         }
@@ -115,18 +98,15 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
       await controlApi.revokeKey(appId, keyId);
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              keyName,
-              message: "Key has been revoked",
-              success: true,
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            keyName,
+            message: "Key has been revoked",
+          },
+          flags,
         );
       } else {
-        this.log(`Key ${keyName} has been revoked.`);
+        this.log(`Key ${formatResource(keyName)} has been revoked.`);
       }
 
       // Check if the revoked key is the current key for this app
@@ -145,19 +125,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            appId,
-            error: errorMessage(error),
-            keyId,
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(`Error revoking key: ${errorMessage(error)}`);
-      }
+      this.fail(error, flags, "keyRevoke", { appId, keyId });
     }
   }
 }

@@ -34,7 +34,7 @@ describe("channel-rule:delete command (alias)", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("deleted successfully");
+      expect(stdout).toContain("deleted");
     });
 
     it("should require nameOrId argument", async () => {

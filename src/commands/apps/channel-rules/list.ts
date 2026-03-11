@@ -3,7 +3,6 @@ import type { Namespace } from "../../../services/control-api.js";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
-import { errorMessage } from "../../../utils/errors.js";
 import { formatHeading } from "../../../utils/output.js";
 
 interface ChannelRuleOutput {
@@ -45,43 +44,38 @@ export default class ChannelRulesListCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(ChannelRulesListCommand);
     const appId = await this.requireAppId(flags);
-    if (!appId) return;
 
     try {
       const controlApi = this.createControlApi(flags);
       const namespaces = await controlApi.listNamespaces(appId);
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              rules: namespaces.map(
-                (rule: Namespace): ChannelRuleOutput => ({
-                  authenticated: rule.authenticated || false,
-                  batchingEnabled: rule.batchingEnabled || false,
-                  batchingInterval: rule.batchingInterval || null,
-                  conflationEnabled: rule.conflationEnabled || false,
-                  conflationInterval: rule.conflationInterval || null,
-                  conflationKey: rule.conflationKey || null,
-                  created: new Date(rule.created).toISOString(),
-                  exposeTimeSerial: rule.exposeTimeSerial || false,
-                  id: rule.id,
-                  modified: new Date(rule.modified).toISOString(),
-                  persistLast: rule.persistLast || false,
-                  persisted: rule.persisted || false,
-                  populateChannelRegistry:
-                    rule.populateChannelRegistry || false,
-                  pushEnabled: rule.pushEnabled || false,
-                  tlsOnly: rule.tlsOnly || false,
-                }),
-              ),
-              success: true,
-              timestamp: new Date().toISOString(),
-              total: namespaces.length,
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            appId,
+            rules: namespaces.map(
+              (rule: Namespace): ChannelRuleOutput => ({
+                authenticated: rule.authenticated || false,
+                batchingEnabled: rule.batchingEnabled || false,
+                batchingInterval: rule.batchingInterval || null,
+                conflationEnabled: rule.conflationEnabled || false,
+                conflationInterval: rule.conflationInterval || null,
+                conflationKey: rule.conflationKey || null,
+                created: new Date(rule.created).toISOString(),
+                exposeTimeSerial: rule.exposeTimeSerial || false,
+                id: rule.id,
+                modified: new Date(rule.modified).toISOString(),
+                persistLast: rule.persistLast || false,
+                persisted: rule.persisted || false,
+                populateChannelRegistry: rule.populateChannelRegistry || false,
+                pushEnabled: rule.pushEnabled || false,
+                tlsOnly: rule.tlsOnly || false,
+              }),
+            ),
+            timestamp: new Date().toISOString(),
+            total: namespaces.length,
+          },
+          flags,
         );
       } else {
         if (namespaces.length === 0) {
@@ -106,19 +100,7 @@ export default class ChannelRulesListCommand extends ControlBaseCommand {
         });
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            appId,
-            error: errorMessage(error),
-            status: "error",
-            success: false,
-          },
-          flags,
-        );
-      } else {
-        this.error(`Error listing channel rules: ${errorMessage(error)}`);
-      }
+      this.fail(error, flags, "channelRuleList", { appId });
     }
   }
 }

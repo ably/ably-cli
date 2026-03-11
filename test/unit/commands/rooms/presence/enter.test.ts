@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
+import { captureJsonLogs } from "../../../../helpers/ndjson.js";
 
 describe("rooms:presence:enter command", () => {
   beforeEach(() => {
@@ -127,11 +128,6 @@ describe("rooms:presence:enter command", () => {
   it("should output JSON on enter success", async () => {
     const mock = getMockAblyChat();
     const room = mock.rooms._getRoom("test-room");
-    const capturedLogs: string[] = [];
-
-    const logSpy = vi.spyOn(console, "log").mockImplementation((msg) => {
-      capturedLogs.push(String(msg));
-    });
 
     let presenceCallback: ((event: unknown) => void) | null = null;
     room.presence.subscribe.mockImplementation((callback) => {
@@ -139,53 +135,48 @@ describe("rooms:presence:enter command", () => {
       return { unsubscribe: vi.fn() };
     });
 
-    const commandPromise = runCommand(
-      [
-        "rooms:presence:enter",
-        "test-room",
-        "--show-others",
-        "--json",
-        "--duration",
-        "0",
-      ],
-      import.meta.url,
-    );
+    const allRecords = await captureJsonLogs(async () => {
+      const commandPromise = runCommand(
+        [
+          "rooms:presence:enter",
+          "test-room",
+          "--show-others",
+          "--json",
+          "--duration",
+          "0",
+        ],
+        import.meta.url,
+      );
 
-    await vi.waitFor(
-      () => {
-        expect(room.presence.subscribe).toHaveBeenCalled();
-      },
-      { timeout: 1000 },
-    );
-
-    // Simulate a presence event from another user
-    if (presenceCallback) {
-      presenceCallback({
-        type: "enter",
-        member: {
-          clientId: "other-user",
-          data: { status: "online" },
+      await vi.waitFor(
+        () => {
+          expect(room.presence.subscribe).toHaveBeenCalled();
         },
-      });
-    }
+        { timeout: 1000 },
+      );
 
-    await commandPromise;
-    logSpy.mockRestore();
-
-    // Find the JSON output with presence data
-    const jsonLines = capturedLogs.filter((line) => {
-      try {
-        const parsed = JSON.parse(line);
-        return parsed.type && parsed.member;
-      } catch {
-        return false;
+      // Simulate a presence event from another user
+      if (presenceCallback) {
+        presenceCallback({
+          type: "enter",
+          member: {
+            clientId: "other-user",
+            data: { status: "online" },
+          },
+        });
       }
+
+      await commandPromise;
     });
 
-    expect(jsonLines.length).toBeGreaterThan(0);
-    const parsed = JSON.parse(jsonLines[0]);
-    expect(parsed).toHaveProperty("success", true);
-    expect(parsed).toHaveProperty("type", "enter");
+    // Find the JSON output with presence data
+    const records = allRecords.filter((r) => r.type === "event" && r.member);
+
+    expect(records.length).toBeGreaterThan(0);
+    const parsed = records[0];
+    expect(parsed).toHaveProperty("command");
+    expect(parsed).toHaveProperty("type", "event");
+    expect(parsed).toHaveProperty("eventType", "enter");
     expect(parsed.member).toHaveProperty("clientId", "other-user");
   });
 });

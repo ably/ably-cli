@@ -105,7 +105,8 @@ This document outlines the directory structure of the Ably CLI project.
 │   │   ├── mock-ably-spaces.ts     # Mock Ably Spaces SDK
 │   │   ├── mock-config-manager.ts  # MockConfigManager (provides test auth)
 │   │   ├── mock-control-api-keys.ts # Mock Control API key responses
-│   │   └── ably-event-emitter.ts   # Event emitter helper for mock SDKs
+│   │   ├── ably-event-emitter.ts   # Event emitter helper for mock SDKs
+│   │   └── ndjson.ts                # NDJSON parsing helpers (parseNdjsonLines, parseLogLines, captureJsonLogs)
 │   ├── unit/                   # Fast, mocked tests
 │   │   ├── setup.ts            # Unit test setup
 │   │   ├── base/               # Base command class tests

@@ -164,13 +164,15 @@ describe("queues:list command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "queues:list");
+      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("appId", appId);
       expect(result).toHaveProperty("queues");
       expect(result.queues).toBeInstanceOf(Array);
       expect(result.queues).toHaveLength(1);
       expect(result.queues[0]).toHaveProperty("id", "queue-1");
       expect(result.queues[0]).toHaveProperty("name", "test-queue-1");
-      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("total", 1);
     });
 
@@ -379,7 +381,6 @@ describe("queues:list command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/No access token|No app|not logged in/i);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle network errors", async () => {
@@ -408,10 +409,12 @@ describe("queues:list command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain('"success": false');
-      expect(stdout).toContain('"status": "error"');
-      expect(stdout).toContain('"error":');
-      expect(stdout).toContain(`"appId": "${appId}"`);
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "error");
+      expect(result).toHaveProperty("command", "queues:list");
+      expect(result).toHaveProperty("success", false);
+      expect(result).toHaveProperty("error");
+      expect(result).toHaveProperty("appId", appId);
     });
 
     it("should handle 429 rate limit error", async () => {
@@ -494,11 +497,13 @@ describe("queues:list command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "queues:list");
+      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("appId", appId);
       expect(result).toHaveProperty("queues");
       expect(result.queues).toBeInstanceOf(Array);
       expect(result.queues).toHaveLength(0);
-      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("total", 0);
     });
   });

@@ -1,9 +1,8 @@
 import { Args, Flags } from "@oclif/core";
-import chalk from "chalk";
-
 import { AblyBaseCommand } from "../../base-command.js";
 import { hiddenControlApiFlags, productApiFlags } from "../../flags.js";
 import openUrl from "../../utils/open-url.js";
+import { formatResource } from "../../utils/output.js";
 
 export default class ChannelsInspect extends AblyBaseCommand {
   static override args = {
@@ -33,15 +32,19 @@ export default class ChannelsInspect extends AblyBaseCommand {
     const currentAccount = this.configManager.getCurrentAccount();
     const accountId = currentAccount?.accountId;
     if (!accountId) {
-      this.error(
-        `No account configured. Please log in first with ${chalk.cyan('"ably accounts login"')}.`,
+      this.fail(
+        `No account configured. Please log in first with ${formatResource("ably accounts login")}.`,
+        flags,
+        "ChannelInspect",
       );
     }
 
     const appId = flags.app ?? this.configManager.getCurrentAppId();
     if (!appId) {
-      this.error(
-        `No app selected. Please select an app first with ${chalk.cyan('"ably apps switch"')} or specify one with ${chalk.cyan("--app")}.`,
+      this.fail(
+        `No app selected. Please select an app first with ${formatResource("ably apps switch")} or specify one with ${formatResource("--app")}.`,
+        flags,
+        "ChannelInspect",
       );
     }
 

@@ -1,15 +1,21 @@
 import { Flags } from "@oclif/core";
 import * as Ably from "ably";
-import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
-import { durationFlag, productApiFlags, rewindFlag } from "../../flags.js";
 import {
+  clientIdFlag,
+  durationFlag,
+  productApiFlags,
+  rewindFlag,
+} from "../../flags.js";
+import {
+  formatEventType,
   formatListening,
+  formatMessageTimestamp,
   formatResource,
   formatSuccess,
   formatTimestamp,
-  formatMessageTimestamp,
+  formatLabel,
 } from "../../utils/output.js";
 
 export default class LogsSubscribe extends AblyBaseCommand {
@@ -26,6 +32,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
+    ...clientIdFlag,
     ...durationFlag,
     ...rewindFlag,
     type: Flags.string({
@@ -60,8 +67,11 @@ export default class LogsSubscribe extends AblyBaseCommand {
       // Get the logs channel
       const appConfig = await this.ensureAppAndKey(flags);
       if (!appConfig) {
-        this.error("Unable to determine app configuration");
-        return;
+        this.fail(
+          "Unable to determine app configuration",
+          flags,
+          "logSubscribe",
+        );
       }
       const logsChannelName = `[meta]log`;
 
@@ -114,7 +124,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
         channel.subscribe(logType, (message: Ably.Message) => {
           const timestamp = formatMessageTimestamp(message.timestamp);
           const event = {
-            type: logType,
+            logType,
             timestamp,
             data: message.data,
             id: message.id,
@@ -128,15 +138,15 @@ export default class LogsSubscribe extends AblyBaseCommand {
           );
 
           if (this.shouldOutputJson(flags)) {
-            this.log(this.formatJsonOutput(event, flags));
+            this.logJsonEvent(event, flags);
           } else {
             this.log(
-              `${formatTimestamp(timestamp)} ${chalk.cyan(`Type: ${logType}`)}`,
+              `${formatTimestamp(timestamp)} Type: ${formatEventType(logType)}`,
             );
 
             if (message.data !== null && message.data !== undefined) {
               this.log(
-                `${chalk.dim("Data:")} ${JSON.stringify(message.data, null, 2)}`,
+                `${formatLabel("Data")} ${JSON.stringify(message.data, null, 2)}`,
               );
             }
 
@@ -158,7 +168,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "logs", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "logs");
+      this.fail(error, flags, "logSubscribe");
     }
   }
 }

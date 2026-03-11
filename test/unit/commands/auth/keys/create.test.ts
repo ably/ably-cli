@@ -128,11 +128,13 @@ describe("auth:keys:create command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "auth:keys:create");
+      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("key");
       expect(result.key).toHaveProperty("id", mockKeyId);
       expect(result.key).toHaveProperty("name", "TestKey");
       expect(result.key).toHaveProperty("key");
-      expect(result).toHaveProperty("success", true);
     });
 
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {

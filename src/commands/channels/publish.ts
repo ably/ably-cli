@@ -5,8 +5,8 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { BaseFlags } from "../../types/cli.js";
-import { interpolateMessage } from "../../utils/message.js";
 import { errorMessage } from "../../utils/errors.js";
+import { interpolateMessage } from "../../utils/message.js";
 import {
   formatProgress,
   formatResource,
@@ -106,34 +106,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
     }
   }
 
-  private handlePublishError(
-    error: unknown,
-    flags: Record<string, unknown>,
-  ): void {
-    const errorMsg = errorMessage(error);
-    this.logCliEvent(
-      flags,
-      "publish",
-      "fatalError",
-      `Failed to publish message: ${errorMsg}`,
-      { error: errorMsg },
-    );
-    this.logErrorAndExit(`Failed to publish message: ${errorMsg}`, flags);
-    return;
-  }
-
   // --- Original Methods (modified) ---
-
-  private logErrorAndExit(
-    message: string,
-    flags: Record<string, unknown>,
-  ): void {
-    if (this.shouldOutputJson(flags)) {
-      this.jsonError({ error: message, success: false }, flags); // Set exit code for JSON output errors
-    } else {
-      this.error(message); // Use oclif error which sets exit code
-    }
-  }
 
   private logFinalSummary(
     flags: Record<string, unknown>,
@@ -147,7 +120,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
       errors,
       published,
       results,
-      success: errors === 0 && published === total,
+      allSucceeded: errors === 0 && published === total,
       total,
       channel: args.channel,
     };
@@ -161,7 +134,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
 
     if (!this.shouldSuppressOutput(flags)) {
       if (this.shouldOutputJson(flags)) {
-        this.log(this.formatJsonOutput(finalResult, flags));
+        this.logJsonResult(finalResult, flags);
       } else if (total > 1) {
         this.log(
           formatSuccess(
@@ -351,13 +324,11 @@ export default class ChannelsPublish extends AblyBaseCommand {
     try {
       this.realtime = await this.createAblyRealtimeClient(flags as BaseFlags);
       if (!this.realtime) {
-        const errorMsg =
-          "Failed to create Ably client. Please check your API key and try again.";
-        this.logCliEvent(flags, "publish", "clientCreationFailed", errorMsg, {
-          error: errorMsg,
-        });
-        this.logErrorAndExit(errorMsg, flags);
-        return;
+        this.fail(
+          "Failed to create Ably client. Please check your API key and try again.",
+          flags as BaseFlags,
+          "channelPublish",
+        );
       }
 
       const client = this.realtime;
@@ -390,9 +361,11 @@ export default class ChannelsPublish extends AblyBaseCommand {
         );
       });
 
-      await this.publishMessages(args, flags, (msg) => channel.publish(msg));
+      await this.publishMessages(args, flags, async (msg) => {
+        await channel.publish(msg);
+      });
     } catch (error) {
-      this.handlePublishError(error, flags);
+      this.fail(error, flags as BaseFlags, "channelPublish");
     }
     // Client cleanup is handled by command finally() method
   }
@@ -416,9 +389,11 @@ export default class ChannelsPublish extends AblyBaseCommand {
         "Using REST transport",
       );
 
-      await this.publishMessages(args, flags, (msg) => channel.publish(msg));
+      await this.publishMessages(args, flags, async (msg) => {
+        await channel.publish(msg);
+      });
     } catch (error) {
-      this.handlePublishError(error, flags);
+      this.fail(error, flags as BaseFlags, "channelPublish");
     }
     // No finally block needed here as REST client doesn't maintain a connection
   }

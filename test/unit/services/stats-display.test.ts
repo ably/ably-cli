@@ -13,14 +13,20 @@ describe("StatsDisplay", () => {
     vi.useRealTimers();
   });
 
-  it("outputs JSON.stringify(stats) in JSON mode", () => {
-    const display = new StatsDisplay({ json: true });
+  it("outputs JSON record with envelope in JSON mode", () => {
+    const display = new StatsDisplay({ json: true, command: "stats" });
     const stats = {
       entries: { "messages.all.all.count": 10 },
       intervalId: "2025-01-15:10:30",
     };
     display.display(stats);
-    expect(consoleSpy).toHaveBeenCalledWith(JSON.stringify(stats));
+    const output = consoleSpy.mock.calls[0][0];
+    const parsed = JSON.parse(output);
+    expect(parsed).toHaveProperty("type", "result");
+    expect(parsed).toHaveProperty("command", "stats");
+    expect(parsed).toHaveProperty("success", true);
+    expect(parsed.entries).toEqual({ "messages.all.all.count": 10 });
+    expect(parsed.intervalId).toBe("2025-01-15:10:30");
   });
 
   it("produces no output for null stats", () => {

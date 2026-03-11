@@ -1,8 +1,6 @@
 import type { ProfileData, SpaceMember } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
-import chalk from "chalk";
 
-import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
@@ -12,6 +10,7 @@ import {
   formatTimestamp,
   formatPresenceAction,
   formatClientId,
+  formatLabel,
 } from "../../../utils/output.js";
 
 export default class SpacesMembersEnter extends SpacesBaseCommand {
@@ -29,6 +28,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
     "$ ably spaces members enter my-space",
     '$ ably spaces members enter my-space --profile \'{"name":"User","status":"active"}\'',
     "$ ably spaces members enter my-space --duration 30",
+    "$ ably spaces members enter my-space --json",
   ];
 
   static override flags = {
@@ -64,7 +64,6 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
       let profileData: ProfileData | undefined;
       if (flags.profile) {
         const parsed = this.parseJsonFlag(flags.profile, "profile", flags);
-        if (!parsed) return;
         profileData = parsed as ProfileData;
         this.logCliEvent(
           flags,
@@ -99,14 +98,12 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
       );
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput({ success: true, ...enteredEventData }, flags),
-        );
+        this.logJsonResult(enteredEventData, flags);
       } else {
         this.log(formatSuccess(`Entered space: ${formatResource(spaceName)}.`));
         if (profileData) {
           this.log(
-            `${chalk.dim("Profile:")} ${JSON.stringify(profileData, null, 2)}`,
+            `${formatLabel("Profile")} ${JSON.stringify(profileData, null, 2)}`,
           );
         } else {
           // No profile data provided
@@ -184,7 +181,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
           },
           spaceName,
           timestamp,
-          type: "member_update",
+          eventType: "member_update",
         };
         this.logCliEvent(
           flags,
@@ -195,9 +192,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput({ success: true, ...memberEventData }, flags),
-          );
+          this.logJsonEvent(memberEventData, flags);
         } else {
           const { symbol: actionSymbol, color: actionColor } =
             formatPresenceAction(action);
@@ -211,7 +206,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
 
           if (hasProfileData) {
             this.log(
-              `  ${chalk.dim("Profile:")} ${JSON.stringify(member.profileData, null, 2)}`,
+              `  ${formatLabel("Profile")} ${JSON.stringify(member.profileData, null, 2)}`,
             );
           } else {
             // No profile data available
@@ -232,11 +227,11 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
               "Connection ID is unknown for member",
             );
           } else {
-            this.log(`  ${chalk.dim("Connection ID:")} ${connectionId}`);
+            this.log(`  ${formatLabel("Connection ID")} ${connectionId}`);
           }
 
           if (member.isConnected === false) {
-            this.log(`  ${chalk.dim("Status:")} Not connected`);
+            this.log(`  ${formatLabel("Status")} Not connected`);
           } else {
             // Member is connected
             this.logCliEvent(
@@ -269,19 +264,11 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "member", flags.duration);
     } catch (error) {
-      const errorMsg = `Error: ${errorMessage(error)}`;
-      this.logCliEvent(flags, "error", "unhandledError", errorMsg, {
-        error: errorMsg,
-      });
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, success: false }, flags);
-      } else {
-        this.error(errorMsg);
-      }
+      this.fail(error, flags, "memberEnter");
     } finally {
       if (!this.shouldOutputJson(flags || {})) {
         if (this.cleanupInProgress) {
-          this.log(chalk.green("Graceful shutdown complete (user interrupt)."));
+          this.log(formatSuccess("Graceful shutdown complete."));
         } else {
           // Normal completion without user interrupt
           this.logCliEvent(

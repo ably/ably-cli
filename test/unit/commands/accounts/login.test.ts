@@ -63,6 +63,8 @@ describe("accounts:login command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("account");
       expect(result.account).toHaveProperty("id", mockAccountId);
@@ -102,6 +104,8 @@ describe("accounts:login command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", true);
       expect(result.account).toHaveProperty("alias", customAlias);
 
@@ -142,6 +146,8 @@ describe("accounts:login command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("app");
       expect(result.app).toHaveProperty("id", mockAppId);
@@ -186,6 +192,8 @@ describe("accounts:login command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", true);
       expect(result).not.toHaveProperty("app");
 
@@ -214,6 +222,8 @@ describe("accounts:login command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "error");
+      expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
     });
@@ -230,6 +240,8 @@ describe("accounts:login command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "error");
+      expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error).toContain("Network error");
@@ -247,6 +259,8 @@ describe("accounts:login command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "error");
+      expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
     });
@@ -281,6 +295,8 @@ describe("accounts:login command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", true);
       expect(result.account).toHaveProperty("id", mockAccountId);
 

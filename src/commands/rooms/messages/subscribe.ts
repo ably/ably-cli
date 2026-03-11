@@ -5,6 +5,7 @@ import chalk from "chalk";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import {
+  formatLabel,
   formatProgress,
   formatResource,
   formatTimestamp,
@@ -107,18 +108,16 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       });
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              message: messageLog,
-              room: roomName,
-              success: true,
-              ...(flags["sequence-numbers"]
-                ? { sequence: this.sequenceCounter }
-                : {}),
-            },
-            flags,
-          ),
+        this.logJsonEvent(
+          {
+            eventType: messageEvent.type,
+            message: messageLog,
+            room: roomName,
+            ...(flags["sequence-numbers"]
+              ? { sequence: this.sequenceCounter }
+              : {}),
+          },
+          flags,
         );
       } else {
         // Format message with timestamp, author and content
@@ -141,7 +140,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         // Show metadata if enabled and available
         if (flags["show-metadata"] && message.metadata) {
           this.log(
-            `${roomPrefix}${chalk.blue("  Metadata:")} ${chalk.yellow(this.formatJsonOutput(message.metadata, flags))}`,
+            `${roomPrefix}  ${formatLabel("Metadata")} ${chalk.yellow(this.formatJsonOutput(message.metadata, flags))}`,
           );
         }
 
@@ -185,16 +184,11 @@ export default class MessagesSubscribe extends ChatBaseCommand {
     this.roomNames = parseResult.argv as string[];
 
     if (this.roomNames.length === 0) {
-      const errorMsg = "At least one room name is required";
-      this.logCliEvent(flags, "subscribe", "validationError", errorMsg, {
-        error: errorMsg,
-      });
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, success: false }, flags);
-      } else {
-        this.error(errorMsg);
-      }
-      return;
+      this.fail(
+        new Error("At least one room name is required"),
+        flags,
+        "roomMessageSubscribe",
+      );
     }
 
     this.logCliEvent(
@@ -259,7 +253,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "subscribe", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "subscribe", {
+      this.fail(error, flags, "roomMessageSubscribe", {
         rooms: this.roomNames,
       });
     }

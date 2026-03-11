@@ -228,7 +228,7 @@ describe("channels:batch-publish command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error?.message).toContain("Failed to execute batch publish");
+      expect(error?.message).toContain("Publish failed");
     });
 
     it("should handle partial success response", async () => {
@@ -283,8 +283,8 @@ describe("channels:batch-publish command", () => {
         import.meta.url,
       );
 
-      // In JSON mode, errors are returned as JSON, not thrown
-      expect(error).toBeUndefined();
+      // In JSON mode, errors are output as JSON and the command exits with code 1
+      expect(error).toBeDefined();
 
       // In JSON mode, progress messages are suppressed by JSON guard
       const result = JSON.parse(stdout);

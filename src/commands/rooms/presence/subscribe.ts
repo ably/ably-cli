@@ -5,14 +5,15 @@ import chalk from "chalk";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import {
-  formatProgress,
-  formatSuccess,
-  formatListening,
-  formatResource,
-  formatTimestamp,
-  formatPresenceAction,
   formatClientId,
+  formatHeading,
   formatLabel,
+  formatListening,
+  formatPresenceAction,
+  formatProgress,
+  formatResource,
+  formatSuccess,
+  formatTimestamp,
 } from "../../../utils/output.js";
 
 export default class RoomsPresenceSubscribe extends ChatBaseCommand {
@@ -134,7 +135,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
           );
         } else {
           this.log(
-            `\n${chalk.cyan("Current presence members")} (${chalk.bold(members.length.toString())}):\n`,
+            `\n${formatHeading("Current presence members")} (${chalk.bold(members.length.toString())}):\n`,
           );
           for (const member of members) {
             this.log(`- ${formatClientId(member.clientId || "Unknown")}`);
@@ -165,7 +166,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         const timestamp = new Date().toISOString();
         const member = event.member;
         const eventData = {
-          type: event.type,
+          eventType: event.type,
           member: { clientId: member.clientId, data: member.data },
           room: this.roomName,
           timestamp,
@@ -178,9 +179,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
           eventData,
         );
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput({ success: true, ...eventData }, flags),
-          );
+          this.logJsonEvent(eventData, flags);
         } else {
           const { symbol: actionSymbol, color: actionColor } =
             formatPresenceAction(event.type);
@@ -221,7 +220,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "presence", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "presence", {
+      this.fail(error, flags, "roomPresenceSubscribe", {
         room: this.roomName,
       });
     } finally {

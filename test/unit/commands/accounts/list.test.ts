@@ -12,10 +12,11 @@ describe("accounts:list command", () => {
       const mock = getMockConfigManager();
       mock.clearAccounts();
 
-      const { stdout } = await runCommand(["accounts:list"], import.meta.url);
+      const { error } = await runCommand(["accounts:list"], import.meta.url);
 
-      expect(stdout).toContain("No accounts configured");
-      expect(stdout).toContain("ably accounts login");
+      expect(error).toBeDefined();
+      expect(error!.message).toContain("No accounts configured");
+      expect(error!.message).toContain("ably accounts login");
     });
 
     it("should output JSON error when no accounts with --json", async () => {

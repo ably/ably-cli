@@ -1,10 +1,13 @@
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
-import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { formatResource, formatSuccess } from "../../../utils/output.js";
+import {
+  formatLabel,
+  formatResource,
+  formatSuccess,
+} from "../../../utils/output.js";
 
 export default class SpacesLocksGet extends SpacesBaseCommand {
   static override args = {
@@ -52,9 +55,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
 
         if (!lock) {
           if (this.shouldOutputJson(flags)) {
-            this.log(
-              this.formatJsonOutput({ error: "Lock not found", lockId }, flags),
-            );
+            this.logJsonResult({ found: false, lockId }, flags);
           } else {
             this.log(
               chalk.yellow(
@@ -67,27 +68,20 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
         }
 
         if (this.shouldOutputJson(flags)) {
-          this.log(this.formatJsonOutput(structuredClone(lock), flags));
+          this.logJsonResult(
+            structuredClone(lock) as Record<string, unknown>,
+            flags,
+          );
         } else {
           this.log(
-            `${chalk.dim("Lock details:")} ${this.formatJsonOutput(structuredClone(lock), flags)}`,
+            `${formatLabel("Lock details")} ${this.formatJsonOutput(structuredClone(lock), flags)}`,
           );
         }
       } catch (error) {
-        const errorMsg = `Failed to get lock: ${errorMessage(error)}`;
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError({ error: errorMsg, success: false }, flags);
-        } else {
-          this.error(errorMsg);
-        }
+        this.fail(error, flags, "lockGet");
       }
     } catch (error) {
-      const errorMsg = `Error: ${errorMessage(error)}`;
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, success: false }, flags);
-      } else {
-        this.error(errorMsg);
-      }
+      this.fail(error, flags, "lockGet");
     }
   }
 }

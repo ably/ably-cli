@@ -1,8 +1,5 @@
 import { type CursorUpdate } from "@ably/spaces";
 import { Args } from "@oclif/core";
-import chalk from "chalk";
-
-import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
@@ -68,7 +65,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
               data: cursorUpdate.data,
               spaceName,
               timestamp,
-              type: "cursor_update",
+              eventType: "cursor_update",
             };
             this.logCliEvent(
               flags,
@@ -79,9 +76,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
             );
 
             if (this.shouldOutputJson(flags)) {
-              this.log(
-                this.formatJsonOutput({ success: true, ...eventData }, flags),
-              );
+              this.logJsonEvent(eventData, flags);
             } else {
               // Include data field in the output if present
               const dataString = cursorUpdate.data
@@ -92,24 +87,9 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
               );
             }
           } catch (error) {
-            const errorMsg = `Error processing cursor update: ${errorMessage(error)}`;
-            this.logCliEvent(flags, "cursor", "updateProcessError", errorMsg, {
-              error: errorMsg,
+            this.fail(error, flags, "cursorSubscribe", {
               spaceName,
             });
-            if (this.shouldOutputJson(flags)) {
-              this.jsonError(
-                {
-                  error: errorMsg,
-                  spaceName,
-                  status: "error",
-                  success: false,
-                },
-                flags,
-              );
-            } else {
-              this.logToStderr(errorMsg);
-            }
           }
         };
 
@@ -126,23 +106,9 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
           "Successfully subscribed to cursor updates",
         );
       } catch (error) {
-        const errorMsg = `Error subscribing to cursor updates: ${errorMessage(error)}`;
-        this.logCliEvent(flags, "cursor", "subscribeError", errorMsg, {
-          error: errorMsg,
+        this.fail(error, flags, "cursorSubscribe", {
           spaceName,
         });
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError(
-            { error: errorMsg, spaceName, status: "error", success: false },
-            flags,
-          );
-        } else {
-          this.log(
-            chalk.yellow(
-              "Will continue running, but may not receive cursor updates.",
-            ),
-          );
-        }
       }
 
       this.logCliEvent(
@@ -168,7 +134,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "cursor", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "cursor", { spaceName });
+      this.fail(error, flags, "cursorSubscribe", { spaceName });
     } finally {
       // Cleanup is now handled by base class finally() method
     }

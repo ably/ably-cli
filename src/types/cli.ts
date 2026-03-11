@@ -1,5 +1,4 @@
 import { Config } from "@oclif/core";
-import * as Ably from "ably";
 
 /**
  * Base interface for CLI flags.
@@ -23,19 +22,6 @@ export interface BaseFlags {
   app?: string;
   [key: string]: unknown;
 }
-
-/**
- * Error details structure for formatted output
- * Compatible with Ably's ErrorInfo
- */
-export type ErrorDetails =
-  | Ably.ErrorInfo
-  | {
-      code?: number;
-      message?: string;
-      statusCode?: number;
-      [key: string]: unknown;
-    };
 
 /**
  * Command configuration type - using any for now to avoid type conflicts

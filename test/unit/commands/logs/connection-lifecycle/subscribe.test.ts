@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import { captureJsonLogs } from "../../../../helpers/ndjson.js";
 
 describe("LogsConnectionLifecycleSubscribe", function () {
   beforeEach(function () {
@@ -245,6 +246,49 @@ describe("LogsConnectionLifecycleSubscribe", function () {
 
     expect(channel.subscribe).toHaveBeenCalled();
     expect(stdout).toContain("channel.attached");
+  });
+
+  it("should emit JSON envelope with type and command for --json events", async function () {
+    const mock = getMockAblyRealtime();
+    const channel = mock.channels._getChannel("[meta]connection.lifecycle");
+
+    let messageCallback: ((message: unknown) => void) | null = null;
+    channel.subscribe.mockImplementation(
+      (callback: (message: unknown) => void) => {
+        messageCallback = callback;
+      },
+    );
+
+    const records = await captureJsonLogs(async () => {
+      const commandPromise = runCommand(
+        ["logs:connection-lifecycle:subscribe", "--json"],
+        import.meta.url,
+      );
+
+      await vi.waitFor(() => {
+        expect(messageCallback).not.toBeNull();
+      });
+
+      messageCallback!({
+        name: "connection.opened",
+        data: { connectionId: "conn-test" },
+        timestamp: Date.now(),
+        id: "msg-envelope",
+      });
+
+      await commandPromise;
+    });
+    const events = records.filter(
+      (r) => r.type === "event" && r.event === "connection.opened",
+    );
+    expect(events.length).toBeGreaterThan(0);
+    const record = events[0];
+    expect(record).toHaveProperty("type", "event");
+    expect(record).toHaveProperty(
+      "command",
+      "logs:connection-lifecycle:subscribe",
+    );
+    expect(record).toHaveProperty("event", "connection.opened");
   });
 
   it("should handle missing mock client in test mode", async function () {

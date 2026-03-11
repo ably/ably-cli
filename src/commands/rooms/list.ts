@@ -5,8 +5,8 @@ import {
   formatCountLabel,
   formatLimitWarning,
   formatResource,
+  formatLabel,
 } from "../../utils/output.js";
-import chalk from "chalk";
 
 // Add interface definitions at the beginning of the file
 interface RoomMetrics {
@@ -86,8 +86,11 @@ export default class RoomsList extends ChatBaseCommand {
       );
 
       if (channelsResponse.statusCode !== 200) {
-        this.error(`Failed to list rooms: ${channelsResponse.statusCode}`);
-        return;
+        this.fail(
+          `Failed to list rooms: ${channelsResponse.statusCode}`,
+          flags,
+          "roomList",
+        );
       }
 
       // Filter to only include chat channels
@@ -129,8 +132,8 @@ export default class RoomsList extends ChatBaseCommand {
 
       // Output rooms based on format
       if (this.shouldOutputJson(flags)) {
-        // Wrap the array in an object for formatJsonOutput
-        this.log(this.formatJsonOutput({ items: limitedRooms }, flags));
+        // Wrap the array in an object for formatJsonRecord
+        this.logJsonResult({ items: limitedRooms }, flags);
       } else {
         if (limitedRooms.length === 0) {
           this.log("No active chat rooms found.");
@@ -148,24 +151,24 @@ export default class RoomsList extends ChatBaseCommand {
           if (room.status?.occupancy?.metrics) {
             const { metrics } = room.status.occupancy;
             this.log(
-              `  ${chalk.dim("Connections:")} ${metrics.connections || 0}`,
+              `  ${formatLabel("Connections")} ${metrics.connections || 0}`,
             );
             this.log(
-              `  ${chalk.dim("Publishers:")} ${metrics.publishers || 0}`,
+              `  ${formatLabel("Publishers")} ${metrics.publishers || 0}`,
             );
             this.log(
-              `  ${chalk.dim("Subscribers:")} ${metrics.subscribers || 0}`,
+              `  ${formatLabel("Subscribers")} ${metrics.subscribers || 0}`,
             );
 
             if (metrics.presenceConnections !== undefined) {
               this.log(
-                `  ${chalk.dim("Presence Connections:")} ${metrics.presenceConnections}`,
+                `  ${formatLabel("Presence Connections")} ${metrics.presenceConnections}`,
               );
             }
 
             if (metrics.presenceMembers !== undefined) {
               this.log(
-                `  ${chalk.dim("Presence Members:")} ${metrics.presenceMembers}`,
+                `  ${formatLabel("Presence Members")} ${metrics.presenceMembers}`,
               );
             }
           }
@@ -181,7 +184,7 @@ export default class RoomsList extends ChatBaseCommand {
         if (warning) this.log(warning);
       }
     } catch (error) {
-      this.handleCommandError(error, flags, "rooms");
+      this.fail(error, flags, "roomList");
     }
   }
 }

@@ -108,6 +108,9 @@ describe("channels:history command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "channels:history");
+      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("messages");
       expect(result.messages).toHaveLength(2);
       expect(result.messages[0]).toHaveProperty("id", "msg-1");
@@ -222,7 +225,7 @@ describe("channels:history command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error?.message).toContain("Error retrieving channel history");
+      expect(error?.message).toContain("API error");
     });
   });
 

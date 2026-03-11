@@ -1,7 +1,6 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
-import { errorMessage } from "../../../utils/errors.js";
 import { formatCapabilityInline } from "../../../utils/key-display.js";
 import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
 
@@ -19,6 +18,7 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
     '$ ably auth keys update APP_ID.KEY_ID --name "New Name"',
     '$ ably auth keys update KEY_ID --app APP_ID --capabilities "publish,subscribe"',
     '$ ably auth keys update APP_ID.KEY_ID --name "New Name" --capabilities "publish,subscribe"',
+    '$ ably auth keys update APP_ID.KEY_ID --name "New Name" --json',
   ];
 
   static flags = {
@@ -40,8 +40,6 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(KeysUpdateCommand);
 
-    const controlApi = this.createControlApi(flags);
-
     let appId = flags.app || this.configManager.getCurrentAppId();
     let keyId = args.keyName;
 
@@ -50,19 +48,24 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
     keyId = parsed.keyId;
 
     if (!appId) {
-      this.error(
+      this.fail(
         'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
+        flags,
+        "keyUpdate",
       );
     }
 
     // Check if any update flags were provided
     if (!flags.name && !flags.capabilities) {
-      this.error(
+      this.fail(
         "No updates specified. Please provide at least one property to update (--name or --capabilities).",
+        flags,
+        "keyUpdate",
       );
     }
 
     try {
+      const controlApi = this.createControlApi(flags);
       // Get original key details
       const originalKey = await controlApi.getKey(appId, keyId);
 
@@ -89,7 +92,9 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
             "*": capabilityArray,
           };
         } catch (error) {
-          this.error(`Invalid capabilities format: ${errorMessage(error)}`);
+          this.fail(error, flags, "keyUpdate", {
+            context: "parsing capabilities",
+          });
         }
       }
 
@@ -97,25 +102,43 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
       const updatedKey = await controlApi.updateKey(appId, keyId, updateData);
 
       const keyName = `${updatedKey.appId}.${updatedKey.id}`;
-      this.log(`Key Name: ${keyName}`);
 
-      if (flags.name) {
-        this.log(
-          `Key Label: "${originalKey.name || "Unnamed key"}" → "${updatedKey.name || "Unnamed key"}"`,
-        );
-      }
+      if (this.shouldOutputJson(flags)) {
+        const result: Record<string, unknown> = { keyName };
+        if (flags.name) {
+          result.name = {
+            before: originalKey.name || "Unnamed key",
+            after: updatedKey.name || "Unnamed key",
+          };
+        }
+        if (flags.capabilities) {
+          result.capabilities = {
+            before: originalKey.capability,
+            after: updatedKey.capability,
+          };
+        }
+        this.logJsonResult(result, flags);
+      } else {
+        this.log(`Key Name: ${keyName}`);
 
-      if (flags.capabilities) {
-        this.log(`Capabilities:`);
-        this.log(
-          `  Before: ${formatCapabilityInline(originalKey.capability as Record<string, string[]>)}`,
-        );
-        this.log(
-          `  After:  ${formatCapabilityInline(updatedKey.capability as Record<string, string[]>)}`,
-        );
+        if (flags.name) {
+          this.log(
+            `Key Label: "${originalKey.name || "Unnamed key"}" → "${updatedKey.name || "Unnamed key"}"`,
+          );
+        }
+
+        if (flags.capabilities) {
+          this.log(`Capabilities:`);
+          this.log(
+            `  Before: ${formatCapabilityInline(originalKey.capability as Record<string, string[]>)}`,
+          );
+          this.log(
+            `  After:  ${formatCapabilityInline(updatedKey.capability as Record<string, string[]>)}`,
+          );
+        }
       }
     } catch (error) {
-      this.error(`Error updating key: ${errorMessage(error)}`);
+      this.fail(error, flags, "keyUpdate");
     }
   }
 }

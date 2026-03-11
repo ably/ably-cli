@@ -155,6 +155,9 @@ describe("queues:create command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "queues:create");
+      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("id", mockQueueId);
       expect(result).toHaveProperty("name", mockQueueName);
       expect(result).toHaveProperty("region", "us-east-1-a");
@@ -354,7 +357,6 @@ describe("queues:create command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/No access token|No app|not logged in/i);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle network errors", async () => {

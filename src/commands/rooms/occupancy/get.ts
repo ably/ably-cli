@@ -37,8 +37,7 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
-        this.error("Failed to create Chat client");
-        return;
+        this.fail("Failed to create Chat client", flags, "roomOccupancyGet");
       }
 
       const { room: roomName } = args;
@@ -75,15 +74,12 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
 
       // Output the occupancy metrics based on format
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              metrics: occupancyMetrics,
-              room: roomName,
-              success: true,
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            metrics: occupancyMetrics,
+            room: roomName,
+          },
+          flags,
         );
       } else {
         this.log(`Occupancy metrics for room ${formatResource(roomName)}:\n`);
@@ -92,7 +88,7 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
         this.log(`Presence Members: ${occupancyMetrics.presenceMembers ?? 0}`);
       }
     } catch (error) {
-      this.handleCommandError(error, flags, "occupancy", { room: args.room });
+      this.fail(error, flags, "roomOccupancyGet", { room: args.room });
     }
   }
 }

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
 
 describe("spaces:locations:subscribe command", () => {
   beforeEach(() => {
@@ -118,6 +119,34 @@ describe("spaces:locations:subscribe command", () => {
     });
   });
 
+  describe("JSON output", () => {
+    it("should output JSON envelope with initial locations snapshot", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.locations.getAll.mockResolvedValue({
+        "conn-1": { room: "lobby", x: 100 },
+      });
+
+      const { stdout } = await runCommand(
+        ["spaces:locations:subscribe", "test-space", "--json"],
+        import.meta.url,
+      );
+
+      const records = parseNdjsonLines(stdout);
+      const resultRecord = records.find(
+        (r) =>
+          r.type === "result" &&
+          r.eventType === "locations_snapshot" &&
+          Array.isArray(r.locations),
+      );
+      expect(resultRecord).toBeDefined();
+      expect(resultRecord).toHaveProperty("command");
+      expect(resultRecord).toHaveProperty("success", true);
+      expect(resultRecord).toHaveProperty("spaceName", "test-space");
+      expect(resultRecord!.locations).toBeInstanceOf(Array);
+    });
+  });
+
   describe("cleanup behavior", () => {
     it("should close client on completion", async () => {
       const realtimeMock = getMockAblyRealtime();
@@ -145,15 +174,17 @@ describe("spaces:locations:subscribe command", () => {
         new Error("Failed to get locations"),
       );
 
-      // The command catches getAll errors and continues
-      const { stdout } = await runCommand(
+      // The command handles the error via fail and exits
+      const { error } = await runCommand(
         ["spaces:locations:subscribe", "test-space"],
         import.meta.url,
       );
 
-      // Command should still subscribe even if getAll fails
-      expect(space.locations.subscribe).toHaveBeenCalled();
-      expect(stdout).toBeDefined();
+      // Command should report the error
+      expect(error).toBeDefined();
+      expect(error!.message).toContain("Failed to get locations");
+      // Command should NOT continue to subscribe after getAll fails
+      expect(space.locations.subscribe).not.toHaveBeenCalled();
     });
   });
 });

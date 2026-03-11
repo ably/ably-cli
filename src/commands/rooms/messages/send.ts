@@ -28,10 +28,10 @@ interface MessageResult {
 }
 
 interface FinalResult {
+  allSucceeded: boolean;
   errors: number;
   results: MessageResult[];
   sent: number;
-  success: boolean;
   total: number;
   [key: string]: unknown;
 }
@@ -100,8 +100,7 @@ export default class MessagesSend extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
-        this.error("Failed to create Chat client");
-        return;
+        this.fail("Failed to create Chat client", flags, "roomMessageSend");
       }
 
       // Set up connection state logging
@@ -120,17 +119,11 @@ export default class MessagesSend extends ChatBaseCommand {
             { metadata },
           );
         } catch (error) {
-          const errorMsg = `Invalid metadata JSON: ${errorMessage(error)}`;
-          this.logCliEvent(flags, "message", "metadataParseError", errorMsg, {
-            error: errorMsg,
-          });
-          if (this.shouldOutputJson(flags)) {
-            this.jsonError({ error: errorMsg, success: false }, flags);
-          } else {
-            this.error(errorMsg);
-          }
-
-          return;
+          this.fail(
+            `Invalid metadata JSON: ${errorMessage(error)}`,
+            flags,
+            "roomMessageSend",
+          );
         }
       }
 
@@ -281,8 +274,6 @@ export default class MessagesSend extends ChatBaseCommand {
                 `Error sending message ${i + 1}: ${errorMsg}`,
                 { error: errorMsg, index: i + 1 },
               );
-              process.exitCode = 1;
-
               if (
                 !this.shouldSuppressOutput(flags) &&
                 !this.shouldOutputJson(flags)
@@ -319,7 +310,7 @@ export default class MessagesSend extends ChatBaseCommand {
           errors: errorCount,
           results,
           sent: sentCount,
-          success: errorCount === 0,
+          allSucceeded: errorCount === 0,
           total: count,
         };
         this.logCliEvent(
@@ -332,7 +323,7 @@ export default class MessagesSend extends ChatBaseCommand {
 
         if (!this.shouldSuppressOutput(flags)) {
           if (this.shouldOutputJson(flags)) {
-            this.log(this.formatJsonOutput(finalResult, flags));
+            this.logJsonResult(finalResult, flags);
           } else {
             // Clear the last progress line before final summary in an interactive
             // terminal. Avoid this in test mode or non-TTY environments as it
@@ -383,7 +374,10 @@ export default class MessagesSend extends ChatBaseCommand {
 
           if (!this.shouldSuppressOutput(flags)) {
             if (this.shouldOutputJson(flags)) {
-              this.log(this.formatJsonOutput(result, flags));
+              this.logJsonResult(
+                { message: messageToSend, room: args.room },
+                flags,
+              );
             } else {
               this.log(
                 formatSuccess(
@@ -393,29 +387,13 @@ export default class MessagesSend extends ChatBaseCommand {
             }
           }
         } catch (error) {
-          const errorMsg = errorMessage(error);
-          const result: MessageResult = {
-            error: errorMsg,
+          this.fail(error, flags, "roomMessageSend", {
             room: args.room,
-            success: false,
-          };
-          this.logCliEvent(
-            flags,
-            "message",
-            "singleSendError",
-            `Failed to send message: ${errorMsg}`,
-            { error: errorMsg },
-          );
-          if (this.shouldOutputJson(flags)) {
-            this.jsonError(result, flags);
-            return;
-          } else {
-            this.error(`Failed to send message: ${errorMsg}`);
-          }
+          });
         }
       }
     } catch (error) {
-      this.handleCommandError(error, flags, "message");
+      this.fail(error, flags, "roomMessageSend");
     }
   }
 }

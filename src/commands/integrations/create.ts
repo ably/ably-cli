@@ -1,7 +1,6 @@
 import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { errorMessage } from "../../utils/errors.js";
 import {
   formatLabel,
   formatResource,
@@ -26,6 +25,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
   static examples = [
     '$ ably integrations create --rule-type "http" --source-type "channel.message" --target-url "https://example.com/webhook"',
     '$ ably integrations create --rule-type "amqp" --source-type "channel.message" --channel-filter "chat:*"',
+    '$ ably integrations create --rule-type "http" --source-type "channel.message" --target-url "https://example.com/webhook" --json',
   ];
 
   static flags = {
@@ -86,11 +86,9 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
     const { flags } = await this.parse(IntegrationsCreateCommand);
 
     const appId = await this.requireAppId(flags);
-    if (!appId) return;
-
-    const controlApi = this.createControlApi(flags);
 
     try {
+      const controlApi = this.createControlApi(flags);
       // Prepare integration data
       const integrationData: IntegrationData = {
         requestMode: flags["request-mode"] as string,
@@ -107,8 +105,11 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
       switch (flags["rule-type"]) {
         case "http": {
           if (!flags["target-url"]) {
-            this.error("--target-url is required for HTTP integrations");
-            return;
+            this.fail(
+              "--target-url is required for HTTP integrations",
+              flags,
+              "integrationCreate",
+            );
           }
 
           integrationData.target = {
@@ -149,9 +150,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
       );
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput({ integration: createdIntegration }, flags),
-        );
+        this.logJsonResult({ integration: createdIntegration }, flags);
       } else {
         this.log(
           formatSuccess(
@@ -175,7 +174,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
         );
       }
     } catch (error) {
-      this.error(`Error creating integration: ${errorMessage(error)}`);
+      this.fail(error, flags, "integrationCreate");
     }
   }
 }

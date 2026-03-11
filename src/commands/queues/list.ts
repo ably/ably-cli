@@ -1,6 +1,5 @@
 import { Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { errorMessage } from "../../utils/errors.js";
 import { formatHeading } from "../../utils/output.js";
 
 interface QueueStats {
@@ -63,38 +62,33 @@ export default class QueuesListCommand extends ControlBaseCommand {
     const { flags } = await this.parse(QueuesListCommand);
 
     const appId = await this.requireAppId(flags);
-    if (!appId) return;
-
-    const controlApi = this.createControlApi(flags);
 
     try {
+      const controlApi = this.createControlApi(flags);
       const queues = await controlApi.listQueues(appId);
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              queues: queues.map((queue: Queue) => ({
-                amqp: queue.amqp,
-                deadletter: queue.deadletter || false,
-                deadletterId: queue.deadletterId,
-                id: queue.id,
-                maxLength: queue.maxLength,
-                messages: queue.messages,
-                name: queue.name,
-                region: queue.region,
-                state: queue.state,
-                stats: queue.stats,
-                stomp: queue.stomp,
-                ttl: queue.ttl,
-              })),
-              success: true,
-              timestamp: new Date().toISOString(),
-              total: queues.length,
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            appId,
+            queues: queues.map((queue: Queue) => ({
+              amqp: queue.amqp,
+              deadletter: queue.deadletter || false,
+              deadletterId: queue.deadletterId,
+              id: queue.id,
+              maxLength: queue.maxLength,
+              messages: queue.messages,
+              name: queue.name,
+              region: queue.region,
+              state: queue.state,
+              stats: queue.stats,
+              stomp: queue.stomp,
+              ttl: queue.ttl,
+            })),
+            timestamp: new Date().toISOString(),
+            total: queues.length,
+          },
+          flags,
         );
       } else {
         if (queues.length === 0) {
@@ -155,20 +149,7 @@ export default class QueuesListCommand extends ControlBaseCommand {
         });
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            appId,
-            error: errorMessage(error),
-            status: "error",
-            success: false,
-          },
-          flags,
-        );
-        return;
-      } else {
-        this.error(`Error listing queues: ${errorMessage(error)}`);
-      }
+      this.fail(error, flags, "queueList", { appId });
     }
   }
 }

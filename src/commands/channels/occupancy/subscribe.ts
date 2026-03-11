@@ -1,7 +1,7 @@
 import { Args } from "@oclif/core";
 import * as Ably from "ably";
 import { AblyBaseCommand } from "../../../base-command.js";
-import { durationFlag, productApiFlags } from "../../../flags.js";
+import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import {
   formatListening,
   formatProgress,
@@ -33,6 +33,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
+    ...clientIdFlag,
     ...durationFlag,
   };
 
@@ -102,7 +103,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.log(this.formatJsonOutput(event, flags));
+          this.logJsonEvent(event, flags);
         } else {
           this.log(
             `${formatTimestamp(timestamp)} ${formatResource(`Channel: ${channelName}`)} | ${formatEventType("Occupancy Update")}`,
@@ -137,7 +138,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "occupancy", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "occupancy", {
+      this.fail(error, flags, "occupancySubscribe", {
         channel: args.channel,
       });
     }

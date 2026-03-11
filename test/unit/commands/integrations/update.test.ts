@@ -154,6 +154,9 @@ describe("integrations:update command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "integrations:update");
+      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("rule");
       expect(result.rule).toHaveProperty("id", mockRuleId);
     });
@@ -204,6 +207,9 @@ describe("integrations:update command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "integrations:update");
+      expect(result).toHaveProperty("success", true);
       expect(result.rule).toHaveProperty("requestMode", "batch");
     });
   });

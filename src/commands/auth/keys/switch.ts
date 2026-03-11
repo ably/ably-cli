@@ -1,7 +1,6 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
-import { errorMessage } from "../../../utils/errors.js";
 import { ControlApi } from "../../../services/control-api.js";
 import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
 
@@ -20,6 +19,7 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
     "$ ably auth keys switch",
     "$ ably auth keys switch APP_ID.KEY_ID",
     "$ ably auth keys switch KEY_ID --app APP_ID",
+    "$ ably auth keys switch --json",
   ];
 
   static flags = {
@@ -33,8 +33,6 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(KeysSwitchCommand);
 
-    const controlApi = this.createControlApi(flags);
-
     // Get app ID from flag or current config
     let appId = flags.app || this.configManager.getCurrentAppId();
     let keyId: string | undefined = args.keyNameOrValue;
@@ -46,23 +44,34 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
     }
 
     if (!appId) {
-      this.error(
+      this.fail(
         'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
+        flags,
+        "keySwitch",
       );
     }
 
     try {
+      const controlApi = this.createControlApi(flags);
       // Get current app name (if available) to preserve it
       const existingAppName = this.configManager.getAppName(appId);
 
       // If key ID or value is provided, switch directly
       if (args.keyNameOrValue && keyId) {
-        await this.switchToKey(appId, keyId, controlApi, existingAppName);
+        await this.switchToKey(
+          appId,
+          keyId,
+          controlApi,
+          flags,
+          existingAppName,
+        );
         return;
       }
 
       // Otherwise, show interactive selection
-      this.log("Select a key to switch to:");
+      if (!this.shouldOutputJson(flags)) {
+        this.log("Select a key to switch to:");
+      }
       const selectedKey = await this.interactiveHelper.selectKey(
         controlApi,
         appId,
@@ -91,14 +100,27 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
           keyId: selectedKey.id,
           keyName: selectedKey.name || "Unnamed key",
         });
-        this.log(
-          `Switched to key: ${selectedKey.name || "Unnamed key"} (${keyName})`,
-        );
+        if (this.shouldOutputJson(flags)) {
+          this.logJsonResult(
+            {
+              appId,
+              keyName,
+              keyLabel: selectedKey.name || "Unnamed key",
+            },
+            flags,
+          );
+        } else {
+          this.log(
+            `Switched to key: ${selectedKey.name || "Unnamed key"} (${keyName})`,
+          );
+        }
       } else {
-        this.log("Key switch cancelled.");
+        if (!this.shouldOutputJson(flags)) {
+          this.log("Key switch cancelled.");
+        }
       }
     } catch (error) {
-      this.error(`Error switching key: ${errorMessage(error)}`);
+      this.fail(error, flags, "keySwitch");
     }
   }
 
@@ -106,6 +128,7 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
     appId: string,
     keyIdOrValue: string,
     controlApi: ControlApi,
+    flags: Record<string, unknown>,
     existingAppName?: string,
   ): Promise<void> {
     try {
@@ -135,9 +158,24 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
         keyName: key.name || "Unnamed key",
       });
 
-      this.log(`Switched to key: ${key.name || "Unnamed key"} (${keyName})`);
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonResult(
+          {
+            appId,
+            keyName,
+            keyLabel: key.name || "Unnamed key",
+          },
+          flags,
+        );
+      } else {
+        this.log(`Switched to key: ${key.name || "Unnamed key"} (${keyName})`);
+      }
     } catch {
-      this.error(`Key "${keyIdOrValue}" not found or access denied.`);
+      this.fail(
+        `Key "${keyIdOrValue}" not found or access denied.`,
+        flags,
+        "keySwitch",
+      );
     }
   }
 }

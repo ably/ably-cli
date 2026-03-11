@@ -92,6 +92,9 @@ apiKey = "${mockApiKey}"
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "config:show");
+      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("exists", true);
       expect(result).toHaveProperty("path");
       expect(result.path).toContain(testConfigDir);
@@ -109,6 +112,9 @@ apiKey = "${mockApiKey}"
       // Pretty JSON should have newlines and indentation
       expect(stdout).toContain("\n");
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "config:show");
+      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("exists", true);
       expect(result).toHaveProperty("config");
     });
@@ -120,6 +126,9 @@ apiKey = "${mockApiKey}"
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "config:show");
+      expect(result).toHaveProperty("success", true);
       expect(result.config).toHaveProperty("accounts");
       expect(result.config.accounts).toHaveProperty("default");
       expect(result.config.accounts.default).toHaveProperty(
@@ -139,6 +148,9 @@ apiKey = "${mockApiKey}"
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "config:show");
+      expect(result).toHaveProperty("success", true);
       expect(result.config.accounts.default).toHaveProperty("apps");
       expect(result.config.accounts.default.apps).toHaveProperty(mockAppId);
       expect(result.config.accounts.default.apps[mockAppId]).toHaveProperty(
@@ -164,6 +176,9 @@ apiKey = "${mockApiKey}"
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "error");
+      expect(result).toHaveProperty("command", "config:show");
+      expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error).toMatch(/Config file does not exist/i);
       expect(result).toHaveProperty("path");

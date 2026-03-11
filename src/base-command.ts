@@ -9,9 +9,11 @@ import {
   createConfigManager,
 } from "./services/config-manager.js";
 import { ControlApi } from "./services/control-api.js";
+import { CommandError } from "./errors/command-error.js";
 import { coreGlobalFlags } from "./flags.js";
 import { InteractiveHelper } from "./services/interactive-helper.js";
-import { BaseFlags, CommandConfig, ErrorDetails } from "./types/cli.js";
+import { BaseFlags, CommandConfig } from "./types/cli.js";
+import { buildJsonRecord } from "./utils/output.js";
 import { getCliVersion } from "./utils/version.js";
 import Spaces from "@ably/spaces";
 import { ChatClient } from "@ably/chat";
@@ -265,7 +267,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       }
 
       if (errorMessage) {
-        this.error(chalk.red(errorMessage));
+        this.fail(errorMessage, {}, "webCli");
       }
     } else {
       // Authenticated web CLI mode - only base restrictions apply
@@ -289,7 +291,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           errorMessage = `Local configuration is not supported in the web CLI version.`;
         }
 
-        this.error(chalk.red(errorMessage));
+        this.fail(errorMessage, {}, "webCli");
       }
     }
   }
@@ -374,8 +376,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
         return mock as unknown as Ably.Rest | Ably.Realtime;
       }
 
-      this.error(`No mock Ably ${clientType} client available in test mode`);
-      return null;
+      this.fail(
+        `No mock Ably ${clientType} client available in test mode`,
+        flags,
+        "client",
+      );
     }
 
     // Track whether the user explicitly provided authentication via env vars
@@ -391,10 +396,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     } else {
       const appAndKey = await this.ensureAppAndKey(flags);
       if (!appAndKey) {
-        this.error(
-          `${chalk.yellow("No app or API key configured for this command")}.\nPlease log in first with "${chalk.cyan("ably accounts login")}" (recommended approach).\nAlternatively you can set the ${chalk.cyan("ABLY_API_KEY")} environment variable.`,
+        this.fail(
+          `No app or API key configured for this command.\nPlease log in first with "ably accounts login" (recommended approach).\nAlternatively you can set the ABLY_API_KEY environment variable.`,
+          flags,
+          "auth",
         );
-        return null;
       }
 
       flags["api-key"] = appAndKey.apiKey;
@@ -407,15 +413,14 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     }
 
     const clientOptions = this.getClientOptions(flags);
-    // isJsonMode is defined outside the try block for use in error handling
-    const isJsonMode = this.shouldOutputJson(flags);
 
     // Make sure we have authentication after potentially modifying options
     if (!clientOptions.key && !clientOptions.token) {
-      this.error(
+      this.fail(
         "Authentication required. Please provide either an API key, a token, or log in first.",
+        flags,
+        "auth",
       );
-      return null;
     }
 
     try {
@@ -432,11 +437,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
         // Add timeout for connection attempt (especially important for E2E tests with fake credentials)
         const connectionTimeout = setTimeout(() => {
           client.connection.off(); // Remove event listeners
-          const timeoutError = new Error("Connection timeout after 3 seconds");
-          if (isJsonMode) {
-            this.outputJsonError("Connection timeout", { code: 80003 }); // Custom timeout error code
-          }
-          reject(timeoutError);
+          reject(
+            Object.assign(new Error("Connection timeout after 3 seconds"), {
+              code: 80003,
+            }),
+          );
         }, 3000); // 3 second timeout
 
         client.connection.once("connected", () => {
@@ -444,7 +449,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           // Use logCliEvent for connection success if verbose
           this.logCliEvent(
             flags,
-            "RealtimeClient",
+            "realtimeClient",
             "connection",
             "Successfully connected to Ably Realtime.",
           );
@@ -459,38 +464,33 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             if (clientOptions.key) {
               // Check the original options object
               this.handleInvalidKey(flags);
-              const errorMsg =
-                "Invalid API key. Ensure you have a valid key configured.";
-              if (isJsonMode) {
-                this.outputJsonError(
-                  errorMsg,
-                  stateChange.reason as ErrorDetails,
-                );
-              }
-
-              reject(new Error(errorMsg));
+              reject(
+                Object.assign(
+                  new Error(
+                    "Invalid API key. Ensure you have a valid key configured.",
+                  ),
+                  {
+                    code: stateChange.reason.code,
+                    statusCode: stateChange.reason.statusCode,
+                  },
+                ),
+              );
             } else {
-              const errorMsg =
-                "Invalid token. Please provide a valid Ably Token or JWT.";
-              if (isJsonMode) {
-                this.outputJsonError(
-                  errorMsg,
-                  stateChange.reason as ErrorDetails,
-                );
-              }
-
-              reject(new Error(errorMsg));
-            }
-          } else {
-            const errorMsg = stateChange.reason?.message || "Connection failed";
-            if (isJsonMode) {
-              this.outputJsonError(
-                errorMsg,
-                stateChange.reason as ErrorDetails,
+              reject(
+                Object.assign(
+                  new Error(
+                    "Invalid token. Please provide a valid Ably Token or JWT.",
+                  ),
+                  {
+                    code: stateChange.reason.code,
+                    statusCode: stateChange.reason.statusCode,
+                  },
+                ),
               );
             }
-
-            reject(stateChange.reason || new Error(errorMsg));
+          } else {
+            const reason = stateChange.reason;
+            reject(reason || new Error("Connection failed"));
           }
         });
       });
@@ -533,7 +533,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     const displayParts: string[] = [];
 
     // Only add account info if it shouldn't be hidden
-    if (!this.shouldHideAccountInfo(flags)) {
+    if (!this.shouldHideAccountInfo()) {
       displayParts.push(
         `${chalk.cyan("Account=")}${chalk.cyan.bold(accountName)}${accountId ? chalk.gray(` (${accountId})`) : ""}`,
       );
@@ -811,8 +811,39 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       }
     }
 
-    // Regular JSON output
-    return JSON.stringify(data, null, 2);
+    // Compact single-line JSON output for --json (NDJSON-friendly)
+    return JSON.stringify(data);
+  }
+
+  /**
+   * Wraps data in a typed envelope with `type` and `command` fields.
+   * - "result" and "error" types include `success: boolean`
+   * - "event" and "log" types include only `type` and `command`
+   *
+   * Output is compact single-line for --json (NDJSON for streaming),
+   * or pretty-printed for --pretty-json.
+   */
+  protected formatJsonRecord(
+    type: "error" | "event" | "log" | "result",
+    data: Record<string, unknown>,
+    flags: BaseFlags,
+  ): string {
+    const record = buildJsonRecord(type, this.id || "unknown", data);
+    return this.formatJsonOutput(record, flags);
+  }
+
+  protected logJsonResult(
+    data: Record<string, unknown>,
+    flags: BaseFlags,
+  ): void {
+    this.log(this.formatJsonRecord("result", data, flags));
+  }
+
+  protected logJsonEvent(
+    data: Record<string, unknown>,
+    flags: BaseFlags,
+  ): void {
+    this.log(this.formatJsonRecord("event", data, flags));
   }
 
   protected getClientOptions(flags: BaseFlags): Ably.ClientOptions {
@@ -874,7 +905,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           const logData = { sdkLogLevel: level, sdkMessage: message };
           this.logCliEvent(
             flags,
-            "AblySDK",
+            "ablySdk",
             `LogLevel-${level}`,
             message,
             logData,
@@ -899,7 +930,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           // logCliEvent handles non-JSON formatting when verbose is true
           this.logCliEvent(
             flags,
-            "AblySDK",
+            "ablySdk",
             `LogLevel-${level}`,
             message,
             logData,
@@ -959,7 +990,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   }
 
   protected isPrettyJsonOutput(flags: BaseFlags): boolean {
-    return flags["pretty-json"] === true;
+    return (
+      flags["pretty-json"] === true ||
+      this.hasRawArgvFlag(flags, "--pretty-json")
+    );
   }
 
   /**
@@ -984,35 +1018,19 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     const isJsonMode = this.shouldOutputJson(flags);
 
     if (isJsonMode) {
-      // Output structured JSON log
+      // Output structured JSON log with envelope
       const logEntry = {
         component,
-        data,
         event,
-        logType: "cliEvent",
         message,
         timestamp: new Date().toISOString(),
+        ...data,
       };
-      // Use the existing formatting method for consistency (handles pretty/plain JSON)
-      this.log(this.formatJsonOutput(logEntry, flags));
+      this.log(this.formatJsonRecord("log", logEntry, flags));
     } else {
       // Output human-readable log in normal (verbose) mode
       this.log(`${chalk.dim(`[${component}]`)} ${message}`);
     }
-  }
-
-  /** Helper to output errors in JSON format */
-  protected outputJsonError(
-    message: string,
-    errorDetails: ErrorDetails = {},
-  ): void {
-    const errorOutput = {
-      details: errorDetails,
-      error: true,
-      message,
-    };
-    // Use console.error to send JSON errors to stderr
-    console.error(JSON.stringify(errorOutput));
   }
 
   /**
@@ -1053,8 +1071,18 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     return (
       flags.json === true ||
       flags["pretty-json"] === true ||
-      flags.format === "json"
+      flags.format === "json" ||
+      this.hasRawArgvFlag(flags, "--json") ||
+      this.hasRawArgvFlag(flags, "--pretty-json")
     );
+  }
+
+  /**
+   * Check raw argv for a flag when flags haven't been parsed yet (empty object).
+   * Used so pre-parse errors still respect --json/--pretty-json.
+   */
+  private hasRawArgvFlag(flags: BaseFlags, flag: string): boolean {
+    return Object.keys(flags).length === 0 && this.argv.includes(flag);
   }
 
   /**
@@ -1275,7 +1303,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * 3. Explicit access token is provided
    * 4. Environment variables are used for auth
    */
-  protected shouldHideAccountInfo(flags: BaseFlags): boolean {
+  protected shouldHideAccountInfo(): boolean {
     // Check if there's no account configured
     const currentAccount = this.configManager.getCurrentAccount();
     if (!currentAccount) {
@@ -1418,69 +1446,58 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   }
 
   /**
-   * Output JSON error and exit with code 1 (unless in test mode).
-   * This provides a consistent way to handle JSON errors across commands.
-   *
-   * @param data - The error data to format as JSON
-   * @param flags - Command flags (used to determine JSON formatting)
-   */
-  protected jsonError(data: Record<string, unknown>, flags: BaseFlags) {
-    // Format and log the JSON output
-    this.log(this.formatJsonOutput(data, flags));
-
-    // Exit with code 1 unless in test mode
-    if (process.env.ABLY_CLI_TEST_MODE !== "true") {
-      this.exit(1);
-    }
-  }
-
-  /**
-   * Parse a JSON string flag value. Returns the parsed object, or null if parsing fails
-   * (after emitting the appropriate error output).
+   * Parse a JSON string flag value.
+   * Calls fail() (exits) if parsing fails.
    */
   protected parseJsonFlag(
     value: string,
     flagName: string,
-    flags: BaseFlags,
-  ): Record<string, unknown> | null {
+    flags: BaseFlags = {},
+  ): Record<string, unknown> {
     try {
       return JSON.parse(value.trim());
     } catch (error) {
-      const errorMsg = `Invalid ${flagName} JSON: ${error instanceof Error ? error.message : String(error)}`;
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, success: false }, flags);
-      } else {
-        this.error(errorMsg);
-      }
-      return null;
+      this.fail(
+        `Invalid ${flagName} JSON: ${error instanceof Error ? error.message : String(error)}`,
+        flags,
+        "parse",
+      );
     }
   }
 
   /**
-   * Centralized error handler for command catch blocks.
-   * Logs the error event and outputs either JSON error or human-readable error.
+   * Unified error handler for command catch blocks.
+   * Logs the error event, preserves structured error data (Ably codes, HTTP status),
+   * and outputs either JSON error envelope or human-readable error.
    *
-   * @param error - The caught error
-   * @param flags - Command flags
-   * @param component - The component name for logCliEvent (e.g., "subscribe", "presence")
-   * @param context - Optional extra fields to include in the JSON error output
+   * Return type `never` ensures TypeScript prevents code execution after this call.
    */
-  protected handleCommandError(
+  protected fail(
     error: unknown,
     flags: BaseFlags,
     component: string,
     context?: Record<string, unknown>,
-  ): void {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    this.logCliEvent(flags, component, "fatalError", `Error: ${errorMsg}`, {
-      error: errorMsg,
-      ...context,
-    });
+  ): never {
+    const cmdError = CommandError.from(error, context);
+
+    this.logCliEvent(
+      flags,
+      component,
+      "fatalError",
+      `Error: ${cmdError.message}`,
+      {
+        error: cmdError.message,
+        ...(cmdError.code === undefined ? {} : { code: cmdError.code }),
+        ...cmdError.context,
+      },
+    );
+
     if (this.shouldOutputJson(flags)) {
-      this.jsonError({ error: errorMsg, success: false, ...context }, flags);
-    } else {
-      this.error(errorMsg);
+      this.log(this.formatJsonRecord("error", cmdError.toJsonData(), flags));
+      this.exit(1);
     }
+
+    this.error(cmdError.message);
   }
 
   /**

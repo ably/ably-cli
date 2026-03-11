@@ -2,7 +2,6 @@ import type { LocationsEvents } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
-import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
@@ -11,6 +10,7 @@ import {
   formatResource,
   formatTimestamp,
   formatClientId,
+  formatLabel,
 } from "../../../utils/output.js";
 
 // Define the type for location subscription
@@ -31,6 +31,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
   static override examples = [
     '$ ably spaces locations set my-space --location \'{"x":10,"y":20}\'',
     '$ ably spaces locations set my-space --location \'{"sectionId":"section1"}\'',
+    '$ ably spaces locations set my-space --location \'{"x":10,"y":20}\' --json',
   ];
 
   static override flags = {
@@ -77,7 +78,6 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
 
     // Parse location data first
     const location = this.parseJsonFlag(flags.location, "location", flags);
-    if (!location) return;
     this.logCliEvent(
       flags,
       "location",
@@ -133,12 +133,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
         });
 
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              { success: true, location, spaceName },
-              flags,
-            ),
-          );
+          this.logJsonResult({ location, spaceName }, flags);
         } else {
           this.log(
             formatSuccess(
@@ -149,12 +144,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       } catch {
         // If an error occurs in E2E mode, just exit cleanly after showing what we can
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput(
-              { success: true, location, spaceName },
-              flags,
-            ),
-          );
+          this.logJsonResult({ location, spaceName }, flags);
         }
         // Don't call this.error() in E2E mode as it sets exit code to 1
       }
@@ -225,9 +215,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput({ success: true, ...eventData }, flags),
-          );
+          this.logJsonEvent(eventData, flags);
         } else {
           // For locations, use yellow for updates
           const actionColor = chalk.yellow;
@@ -237,7 +225,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
             `${formatTimestamp(timestamp)} ${formatClientId(member.clientId || "Unknown")} ${actionColor(action)}d location:`,
           );
           this.log(
-            `  ${chalk.dim("Location:")} ${JSON.stringify(currentLocation, null, 2)}`,
+            `  ${formatLabel("Location")} ${JSON.stringify(currentLocation, null, 2)}`,
           );
         }
       };
@@ -270,15 +258,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "location", flags.duration);
     } catch (error) {
-      const errorMsg = `Error: ${errorMessage(error)}`;
-      this.logCliEvent(flags, "location", "fatalError", errorMsg, {
-        error: errorMsg,
-      });
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, success: false }, flags);
-      } else {
-        this.error(errorMsg);
-      }
+      this.fail(error, flags, "locationSet");
     } finally {
       // Cleanup is now handled by base class finally() method
     }

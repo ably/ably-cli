@@ -1,13 +1,19 @@
 import * as Ably from "ably";
-import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
-import { durationFlag, productApiFlags, rewindFlag } from "../../../flags.js";
 import {
+  clientIdFlag,
+  durationFlag,
+  productApiFlags,
+  rewindFlag,
+} from "../../../flags.js";
+import {
+  formatEventType,
   formatListening,
+  formatMessageTimestamp,
   formatSuccess,
   formatTimestamp,
-  formatMessageTimestamp,
+  formatLabel,
 } from "../../../utils/output.js";
 
 export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
@@ -22,6 +28,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
+    ...clientIdFlag,
     ...durationFlag,
     ...rewindFlag,
   };
@@ -95,15 +102,15 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.log(this.formatJsonOutput(event, flags));
+          this.logJsonEvent(event, flags);
         } else {
           this.log(
-            `${formatTimestamp(timestamp)} ${chalk.cyan(`Event: ${event.event}`)}`,
+            `${formatTimestamp(timestamp)} Event: ${formatEventType(event.event)}`,
           );
 
           if (message.data !== null && message.data !== undefined) {
             this.log(
-              `${chalk.dim("Data:")} ${JSON.stringify(message.data, null, 2)}`,
+              `${formatLabel("Data")} ${JSON.stringify(message.data, null, 2)}`,
             );
           }
 
@@ -126,7 +133,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "logs", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "logs");
+      this.fail(error, flags, "connectionLifecycleSubscribe");
     }
   }
 

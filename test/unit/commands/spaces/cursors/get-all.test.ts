@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
 
 describe("spaces:cursors:get-all command", () => {
   beforeEach(() => {
@@ -125,6 +126,37 @@ describe("spaces:cursors:get-all command", () => {
       // Command should still output JSON even if getAll fails
       expect(stdout).toBeDefined();
       expect(space.cursors.getAll).toHaveBeenCalled();
+    });
+  });
+
+  describe("JSON output", () => {
+    it("should output JSON envelope with type and command for cursor results", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.cursors.getAll.mockResolvedValue([
+        {
+          clientId: "user-1",
+          connectionId: "conn-1",
+          position: { x: 10, y: 20 },
+          data: null,
+        },
+      ]);
+
+      const { stdout } = await runCommand(
+        ["spaces:cursors:get-all", "test-space", "--json"],
+        import.meta.url,
+      );
+
+      const records = parseNdjsonLines(stdout);
+      const resultRecord = records.find(
+        (r) => r.type === "result" && Array.isArray(r.cursors),
+      );
+      expect(resultRecord).toBeDefined();
+      expect(resultRecord).toHaveProperty("type", "result");
+      expect(resultRecord).toHaveProperty("command");
+      expect(resultRecord).toHaveProperty("success", true);
+      expect(resultRecord).toHaveProperty("spaceName", "test-space");
+      expect(resultRecord!.cursors).toBeInstanceOf(Array);
     });
   });
 

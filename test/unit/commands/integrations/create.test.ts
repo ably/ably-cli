@@ -125,6 +125,9 @@ describe("integrations:create command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "integrations:create");
+      expect(result).toHaveProperty("success", true);
       expect(result.integration).toHaveProperty("status", "disabled");
     });
 
@@ -166,6 +169,9 @@ describe("integrations:create command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "integrations:create");
+      expect(result).toHaveProperty("success", true);
       expect(result.integration).toHaveProperty("requestMode", "batch");
     });
 
@@ -206,6 +212,9 @@ describe("integrations:create command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "integrations:create");
+      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("integration");
       expect(result.integration).toHaveProperty("id", mockRuleId);
       expect(result.integration).toHaveProperty("ruleType", "http");
@@ -353,6 +362,9 @@ describe("integrations:create command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "integrations:create");
+      expect(result).toHaveProperty("success", true);
       expect(result.integration.source.type).toBe("channel.presence");
     });
 
@@ -390,6 +402,9 @@ describe("integrations:create command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "integrations:create");
+      expect(result).toHaveProperty("success", true);
       expect(result.integration.source.type).toBe("channel.lifecycle");
     });
   });

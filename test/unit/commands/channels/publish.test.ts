@@ -162,6 +162,8 @@ describe("ChannelsPublish", function () {
 
     // Parse the JSON output
     const jsonOutput = JSON.parse(stdout.trim());
+    expect(jsonOutput).toHaveProperty("type", "result");
+    expect(jsonOutput).toHaveProperty("command", "channels:publish");
     expect(jsonOutput).toHaveProperty("success", true);
     expect(jsonOutput).toHaveProperty("channel", "test-channel");
   });

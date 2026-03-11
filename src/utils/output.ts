@@ -88,6 +88,54 @@ export function formatIndex(n: number): string {
   return chalk.dim(`[${n}]`);
 }
 
+export type JsonRecordType = "error" | "event" | "log" | "result";
+
+/**
+ * Build a typed JSON envelope record.
+ * - "result" and "error" types include `success: boolean`
+ * - "event" and "log" types include only `type` and `command`
+ * - Data fields are spread into the record. For "result" types, data can
+ *   override `success` (e.g. partial-success batch results). For "error"
+ *   types, `success` is always `false` and cannot be overridden by data.
+ */
+export function buildJsonRecord(
+  type: JsonRecordType,
+  command: string,
+  data: Record<string, unknown>,
+): Record<string, unknown> {
+  // Strip reserved envelope keys from data to prevent payload collisions.
+  // Also strip `success` from error records — errors are always success: false.
+  const reservedKeys = new Set(["type", "command"]);
+  if (type === "error") {
+    reservedKeys.add("success");
+  }
+  const safeData = Object.fromEntries(
+    Object.entries(data).filter(([key]) => !reservedKeys.has(key)),
+  );
+  return {
+    type,
+    command,
+    ...(type === "result" || type === "error"
+      ? { success: type !== "error" }
+      : {}),
+    ...safeData,
+  };
+}
+
+/**
+ * Format a JSON record as a string. Compact single-line for `json` mode
+ * (NDJSON-friendly), pretty-printed for `prettyJson` mode.
+ */
+export function formatJsonString(
+  data: Record<string, unknown>,
+  options: { json?: boolean; prettyJson?: boolean },
+): string {
+  if (options.prettyJson) {
+    return JSON.stringify(data, null, 2);
+  }
+  return JSON.stringify(data);
+}
+
 export function formatPresenceAction(action: string): {
   symbol: string;
   color: ChalkInstance;

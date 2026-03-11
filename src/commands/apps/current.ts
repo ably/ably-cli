@@ -2,6 +2,7 @@ import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
+import { formatLabel } from "../../utils/output.js";
 
 export default class AppsCurrent extends ControlBaseCommand {
   static override description = "Show the currently selected app";
@@ -30,13 +31,19 @@ export default class AppsCurrent extends ControlBaseCommand {
     const currentAppId = this.configManager.getCurrentAppId();
 
     if (!currentAccountAlias || !currentAccount) {
-      this.error(
+      this.fail(
         'No account selected. Use "ably accounts switch" to select an account.',
+        flags,
+        "appCurrent",
       );
     }
 
     if (!currentAppId) {
-      this.error('No app selected. Use "ably apps switch" to select an app.');
+      this.fail(
+        'No app selected. Use "ably apps switch" to select an app.',
+        flags,
+        "appCurrent",
+      );
     }
 
     // Get app name from local config
@@ -63,28 +70,26 @@ export default class AppsCurrent extends ControlBaseCommand {
           };
         }
 
-        this.log(
-          this.formatJsonOutput(
-            {
-              account: {
-                alias: currentAccountAlias,
-                ...currentAccount,
-              },
-              app: {
-                id: currentAppId,
-                name: appName,
-              },
-              key: keyInfo,
+        this.logJsonResult(
+          {
+            account: {
+              alias: currentAccountAlias,
+              ...currentAccount,
             },
-            flags,
-          ),
+            app: {
+              id: currentAppId,
+              name: appName,
+            },
+            key: keyInfo,
+          },
+          flags,
         );
       } else {
         this.log(
-          `${chalk.cyan("Account:")} ${chalk.cyan.bold(currentAccount.accountName || currentAccountAlias)} ${chalk.gray(`(${currentAccount.accountId || "Unknown ID"})`)}`,
+          `${formatLabel("Account")} ${chalk.cyan.bold(currentAccount.accountName || currentAccountAlias)} ${chalk.gray(`(${currentAccount.accountId || "Unknown ID"})`)}`,
         );
         this.log(
-          `${chalk.green("App:")} ${chalk.green.bold(appName)} ${chalk.gray(`(${currentAppId})`)}`,
+          `${formatLabel("App")} ${chalk.green.bold(appName)} ${chalk.gray(`(${currentAppId})`)}`,
         );
 
         // Show the currently selected API key if one is set
@@ -101,18 +106,20 @@ export default class AppsCurrent extends ControlBaseCommand {
             ? keyId
             : `${currentAppId}.${keyId.split(".")[1] || keyId}`;
 
-          this.log(`${chalk.yellow("API Key:")} ${chalk.yellow.bold(keyName)}`);
+          this.log(`${formatLabel("API Key")} ${chalk.yellow.bold(keyName)}`);
           this.log(
-            `${chalk.yellow("Key Label:")} ${chalk.yellow.bold(keyLabel)}`,
+            `${formatLabel("Key Label")} ${chalk.yellow.bold(keyLabel)}`,
           );
         } else {
           this.log(
-            `${chalk.yellow("API Key:")} ${chalk.dim('None selected. Use "ably auth keys switch" to select a key.')}`,
+            `${formatLabel("API Key")} ${chalk.dim('None selected. Use "ably auth keys switch" to select a key.')}`,
           );
         }
       }
     } catch (error) {
-      this.error(`Error retrieving app information: ${errorMessage(error)}`);
+      this.fail(error, flags, "appCurrent", {
+        context: "retrieving app information",
+      });
     }
   }
 
@@ -126,7 +133,11 @@ export default class AppsCurrent extends ControlBaseCommand {
     // Extract app ID from the ABLY_API_KEY environment variable
     const apiKey = process.env.ABLY_API_KEY;
     if (!apiKey) {
-      this.error("ABLY_API_KEY environment variable is not set");
+      this.fail(
+        "ABLY_API_KEY environment variable is not set",
+        flags,
+        "appCurrent",
+      );
     }
 
     // API key format is [APP_ID].[KEY_ID]:[KEY_SECRET]
@@ -141,21 +152,19 @@ export default class AppsCurrent extends ControlBaseCommand {
       const appDetails = await controlApi.getApp(appId);
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              app: {
-                id: appId,
-                name: appDetails.name,
-              },
-              key: {
-                keyName: keyId,
-                label: "Web CLI Key",
-              },
-              mode: "web-cli",
+        this.logJsonResult(
+          {
+            app: {
+              id: appId,
+              name: appDetails.name,
             },
-            flags,
-          ),
+            key: {
+              keyName: keyId,
+              label: "Web CLI Key",
+            },
+            mode: "web-cli",
+          },
+          flags,
         );
       } else {
         // Get account info if possible
@@ -171,45 +180,43 @@ export default class AppsCurrent extends ControlBaseCommand {
         }
 
         this.log(
-          `${chalk.cyan("Account:")} ${chalk.cyan.bold(accountName)} ${accountId ? chalk.gray(`(${accountId})`) : ""}`,
+          `${formatLabel("Account")} ${chalk.cyan.bold(accountName)} ${accountId ? chalk.gray(`(${accountId})`) : ""}`,
         );
         this.log(
-          `${chalk.green("App:")} ${chalk.green.bold(appDetails.name)} ${chalk.gray(`(${appId})`)}`,
+          `${formatLabel("App")} ${chalk.green.bold(appDetails.name)} ${chalk.gray(`(${appId})`)}`,
         );
-        this.log(`${chalk.yellow("API Key:")} ${chalk.yellow.bold(keyId)}`);
+        this.log(`${formatLabel("API Key")} ${chalk.yellow.bold(keyId)}`);
         this.log(
-          `${chalk.magenta("Mode:")} ${chalk.magenta.bold("Web CLI")} ${chalk.dim("(using environment variables)")}`,
+          `${formatLabel("Mode")} ${chalk.magenta.bold("Web CLI")} ${chalk.dim("(using environment variables)")}`,
         );
       }
     } catch (error) {
       // If we can't get app details, just show what we know
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              app: {
-                id: appId,
-                name: "Unknown",
-              },
-              key: {
-                keyName: keyId,
-                label: "Web CLI Key",
-              },
-              mode: "web-cli",
+        this.logJsonResult(
+          {
+            app: {
+              id: appId,
+              name: "Unknown",
             },
-            flags,
-          ),
+            key: {
+              keyName: keyId,
+              label: "Web CLI Key",
+            },
+            mode: "web-cli",
+          },
+          flags,
         );
       } else {
         this.log(
-          `${chalk.green("App:")} ${chalk.green.bold("Unknown")} ${chalk.gray(`(${appId})`)}`,
+          `${formatLabel("App")} ${chalk.green.bold("Unknown")} ${chalk.gray(`(${appId})`)}`,
         );
-        this.log(`${chalk.yellow("API Key:")} ${chalk.yellow.bold(keyId)}`);
-        this.log(
-          `${chalk.red("Error:")} Could not fetch additional app details: ${errorMessage(error)}`,
+        this.log(`${formatLabel("API Key")} ${chalk.yellow.bold(keyId)}`);
+        this.warn(
+          `Could not fetch additional app details: ${errorMessage(error)}`,
         );
         this.log(
-          `${chalk.magenta("Mode:")} ${chalk.magenta.bold("Web CLI")} ${chalk.dim("(using environment variables)")}`,
+          `${formatLabel("Mode")} ${chalk.magenta.bold("Web CLI")} ${chalk.dim("(using environment variables)")}`,
         );
       }
     }

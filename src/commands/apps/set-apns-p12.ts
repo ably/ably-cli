@@ -3,7 +3,6 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { errorMessage } from "../../utils/errors.js";
 import {
   formatLabel,
   formatProgress,
@@ -26,6 +25,7 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
     "$ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12",
     '$ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --password "YOUR_CERTIFICATE_PASSWORD"',
     "$ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --use-for-sandbox",
+    "$ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --json",
   ];
 
   static flags = {
@@ -50,14 +50,16 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
     // Display authentication information
     this.showAuthInfoIfNeeded(flags);
 
-    const controlApi = this.createControlApi(flags);
-
     try {
+      const controlApi = this.createControlApi(flags);
       // Validate certificate file exists
       const certificatePath = path.resolve(flags.certificate);
       if (!fs.existsSync(certificatePath)) {
-        this.error(`Certificate file not found: ${certificatePath}`);
-        return;
+        this.fail(
+          `Certificate file not found: ${certificatePath}`,
+          flags,
+          "appSetApnsP12",
+        );
       }
 
       this.log(
@@ -77,7 +79,7 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
       });
 
       if (this.shouldOutputJson(flags)) {
-        this.log(this.formatJsonOutput(result, flags));
+        this.logJsonResult(result, flags);
       } else {
         this.log(formatSuccess("APNS P12 certificate uploaded."));
         this.log(`${formatLabel("Certificate ID")} ${result.id}`);
@@ -88,12 +90,7 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      const errorMsg = `Error uploading APNS P12 certificate: ${errorMessage(error)}`;
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, success: false }, flags);
-      } else {
-        this.error(errorMsg);
-      }
+      this.fail(error, flags, "appSetApnsP12");
     }
   }
 }

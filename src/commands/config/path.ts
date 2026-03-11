@@ -8,6 +8,7 @@ export default class ConfigPath extends AblyBaseCommand {
 
   static override examples = [
     "<%= config.bin %> <%= command.id %>",
+    "<%= config.bin %> <%= command.id %> --json",
     "# Open in your preferred editor:",
     "code $(ably config path)",
     "vim $(ably config path)",
@@ -28,7 +29,7 @@ export default class ConfigPath extends AblyBaseCommand {
     }
 
     if (this.shouldOutputJson(flags)) {
-      this.log(this.formatJsonOutput({ path: configPath }, flags));
+      this.logJsonResult({ path: configPath }, flags);
     } else {
       this.log(configPath);
     }

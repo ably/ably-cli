@@ -6,7 +6,6 @@ import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../flags.js";
 import { formatMessageData } from "../../utils/json-formatter.js";
 import { buildHistoryParams } from "../../utils/history.js";
-import { errorMessage } from "../../utils/errors.js";
 import {
   formatCountLabel,
   formatTimestamp,
@@ -91,7 +90,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
 
       // Display results based on format
       if (this.shouldOutputJson(flags)) {
-        this.log(this.formatJsonOutput({ messages }, flags));
+        this.logJsonResult({ messages }, flags);
       } else {
         if (messages.length === 0) {
           this.log("No messages found in the channel history.");
@@ -133,12 +132,9 @@ export default class ChannelsHistory extends AblyBaseCommand {
         if (warning) this.log(warning);
       }
     } catch (error) {
-      const errorMsg = `Error retrieving channel history: ${errorMessage(error)}`;
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, success: false }, flags);
-      } else {
-        this.error(errorMsg);
-      }
+      this.fail(error, flags, "channelHistory", {
+        channel: channelName,
+      });
     }
   }
 }

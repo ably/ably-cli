@@ -4,7 +4,7 @@ import chalk from "chalk";
 import Table from "cli-table3";
 
 import { AblyBaseCommand } from "../../base-command.js";
-import { productApiFlags } from "../../flags.js";
+import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { errorMessage } from "../../utils/errors.js";
 import { formatSuccess } from "../../utils/output.js";
 
@@ -66,10 +66,12 @@ export default class BenchPublisher extends AblyBaseCommand {
     "$ ably bench publisher my-channel",
     "$ ably bench publisher --messages 5000 --rate 10 my-channel",
     "$ ably bench publisher --transport realtime my-channel",
+    "$ ably bench publisher my-channel --json",
   ];
 
   static override flags = {
     ...productApiFlags,
+    ...clientIdFlag,
     "message-size": Flags.integer({
       default: 100,
       description: "Size of the message payload in bytes",
@@ -128,10 +130,11 @@ export default class BenchPublisher extends AblyBaseCommand {
     this.realtime = await this.createAblyRealtimeClient(flags);
 
     if (!this.realtime) {
-      this.error(
+      this.fail(
         "Failed to create Ably client. Please check your API key and try again.",
+        flags,
+        "benchPublisher",
       );
-      return;
     }
 
     const client = this.realtime;
@@ -267,14 +270,7 @@ export default class BenchPublisher extends AblyBaseCommand {
         progressDisplay,
       );
     } catch (error) {
-      this.logCliEvent(
-        flags,
-        "benchmark",
-        "testError",
-        `Benchmark failed: ${errorMessage(error)}`,
-        { error: error instanceof Error ? error.stack : String(error) },
-      );
-      this.error(`Benchmark failed: ${errorMessage(error)}`);
+      this.fail(error, flags, "benchPublisher");
     } finally {
       // Cleanup managed by the finally method override
       if (channel) {
@@ -426,7 +422,7 @@ export default class BenchPublisher extends AblyBaseCommand {
   private createProgressDisplay(): InstanceType<typeof Table> {
     const table = new Table({
       colWidths: [20, 40], // Adjust column widths
-      head: [chalk.white("Benchmark Progress"), chalk.white("Status")],
+      head: [chalk.white("Benchmark Progress"), chalk.white("status")],
       style: {
         border: [], // No additional styles for the border
         head: [], // No additional styles for the header
@@ -521,7 +517,7 @@ export default class BenchPublisher extends AblyBaseCommand {
     );
 
     if (this.shouldOutputJson(flags)) {
-      this.log(this.formatJsonOutput(summaryData, flags));
+      this.logJsonResult(summaryData, flags);
     } else {
       if (progressDisplay && this.shouldUseTerminalUpdates()) {
         // Skip terminal control in CI/test mode
@@ -869,7 +865,7 @@ export default class BenchPublisher extends AblyBaseCommand {
     let intervalId: NodeJS.Timeout | null = null;
     const progressDisplay = new Table({
       colWidths: [20, 40],
-      head: [chalk.white("Benchmark Progress"), chalk.white("Status")],
+      head: [chalk.white("Benchmark Progress"), chalk.white("status")],
       style: {
         border: [],
         head: [],
@@ -987,7 +983,7 @@ export default class BenchPublisher extends AblyBaseCommand {
     // Recreate table with updated data
     const updatedTable = new Table({
       colWidths: [20, 40],
-      head: [chalk.white("Benchmark Progress"), chalk.white("Status")],
+      head: [chalk.white("Benchmark Progress"), chalk.white("status")],
       style: {
         border: [],
         head: [],

@@ -80,6 +80,9 @@ describe("apps:list command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "apps:list");
+      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("apps");
       expect(result.apps).toBeInstanceOf(Array);
       expect(result.apps).toHaveLength(2);

@@ -1,6 +1,5 @@
 import { Args, Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { errorMessage } from "../../utils/errors.js";
 import { formatSuccess } from "../../utils/output.js";
 
 // Interface for rule update data structure (most fields optional)
@@ -29,6 +28,7 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
     "$ ably integrations update rule123 --status disabled",
     '$ ably integrations update rule123 --channel-filter "chat:*"',
     '$ ably integrations update rule123 --target-url "https://new-example.com/webhook"',
+    "$ ably integrations update rule123 --status disabled --json",
   ];
 
   static flags = {
@@ -68,11 +68,9 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
     const { args, flags } = await this.parse(IntegrationsUpdateCommand);
 
     const appId = await this.requireAppId(flags);
-    if (!appId) return;
-
-    const controlApi = this.createControlApi(flags);
 
     try {
+      const controlApi = this.createControlApi(flags);
       // Get current rule to preserve existing fields
       const existingRule = await controlApi.getRule(appId, args.ruleId);
 
@@ -109,7 +107,7 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
       );
 
       if (this.shouldOutputJson(flags)) {
-        this.log(this.formatJsonOutput({ rule: updatedRule }, flags));
+        this.logJsonResult({ rule: updatedRule }, flags);
       } else {
         this.log(formatSuccess("Integration rule updated."));
         this.log(`ID: ${updatedRule.id}`);
@@ -127,13 +125,10 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
             `Target URL: ${(updatedRule.target as Record<string, unknown>).url}`,
           );
         }
-        // Cast target for formatJsonOutput
-        this.log(
-          `Target: ${this.formatJsonOutput(updatedRule.target as Record<string, unknown>, flags)}`,
-        );
+        this.log(`Target: ${JSON.stringify(updatedRule.target, null, 2)}`);
       }
     } catch (error) {
-      this.error(`Error updating integration rule: ${errorMessage(error)}`);
+      this.fail(error, flags, "integrationUpdate");
     }
   }
 }

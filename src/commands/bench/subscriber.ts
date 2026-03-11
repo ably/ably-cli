@@ -1,13 +1,12 @@
-import { Args, Flags } from "@oclif/core";
+import { Args } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 import Table from "cli-table3";
 
-import { AblyBaseCommand } from "../../base-command.js";
-import { productApiFlags } from "../../flags.js";
-import { errorMessage } from "../../utils/errors.js";
-import { waitUntilInterruptedOrTimeout } from "../../utils/long-running.js";
+import { AblyBaseCommand, type BaseFlags } from "../../base-command.js";
+import { clientIdFlag, durationFlag, productApiFlags } from "../../flags.js";
 import {
+  formatHeading,
   formatProgress,
   formatResource,
   formatSuccess,
@@ -34,14 +33,15 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
   static override description = "Run a subscriber benchmark test";
 
-  static override examples = ["$ ably bench subscriber my-channel"];
+  static override examples = [
+    "$ ably bench subscriber my-channel",
+    "$ ably bench subscriber my-channel --json",
+  ];
 
   static override flags = {
     ...productApiFlags,
-    duration: Flags.integer({
-      char: "D",
-      description: "Automatically exit after N seconds",
-    }),
+    ...clientIdFlag,
+    ...durationFlag,
   };
 
   private receivedEchoCount = 0;
@@ -129,14 +129,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
       await this.waitForTermination(flags);
     } catch (error) {
-      this.logCliEvent(
-        flags,
-        "benchmark",
-        "testError",
-        `Benchmark failed: ${errorMessage(error)}`,
-        { error: error instanceof Error ? error.stack : String(error) },
-      );
-      this.error(`Benchmark failed: ${errorMessage(error)}`);
+      this.fail(error, flags, "benchSubscriber");
     } finally {
       // Cleanup is handled by the overridden finally method
     }
@@ -314,11 +307,11 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
     if (this.shouldOutputJson(flags)) {
       // In JSON mode, output the structured results object
-      this.log(this.formatJsonOutput(results, flags));
+      this.logJsonResult(results, flags);
       return;
     }
 
-    this.log("\n" + chalk.green("Benchmark Results") + "\n");
+    this.log("\n" + formatHeading("Benchmark Results") + "\n");
 
     // Create a summary table
     const summaryTable = new Table({
@@ -528,8 +521,10 @@ export default class BenchSubscriber extends AblyBaseCommand {
   ): Promise<Ably.Realtime | null> {
     const realtime = await this.createAblyRealtimeClient(flags);
     if (!realtime) {
-      this.error(
+      this.fail(
         "Failed to create Ably client. Please check your API key and try again.",
+        flags,
+        "benchSubscriber",
       );
       return null;
     }
@@ -804,7 +799,9 @@ export default class BenchSubscriber extends AblyBaseCommand {
     flags: Record<string, unknown>,
   ): Promise<void> {
     // Wait until the user interrupts or the optional duration elapses
-    const exitReason = await waitUntilInterruptedOrTimeout(
+    const exitReason = await this.waitAndTrackCleanup(
+      flags as BaseFlags,
+      "benchSubscriber",
       flags.duration as number | undefined,
     );
     this.logCliEvent(flags, "benchmark", "runComplete", "Exiting wait loop", {

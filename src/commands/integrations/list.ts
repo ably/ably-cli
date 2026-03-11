@@ -1,6 +1,5 @@
 import { Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { errorMessage } from "../../utils/errors.js";
 import { formatHeading } from "../../utils/output.js";
 
 export default class IntegrationsListCommand extends ControlBaseCommand {
@@ -28,38 +27,33 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
     this.showAuthInfoIfNeeded(flags);
 
     const appId = await this.requireAppId(flags);
-    if (!appId) return;
-
-    const controlApi = this.createControlApi(flags);
 
     try {
+      const controlApi = this.createControlApi(flags);
       const integrations = await controlApi.listRules(appId);
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              integrations: integrations.map((integration) => ({
-                appId: integration.appId,
-                created: new Date(integration.created).toISOString(),
-                id: integration.id,
-                modified: new Date(integration.modified).toISOString(),
-                requestMode: integration.requestMode,
-                source: {
-                  channelFilter: integration.source.channelFilter || null,
-                  type: integration.source.type,
-                },
-                target: integration.target,
-                type: integration.ruleType,
-                version: integration.version,
-              })),
-              success: true,
-              timestamp: new Date().toISOString(),
-              total: integrations.length,
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            appId,
+            integrations: integrations.map((integration) => ({
+              appId: integration.appId,
+              created: new Date(integration.created).toISOString(),
+              id: integration.id,
+              modified: new Date(integration.modified).toISOString(),
+              requestMode: integration.requestMode,
+              source: {
+                channelFilter: integration.source.channelFilter || null,
+                type: integration.source.type,
+              },
+              target: integration.target,
+              type: integration.ruleType,
+              version: integration.version,
+            })),
+            timestamp: new Date().toISOString(),
+            total: integrations.length,
+          },
+          flags,
         );
       } else {
         if (integrations.length === 0) {
@@ -79,7 +73,7 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
             `  Channel Filter: ${integration.source.channelFilter || "(none)"}`,
           );
           this.log(
-            `  Target: ${this.formatJsonOutput(integration.target as Record<string, unknown>, flags).replaceAll("\n", "\n    ")}`,
+            `  Target: ${JSON.stringify(integration.target, null, 2).replaceAll("\n", "\n    ")}`,
           );
           this.log(`  Version: ${integration.version}`);
           this.log(`  Created: ${this.formatDate(integration.created)}`);
@@ -88,20 +82,7 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            appId,
-            error: errorMessage(error),
-            status: "error",
-            success: false,
-          },
-          flags,
-        );
-        return;
-      } else {
-        this.error(`Error listing integrations: ${errorMessage(error)}`);
-      }
+      this.fail(error, flags, "integrationList");
     }
   }
 }

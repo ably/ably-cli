@@ -28,7 +28,6 @@ describe("auth:revoke-token command", () => {
       expect(stdout).toContain("Revoke a token");
       expect(stdout).toContain("USAGE");
       expect(stdout).toContain("--client-id");
-      expect(stdout).toContain("--debug");
     });
 
     it("should display examples in help", async () => {
@@ -137,13 +136,13 @@ describe("auth:revoke-token command", () => {
         .post(`/keys/${keyId}/revokeTokens`)
         .reply(404, "token_not_found");
 
-      const { stdout } = await runCommand(
+      const { error } = await runCommand(
         ["auth:revoke-token", mockToken, "--client-id", mockClientId],
         import.meta.url,
       );
 
-      // Command outputs special message for token_not_found
-      expect(stdout).toContain("Token not found or already revoked");
+      // Command outputs error via fail
+      expect(error?.message).toContain("Token not found or already revoked");
     });
 
     it("should handle authentication error (invalid API key)", async () => {
@@ -179,65 +178,7 @@ describe("auth:revoke-token command", () => {
     });
   });
 
-  describe("debug mode", () => {
-    it("should show debug information when --debug flag is used", async () => {
-      const mockConfig = getMockConfigManager();
-      const keyId = mockConfig.getKeyId()!;
-      nock("https://rest.ably.io")
-        .post(`/keys/${keyId}/revokeTokens`)
-        .reply(200, {});
-
-      const { stdout } = await runCommand(
-        [
-          "auth:revoke-token",
-          mockToken,
-          "--client-id",
-          mockClientId,
-          "--debug",
-        ],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("Debug: Using API key:");
-    });
-
-    it("should mask the API key secret in debug output", async () => {
-      const mockConfig = getMockConfigManager();
-      const keyId = mockConfig.getKeyId()!;
-      const apiKey = mockConfig.getApiKey()!;
-      const keySecret = apiKey.split(":")[1];
-      nock("https://rest.ably.io")
-        .post(`/keys/${keyId}/revokeTokens`)
-        .reply(200, {});
-
-      const { stdout } = await runCommand(
-        [
-          "auth:revoke-token",
-          mockToken,
-          "--client-id",
-          mockClientId,
-          "--debug",
-        ],
-        import.meta.url,
-      );
-
-      // Verify the secret part of the API key is masked
-      expect(stdout).not.toContain(keySecret);
-      expect(stdout).toContain("***");
-    });
-  });
-
   describe("flags", () => {
-    it("should accept --debug flag", async () => {
-      const { stdout } = await runCommand(
-        ["auth:revoke-token", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--debug");
-      expect(stdout).toContain("debug information");
-    });
-
     it("should accept --client-id flag", async () => {
       const { stdout } = await runCommand(
         ["auth:revoke-token", "--help"],

@@ -3,7 +3,6 @@ import jwt from "jsonwebtoken";
 import { randomUUID } from "node:crypto";
 
 import { AblyBaseCommand } from "../../base-command.js";
-import { errorMessage } from "../../utils/errors.js";
 import { productApiFlags } from "../../flags.js";
 
 interface JwtPayload {
@@ -72,7 +71,11 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
       const [keyId, keySecret] = apiKey.split(":");
 
       if (!keyId || !keySecret) {
-        this.error("Invalid API key format. Expected format: keyId:keySecret");
+        this.fail(
+          "Invalid API key format. Expected format: keyId:keySecret",
+          flags,
+          "issueJwtToken",
+        );
       }
 
       // Parse capabilities
@@ -80,7 +83,9 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
       try {
         capabilities = JSON.parse(flags.capability);
       } catch (error) {
-        this.error(`Invalid capability JSON: ${errorMessage(error)}`);
+        this.fail(error, flags, "issueJwtToken", {
+          context: "parsing capability JSON",
+        });
       }
 
       // Create JWT payload
@@ -123,21 +128,19 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
       }
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              appId,
-              capability: capabilities,
-              clientId,
-              expires: new Date(jwtPayload.exp * 1000).toISOString(),
-              issued: new Date(jwtPayload.iat * 1000).toISOString(),
-              keyId,
-              token,
-              ttl: flags.ttl,
-              type: "jwt",
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            appId,
+            capability: capabilities,
+            clientId,
+            expires: new Date(jwtPayload.exp * 1000).toISOString(),
+            issued: new Date(jwtPayload.iat * 1000).toISOString(),
+            keyId,
+            token,
+            tokenType: "jwt",
+            ttl: flags.ttl,
+          },
+          flags,
         );
       } else {
         this.log("Generated Ably JWT Token:");
@@ -152,7 +155,7 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
         this.log(`Capability: ${this.formatJsonOutput(capabilities, flags)}`);
       }
     } catch (error) {
-      this.error(`Error issuing JWT token: ${errorMessage(error)}`);
+      this.fail(error, flags, "issueJwtToken");
     }
   }
 }

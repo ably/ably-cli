@@ -67,8 +67,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);
       if (!this.chatClient) {
-        this.error("Failed to initialize clients");
-        return;
+        this.fail("Failed to initialize clients", flags, "roomTypingKeystroke");
       }
 
       const { room: roomName } = args;
@@ -126,7 +125,16 @@ export default class TypingKeystroke extends ChatBaseCommand {
             .keystroke()
             .then(() => {
               this.logCliEvent(flags, "typing", "started", "Started typing");
-              if (!this.shouldOutputJson(flags)) {
+              if (this.shouldOutputJson(flags)) {
+                this.logJsonResult(
+                  {
+                    room: roomName,
+                    typing: true,
+                    autoType: Boolean(flags["auto-type"]),
+                  },
+                  flags,
+                );
+              } else {
                 this.log(
                   formatSuccess(
                     `Started typing in room: ${formatResource(roomName)}.`,
@@ -165,23 +173,16 @@ export default class TypingKeystroke extends ChatBaseCommand {
               }
             })
             .catch((error: Error) => {
-              this.logCliEvent(
-                flags,
-                "typing",
-                "startErrorInitial",
-                `Failed to start typing initially: ${error.message}`,
-                { error: error.message },
-              );
-              if (!this.shouldOutputJson(flags)) {
-                this.error(`Failed to start typing: ${error.message}`);
-              }
+              this.fail(error, flags, "roomTypingKeystroke", {
+                room: roomName,
+              });
             });
-        } else if (
-          statusChange.current === RoomStatus.Failed &&
-          !this.shouldOutputJson(flags)
-        ) {
-          this.error(
+        } else if (statusChange.current === RoomStatus.Failed) {
+          this.fail(
             `Failed to attach to room ${roomName}: ${reasonMsg || "Unknown error"}`,
+            flags,
+            "roomTypingKeystroke",
+            { room: roomName },
           );
         }
       });
@@ -206,7 +207,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
       // Decide how long to remain connected
       await this.waitAndTrackCleanup(flags, "typing", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "typing", { room: args.room });
+      this.fail(error, flags, "roomTypingKeystroke", { room: args.room });
     }
   }
 }

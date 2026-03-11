@@ -1,6 +1,5 @@
 import { ChatClient, Room, PresenceEvent, PresenceData } from "@ably/chat";
 import { Args, Flags, Interfaces } from "@oclif/core";
-import chalk from "chalk";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import {
@@ -29,6 +28,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
     `$ ably rooms presence enter my-room --data '{"name":"User","status":"active"}'`,
     "$ ably rooms presence enter my-room --show-others",
     "$ ably rooms presence enter my-room --duration 30",
+    "$ ably rooms presence enter my-room --json",
   ];
   static override flags = {
     ...productApiFlags,
@@ -75,7 +75,6 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
         trimmed = trimmed.slice(1, -1);
       }
       const parsed = this.parseJsonFlag(trimmed, "data", flags);
-      if (!parsed) return;
       this.data = parsed as PresenceData;
     }
 
@@ -84,8 +83,11 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient || !this.roomName) {
-        this.error("Failed to initialize chat client or room");
-        return;
+        this.fail(
+          new Error("Failed to initialize chat client or room"),
+          flags,
+          "roomPresenceEnter",
+        );
       }
 
       // Set up connection state logging
@@ -109,7 +111,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
             this.sequenceCounter++;
             const timestamp = new Date().toISOString();
             const eventData = {
-              type: event.type,
+              eventType: event.type,
               member: { clientId: member.clientId, data: member.data },
               room: this.roomName,
               timestamp,
@@ -125,9 +127,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
               eventData,
             );
             if (this.shouldOutputJson(flags)) {
-              this.log(
-                this.formatJsonOutput({ success: true, ...eventData }, flags),
-              );
+              this.logJsonEvent(eventData, flags);
             } else {
               const { symbol: actionSymbol, color: actionColor } =
                 formatPresenceAction(event.type);
@@ -178,7 +178,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "presence", flags.duration);
     } catch (error) {
-      this.handleCommandError(error, flags, "presence", {
+      this.fail(error, flags, "roomPresenceEnter", {
         room: this.roomName,
       });
     } finally {
@@ -209,7 +209,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
 
       if (!this.shouldOutputJson(currentFlags)) {
         if (this.cleanupInProgress) {
-          this.log(chalk.green("Graceful shutdown complete (user interrupt)."));
+          this.log(formatSuccess("Graceful shutdown complete."));
         } else {
           // Normal completion without user interrupt
           this.logCliEvent(

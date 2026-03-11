@@ -1,6 +1,7 @@
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { formatLabel } from "../../utils/output.js";
 
 export default class AccountsList extends ControlBaseCommand {
   static override description = "List locally configured Ably accounts";
@@ -23,54 +24,37 @@ export default class AccountsList extends ControlBaseCommand {
     const currentAlias = this.configManager.getCurrentAccountAlias();
 
     if (accounts.length === 0) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            accounts: [],
-            error:
-              'No accounts configured. Use "ably accounts login" to add an account.',
-            success: false,
-          },
-          flags,
-        );
-        return;
-      } else {
-        this.log(
-          'No accounts configured. Use "ably accounts login" to add an account.',
-        );
-      }
-
-      return;
+      this.fail(
+        'No accounts configured. Use "ably accounts login" to add an account.',
+        flags,
+        "accountList",
+        { accounts: [] },
+      );
     }
 
     if (this.shouldOutputJson(flags)) {
-      this.log(
-        this.formatJsonOutput(
-          {
-            accounts: accounts.map(({ account, alias }) => ({
-              alias,
-              appsConfigured: account.apps
-                ? Object.keys(account.apps).length
-                : 0,
-              currentApp:
-                alias === currentAlias && account.currentAppId
-                  ? {
-                      id: account.currentAppId,
-                      name:
-                        this.configManager.getAppName(account.currentAppId) ||
-                        account.currentAppId,
-                    }
-                  : undefined,
-              id: account.accountId || "Unknown",
-              isCurrent: alias === currentAlias,
-              name: account.accountName || "Unknown",
-              user: account.userEmail || "Unknown",
-            })),
-            currentAccount: currentAlias,
-            success: true,
-          },
-          flags,
-        ),
+      this.logJsonResult(
+        {
+          accounts: accounts.map(({ account, alias }) => ({
+            alias,
+            appsConfigured: account.apps ? Object.keys(account.apps).length : 0,
+            currentApp:
+              alias === currentAlias && account.currentAppId
+                ? {
+                    id: account.currentAppId,
+                    name:
+                      this.configManager.getAppName(account.currentAppId) ||
+                      account.currentAppId,
+                  }
+                : undefined,
+            id: account.accountId || "Unknown",
+            isCurrent: alias === currentAlias,
+            name: account.accountName || "Unknown",
+            user: account.userEmail || "Unknown",
+          })),
+          currentAccount: currentAlias,
+        },
+        flags,
       );
       return;
     }
@@ -88,20 +72,22 @@ export default class AccountsList extends ControlBaseCommand {
           (isCurrent ? chalk.green(" (current)") : ""),
       );
       this.log(
-        `  Name: ${account.accountName || "Unknown"} (${account.accountId || "Unknown"})`,
+        `  ${formatLabel("Name")} ${account.accountName || "Unknown"} (${account.accountId || "Unknown"})`,
       );
-      this.log(`  User: ${account.userEmail || "Unknown"}`);
+      this.log(`  ${formatLabel("User")} ${account.userEmail || "Unknown"}`);
 
       // Count number of apps configured for this account
       const appCount = account.apps ? Object.keys(account.apps).length : 0;
-      this.log(`  Apps configured: ${appCount}`);
+      this.log(`  ${formatLabel("Apps configured")} ${appCount}`);
 
       // Show current app if one is selected and this is the current account
       if (isCurrent && account.currentAppId) {
         const appName =
           this.configManager.getAppName(account.currentAppId) ||
           account.currentAppId;
-        this.log(`  Current app: ${appName} (${account.currentAppId})`);
+        this.log(
+          `  ${formatLabel("Current app")} ${appName} (${account.currentAppId})`,
+        );
       }
 
       this.log(""); // Add a blank line between accounts

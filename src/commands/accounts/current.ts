@@ -3,6 +3,7 @@ import chalk from "chalk";
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
 import { ControlApi } from "../../services/control-api.js";
+import { formatLabel } from "../../utils/output.js";
 
 export default class AccountsCurrent extends ControlBaseCommand {
   static override description = "Show the current Ably account";
@@ -30,10 +31,11 @@ export default class AccountsCurrent extends ControlBaseCommand {
     const currentAccount = this.configManager.getCurrentAccount();
 
     if (!currentAlias || !currentAccount) {
-      this.error(
+      this.fail(
         'No account is currently selected. Use "ably accounts login" or "ably accounts switch" to select an account.',
+        flags,
+        "accountCurrent",
       );
-      return;
     }
 
     // Verify the account by making an API call to get up-to-date information
@@ -47,27 +49,20 @@ export default class AccountsCurrent extends ControlBaseCommand {
 
       const { account, user } = await controlApi.getMe();
 
-      this.log(
-        `${chalk.cyan("Account:")} ${chalk.cyan.bold(account.name)} ${chalk.gray(`(${account.id})`)}`,
-      );
-      this.log(`${chalk.cyan("User:")} ${chalk.cyan.bold(user.email)}`);
-
       // Count number of apps configured for this account
       const appCount = currentAccount.apps
         ? Object.keys(currentAccount.apps).length
         : 0;
-      this.log(
-        `${chalk.cyan("Apps configured:")} ${chalk.cyan.bold(appCount)}`,
-      );
 
       // Show current app if one is selected
       const currentAppId = this.configManager.getCurrentAppId();
+      let currentApp: { id: string; name: string } | null = null;
+      let currentKey: { id: string; label: string } | null = null;
+
       if (currentAppId) {
         const appName =
           this.configManager.getAppName(currentAppId) || currentAppId;
-        this.log(
-          `${chalk.green("Current App:")} ${chalk.green.bold(appName)} ${chalk.gray(`(${currentAppId})`)}`,
-        );
+        currentApp = { id: currentAppId, name: appName };
 
         // Show current key if one is selected
         const apiKey = this.configManager.getApiKey(currentAppId);
@@ -76,39 +71,85 @@ export default class AccountsCurrent extends ControlBaseCommand {
             this.configManager.getKeyId(currentAppId) || apiKey.split(":")[0];
           const keyName =
             this.configManager.getKeyName(currentAppId) || "Unnamed key";
-          // Format the full key name (app_id.key_id)
           const formattedKeyName = keyId.includes(".")
             ? keyId
             : `${currentAppId}.${keyId}`;
+          currentKey = { id: formattedKeyName, label: keyName };
+        }
+      }
+
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonResult(
+          {
+            account: { name: account.name, id: account.id },
+            user: { email: user.email },
+            appsConfigured: appCount,
+            currentApp,
+            currentKey,
+          },
+          flags,
+        );
+      } else {
+        this.log(
+          `${formatLabel("Account")} ${chalk.cyan.bold(account.name)} ${chalk.gray(`(${account.id})`)}`,
+        );
+        this.log(`${formatLabel("User")} ${chalk.cyan.bold(user.email)}`);
+        this.log(
+          `${formatLabel("Apps configured")} ${chalk.cyan.bold(appCount)}`,
+        );
+
+        if (currentApp) {
           this.log(
-            `${chalk.yellow("Current API Key:")} ${chalk.yellow.bold(formattedKeyName)}`,
+            `${formatLabel("Current App")} ${chalk.green.bold(currentApp.name)} ${chalk.gray(`(${currentApp.id})`)}`,
           );
-          this.log(
-            `${chalk.yellow("Key Label:")} ${chalk.yellow.bold(keyName)}`,
-          );
+
+          if (currentKey) {
+            this.log(
+              `${formatLabel("Current API Key")} ${chalk.yellow.bold(currentKey.id)}`,
+            );
+            this.log(
+              `${formatLabel("Key Label")} ${chalk.yellow.bold(currentKey.label)}`,
+            );
+          }
         }
       }
     } catch {
-      this.warn(
-        "Unable to verify account information. Your access token may have expired.",
-      );
-      this.log(
-        chalk.red(
-          `Consider logging in again with "ably accounts login --alias ${currentAlias}".`,
-        ),
-      );
-
-      // Show cached information
-      if (currentAccount.accountName || currentAccount.accountId) {
-        this.log(
-          `${chalk.cyan("Account (cached):")} ${chalk.cyan.bold(currentAccount.accountName || "Unknown")} ${chalk.gray(`(${currentAccount.accountId || "Unknown ID"})`)}`,
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonResult(
+          {
+            cached: true,
+            account: {
+              name: currentAccount.accountName || "Unknown",
+              id: currentAccount.accountId || "Unknown ID",
+            },
+            user: { email: currentAccount.userEmail || null },
+            warning:
+              "Unable to verify account information. Your access token may have expired.",
+          },
+          flags,
         );
-      }
-
-      if (currentAccount.userEmail) {
-        this.log(
-          `${chalk.cyan("User (cached):")} ${chalk.cyan.bold(currentAccount.userEmail)}`,
+      } else {
+        this.warn(
+          "Unable to verify account information. Your access token may have expired.",
         );
+        this.log(
+          chalk.yellow(
+            `Consider logging in again with "ably accounts login --alias ${currentAlias}".`,
+          ),
+        );
+
+        // Show cached information
+        if (currentAccount.accountName || currentAccount.accountId) {
+          this.log(
+            `${formatLabel("Account (cached)")} ${chalk.cyan.bold(currentAccount.accountName || "Unknown")} ${chalk.gray(`(${currentAccount.accountId || "Unknown ID"})`)}`,
+          );
+        }
+
+        if (currentAccount.userEmail) {
+          this.log(
+            `${formatLabel("User (cached)")} ${chalk.cyan.bold(currentAccount.userEmail)}`,
+          );
+        }
       }
     }
   }
@@ -122,7 +163,11 @@ export default class AccountsCurrent extends ControlBaseCommand {
   ): Promise<void> {
     const accessToken = process.env.ABLY_ACCESS_TOKEN;
     if (!accessToken) {
-      this.error("ABLY_ACCESS_TOKEN environment variable is not set");
+      this.fail(
+        "ABLY_ACCESS_TOKEN environment variable is not set",
+        flags,
+        "accountCurrent",
+      );
     }
 
     try {
@@ -133,18 +178,16 @@ export default class AccountsCurrent extends ControlBaseCommand {
       const { account, user } = await controlApi.getMe();
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              account: {
-                accountId: account.id,
-                accountName: account.name,
-                userEmail: user.email,
-              },
-              mode: "web-cli",
+        this.logJsonResult(
+          {
+            account: {
+              accountId: account.id,
+              accountName: account.name,
+              userEmail: user.email,
             },
-            flags,
-          ),
+            mode: "web-cli",
+          },
+          flags,
         );
       } else {
         // Extract app ID from ABLY_API_KEY
@@ -158,42 +201,40 @@ export default class AccountsCurrent extends ControlBaseCommand {
         }
 
         this.log(
-          `${chalk.cyan("Account:")} ${chalk.cyan.bold(account.name)} ${chalk.gray(`(${account.id})`)}`,
+          `${formatLabel("Account")} ${chalk.cyan.bold(account.name)} ${chalk.gray(`(${account.id})`)}`,
         );
-        this.log(`${chalk.cyan("User:")} ${chalk.cyan.bold(user.email)}`);
+        this.log(`${formatLabel("User")} ${chalk.cyan.bold(user.email)}`);
 
         if (appId && keyId) {
           this.log(
-            `${chalk.green("Current App ID:")} ${chalk.green.bold(appId)}`,
+            `${formatLabel("Current App ID")} ${chalk.green.bold(appId)}`,
           );
           this.log(
-            `${chalk.yellow("Current API Key:")} ${chalk.yellow.bold(keyId)}`,
+            `${formatLabel("Current API Key")} ${chalk.yellow.bold(keyId)}`,
           );
         }
 
         this.log(
-          `${chalk.magenta("Mode:")} ${chalk.magenta.bold("Web CLI")} ${chalk.dim("(using environment variables)")}`,
+          `${formatLabel("Mode")} ${chalk.magenta.bold("Web CLI")} ${chalk.dim("(using environment variables)")}`,
         );
       }
     } catch (error) {
       // If we can't get account details, show an error message
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              error: errorMessage(error),
-              mode: "web-cli",
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            error: errorMessage(error),
+            mode: "web-cli",
+          },
+          flags,
         );
       } else {
-        this.log(`${chalk.red("Error:")} ${errorMessage(error)}`);
+        this.warn(errorMessage(error));
         this.log(
-          `${chalk.yellow("Info:")} Your access token may have expired or is invalid.`,
+          `${formatLabel("Info")} Your access token may have expired or is invalid.`,
         );
         this.log(
-          `${chalk.magenta("Mode:")} ${chalk.magenta.bold("Web CLI")} ${chalk.dim("(using environment variables)")}`,
+          `${formatLabel("Mode")} ${chalk.magenta.bold("Web CLI")} ${chalk.dim("(using environment variables)")}`,
         );
       }
     }

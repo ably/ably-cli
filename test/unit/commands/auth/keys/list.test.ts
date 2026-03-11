@@ -104,6 +104,9 @@ describe("auth:keys:list command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "auth:keys:list");
+      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("keys");
       expect(result.keys).toHaveLength(1);
       expect(result.keys[0]).toHaveProperty("name", "Test Key");

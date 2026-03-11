@@ -155,10 +155,7 @@ export abstract class BaseTopicCommand extends InteractiveBaseCommand {
               if (isInteractiveMode) {
                 throw error;
               } else {
-                const err = error as Error & { oclif?: { exit?: number } };
-                this.error(err.message || "Unknown error", {
-                  exit: err.oclif?.exit || 1,
-                });
+                throw error;
               }
             }
           }

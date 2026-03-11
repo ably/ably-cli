@@ -7,17 +7,6 @@ import { clientIdFlag, productApiFlags } from "../../../../flags.js";
 import { formatResource, formatSuccess } from "../../../../utils/output.js";
 import { REACTION_TYPE_MAP } from "../../../../utils/chat-constants.js";
 
-interface MessageReactionResult {
-  [key: string]: unknown;
-  success: boolean;
-  room: string;
-  messageSerial?: string;
-  reaction?: string;
-  type?: string;
-  count?: number;
-  error?: string;
-}
-
 export default class MessagesReactionsSend extends ChatBaseCommand {
   static override args = {
     room: Args.string({
@@ -70,26 +59,24 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
         flags.count !== undefined &&
         flags.count <= 0
       ) {
-        const errorMsg =
-          "Count must be a positive integer for Multiple type reactions";
-        this.logCliEvent(flags, "reaction", "invalidCount", errorMsg, {
-          error: errorMsg,
-          count: flags.count,
-        });
-        if (this.shouldOutputJson(flags)) {
-          this.jsonError({ error: errorMsg, room, success: false }, flags);
-        } else {
-          this.error(errorMsg);
-        }
-        return;
+        this.fail(
+          "Count must be a positive integer for Multiple type reactions",
+          flags,
+          "roomMessageReactionSend",
+          { room, count: flags.count },
+        );
       }
 
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
-        this.error("Failed to create Chat client");
-        return;
+        this.fail(
+          "Failed to create Chat client",
+          flags,
+          "roomMessageReactionSend",
+          { room },
+        );
       }
 
       // Set up connection state logging
@@ -156,18 +143,17 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
         `Successfully sent reaction ${reaction} to message`,
       );
 
-      // Format the response
-      const resultData: MessageReactionResult = {
-        messageSerial,
-        reaction,
-        room,
-        success: true,
-        ...(flags.type && { type: flags.type }),
-        ...(flags.count && { count: flags.count }),
-      };
-
       if (this.shouldOutputJson(flags)) {
-        this.log(this.formatJsonOutput(resultData, flags));
+        this.logJsonResult(
+          {
+            messageSerial,
+            reaction,
+            room,
+            ...(flags.type && { reactionType: flags.type }),
+            ...(flags.count && { count: flags.count }),
+          },
+          flags,
+        );
       } else {
         this.log(
           formatSuccess(
@@ -176,11 +162,11 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
         );
       }
     } catch (error) {
-      this.handleCommandError(error, flags, "reaction", {
+      this.fail(error, flags, "roomMessageReactionSend", {
         room,
         messageSerial,
         reaction,
-        ...(flags.type && { type: flags.type }),
+        ...(flags.type && { reactionType: flags.type }),
         ...(flags.count && { count: flags.count }),
       });
     }

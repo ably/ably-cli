@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
 
 describe("spaces:locks:subscribe command", () => {
   beforeEach(() => {
@@ -134,6 +135,36 @@ describe("spaces:locks:subscribe command", () => {
       );
 
       expect(stdout).toContain("No locks");
+    });
+  });
+
+  describe("JSON output", () => {
+    it("should output JSON envelope with initial locks snapshot", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.locks.getAll.mockResolvedValue([
+        {
+          id: "lock-1",
+          status: "locked",
+          member: { clientId: "user-1", connectionId: "conn-1" },
+        },
+      ]);
+
+      const { stdout } = await runCommand(
+        ["spaces:locks:subscribe", "test-space", "--json"],
+        import.meta.url,
+      );
+
+      const records = parseNdjsonLines(stdout);
+      const resultRecord = records.find(
+        (r) => r.type === "result" && Array.isArray(r.locks),
+      );
+      expect(resultRecord).toBeDefined();
+      expect(resultRecord).toHaveProperty("type", "result");
+      expect(resultRecord).toHaveProperty("command");
+      expect(resultRecord).toHaveProperty("success", true);
+      expect(resultRecord).toHaveProperty("spaceName", "test-space");
+      expect(resultRecord!.locks).toBeInstanceOf(Array);
     });
   });
 

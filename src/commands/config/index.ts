@@ -1,19 +1,13 @@
-import { AblyBaseCommand } from "../../base-command.js";
-import { coreGlobalFlags } from "../../flags.js";
+import { BaseTopicCommand } from "../../base-topic-command.js";
 
-export default class ConfigIndex extends AblyBaseCommand {
+export default class ConfigIndex extends BaseTopicCommand {
+  protected topicName = "config";
+  protected commandGroup = "Configuration";
+
   static override description = "Manage Ably CLI configuration";
 
   static override examples = [
-    "<%= config.bin %> config path",
-    "<%= config.bin %> config show",
+    "<%= config.bin %> <%= command.id %> path",
+    "<%= config.bin %> <%= command.id %> show",
   ];
-
-  static override flags = {
-    ...coreGlobalFlags,
-  };
-
-  async run(): Promise<void> {
-    await this.config.runCommand("help", ["config"]);
-  }
 }

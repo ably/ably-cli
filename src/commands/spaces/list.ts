@@ -1,9 +1,12 @@
 import { Flags } from "@oclif/core";
-import chalk from "chalk";
 
-import { errorMessage } from "../../utils/errors.js";
 import { productApiFlags } from "../../flags.js";
-import { formatCountLabel, formatLimitWarning } from "../../utils/output.js";
+import {
+  formatLabel,
+  formatCountLabel,
+  formatLimitWarning,
+  formatResource,
+} from "../../utils/output.js";
 import { SpacesBaseCommand } from "../../spaces-base-command.js";
 
 interface SpaceMetrics {
@@ -82,8 +85,11 @@ export default class SpacesList extends SpacesBaseCommand {
       );
 
       if (channelsResponse.statusCode !== 200) {
-        this.error(`Failed to list spaces: ${channelsResponse.statusCode}`);
-        return;
+        this.fail(
+          `Failed to list spaces: ${channelsResponse.statusCode}`,
+          flags,
+          "spaceList",
+        );
       }
 
       // Filter to only include space channels
@@ -124,21 +130,18 @@ export default class SpacesList extends SpacesBaseCommand {
       const limitedSpaces = spacesList.slice(0, flags.limit);
 
       if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              hasMore: spacesList.length > flags.limit,
-              shown: limitedSpaces.length,
-              spaces: limitedSpaces.map((space: SpaceItem) => ({
-                metrics: space.status?.occupancy?.metrics || {},
-                spaceName: space.spaceName,
-              })),
-              success: true,
-              timestamp: new Date().toISOString(),
-              total: spacesList.length,
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            hasMore: spacesList.length > flags.limit,
+            shown: limitedSpaces.length,
+            spaces: limitedSpaces.map((space: SpaceItem) => ({
+              metrics: space.status?.occupancy?.metrics || {},
+              spaceName: space.spaceName,
+            })),
+            timestamp: new Date().toISOString(),
+            total: spacesList.length,
+          },
+          flags,
         );
       } else {
         if (limitedSpaces.length === 0) {
@@ -151,30 +154,30 @@ export default class SpacesList extends SpacesBaseCommand {
         );
 
         limitedSpaces.forEach((space: SpaceItem) => {
-          this.log(`${chalk.green(space.spaceName)}`);
+          this.log(`${formatResource(space.spaceName)}`);
 
           // Show occupancy if available
           if (space.status?.occupancy?.metrics) {
             const { metrics } = space.status.occupancy;
             this.log(
-              `  ${chalk.dim("Connections:")} ${metrics.connections || 0}`,
+              `  ${formatLabel("Connections")} ${metrics.connections || 0}`,
             );
             this.log(
-              `  ${chalk.dim("Publishers:")} ${metrics.publishers || 0}`,
+              `  ${formatLabel("Publishers")} ${metrics.publishers || 0}`,
             );
             this.log(
-              `  ${chalk.dim("Subscribers:")} ${metrics.subscribers || 0}`,
+              `  ${formatLabel("Subscribers")} ${metrics.subscribers || 0}`,
             );
 
             if (metrics.presenceConnections !== undefined) {
               this.log(
-                `  ${chalk.dim("Presence Connections:")} ${metrics.presenceConnections}`,
+                `  ${formatLabel("Presence Connections")} ${metrics.presenceConnections}`,
               );
             }
 
             if (metrics.presenceMembers !== undefined) {
               this.log(
-                `  ${chalk.dim("Presence Members:")} ${metrics.presenceMembers}`,
+                `  ${formatLabel("Presence Members")} ${metrics.presenceMembers}`,
               );
             }
           }
@@ -190,19 +193,7 @@ export default class SpacesList extends SpacesBaseCommand {
         if (warning) this.log(warning);
       }
     } catch (error) {
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError(
-          {
-            error: errorMessage(error),
-            status: "error",
-            success: false,
-          },
-          flags,
-        );
-        return;
-      } else {
-        this.error(`Error listing spaces: ${errorMessage(error)}`);
-      }
+      this.fail(error, flags, "spaceList");
     }
   }
 }

@@ -74,8 +74,9 @@ describe("auth:keys:revoke command", () => {
 
       // The JSON output should be parseable
       const result = JSON.parse(stdout);
-      // Either success or error with keyName property
-      expect(typeof result).toBe("object");
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "auth:keys:revoke");
+      expect(result).toHaveProperty("success", true);
     });
   });
 

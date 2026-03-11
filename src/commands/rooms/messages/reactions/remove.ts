@@ -6,16 +6,6 @@ import { clientIdFlag, productApiFlags } from "../../../../flags.js";
 import { formatResource, formatSuccess } from "../../../../utils/output.js";
 import { REACTION_TYPE_MAP } from "../../../../utils/chat-constants.js";
 
-interface MessageReactionResult {
-  [key: string]: unknown;
-  success: boolean;
-  room: string;
-  messageSerial?: string;
-  reaction?: string;
-  type?: string;
-  error?: string;
-}
-
 export default class MessagesReactionsRemove extends ChatBaseCommand {
   static override args = {
     room: Args.string({
@@ -60,8 +50,12 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
       const chatClient = await this.createChatClient(flags);
 
       if (!chatClient) {
-        this.error("Failed to create Chat client");
-        return;
+        this.fail(
+          "Failed to create Chat client",
+          flags,
+          "roomMessageReactionRemove",
+          { room },
+        );
       }
 
       // Set up connection state logging
@@ -116,17 +110,16 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
         `Successfully removed reaction ${reaction} from message`,
       );
 
-      // Format the response
-      const resultData: MessageReactionResult = {
-        messageSerial,
-        reaction,
-        room,
-        success: true,
-        ...(flags.type && { type: flags.type }),
-      };
-
       if (this.shouldOutputJson(flags)) {
-        this.log(this.formatJsonOutput(resultData, flags));
+        this.logJsonResult(
+          {
+            messageSerial,
+            reaction,
+            room,
+            ...(flags.type && { reactionType: flags.type }),
+          },
+          flags,
+        );
       } else {
         this.log(
           formatSuccess(
@@ -135,7 +128,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
         );
       }
     } catch (error) {
-      this.handleCommandError(error, flags, "reaction", {
+      this.fail(error, flags, "roomMessageReactionRemove", {
         room,
         messageSerial,
         reaction,

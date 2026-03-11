@@ -2,15 +2,15 @@ import { type Lock } from "@ably/spaces";
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
-import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
+  formatHeading,
+  formatLabel,
   formatListening,
   formatProgress,
   formatResource,
   formatTimestamp,
-  formatLabel,
 } from "../../../utils/output.js";
 
 export default class SpacesLocksSubscribe extends SpacesBaseCommand {
@@ -37,6 +37,35 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
   };
 
   private listener: ((lock: Lock) => void) | null = null;
+
+  private displayLockDetails(lock: Lock): void {
+    this.log(`  ${formatLabel("Status")} ${lock.status}`);
+    this.log(
+      `  ${formatLabel("Member")} ${lock.member?.clientId || "Unknown"}`,
+    );
+
+    if (lock.member?.connectionId) {
+      this.log(`  ${formatLabel("Connection ID")} ${lock.member.connectionId}`);
+    }
+
+    if (lock.timestamp) {
+      this.log(
+        `  ${formatLabel("Timestamp")} ${new Date(lock.timestamp).toISOString()}`,
+      );
+    }
+
+    if (lock.attributes) {
+      this.log(
+        `  ${formatLabel("Attributes")} ${JSON.stringify(lock.attributes)}`,
+      );
+    }
+
+    if (lock.reason) {
+      this.log(
+        `  ${formatLabel("Reason")} ${lock.reason.message || lock.reason.toString()}`,
+      );
+    }
+  }
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksSubscribe);
@@ -100,38 +129,29 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
           );
         }
       } else if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonOutput(
-            {
-              locks: locks.map((lock) => ({
-                id: lock.id,
-                member: lock.member,
-                status: lock.status,
-              })),
-              spaceName,
-              status: "connected",
-              success: true,
-            },
-            flags,
-          ),
+        this.logJsonResult(
+          {
+            locks: locks.map((lock) => ({
+              id: lock.id,
+              member: lock.member,
+              status: lock.status,
+              timestamp: lock.timestamp,
+              ...(lock.attributes && { attributes: lock.attributes }),
+              ...(lock.reason && { reason: lock.reason }),
+            })),
+            spaceName,
+            status: "connected",
+          },
+          flags,
         );
       } else {
         this.log(
-          `\n${chalk.cyan("Current locks")} (${chalk.bold(locks.length.toString())}):\n`,
+          `\n${formatHeading("Current locks")} (${chalk.bold(locks.length.toString())}):\n`,
         );
 
         for (const lock of locks) {
-          this.log(`- Lock ID: ${chalk.blue(lock.id)}`);
-          this.log(`  ${formatLabel("Status")} ${lock.status}`);
-          this.log(
-            `  ${chalk.dim("Member:")} ${lock.member?.clientId || "Unknown"}`,
-          );
-
-          if (lock.member?.connectionId) {
-            this.log(
-              `  ${chalk.dim("Connection ID:")} ${lock.member.connectionId}`,
-            );
-          }
+          this.log(`- Lock ID: ${formatResource(lock.id)}`);
+          this.displayLockDetails(lock);
         }
       }
 
@@ -161,10 +181,13 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
             id: lock.id,
             member: lock.member,
             status: lock.status,
+            timestamp: lock.timestamp,
+            ...(lock.attributes && { attributes: lock.attributes }),
+            ...(lock.reason && { reason: lock.reason }),
           },
           spaceName,
           timestamp,
-          type: "lock_event",
+          eventType: "lock_event",
         };
 
         this.logCliEvent(
@@ -176,23 +199,12 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.log(
-            this.formatJsonOutput({ success: true, ...eventData }, flags),
-          );
+          this.logJsonEvent(eventData, flags);
         } else {
           this.log(
-            `${formatTimestamp(timestamp)} Lock ${chalk.blue(lock.id)} updated`,
+            `${formatTimestamp(timestamp)} Lock ${formatResource(lock.id)} updated`,
           );
-          this.log(`  ${formatLabel("Status")} ${lock.status}`);
-          this.log(
-            `  ${chalk.dim("Member:")} ${lock.member?.clientId || "Unknown"}`,
-          );
-
-          if (lock.member?.connectionId) {
-            this.log(
-              `  ${chalk.dim("Connection ID:")} ${lock.member.connectionId}`,
-            );
-          }
+          this.displayLockDetails(lock);
         }
       };
 
@@ -216,15 +228,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "lock", flags.duration);
     } catch (error) {
-      const errorMsg = `Error during execution: ${errorMessage(error)}`;
-      this.logCliEvent(flags, "lock", "executionError", errorMsg, {
-        error: errorMsg,
-      });
-      if (this.shouldOutputJson(flags)) {
-        this.jsonError({ error: errorMsg, success: false }, flags);
-      } else {
-        this.error(errorMsg);
-      }
+      this.fail(error, flags, "lockSubscribe");
     } finally {
       // Cleanup is now handled by base class finally() method
     }

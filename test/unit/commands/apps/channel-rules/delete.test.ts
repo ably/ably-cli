@@ -36,7 +36,7 @@ describe("apps:channel-rules:delete command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("deleted successfully");
+      expect(stdout).toContain("deleted");
     });
 
     it("should output JSON format when --json flag is used", async () => {

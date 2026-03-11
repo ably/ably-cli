@@ -1,12 +1,16 @@
 import chalk from "chalk";
 import isTestMode from "../utils/test-mode.js";
+import { buildJsonRecord, formatJsonString } from "../utils/output.js";
 
 export interface StatsDisplayOptions {
+  command?: string;
   intervalSeconds?: number;
   isAccountStats?: boolean;
   isConnectionStats?: boolean;
   json?: boolean;
   live?: boolean;
+  logger?: (...args: unknown[]) => void;
+  prettyJson?: boolean;
   startTime?: Date;
   unit?: "day" | "hour" | "minute" | "month";
 }
@@ -76,9 +80,11 @@ export class StatsDisplay {
     tokenRequests: 0,
   };
 
+  private logger: (...args: unknown[]) => void;
   private startTime: Date | undefined;
 
   constructor(private options: StatsDisplayOptions = {}) {
+    this.logger = options.logger || console.log;
     // Initialize start time if live mode is enabled
     if (options.live) {
       this.startTime = options.startTime || new Date();
@@ -87,7 +93,17 @@ export class StatsDisplay {
 
   public display(stats: StatsDisplayData): void {
     if (this.options.json) {
-      console.log(JSON.stringify(stats));
+      const record = buildJsonRecord(
+        this.options.live ? "event" : "result",
+        this.options.command || "unknown",
+        stats as Record<string, unknown>,
+      );
+      this.logger(
+        formatJsonString(record, {
+          json: this.options.json,
+          prettyJson: this.options.prettyJson,
+        }),
+      );
       return;
     }
 
@@ -249,20 +265,20 @@ export class StatsDisplay {
     this.displayAppHistoricalMetrics(stats, getEntry);
 
     // Add peak rates section
-    console.log(chalk.magenta("Peak Rates:"));
-    console.log(
+    this.logger(chalk.magenta("Peak Rates:"));
+    this.logger(
       `  Messages: ${this.formatRate(getEntry("peakRates.messages"))} msgs/s`,
     );
-    console.log(
+    this.logger(
       `  Connections: ${this.formatRate(getEntry("peakRates.connections"))} conns/s`,
     );
-    console.log(
+    this.logger(
       `  Channels: ${this.formatRate(getEntry("peakRates.channels"))} chans/s`,
     );
-    console.log(
+    this.logger(
       `  API Requests: ${this.formatRate(getEntry("peakRates.apiRequests"))} reqs/s`,
     );
-    console.log(
+    this.logger(
       `  Token Requests: ${this.formatRate(getEntry("peakRates.tokenRequests"))} tokens/s`,
     );
   }
@@ -272,7 +288,7 @@ export class StatsDisplay {
     getEntry: (key: string, defaultVal?: number) => number,
   ): void {
     // Connections
-    console.log(
+    this.logger(
       chalk.yellow("Connections:"),
       `${this.formatNumber(getEntry("connections.all.peak"))} peak, ` +
         `${this.formatNumber(getEntry("connections.all.min"))} min, ` +
@@ -283,7 +299,7 @@ export class StatsDisplay {
     );
 
     // Channels
-    console.log(
+    this.logger(
       chalk.green("Channels:"),
       `${this.formatNumber(getEntry("channels.peak"))} peak, ` +
         `${this.formatNumber(getEntry("channels.min"))} min, ` +
@@ -294,7 +310,7 @@ export class StatsDisplay {
     );
 
     // Messages
-    console.log(
+    this.logger(
       chalk.blue("Messages:"),
       `${this.formatNumber(getEntry("messages.all.all.count"))} total, ` +
         `${this.formatNumber(getEntry("messages.inbound.all.messages.count"))} published, ` +
@@ -303,7 +319,7 @@ export class StatsDisplay {
     );
 
     // API Requests
-    console.log(
+    this.logger(
       chalk.magenta("API Requests:"),
       `${this.formatNumber(getEntry("apiRequests.all.succeeded"))} succeeded, ` +
         `${this.formatNumber(getEntry("apiRequests.all.failed"))} failed, ` +
@@ -312,7 +328,7 @@ export class StatsDisplay {
     );
 
     // Token Requests
-    console.log(
+    this.logger(
       chalk.cyan("Token Requests:"),
       `${this.formatNumber(getEntry("apiRequests.tokenRequests.succeeded"))} succeeded, ` +
         `${this.formatNumber(getEntry("apiRequests.tokenRequests.failed"))} failed, ` +
@@ -322,19 +338,19 @@ export class StatsDisplay {
 
   private displayConnectionCumulativeStats(): void {
     // Connections stats - simplified
-    console.log(
+    this.logger(
       chalk.yellow("Connections:"),
       `${this.formatNumber(this.cumulativeStats.connections.peak)} peak`,
     );
 
     // Channels stats - simplified
-    console.log(
+    this.logger(
       chalk.green("Channels:"),
       `${this.formatNumber(this.cumulativeStats.channels.peak)} peak`,
     );
 
     // Messages stats - simplified
-    console.log(
+    this.logger(
       chalk.blue("Messages:"),
       `${this.formatNumber(this.cumulativeStats.messages.published)} published, ` +
         `${this.formatNumber(this.cumulativeStats.messages.delivered)} delivered`,
@@ -346,8 +362,8 @@ export class StatsDisplay {
     getEntry: (key: string, defaultVal?: number) => number,
   ): void {
     // Display header
-    console.log(chalk.bold("Ably Connection Stats Dashboard - Live Updates"));
-    console.log(
+    this.logger(chalk.bold("Ably Connection Stats Dashboard - Live Updates"));
+    this.logger(
       chalk.dim(
         `Polling every ${this.options.intervalSeconds || 6} seconds. Press Ctrl+C to exit.\n`,
       ),
@@ -361,52 +377,52 @@ export class StatsDisplay {
     const currentUtcTime =
       now.toISOString().replace("T", " ").slice(0, 19) + " UTC";
     const currentLocalTime = now.toLocaleString();
-    console.log(
+    this.logger(
       chalk.cyan(
         `Current time: ${currentUtcTime} (local: ${currentLocalTime})`,
       ),
     );
-    console.log(
+    this.logger(
       chalk.cyan(`Stats interval resets in: ${secondsToNextMinute} seconds`),
     );
 
     if (this.startTime) {
-      console.log(
+      this.logger(
         chalk.cyan(
           `Monitoring since: ${this.startTime.toLocaleString()} (${this.formatElapsedTime()})`,
         ),
       );
     }
 
-    console.log("");
+    this.logger("");
 
     // Connection stats - simplified version with just the essential metrics
-    console.log(chalk.bold("Current Minute Stats:"));
+    this.logger(chalk.bold("Current Minute Stats:"));
 
     // Connections - simplified
-    console.log(
+    this.logger(
       chalk.yellow("Connections:"),
       `${this.formatNumber(getEntry("connections.all.peak"))} peak, ` +
         `${this.formatNumber(getEntry("connections.all.mean"))} current`,
     );
 
     // Channels - simplified
-    console.log(
+    this.logger(
       chalk.green("Channels:"),
       `${this.formatNumber(getEntry("channels.peak"))} peak`,
     );
 
     // Messages - simplified
-    console.log(
+    this.logger(
       chalk.blue("Messages:"),
       `${this.formatNumber(getEntry("messages.inbound.all.messages.count"))} published, ` +
         `${this.formatNumber(getEntry("messages.outbound.all.messages.count"))} delivered`,
     );
 
-    console.log("");
+    this.logger("");
 
     // Display simplified cumulative stats
-    console.log(chalk.bold("Cumulative Stats (since monitoring started):"));
+    this.logger(chalk.bold("Cumulative Stats (since monitoring started):"));
     this.displayConnectionCumulativeStats();
   }
 
@@ -414,21 +430,21 @@ export class StatsDisplay {
     const avgRates = this.calculateAverageRates();
 
     // Connections stats
-    console.log(
+    this.logger(
       chalk.yellow("Connections:"),
       `${this.formatNumber(this.cumulativeStats.connections.peak)} peak, ` +
         `${this.formatNumber(this.cumulativeStats.connections.opened)} opened (${this.formatRate(avgRates.connections)} new conns/s avg)`,
     );
 
     // Channels stats
-    console.log(
+    this.logger(
       chalk.green("Channels:"),
       `${this.formatNumber(this.cumulativeStats.channels.peak)} peak, ` +
         `${this.formatNumber(this.cumulativeStats.channels.opened)} opened (${this.formatRate(avgRates.channels)} new chans/s avg)`,
     );
 
     // Messages stats
-    console.log(
+    this.logger(
       chalk.blue("Messages:"),
       `${this.formatNumber(this.cumulativeStats.messages.published)} published (${this.formatBytes(this.cumulativeStats.messages.data.published)}, ${this.formatRate(avgRates.messages.published)} msgs/s avg), ` +
         `${this.formatNumber(this.cumulativeStats.messages.delivered)} delivered (${this.formatBytes(this.cumulativeStats.messages.data.delivered)}, ${this.formatRate(avgRates.messages.delivered)} msgs/s avg)`,
@@ -443,7 +459,7 @@ export class StatsDisplay {
             100
           ).toFixed(1)
         : "0.0";
-    console.log(
+    this.logger(
       chalk.magenta("API Requests:"),
       `${this.formatNumber(this.cumulativeStats.apiRequests.succeeded)} succeeded, ` +
         `${this.formatNumber(this.cumulativeStats.apiRequests.failed)} failed, ` +
@@ -461,7 +477,7 @@ export class StatsDisplay {
             100
           ).toFixed(1)
         : "0.0";
-    console.log(
+    this.logger(
       chalk.cyan("Token Requests:"),
       `${this.formatNumber(this.cumulativeStats.tokenRequests.succeeded)} succeeded, ` +
         `${this.formatNumber(this.cumulativeStats.tokenRequests.failed)} failed, ` +
@@ -480,7 +496,7 @@ export class StatsDisplay {
       ? this.parseIntervalId(stats.intervalId, unit)
       : { period: "Unknown period", start: new Date() };
 
-    console.log(chalk.bold(`Stats for ${intervalInfo.period}`));
+    this.logger(chalk.bold(`Stats for ${intervalInfo.period}`));
 
     if (this.options.isAccountStats) {
       // Account-specific metrics
@@ -490,7 +506,7 @@ export class StatsDisplay {
       this.displayAppHistoricalMetrics(stats, getEntry);
     }
 
-    console.log(""); // Empty line between intervals
+    this.logger(""); // Empty line between intervals
   }
 
   private displayLiveStats(
@@ -498,8 +514,8 @@ export class StatsDisplay {
     getEntry: (key: string, defaultVal?: number) => number,
   ): void {
     // Display header
-    console.log(chalk.bold("Ably Stats Dashboard - Live Updates"));
-    console.log(
+    this.logger(chalk.bold("Ably Stats Dashboard - Live Updates"));
+    this.logger(
       chalk.dim(
         `Polling every ${this.options.intervalSeconds || 6} seconds. Press Ctrl+C to exit.\n`,
       ),
@@ -513,36 +529,36 @@ export class StatsDisplay {
     const currentUtcTime =
       now.toISOString().replace("T", " ").slice(0, 19) + " UTC";
     const currentLocalTime = now.toLocaleString();
-    console.log(
+    this.logger(
       chalk.cyan(
         `Current time: ${currentUtcTime} (local: ${currentLocalTime})`,
       ),
     );
-    console.log(
+    this.logger(
       chalk.cyan(`Stats interval resets in: ${secondsToNextMinute} seconds`),
     );
 
     if (this.startTime) {
-      console.log(
+      this.logger(
         chalk.cyan(
           `Monitoring since: ${this.startTime.toLocaleString()} (${this.formatElapsedTime()})`,
         ),
       );
     }
 
-    console.log("");
+    this.logger("");
 
     // Display current stats (for the current minute interval)
-    console.log(chalk.bold("Current Minute Stats:"));
+    this.logger(chalk.bold("Current Minute Stats:"));
     if (this.options.isAccountStats) {
       // Account-specific metrics for live view (including peak rates)
-      console.log(
+      this.logger(
         chalk.blue("Messages:"),
         `${this.formatNumber(getEntry("messages.inbound.all.messages.count"))} published, ` +
           `${this.formatNumber(getEntry("messages.outbound.all.messages.count"))} delivered ` +
           `(${this.formatRate(getEntry("peakRates.messages"))} msgs/s peak)`,
       );
-      console.log(
+      this.logger(
         chalk.yellow("Connections:"),
         `${this.formatNumber(getEntry("connections.all.peak"))} peak, ` +
           `${this.formatNumber(getEntry("connections.all.min"))} min, ` +
@@ -550,21 +566,21 @@ export class StatsDisplay {
           `${this.formatNumber(getEntry("connections.all.opened"))} opened ` +
           `(${this.formatRate(getEntry("peakRates.connections"))} new conns/s peak)`,
       );
-      console.log(
+      this.logger(
         chalk.green("Channels:"),
         `${this.formatNumber(getEntry("channels.peak"))} peak, ` +
           `${this.formatNumber(getEntry("channels.min"))} min, ` +
           `${this.formatNumber(getEntry("channels.mean"))} current ` +
           `(${this.formatRate(getEntry("peakRates.channels"))} new chans/s peak)`,
       );
-      console.log(
+      this.logger(
         chalk.magenta("API Requests:"),
         `${this.formatNumber(getEntry("apiRequests.all.succeeded"))} succeeded, ` +
           `${this.formatNumber(getEntry("apiRequests.all.failed"))} failed, ` +
           `${this.formatNumber(getEntry("apiRequests.all.refused"))} refused ` +
           `(${this.formatRate(getEntry("peakRates.apiRequests"))} reqs/s peak)`,
       );
-      console.log(
+      this.logger(
         chalk.cyan("Token Requests:"),
         `${this.formatNumber(getEntry("apiRequests.tokenRequests.succeeded"))} succeeded, ` +
           `${this.formatNumber(getEntry("apiRequests.tokenRequests.failed"))} failed, ` +
@@ -573,7 +589,7 @@ export class StatsDisplay {
       );
     } else {
       // App-specific metrics for live view (more detailed, like account stats but without peak rates)
-      console.log(
+      this.logger(
         chalk.yellow("Connections:"),
         `${this.formatNumber(getEntry("connections.all.peak"))} peak, ` +
           `${this.formatNumber(getEntry("connections.all.min"))} min, ` +
@@ -581,28 +597,28 @@ export class StatsDisplay {
           `${this.formatNumber(getEntry("connections.all.opened"))} opened, ` +
           `${this.formatNumber(getEntry("connections.all.refused"))} refused`,
       );
-      console.log(
+      this.logger(
         chalk.green("Channels:"),
         `${this.formatNumber(getEntry("channels.peak"))} peak, ` +
           `${this.formatNumber(getEntry("channels.min"))} min, ` +
           `${this.formatNumber(getEntry("channels.mean"))} mean, ` +
           `${this.formatNumber(getEntry("channels.opened"))} opened`,
       );
-      console.log(
+      this.logger(
         chalk.blue("Messages:"),
         `${this.formatNumber(getEntry("messages.all.all.count"))} total, ` +
           `${this.formatNumber(getEntry("messages.inbound.all.messages.count"))} published, ` +
           `${this.formatNumber(getEntry("messages.outbound.all.messages.count"))} delivered, ` +
           `${this.formatBytes(getEntry("messages.all.all.data"))} data volume`,
       );
-      console.log(
+      this.logger(
         chalk.magenta("API Requests:"),
         `${this.formatNumber(getEntry("apiRequests.all.succeeded"))} succeeded, ` +
           `${this.formatNumber(getEntry("apiRequests.all.failed"))} failed, ` +
           `${this.formatNumber(getEntry("apiRequests.all.refused"))} refused, ` +
           `${this.formatNumber(getEntry("apiRequests.all.succeeded") + getEntry("apiRequests.all.failed") + getEntry("apiRequests.all.refused"))} total`,
       );
-      console.log(
+      this.logger(
         chalk.cyan("Token Requests:"),
         `${this.formatNumber(getEntry("apiRequests.tokenRequests.succeeded"))} succeeded, ` +
           `${this.formatNumber(getEntry("apiRequests.tokenRequests.failed"))} failed, ` +
@@ -610,10 +626,10 @@ export class StatsDisplay {
       );
     }
 
-    console.log("");
+    this.logger("");
 
     // Display cumulative stats (since live monitoring started)
-    console.log(chalk.bold("Cumulative Stats (since monitoring started):"));
+    this.logger(chalk.bold("Cumulative Stats (since monitoring started):"));
     this.displayCumulativeStats();
   }
 
@@ -785,7 +801,7 @@ export class StatsDisplay {
       }
     } catch {
       // If parsing fails, use a more direct approach
-      console.log(
+      this.logger(
         chalk.yellow(
           `Note: Could not parse intervalId '${intervalId}' with unit '${unit}'. Using original format.`,
         ),

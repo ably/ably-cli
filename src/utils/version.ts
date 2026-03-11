@@ -68,9 +68,8 @@ export function formatVersionJson(
       return colorJson(versionInfo);
     }
     return JSON.stringify(versionInfo);
-  } catch (error) {
+  } catch {
     // Fallback to regular JSON.stringify if colorJson fails
-    console.error("Error formatting version as JSON:", error);
     return JSON.stringify(versionInfo, undefined, isPretty ? 2 : undefined);
   }
 }

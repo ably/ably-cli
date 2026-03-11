@@ -6,6 +6,7 @@ Pick the pattern that matches your command from Step 1 of the skill, then follow
 - [Subscribe Pattern](#subscribe-pattern)
 - [Publish/Send Pattern](#publishsend-pattern)
 - [History Pattern](#history-pattern)
+- [Get Pattern](#get-pattern)
 - [Enter/Presence Pattern](#enterpresence-pattern)
 - [List Pattern](#list-pattern)
 - [CRUD / Control API Pattern](#crud--control-api-pattern)
@@ -35,7 +36,7 @@ async run(): Promise<void> {
   this.setupConnectionStateLogging(client, flags);
 
   const channelOptions: Ably.ChannelOptions = {};
-  this.configureRewind(channelOptions, flags.rewind, flags, "MySubscribe", args.channel);
+  this.configureRewind(channelOptions, flags.rewind, flags, "subscribe", args.channel);
 
   const channel = client.channels.get(args.channel, channelOptions);
   // Shared helper that monitors channel state changes and logs them (verbose mode).
@@ -58,17 +59,23 @@ async run(): Promise<void> {
     sequenceCounter++;
     // Format and output the message
     if (this.shouldOutputJson(flags)) {
-      this.log(this.formatJsonOutput({ /* message data */ }, flags));
+      // Use "event" type for streaming records. IMPORTANT: don't use "type" as a
+      // data key — it's reserved by the envelope. Use "eventType" instead.
+      this.logJsonEvent({
+        eventType: "message",  // not "type" — that's reserved by the envelope
+        channel: args.channel,
+        data: message.data,
+        name: message.name,
+        timestamp: message.timestamp,
+      }, flags);
     } else {
       // Human-readable output with formatTimestamp, formatResource, chalk colors
     }
   });
 
-  await waitUntilInterruptedOrTimeout(flags);
+  await this.waitAndTrackCleanup(flags, "subscribe", flags.duration);
 }
 ```
-
-Import `waitUntilInterruptedOrTimeout` from `../../utils/long-running.js`.
 
 ---
 
@@ -105,12 +112,14 @@ async run(): Promise<void> {
     await channel.publish(message as Ably.Message);
 
     if (this.shouldOutputJson(flags)) {
-      this.log(this.formatJsonOutput({ success: true, channel: args.channel }, flags));
+      // Use "result" type for one-shot results. Don't use "success" as a data key
+      // for batch summaries — it overrides the envelope's success field. Use "allSucceeded".
+      this.logJsonResult({ channel: args.channel }, flags);
     } else {
       this.log(formatSuccess("Message published to channel: " + formatResource(args.channel) + "."));
     }
   } catch (error) {
-    this.handleCommandError(error, flags, "Publish", { channel: args.channel });
+    this.fail(error, flags, "publish", { channel: args.channel });
   }
 }
 ```
@@ -148,10 +157,48 @@ async run(): Promise<void> {
   const messages = history.items;
 
   if (this.shouldOutputJson(flags)) {
-    this.log(this.formatJsonOutput({ messages }, flags));
+    this.logJsonResult({ messages }, flags);
   } else {
     this.log(formatSuccess(`Found ${messages.length} messages.`));
     // Display each message
+  }
+}
+```
+
+---
+
+## Get Pattern
+
+Get commands perform one-shot queries for current state. They use REST clients and don't need `clientIdFlag`, `durationFlag`, or `rewindFlag`.
+
+```typescript
+static override flags = {
+  ...productApiFlags,
+  // command-specific flags here
+};
+```
+
+```typescript
+async run(): Promise<void> {
+  const { args, flags } = await this.parse(MyGetCommand);
+
+  try {
+    const client = await this.createAblyRestClient(flags);
+    if (!client) return;
+
+    // Fetch the resource data
+    const result = await client.request("get", `/resource/${encodeURIComponent(args.id)}`, 2);
+    const data = result.items?.[0] || {};
+
+    if (this.shouldOutputJson(flags)) {
+      this.logJsonResult({ resource: args.id, ...data }, flags);
+    } else {
+      this.log(`Details for ${formatResource(args.id)}:\n`);
+      this.log(`${formatLabel("Field")} ${data.field}`);
+      this.log(`${formatLabel("Status")} ${data.status}`);
+    }
+  } catch (error) {
+    this.fail(error, flags, "resourceGet", { resource: args.id });
   }
 }
 ```
@@ -189,8 +236,7 @@ async run(): Promise<void> {
     try {
       presenceData = JSON.parse(flags.data);
     } catch {
-      this.handleCommandError("Invalid JSON data provided", flags, "PresenceEnter");
-      return;
+      this.fail("Invalid JSON data provided", flags, "presenceEnter");
     }
   }
 
@@ -213,7 +259,7 @@ async run(): Promise<void> {
     this.log(formatListening("Present on channel."));
   }
 
-  await waitUntilInterruptedOrTimeout(flags);
+  await this.waitAndTrackCleanup(flags, "presence", flags.duration);
 }
 
 // Clean up in finally — leave presence before closing connection
@@ -260,24 +306,23 @@ Full Control API list command template:
 async run(): Promise<void> {
   const { flags } = await this.parse(MyListCommand);
 
-  const controlApi = this.createControlApi(flags);
   const appId = await this.resolveAppId(flags);
 
   if (!appId) {
-    this.handleCommandError(
+    this.fail(
       'No app specified. Use --app flag or select an app with "ably apps switch"',
       flags,
-      "ListItems",
+      "listItems",
     );
-    return;
   }
 
   try {
+    const controlApi = this.createControlApi(flags);
     const items = await controlApi.listThings(appId);
     const limited = flags.limit ? items.slice(0, flags.limit) : items;
 
     if (this.shouldOutputJson(flags)) {
-      this.log(this.formatJsonOutput({ items: limited, total: limited.length, appId }, flags));
+      this.logJsonResult({ items: limited, total: limited.length, appId }, flags);
     } else {
       this.log(`Found ${limited.length} item${limited.length !== 1 ? "s" : ""}:\n`);
       for (const item of limited) {
@@ -288,7 +333,7 @@ async run(): Promise<void> {
       }
     }
   } catch (error) {
-    this.handleCommandError(error, flags, "ListItems");
+    this.fail(error, flags, "listItems");
   }
 }
 ```
@@ -307,29 +352,28 @@ Key conventions for list output:
 async run(): Promise<void> {
   const { args, flags } = await this.parse(MyControlCommand);
 
-  const controlApi = this.createControlApi(flags);
   const appId = await this.resolveAppId(flags);
 
   if (!appId) {
-    this.handleCommandError(
+    this.fail(
       'No app specified. Use --app flag or select an app with "ably apps switch"',
       flags,
-      "CreateResource",
+      "createResource",
     );
-    return;
   }
 
   try {
+    const controlApi = this.createControlApi(flags);
     const result = await controlApi.someMethod(appId, data);
 
     if (this.shouldOutputJson(flags)) {
-      this.log(this.formatJsonOutput({ result }, flags));
+      this.logJsonResult({ resource: result }, flags);
     } else {
       this.log(formatSuccess("Resource created: " + formatResource(result.id) + "."));
       // Display additional fields
     }
   } catch (error) {
-    this.handleCommandError(error, flags, "CreateResource");
+    this.fail(error, flags, "createResource");
   }
 }
 ```

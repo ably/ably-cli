@@ -2,6 +2,7 @@ import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { formatLabel } from "../../../utils/output.js";
 
 export default class KeysCurrentCommand extends ControlBaseCommand {
   static description = "Show the current API key for the selected app";
@@ -33,8 +34,10 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
     const appId = flags.app || this.configManager.getCurrentAppId();
 
     if (!appId) {
-      this.error(
+      this.fail(
         'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
+        flags,
+        "KeyCurrent",
       );
     }
 
@@ -42,8 +45,10 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
     const apiKey = this.configManager.getApiKey(appId);
 
     if (!apiKey) {
-      this.error(
+      this.fail(
         `No API key configured for app ${appId}. Use "ably auth keys switch" to select a key.`,
+        flags,
+        "KeyCurrent",
       );
     }
 
@@ -58,35 +63,33 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
       : `${appId}.${keyId.split(".")[1] || keyId}`;
 
     if (this.shouldOutputJson(flags)) {
-      this.log(
-        this.formatJsonOutput(
-          {
-            app: {
-              id: appId,
-              name: appName,
-            },
-            key: {
-              id: keyName,
-              label: keyLabel,
-              value: apiKey,
-            },
+      this.logJsonResult(
+        {
+          app: {
+            id: appId,
+            name: appName,
           },
-          flags,
-        ),
+          key: {
+            id: keyName,
+            label: keyLabel,
+            value: apiKey,
+          },
+        },
+        flags,
       );
     } else {
       const currentAccount = this.configManager.getCurrentAccount();
       const currentAccountAlias = this.configManager.getCurrentAccountAlias();
 
       this.log(
-        `${chalk.cyan("Account:")} ${chalk.cyan.bold(currentAccount?.accountName || currentAccountAlias)} ${chalk.gray(`(${currentAccount?.accountId || "Unknown ID"})`)}`,
+        `${formatLabel("Account")} ${chalk.cyan.bold(currentAccount?.accountName || currentAccountAlias)} ${chalk.gray(`(${currentAccount?.accountId || "Unknown ID"})`)}`,
       );
       this.log(
-        `${chalk.green("App:")} ${chalk.green.bold(appName)} ${chalk.gray(`(${appId})`)}`,
+        `${formatLabel("App")} ${chalk.green.bold(appName)} ${chalk.gray(`(${appId})`)}`,
       );
-      this.log(`${chalk.yellow("API Key:")} ${chalk.yellow.bold(keyName)}`);
-      this.log(`${chalk.yellow("Key Value:")} ${chalk.yellowBright(apiKey)}`);
-      this.log(`${chalk.yellow("Key Label:")} ${chalk.yellow.bold(keyLabel)}`);
+      this.log(`${formatLabel("API Key")} ${chalk.yellow.bold(keyName)}`);
+      this.log(`${formatLabel("Key Value")} ${chalk.yellowBright(apiKey)}`);
+      this.log(`${formatLabel("Key Label")} ${chalk.yellow.bold(keyLabel)}`);
     }
   }
 
@@ -99,7 +102,11 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
     // Extract API key from environment variable
     const apiKey = process.env.ABLY_API_KEY;
     if (!apiKey) {
-      this.error("ABLY_API_KEY environment variable is not set");
+      this.fail(
+        "ABLY_API_KEY environment variable is not set",
+        flags,
+        "KeyCurrent",
+      );
     }
 
     // Parse components from the API key
@@ -109,21 +116,19 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
     const keyName = `${appId}.${keyId || ""}`;
 
     if (this.shouldOutputJson(flags)) {
-      this.log(
-        this.formatJsonOutput(
-          {
-            app: {
-              id: appId,
-            },
-            key: {
-              id: keyName,
-              label: "Web CLI Key",
-              value: apiKey,
-            },
-            mode: "web-cli",
+      this.logJsonResult(
+        {
+          app: {
+            id: appId,
           },
-          flags,
-        ),
+          key: {
+            id: keyName,
+            label: "Web CLI Key",
+            value: apiKey,
+          },
+          mode: "web-cli",
+        },
+        flags,
       );
     } else {
       // Get account info if possible
@@ -140,13 +145,13 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
       }
 
       this.log(
-        `${chalk.cyan("Account:")} ${chalk.cyan.bold(accountName)} ${accountId ? chalk.gray(`(${accountId})`) : ""}`,
+        `${formatLabel("Account")} ${chalk.cyan.bold(accountName)} ${accountId ? chalk.gray(`(${accountId})`) : ""}`,
       );
-      this.log(`${chalk.green("App:")} ${chalk.green.bold(appId)}`);
-      this.log(`${chalk.yellow("API Key:")} ${chalk.yellow.bold(keyName)}`);
-      this.log(`${chalk.yellow("Key Value:")} ${chalk.yellowBright(apiKey)}`);
+      this.log(`${formatLabel("App")} ${chalk.green.bold(appId)}`);
+      this.log(`${formatLabel("API Key")} ${chalk.yellow.bold(keyName)}`);
+      this.log(`${formatLabel("Key Value")} ${chalk.yellowBright(apiKey)}`);
       this.log(
-        `${chalk.magenta("Mode:")} ${chalk.magenta.bold("Web CLI")} ${chalk.dim("(using environment variables)")}`,
+        `${formatLabel("Mode")} ${chalk.magenta.bold("Web CLI")} ${chalk.dim("(using environment variables)")}`,
       );
     }
   }

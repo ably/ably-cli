@@ -143,10 +143,13 @@ describe("auth:issue-jwt-token command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "auth:issue-jwt-token");
+      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("token");
       expect(result).toHaveProperty("appId", appId);
       expect(result).toHaveProperty("keyId", keyId);
-      expect(result).toHaveProperty("type", "jwt");
+      expect(result).toHaveProperty("tokenType", "jwt");
       expect(result).toHaveProperty("capability");
       expect(result).toHaveProperty("ttl");
     });
@@ -194,7 +197,7 @@ describe("auth:issue-jwt-token command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Invalid capability JSON/i);
+      expect(error?.message).toMatch(/is not valid JSON/i);
     });
 
     it("should not produce token output when app configuration is missing", async () => {
