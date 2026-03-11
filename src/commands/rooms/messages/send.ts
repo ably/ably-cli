@@ -100,11 +100,7 @@ export default class MessagesSend extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
-        this.fail(
-          new Error("Failed to create Chat client"),
-          flags,
-          "RoomMessageSend",
-        );
+        this.fail("Failed to create Chat client", flags, "roomMessageSend");
       }
 
       // Set up connection state logging
@@ -124,9 +120,9 @@ export default class MessagesSend extends ChatBaseCommand {
           );
         } catch (error) {
           this.fail(
-            new Error(`Invalid metadata JSON: ${errorMessage(error)}`),
+            `Invalid metadata JSON: ${errorMessage(error)}`,
             flags,
-            "RoomMessageSend",
+            "roomMessageSend",
           );
         }
       }
@@ -391,13 +387,13 @@ export default class MessagesSend extends ChatBaseCommand {
             }
           }
         } catch (error) {
-          this.fail(error, flags, "RoomMessageSend", {
+          this.fail(error, flags, "roomMessageSend", {
             room: args.room,
           });
         }
       }
     } catch (error) {
-      this.fail(error, flags, "RoomMessageSend");
+      this.fail(error, flags, "roomMessageSend");
     }
   }
 }

@@ -138,7 +138,7 @@ export default class LogsConnectionLifecycleHistory extends AblyBaseCommand {
         if (warning) this.log(warning);
       }
     } catch (error) {
-      this.fail(error, flags, "ConnectionLifecycleHistory");
+      this.fail(error, flags, "connectionLifecycleHistory");
     }
   }
 }

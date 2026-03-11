@@ -164,7 +164,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
         });
       }
     } catch (error) {
-      this.fail(error, flags, "LockGetAll", { spaceName });
+      this.fail(error, flags, "lockGetAll", { spaceName });
     }
   }
 }

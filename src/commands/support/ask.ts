@@ -137,7 +137,7 @@ export default class AskCommand extends ControlBaseCommand {
       if (spinner) {
         spinner.fail("Failed to get a response from the Ably AI agent");
       }
-      this.fail(error, flags, "SupportAsk");
+      this.fail(error, flags, "supportAsk");
     }
   }
 }

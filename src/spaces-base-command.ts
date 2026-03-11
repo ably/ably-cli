@@ -116,7 +116,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     // First create an Ably client
     this.realtimeClient = await this.createAblyRealtimeClient(flags);
     if (!this.realtimeClient) {
-      this.fail("Failed to create Ably client", flags, "Client");
+      this.fail("Failed to create Ably client", flags, "client");
     }
 
     // Create a Spaces client using the Ably client
@@ -165,7 +165,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
       this.logCliEvent(flags, "connection", "failed", errorMsg, {
         state: connection.state,
       });
-      this.fail(errorMsg, flags, "Connection");
+      this.fail(errorMsg, flags, "connection");
     }
 
     await new Promise<void>((resolve, reject) => {
@@ -230,7 +230,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     this.realtimeClient = setupResult.realtimeClient;
     this.space = setupResult.space;
     if (!this.realtimeClient || !this.space) {
-      this.fail("Failed to initialize clients or space", flags, "Client");
+      this.fail("Failed to initialize clients or space", flags, "client");
     }
 
     if (setupConnectionLogging) {

@@ -78,10 +78,10 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
           );
         }
       } catch (error) {
-        this.fail(error, flags, "LockGet");
+        this.fail(error, flags, "lockGet");
       }
     } catch (error) {
-      this.fail(error, flags, "LockGet");
+      this.fail(error, flags, "lockGet");
     }
   }
 }

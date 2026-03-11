@@ -51,9 +51,9 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
 
       if (!chatClient) {
         this.fail(
-          new Error("Failed to create Chat client"),
+          "Failed to create Chat client",
           flags,
-          "RoomMessageReactionRemove",
+          "roomMessageReactionRemove",
           { room },
         );
       }
@@ -128,7 +128,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags, "RoomMessageReactionRemove", {
+      this.fail(error, flags, "roomMessageReactionRemove", {
         room,
         messageSerial,
         reaction,

@@ -132,7 +132,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
         if (warning) this.log(warning);
       }
     } catch (error) {
-      this.fail(error, flags, "ChannelHistory", {
+      this.fail(error, flags, "channelHistory", {
         channel: channelName,
       });
     }

@@ -20,7 +20,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
         this.fail(
           `No access token provided. Please set the ABLY_ACCESS_TOKEN environment variable or configure an account with "ably accounts login".`,
           flags,
-          "Auth",
+          "auth",
         );
       }
 
@@ -51,7 +51,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
       this.fail(
         'No app specified. Use --app flag or select an app with "ably apps switch"',
         flags,
-        "App",
+        "app",
       );
     }
     return appId;
@@ -103,13 +103,13 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
       this.fail(
         `App "${appNameOrId}" not found. Please provide a valid app ID or name.`,
         flags,
-        "App",
+        "app",
       );
     } catch (error) {
       this.fail(
         `Failed to look up app "${appNameOrId}": ${errorMessage(error)}`,
         flags,
-        "App",
+        "app",
       );
     }
   }
@@ -141,7 +141,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
 
       return app.id;
     } catch (error) {
-      this.fail(`Failed to get apps: ${errorMessage(error)}`, flags, "App");
+      this.fail(`Failed to get apps: ${errorMessage(error)}`, flags, "app");
     }
   }
 
@@ -162,7 +162,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
       const api = this.createControlApi(flags);
       return await apiCall(api);
     } catch (error: unknown) {
-      this.fail(error, flags, "ControlApi", {
+      this.fail(error, flags, "controlApi", {
         errorPrefix,
       });
     }

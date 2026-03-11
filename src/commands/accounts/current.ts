@@ -34,7 +34,7 @@ export default class AccountsCurrent extends ControlBaseCommand {
       this.fail(
         'No account is currently selected. Use "ably accounts login" or "ably accounts switch" to select an account.',
         flags,
-        "AccountCurrent",
+        "accountCurrent",
       );
     }
 
@@ -166,7 +166,7 @@ export default class AccountsCurrent extends ControlBaseCommand {
       this.fail(
         "ABLY_ACCESS_TOKEN environment variable is not set",
         flags,
-        "AccountCurrent",
+        "accountCurrent",
       );
     }
 

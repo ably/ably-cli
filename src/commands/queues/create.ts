@@ -90,7 +90,7 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags, "QueueCreate");
+      this.fail(error, flags, "queueCreate");
     }
   }
 }

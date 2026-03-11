@@ -54,7 +54,7 @@ export default class KeysGetCommand extends ControlBaseCommand {
       this.fail(
         'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
         flags,
-        "KeyGet",
+        "keyGet",
       );
     }
 
@@ -91,7 +91,7 @@ export default class KeysGetCommand extends ControlBaseCommand {
         this.log(`Full key: ${key.key}`);
       }
     } catch (error) {
-      this.fail(error, flags, "KeyGet", { appId, keyIdentifier });
+      this.fail(error, flags, "keyGet", { appId, keyIdentifier });
     }
   }
 }

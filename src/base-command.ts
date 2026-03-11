@@ -267,7 +267,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       }
 
       if (errorMessage) {
-        this.fail(errorMessage, {}, "web-cli");
+        this.fail(errorMessage, {}, "webCli");
       }
     } else {
       // Authenticated web CLI mode - only base restrictions apply
@@ -291,7 +291,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           errorMessage = `Local configuration is not supported in the web CLI version.`;
         }
 
-        this.fail(errorMessage, {}, "web-cli");
+        this.fail(errorMessage, {}, "webCli");
       }
     }
   }
@@ -449,7 +449,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           // Use logCliEvent for connection success if verbose
           this.logCliEvent(
             flags,
-            "RealtimeClient",
+            "realtimeClient",
             "connection",
             "Successfully connected to Ably Realtime.",
           );
@@ -905,7 +905,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           const logData = { sdkLogLevel: level, sdkMessage: message };
           this.logCliEvent(
             flags,
-            "AblySDK",
+            "ablySdk",
             `LogLevel-${level}`,
             message,
             logData,
@@ -930,7 +930,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           // logCliEvent handles non-JSON formatting when verbose is true
           this.logCliEvent(
             flags,
-            "AblySDK",
+            "ablySdk",
             `LogLevel-${level}`,
             message,
             logData,

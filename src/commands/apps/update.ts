@@ -42,7 +42,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
       this.fail(
         "At least one update parameter (--name or --tls-only) must be provided",
         flags,
-        "AppUpdate",
+        "appUpdate",
         { appId: args.id },
       );
     }
@@ -100,7 +100,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "AppUpdate", {
+      this.fail(error, flags, "appUpdate", {
         appId: args.id,
       });
     }

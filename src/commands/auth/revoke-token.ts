@@ -77,7 +77,7 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
         this.fail(
           "Invalid API key format. Expected format: appId.keyId:secret",
           flags,
-          "TokenRevoke",
+          "tokenRevoke",
         );
       }
 
@@ -112,13 +112,13 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
         // Handle specific API errors
         const error = requestError as Error;
         if (error.message && error.message.includes("token_not_found")) {
-          this.fail("Token not found or already revoked", flags, "TokenRevoke");
+          this.fail("Token not found or already revoked", flags, "tokenRevoke");
         } else {
           throw requestError;
         }
       }
     } catch (error) {
-      this.fail(error, flags, "TokenRevoke");
+      this.fail(error, flags, "tokenRevoke");
     }
     // Client cleanup is handled by base class finally() method
   }

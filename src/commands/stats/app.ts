@@ -53,7 +53,7 @@ export default class StatsAppCommand extends StatsBaseCommand {
       this.fail(
         'No app ID provided and no default app selected. Please specify an app ID or select a default app with "ably apps switch".',
         flags,
-        "StatsApp",
+        "statsApp",
       );
     }
 
@@ -61,7 +61,7 @@ export default class StatsAppCommand extends StatsBaseCommand {
       const controlApi = this.createControlApi(flags);
       await this.runStats(flags, controlApi);
     } catch (error) {
-      this.fail(error, flags, "StatsApp");
+      this.fail(error, flags, "statsApp");
     }
   }
 }

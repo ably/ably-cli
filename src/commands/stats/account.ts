@@ -52,7 +52,7 @@ export default class StatsAccountCommand extends StatsBaseCommand {
       const controlApi = this.createControlApi(flags);
       await this.runStats(flags, controlApi);
     } catch (error) {
-      this.fail(error, flags, "StatsAccount");
+      this.fail(error, flags, "statsAccount");
     }
   }
 }

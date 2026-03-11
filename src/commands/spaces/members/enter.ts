@@ -264,7 +264,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "member", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "MemberEnter");
+      this.fail(error, flags, "memberEnter");
     } finally {
       if (!this.shouldOutputJson(flags || {})) {
         if (this.cleanupInProgress) {

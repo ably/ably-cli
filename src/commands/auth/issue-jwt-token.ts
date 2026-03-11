@@ -74,7 +74,7 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
         this.fail(
           "Invalid API key format. Expected format: keyId:keySecret",
           flags,
-          "IssueJwtToken",
+          "issueJwtToken",
         );
       }
 
@@ -83,7 +83,7 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
       try {
         capabilities = JSON.parse(flags.capability);
       } catch (error) {
-        this.fail(error, flags, "IssueJwtToken", {
+        this.fail(error, flags, "issueJwtToken", {
           context: "parsing capability JSON",
         });
       }
@@ -155,7 +155,7 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
         this.log(`Capability: ${this.formatJsonOutput(capabilities, flags)}`);
       }
     } catch (error) {
-      this.fail(error, flags, "IssueJwtToken");
+      this.fail(error, flags, "issueJwtToken");
     }
   }
 }

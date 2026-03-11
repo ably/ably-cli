@@ -52,7 +52,7 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
         this.fail(
           `Channel rule "${args.nameOrId}" not found`,
           flags,
-          "ChannelRuleDelete",
+          "channelRuleDelete",
           { appId },
         );
       }
@@ -101,7 +101,7 @@ export default class ChannelRulesDeleteCommand extends ControlBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags, "ChannelRuleDelete", { appId });
+      this.fail(error, flags, "channelRuleDelete", { appId });
     }
   }
 }

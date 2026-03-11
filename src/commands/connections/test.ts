@@ -80,7 +80,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
 
       this.outputSummary(flags, wsSuccess, xhrSuccess, wsError, xhrError);
     } catch (error: unknown) {
-      this.fail(error, flags, "ConnectionTest");
+      this.fail(error, flags, "connectionTest");
     } finally {
       // Ensure clients are closed (handled by the finally override)
     }

@@ -54,7 +54,7 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
         this.fail(
           'No app ID provided and no current app selected. Please provide an app ID or select a default app with "ably apps switch".',
           flags,
-          "AppDelete",
+          "appDelete",
         );
       }
     }
@@ -130,7 +130,7 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
         await switchCommand.run();
       }
     } catch (error) {
-      this.fail(error, flags, "AppDelete", {
+      this.fail(error, flags, "appDelete", {
         appId: appIdToDelete,
         status: "error",
       });

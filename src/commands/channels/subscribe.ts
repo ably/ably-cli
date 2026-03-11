@@ -98,7 +98,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
         this.fail(
           "At least one channel name is required",
           flags,
-          "ChannelSubscribe",
+          "channelSubscribe",
         );
       }
 
@@ -272,7 +272,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "subscribe", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "ChannelSubscribe", {
+      this.fail(error, flags, "channelSubscribe", {
         channels: channelNames,
       });
     }

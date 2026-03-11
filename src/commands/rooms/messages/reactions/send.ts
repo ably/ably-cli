@@ -60,11 +60,9 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
         flags.count <= 0
       ) {
         this.fail(
-          new Error(
-            "Count must be a positive integer for Multiple type reactions",
-          ),
+          "Count must be a positive integer for Multiple type reactions",
           flags,
-          "RoomMessageReactionSend",
+          "roomMessageReactionSend",
           { room, count: flags.count },
         );
       }
@@ -74,9 +72,9 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
 
       if (!this.chatClient) {
         this.fail(
-          new Error("Failed to create Chat client"),
+          "Failed to create Chat client",
           flags,
-          "RoomMessageReactionSend",
+          "roomMessageReactionSend",
           { room },
         );
       }
@@ -164,7 +162,7 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags, "RoomMessageReactionSend", {
+      this.fail(error, flags, "roomMessageReactionSend", {
         room,
         messageSerial,
         reaction,

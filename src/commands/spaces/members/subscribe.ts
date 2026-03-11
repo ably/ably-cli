@@ -248,7 +248,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "member", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "MemberSubscribe");
+      this.fail(error, flags, "memberSubscribe");
     } finally {
       // Cleanup is now handled by base class finally() method
     }

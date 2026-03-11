@@ -82,7 +82,7 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "IntegrationList");
+      this.fail(error, flags, "integrationList");
     }
   }
 }

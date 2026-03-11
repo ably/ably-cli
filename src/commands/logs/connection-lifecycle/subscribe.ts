@@ -133,7 +133,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "logs", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "ConnectionLifecycleSubscribe");
+      this.fail(error, flags, "connectionLifecycleSubscribe");
     }
   }
 

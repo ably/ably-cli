@@ -149,7 +149,7 @@ export default class QueuesListCommand extends ControlBaseCommand {
         });
       }
     } catch (error) {
-      this.fail(error, flags, "QueueList", { appId });
+      this.fail(error, flags, "queueList", { appId });
     }
   }
 }

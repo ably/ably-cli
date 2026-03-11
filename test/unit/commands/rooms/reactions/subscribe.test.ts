@@ -66,6 +66,7 @@ describe("rooms:reactions:subscribe command", () => {
             name: "heart",
             clientId: "client-123",
             metadata: { color: "red" },
+            createdAt: new Date("2025-01-01T00:00:00.000Z"),
           },
         });
       }
@@ -116,6 +117,7 @@ describe("rooms:reactions:subscribe command", () => {
               name: "thumbsup",
               clientId: "user1",
               metadata: {},
+              createdAt: new Date("2025-01-01T00:00:00.000Z"),
             },
           });
         }

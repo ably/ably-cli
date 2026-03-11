@@ -133,7 +133,7 @@ export default class BenchPublisher extends AblyBaseCommand {
       this.fail(
         "Failed to create Ably client. Please check your API key and try again.",
         flags,
-        "BenchPublisher",
+        "benchPublisher",
       );
     }
 
@@ -270,7 +270,7 @@ export default class BenchPublisher extends AblyBaseCommand {
         progressDisplay,
       );
     } catch (error) {
-      this.fail(error, flags, "BenchPublisher");
+      this.fail(error, flags, "benchPublisher");
     } finally {
       // Cleanup managed by the finally method override
       if (channel) {
@@ -422,7 +422,7 @@ export default class BenchPublisher extends AblyBaseCommand {
   private createProgressDisplay(): InstanceType<typeof Table> {
     const table = new Table({
       colWidths: [20, 40], // Adjust column widths
-      head: [chalk.white("Benchmark Progress"), chalk.white("Status")],
+      head: [chalk.white("Benchmark Progress"), chalk.white("status")],
       style: {
         border: [], // No additional styles for the border
         head: [], // No additional styles for the header
@@ -865,7 +865,7 @@ export default class BenchPublisher extends AblyBaseCommand {
     let intervalId: NodeJS.Timeout | null = null;
     const progressDisplay = new Table({
       colWidths: [20, 40],
-      head: [chalk.white("Benchmark Progress"), chalk.white("Status")],
+      head: [chalk.white("Benchmark Progress"), chalk.white("status")],
       style: {
         border: [],
         head: [],
@@ -983,7 +983,7 @@ export default class BenchPublisher extends AblyBaseCommand {
     // Recreate table with updated data
     const updatedTable = new Table({
       colWidths: [20, 40],
-      head: [chalk.white("Benchmark Progress"), chalk.white("Status")],
+      head: [chalk.white("Benchmark Progress"), chalk.white("status")],
       style: {
         border: [],
         head: [],

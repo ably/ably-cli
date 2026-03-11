@@ -38,7 +38,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
         this.fail(
           'No accounts configured. Use "ably accounts login" to add an account.',
           flags,
-          "AccountSwitch",
+          "accountSwitch",
         );
       }
 
@@ -59,7 +59,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
       this.fail(
         "No account alias provided. Please specify an account alias to switch to.",
         flags,
-        "AccountSwitch",
+        "accountSwitch",
         {
           availableAccounts: accounts.map(({ account, alias }) => ({
             alias,
@@ -95,7 +95,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
       this.fail(
         `Account with alias "${alias}" not found. Use "ably accounts list" to see available accounts.`,
         flags,
-        "AccountSwitch",
+        "accountSwitch",
         {
           availableAccounts: accounts.map(({ account, alias }) => ({
             alias,
@@ -121,7 +121,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
         this.fail(
           "No access token found for this account. Please log in again.",
           flags,
-          "AccountSwitch",
+          "accountSwitch",
         );
       }
 

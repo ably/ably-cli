@@ -261,6 +261,8 @@ this.error()         ← oclif exit (ONLY inside fail, nowhere else)
 
 **In command `run()` methods**, use `this.fail()` for all errors. It always exits — returns `never`, so no `return;` is needed after calling it. It logs the CLI event, preserves structured error data, emits JSON error envelope when `--json` is active, and calls `this.error()` for human-readable output. It accepts an `Error` object or a plain string message.
 
+**Component name casing:** All component strings use **camelCase** — both in `this.fail()` and `logCliEvent()`. Single-word components are plain lowercase (`"room"`, `"auth"`). Multi-word components use camelCase (`"channelPublish"`, `"roomPresenceSubscribe"`). This matches CLI conventions for log tags and keeps output like `[channelPublish] Error: ...` readable.
+
 ```typescript
 // In catch blocks — pass the error object
 try {
@@ -273,17 +275,21 @@ try {
   this.fail(
     error,
     flags,
-    "ComponentName",     // e.g., "ChannelPublish", "PresenceEnter"
+    "channelPublish",     // camelCase — e.g., "channelPublish", "presenceEnter"
     { channel: args.channel },  // optional context for logging
   );
 }
+
+// logCliEvent uses the same camelCase convention
+this.logCliEvent(flags, "room", "attaching", `Attaching to room ${roomName}`);
+this.logCliEvent(flags, "presence", "subscribed", "Subscribed to presence events");
 
 // For validation / early exit — pass a string message (no return; needed)
 if (!appId) {
   this.fail(
     'No app specified. Use --app flag or select an app with "ably apps switch"',
     flags,
-    "AppResolve",
+    "app",
   );
 }
 ```
@@ -370,6 +376,7 @@ pnpm test:unit      # Run tests
 - [ ] JSON output uses `logJsonResult()` (one-shot) or `logJsonEvent()` (streaming), not direct `formatJsonRecord()`
 - [ ] Subscribe/enter commands use `this.waitAndTrackCleanup(flags, component, flags.duration)` (not `waitUntilInterruptedOrTimeout`)
 - [ ] Error handling uses `this.fail()` exclusively, not `this.error()` or `this.log(chalk.red(...))`
+- [ ] Component strings are camelCase: single-word lowercase (`"room"`, `"auth"`), multi-word camelCase (`"channelPublish"`, `"roomPresenceSubscribe"`)
 - [ ] At least one `--json` example in `static examples`
 - [ ] Test file at matching path under `test/unit/commands/`
 - [ ] Tests use correct mock helper (`getMockAblyRealtime`, `getMockAblyRest`, `nock`)

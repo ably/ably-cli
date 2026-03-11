@@ -41,7 +41,7 @@ export default class AccountsLogout extends ControlBaseCommand {
       this.fail(
         'No account is currently selected and no alias provided. Use "ably accounts list" to see available accounts.',
         flags,
-        "AccountLogout",
+        "accountLogout",
       );
     }
 
@@ -54,7 +54,7 @@ export default class AccountsLogout extends ControlBaseCommand {
       this.fail(
         `Account with alias "${targetAlias}" not found. Use "ably accounts list" to see available accounts.`,
         flags,
-        "AccountLogout",
+        "accountLogout",
       );
     }
 
@@ -104,7 +104,7 @@ export default class AccountsLogout extends ControlBaseCommand {
       this.fail(
         `Failed to log out from account ${targetAlias}.`,
         flags,
-        "AccountLogout",
+        "accountLogout",
       );
     }
   }

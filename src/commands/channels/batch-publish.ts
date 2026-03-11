@@ -119,7 +119,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
         try {
           batchContent = JSON.parse(flags.spec);
         } catch (error) {
-          this.fail(error, flags, "BatchPublish");
+          this.fail(error, flags, "batchPublish");
         }
       } else {
         // Build the batch content from flags and args
@@ -134,19 +134,19 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
               this.fail(
                 "channels-json must be a valid JSON array of channel names",
                 flags,
-                "BatchPublish",
+                "batchPublish",
               );
             }
 
             channels = parsedChannels;
           } catch (error) {
-            this.fail(error, flags, "BatchPublish");
+            this.fail(error, flags, "batchPublish");
           }
         } else {
           this.fail(
             "You must specify either --channels, --channels-json, or --spec",
             flags,
-            "BatchPublish",
+            "batchPublish",
           );
         }
 
@@ -154,7 +154,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
           this.fail(
             "Message is required when not using --spec",
             flags,
-            "BatchPublish",
+            "batchPublish",
           );
         }
 
@@ -257,7 +257,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
             // This is a partial success with batchResponse field
             if (!this.shouldSuppressOutput(flags)) {
               if (this.shouldOutputJson(flags)) {
-                this.fail(errorInfo.error.message, flags, "BatchPublish", {
+                this.fail(errorInfo.error.message, flags, "batchPublish", {
                   channels: Array.isArray(batchContentObj.channels)
                     ? batchContentObj.channels
                     : [batchContentObj.channels],
@@ -297,14 +297,14 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
             this.fail(
               `Batch publish failed: ${errMsg} (${errorCode})`,
               flags,
-              "BatchPublish",
+              "batchPublish",
             );
           }
         } else {
           this.fail(
             `Batch publish failed with status code ${response.statusCode}`,
             flags,
-            "BatchPublish",
+            "batchPublish",
           );
         }
       } else {
@@ -328,11 +328,11 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
         this.fail(
           `Batch publish failed: ${errMsg} (${errorCode})`,
           flags,
-          "BatchPublish",
+          "batchPublish",
         );
       }
     } catch (error) {
-      this.fail(error, flags, "BatchPublish");
+      this.fail(error, flags, "batchPublish");
     }
   }
 }

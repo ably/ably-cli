@@ -135,10 +135,12 @@ describe("apps:update command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "apps:update");
+      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("app");
       expect(result.app).toHaveProperty("id", appId);
       expect(result.app).toHaveProperty("name", updatedName);
-      expect(result).toHaveProperty("success", true);
     });
 
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
@@ -200,6 +202,8 @@ describe("apps:update command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "error");
+      expect(result).toHaveProperty("command", "apps:update");
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error).toMatch(/At least one update parameter/);
@@ -320,6 +324,8 @@ describe("apps:update command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "error");
+      expect(result).toHaveProperty("command", "apps:update");
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result).toHaveProperty("appId", appId);
@@ -375,6 +381,9 @@ describe("apps:update command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "apps:update");
+      expect(result).toHaveProperty("success", true);
       expect(result.app).toHaveProperty("apnsUsesSandboxCert", false);
     });
   });

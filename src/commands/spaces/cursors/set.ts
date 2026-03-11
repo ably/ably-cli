@@ -103,11 +103,9 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
             cursorData.data = additionalData;
           } catch {
             this.fail(
-              new Error(
-                'Invalid JSON in --data flag. Expected format: {"name":"value",...}',
-              ),
+              'Invalid JSON in --data flag. Expected format: {"name":"value",...}',
               flags,
-              "CursorSet",
+              "cursorSet",
               { spaceName },
             );
           }
@@ -125,11 +123,9 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
             cursorData.data = additionalData;
           } catch {
             this.fail(
-              new Error(
-                'Invalid JSON in --data flag when used with --x and --y. Expected format: {"name":"value",...}',
-              ),
+              'Invalid JSON in --data flag when used with --x and --y. Expected format: {"name":"value",...}',
               flags,
-              "CursorSet",
+              "cursorSet",
               { spaceName },
             );
           }
@@ -140,11 +136,9 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           cursorData = JSON.parse(flags.data);
         } catch {
           this.fail(
-            new Error(
-              'Invalid JSON in --data flag. Expected format: {"position":{"x":number,"y":number},"data":{...}}',
-            ),
+            'Invalid JSON in --data flag. Expected format: {"position":{"x":number,"y":number},"data":{...}}',
             flags,
-            "CursorSet",
+            "cursorSet",
             { spaceName },
           );
         }
@@ -157,21 +151,17 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           typeof (cursorData.position as Record<string, unknown>).y !== "number"
         ) {
           this.fail(
-            new Error(
-              'Invalid cursor position in --data. Expected format: {"position":{"x":number,"y":number}}',
-            ),
+            'Invalid cursor position in --data. Expected format: {"position":{"x":number,"y":number}}',
             flags,
-            "CursorSet",
+            "cursorSet",
             { spaceName },
           );
         }
       } else {
         this.fail(
-          new Error(
-            "Cursor position is required. Use either --x and --y flags, --data flag with position, or --simulate for random movement.",
-          ),
+          "Cursor position is required. Use either --x and --y flags, --data flag with position, or --simulate for random movement.",
           flags,
-          "CursorSet",
+          "cursorSet",
           { spaceName },
         );
       }
@@ -300,7 +290,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       // After cleanup (handled in finally), ensure the process exits so user doesn't need multiple Ctrl-C
       this.exit(0);
     } catch (error) {
-      this.fail(error, flags, "CursorSet", { spaceName });
+      this.fail(error, flags, "cursorSet", { spaceName });
     }
   }
 }

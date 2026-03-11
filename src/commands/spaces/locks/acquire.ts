@@ -139,7 +139,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
           this.log(`\n${formatListening("Holding lock.")}`);
         }
       } catch (error) {
-        this.fail(error, flags, "LockAcquire", {
+        this.fail(error, flags, "lockAcquire", {
           lockId,
         });
       }
@@ -153,7 +153,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
       // Decide how long to remain connected
       await this.waitAndTrackCleanup(flags, "locks", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "LockAcquire");
+      this.fail(error, flags, "lockAcquire");
     }
   }
 }

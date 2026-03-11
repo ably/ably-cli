@@ -64,7 +64,7 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
       try {
         capabilities = JSON.parse(flags.capability);
       } catch (error) {
-        this.fail(error, flags, "IssueAblyToken", {
+        this.fail(error, flags, "issueAblyToken", {
           context: "parsing capability JSON",
         });
       }
@@ -133,7 +133,7 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags, "IssueAblyToken");
+      this.fail(error, flags, "issueAblyToken");
     }
   }
 }

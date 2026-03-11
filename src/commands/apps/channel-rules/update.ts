@@ -111,7 +111,7 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
         this.fail(
           `Channel rule "${args.nameOrId}" not found`,
           flags,
-          "ChannelRuleUpdate",
+          "channelRuleUpdate",
           { appId },
         );
       }
@@ -173,7 +173,7 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
         this.fail(
           "No update parameters provided. Use one of the flag options to update the channel rule.",
           flags,
-          "ChannelRuleUpdate",
+          "channelRuleUpdate",
           { appId, ruleId: namespace.id },
         );
       }
@@ -220,7 +220,7 @@ export default class ChannelRulesUpdateCommand extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "ChannelRuleUpdate", { appId });
+      this.fail(error, flags, "channelRuleUpdate", { appId });
     }
   }
 }

@@ -174,7 +174,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
           }
         }
       } catch (error) {
-        this.fail(error, flags, "LocationSubscribe", {
+        this.fail(error, flags, "locationSubscribe", {
           spaceName,
         });
       }
@@ -239,7 +239,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
               );
             }
           } catch (error) {
-            this.fail(error, flags, "LocationSubscribe", {
+            this.fail(error, flags, "locationSubscribe", {
               spaceName,
             });
           }
@@ -255,7 +255,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
           "Successfully subscribed to location updates",
         );
       } catch (error) {
-        this.fail(error, flags, "LocationSubscribe", {
+        this.fail(error, flags, "locationSubscribe", {
           spaceName,
         });
       }
@@ -270,7 +270,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "location", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "LocationSubscribe", { spaceName });
+      this.fail(error, flags, "locationSubscribe", { spaceName });
     } finally {
       // Wrap all cleanup in a timeout to prevent hanging
       if (!this.shouldOutputJson(flags || {})) {

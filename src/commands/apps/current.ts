@@ -34,7 +34,7 @@ export default class AppsCurrent extends ControlBaseCommand {
       this.fail(
         'No account selected. Use "ably accounts switch" to select an account.',
         flags,
-        "AppCurrent",
+        "appCurrent",
       );
     }
 
@@ -42,7 +42,7 @@ export default class AppsCurrent extends ControlBaseCommand {
       this.fail(
         'No app selected. Use "ably apps switch" to select an app.',
         flags,
-        "AppCurrent",
+        "appCurrent",
       );
     }
 
@@ -117,7 +117,7 @@ export default class AppsCurrent extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "AppCurrent", {
+      this.fail(error, flags, "appCurrent", {
         context: "retrieving app information",
       });
     }
@@ -136,7 +136,7 @@ export default class AppsCurrent extends ControlBaseCommand {
       this.fail(
         "ABLY_API_KEY environment variable is not set",
         flags,
-        "AppCurrent",
+        "appCurrent",
       );
     }
 

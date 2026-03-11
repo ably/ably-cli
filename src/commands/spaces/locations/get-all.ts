@@ -268,10 +268,10 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
           }
         }
       } catch (error) {
-        this.fail(error, flags, "LocationGetAll", { spaceName });
+        this.fail(error, flags, "locationGetAll", { spaceName });
       }
     } catch (error) {
-      this.fail(error, flags, "LocationGetAll", { spaceName });
+      this.fail(error, flags, "locationGetAll", { spaceName });
     }
   }
 }

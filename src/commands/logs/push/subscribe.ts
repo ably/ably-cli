@@ -171,7 +171,7 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "logs", flags.duration);
     } catch (error: unknown) {
-      this.fail(error, flags, "PushLogSubscribe");
+      this.fail(error, flags, "pushLogSubscribe");
     }
     // Client cleanup is handled by command finally() method
   }

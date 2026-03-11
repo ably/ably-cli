@@ -26,7 +26,7 @@ export default class ConfigShow extends AblyBaseCommand {
       this.fail(
         `Config file does not exist at: ${configPath}\nRun "ably accounts login" to create one.`,
         flags,
-        "ConfigShow",
+        "configShow",
         { path: configPath },
       );
     }

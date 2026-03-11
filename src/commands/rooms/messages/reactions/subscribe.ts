@@ -61,9 +61,9 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
 
       if (!this.chatClient) {
         this.fail(
-          new Error("Failed to initialize clients"),
+          "Failed to initialize clients",
           flags,
-          "RoomMessageReactionSubscribe",
+          "roomMessageReactionSubscribe",
           { room: args.room },
         );
       }
@@ -193,6 +193,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
             if (this.shouldOutputJson(flags)) {
               this.logJsonEvent(
                 {
+                  eventType: event.type,
                   room,
                   timestamp,
                   summary: summaryData,
@@ -249,7 +250,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "reactions", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "RoomMessageReactionSubscribe", {
+      this.fail(error, flags, "roomMessageReactionSubscribe", {
         room: args.room,
       });
     }

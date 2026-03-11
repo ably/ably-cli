@@ -384,7 +384,7 @@ export default class AccountsLogin extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "AccountLogin");
+      this.fail(error, flags, "accountLogin");
     }
   }
 

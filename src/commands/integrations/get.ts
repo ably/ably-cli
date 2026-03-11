@@ -63,7 +63,7 @@ export default class IntegrationsGetCommand extends ControlBaseCommand {
         this.log(`${formatLabel("Updated")} ${this.formatDate(rule.modified)}`);
       }
     } catch (error) {
-      this.fail(error, flags, "IntegrationGet");
+      this.fail(error, flags, "integrationGet");
     }
   }
 }

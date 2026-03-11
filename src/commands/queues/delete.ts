@@ -54,7 +54,7 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
         this.fail(
           `Queue with ID "${args.queueId}" not found`,
           flags,
-          "QueueDelete",
+          "queueDelete",
         );
       }
 
@@ -63,7 +63,7 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
         this.fail(
           "The --force flag is required when using --json to confirm deletion",
           flags,
-          "QueueDelete",
+          "queueDelete",
         );
       }
 
@@ -109,7 +109,7 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags, "QueueDelete");
+      this.fail(error, flags, "queueDelete");
     }
   }
 }

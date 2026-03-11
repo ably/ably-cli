@@ -108,7 +108,7 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "OccupancyGet", {
+      this.fail(error, flags, "occupancyGet", {
         channel: args.channel,
       });
     }

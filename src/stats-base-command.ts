@@ -104,7 +104,7 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
         this.statsDisplay!.display(stats[0]);
       }
     } catch (error) {
-      this.fail(error, flags, "Stats");
+      this.fail(error, flags, "stats");
     }
   }
 
@@ -182,7 +182,7 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
         clearInterval(this.pollInterval);
       }
 
-      this.fail(error, flags, "Stats");
+      this.fail(error, flags, "stats");
     }
   }
 
@@ -221,7 +221,7 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
         this.fail(
           "--start must be earlier than or equal to --end",
           flags,
-          "Stats",
+          "stats",
         );
       }
 
@@ -246,7 +246,7 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
         this.statsDisplay!.display(stat);
       }
     } catch (error) {
-      this.fail(error, flags, "Stats");
+      this.fail(error, flags, "stats");
     }
   }
 }

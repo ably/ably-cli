@@ -187,7 +187,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       this.fail(
         new Error("At least one room name is required"),
         flags,
-        "RoomMessageSubscribe",
+        "roomMessageSubscribe",
       );
     }
 
@@ -253,7 +253,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "subscribe", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "RoomMessageSubscribe", {
+      this.fail(error, flags, "roomMessageSubscribe", {
         rooms: this.roomNames,
       });
     }

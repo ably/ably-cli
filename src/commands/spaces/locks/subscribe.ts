@@ -38,6 +38,35 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
 
   private listener: ((lock: Lock) => void) | null = null;
 
+  private displayLockDetails(lock: Lock): void {
+    this.log(`  ${formatLabel("Status")} ${lock.status}`);
+    this.log(
+      `  ${formatLabel("Member")} ${lock.member?.clientId || "Unknown"}`,
+    );
+
+    if (lock.member?.connectionId) {
+      this.log(`  ${formatLabel("Connection ID")} ${lock.member.connectionId}`);
+    }
+
+    if (lock.timestamp) {
+      this.log(
+        `  ${formatLabel("Timestamp")} ${new Date(lock.timestamp).toISOString()}`,
+      );
+    }
+
+    if (lock.attributes) {
+      this.log(
+        `  ${formatLabel("Attributes")} ${JSON.stringify(lock.attributes)}`,
+      );
+    }
+
+    if (lock.reason) {
+      this.log(
+        `  ${formatLabel("Reason")} ${lock.reason.message || lock.reason.toString()}`,
+      );
+    }
+  }
+
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksSubscribe);
     const { space: spaceName } = args;
@@ -106,6 +135,9 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
               id: lock.id,
               member: lock.member,
               status: lock.status,
+              timestamp: lock.timestamp,
+              ...(lock.attributes && { attributes: lock.attributes }),
+              ...(lock.reason && { reason: lock.reason }),
             })),
             spaceName,
             status: "connected",
@@ -119,16 +151,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
 
         for (const lock of locks) {
           this.log(`- Lock ID: ${formatResource(lock.id)}`);
-          this.log(`  ${formatLabel("Status")} ${lock.status}`);
-          this.log(
-            `  ${formatLabel("Member")} ${lock.member?.clientId || "Unknown"}`,
-          );
-
-          if (lock.member?.connectionId) {
-            this.log(
-              `  ${formatLabel("Connection ID")} ${lock.member.connectionId}`,
-            );
-          }
+          this.displayLockDetails(lock);
         }
       }
 
@@ -158,6 +181,9 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
             id: lock.id,
             member: lock.member,
             status: lock.status,
+            timestamp: lock.timestamp,
+            ...(lock.attributes && { attributes: lock.attributes }),
+            ...(lock.reason && { reason: lock.reason }),
           },
           spaceName,
           timestamp,
@@ -178,16 +204,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
           this.log(
             `${formatTimestamp(timestamp)} Lock ${formatResource(lock.id)} updated`,
           );
-          this.log(`  ${formatLabel("Status")} ${lock.status}`);
-          this.log(
-            `  ${formatLabel("Member")} ${lock.member?.clientId || "Unknown"}`,
-          );
-
-          if (lock.member?.connectionId) {
-            this.log(
-              `  ${formatLabel("Connection ID")} ${lock.member.connectionId}`,
-            );
-          }
+          this.displayLockDetails(lock);
         }
       };
 
@@ -211,7 +228,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "lock", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "LockSubscribe");
+      this.fail(error, flags, "lockSubscribe");
     } finally {
       // Cleanup is now handled by base class finally() method
     }

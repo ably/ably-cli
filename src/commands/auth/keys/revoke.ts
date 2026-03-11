@@ -49,7 +49,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
       this.fail(
         'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
         flags,
-        "KeyRevoke",
+        "keyRevoke",
       );
     }
 
@@ -85,7 +85,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
 
       if (!confirmed) {
         if (this.shouldOutputJson(flags)) {
-          this.fail("Revocation cancelled by user", flags, "KeyRevoke", {
+          this.fail("Revocation cancelled by user", flags, "keyRevoke", {
             keyName,
           });
         } else {
@@ -125,7 +125,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "KeyRevoke", { appId, keyId });
+      this.fail(error, flags, "keyRevoke", { appId, keyId });
     }
   }
 }

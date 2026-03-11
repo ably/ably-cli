@@ -58,9 +58,9 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
           );
         } catch (error) {
           this.fail(
-            new Error(`Invalid metadata JSON: ${errorMessage(error)}`),
+            `Invalid metadata JSON: ${errorMessage(error)}`,
             flags,
-            "RoomReactionSend",
+            "roomReactionSend",
             { room: roomName },
           );
         }
@@ -70,12 +70,9 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
-        this.fail(
-          new Error("Failed to create Chat client"),
-          flags,
-          "RoomReactionSend",
-          { room: roomName },
-        );
+        this.fail("Failed to create Chat client", flags, "roomReactionSend", {
+          room: roomName,
+        });
       }
 
       // Set up connection state logging
@@ -146,7 +143,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags, "RoomReactionSend", {
+      this.fail(error, flags, "roomReactionSend", {
         room: roomName,
         emoji,
       });

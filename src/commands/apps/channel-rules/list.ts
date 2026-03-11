@@ -100,7 +100,7 @@ export default class ChannelRulesListCommand extends ControlBaseCommand {
         });
       }
     } catch (error) {
-      this.fail(error, flags, "ChannelRuleList", { appId });
+      this.fail(error, flags, "channelRuleList", { appId });
     }
   }
 }

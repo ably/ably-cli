@@ -134,10 +134,12 @@ describe("apps:create command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "apps:create");
+      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("app");
       expect(result.app).toHaveProperty("id", newAppId);
       expect(result.app).toHaveProperty("name", mockAppName);
-      expect(result).toHaveProperty("success", true);
     });
 
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {

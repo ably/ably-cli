@@ -220,6 +220,7 @@ this.error()         ← oclif exit (ONLY inside fail, nowhere else)
 ```
 
 - **`this.fail()` always exits** — it returns `never`. TypeScript enforces no code runs after it. This eliminates the "forgotten `return;`" bug class.
+- **Component strings are camelCase** — both in `this.fail()` and `logCliEvent()`. Single-word: `"room"`, `"auth"`. Multi-word: `"channelPublish"`, `"roomPresenceSubscribe"`. These appear in verbose log output as `[component]` tags and in JSON envelopes.
 - **In command `run()` methods**: Use `this.fail()` for all errors. Wrap fallible calls in try-catch blocks.
 - **Base class methods with `flags`** (`createControlApi`, `createAblyRealtimeClient`, `requireAppId`, `runControlCommand`, etc.) also use `this.fail()` directly. Methods without `flags` pass `{}` as a fallback.
 - **`reject(new Error(...))`** inside Promise callbacks (e.g., connection event handlers) is the one pattern that can't use `this.fail()` — the rejection propagates to `await`, where the command's catch block calls `this.fail()`.

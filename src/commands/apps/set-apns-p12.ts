@@ -58,7 +58,7 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
         this.fail(
           `Certificate file not found: ${certificatePath}`,
           flags,
-          "AppSetApnsP12",
+          "appSetApnsP12",
         );
       }
 
@@ -90,7 +90,7 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "AppSetApnsP12");
+      this.fail(error, flags, "appSetApnsP12");
     }
   }
 }

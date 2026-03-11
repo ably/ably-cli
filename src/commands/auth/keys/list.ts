@@ -35,7 +35,7 @@ export default class KeysListCommand extends ControlBaseCommand {
       this.fail(
         'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
         flags,
-        "KeyList",
+        "keyList",
       );
     }
 
@@ -101,7 +101,7 @@ export default class KeysListCommand extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "KeyList", { appId });
+      this.fail(error, flags, "keyList", { appId });
     }
   }
 }

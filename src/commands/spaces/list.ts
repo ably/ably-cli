@@ -86,9 +86,9 @@ export default class SpacesList extends SpacesBaseCommand {
 
       if (channelsResponse.statusCode !== 200) {
         this.fail(
-          new Error(`Failed to list spaces: ${channelsResponse.statusCode}`),
+          `Failed to list spaces: ${channelsResponse.statusCode}`,
           flags,
-          "SpaceList",
+          "spaceList",
         );
       }
 
@@ -193,7 +193,7 @@ export default class SpacesList extends SpacesBaseCommand {
         if (warning) this.log(warning);
       }
     } catch (error) {
-      this.fail(error, flags, "SpaceList");
+      this.fail(error, flags, "spaceList");
     }
   }
 }

@@ -36,7 +36,7 @@ async run(): Promise<void> {
   this.setupConnectionStateLogging(client, flags);
 
   const channelOptions: Ably.ChannelOptions = {};
-  this.configureRewind(channelOptions, flags.rewind, flags, "MySubscribe", args.channel);
+  this.configureRewind(channelOptions, flags.rewind, flags, "subscribe", args.channel);
 
   const channel = client.channels.get(args.channel, channelOptions);
   // Shared helper that monitors channel state changes and logs them (verbose mode).
@@ -73,7 +73,7 @@ async run(): Promise<void> {
     }
   });
 
-  await this.waitAndTrackCleanup(flags, "MySubscribe", flags.duration);
+  await this.waitAndTrackCleanup(flags, "subscribe", flags.duration);
 }
 ```
 
@@ -119,7 +119,7 @@ async run(): Promise<void> {
       this.log(formatSuccess("Message published to channel: " + formatResource(args.channel) + "."));
     }
   } catch (error) {
-    this.fail(error, flags, "Publish", { channel: args.channel });
+    this.fail(error, flags, "publish", { channel: args.channel });
   }
 }
 ```
@@ -198,7 +198,7 @@ async run(): Promise<void> {
       this.log(`${formatLabel("Status")} ${data.status}`);
     }
   } catch (error) {
-    this.fail(error, flags, "ResourceGet", { resource: args.id });
+    this.fail(error, flags, "resourceGet", { resource: args.id });
   }
 }
 ```
@@ -236,7 +236,7 @@ async run(): Promise<void> {
     try {
       presenceData = JSON.parse(flags.data);
     } catch {
-      this.fail("Invalid JSON data provided", flags, "PresenceEnter");
+      this.fail("Invalid JSON data provided", flags, "presenceEnter");
     }
   }
 
@@ -259,7 +259,7 @@ async run(): Promise<void> {
     this.log(formatListening("Present on channel."));
   }
 
-  await this.waitAndTrackCleanup(flags, "PresenceEnter", flags.duration);
+  await this.waitAndTrackCleanup(flags, "presence", flags.duration);
 }
 
 // Clean up in finally — leave presence before closing connection
@@ -312,7 +312,7 @@ async run(): Promise<void> {
     this.fail(
       'No app specified. Use --app flag or select an app with "ably apps switch"',
       flags,
-      "ListItems",
+      "listItems",
     );
   }
 
@@ -333,7 +333,7 @@ async run(): Promise<void> {
       }
     }
   } catch (error) {
-    this.fail(error, flags, "ListItems");
+    this.fail(error, flags, "listItems");
   }
 }
 ```
@@ -358,7 +358,7 @@ async run(): Promise<void> {
     this.fail(
       'No app specified. Use --app flag or select an app with "ably apps switch"',
       flags,
-      "CreateResource",
+      "createResource",
     );
   }
 
@@ -373,7 +373,7 @@ async run(): Promise<void> {
       // Display additional fields
     }
   } catch (error) {
-    this.fail(error, flags, "CreateResource");
+    this.fail(error, flags, "createResource");
   }
 }
 ```

@@ -39,11 +39,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);
       if (!this.chatClient) {
-        this.fail(
-          new Error("Failed to initialize clients"),
-          flags,
-          "RoomTypingSubscribe",
-        );
+        this.fail("Failed to initialize clients", flags, "roomTypingSubscribe");
       }
 
       const { room: roomName } = args;
@@ -159,7 +155,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "typing", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "RoomTypingSubscribe", { room: args.room });
+      this.fail(error, flags, "roomTypingSubscribe", { room: args.room });
     }
   }
 }

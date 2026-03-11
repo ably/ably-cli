@@ -45,9 +45,9 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
 
       if (!this.chatClient) {
         this.fail(
-          new Error("Failed to initialize clients"),
+          "Failed to initialize clients",
           flags,
-          "RoomReactionSubscribe",
+          "roomReactionSubscribe",
         );
       }
 
@@ -113,7 +113,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
       );
       room.reactions.subscribe((event: RoomReactionEvent) => {
         const reaction = event.reaction;
-        const timestamp = new Date().toISOString(); // Chat SDK doesn't provide timestamp in event
+        const timestamp = reaction.createdAt.toISOString();
         const eventData = {
           clientId: reaction.clientId,
           metadata: reaction.metadata,
@@ -161,7 +161,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "reactions", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "RoomReactionSubscribe", { room: args.room });
+      this.fail(error, flags, "roomReactionSubscribe", { room: args.room });
     }
   }
 }

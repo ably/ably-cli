@@ -67,11 +67,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);
       if (!this.chatClient) {
-        this.fail(
-          new Error("Failed to initialize clients"),
-          flags,
-          "RoomTypingKeystroke",
-        );
+        this.fail("Failed to initialize clients", flags, "roomTypingKeystroke");
       }
 
       const { room: roomName } = args;
@@ -177,17 +173,15 @@ export default class TypingKeystroke extends ChatBaseCommand {
               }
             })
             .catch((error: Error) => {
-              this.fail(error, flags, "RoomTypingKeystroke", {
+              this.fail(error, flags, "roomTypingKeystroke", {
                 room: roomName,
               });
             });
         } else if (statusChange.current === RoomStatus.Failed) {
           this.fail(
-            new Error(
-              `Failed to attach to room ${roomName}: ${reasonMsg || "Unknown error"}`,
-            ),
+            `Failed to attach to room ${roomName}: ${reasonMsg || "Unknown error"}`,
             flags,
-            "RoomTypingKeystroke",
+            "roomTypingKeystroke",
             { room: roomName },
           );
         }
@@ -213,7 +207,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
       // Decide how long to remain connected
       await this.waitAndTrackCleanup(flags, "typing", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "RoomTypingKeystroke", { room: args.room });
+      this.fail(error, flags, "roomTypingKeystroke", { room: args.room });
     }
   }
 }

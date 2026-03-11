@@ -70,7 +70,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
         this.fail(
           "Unable to determine app configuration",
           flags,
-          "LogSubscribe",
+          "logSubscribe",
         );
       }
       const logsChannelName = `[meta]log`;
@@ -168,7 +168,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "logs", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "LogSubscribe");
+      this.fail(error, flags, "logSubscribe");
     }
   }
 }

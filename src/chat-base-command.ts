@@ -134,9 +134,7 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
         }
         case RoomStatus.Failed: {
           this.fail(
-            new Error(
-              `Failed to attach to room ${options.roomName}: ${reasonMsg || "Unknown error"}`,
-            ),
+            `Failed to attach to room ${options.roomName}: ${reasonMsg || "Unknown error"}`,
             flags as BaseFlags,
             "room",
           );

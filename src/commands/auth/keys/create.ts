@@ -49,7 +49,7 @@ export default class KeysCreateCommand extends ControlBaseCommand {
       this.fail(
         'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
         flags,
-        "KeyCreate",
+        "keyCreate",
       );
     }
 
@@ -60,7 +60,7 @@ export default class KeysCreateCommand extends ControlBaseCommand {
       this.fail(
         "Invalid capabilities JSON format. Please provide a valid JSON string.",
         flags,
-        "KeyCreate",
+        "keyCreate",
       );
     }
 
@@ -111,7 +111,7 @@ export default class KeysCreateCommand extends ControlBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags, "KeyCreate", { appId });
+      this.fail(error, flags, "keyCreate", { appId });
     }
   }
 }

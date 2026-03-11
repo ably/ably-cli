@@ -89,7 +89,7 @@ export default class ChannelsList extends AblyBaseCommand {
         this.fail(
           `Failed to list channels: ${channelsResponse.statusCode}`,
           flags,
-          "ChannelList",
+          "channelList",
         );
       }
 
@@ -159,7 +159,7 @@ export default class ChannelsList extends AblyBaseCommand {
         if (warning) this.log(warning);
       }
     } catch (error) {
-      this.fail(error, flags, "ChannelList");
+      this.fail(error, flags, "channelList");
     }
   }
 }

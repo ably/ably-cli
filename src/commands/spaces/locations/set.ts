@@ -258,7 +258,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "location", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "LocationSet");
+      this.fail(error, flags, "locationSet");
     } finally {
       // Cleanup is now handled by base class finally() method
     }

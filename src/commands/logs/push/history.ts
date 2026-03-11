@@ -153,7 +153,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
         if (warning) this.log(warning);
       }
     } catch (error) {
-      this.fail(error, flags, "PushHistory");
+      this.fail(error, flags, "pushHistory");
     }
   }
 }

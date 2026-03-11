@@ -59,7 +59,7 @@ export default class StatusCommand extends AblyBaseCommand {
             "Invalid response from status endpoint: status attribute is missing",
           ),
           flags as BaseFlags,
-          "Status",
+          "status",
         );
       }
 
@@ -94,7 +94,7 @@ export default class StatusCommand extends AblyBaseCommand {
         spinner.fail("Failed to check Ably service status");
       }
 
-      this.fail(error, flags as BaseFlags, "Status");
+      this.fail(error, flags as BaseFlags, "status");
     }
   }
 }

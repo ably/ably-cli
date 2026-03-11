@@ -129,7 +129,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
       await this.waitForTermination(flags);
     } catch (error) {
-      this.fail(error, flags, "BenchSubscriber");
+      this.fail(error, flags, "benchSubscriber");
     } finally {
       // Cleanup is handled by the overridden finally method
     }
@@ -524,7 +524,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
       this.fail(
         "Failed to create Ably client. Please check your API key and try again.",
         flags,
-        "BenchSubscriber",
+        "benchSubscriber",
       );
       return null;
     }
@@ -801,7 +801,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
     // Wait until the user interrupts or the optional duration elapses
     const exitReason = await this.waitAndTrackCleanup(
       flags as BaseFlags,
-      "BenchSubscriber",
+      "benchSubscriber",
       flags.duration as number | undefined,
     );
     this.logCliEvent(flags, "benchmark", "runComplete", "Exiting wait loop", {

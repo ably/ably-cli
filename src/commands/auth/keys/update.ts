@@ -51,7 +51,7 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
       this.fail(
         'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
         flags,
-        "KeyUpdate",
+        "keyUpdate",
       );
     }
 
@@ -60,7 +60,7 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
       this.fail(
         "No updates specified. Please provide at least one property to update (--name or --capabilities).",
         flags,
-        "KeyUpdate",
+        "keyUpdate",
       );
     }
 
@@ -92,7 +92,7 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
             "*": capabilityArray,
           };
         } catch (error) {
-          this.fail(error, flags, "KeyUpdate", {
+          this.fail(error, flags, "keyUpdate", {
             context: "parsing capabilities",
           });
         }
@@ -138,7 +138,7 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "KeyUpdate");
+      this.fail(error, flags, "keyUpdate");
     }
   }
 }

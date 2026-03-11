@@ -87,9 +87,9 @@ export default class RoomsList extends ChatBaseCommand {
 
       if (channelsResponse.statusCode !== 200) {
         this.fail(
-          new Error(`Failed to list rooms: ${channelsResponse.statusCode}`),
+          `Failed to list rooms: ${channelsResponse.statusCode}`,
           flags,
-          "RoomList",
+          "roomList",
         );
       }
 
@@ -184,7 +184,7 @@ export default class RoomsList extends ChatBaseCommand {
         if (warning) this.log(warning);
       }
     } catch (error) {
-      this.fail(error, flags, "RoomList");
+      this.fail(error, flags, "roomList");
     }
   }
 }

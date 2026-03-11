@@ -27,7 +27,7 @@ export default class AccountsList extends ControlBaseCommand {
       this.fail(
         'No accounts configured. Use "ably accounts login" to add an account.',
         flags,
-        "AccountList",
+        "accountList",
         { accounts: [] },
       );
     }

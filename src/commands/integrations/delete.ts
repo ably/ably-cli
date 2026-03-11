@@ -56,7 +56,7 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
             "The --force flag is required when using --json to confirm deletion",
           ),
           flags,
-          "IntegrationDelete",
+          "integrationDelete",
         );
       }
 
@@ -108,7 +108,7 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
         this.log(`${formatLabel("Source Type")} ${integration.source.type}`);
       }
     } catch (error) {
-      this.fail(error, flags, "IntegrationDelete");
+      this.fail(error, flags, "integrationDelete");
     }
   }
 }

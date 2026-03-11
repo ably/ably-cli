@@ -86,7 +86,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
         this.fail(
           new Error("Failed to initialize chat client or room"),
           flags,
-          "RoomPresenceEnter",
+          "roomPresenceEnter",
         );
       }
 
@@ -178,7 +178,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "presence", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "RoomPresenceEnter", {
+      this.fail(error, flags, "roomPresenceEnter", {
         room: this.roomName,
       });
     } finally {

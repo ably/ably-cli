@@ -146,7 +146,7 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
       this.logCliEvent(flags, "logs", "listening", "Listening for logs...");
       await this.waitAndTrackCleanup(flags, "logs", flags.duration);
     } catch (error: unknown) {
-      this.fail(error, flags, "ChannelLifecycleSubscribe", {
+      this.fail(error, flags, "channelLifecycleSubscribe", {
         channel: channelName,
       });
     }

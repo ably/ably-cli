@@ -150,7 +150,7 @@ export default class ChannelRulesCreateCommand extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "ChannelRuleCreate", { appId });
+      this.fail(error, flags, "channelRuleCreate", { appId });
     }
   }
 }

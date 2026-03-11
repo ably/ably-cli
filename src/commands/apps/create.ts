@@ -85,7 +85,7 @@ export default class AppsCreateCommand extends ControlBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags, "AppCreate");
+      this.fail(error, flags, "appCreate");
     }
   }
 }

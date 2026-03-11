@@ -291,7 +291,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
             chalk.gray(" │ ") +
             chalk.bold("Y".padEnd(colWidths.y)) +
             chalk.gray(" │ ") +
-            chalk.bold("Connection".padEnd(colWidths.connection)) +
+            chalk.bold("connection".padEnd(colWidths.connection)) +
             chalk.gray(" │"),
         );
         this.log(
@@ -360,7 +360,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "CursorGetAll", { spaceName });
+      this.fail(error, flags, "cursorGetAll", { spaceName });
     }
   }
 }

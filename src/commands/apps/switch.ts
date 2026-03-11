@@ -64,7 +64,7 @@ export default class AppsSwitch extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "AppSwitch");
+      this.fail(error, flags, "appSwitch");
     }
   }
 
@@ -87,7 +87,7 @@ export default class AppsSwitch extends ControlBaseCommand {
         this.log(`Switched to app: ${formatResource(app.name)} (${app.id})`);
       }
     } catch (error) {
-      this.fail(error, flags, "AppSwitch", {
+      this.fail(error, flags, "appSwitch", {
         context: `switching to app "${appId}"`,
       });
     }

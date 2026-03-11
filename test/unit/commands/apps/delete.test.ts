@@ -96,6 +96,8 @@ describe("apps:delete command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "apps:delete");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("app");
       expect(result.app).toHaveProperty("id", appId);
@@ -325,8 +327,9 @@ describe("apps:delete command", () => {
       );
 
       const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("type", "error");
+      expect(result).toHaveProperty("command", "apps:delete");
+      expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result).toHaveProperty("appId", appId);
     });

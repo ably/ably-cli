@@ -128,7 +128,7 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
         this.log(`Target: ${JSON.stringify(updatedRule.target, null, 2)}`);
       }
     } catch (error) {
-      this.fail(error, flags, "IntegrationUpdate");
+      this.fail(error, flags, "integrationUpdate");
     }
   }
 }

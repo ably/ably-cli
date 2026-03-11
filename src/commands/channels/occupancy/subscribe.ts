@@ -138,7 +138,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "occupancy", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "OccupancySubscribe", {
+      this.fail(error, flags, "occupancySubscribe", {
         channel: args.channel,
       });
     }

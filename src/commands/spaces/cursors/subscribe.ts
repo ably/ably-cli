@@ -87,7 +87,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
               );
             }
           } catch (error) {
-            this.fail(error, flags, "CursorSubscribe", {
+            this.fail(error, flags, "cursorSubscribe", {
               spaceName,
             });
           }
@@ -106,7 +106,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
           "Successfully subscribed to cursor updates",
         );
       } catch (error) {
-        this.fail(error, flags, "CursorSubscribe", {
+        this.fail(error, flags, "cursorSubscribe", {
           spaceName,
         });
       }
@@ -134,7 +134,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "cursor", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "CursorSubscribe", { spaceName });
+      this.fail(error, flags, "cursorSubscribe", { spaceName });
     } finally {
       // Cleanup is now handled by base class finally() method
     }

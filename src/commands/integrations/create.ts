@@ -108,7 +108,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
             this.fail(
               "--target-url is required for HTTP integrations",
               flags,
-              "IntegrationCreate",
+              "integrationCreate",
             );
           }
 
@@ -174,7 +174,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags, "IntegrationCreate");
+      this.fail(error, flags, "integrationCreate");
     }
   }
 }

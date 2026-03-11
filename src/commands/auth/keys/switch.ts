@@ -47,7 +47,7 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
       this.fail(
         'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
         flags,
-        "KeySwitch",
+        "keySwitch",
       );
     }
 
@@ -120,7 +120,7 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "KeySwitch");
+      this.fail(error, flags, "keySwitch");
     }
   }
 
@@ -174,7 +174,7 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
       this.fail(
         `Key "${keyIdOrValue}" not found or access denied.`,
         flags,
-        "KeySwitch",
+        "keySwitch",
       );
     }
   }

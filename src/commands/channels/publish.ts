@@ -327,7 +327,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
         this.fail(
           "Failed to create Ably client. Please check your API key and try again.",
           flags as BaseFlags,
-          "ChannelPublish",
+          "channelPublish",
         );
       }
 
@@ -361,9 +361,11 @@ export default class ChannelsPublish extends AblyBaseCommand {
         );
       });
 
-      await this.publishMessages(args, flags, (msg) => channel.publish(msg));
+      await this.publishMessages(args, flags, async (msg) => {
+        await channel.publish(msg);
+      });
     } catch (error) {
-      this.fail(error, flags as BaseFlags, "ChannelPublish");
+      this.fail(error, flags as BaseFlags, "channelPublish");
     }
     // Client cleanup is handled by command finally() method
   }
@@ -387,9 +389,11 @@ export default class ChannelsPublish extends AblyBaseCommand {
         "Using REST transport",
       );
 
-      await this.publishMessages(args, flags, (msg) => channel.publish(msg));
+      await this.publishMessages(args, flags, async (msg) => {
+        await channel.publish(msg);
+      });
     } catch (error) {
-      this.fail(error, flags as BaseFlags, "ChannelPublish");
+      this.fail(error, flags as BaseFlags, "channelPublish");
     }
     // No finally block needed here as REST client doesn't maintain a connection
   }

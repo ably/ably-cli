@@ -220,7 +220,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "presence", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "RoomPresenceSubscribe", {
+      this.fail(error, flags, "roomPresenceSubscribe", {
         room: this.roomName,
       });
     } finally {

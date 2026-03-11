@@ -62,9 +62,9 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
 
       if (!this.chatClient) {
         this.fail(
-          new Error("Failed to create Chat client"),
+          "Failed to create Chat client",
           flags,
-          "RoomOccupancySubscribe",
+          "roomOccupancySubscribe",
         );
       }
 
@@ -167,7 +167,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "occupancy", flags.duration);
     } catch (error) {
-      this.fail(error, flags, "RoomOccupancySubscribe", {
+      this.fail(error, flags, "roomOccupancySubscribe", {
         room: this.roomName,
       });
     }
