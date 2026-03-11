@@ -4103,6 +4103,19 @@ EXAMPLES
 _See code: [src/commands/support/contact.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/support/contact.ts)_
 <!-- commandsstop -->
 
+## JSON Output
+
+All commands support `--json` for machine-readable output and `--pretty-json` for human-readable formatted JSON.
+
+When using `--json`, every record is wrapped in a standard envelope:
+
+- **`type`** — `"result"`, `"event"`, `"error"`, or `"log"`
+- **`command`** — the command that produced the record (e.g. `"channels:publish"`)
+- **`success`** — `true` or `false` (only on `"result"` and `"error"` types)
+- Additional fields are command-specific
+
+Streaming commands (subscribe, logs) emit one JSON object per line (NDJSON).
+
 ## Environment Variables
 
 The CLI supports the following environment variables for authentication and configuration:

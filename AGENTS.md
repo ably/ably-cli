@@ -197,12 +197,38 @@ All output helpers use the `format` prefix and are exported from `src/utils/outp
 - **Count labels**: `formatCountLabel(n, "message")` — cyan count + pluralized label.
 - **Limit warnings**: `formatLimitWarning(count, limit, "items")` — yellow warning if results truncated.
 - **JSON guard**: All human-readable output (progress, success, listening messages) must be wrapped in `if (!this.shouldOutputJson(flags))` so it doesn't pollute `--json` output. Only JSON payloads should be emitted when `--json` is active.
-- **JSON errors**: In catch blocks, use `this.handleCommandError(error, flags, component, context?)` for consistent error handling. It logs the event, emits JSON error when `--json` is active, and calls `this.error()` for human-readable output. For non-standard error flows, use `this.jsonError()` directly.
+- **JSON envelope**: Use `this.logJsonResult(data, flags)` for one-shot results and `this.logJsonEvent(data, flags)` for streaming events. These are shorthand for `this.log(this.formatJsonRecord("result"|"event", data, flags))`. The envelope wraps data in `{type, command, success?, ...data}`. Do NOT add ad-hoc `success: true/false` — the envelope handles it. `--json` produces compact single-line output (NDJSON for streaming). `--pretty-json` is unchanged.
+- **JSON errors**: Use `this.fail(error, flags, component, context?)` as the single error funnel in command `run()` methods. It logs the CLI event, preserves structured error data (Ably codes, HTTP status), emits JSON error envelope when `--json` is active, and calls `this.error()` for human-readable output. Returns `never` — no `return;` needed after calling it. Do NOT call `this.error()` directly — it is an internal implementation detail of `fail`.
 - **History output**: Use `[index] timestamp` ordering: `` `${formatIndex(index + 1)} ${formatTimestamp(timestamp)}` ``. Consistent across all history commands (channels, logs, connection-lifecycle, push).
+
+### Error handling architecture
+
+Choose the right mechanism based on intent:
+
+| Intent | Method | Behavior |
+|--------|--------|----------|
+| **Stop the command** (fatal error) | `this.fail(error, flags, component)` | Logs event, emits JSON error envelope if `--json`, exits. Returns `never` — execution stops, no `return;` needed. |
+| **Warn and continue** (non-fatal) | `this.warn()` or `this.logToStderr()` | Prints warning, execution continues normally. |
+| **Reject inside Promise callbacks** | `reject(new Error(...))` | Propagates to `await`, where the catch block calls `this.fail()`. |
+
+All fatal errors flow through `this.fail()` (`src/base-command.ts`), which uses `CommandError` (`src/errors/command-error.ts`) to preserve Ably error codes and HTTP status codes:
+
+```
+this.fail(): never   ← the single funnel (logs event, emits JSON, exits)
+    ↓ internally calls
+this.error()         ← oclif exit (ONLY inside fail, nowhere else)
+```
+
+- **`this.fail()` always exits** — it returns `never`. TypeScript enforces no code runs after it. This eliminates the "forgotten `return;`" bug class.
+- **In command `run()` methods**: Use `this.fail()` for all errors. Wrap fallible calls in try-catch blocks.
+- **Base class methods with `flags`** (`createControlApi`, `createAblyRealtimeClient`, `requireAppId`, `runControlCommand`, etc.) also use `this.fail()` directly. Methods without `flags` pass `{}` as a fallback.
+- **`reject(new Error(...))`** inside Promise callbacks (e.g., connection event handlers) is the one pattern that can't use `this.fail()` — the rejection propagates to `await`, where the command's catch block calls `this.fail()`.
+- **Never use `this.error()` directly** — it is an internal implementation detail of `this.fail()`.
+- **`requireAppId`** returns `Promise<string>` (not nullable) — calls `this.fail()` internally if no app found.
+- **`runControlCommand<T>`** returns `Promise<T>` (not nullable) — calls `this.fail()` internally on error.
 
 ### Additional output patterns (direct chalk, not helpers)
 - **Warnings**: `chalk.yellow("Warning: ...")` — for non-fatal warnings
-- **Errors**: Use `this.error()` (oclif standard) for fatal errors, not `this.log(chalk.red(...))`
 - **No app error**: `'No app specified. Use --app flag or select an app with "ably apps switch"'`
 
 ### Help output theme

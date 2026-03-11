@@ -172,9 +172,14 @@ if (!this.shouldOutputJson(flags)) {
   this.log(formatListening("Listening for messages."));
 }
 
-// JSON output:
+// JSON output — use logJsonResult for one-shot results:
 if (this.shouldOutputJson(flags)) {
-  this.log(this.formatJsonOutput(data, flags));
+  this.logJsonResult({ channel: args.channel, message }, flags);
+}
+
+// Streaming events — use logJsonEvent:
+if (this.shouldOutputJson(flags)) {
+  this.logJsonEvent({ eventType: event.type, message, channel: channelName }, flags);
 }
 ```
 
@@ -208,19 +213,64 @@ Rules:
 - `formatLabel(text)` — dim with colon, for field labels
 - `formatHeading(text)` — bold, for record headings in lists
 - `formatIndex(n)` — dim bracketed number, for history ordering
-- Use `this.handleCommandError()` for all errors (see Error handling below), never `this.log(chalk.red(...))`
+- Use `this.fail()` for all errors (see Error handling below), never `this.log(chalk.red(...))`
 - Never use `console.log` or `console.error` — always `this.log()` or `this.logToStderr()`
+
+### JSON envelope — reserved keys
+
+`logJsonResult(data, flags)` and `logJsonEvent(data, flags)` are shorthand for `this.log(this.formatJsonRecord("result"|"event", data, flags))`. The envelope wraps data in `{type, command, success?, ...data}` and **silently strips** these reserved keys from your data to prevent collisions:
+- `type` — always stripped (envelope's own `type` field)
+- `command` — always stripped (envelope's own `command` field)
+- `success` — stripped from `"error"` records (always `false`); for `"result"` records, data's `success` **overrides** the envelope's default `true`
+
+**Pitfall:** If your event data has a `type` field (e.g., from an SDK event object), it will be silently dropped. Use a different key name:
+```typescript
+// WRONG — event.type is silently stripped by the envelope
+this.logJsonEvent({ type: event.type, message, room }, flags);
+
+// CORRECT — use "eventType" to avoid collision with envelope's "type"
+this.logJsonEvent({ eventType: event.type, message, room }, flags);
+```
+
+Similarly, for batch results with a success/failure summary, don't use `success` as the key — it collides with the envelope's `success: true`:
+```typescript
+// WRONG — data's "success" overrides envelope's "success"
+this.logJsonResult({ success: errors === 0, published, errors }, flags);
+
+// CORRECT — use "allSucceeded" for the batch summary
+this.logJsonResult({ allSucceeded: errors === 0, published, errors }, flags);
+```
 
 ### Error handling
 
-**Use `handleCommandError` for all errors.** It's the single error function for commands — it logs the CLI event, emits JSON error when `--json` is active, and calls `this.error()` for human-readable output. It accepts an `Error` object or a plain string message.
+Choose the right mechanism based on intent:
+
+| Intent | Method | Behavior |
+|--------|--------|----------|
+| **Stop the command** (fatal error) | `this.fail(error, flags, component)` | Logs event, emits JSON error envelope if `--json`, exits. Returns `never` — execution stops, no `return;` needed. |
+| **Warn and continue** (non-fatal) | `this.warn()` or `this.logToStderr()` | Prints warning, execution continues normally. |
+| **Reject inside Promise callbacks** | `reject(new Error(...))` | Propagates to `await`, where the catch block calls `this.fail()`. |
+
+All fatal errors flow through `this.fail()`, which uses `CommandError` (`src/errors/command-error.ts`) to preserve Ably error codes and HTTP status codes:
+
+```
+this.fail(): never   ← the single funnel (logs event, emits JSON, exits)
+    ↓ internally calls
+this.error()         ← oclif exit (ONLY inside fail, nowhere else)
+```
+
+**In command `run()` methods**, use `this.fail()` for all errors. It always exits — returns `never`, so no `return;` is needed after calling it. It logs the CLI event, preserves structured error data, emits JSON error envelope when `--json` is active, and calls `this.error()` for human-readable output. It accepts an `Error` object or a plain string message.
 
 ```typescript
 // In catch blocks — pass the error object
 try {
-  // command logic
+  // All fallible calls go inside try-catch, including base class methods
+  // like createControlApi, createAblyRealtimeClient, etc.
+  const controlApi = this.createControlApi(flags);
+  const result = await controlApi.someMethod(appId, data);
+  // ...
 } catch (error) {
-  this.handleCommandError(
+  this.fail(
     error,
     flags,
     "ComponentName",     // e.g., "ChannelPublish", "PresenceEnter"
@@ -228,18 +278,19 @@ try {
   );
 }
 
-// For validation / early exit — pass a string message
+// For validation / early exit — pass a string message (no return; needed)
 if (!appId) {
-  this.handleCommandError(
+  this.fail(
     'No app specified. Use --app flag or select an app with "ably apps switch"',
     flags,
     "AppResolve",
   );
-  return;
 }
 ```
 
-**Do NOT use `this.error()` or `this.jsonError()` directly** — they are internal implementation details. Calling `this.error()` directly skips event logging and doesn't respect `--json` mode. Calling `this.jsonError()` directly skips event logging and doesn't handle the non-JSON case.
+**In base class utility methods** (e.g., `createControlApi`, `createAblyRealtimeClient`, `parseJsonFlag`), use `throw new Error()`. These methods return values, so they can't call `fail`. The thrown error is caught by the command's try-catch and routed through `fail`.
+
+**Do NOT use `this.error()` directly** — it is an internal implementation detail of `fail`. Calling `this.error()` directly skips event logging and doesn't respect `--json` mode.
 
 ### Pattern-specific implementation
 
@@ -316,7 +367,10 @@ pnpm test:unit      # Run tests
 - [ ] Output helpers used correctly (`formatProgress`, `formatSuccess`, `formatListening`, `formatResource`, `formatTimestamp`, `formatClientId`, `formatEventType`, `formatLabel`, `formatHeading`, `formatIndex`)
 - [ ] `success()` messages end with `.` (period)
 - [ ] Resource names use `resource(name)`, never quoted
-- [ ] Error handling uses `this.handleCommandError()` exclusively, not `this.error()`, `this.jsonError()`, or `this.log(chalk.red(...))`
+- [ ] JSON output uses `logJsonResult()` (one-shot) or `logJsonEvent()` (streaming), not direct `formatJsonRecord()`
+- [ ] Subscribe/enter commands use `this.waitAndTrackCleanup(flags, component, flags.duration)` (not `waitUntilInterruptedOrTimeout`)
+- [ ] Error handling uses `this.fail()` exclusively, not `this.error()` or `this.log(chalk.red(...))`
+- [ ] At least one `--json` example in `static examples`
 - [ ] Test file at matching path under `test/unit/commands/`
 - [ ] Tests use correct mock helper (`getMockAblyRealtime`, `getMockAblyRest`, `nock`)
 - [ ] Tests don't pass auth flags — `MockConfigManager` handles auth
