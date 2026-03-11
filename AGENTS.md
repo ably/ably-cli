@@ -283,4 +283,26 @@ When adding COMMANDS sections in `src/help.ts`, use `chalk.bold()` for headers, 
 - [ ] `pnpm test:unit` passes
 - [ ] No debug artifacts remain
 - [ ] Docs updated if needed (especially `docs/Project-Structure.md` when adding/moving files, `docs/Testing.md` when changing test patterns)
+- [ ] Skills updated if needed (see below)
 - [ ] Followed oclif patterns
+
+## Keeping Skills Up to Date
+
+Skills in `.claude/skills/` encode the project's conventions and patterns. When you change the source of truth (base classes, helpers, flags, error handling, test helpers), **you must update the skills that reference those patterns**. Stale skills cause Claude to generate incorrect code.
+
+**When to update skills:**
+- Changed a base class method signature or behavior (`base-command.ts`, `control-base-command.ts`, `chat-base-command.ts`, `spaces-base-command.ts`, `stats-base-command.ts`)
+- Added, renamed, or removed output helpers in `src/utils/output.ts`
+- Changed flag definitions in `src/flags.ts`
+- Changed error handling patterns (e.g., `fail()`, `CommandError`)
+- Changed test helpers or mock patterns in `test/helpers/`
+- Added a new base class or removed an existing one
+
+**Which files to check:**
+- `ably-new-command/SKILL.md` — the primary source of conventions for creating commands
+- `ably-new-command/references/patterns.md` — implementation templates (must match actual code)
+- `ably-new-command/references/testing.md` — test scaffolds (must match actual test helpers)
+- `ably-review/SKILL.md` — branch review checks (must know current method names)
+- `ably-codebase-review/SKILL.md` — codebase review checks (must know current method names)
+
+**How to verify:** After updating skills, grep the skill files for the old method/pattern name to ensure no stale references remain.
