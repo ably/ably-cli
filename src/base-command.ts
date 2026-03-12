@@ -1502,7 +1502,16 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       this.exit(1);
     }
 
-    this.error(cmdError.message);
+    let humanMessage = cmdError.message;
+    const code = cmdError.code ?? cmdError.context.errorCode;
+    if (code !== undefined) {
+      const helpUrl = cmdError.context.helpUrl;
+      humanMessage += helpUrl
+        ? `\nAbly error code: ${code} (${helpUrl})`
+        : `\nAbly error code: ${code}`;
+    }
+
+    this.error(humanMessage);
   }
 
   /**
