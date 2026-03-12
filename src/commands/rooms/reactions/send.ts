@@ -70,9 +70,14 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
-        this.fail("Failed to create Chat client", flags, "roomReactionSend", {
-          room: roomName,
-        });
+        return this.fail(
+          "Failed to create Chat client",
+          flags,
+          "roomReactionSend",
+          {
+            room: roomName,
+          },
+        );
       }
 
       // Set up connection state logging

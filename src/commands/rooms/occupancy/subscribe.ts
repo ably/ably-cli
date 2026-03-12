@@ -61,7 +61,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
-        this.fail(
+        return this.fail(
           "Failed to create Chat client",
           flags,
           "roomOccupancySubscribe",

@@ -66,7 +66,11 @@ export default class MessagesHistory extends ChatBaseCommand {
       const chatClient = await this.createChatClient(flags);
 
       if (!chatClient) {
-        this.fail("Failed to create Chat client", flags, "roomMessageHistory");
+        return this.fail(
+          "Failed to create Chat client",
+          flags,
+          "roomMessageHistory",
+        );
       }
 
       // Get the room
@@ -122,7 +126,7 @@ export default class MessagesHistory extends ChatBaseCommand {
         historyParams.end !== undefined &&
         historyParams.start > historyParams.end
       ) {
-        this.fail(
+        return this.fail(
           "--start must be earlier than or equal to --end",
           flags,
           "roomMessageHistory",
