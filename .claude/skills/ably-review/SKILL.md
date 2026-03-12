@@ -102,7 +102,7 @@ For each changed command file, run the relevant checks. Spawn agents for paralle
 **Flag architecture check (grep, with LSP for ambiguous cases):**
 1. **Grep** for flag spreads (`productApiFlags`, `clientIdFlag`, `durationFlag`, `rewindFlag`, `timeRangeFlags`, `ControlBaseCommand.globalFlags`)
 2. Verify correct flag sets per the skill rules
-3. Check subscribe commands have `durationFlag`, `rewindFlag`, `clientIdFlag` as appropriate
+3. Check subscribe commands have `durationFlag`, `rewindFlag`, `clientIdFlag` as appropriate; mutation commands (publish, update, delete, append) should also have `clientIdFlag`
 4. For ambiguous cases, use **LSP** `goToDefinition` to confirm flag imports resolve to `src/flags.ts`
 
 **JSON output check (grep/read):**

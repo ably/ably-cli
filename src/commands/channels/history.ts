@@ -112,6 +112,20 @@ export default class ChannelsHistory extends AblyBaseCommand {
             `${formatLabel("Event")} ${formatEventType(message.name || "(none)")}`,
           );
 
+          if (message.action !== undefined) {
+            this.log(
+              `${formatLabel("Action")} ${formatEventType(String(message.action))}`,
+            );
+          }
+
+          if (message.serial) {
+            this.log(`${formatLabel("Serial")} ${message.serial}`);
+          }
+
+          if (message.version) {
+            this.log(`${formatLabel("Version")} ${message.version}`);
+          }
+
           if (message.clientId) {
             this.log(
               `${formatLabel("Client ID")} ${formatClientId(message.clientId)}`,

@@ -99,7 +99,7 @@ Flags are NOT global. Each command explicitly declares only the flags it needs v
 - **`coreGlobalFlags`** — `--verbose`, `--json`, `--pretty-json`, `--web-cli-help` (hidden) (on every command via `AblyBaseCommand.globalFlags`)
 - **`productApiFlags`** — core + hidden product API flags (`port`, `tlsPort`, `tls`). Use for commands that talk to the Ably product API.
 - **`controlApiFlags`** — core + hidden control API flags (`control-host`, `dashboard-host`). Use for commands that talk to the Control API.
-- **`clientIdFlag`** — `--client-id`. Add to any command that creates a realtime connection (publish, subscribe, presence enter/subscribe, spaces enter/get/subscribe, locks acquire/get/subscribe, cursors set/get/subscribe, locations set/get/subscribe, etc.). The rule: if the command calls `space.enter()`, creates a realtime client, or joins a channel, include `clientIdFlag`. Do NOT add globally.
+- **`clientIdFlag`** — `--client-id`. Add to any command where the user might want to control which client identity performs the operation. This includes: commands that create a realtime connection (subscribe, presence enter/subscribe, spaces, etc.), publish, and REST mutations where permissions may depend on the client (update, delete, append). Do NOT add globally.
 - **`durationFlag`** — `--duration` / `-D`. Use for long-running subscribe/stream commands that auto-exit after N seconds.
 - **`rewindFlag`** — `--rewind`. Use for subscribe commands that support message replay (default: 0).
 - **`timeRangeFlags`** — `--start`, `--end`. Use for history and stats commands. Parse with `parseTimestamp()` from `src/utils/time.ts`. Accepts ISO 8601, Unix ms, or relative (e.g., `"1h"`, `"30m"`, `"2d"`).

@@ -28,6 +28,9 @@ export interface MockRestChannel {
   publish: Mock;
   history: Mock;
   status: Mock;
+  updateMessage: Mock;
+  deleteMessage: Mock;
+  appendMessage: Mock;
   presence: MockRestPresence;
 }
 
@@ -116,8 +119,17 @@ function createMockRestPresence(): MockRestPresence {
 function createMockRestChannel(name: string): MockRestChannel {
   return {
     name,
-    publish: vi.fn().mockImplementation(async () => {}),
+    publish: vi.fn().mockResolvedValue({ serials: ["mock-serial-001"] }),
     history: vi.fn().mockResolvedValue({ items: [] }),
+    updateMessage: vi
+      .fn()
+      .mockResolvedValue({ versionSerial: "mock-version-serial-update" }),
+    deleteMessage: vi
+      .fn()
+      .mockResolvedValue({ versionSerial: "mock-version-serial-delete" }),
+    appendMessage: vi
+      .fn()
+      .mockResolvedValue({ versionSerial: "mock-version-serial-append" }),
     status: vi.fn().mockResolvedValue({
       channelId: name,
       status: {

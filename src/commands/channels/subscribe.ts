@@ -203,6 +203,10 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
             event: message.name || "(none)",
             id: message.id,
             timestamp,
+            action:
+              message.action === undefined ? undefined : String(message.action),
+            serial: message.serial,
+            version: message.version,
             ...(flags["sequence-numbers"]
               ? { sequence: this.sequenceCounter }
               : {}),
@@ -227,6 +231,21 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
             this.log(
               `${formatTimestamp(timestamp)}${sequencePrefix} ${formatResource(`Channel: ${channel.name}`)} | Event: ${formatEventType(name)}`,
             );
+
+            // Action, serial, version
+            if (message.action !== undefined) {
+              this.log(
+                `${formatLabel("Action")} ${formatEventType(String(message.action))}`,
+              );
+            }
+
+            if (message.serial) {
+              this.log(`${formatLabel("Serial")} ${message.serial}`);
+            }
+
+            if (message.version) {
+              this.log(`${formatLabel("Version")} ${message.version}`);
+            }
 
             // Message data with consistent formatting
             this.log(formatLabel("Data"));

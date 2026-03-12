@@ -142,11 +142,18 @@ export default class ChannelsPublish extends AblyBaseCommand {
           ),
         );
       } else if (errors === 0) {
+        const serial =
+          results[0]?.serial === undefined
+            ? undefined
+            : String(results[0].serial);
         this.log(
           formatSuccess(
             `Message published to channel: ${formatResource(args.channel as string)}.`,
           ),
         );
+        if (serial) {
+          this.log(`  Serial: ${formatResource(serial)}`);
+        }
       } else {
         // Error message already logged by publishMessages loop or prepareMessage
       }
@@ -212,7 +219,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
   private async publishMessages(
     args: Record<string, unknown>,
     flags: Record<string, unknown>,
-    publisher: (msg: Ably.Message) => Promise<void>,
+    publisher: (msg: Ably.Message) => Promise<Ably.PublishResult | void>,
   ): Promise<void> {
     // Validate count and delay
     const count = Math.max(1, flags.count as number);
@@ -261,9 +268,18 @@ export default class ChannelsPublish extends AblyBaseCommand {
       );
 
       try {
-        await publisher(message);
+        const publishResult = await publisher(message);
         publishedCount++;
-        const result = { index: messageIndex, message, success: true };
+        const serial =
+          publishResult?.serials?.[0] === undefined
+            ? undefined
+            : publishResult.serials[0];
+        const result = {
+          index: messageIndex,
+          message,
+          success: true,
+          ...(serial === undefined ? {} : { serial }),
+        };
         results.push(result);
         this.logCliEvent(
           flags,
@@ -362,7 +378,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
       });
 
       await this.publishMessages(args, flags, async (msg) => {
-        await channel.publish(msg);
+        return channel.publish(msg);
       });
     } catch (error) {
       this.fail(error, flags as BaseFlags, "channelPublish");
@@ -390,7 +406,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
       );
 
       await this.publishMessages(args, flags, async (msg) => {
-        await channel.publish(msg);
+        return channel.publish(msg);
       });
     } catch (error) {
       this.fail(error, flags as BaseFlags, "channelPublish");
