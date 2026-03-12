@@ -75,6 +75,7 @@ describe("apps:rules:create command", () => {
           mockNamespace({
             id: mockRuleId,
             persisted: true,
+            mutableMessages: true,
           }),
         );
 
@@ -85,6 +86,7 @@ describe("apps:rules:create command", () => {
 
       expect(stdout).toContain("Channel rule chat created.");
       expect(stdout).toContain("Persisted: Yes");
+      expect(stdout).toContain("Mutable Messages: Yes");
       expect(stderr).toContain("persistence is automatically enabled");
     });
 
@@ -128,7 +130,14 @@ describe("apps:rules:create command", () => {
         .post(`/v1/apps/${appId}/namespaces`, (body) => {
           return body.mutableMessages === true && body.persisted === true;
         })
-        .reply(201, mockNamespace({ id: mockRuleId, persisted: true }));
+        .reply(
+          201,
+          mockNamespace({
+            id: mockRuleId,
+            persisted: true,
+            mutableMessages: true,
+          }),
+        );
 
       const { stdout } = await runCommand(
         [
@@ -144,6 +153,7 @@ describe("apps:rules:create command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", true);
       expect(result.rule).toHaveProperty("persisted", true);
+      expect(result.rule).toHaveProperty("mutableMessages", true);
     });
   });
 

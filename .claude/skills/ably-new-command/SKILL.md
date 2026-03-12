@@ -303,6 +303,8 @@ if (!appId) {
 
 **Do NOT use `this.error()` directly** — it is an internal implementation detail of `fail`. Calling `this.error()` directly skips event logging and doesn't respect `--json` mode.
 
+**Safe to use `this.fail()` in both try and catch** — `this.fail()` automatically detects if the error was already processed by a prior `this.fail()` call (by checking for the `oclif` property) and re-throws it instead of double-processing. This means you can freely call `this.fail()` for validation inside a `try` block without worrying about the `catch` block calling `this.fail()` again.
+
 ### Pattern-specific implementation
 
 Read `references/patterns.md` for the full implementation template matching your pattern (Subscribe, Publish/Send, History, Enter/Presence, List, CRUD/Control API). Each template includes the correct flags, `run()` method structure, and output conventions.

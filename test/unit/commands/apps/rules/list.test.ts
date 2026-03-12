@@ -76,12 +76,14 @@ describe("apps:rules:list command", () => {
           mockNamespace({
             id: "mutable-chat",
             persisted: true,
+            mutableMessages: true,
           }),
         ]);
 
       const { stdout } = await runCommand(["apps:rules:list"], import.meta.url);
 
       expect(stdout).toContain("mutable-chat");
+      expect(stdout).toContain("Mutable Messages:");
     });
 
     it("should output JSON format when --json flag is used", async () => {

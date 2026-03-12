@@ -13,15 +13,13 @@ describe("apps:channel-rules:create alias", () => {
 
   it("should forward to apps:rules:create and produce the same output", async () => {
     const appId = getMockConfigManager().getCurrentAppId()!;
-    nockControl()
-      .post(`/v1/apps/${appId}/namespaces`)
-      .reply(201, {
-        id: "chat",
-        persisted: false,
-        pushEnabled: false,
-        created: Date.now(),
-        modified: Date.now(),
-      });
+    nockControl().post(`/v1/apps/${appId}/namespaces`).reply(201, {
+      id: "chat",
+      persisted: false,
+      pushEnabled: false,
+      created: Date.now(),
+      modified: Date.now(),
+    });
 
     const { stdout } = await runCommand(
       ["apps:channel-rules:create", "--name", "chat"],

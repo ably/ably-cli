@@ -25,9 +25,7 @@ describe("apps:channel-rules:delete alias", () => {
         },
       ]);
 
-    nockControl()
-      .delete(`/v1/apps/${appId}/namespaces/chat`)
-      .reply(204);
+    nockControl().delete(`/v1/apps/${appId}/namespaces/chat`).reply(204);
 
     const { stdout } = await runCommand(
       ["apps:channel-rules:delete", "chat", "--force"],

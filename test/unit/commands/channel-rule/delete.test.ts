@@ -18,9 +18,7 @@ describe("channel-rule:delete alias", () => {
       .get(`/v1/apps/${appId}/namespaces`)
       .reply(200, [mockNamespace({ id: "test-rule" })]);
 
-    nockControl()
-      .delete(`/v1/apps/${appId}/namespaces/test-rule`)
-      .reply(204);
+    nockControl().delete(`/v1/apps/${appId}/namespaces/test-rule`).reply(204);
 
     const { stdout } = await runCommand(
       ["channel-rule:delete", "test-rule", "--force"],

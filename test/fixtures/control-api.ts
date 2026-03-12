@@ -133,6 +133,7 @@ export interface MockNamespace {
   id: string;
   persisted: boolean;
   pushEnabled: boolean;
+  mutableMessages?: boolean;
   created: number;
   modified: number;
 }

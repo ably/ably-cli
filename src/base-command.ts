@@ -1478,6 +1478,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     component: string,
     context?: Record<string, unknown>,
   ): never {
+    // If error was already handled by a prior fail() call, re-throw it.
+    // This prevents double error output when fail() is called inside a try
+    // block (e.g., for validation) and the catch block also calls fail().
+    if (error instanceof Error && "oclif" in error) throw error;
+
     const cmdError = CommandError.from(error, context);
 
     this.logCliEvent(

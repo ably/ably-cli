@@ -25,15 +25,13 @@ describe("apps:channel-rules:update alias", () => {
         },
       ]);
 
-    nockControl()
-      .patch(`/v1/apps/${appId}/namespaces/chat`)
-      .reply(200, {
-        id: "chat",
-        persisted: true,
-        pushEnabled: false,
-        created: Date.now(),
-        modified: Date.now(),
-      });
+    nockControl().patch(`/v1/apps/${appId}/namespaces/chat`).reply(200, {
+      id: "chat",
+      persisted: true,
+      pushEnabled: false,
+      created: Date.now(),
+      modified: Date.now(),
+    });
 
     const { stdout } = await runCommand(
       ["apps:channel-rules:update", "chat", "--persisted"],
