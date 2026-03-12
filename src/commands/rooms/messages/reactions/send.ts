@@ -59,7 +59,7 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
         flags.count !== undefined &&
         flags.count <= 0
       ) {
-        this.fail(
+        return this.fail(
           "Count must be a positive integer for Multiple type reactions",
           flags,
           "roomMessageReactionSend",
@@ -71,7 +71,7 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
-        this.fail(
+        return this.fail(
           "Failed to create Chat client",
           flags,
           "roomMessageReactionSend",

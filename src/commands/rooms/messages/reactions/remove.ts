@@ -50,7 +50,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
       const chatClient = await this.createChatClient(flags);
 
       if (!chatClient) {
-        this.fail(
+        return this.fail(
           "Failed to create Chat client",
           flags,
           "roomMessageReactionRemove",

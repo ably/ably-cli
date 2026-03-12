@@ -37,7 +37,11 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
-        this.fail("Failed to create Chat client", flags, "roomOccupancyGet");
+        return this.fail(
+          "Failed to create Chat client",
+          flags,
+          "roomOccupancyGet",
+        );
       }
 
       const { room: roomName } = args;
