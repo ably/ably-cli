@@ -1,19 +1,19 @@
 import { Command } from "@oclif/core";
 
-import ChannelRulesDelete from "../apps/channel-rules/delete.js";
+import RulesDelete from "../apps/rules/delete.js";
 
 export default class ChannelRuleDelete extends Command {
-  static override args = ChannelRulesDelete.args;
-  static override description = 'Alias for "ably apps channel-rules delete"';
-  static override flags = ChannelRulesDelete.flags;
+  static override args = RulesDelete.args;
+  static override description = 'Alias for "ably apps rules delete"';
+  static override flags = RulesDelete.flags;
   static override hidden = true;
-
-  // Special property to identify this as an alias command
   static isAlias = true;
 
   async run(): Promise<void> {
-    // Forward to the channel-rules delete command
-    const command = new ChannelRulesDelete(this.argv, this.config);
+    this.warn(
+      '"channel-rule delete" is deprecated. Use "apps rules delete" instead.',
+    );
+    const command = new RulesDelete(this.argv, this.config);
     await command.run();
   }
 }

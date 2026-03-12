@@ -38,9 +38,11 @@ This document outlines the directory structure of the Ably CLI project.
 │   ├── commands/               # CLI commands (oclif)
 │   │   ├── accounts/           # Account management (login, logout, list, switch, current)
 │   │   ├── apps/               # App management (create, list, delete, switch, current, etc.)
+│   │   │   ├── rules/          # Channel rules / namespaces (primary path)
+│   │   │   └── channel-rules/  # Hidden alias → apps/rules/
 │   │   ├── auth/               # Authentication (keys, tokens)
 │   │   ├── bench/              # Benchmarking (publisher, subscriber)
-│   │   ├── channel-rule/       # Channel rules / namespaces
+│   │   ├── channel-rule/       # Hidden alias → apps/rules/
 │   │   ├── channels/           # Pub/Sub channels (publish, subscribe, presence, history, etc.)
 │   │   ├── config/             # CLI config management (show, path)
 │   │   ├── connections/        # Client connections (test)

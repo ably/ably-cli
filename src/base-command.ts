@@ -918,8 +918,8 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             message,
             timestamp: new Date().toISOString(),
           };
-          // Log directly using console.error for SDK operational errors
-          console.error(this.formatJsonOutput(errorData, flags));
+          // Log to stderr with standard JSON envelope for consistency
+          this.logToStderr(this.formatJsonRecord("log", errorData, flags));
         }
         // If not verbose JSON and level > 1, suppress non-error SDK logs
       } else {
@@ -1478,6 +1478,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     component: string,
     context?: Record<string, unknown>,
   ): never {
+    // If error was already handled by a prior fail() call, re-throw it.
+    // This prevents double error output when fail() is called inside a try
+    // block (e.g., for validation) and the catch block also calls fail().
+    if (error instanceof Error && "oclif" in error) throw error;
+
     const cmdError = CommandError.from(error, context);
 
     this.logCliEvent(
@@ -1497,7 +1502,16 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       this.exit(1);
     }
 
-    this.error(cmdError.message);
+    let humanMessage = cmdError.message;
+    const code = cmdError.code ?? cmdError.context.errorCode;
+    if (code !== undefined) {
+      const helpUrl = cmdError.context.helpUrl;
+      humanMessage += helpUrl
+        ? `\nAbly error code: ${code} (${helpUrl})`
+        : `\nAbly error code: ${code}`;
+    }
+
+    this.error(humanMessage);
   }
 
   /**

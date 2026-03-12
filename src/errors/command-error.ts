@@ -50,6 +50,7 @@ export class CommandError extends Error {
       const errWithCode = error as Error & {
         code?: number | string;
         statusCode?: number;
+        href?: string;
       };
 
       // Duck-type Ably ErrorInfo: has numeric code and statusCode
@@ -57,19 +58,27 @@ export class CommandError extends Error {
         typeof errWithCode.code === "number" &&
         typeof errWithCode.statusCode === "number"
       ) {
+        const errorContext: Record<string, unknown> = { ...context };
+        if (typeof errWithCode.href === "string") {
+          errorContext.helpUrl = errWithCode.href;
+        }
         return new CommandError(error.message, {
           code: errWithCode.code,
           statusCode: errWithCode.statusCode,
-          context,
+          context: errorContext,
           cause: error,
         });
       }
 
       // Error with numeric .code only
       if (typeof errWithCode.code === "number") {
+        const errorContext: Record<string, unknown> = { ...context };
+        if (typeof errWithCode.href === "string") {
+          errorContext.helpUrl = errWithCode.href;
+        }
         return new CommandError(error.message, {
           code: errWithCode.code,
-          context,
+          context: errorContext,
           cause: error,
         });
       }

@@ -89,6 +89,7 @@ For each changed command file, run the relevant checks. Spawn agents for paralle
 2. If found, use **LSP** `hover` on the call to confirm it's the oclif `this.error()` and not something else
 3. **Grep** for `this\.fail\(` and check component strings are camelCase — single-word lowercase (`"room"`, `"auth"`), multi-word camelCase (`"channelPublish"`, `"roomPresenceSubscribe"`). Flag PascalCase like `"ChannelPublish"` or kebab-case like `"web-cli"`.
 4. **Grep** for `this\.fail\(\s*new Error\(` — `this.fail()` accepts plain strings, so `new Error(...)` wrapping is unnecessary. Flag as a simplification opportunity.
+5. **Check** that catch blocks calling `this.fail()` do NOT include manual oclif error re-throw guards (`if (error instanceof Error && "oclif" in error) throw error`). The base class `fail()` method handles this automatically — manual guards are unnecessary boilerplate.
 
 **Output formatting check (grep/read — text patterns):**
 1. **Grep** for `chalk\.cyan\(` — should use `formatResource()` instead

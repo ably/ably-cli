@@ -211,7 +211,7 @@ Rules:
 - `formatProgress("Action text")` — appends `...` automatically, never add it manually
 - `formatSuccess("Completed action.")` — green checkmark, always end with `.` (period, not `!`)
 - `formatListening("Listening for X.")` — dim text, automatically appends "Press Ctrl+C to exit."
-- `formatResource(name)` — cyan colored, never use quotes around resource names
+- `formatResource(name)` — cyan colored, never use quotes around resource names. **Exception:** do not use `formatResource()` or any ANSI-producing helper inside `this.fail()` message strings — `fail()` passes the message into the JSON error envelope, where ANSI codes would corrupt the output. Use plain quoted strings in error messages instead.
 - `formatTimestamp(ts)` — dim `[timestamp]` for event streams
 - `formatClientId(id)` — blue, for client identity in events
 - `formatEventType(type)` — yellow, for event/action labels
@@ -302,6 +302,8 @@ if (!appId) {
 **In base class utility methods** (e.g., `createControlApi`, `createAblyRealtimeClient`, `parseJsonFlag`), use `this.fail()` for fatal errors — the same pattern as in command `run()` methods. The `fail()` method returns `never`, so TypeScript knows execution stops and won't require a return value after the call.
 
 **Do NOT use `this.error()` directly** — it is an internal implementation detail of `fail`. Calling `this.error()` directly skips event logging and doesn't respect `--json` mode.
+
+**Safe to use `this.fail()` in both try and catch** — `this.fail()` automatically detects if the error was already processed by a prior `this.fail()` call (by checking for the `oclif` property) and re-throws it instead of double-processing. This means you can freely call `this.fail()` for validation inside a `try` block without worrying about the `catch` block calling `this.fail()` again.
 
 ### Pattern-specific implementation
 

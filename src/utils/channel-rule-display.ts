@@ -1,6 +1,7 @@
 import chalk from "chalk";
 
 import type { Namespace } from "../services/control-api.js";
+import { formatLabel } from "./output.js";
 
 function boolField(value: boolean | undefined): string {
   return value ? chalk.green("Yes") : "No";
@@ -39,36 +40,44 @@ export function formatChannelRuleDetails(
   const lines: string[] = [];
 
   lines.push(
-    `${indent}Persisted: ${bool(rule.persisted)}`,
-    `${indent}Push Enabled: ${bool(rule.pushEnabled)}`,
+    `${indent}${formatLabel("Persisted")} ${bool(rule.persisted)}`,
+    `${indent}${formatLabel("Push Enabled")} ${bool(rule.pushEnabled)}`,
   );
 
   if (rule.mutableMessages !== undefined) {
-    lines.push(`${indent}Mutable Messages: ${bool(rule.mutableMessages)}`);
+    lines.push(
+      `${indent}${formatLabel("Mutable Messages")} ${bool(rule.mutableMessages)}`,
+    );
   }
 
   if (rule.authenticated !== undefined) {
-    lines.push(`${indent}Authenticated: ${bool(rule.authenticated)}`);
+    lines.push(
+      `${indent}${formatLabel("Authenticated")} ${bool(rule.authenticated)}`,
+    );
   }
 
   if (rule.persistLast !== undefined) {
     lines.push(
-      `${indent}Persist Last${bold ? " Message" : ""}: ${bool(rule.persistLast)}`,
+      `${indent}${formatLabel(`Persist Last${bold ? " Message" : ""}`)} ${bool(rule.persistLast)}`,
     );
   }
 
   if (rule.exposeTimeSerial !== undefined) {
-    lines.push(`${indent}Expose Time Serial: ${bool(rule.exposeTimeSerial)}`);
+    lines.push(
+      `${indent}${formatLabel("Expose Time Serial")} ${bool(rule.exposeTimeSerial)}`,
+    );
   }
 
   if (rule.populateChannelRegistry !== undefined) {
     lines.push(
-      `${indent}Populate Channel Registry: ${bool(rule.populateChannelRegistry)}`,
+      `${indent}${formatLabel("Populate Channel Registry")} ${bool(rule.populateChannelRegistry)}`,
     );
   }
 
   if (rule.batchingEnabled !== undefined) {
-    lines.push(`${indent}Batching Enabled: ${bool(rule.batchingEnabled)}`);
+    lines.push(
+      `${indent}${formatLabel("Batching Enabled")} ${bool(rule.batchingEnabled)}`,
+    );
   }
 
   if (
@@ -76,12 +85,14 @@ export function formatChannelRuleDetails(
     rule.batchingInterval !== 0
   ) {
     lines.push(
-      `${indent}Batching Interval: ${bold ? chalk.bold.green(`✓ ${rule.batchingInterval}`) : chalk.green(rule.batchingInterval.toString())}`,
+      `${indent}${formatLabel("Batching Interval")} ${bold ? chalk.bold.green(`✓ ${rule.batchingInterval}`) : chalk.green(rule.batchingInterval.toString())}`,
     );
   }
 
   if (rule.conflationEnabled !== undefined) {
-    lines.push(`${indent}Conflation Enabled: ${bool(rule.conflationEnabled)}`);
+    lines.push(
+      `${indent}${formatLabel("Conflation Enabled")} ${bool(rule.conflationEnabled)}`,
+    );
   }
 
   if (
@@ -89,24 +100,28 @@ export function formatChannelRuleDetails(
     rule.conflationInterval !== 0
   ) {
     lines.push(
-      `${indent}Conflation Interval: ${bold ? chalk.bold.green(`✓ ${rule.conflationInterval}`) : chalk.green(rule.conflationInterval.toString())}`,
+      `${indent}${formatLabel("Conflation Interval")} ${bold ? chalk.bold.green(`✓ ${rule.conflationInterval}`) : chalk.green(rule.conflationInterval.toString())}`,
     );
   }
 
   if (rule.conflationKey && rule.conflationKey !== "") {
     lines.push(
-      `${indent}Conflation Key: ${bold ? chalk.bold.green(`✓ ${rule.conflationKey}`) : chalk.green(rule.conflationKey)}`,
+      `${indent}${formatLabel("Conflation Key")} ${bold ? chalk.bold.green(`✓ ${rule.conflationKey}`) : chalk.green(rule.conflationKey)}`,
     );
   }
 
   if (rule.tlsOnly !== undefined) {
-    lines.push(`${indent}TLS Only: ${bool(rule.tlsOnly)}`);
+    lines.push(`${indent}${formatLabel("TLS Only")} ${bool(rule.tlsOnly)}`);
   }
 
   if (showTimestamps && formatDate) {
-    lines.push(`${indent}Created: ${formatDate(rule.created)}`);
+    lines.push(
+      `${indent}${formatLabel("Created")} ${formatDate(rule.created)}`,
+    );
     if (rule.modified) {
-      lines.push(`${indent}Updated: ${formatDate(rule.modified)}`);
+      lines.push(
+        `${indent}${formatLabel("Updated")} ${formatDate(rule.modified)}`,
+      );
     }
   }
 

@@ -1,19 +1,17 @@
 import { Command } from "@oclif/core";
 
-import ChannelRules from "../apps/channel-rules/index.js";
+import RulesIndex from "../apps/rules/index.js";
 
 export default class ChannelRule extends Command {
-  static override args = ChannelRules.args;
-  static override description = 'Alias for "ably apps channel-rules"';
-  static override flags = ChannelRules.flags;
+  static override args = RulesIndex.args;
+  static override description = 'Alias for "ably apps rules"';
+  static override flags = RulesIndex.flags;
   static override hidden = true;
-
-  // Special property to identify this as an alias command
   static isAlias = true;
 
   async run(): Promise<void> {
-    // Forward to the channel-rules command using static run method
-    // Direct forward since it's an alias
-    await ChannelRules.run(this.argv, this.config);
+    this.warn('"channel-rule" is deprecated. Use "apps rules" instead.');
+    const command = new RulesIndex(this.argv, this.config);
+    await command.run();
   }
 }
