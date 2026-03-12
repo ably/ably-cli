@@ -30,6 +30,17 @@ import { EventEmitter, type AblyEventEmitter } from "./ably-event-emitter.js";
 /**
  * Mock channel type with all common methods.
  */
+export interface MockRealtimeAnnotations {
+  subscribe: Mock;
+  unsubscribe: Mock;
+  publish: Mock;
+  delete: Mock;
+  // Internal emitter for simulating events
+  _emitter: AblyEventEmitter;
+  // Helper to emit annotation events
+  _emit: (annotation: unknown) => void;
+}
+
 export interface MockRealtimeChannel {
   name: string;
   state: string;
@@ -44,6 +55,7 @@ export interface MockRealtimeChannel {
   once: Mock;
   setOptions: Mock;
   presence: MockPresence;
+  annotations: MockRealtimeAnnotations;
   // Internal emitter for simulating events
   _emitter: AblyEventEmitter;
   // Helper to emit message events
@@ -162,6 +174,45 @@ function createMockPresence(): MockPresence {
 }
 
 /**
+ * Create a mock annotations object for a realtime channel.
+ */
+function createMockAnnotations(
+  onSubscribe: () => Promise<void> | void,
+): MockRealtimeAnnotations {
+  const emitter = new EventEmitter();
+
+  const annotations: MockRealtimeAnnotations = {
+    subscribe: vi.fn(async (typeOrCallback: unknown, callback?: unknown) => {
+      const cb = (callback ?? typeOrCallback) as (...args: unknown[]) => void;
+      const type = callback ? (typeOrCallback as string) : null;
+      emitter.on(type, cb);
+      await onSubscribe();
+    }),
+    unsubscribe: vi.fn((typeOrCallback?: unknown, callback?: unknown) => {
+      if (!typeOrCallback) {
+        emitter.off();
+      } else if (typeof typeOrCallback === "function") {
+        emitter.off(null, typeOrCallback as (...args: unknown[]) => void);
+      } else if (callback) {
+        emitter.off(
+          typeOrCallback as string,
+          callback as (...args: unknown[]) => void,
+        );
+      }
+    }),
+    publish: vi.fn().mockResolvedValue(),
+    delete: vi.fn().mockResolvedValue(),
+    _emitter: emitter,
+    _emit: (annotation: unknown) => {
+      const ann = annotation as Record<string, unknown>;
+      emitter.emit((ann.type as string) || "", annotation);
+    },
+  };
+
+  return annotations;
+}
+
+/**
  * Create a mock channel object.
  *
  * The `state` setter automatically emits state change events, so custom
@@ -242,6 +293,7 @@ function createMockChannel(name: string): MockRealtimeChannel {
     }),
     setOptions: vi.fn().mockImplementation(async () => {}),
     presence: createMockPresence(),
+    annotations: createMockAnnotations(() => channel.attach()),
     _emitter: emitter,
     _emit: (message: Message) => {
       emitter.emit(message.name || "", message);

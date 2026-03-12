@@ -3,7 +3,6 @@ import * as Ably from "ably";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
-import { BaseFlags } from "../../types/cli.js";
 import { prepareMessageFromInput } from "../../utils/message.js";
 import {
   formatProgress,
@@ -61,7 +60,7 @@ export default class ChannelsUpdate extends AblyBaseCommand {
     const serial = args.serial;
 
     try {
-      const rest = await this.createAblyRestClient(flags as BaseFlags);
+      const rest = await this.createAblyRestClient(flags);
       if (!rest) return;
 
       const channel = rest.channels.get(channelName);
@@ -111,7 +110,7 @@ export default class ChannelsUpdate extends AblyBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags as BaseFlags, "channelUpdate", {
+      this.fail(error, flags, "channelUpdate", {
         channel: channelName,
         serial,
       });
