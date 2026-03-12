@@ -177,6 +177,7 @@ export default class PushPublish extends AblyBaseCommand {
 
       // Add platform-specific overrides
       if (flags.apns) {
+<<<<<<< HEAD
         payload.apns = this.parseJsonObjectFlag(
           flags.apns,
           "--apns",

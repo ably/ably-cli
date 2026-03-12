@@ -12,6 +12,7 @@ import {
   formatProgress,
   formatResource,
   formatSuccess,
+  formatWarning,
 } from "../../../utils/output.js";
 
 export default class PushChannelsList extends AblyBaseCommand {
@@ -72,7 +73,7 @@ export default class PushChannelsList extends AblyBaseCommand {
       }
 
       if (subscriptions.length === 0) {
-        this.log("No subscriptions found.");
+        this.log(formatWarning("No subscriptions found."));
         return;
       }
 
