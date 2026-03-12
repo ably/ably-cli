@@ -137,6 +137,51 @@ describe("CommandError", () => {
       expect(result.statusCode).toBe(404);
       expect(result.context).toEqual({ appId: "abc" });
     });
+
+    it("should extract href as helpUrl from Ably ErrorInfo-like errors with code and statusCode", () => {
+      const ablyError = Object.assign(new Error("Unauthorized"), {
+        code: 40100,
+        statusCode: 401,
+        href: "https://help.ably.io/error/40100",
+      });
+      const result = CommandError.from(ablyError);
+      expect(result.code).toBe(40100);
+      expect(result.statusCode).toBe(401);
+      expect(result.context.helpUrl).toBe("https://help.ably.io/error/40100");
+    });
+
+    it("should extract href as helpUrl from errors with code only", () => {
+      const err = Object.assign(new Error("Connection failed"), {
+        code: 80003,
+        href: "https://help.ably.io/error/80003",
+      });
+      const result = CommandError.from(err);
+      expect(result.code).toBe(80003);
+      expect(result.context.helpUrl).toBe("https://help.ably.io/error/80003");
+    });
+
+    it("should merge href-derived helpUrl with provided context", () => {
+      const ablyError = Object.assign(new Error("Not Found"), {
+        code: 40400,
+        statusCode: 404,
+        href: "https://help.ably.io/error/40400",
+      });
+      const result = CommandError.from(ablyError, { appId: "abc" });
+      expect(result.code).toBe(40400);
+      expect(result.context).toEqual({
+        appId: "abc",
+        helpUrl: "https://help.ably.io/error/40400",
+      });
+    });
+
+    it("should not add helpUrl when href is absent", () => {
+      const ablyError = Object.assign(new Error("Unauthorized"), {
+        code: 40100,
+        statusCode: 401,
+      });
+      const result = CommandError.from(ablyError);
+      expect(result.context.helpUrl).toBeUndefined();
+    });
   });
 
   describe("toJsonData()", () => {

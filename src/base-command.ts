@@ -918,8 +918,8 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             message,
             timestamp: new Date().toISOString(),
           };
-          // Log directly using console.error for SDK operational errors
-          console.error(this.formatJsonOutput(errorData, flags));
+          // Log to stderr with standard JSON envelope for consistency
+          this.logToStderr(this.formatJsonRecord("log", errorData, flags));
         }
         // If not verbose JSON and level > 1, suppress non-error SDK logs
       } else {

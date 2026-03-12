@@ -10,6 +10,9 @@ export default class ChannelRulesDeleteCommand extends Command {
   static isAlias = true;
 
   async run(): Promise<void> {
+    this.warn(
+      '"apps channel-rules delete" is deprecated. Use "apps rules delete" instead.',
+    );
     const command = new RulesDelete(this.argv, this.config);
     await command.run();
   }

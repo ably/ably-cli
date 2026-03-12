@@ -10,6 +10,9 @@ export default class ChannelRuleUpdate extends Command {
   static isAlias = true;
 
   async run(): Promise<void> {
+    this.warn(
+      '"channel-rule update" is deprecated. Use "apps rules update" instead.',
+    );
     const command = new RulesUpdate(this.argv, this.config);
     await command.run();
   }

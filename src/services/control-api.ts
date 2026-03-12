@@ -1,6 +1,6 @@
 import fetch, { type RequestInit } from "node-fetch";
+import { CommandError } from "../errors/command-error.js";
 import { getCliVersion } from "../utils/version.js";
-import isTestMode from "../utils/test-mode.js";
 
 export interface ControlApiOptions {
   accessToken: string;
@@ -167,24 +167,10 @@ export interface MeResponse {
 export class ControlApi {
   private accessToken: string;
   private controlHost: string;
-  private logErrors: boolean;
 
   constructor(options: ControlApiOptions) {
     this.accessToken = options.accessToken;
     this.controlHost = options.controlHost || "control.ably.net";
-    // Respect SUPPRESS_CONTROL_API_ERRORS env var for default behavior
-    // Explicit options.logErrors will override the env var.
-    // eslint-disable-next-line unicorn/no-negated-condition
-    if (options.logErrors !== undefined) {
-      this.logErrors = options.logErrors;
-    } else {
-      // Determine logErrors based on environment variables
-      const suppressErrors =
-        process.env.SUPPRESS_CONTROL_API_ERRORS === "true" ||
-        process.env.CI === "true" ||
-        isTestMode();
-      this.logErrors = !suppressErrors;
-    }
   }
 
   // Ask a question to the Ably AI agent
@@ -545,24 +531,7 @@ export class ControlApi {
         /* Ignore parsing errors, keep as string */
       }
 
-      const errorDetails = {
-        message: `API request failed with status ${response.status}: ${response.statusText}`,
-        response: responseData, // Assign unknown type
-        statusCode: response.status,
-      };
-
-      // Log the error for debugging purposes, but not during tests
-      if (this.logErrors) {
-        console.error("Control API Request Error:", {
-          message: errorDetails.message,
-          method,
-          response: errorDetails.response || "No response body",
-          statusCode: errorDetails.statusCode,
-          url,
-        });
-      }
-
-      // Throw a more user-friendly error, including the message from the response if available
+      // Build a user-friendly error message, including the message from the response if available
       let errorMessage = `API request failed (${response.status} ${response.statusText})`;
       if (
         typeof responseData === "object" &&
@@ -578,7 +547,23 @@ export class ControlApi {
         // Include short string responses directly
         errorMessage += `: ${responseData}`;
       }
-      throw new Error(errorMessage);
+
+      // Extract structured error fields from the API response
+      const errorContext: Record<string, unknown> = {};
+      if (typeof responseData === "object" && responseData !== null) {
+        const data = responseData as Record<string, unknown>;
+        if (typeof data.code === "number") {
+          errorContext.errorCode = data.code;
+        }
+        if (typeof data.href === "string") {
+          errorContext.helpUrl = data.href;
+        }
+      }
+
+      throw new CommandError(errorMessage, {
+        statusCode: response.status,
+        context: errorContext,
+      });
     }
 
     if (response.status === 204) {

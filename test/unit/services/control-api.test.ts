@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import nock from "nock";
 import {
   nockControl,
   controlApiCleanup,
 } from "../../helpers/control-api-test-helpers.js";
 import { ControlApi } from "../../../src/services/control-api.js";
+import { CommandError } from "../../../src/errors/command-error.js";
 
 describe("ControlApi", function () {
   const accessToken = "test-access-token";
@@ -395,6 +396,87 @@ describe("ControlApi", function () {
       await expect(api.updateKey(appId, keyId, updateData)).rejects.toThrow(
         "Failed to update key",
       );
+    });
+  });
+
+  describe("structured error output", function () {
+    it("should throw CommandError instead of plain Error on API failure", async function () {
+      nock(`https://${controlHost}`)
+        .get("/v1/me")
+        .reply(400, { message: "Bad Request" });
+
+      await expect(api.getMe()).rejects.toBeInstanceOf(CommandError);
+    });
+
+    it("should preserve Ably errorCode and helpUrl from API response", async function () {
+      nock(`https://${controlHost}`).get("/v1/me").reply(400, {
+        message: "Unable to modify existing channel namespace id with POST",
+        code: 40300,
+        statusCode: 400,
+        href: "https://help.ably.io/error/40300",
+        details: null,
+      });
+
+      const error = await api.getMe().catch((error_) => error_);
+      const cmdError = error as CommandError;
+      expect(cmdError.statusCode).toBe(400);
+      expect(cmdError.context.errorCode).toBe(40300);
+      expect(cmdError.context.helpUrl).toBe("https://help.ably.io/error/40300");
+    });
+
+    it("should include errorCode and helpUrl in toJsonData() output", async function () {
+      nock(`https://${controlHost}`).get("/v1/me").reply(400, {
+        message: "Namespace not found",
+        code: 40400,
+        href: "https://help.ably.io/error/40400",
+      });
+
+      const error = await api.getMe().catch((error_) => error_);
+      const cmdError = error as CommandError;
+      const jsonData = cmdError.toJsonData();
+      expect(jsonData.statusCode).toBe(400);
+      expect(jsonData.errorCode).toBe(40400);
+      expect(jsonData.helpUrl).toBe("https://help.ably.io/error/40400");
+      expect(jsonData.error).toContain("Namespace not found");
+    });
+
+    it("should not include errorCode or helpUrl when API response lacks them", async function () {
+      nock(`https://${controlHost}`)
+        .get("/v1/me")
+        .reply(500, { message: "Internal Server Error" });
+
+      const error = await api.getMe().catch((error_) => error_);
+      const cmdError = error as CommandError;
+      expect(cmdError.statusCode).toBe(500);
+      expect(cmdError.context.errorCode).toBeUndefined();
+      expect(cmdError.context.helpUrl).toBeUndefined();
+    });
+
+    it("should not write to stderr on API failure", async function () {
+      const stderrSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      nock(`https://${controlHost}`).get("/v1/me").reply(400, {
+        message: "Bad Request",
+        code: 40300,
+        href: "https://help.ably.io/error/40300",
+      });
+
+      await api.getMe().catch(() => {});
+
+      expect(stderrSpy).not.toHaveBeenCalled();
+      stderrSpy.mockRestore();
+    });
+
+    it("should handle non-JSON error responses gracefully", async function () {
+      nock(`https://${controlHost}`).get("/v1/me").reply(502, "Bad Gateway");
+
+      const error = await api.getMe().catch((error_) => error_);
+      const cmdError = error as CommandError;
+      expect(cmdError).toBeInstanceOf(CommandError);
+      expect(cmdError.statusCode).toBe(502);
+      expect(cmdError.message).toContain("Bad Gateway");
+      expect(cmdError.context.errorCode).toBeUndefined();
+      expect(cmdError.context.helpUrl).toBeUndefined();
     });
   });
 });
