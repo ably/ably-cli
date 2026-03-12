@@ -5,70 +5,28 @@ import {
   controlApiCleanup,
 } from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
-import {
-  standardHelpTests,
-  standardArgValidationTests,
-  standardFlagTests,
-} from "../../../helpers/standard-tests.js";
+import { mockNamespace } from "../../../fixtures/control-api.js";
 
-describe("channel-rule:delete command (alias)", () => {
-  const mockRuleId = "test-rule";
-
+describe("channel-rule:delete alias", () => {
   afterEach(() => {
     controlApiCleanup();
   });
 
-  describe("functionality", () => {
-    it("should execute the same as apps:channel-rules:delete", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl()
-        .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, [
-          {
-            id: mockRuleId,
-            persisted: false,
-            pushEnabled: false,
-            created: Date.now(),
-            modified: Date.now(),
-          },
-        ]);
+  it("should forward to apps:rules:delete and produce the same output", async () => {
+    const appId = getMockConfigManager().getCurrentAppId()!;
+    nockControl()
+      .get(`/v1/apps/${appId}/namespaces`)
+      .reply(200, [mockNamespace({ id: "test-rule" })]);
 
-      nockControl()
-        .delete(`/v1/apps/${appId}/namespaces/${mockRuleId}`)
-        .reply(200, {});
+    nockControl()
+      .delete(`/v1/apps/${appId}/namespaces/test-rule`)
+      .reply(204);
 
-      const { stdout } = await runCommand(
-        ["channel-rule:delete", mockRuleId, "--force"],
-        import.meta.url,
-      );
+    const { stdout } = await runCommand(
+      ["channel-rule:delete", "test-rule", "--force"],
+      import.meta.url,
+    );
 
-      expect(stdout).toContain("deleted");
-    });
-
-    it("should require nameOrId argument", async () => {
-      const { error } = await runCommand(
-        ["channel-rule:delete", "--force"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Missing 1 required arg/);
-    });
-  });
-
-  standardHelpTests("channel-rule:delete", import.meta.url);
-  standardArgValidationTests("channel-rule:delete", import.meta.url, {
-    requiredArgs: ["nameOrId"],
-  });
-  standardFlagTests("channel-rule:delete", import.meta.url, ["--json"]);
-
-  describe("error handling", () => {
-    it("should require nameOrId argument", async () => {
-      const { error } = await runCommand(
-        ["channel-rule:delete", "--force"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-    });
+    expect(stdout).toContain("deleted");
   });
 });

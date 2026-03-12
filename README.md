@@ -77,15 +77,15 @@ $ ably-interactive
 * [`ably accounts logout [ALIAS]`](#ably-accounts-logout-alias)
 * [`ably accounts switch [ALIAS]`](#ably-accounts-switch-alias)
 * [`ably apps`](#ably-apps)
-* [`ably apps channel-rules`](#ably-apps-channel-rules)
-* [`ably apps channel-rules create`](#ably-apps-channel-rules-create)
-* [`ably apps channel-rules delete NAMEORID`](#ably-apps-channel-rules-delete-nameorid)
-* [`ably apps channel-rules list`](#ably-apps-channel-rules-list)
-* [`ably apps channel-rules update NAMEORID`](#ably-apps-channel-rules-update-nameorid)
 * [`ably apps create`](#ably-apps-create)
 * [`ably apps current`](#ably-apps-current)
 * [`ably apps delete [APPID]`](#ably-apps-delete-appid)
 * [`ably apps list`](#ably-apps-list)
+* [`ably apps rules`](#ably-apps-rules)
+* [`ably apps rules create`](#ably-apps-rules-create)
+* [`ably apps rules delete NAMEORID`](#ably-apps-rules-delete-nameorid)
+* [`ably apps rules list`](#ably-apps-rules-list)
+* [`ably apps rules update NAMEORID`](#ably-apps-rules-update-nameorid)
 * [`ably apps set-apns-p12 ID`](#ably-apps-set-apns-p12-id)
 * [`ably apps switch [APPID]`](#ably-apps-switch-appid)
 * [`ably apps update ID`](#ably-apps-update-id)
@@ -396,211 +396,22 @@ EXAMPLES
 
   $ ably apps set-apns-p12
 
-  $ ably apps channel-rules list
+  $ ably apps rules list
 
   $ ably apps switch my-app
 
 COMMANDS
-  ably apps channel-rules  Manage Ably channel rules (namespaces)
-  ably apps create         Create a new app
-  ably apps current        Show the currently selected app
-  ably apps delete         Delete an app
-  ably apps list           List all apps in the current account
-  ably apps set-apns-p12   Upload Apple Push Notification Service P12 certificate for an app
-  ably apps switch         Switch to a different Ably app
-  ably apps update         Update an app
+  ably apps create        Create a new app
+  ably apps current       Show the currently selected app
+  ably apps delete        Delete an app
+  ably apps list          List all apps in the current account
+  ably apps rules         Manage Ably channel rules (namespaces)
+  ably apps set-apns-p12  Upload Apple Push Notification Service P12 certificate for an app
+  ably apps switch        Switch to a different Ably app
+  ably apps update        Update an app
 ```
 
 _See code: [src/commands/apps/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/index.ts)_
-
-## `ably apps channel-rules`
-
-Manage Ably channel rules (namespaces)
-
-```
-USAGE
-  $ ably apps channel-rules
-
-DESCRIPTION
-  Manage Ably channel rules (namespaces)
-
-EXAMPLES
-  $ ably apps channel-rules list
-
-  $ ably apps channel-rules create --name "chat" --persisted
-
-  $ ably apps channel-rules update chat --mutable-messages
-
-  $ ably apps channel-rules update chat --push-enabled
-
-  $ ably apps channel-rules delete chat
-```
-
-_See code: [src/commands/apps/channel-rules/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/channel-rules/index.ts)_
-
-## `ably apps channel-rules create`
-
-Create a channel rule
-
-```
-USAGE
-  $ ably apps channel-rules create --name <value> [-v] [--json | --pretty-json] [--app <value>] [--authenticated]
-    [--batching-enabled] [--batching-interval <value>] [--conflation-enabled] [--conflation-interval <value>]
-    [--conflation-key <value>] [--expose-time-serial] [--mutable-messages] [--persist-last] [--persisted]
-    [--populate-channel-registry] [--push-enabled] [--tls-only]
-
-FLAGS
-  -v, --verbose                      Output verbose logs
-      --app=<value>                  The app ID or name (defaults to current app)
-      --authenticated                Whether channels matching this rule require clients to be authenticated
-      --batching-enabled             Whether to enable batching for messages on channels matching this rule
-      --batching-interval=<value>    The batching interval for messages on channels matching this rule
-      --conflation-enabled           Whether to enable conflation for messages on channels matching this rule
-      --conflation-interval=<value>  The conflation interval for messages on channels matching this rule
-      --conflation-key=<value>       The conflation key for messages on channels matching this rule
-      --expose-time-serial           Whether to expose the time serial for messages on channels matching this rule
-      --json                         Output in JSON format
-      --mutable-messages             Whether messages on channels matching this rule can be updated or deleted after
-                                     publishing. Automatically enables message persistence.
-      --name=<value>                 (required) Name of the channel rule
-      --persist-last                 Whether to persist only the last message on channels matching this rule
-      --persisted                    Whether messages on channels matching this rule should be persisted
-      --populate-channel-registry    Whether to populate the channel registry for channels matching this rule
-      --pretty-json                  Output in colorized JSON format
-      --push-enabled                 Whether push notifications should be enabled for channels matching this rule
-      --tls-only                     Whether to enforce TLS for channels matching this rule
-
-DESCRIPTION
-  Create a channel rule
-
-EXAMPLES
-  $ ably apps channel-rules create --name "chat" --persisted
-
-  $ ably apps channel-rules create --name "chat" --mutable-messages
-
-  $ ably apps channel-rules create --name "events" --push-enabled
-
-  $ ably apps channel-rules create --name "notifications" --persisted --push-enabled --app "My App"
-
-  $ ably apps channel-rules create --name "chat" --persisted --json
-```
-
-_See code: [src/commands/apps/channel-rules/create.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/channel-rules/create.ts)_
-
-## `ably apps channel-rules delete NAMEORID`
-
-Delete a channel rule
-
-```
-USAGE
-  $ ably apps channel-rules delete NAMEORID [-v] [--json | --pretty-json] [--app <value>] [-f]
-
-ARGUMENTS
-  NAMEORID  Name or ID of the channel rule to delete
-
-FLAGS
-  -f, --force        Force deletion without confirmation
-  -v, --verbose      Output verbose logs
-      --app=<value>  The app ID or name (defaults to current app)
-      --json         Output in JSON format
-      --pretty-json  Output in colorized JSON format
-
-DESCRIPTION
-  Delete a channel rule
-
-EXAMPLES
-  $ ably apps channel-rules delete chat
-
-  $ ably apps channel-rules delete events --app "My App"
-
-  $ ably apps channel-rules delete notifications --force
-
-  $ ably apps channel-rules delete chat --json
-
-  $ ably apps channel-rules delete chat --pretty-json
-```
-
-_See code: [src/commands/apps/channel-rules/delete.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/channel-rules/delete.ts)_
-
-## `ably apps channel-rules list`
-
-List channel rules for an app
-
-```
-USAGE
-  $ ably apps channel-rules list [-v] [--json | --pretty-json] [--app <value>]
-
-FLAGS
-  -v, --verbose      Output verbose logs
-      --app=<value>  The app ID or name (defaults to current app)
-      --json         Output in JSON format
-      --pretty-json  Output in colorized JSON format
-
-DESCRIPTION
-  List channel rules for an app
-
-EXAMPLES
-  $ ably apps:channel-rules:list
-
-  $ ably apps:channel-rules:list --app my-app-id
-
-  $ ably apps:channel-rules:list --json
-
-  $ ably apps:channel-rules:list --pretty-json
-```
-
-_See code: [src/commands/apps/channel-rules/list.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/channel-rules/list.ts)_
-
-## `ably apps channel-rules update NAMEORID`
-
-Update a channel rule
-
-```
-USAGE
-  $ ably apps channel-rules update NAMEORID [-v] [--json | --pretty-json] [--app <value>] [--authenticated]
-    [--batching-enabled] [--batching-interval <value>] [--conflation-enabled] [--conflation-interval <value>]
-    [--conflation-key <value>] [--expose-time-serial] [--mutable-messages] [--persist-last] [--persisted]
-    [--populate-channel-registry] [--push-enabled] [--tls-only]
-
-ARGUMENTS
-  NAMEORID  Name or ID of the channel rule to update
-
-FLAGS
-  -v, --verbose                         Output verbose logs
-      --app=<value>                     The app ID or name (defaults to current app)
-      --[no-]authenticated              Whether channels matching this rule require clients to be authenticated
-      --[no-]batching-enabled           Whether to enable batching for messages on channels matching this rule
-      --batching-interval=<value>       The batching interval for messages on channels matching this rule
-      --[no-]conflation-enabled         Whether to enable conflation for messages on channels matching this rule
-      --conflation-interval=<value>     The conflation interval for messages on channels matching this rule
-      --conflation-key=<value>          The conflation key for messages on channels matching this rule
-      --[no-]expose-time-serial         Whether to expose the time serial for messages on channels matching this rule
-      --json                            Output in JSON format
-      --[no-]mutable-messages           Whether messages on channels matching this rule can be updated or deleted after
-                                        publishing. Automatically enables message persistence.
-      --[no-]persist-last               Whether to persist only the last message on channels matching this rule
-      --[no-]persisted                  Whether messages on channels matching this rule should be persisted
-      --[no-]populate-channel-registry  Whether to populate the channel registry for channels matching this rule
-      --pretty-json                     Output in colorized JSON format
-      --[no-]push-enabled               Whether push notifications should be enabled for channels matching this rule
-      --[no-]tls-only                   Whether to enforce TLS for channels matching this rule
-
-DESCRIPTION
-  Update a channel rule
-
-EXAMPLES
-  $ ably apps channel-rules update chat --persisted
-
-  $ ably apps channel-rules update chat --mutable-messages
-
-  $ ably apps channel-rules update events --push-enabled=false
-
-  $ ably apps channel-rules update notifications --persisted --push-enabled --app "My App"
-
-  $ ably apps channel-rules update chat --persisted --json
-```
-
-_See code: [src/commands/apps/channel-rules/update.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/channel-rules/update.ts)_
 
 ## `ably apps create`
 
@@ -722,6 +533,193 @@ EXAMPLES
 ```
 
 _See code: [src/commands/apps/list.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/list.ts)_
+
+## `ably apps rules`
+
+Manage Ably channel rules (namespaces)
+
+```
+USAGE
+  $ ably apps rules
+
+DESCRIPTION
+  Manage Ably channel rules (namespaces)
+
+EXAMPLES
+  $ ably apps rules list
+
+  $ ably apps rules create --name "chat" --persisted
+
+  $ ably apps rules update chat --push-enabled
+
+  $ ably apps rules delete chat
+```
+
+_See code: [src/commands/apps/rules/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/rules/index.ts)_
+
+## `ably apps rules create`
+
+Create a channel rule
+
+```
+USAGE
+  $ ably apps rules create --name <value> [-v] [--json | --pretty-json] [--app <value>] [--authenticated]
+    [--batching-enabled] [--batching-interval <value>] [--conflation-enabled] [--conflation-interval <value>]
+    [--conflation-key <value>] [--expose-time-serial] [--mutable-messages] [--persist-last] [--persisted]
+    [--populate-channel-registry] [--push-enabled] [--tls-only]
+
+FLAGS
+  -v, --verbose                      Output verbose logs
+      --app=<value>                  The app ID or name (defaults to current app)
+      --authenticated                Whether channels matching this rule require clients to be authenticated
+      --batching-enabled             Whether to enable batching for messages on channels matching this rule
+      --batching-interval=<value>    The batching interval for messages on channels matching this rule
+      --conflation-enabled           Whether to enable conflation for messages on channels matching this rule
+      --conflation-interval=<value>  The conflation interval for messages on channels matching this rule
+      --conflation-key=<value>       The conflation key for messages on channels matching this rule
+      --expose-time-serial           Whether to expose the time serial for messages on channels matching this rule
+      --json                         Output in JSON format
+      --mutable-messages             Whether messages on channels matching this rule can be updated or deleted after
+                                     publishing. Automatically enables message persistence.
+      --name=<value>                 (required) Name of the channel rule
+      --persist-last                 Whether to persist only the last message on channels matching this rule
+      --persisted                    Whether messages on channels matching this rule should be persisted
+      --populate-channel-registry    Whether to populate the channel registry for channels matching this rule
+      --pretty-json                  Output in colorized JSON format
+      --push-enabled                 Whether push notifications should be enabled for channels matching this rule
+      --tls-only                     Whether to enforce TLS for channels matching this rule
+
+DESCRIPTION
+  Create a channel rule
+
+EXAMPLES
+  $ ably apps rules create --name "chat" --persisted
+
+  $ ably apps rules create --name "chat" --mutable-messages
+
+  $ ably apps rules create --name "events" --push-enabled
+
+  $ ably apps rules create --name "notifications" --persisted --push-enabled --app "My App"
+
+  $ ably apps rules create --name "chat" --persisted --json
+```
+
+_See code: [src/commands/apps/rules/create.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/rules/create.ts)_
+
+## `ably apps rules delete NAMEORID`
+
+Delete a channel rule
+
+```
+USAGE
+  $ ably apps rules delete NAMEORID [-v] [--json | --pretty-json] [--app <value>] [-f]
+
+ARGUMENTS
+  NAMEORID  Name or ID of the channel rule to delete
+
+FLAGS
+  -f, --force        Force deletion without confirmation
+  -v, --verbose      Output verbose logs
+      --app=<value>  The app ID or name (defaults to current app)
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
+
+DESCRIPTION
+  Delete a channel rule
+
+EXAMPLES
+  $ ably apps rules delete chat
+
+  $ ably apps rules delete events --app "My App"
+
+  $ ably apps rules delete notifications --force
+
+  $ ably apps rules delete chat --json
+
+  $ ably apps rules delete chat --pretty-json
+```
+
+_See code: [src/commands/apps/rules/delete.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/rules/delete.ts)_
+
+## `ably apps rules list`
+
+List channel rules for an app
+
+```
+USAGE
+  $ ably apps rules list [-v] [--json | --pretty-json] [--app <value>]
+
+FLAGS
+  -v, --verbose      Output verbose logs
+      --app=<value>  The app ID or name (defaults to current app)
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
+
+DESCRIPTION
+  List channel rules for an app
+
+EXAMPLES
+  $ ably apps rules list
+
+  $ ably apps rules list --app my-app-id
+
+  $ ably apps rules list --json
+
+  $ ably apps rules list --pretty-json
+```
+
+_See code: [src/commands/apps/rules/list.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/rules/list.ts)_
+
+## `ably apps rules update NAMEORID`
+
+Update a channel rule
+
+```
+USAGE
+  $ ably apps rules update NAMEORID [-v] [--json | --pretty-json] [--app <value>] [--authenticated]
+    [--batching-enabled] [--batching-interval <value>] [--conflation-enabled] [--conflation-interval <value>]
+    [--conflation-key <value>] [--expose-time-serial] [--mutable-messages] [--persist-last] [--persisted]
+    [--populate-channel-registry] [--push-enabled] [--tls-only]
+
+ARGUMENTS
+  NAMEORID  Name or ID of the channel rule to update
+
+FLAGS
+  -v, --verbose                         Output verbose logs
+      --app=<value>                     The app ID or name (defaults to current app)
+      --[no-]authenticated              Whether channels matching this rule require clients to be authenticated
+      --[no-]batching-enabled           Whether to enable batching for messages on channels matching this rule
+      --batching-interval=<value>       The batching interval for messages on channels matching this rule
+      --[no-]conflation-enabled         Whether to enable conflation for messages on channels matching this rule
+      --conflation-interval=<value>     The conflation interval for messages on channels matching this rule
+      --conflation-key=<value>          The conflation key for messages on channels matching this rule
+      --[no-]expose-time-serial         Whether to expose the time serial for messages on channels matching this rule
+      --json                            Output in JSON format
+      --[no-]mutable-messages           Whether messages on channels matching this rule can be updated or deleted after
+                                        publishing. Automatically enables message persistence.
+      --[no-]persist-last               Whether to persist only the last message on channels matching this rule
+      --[no-]persisted                  Whether messages on channels matching this rule should be persisted
+      --[no-]populate-channel-registry  Whether to populate the channel registry for channels matching this rule
+      --pretty-json                     Output in colorized JSON format
+      --[no-]push-enabled               Whether push notifications should be enabled for channels matching this rule
+      --[no-]tls-only                   Whether to enforce TLS for channels matching this rule
+
+DESCRIPTION
+  Update a channel rule
+
+EXAMPLES
+  $ ably apps rules update chat --persisted
+
+  $ ably apps rules update chat --mutable-messages
+
+  $ ably apps rules update events --push-enabled=false
+
+  $ ably apps rules update notifications --persisted --push-enabled --app "My App"
+
+  $ ably apps rules update chat --persisted --json
+```
+
+_See code: [src/commands/apps/rules/update.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/rules/update.ts)_
 
 ## `ably apps set-apns-p12 ID`
 

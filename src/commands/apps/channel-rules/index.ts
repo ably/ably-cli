@@ -1,16 +1,16 @@
-import { BaseTopicCommand } from "../../../base-topic-command.js";
+import { Command } from "@oclif/core";
 
-export default class ChannelRulesIndexCommand extends BaseTopicCommand {
-  protected topicName = "apps:channel-rules";
-  protected commandGroup = "channel rules";
+import RulesIndex from "../rules/index.js";
 
-  static description = "Manage Ably channel rules (namespaces)";
+export default class ChannelRulesIndexCommand extends Command {
+  static override args = RulesIndex.args;
+  static override description = 'Alias for "ably apps rules"';
+  static override flags = RulesIndex.flags;
+  static override hidden = true;
+  static isAlias = true;
 
-  static examples = [
-    "ably apps channel-rules list",
-    'ably apps channel-rules create --name "chat" --persisted',
-    "ably apps channel-rules update chat --mutable-messages",
-    "ably apps channel-rules update chat --push-enabled",
-    "ably apps channel-rules delete chat",
-  ];
+  async run(): Promise<void> {
+    const command = new RulesIndex(this.argv, this.config);
+    await command.run();
+  }
 }

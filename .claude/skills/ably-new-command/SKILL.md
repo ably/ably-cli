@@ -211,7 +211,7 @@ Rules:
 - `formatProgress("Action text")` — appends `...` automatically, never add it manually
 - `formatSuccess("Completed action.")` — green checkmark, always end with `.` (period, not `!`)
 - `formatListening("Listening for X.")` — dim text, automatically appends "Press Ctrl+C to exit."
-- `formatResource(name)` — cyan colored, never use quotes around resource names
+- `formatResource(name)` — cyan colored, never use quotes around resource names. **Exception:** do not use `formatResource()` or any ANSI-producing helper inside `this.fail()` message strings — `fail()` passes the message into the JSON error envelope, where ANSI codes would corrupt the output. Use plain quoted strings in error messages instead.
 - `formatTimestamp(ts)` — dim `[timestamp]` for event streams
 - `formatClientId(id)` — blue, for client identity in events
 - `formatEventType(type)` — yellow, for event/action labels
