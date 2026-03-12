@@ -153,7 +153,9 @@ export default class PushDevicesSave extends AblyBaseCommand {
           }
           recipient = {
             transportType,
-            deviceToken: flags["device-token"],
+            ...(transportType === "fcm"
+              ? { registrationToken: flags["device-token"] }
+              : { deviceToken: flags["device-token"] }),
           };
         }
 
@@ -225,8 +227,9 @@ export default class PushDevicesSave extends AblyBaseCommand {
       jsonString = fs.readFileSync(filePath, "utf8");
     }
 
+    let parsed: unknown;
     try {
-      return JSON.parse(jsonString) as Record<string, unknown>;
+      parsed = JSON.parse(jsonString);
     } catch {
       this.fail(
         "--data must be valid JSON or a path to a JSON file (prefixed with @)",
@@ -234,5 +237,15 @@ export default class PushDevicesSave extends AblyBaseCommand {
         "pushDeviceSave",
       );
     }
+
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      this.fail(
+        "--data must be a JSON object",
+        flags as BaseFlags,
+        "pushDeviceSave",
+      );
+    }
+
+    return parsed as Record<string, unknown>;
   }
 }

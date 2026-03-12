@@ -4,6 +4,7 @@ import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
 import { BaseFlags } from "../../../types/cli.js";
 import {
+  formatClientId,
   formatCountLabel,
   formatHeading,
   formatLabel,
@@ -11,6 +12,7 @@ import {
   formatProgress,
   formatResource,
   formatSuccess,
+  formatWarning,
 } from "../../../utils/output.js";
 
 export default class PushChannelsList extends AblyBaseCommand {
@@ -71,7 +73,7 @@ export default class PushChannelsList extends AblyBaseCommand {
       }
 
       if (subscriptions.length === 0) {
-        this.log("No subscriptions found.");
+        this.log(formatWarning("No subscriptions found."));
         return;
       }
 
@@ -90,7 +92,9 @@ export default class PushChannelsList extends AblyBaseCommand {
         if (sub.deviceId)
           this.log(`  ${formatLabel("Device ID")} ${sub.deviceId}`);
         if (sub.clientId)
-          this.log(`  ${formatLabel("Client ID")} ${sub.clientId}`);
+          this.log(
+            `  ${formatLabel("Client ID")} ${formatClientId(sub.clientId)}`,
+          );
         this.log("");
       }
 
