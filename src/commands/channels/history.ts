@@ -1,22 +1,19 @@
 import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
-import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../flags.js";
-import { formatMessageData } from "../../utils/json-formatter.js";
 import { buildHistoryParams } from "../../utils/history.js";
 import {
-  formatCountLabel,
   formatTimestamp,
   formatMessageTimestamp,
   formatIndex,
-  formatLabel,
-  formatClientId,
-  formatEventType,
-  formatLimitWarning,
+  formatCountLabel,
   formatResource,
+  formatLimitWarning,
+  formatMessagesOutput,
 } from "../../utils/output.js";
+import type { MessageDisplayFields } from "../../utils/output.js";
 
 export default class ChannelsHistory extends AblyBaseCommand {
   static override args = {
@@ -102,41 +99,29 @@ export default class ChannelsHistory extends AblyBaseCommand {
         );
         this.log("");
 
-        for (const [index, message] of messages.entries()) {
-          const timestampDisplay = message.timestamp
-            ? formatTimestamp(formatMessageTimestamp(message.timestamp))
-            : chalk.dim("[Unknown timestamp]");
+        const displayMessages: MessageDisplayFields[] = messages.map(
+          (message, index) => {
+            const ts = message.timestamp ?? Date.now();
+            return {
+              action:
+                message.action === undefined
+                  ? undefined
+                  : String(message.action),
+              channel: channelName,
+              clientId: message.clientId,
+              data: message.data,
+              event: message.name || "(none)",
+              id: message.id,
+              indexPrefix: `${formatIndex(index + 1)} ${formatTimestamp(formatMessageTimestamp(ts))}`,
+              serial: message.serial,
+              timestamp: ts,
+              version: message.version,
+              annotations: message.annotations,
+            };
+          },
+        );
 
-          this.log(`${formatIndex(index + 1)} ${timestampDisplay}`);
-          this.log(
-            `${formatLabel("Event")} ${formatEventType(message.name || "(none)")}`,
-          );
-
-          if (message.action !== undefined) {
-            this.log(
-              `${formatLabel("Action")} ${formatEventType(String(message.action))}`,
-            );
-          }
-
-          if (message.serial) {
-            this.log(`${formatLabel("Serial")} ${message.serial}`);
-          }
-
-          if (message.version) {
-            this.log(`${formatLabel("Version")} ${message.version}`);
-          }
-
-          if (message.clientId) {
-            this.log(
-              `${formatLabel("Client ID")} ${formatClientId(message.clientId)}`,
-            );
-          }
-
-          this.log(formatLabel("Data"));
-          this.log(formatMessageData(message.data));
-
-          this.log("");
-        }
+        this.log(formatMessagesOutput(displayMessages));
 
         const warning = formatLimitWarning(
           messages.length,

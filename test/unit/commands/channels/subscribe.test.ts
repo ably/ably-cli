@@ -92,6 +92,19 @@ describe("channels:subscribe command", () => {
         id: "msg-123",
         clientId: "publisher-client",
         connectionId: "conn-456",
+        serial: "sub-serial-1",
+        version: {
+          serial: "ver-serial-1",
+          timestamp: Date.now(),
+          clientId: "version-client",
+        },
+        annotations: {
+          summary: {
+            "reaction:distinct.v1": {
+              "👍": { total: 2, clientIds: ["c1", "c2"], clipped: false },
+            },
+          },
+        },
       });
 
       const { stdout } = await commandPromise;
@@ -100,6 +113,18 @@ describe("channels:subscribe command", () => {
       expect(stdout).toContain("test-channel");
       expect(stdout).toContain("Event: test-event");
       expect(stdout).toContain("hello world");
+      expect(stdout).toContain("Timestamp:");
+      expect(stdout).toContain("Channel:");
+      expect(stdout).toContain("ID:");
+      expect(stdout).toContain("msg-123");
+      expect(stdout).toContain("Client ID:");
+      expect(stdout).toContain("publisher-client");
+      expect(stdout).toContain("Data:");
+      expect(stdout).toContain("Version:");
+      expect(stdout).toContain("ver-serial-1");
+      expect(stdout).toContain("version-client");
+      expect(stdout).toContain("Annotations:");
+      expect(stdout).toContain("reaction:distinct.v1:");
     });
 
     it("should run with --json flag without errors", async () => {
@@ -133,23 +158,40 @@ describe("channels:subscribe command", () => {
           id: "msg-envelope-test",
           clientId: "client-1",
           connectionId: "conn-1",
+          serial: "envelope-serial-1",
+          version: {
+            serial: "envelope-ver-serial",
+            timestamp: Date.now(),
+            clientId: "envelope-ver-client",
+          },
+          annotations: {
+            summary: { "test:annotation": { count: 1 } },
+          },
         });
 
         await commandPromise;
       });
       const events = records.filter(
-        (r) => r.type === "event" && r.channel === "test-channel",
+        (r) =>
+          r.type === "event" &&
+          (r as Record<string, unknown>).message &&
+          ((r as Record<string, unknown>).message as Record<string, unknown>)
+            .channel === "test-channel",
       );
       expect(events.length).toBeGreaterThan(0);
       const record = events[0];
       expect(record).toHaveProperty("type", "event");
       expect(record).toHaveProperty("command", "channels:subscribe");
-      expect(record).toHaveProperty("channel", "test-channel");
-      expect(record).toHaveProperty("event", "greeting");
+      expect(record).toHaveProperty("message.channel", "test-channel");
+      expect(record).toHaveProperty("message.event", "greeting");
+      expect(record).toHaveProperty("message.id", "msg-envelope-test");
+      expect(record).toHaveProperty("message.serial");
+      expect(record).toHaveProperty("message.version");
+      expect(record).toHaveProperty("message.annotations");
     });
   });
 
-  describe("flag behavior", () => {
+  describe("flags", () => {
     it("should configure channel with rewind option", async () => {
       const mock = getMockAblyRealtime();
 
