@@ -71,7 +71,7 @@ describe("push:devices:save command", () => {
         [
           "push:devices:save",
           "--data",
-          '{"id":"device-2","platform":"android","formFactor":"tablet","push":{"recipient":{"transportType":"fcm","deviceToken":"tok"}}}',
+          '{"id":"device-2","platform":"android","formFactor":"tablet","push":{"recipient":{"transportType":"fcm","registrationToken":"tok"}}}',
         ],
         import.meta.url,
       );

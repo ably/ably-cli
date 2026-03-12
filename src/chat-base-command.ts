@@ -3,7 +3,6 @@ import { ChatClient, Room, RoomStatus } from "@ably/chat";
 import { AblyBaseCommand } from "./base-command.js";
 import { productApiFlags } from "./flags.js";
 import { BaseFlags } from "./types/cli.js";
-import chalk from "chalk";
 
 import {
   formatSuccess,

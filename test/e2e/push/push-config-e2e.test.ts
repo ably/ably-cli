@@ -41,23 +41,19 @@ describe("Push Config E2E Tests", () => {
       logErrors: false,
     });
 
-    try {
-      // Create a dedicated test app for push config tests
-      const appName = `E2E Push Config Test ${Date.now()}`;
-      const createResult = await runCommand(
-        ["apps", "create", "--name", appName, "--json"],
-        {
-          env: { ABLY_ACCESS_TOKEN: accessToken },
-        },
-      );
+    // Create a dedicated test app for push config tests
+    // Let setup failures propagate — only missing credentials should skip
+    const appName = `E2E Push Config Test ${Date.now()}`;
+    const createResult = await runCommand(
+      ["apps", "create", "--name", appName, "--json"],
+      {
+        env: { ABLY_ACCESS_TOKEN: accessToken },
+      },
+    );
 
-      const result = JSON.parse(createResult.stdout);
-      testAppId = result.app.id;
-      console.log(`Created test app for push config: ${testAppId}`);
-    } catch (error) {
-      console.error("Failed to create test app:", error);
-      shouldSkip = true;
-    }
+    const result = JSON.parse(createResult.stdout);
+    testAppId = result.app.id;
+    console.log(`Created test app for push config: ${testAppId}`);
   });
 
   afterAll(async () => {

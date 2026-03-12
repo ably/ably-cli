@@ -8,6 +8,7 @@ import {
   formatProgress,
   formatResource,
   formatSuccess,
+  formatWarning,
 } from "../../utils/output.js";
 
 export default class AppsSetApnsP12Command extends ControlBaseCommand {
@@ -49,9 +50,13 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(AppsSetApnsP12Command);
 
-    this.warn(
-      'This command is deprecated. Use "ably push config set-apns" instead.',
-    );
+    if (!this.shouldOutputJson(flags)) {
+      this.logToStderr(
+        formatWarning(
+          'This command is deprecated. Use "ably push config set-apns" instead.',
+        ),
+      );
+    }
 
     // Display authentication information
     this.showAuthInfoIfNeeded(flags);
