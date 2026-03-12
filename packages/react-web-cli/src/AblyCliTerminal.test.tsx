@@ -2557,3 +2557,74 @@ describe("AblyCliTerminal - Initial Command Execution", () => {
     expect(hasTestCmd).toBe(true);
   }, 15_000);
 });
+
+describe("AblyCliTerminal - Unmount cleanup", () => {
+  test("closes socket normally on unmount (no special code for resume support)", async () => {
+    mockClose.mockClear();
+
+    const { unmount } = render(
+      <AblyCliTerminal
+        websocketUrl={TEST_WEBSOCKET_URL}
+        signedConfig={DEFAULT_SIGNED_CONFIG}
+        signature={DEFAULT_SIGNATURE}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockSocketInstance).toBeTruthy();
+      expect(mockSocketInstance.readyState).toBe(WebSocket.OPEN);
+    });
+
+    unmount();
+
+    expect(mockClose).toHaveBeenCalledWith();
+  });
+
+  test("does not call close if socket already closing", async () => {
+    mockClose.mockClear();
+
+    const { unmount } = render(
+      <AblyCliTerminal
+        websocketUrl={TEST_WEBSOCKET_URL}
+        signedConfig={DEFAULT_SIGNED_CONFIG}
+        signature={DEFAULT_SIGNATURE}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockSocketInstance).toBeTruthy();
+      expect(mockSocketInstance.readyState).toBe(WebSocket.OPEN);
+    });
+
+    mockSocketInstance.readyState = WebSocket.CLOSING;
+
+    unmount();
+
+    expect(mockClose).not.toHaveBeenCalled();
+  });
+
+  test("terminateSession() sends close code 4001 for immediate cleanup", async () => {
+    mockClose.mockClear();
+    const terminalRef = React.createRef<AblyCliTerminalHandle>();
+
+    render(
+      <AblyCliTerminal
+        ref={terminalRef}
+        websocketUrl={TEST_WEBSOCKET_URL}
+        signedConfig={DEFAULT_SIGNED_CONFIG}
+        signature={DEFAULT_SIGNATURE}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockSocketInstance).toBeTruthy();
+      expect(mockSocketInstance.readyState).toBe(WebSocket.OPEN);
+    });
+
+    act(() => {
+      terminalRef.current?.terminateSession();
+    });
+
+    expect(mockClose).toHaveBeenCalledWith(4001, "user-closed-primary");
+  });
+});

@@ -142,6 +142,8 @@ export interface AblyCliTerminalHandle {
   setSplitPosition: (percent: number) => void;
   /** Read current split state. */
   getSplitState: () => { isSplit: boolean; splitPosition: number };
+  /** Terminate the session immediately. Call this before unmounting when user explicitly closes the panel. */
+  terminateSession: () => void;
 }
 
 // Use shared debug logging
@@ -340,6 +342,23 @@ const AblyCliTerminalInner = (
         setSplitPosition(clamped);
       },
       getSplitState: () => ({ isSplit, splitPosition }),
+      terminateSession: () => {
+        debugLog(
+          "[AblyCLITerminal] terminateSession called - closing with code 4001",
+        );
+        if (
+          socketReference.current &&
+          socketReference.current.readyState < WebSocket.CLOSING
+        ) {
+          socketReference.current.close(4001, "user-closed-primary");
+        }
+        if (
+          secondarySocketReference.current &&
+          secondarySocketReference.current.readyState < WebSocket.CLOSING
+        ) {
+          secondarySocketReference.current.close(4001, "user-closed-secondary");
+        }
+      },
     }),
     [
       enableSplitScreen,
@@ -2378,16 +2397,15 @@ const AblyCliTerminalInner = (
         term.current.dispose();
         term.current = null;
       }
+      grCancelReconnect();
       if (
         socketReference.current &&
         socketReference.current.readyState < WebSocket.CLOSING
       ) {
-        // close websocket
         debugLog("[AblyCLITerminal] Closing WebSocket on unmount.");
         socketReference.current.close();
       }
-      grResetState(); // Ensure global state is clean
-      clearConnectionTimeout(); // Clear any pending connection timeout
+      clearConnectionTimeout();
     };
   }, []); // Empty deps - this effect only runs once on mount to initialize the terminal
 
