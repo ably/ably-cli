@@ -1425,6 +1425,8 @@ EXAMPLES
   $ ably channels append my-channel "01234567890:0" '{"data":"appended"}' --description "Added context"
 
   $ ably channels append my-channel "01234567890:0" '{"data":"appended"}' --json
+
+  $ ably channels append my-channel "01234567890:0" '{"data":"appended"}' --pretty-json
 ```
 
 _See code: [src/commands/channels/append.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/append.ts)_
@@ -1503,6 +1505,8 @@ EXAMPLES
   $ ably channels delete my-channel "01234567890:0" --description "Removed by admin"
 
   $ ably channels delete my-channel "01234567890:0" --json
+
+  $ ably channels delete my-channel "01234567890:0" --pretty-json
 ```
 
 _See code: [src/commands/channels/delete.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/delete.ts)_
@@ -1941,6 +1945,8 @@ EXAMPLES
   $ ably channels update my-channel "01234567890:0" '{"data":"updated"}' --description "Corrected typo"
 
   $ ably channels update my-channel "01234567890:0" '{"data":"updated"}' --json
+
+  $ ably channels update my-channel "01234567890:0" '{"data":"updated"}' --pretty-json
 ```
 
 _See code: [src/commands/channels/update.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/update.ts)_

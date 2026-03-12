@@ -286,7 +286,12 @@ export default class ChannelsPublish extends AblyBaseCommand {
           "publish",
           "messagePublished",
           `Message ${messageIndex} published to channel ${args.channel}`,
-          { index: messageIndex, message, channel: args.channel },
+          {
+            index: messageIndex,
+            message,
+            channel: args.channel,
+            ...(serial === undefined ? {} : { serial }),
+          },
         );
         if (
           !this.shouldSuppressOutput(flags) &&
@@ -298,6 +303,9 @@ export default class ChannelsPublish extends AblyBaseCommand {
               `Message ${messageIndex} published to channel: ${formatResource(args.channel as string)}.`,
             ),
           );
+          if (serial) {
+            this.log(`  Serial: ${formatResource(serial)}`);
+          }
         }
       } catch (error) {
         errorCount++;

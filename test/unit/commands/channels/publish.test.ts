@@ -224,6 +224,29 @@ describe("ChannelsPublish", function () {
       expect(realtimeChannel.publish).not.toHaveBeenCalled();
     });
 
+    it("should include serial in per-message output for multi-message publish", async function () {
+      const restMock = getMockAblyRest();
+      restMock.channels._getChannel("test-channel");
+
+      const { stdout } = await runCommand(
+        [
+          "channels:publish",
+          "test-channel",
+          '{"data":"count test"}',
+          "--transport",
+          "rest",
+          "--count",
+          "2",
+          "--delay",
+          "0",
+        ],
+        import.meta.url,
+      );
+
+      // Each message should show its serial
+      expect(stdout).toContain("mock-serial-001");
+    });
+
     describe("message delay and ordering", function () {
       it("should publish messages with delay", async function () {
         const realtimeMock = getMockAblyRealtime();

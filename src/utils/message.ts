@@ -37,6 +37,15 @@ export function prepareMessageFromInput(
     delete messageData.name;
   }
 
+  if (
+    messageData.extras &&
+    typeof messageData.extras === "object" &&
+    Object.keys(messageData.extras).length > 0
+  ) {
+    message.extras = messageData.extras;
+    delete messageData.extras;
+  }
+
   if ("data" in messageData) {
     message.data = messageData.data;
   } else if (Object.keys(messageData).length > 0) {

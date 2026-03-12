@@ -127,6 +127,28 @@ describe("channels:append command", () => {
       });
     });
 
+    it("should preserve extras from message data", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+
+      await runCommand(
+        [
+          "channels:append",
+          "test-channel",
+          "serial-001",
+          '{"data":"hello","extras":{"push":{"notification":{"title":"Test","body":"Push"}}}}',
+        ],
+        import.meta.url,
+      );
+
+      const sentMessage = channel.appendMessage.mock.calls[0][0];
+      expect(sentMessage).toHaveProperty("data", "hello");
+      expect(sentMessage).toHaveProperty("extras");
+      expect(sentMessage.extras).toEqual({
+        push: { notification: { title: "Test", body: "Push" } },
+      });
+    });
+
     it("should not pass operation when no description provided", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
