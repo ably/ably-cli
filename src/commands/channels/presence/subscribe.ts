@@ -7,12 +7,10 @@ import {
   formatProgress,
   formatResource,
   formatSuccess,
-  formatTimestamp,
   formatMessageTimestamp,
-  formatLabel,
-  formatClientId,
-  formatEventType,
+  formatPresenceOutput,
 } from "../../../utils/output.js";
+import type { PresenceDisplayFields } from "../../../utils/output.js";
 
 export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
   static override args = {
@@ -83,42 +81,36 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
 
       channel.presence.subscribe((presenceMessage: Ably.PresenceMessage) => {
         const timestamp = formatMessageTimestamp(presenceMessage.timestamp);
-        const event = {
+        const presenceData = {
+          id: presenceMessage.id,
+          timestamp,
           action: presenceMessage.action,
           channel: channelName,
           clientId: presenceMessage.clientId,
           connectionId: presenceMessage.connectionId,
           data: presenceMessage.data,
-          id: presenceMessage.id,
-          timestamp,
         };
         this.logCliEvent(
           flags,
           "presence",
           presenceMessage.action!,
           `Presence event: ${presenceMessage.action} by ${presenceMessage.clientId}`,
-          event,
+          presenceData,
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonEvent(event, flags);
+          this.logJsonEvent({ presenceMessage: presenceData }, flags);
         } else {
-          const action = presenceMessage.action || "unknown";
-          const clientId = presenceMessage.clientId || "Unknown";
-
-          this.log(
-            `${formatTimestamp(timestamp)} ${formatResource(`Channel: ${channelName}`)} | Action: ${formatEventType(action)} | Client: ${formatClientId(clientId)}`,
-          );
-
-          if (
-            presenceMessage.data !== null &&
-            presenceMessage.data !== undefined
-          ) {
-            this.log(
-              `${formatLabel("Data")} ${JSON.stringify(presenceMessage.data, null, 2)}`,
-            );
-          }
-
+          const displayFields: PresenceDisplayFields = {
+            id: presenceMessage.id,
+            timestamp: presenceMessage.timestamp ?? Date.now(),
+            action: presenceMessage.action || "unknown",
+            channel: channelName,
+            clientId: presenceMessage.clientId,
+            connectionId: presenceMessage.connectionId,
+            data: presenceMessage.data,
+          };
+          this.log(formatPresenceOutput([displayFields]));
           this.log(""); // Empty line for better readability
         }
       });
@@ -130,6 +122,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
           ),
         );
         this.log(formatListening("Listening for presence events."));
+        this.log("");
       }
 
       this.logCliEvent(

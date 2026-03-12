@@ -7,18 +7,16 @@ import {
   productApiFlags,
   rewindFlag,
 } from "../../flags.js";
-import { formatMessageData } from "../../utils/json-formatter.js";
 import {
   formatListening,
   formatProgress,
   formatResource,
   formatSuccess,
-  formatTimestamp,
   formatMessageTimestamp,
   formatIndex,
-  formatLabel,
-  formatEventType,
+  formatMessagesOutput,
 } from "../../utils/output.js";
+import type { MessageDisplayFields } from "../../utils/output.js";
 
 export default class ChannelsSubscribe extends AblyBaseCommand {
   static override args = {
@@ -194,19 +192,20 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
         channel.subscribe((message: Ably.Message) => {
           this.sequenceCounter++;
           const timestamp = formatMessageTimestamp(message.timestamp);
-          const messageEvent = {
+          const messageData = {
+            id: message.id,
+            timestamp,
             channel: channel.name,
+            event: message.name || "(none)",
             clientId: message.clientId,
             connectionId: message.connectionId,
             data: message.data,
             encoding: message.encoding,
-            event: message.name || "(none)",
-            id: message.id,
-            timestamp,
             action:
               message.action === undefined ? undefined : String(message.action),
             serial: message.serial,
             version: message.version,
+            annotations: message.annotations,
             ...(flags["sequence-numbers"]
               ? { sequence: this.sequenceCounter }
               : {}),
@@ -216,42 +215,40 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
             "subscribe",
             "messageReceived",
             `Received message on channel ${channel.name}`,
-            messageEvent,
+            messageData,
           );
 
           if (this.shouldOutputJson(flags)) {
-            this.logJsonEvent(messageEvent, flags);
-          } else {
-            const name = message.name || "(none)";
-            const sequencePrefix = flags["sequence-numbers"]
-              ? `${formatIndex(this.sequenceCounter)}`
-              : "";
-
-            // Message header with timestamp and channel info
-            this.log(
-              `${formatTimestamp(timestamp)}${sequencePrefix} ${formatResource(`Channel: ${channel.name}`)} | Event: ${formatEventType(name)}`,
+            this.logJsonEvent(
+              {
+                message: messageData,
+                ...(flags["sequence-numbers"]
+                  ? { sequence: this.sequenceCounter }
+                  : {}),
+              },
+              flags,
             );
-
-            // Action, serial, version
-            if (message.action !== undefined) {
-              this.log(
-                `${formatLabel("Action")} ${formatEventType(String(message.action))}`,
-              );
-            }
-
-            if (message.serial) {
-              this.log(`${formatLabel("Serial")} ${message.serial}`);
-            }
-
-            if (message.version) {
-              this.log(`${formatLabel("Version")} ${message.version}`);
-            }
-
-            // Message data with consistent formatting
-            this.log(formatLabel("Data"));
-            this.log(formatMessageData(message.data));
-
-            this.log(""); // Empty line for better readability
+          } else {
+            const msgFields: MessageDisplayFields = {
+              action:
+                message.action === undefined
+                  ? undefined
+                  : String(message.action),
+              channel: channel.name,
+              clientId: message.clientId,
+              data: message.data,
+              event: message.name || "(none)",
+              id: message.id,
+              serial: message.serial,
+              timestamp: message.timestamp ?? Date.now(),
+              version: message.version,
+              annotations: message.annotations,
+              ...(flags["sequence-numbers"]
+                ? { sequencePrefix: `${formatIndex(this.sequenceCounter)} ` }
+                : {}),
+            };
+            this.log(formatMessagesOutput([msgFields]));
+            this.log(""); // Empty line for readability between messages
           }
         });
       }
@@ -279,6 +276,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
         }
 
         this.log(formatListening("Listening for messages."));
+        this.log("");
       }
 
       this.logCliEvent(

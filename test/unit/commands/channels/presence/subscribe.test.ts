@@ -91,10 +91,18 @@ describe("channels:presence:subscribe command", () => {
 
       const { stdout } = await commandPromise;
 
-      // Should show presence event output with action, client, and data
+      // Should show presence event output with structured fields
       expect(stdout).toContain("test-channel");
+      expect(stdout).toContain("ID:");
+      expect(stdout).toContain("presence-msg-123");
+      expect(stdout).toContain("Timestamp:");
       expect(stdout).toContain("Action: enter");
-      expect(stdout).toContain("Client: other-client");
+      expect(stdout).toContain("Channel:");
+      expect(stdout).toContain("Client ID:");
+      expect(stdout).toContain("other-client");
+      expect(stdout).toContain("Connection ID:");
+      expect(stdout).toContain("conn-123");
+      expect(stdout).toContain("Data:");
       expect(stdout).toContain("online");
     });
 

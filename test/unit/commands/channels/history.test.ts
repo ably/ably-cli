@@ -21,6 +21,23 @@ describe("channels:history command", () => {
           timestamp: 1700000000000,
           clientId: "client-1",
           connectionId: "conn-1",
+          serial: "01700000000000-000@abc123:000",
+          version: {
+            serial: "v1-serial",
+            timestamp: 1700000000000,
+            clientId: "updater-1",
+          },
+          annotations: {
+            summary: {
+              "reaction:distinct.v1": {
+                "👍": {
+                  total: 3,
+                  clientIds: ["c1", "c2", "c3"],
+                  clipped: false,
+                },
+              },
+            },
+          },
         },
         {
           id: "msg-2",
@@ -57,9 +74,11 @@ describe("channels:history command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Found");
-      expect(stdout).toContain("2");
-      expect(stdout).toContain("messages");
+      expect(stdout).toContain("Timestamp:");
+      expect(stdout).toContain("Channel:");
+      expect(stdout).toContain("test-channel");
+      expect(stdout).toContain("[1]");
+      expect(stdout).toContain("[2]");
       expect(channel.history).toHaveBeenCalled();
     });
 
@@ -69,9 +88,31 @@ describe("channels:history command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("test-event");
+      expect(stdout).toContain("Event: test-event");
       expect(stdout).toContain("Hello world");
+      expect(stdout).toContain("Client ID:");
       expect(stdout).toContain("client-1");
+      expect(stdout).toContain("ID:");
+      expect(stdout).toContain("msg-1");
+    });
+
+    it("should display version fields when present", async () => {
+      const { stdout } = await runCommand(
+        ["channels:history", "test-channel"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("Version:");
+      expect(stdout).toContain("v1-serial");
+      expect(stdout).toContain("updater-1");
+    });
+
+    it("should display annotations summary when present", async () => {
+      const { stdout } = await runCommand(
+        ["channels:history", "test-channel"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("Annotations:");
+      expect(stdout).toContain("reaction:distinct.v1:");
     });
 
     it("should display message versioning metadata", async () => {

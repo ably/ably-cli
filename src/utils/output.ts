@@ -1,4 +1,7 @@
+import type * as Ably from "ably";
 import chalk, { type ChalkInstance } from "chalk";
+
+import { formatMessageData, isJsonData } from "./json-formatter.js";
 
 export function formatProgress(message: string): string {
   return `${message}...`;
@@ -90,6 +93,167 @@ export function formatHeading(text: string): string {
 /** Index number display — dim bracketed number for history/list ordering */
 export function formatIndex(n: number): string {
   return chalk.dim(`[${n}]`);
+}
+
+export interface MessageDisplayFields {
+  action?: string;
+  channel: string;
+  clientId?: string;
+  data: unknown;
+  event: string;
+  id?: string;
+  indexPrefix?: string;
+  sequencePrefix?: string;
+  serial?: string;
+  timestamp: number;
+  version?: Ably.MessageVersion;
+  annotations?: Ably.MessageAnnotations;
+}
+
+export function formatMessagesOutput(messages: MessageDisplayFields[]): string {
+  if (messages.length === 0) {
+    return "No messages found.";
+  }
+
+  const blocks: string[] = [];
+
+  for (const msg of messages) {
+    const lines: string[] = [];
+
+    if (msg.indexPrefix) {
+      lines.push(msg.indexPrefix);
+    } else {
+      lines.push(formatTimestamp(new Date(msg.timestamp).toISOString()));
+    }
+
+    if (msg.id) {
+      lines.push(`${formatLabel("ID")} ${msg.id}`);
+    }
+
+    const timestampLine = msg.sequencePrefix
+      ? `${msg.sequencePrefix}${formatLabel("Timestamp")} ${msg.timestamp}`
+      : `${formatLabel("Timestamp")} ${msg.timestamp}`;
+    lines.push(
+      timestampLine,
+      `${formatLabel("Channel")} ${formatResource(msg.channel)}`,
+      `${formatLabel("Event")} ${formatEventType(msg.event)}`,
+    );
+
+    if (msg.action) {
+      lines.push(`${formatLabel("Action")} ${formatEventType(msg.action)}`);
+    }
+
+    if (msg.clientId) {
+      lines.push(`${formatLabel("Client ID")} ${formatClientId(msg.clientId)}`);
+    }
+
+    if (msg.serial) {
+      lines.push(`${formatLabel("Serial")} ${msg.serial}`);
+    }
+
+    if (
+      msg.version &&
+      typeof msg.version === "object" &&
+      "serial" in msg.version &&
+      msg.version.serial &&
+      msg.version.serial !== msg.serial
+    ) {
+      lines.push(
+        `${formatLabel("Version")}`,
+        `  ${formatLabel("Serial")} ${msg.version.serial}`,
+      );
+      if (msg.version.timestamp !== undefined) {
+        lines.push(`  ${formatLabel("Timestamp")} ${msg.version.timestamp}`);
+      }
+      if (msg.version.clientId) {
+        lines.push(
+          `  ${formatLabel("Client ID")} ${formatClientId(msg.version.clientId)}`,
+        );
+      }
+    }
+
+    if (
+      msg.annotations &&
+      msg.annotations.summary &&
+      Object.keys(msg.annotations.summary).length > 0
+    ) {
+      lines.push(`${formatLabel("Annotations")}`);
+      for (const [annotationType, value] of Object.entries(
+        msg.annotations.summary,
+      )) {
+        lines.push(
+          `  ${formatLabel(annotationType)}`,
+          `    ${formatMessageData(value)}`,
+        );
+      }
+    }
+
+    if (isJsonData(msg.data)) {
+      lines.push(`${formatLabel("Data")}`, formatMessageData(msg.data));
+    } else {
+      lines.push(`${formatLabel("Data")} ${String(msg.data)}`);
+    }
+
+    blocks.push(lines.join("\n"));
+  }
+
+  return blocks.join("\n\n");
+}
+
+export interface PresenceDisplayFields {
+  id?: string;
+  timestamp: number;
+  action: string;
+  channel: string;
+  clientId?: string;
+  connectionId?: string;
+  data?: unknown;
+}
+
+export function formatPresenceOutput(
+  messages: PresenceDisplayFields[],
+): string {
+  if (messages.length === 0) {
+    return "No presence events found.";
+  }
+
+  const blocks: string[] = [];
+
+  for (const msg of messages) {
+    const lines: string[] = [];
+
+    lines.push(formatTimestamp(new Date(msg.timestamp).toISOString()));
+
+    if (msg.id) {
+      lines.push(`${formatLabel("ID")} ${msg.id}`);
+    }
+
+    lines.push(
+      `${formatLabel("Timestamp")} ${msg.timestamp}`,
+      `${formatLabel("Action")} ${formatEventType(msg.action)}`,
+      `${formatLabel("Channel")} ${formatResource(msg.channel)}`,
+    );
+
+    if (msg.clientId) {
+      lines.push(`${formatLabel("Client ID")} ${formatClientId(msg.clientId)}`);
+    }
+
+    if (msg.connectionId) {
+      lines.push(`${formatLabel("Connection ID")} ${msg.connectionId}`);
+    }
+
+    if (msg.data !== null && msg.data !== undefined) {
+      if (isJsonData(msg.data)) {
+        lines.push(`${formatLabel("Data")}`, formatMessageData(msg.data));
+      } else {
+        lines.push(`${formatLabel("Data")} ${String(msg.data)}`);
+      }
+    }
+
+    blocks.push(lines.join("\n"));
+  }
+
+  return blocks.join("\n\n");
 }
 
 export type JsonRecordType = "error" | "event" | "log" | "result";
