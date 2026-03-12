@@ -10,8 +10,17 @@ export interface ControlApiOptions {
 
 export interface App {
   accountId: string;
+  apnsAuthType?: string | null;
+  apnsCertificate?: string | null;
+  apnsIssuerKey?: string | null;
+  apnsPrivateKey?: string | null;
+  apnsSigningKey?: string | null;
+  apnsSigningKeyId?: string | null;
+  apnsTopicHeader?: string | null;
+  apnsUseSandboxEndpoint?: boolean | null;
   apnsUsesSandboxCert?: boolean;
   created: number;
+  fcmServiceAccount?: string | null;
   id: string;
   modified: number;
   name: string;
@@ -414,11 +423,7 @@ export class ControlApi {
   }
 
   // Update an app
-  async updateApp(
-    appId: string,
-    appData: { name?: string; tlsOnly?: boolean },
-  ): Promise<App> {
-    // Update app uses /apps/{appId} path
+  async updateApp(appId: string, appData: Partial<App>): Promise<App> {
     return this.request<App>(`/apps/${appId}`, "PATCH", appData);
   }
 

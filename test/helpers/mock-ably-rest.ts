@@ -84,14 +84,17 @@ export interface MockPush {
     publish: Mock;
     channelSubscriptions: {
       list: Mock;
+      listChannels: Mock;
       save: Mock;
       remove: Mock;
+      removeWhere: Mock;
     };
     deviceRegistrations: {
       list: Mock;
       get: Mock;
       save: Mock;
       remove: Mock;
+      removeWhere: Mock;
     };
   };
 }
@@ -217,14 +220,17 @@ function createMockPush(): MockPush {
       publish: vi.fn().mockImplementation(async () => {}),
       channelSubscriptions: {
         list: vi.fn().mockResolvedValue({ items: [] }),
+        listChannels: vi.fn().mockResolvedValue({ items: [] }),
         save: vi.fn().mockImplementation(async () => {}),
         remove: vi.fn().mockImplementation(async () => {}),
+        removeWhere: vi.fn().mockImplementation(async () => {}),
       },
       deviceRegistrations: {
         list: vi.fn().mockResolvedValue({ items: [] }),
         get: vi.fn().mockResolvedValue(null),
         save: vi.fn().mockImplementation(async () => {}),
         remove: vi.fn().mockImplementation(async () => {}),
+        removeWhere: vi.fn().mockImplementation(async () => {}),
       },
     },
   };

@@ -71,6 +71,9 @@ export const WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS = [
   "integrations*",
   "queues*",
 
+  // Push notification management is not available to anonymous users
+  "push*",
+
   // Stats commands expose account/app usage data
   "stats*",
 ];

@@ -48,6 +48,10 @@ This document outlines the directory structure of the Ably CLI project.
 │   │   ├── connections/        # Client connections (test)
 │   │   ├── integrations/       # Integration rules
 │   │   ├── logs/               # Log streams (subscribe, history, push subscribe)
+│   │   ├── push/              # Push notifications
+│   │   │   ├── config/        # Push config (show, set-apns, set-fcm, clear-apns, clear-fcm)
+│   │   │   ├── devices/       # Device registrations (list, get, save, remove, remove-where)
+│   │   │   └── channels/      # Channel subscriptions (list, list-channels, save, remove, remove-where)
 │   │   ├── queues/             # Queue management
 │   │   ├── rooms/              # Ably Chat rooms (send, subscribe, presence, reactions, typing, etc.)
 │   │   ├── spaces/             # Ably Spaces (members, cursors, locations, locks)
@@ -112,7 +116,8 @@ This document outlines the directory structure of the Ably CLI project.
 │   │   ├── standard-tests.ts        # Standard test generators for the 5 required describe blocks
 │   │   └── control-api-test-helpers.ts # Shared helpers for Control API nock tests (nockControl, getControlApiContext)
 │   ├── fixtures/                 # Mock data factories
-│   │   └── control-api.ts           # Mock factory functions for Control API response bodies (mockApp, mockKey, mockRule, mockQueue, mockNamespace, mockStats)
+│   │   ├── control-api.ts           # Mock factory functions for Control API response bodies (mockApp, mockKey, mockRule, mockQueue, mockNamespace, mockStats)
+│   │   └── push/                    # Push notification test fixtures (P8 key, FCM service account)
 │   ├── unit/                   # Fast, mocked tests
 │   │   ├── setup.ts            # Unit test setup
 │   │   ├── base/               # Base command class tests
@@ -139,6 +144,7 @@ This document outlines the directory structure of the Ably CLI project.
 │   │   ├── interactive/        # Interactive mode E2E tests
 │   │   ├── rooms/              # Chat rooms E2E tests
 │   │   ├── spaces/             # Spaces E2E tests
+│   │   ├── push/               # Push notification E2E tests
 │   │   ├── stats/              # Stats E2E tests
 │   │   └── web-cli/            # Playwright browser tests for Web CLI
 │   └── manual/                 # Manual test scripts
