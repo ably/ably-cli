@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("channels:list command", () => {
   // Mock channel response data
@@ -41,29 +46,11 @@ describe("channels:list command", () => {
     mock.request.mockResolvedValue(mockChannelsResponse);
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:list", "--help"],
-        import.meta.url,
-      );
+  standardHelpTests("channels:list", import.meta.url);
+  standardArgValidationTests("channels:list", import.meta.url);
+  standardFlagTests("channels:list", import.meta.url, ["--limit", "--prefix"]);
 
-      expect(stdout).toContain("List active channels");
-      expect(stdout).toContain("USAGE");
-    });
-
-    it("should display examples in help", async () => {
-      const { stdout } = await runCommand(
-        ["channels:list", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("EXAMPLES");
-      expect(stdout).toContain("channels list");
-    });
-  });
-
-  describe("channel listing", () => {
+  describe("functionality", () => {
     it("should list channels successfully", async () => {
       const mock = getMockAblyRest();
 
@@ -193,23 +180,14 @@ describe("channels:list command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should accept --limit flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:list", "--help"],
-        import.meta.url,
-      );
+  describe("error handling", () => {
+    it("should handle network errors gracefully", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockRejectedValue(new Error("Network error"));
 
-      expect(stdout).toContain("--limit");
-    });
+      const { error } = await runCommand(["channels:list"], import.meta.url);
 
-    it("should accept --prefix flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:list", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--prefix");
+      expect(error).toBeDefined();
     });
   });
 });

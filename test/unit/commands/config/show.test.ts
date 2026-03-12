@@ -3,6 +3,10 @@ import { runCommand } from "@oclif/test";
 import { resolve } from "node:path";
 import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
+import {
+  standardHelpTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("config:show command", () => {
   const mockAccessToken = "fake_access_token";
@@ -49,7 +53,7 @@ describe("config:show command", () => {
     }
   });
 
-  describe("when config file exists", () => {
+  describe("functionality", () => {
     beforeEach(() => {
       const configContent = `[current]
 account = "default"
@@ -214,7 +218,7 @@ apiKey = "${mockApiKey}"
     });
   });
 
-  describe("command arguments and flags", () => {
+  describe("argument validation", () => {
     beforeEach(() => {
       const configContent = `[current]\naccount = "default"`;
       writeFileSync(resolve(testConfigDir, "config"), configContent);
@@ -227,7 +231,7 @@ apiKey = "${mockApiKey}"
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
 
     it("should not require any arguments", async () => {
@@ -239,6 +243,29 @@ apiKey = "${mockApiKey}"
       // Should not error for missing arguments
       expect(error?.message || "").not.toMatch(/Missing.*required/i);
       expect(stdout).toContain("[current]");
+    });
+  });
+
+  standardHelpTests("config:show", import.meta.url);
+
+  standardFlagTests("config:show", import.meta.url, ["--json"]);
+
+  describe("error handling", () => {
+    it("should handle missing config file gracefully", async () => {
+      const { error } = await runCommand(["config:show"], import.meta.url);
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/Config file does not exist/i);
+    });
+
+    it("should handle malformed config file gracefully", async () => {
+      const invalidConfig = "[[[this is definitely not valid TOML";
+      writeFileSync(resolve(testConfigDir, "config"), invalidConfig);
+
+      const { error } = await runCommand(["config:show"], import.meta.url);
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/Failed to load|SyntaxError|parse/i);
     });
   });
 });

@@ -1,13 +1,27 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("rooms:reactions:send command", () => {
   beforeEach(() => {
     getMockAblyChat();
   });
 
-  describe("sending reactions", () => {
+  standardHelpTests("rooms:reactions:send", import.meta.url);
+  standardArgValidationTests("rooms:reactions:send", import.meta.url, {
+    requiredArgs: ["test-room", "thumbsup"],
+  });
+  standardFlagTests("rooms:reactions:send", import.meta.url, [
+    "--json",
+    "--metadata",
+  ]);
+
+  describe("functionality", () => {
     it("should send reaction emoji", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
@@ -61,7 +75,7 @@ describe("rooms:reactions:send command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Invalid metadata JSON");
+      expect(error?.message).toContain("Invalid metadata JSON");
     });
 
     it("should output JSON on success", async () => {
@@ -94,6 +108,22 @@ describe("rooms:reactions:send command", () => {
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error).toContain("Send failed");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle reaction send failure gracefully", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+      room.reactions.send.mockRejectedValue(new Error("Network error"));
+
+      const { error } = await runCommand(
+        ["rooms:reactions:send", "test-room", "thumbsup"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Network error");
     });
   });
 });

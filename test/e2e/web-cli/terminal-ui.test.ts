@@ -235,7 +235,7 @@ test.describe("Web CLI Terminal UI Tests", () => {
       await page.keyboard.press("Enter");
 
       // Verify each terminal has its own output
-      await expect(primaryTerminal).toContainText("COMMANDS");
+      await expect(primaryTerminal).toContainText("Subscribe to a channel");
       await expect(secondaryTerminal).toContainText(
         "browser-based interactive CLI",
       );

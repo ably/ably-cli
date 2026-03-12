@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("channels:batch-publish command", () => {
   beforeEach(() => {
@@ -16,29 +21,17 @@ describe("channels:batch-publish command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:batch-publish", "--help"],
-        import.meta.url,
-      );
+  standardHelpTests("channels:batch-publish", import.meta.url);
+  standardArgValidationTests("channels:batch-publish", import.meta.url);
+  standardFlagTests("channels:batch-publish", import.meta.url, [
+    "--channels",
+    "--channels-json",
+    "--spec",
+    "--name",
+    "--encoding",
+  ]);
 
-      expect(stdout).toContain("Publish messages to multiple Ably channels");
-      expect(stdout).toContain("USAGE");
-    });
-
-    it("should display examples in help", async () => {
-      const { stdout } = await runCommand(
-        ["channels:batch-publish", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("EXAMPLES");
-      expect(stdout).toContain("batch-publish");
-    });
-  });
-
-  describe("argument validation", () => {
+  describe("input validation", () => {
     it("should require channels flag when not using --spec", async () => {
       const { error } = await runCommand(
         ["channels:batch-publish", '{"data":"test"}'],
@@ -291,53 +284,6 @@ describe("channels:batch-publish command", () => {
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error).toContain("Network error");
-    });
-  });
-
-  describe("flags", () => {
-    it("should accept --channels flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:batch-publish", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--channels");
-    });
-
-    it("should accept --channels-json flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:batch-publish", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--channels-json");
-    });
-
-    it("should accept --spec flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:batch-publish", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--spec");
-    });
-
-    it("should accept --name flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:batch-publish", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--name");
-    });
-
-    it("should accept --encoding flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:batch-publish", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--encoding");
     });
   });
 });

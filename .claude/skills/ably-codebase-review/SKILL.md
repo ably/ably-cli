@@ -154,14 +154,26 @@ Launch these agents **in parallel**. Each agent gets a focused mandate and uses 
 
 **Method (grep/glob — text patterns and file matching):**
 1. **Glob** for each command in `src/commands/` and check if a corresponding test file exists at `test/unit/commands/`
-2. **Grep** for `describe(` in test files to check for required describe blocks: `help`, `argument validation`, `functionality`, `flags`, `error handling`
-3. **Grep** for `--duration` in subscribe test files
+2. **Grep** for `describe(` in test files to check for the 5 required describe blocks with EXACT standard names:
+   - `describe("help"` — required in every test file
+   - `describe("argument validation"` — required (test required args OR unknown flag rejection)
+   - `describe("functionality"` — required (core happy-path tests)
+   - `describe("flags"` — required (verify flags exist and work)
+   - `describe("error handling"` — required (API errors, network failures)
+   Flag non-standard variants: `"command arguments and flags"`, `"command flags"`, `"flag options"`, `"parameter validation"`.
+   Exception: `interactive.test.ts`, `interactive-sigint.test.ts`, and `bench/*.test.ts` are exempt.
+3. **Grep** for `--duration` in unit test `runCommand()` args — should NOT be present (env var handles it). Exceptions: `test:wait` tests, `interactive-sigint` tests, help output checks.
 4. **Grep** for `getMockAblyRealtime`, `getMockAblyRest`, `getMockConfigManager` in test files to verify correct mock usage per command type
 5. **Grep** for `--api-key`, `--token`, `--access-token` in unit test files — these should not use CLI auth flags
+6. **Check** for use of shared test helpers where applicable:
+   - Control API tests should use `nockControl()`, `getControlApiContext()`, `controlApiCleanup()` from `test/helpers/control-api-test-helpers.ts` instead of manual nock setup
+   - Control API tests should use mock factories (`mockApp()`, `mockKey()`, `mockRule()`, `mockQueue()`, `mockNamespace()`, `mockStats()`) from `test/fixtures/control-api.ts` instead of duplicating inline response objects
+   - Tests with boilerplate help/arg-validation/flags blocks should use `standardHelpTests()`, `standardArgValidationTests()`, `standardFlagTests()` from `test/helpers/standard-tests.ts`
+   - Control API error handling blocks should use `standardControlApiErrorTests()` from `test/helpers/standard-tests.ts` for 401/500/network error tests
 
 **Reasoning guidance:**
 - Missing test files are deviations but may be documented as known gaps
-- Missing describe blocks in existing tests are deviations but may be lower priority
+- Missing describe blocks or non-standard block names are deviations that should be flagged
 - Subscribe tests that auto-exit via mocked callbacks (without `--duration`) may be acceptable
 
 ### Agent 7: Lifecycle & Convention Sweep

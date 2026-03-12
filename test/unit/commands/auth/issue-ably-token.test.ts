@@ -2,13 +2,18 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
 import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("auth:issue-ably-token command", () => {
   beforeEach(() => {
     getMockAblyRest();
   });
 
-  describe("successful token issuance", () => {
+  describe("functionality", () => {
     it("should issue an Ably token successfully", async () => {
       const keyId = getMockConfigManager().getKeyId()!;
       const restMock = getMockAblyRest();
@@ -189,6 +194,8 @@ describe("auth:issue-ably-token command", () => {
     });
   });
 
+  standardHelpTests("auth:issue-ably-token", import.meta.url);
+
   describe("error handling", () => {
     it("should handle invalid capability JSON", async () => {
       const { error } = await runCommand(
@@ -230,37 +237,7 @@ describe("auth:issue-ably-token command", () => {
     });
   });
 
-  describe("command arguments and flags", () => {
-    it("should accept --app flag to specify app", async () => {
-      const restMock = getMockAblyRest();
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      const mockTokenDetails = {
-        token: "mock-ably-token-app",
-        issued: Date.now(),
-        expires: Date.now() + 3600000,
-        capability: '{"*":["*"]}',
-        clientId: "ably-cli-test1234",
-      };
+  standardArgValidationTests("auth:issue-ably-token", import.meta.url);
 
-      restMock.auth.createTokenRequest.mockResolvedValue({});
-      restMock.auth.requestToken.mockResolvedValue(mockTokenDetails);
-
-      const { stdout } = await runCommand(
-        ["auth:issue-ably-token", "--app", appId],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("Generated Ably Token");
-    });
-
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["auth:issue-ably-token", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-  });
+  standardFlagTests("auth:issue-ably-token", import.meta.url, ["--json"]);
 });

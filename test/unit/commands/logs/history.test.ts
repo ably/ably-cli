@@ -1,13 +1,38 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("logs:history command", () => {
   beforeEach(() => {
     getMockAblyRest();
   });
 
-  describe("history retrieval", () => {
+  standardHelpTests("logs:history", import.meta.url);
+  standardArgValidationTests("logs:history", import.meta.url);
+  standardFlagTests("logs:history", import.meta.url, [
+    "--json",
+    "--limit",
+    "--direction",
+  ]);
+
+  describe("error handling", () => {
+    it("should handle API errors gracefully", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("[meta]log");
+      channel.history.mockRejectedValue(new Error("API error"));
+
+      const { error } = await runCommand(["logs:history"], import.meta.url);
+
+      expect(error).toBeDefined();
+    });
+  });
+
+  describe("functionality", () => {
     it("should pass --start to history params", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("[meta]log");
@@ -40,7 +65,7 @@ describe("logs:history command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain(
+      expect(error?.message).toContain(
         "--start must be earlier than or equal to --end",
       );
     });

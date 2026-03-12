@@ -1,21 +1,31 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+  CONTROL_HOST,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardFlagTests,
+  standardControlApiErrorTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("apps:delete command", () => {
   const mockAppName = "TestApp";
 
   beforeEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
-  describe("successful app deletion", () => {
+  describe("functionality", () => {
     it("should delete app successfully with --force flag", async () => {
       const mock = getMockConfigManager();
       const accountId = mock.getCurrentAccount()!.accountId!;
@@ -24,7 +34,7 @@ describe("apps:delete command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock the /me endpoint for getApp (listApps)
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: accountName },
@@ -32,7 +42,7 @@ describe("apps:delete command", () => {
         });
 
       // Mock the app listing endpoint for getApp
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [
           {
@@ -47,7 +57,7 @@ describe("apps:delete command", () => {
         ]);
 
       // Mock the app deletion endpoint
-      nock("https://control.ably.net").delete(`/v1/apps/${appId}`).reply(204);
+      nockControl().delete(`/v1/apps/${appId}`).reply(204);
 
       const { stdout } = await runCommand(
         ["apps:delete", appId, "--force"],
@@ -75,7 +85,7 @@ describe("apps:delete command", () => {
       };
 
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: accountName },
@@ -83,12 +93,10 @@ describe("apps:delete command", () => {
         });
 
       // Mock the app listing endpoint for getApp
-      nock("https://control.ably.net")
-        .get(`/v1/accounts/${accountId}/apps`)
-        .reply(200, [mockApp]);
+      nockControl().get(`/v1/accounts/${accountId}/apps`).reply(200, [mockApp]);
 
       // Mock the app deletion endpoint
-      nock("https://control.ably.net").delete(`/v1/apps/${appId}`).reply(204);
+      nockControl().delete(`/v1/apps/${appId}`).reply(204);
 
       const { stdout } = await runCommand(
         ["apps:delete", appId, "--force", "--json"],
@@ -115,7 +123,7 @@ describe("apps:delete command", () => {
       process.env.ABLY_ACCESS_TOKEN = customToken;
 
       // Mock the /me endpoint with custom token
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -127,7 +135,7 @@ describe("apps:delete command", () => {
         });
 
       // Mock the app listing endpoint
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -146,7 +154,7 @@ describe("apps:delete command", () => {
         ]);
 
       // Mock the app deletion endpoint
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -163,23 +171,71 @@ describe("apps:delete command", () => {
     });
   });
 
-  describe("error handling", () => {
-    it("should handle 401 authentication error", async () => {
+  standardHelpTests("apps:delete", import.meta.url);
+
+  describe("argument validation", () => {
+    it("should handle missing app ID when no current app is set", async () => {
       const mock = getMockConfigManager();
-      const appId = mock.getCurrentAppId()!;
+      mock.setCurrentAppIdForAccount(undefined);
 
-      // Mock authentication failure
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["apps:delete", appId, "--force"],
-        import.meta.url,
-      );
+      const { error } = await runCommand(["apps:delete"], import.meta.url);
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/401/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
+      expect(error?.message).toMatch(
+        /No app ID provided and no current app selected/,
+      );
+    });
+  });
+
+  standardFlagTests("apps:delete", import.meta.url, ["--json"]);
+
+  describe("error handling", () => {
+    standardControlApiErrorTests({
+      get commandArgs() {
+        return [
+          "apps:delete",
+          getMockConfigManager().getCurrentAppId()!,
+          "--force",
+        ];
+      },
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        if (scenario === "401") {
+          nockControl().get("/v1/me").reply(401, { error: "Unauthorized" });
+          return;
+        }
+        if (scenario === "network") {
+          nockControl().get("/v1/me").replyWithError("Network error");
+          return;
+        }
+        // 500: need full pre-mock chain, then fail on DELETE
+        const mock = getMockConfigManager();
+        const accountId = mock.getCurrentAccount()!.accountId!;
+        const accountName = mock.getCurrentAccount()!.accountName!;
+        const userEmail = mock.getCurrentAccount()!.userEmail!;
+        const appId = mock.getCurrentAppId()!;
+        nockControl()
+          .get("/v1/me")
+          .reply(200, {
+            account: { id: accountId, name: accountName },
+            user: { email: userEmail },
+          });
+        nockControl()
+          .get(`/v1/accounts/${accountId}/apps`)
+          .reply(200, [
+            {
+              id: appId,
+              accountId: accountId,
+              name: mockAppName,
+              status: "active",
+              created: Date.now(),
+              modified: Date.now(),
+              tlsOnly: false,
+            },
+          ]);
+        nockControl()
+          .delete(`/v1/apps/${appId}`)
+          .reply(500, { error: "Internal Server Error" });
+      },
     });
 
     it("should handle app not found error", async () => {
@@ -190,7 +246,7 @@ describe("apps:delete command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: accountName },
@@ -198,91 +254,14 @@ describe("apps:delete command", () => {
         });
 
       // Mock app not found
-      nock("https://control.ably.net")
-        .get(`/v1/accounts/${accountId}/apps`)
-        .reply(200, []);
+      nockControl().get(`/v1/accounts/${accountId}/apps`).reply(200, []);
 
       const { error } = await runCommand(
         ["apps:delete", appId, "--force"],
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/not found/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
-    });
-
-    it("should handle deletion API error", async () => {
-      const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
-      const appId = mock.getCurrentAppId()!;
-
-      // Mock the /me endpoint
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .reply(200, {
-          account: { id: accountId, name: accountName },
-          user: { email: userEmail },
-        });
-
-      // Mock the app listing endpoint
-      nock("https://control.ably.net")
-        .get(`/v1/accounts/${accountId}/apps`)
-        .reply(200, [
-          {
-            id: appId,
-            accountId: accountId,
-            name: mockAppName,
-            status: "active",
-            created: Date.now(),
-            modified: Date.now(),
-            tlsOnly: false,
-          },
-        ]);
-
-      // Mock deletion failure
-      nock("https://control.ably.net")
-        .delete(`/v1/apps/${appId}`)
-        .reply(500, { error: "Internal Server Error" });
-
-      const { error } = await runCommand(
-        ["apps:delete", appId, "--force"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error.message).toMatch(/500/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
-    });
-
-    it("should handle missing app ID when no current app is set", async () => {
-      // Clear the current app from mock config
-      const mock = getMockConfigManager();
-      mock.setCurrentAppIdForAccount(undefined);
-
-      const { error } = await runCommand(["apps:delete"], import.meta.url);
-      expect(error).toBeDefined();
-      expect(error.message).toMatch(
-        /No app ID provided and no current app selected/,
-      );
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
-    });
-
-    it("should handle network errors", async () => {
-      const mock = getMockConfigManager();
-      const appId = mock.getCurrentAppId()!;
-
-      // Mock network error
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .replyWithError("Network error");
-
-      const { error } = await runCommand(
-        ["apps:delete", appId, "--force"],
-        import.meta.url,
-      );
-      expect(error).toBeDefined();
-      expect(error.message).toMatch(/Network error/);
+      expect(error?.message).toMatch(/not found/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -294,7 +273,7 @@ describe("apps:delete command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: accountName },
@@ -302,7 +281,7 @@ describe("apps:delete command", () => {
         });
 
       // Mock the app listing endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [
           {
@@ -317,7 +296,7 @@ describe("apps:delete command", () => {
         ]);
 
       // Mock deletion failure
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${appId}`)
         .reply(500, { error: "Internal Server Error" });
 
@@ -342,7 +321,7 @@ describe("apps:delete command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: accountName },
@@ -350,7 +329,7 @@ describe("apps:delete command", () => {
         });
 
       // Mock the app listing endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [
           {
@@ -365,7 +344,7 @@ describe("apps:delete command", () => {
         ]);
 
       // Mock forbidden error
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${appId}`)
         .reply(403, { error: "Forbidden" });
 
@@ -374,7 +353,7 @@ describe("apps:delete command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/403/);
+      expect(error?.message).toMatch(/403/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -386,7 +365,7 @@ describe("apps:delete command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock the /me endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: accountName },
@@ -394,7 +373,7 @@ describe("apps:delete command", () => {
         });
 
       // Mock the app listing endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [
           {
@@ -409,7 +388,7 @@ describe("apps:delete command", () => {
         ]);
 
       // Mock conflict error (app has dependencies)
-      nock("https://control.ably.net").delete(`/v1/apps/${appId}`).reply(409, {
+      nockControl().delete(`/v1/apps/${appId}`).reply(409, {
         error: "Conflict",
         details: "App has active resources that must be deleted first",
       });
@@ -419,7 +398,7 @@ describe("apps:delete command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error.message).toMatch(/409/);
+      expect(error?.message).toMatch(/409/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
   });
@@ -438,7 +417,7 @@ describe("apps:delete command", () => {
 
       try {
         // Mock the /me endpoint
-        nock("https://control.ably.net")
+        nockControl()
           .get("/v1/me")
           .reply(200, {
             account: { id: accountId, name: accountName },
@@ -446,7 +425,7 @@ describe("apps:delete command", () => {
           });
 
         // Mock the app listing endpoint for getApp
-        nock("https://control.ably.net")
+        nockControl()
           .get(`/v1/accounts/${accountId}/apps`)
           .reply(200, [
             {
@@ -461,7 +440,7 @@ describe("apps:delete command", () => {
           ]);
 
         // Mock the app deletion endpoint
-        nock("https://control.ably.net").delete(`/v1/apps/${appId}`).reply(204);
+        nockControl().delete(`/v1/apps/${appId}`).reply(204);
 
         const { stdout } = await runCommand(
           ["apps:delete", "--force"],

@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("ConnectionsTest", function () {
   beforeEach(function () {
@@ -65,5 +70,32 @@ describe("ConnectionsTest", function () {
       // Should not fail with flag parsing error - check message doesn't contain the error
       expect(error?.message ?? "").not.toContain("Expected --transport");
     }
+  });
+
+  describe("functionality", () => {
+    it("should output connection test summary", async () => {
+      // The command creates Ably.Realtime directly (not via base-command mock),
+      // so it will fail to connect with mock credentials, but still outputs a summary.
+      const { stdout } = await runCommand(
+        ["connections:test", "--transport", "ws"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Connection Test Summary");
+    });
+  });
+
+  standardHelpTests("connections:test", import.meta.url);
+  standardArgValidationTests("connections:test", import.meta.url);
+  standardFlagTests("connections:test", import.meta.url, ["--json"]);
+
+  describe("error handling", () => {
+    it("should handle invalid transport option", async () => {
+      const { error } = await runCommand(
+        ["connections:test", "--transport", "invalid"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+    });
   });
 });

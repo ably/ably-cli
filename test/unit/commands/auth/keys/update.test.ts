@@ -1,24 +1,32 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 import {
   mockKeysList,
   buildMockKey,
 } from "../../../../helpers/mock-control-api-keys.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("auth:keys:update command", () => {
   const mockKeyId = "testkey";
 
   beforeEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
-  describe("successful key update", () => {
+  describe("functionality", () => {
     it("should update key name", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock list keys (getKey now uses list+filter)
@@ -27,7 +35,7 @@ describe("auth:keys:update command", () => {
       ]);
 
       // Mock update key
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {
           id: mockKeyId,
@@ -52,7 +60,7 @@ describe("auth:keys:update command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       mockKeysList(appId, [buildMockKey(appId, mockKeyId)]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {
           id: mockKeyId,
@@ -87,7 +95,7 @@ describe("auth:keys:update command", () => {
         }),
       ]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {
           id: mockKeyId,
@@ -109,6 +117,14 @@ describe("auth:keys:update command", () => {
     });
   });
 
+  standardHelpTests("auth:keys:update", import.meta.url);
+
+  standardArgValidationTests("auth:keys:update", import.meta.url, {
+    requiredArgs: ["test-key"],
+  });
+
+  standardFlagTests("auth:keys:update", import.meta.url, ["--json"]);
+
   describe("error handling", () => {
     it("should require keyName argument", async () => {
       const { error } = await runCommand(
@@ -117,7 +133,7 @@ describe("auth:keys:update command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing 1 required arg/);
+      expect(error?.message).toMatch(/Missing 1 required arg/);
     });
 
     it("should require at least one update parameter", async () => {
@@ -128,7 +144,7 @@ describe("auth:keys:update command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/No updates specified/);
+      expect(error?.message).toMatch(/No updates specified/);
     });
 
     it("should handle key not found", async () => {
@@ -142,12 +158,12 @@ describe("auth:keys:update command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/not found/);
+      expect(error?.message).toMatch(/not found/);
     });
 
     it("should handle 401 authentication error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/keys`)
         .reply(401, { error: "Unauthorized" });
 
@@ -157,7 +173,7 @@ describe("auth:keys:update command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/401/);
+      expect(error?.message).toMatch(/401/);
     });
   });
 });

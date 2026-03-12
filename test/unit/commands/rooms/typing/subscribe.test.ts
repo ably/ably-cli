@@ -3,31 +3,20 @@ import { runCommand } from "@oclif/test";
 import { RoomStatus } from "@ably/chat";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
 import { captureJsonLogs } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("rooms:typing:subscribe command", () => {
-  describe("command arguments and flags", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["rooms:typing:subscribe", "test-room", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should require room argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:typing:subscribe"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
+  standardHelpTests("rooms:typing:subscribe", import.meta.url);
+  standardArgValidationTests("rooms:typing:subscribe", import.meta.url, {
+    requiredArgs: ["test-room"],
   });
+  standardFlagTests("rooms:typing:subscribe", import.meta.url, ["--json"]);
 
-  describe("subscription behavior", () => {
+  describe("functionality", () => {
     it("should subscribe to typing events and display them", async () => {
       const mock = getMockAblyChat();
       const room = mock.rooms._getRoom("test-room");
@@ -136,6 +125,22 @@ describe("rooms:typing:subscribe command", () => {
       expect(parsed).toHaveProperty("command");
       expect(parsed).toHaveProperty("type", "event");
       expect(parsed.currentlyTyping).toContain("user1");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const mock = getMockAblyChat();
+      const room = mock.rooms._getRoom("test-room");
+
+      room.attach.mockRejectedValue(new Error("Connection failed"));
+
+      const { error } = await runCommand(
+        ["rooms:typing:subscribe", "test-room"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
     });
   });
 });

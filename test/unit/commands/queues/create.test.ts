@@ -1,68 +1,51 @@
 import { describe, it, expect, afterEach } from "vitest";
 import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+  CONTROL_HOST,
+} from "../../../helpers/control-api-test-helpers.js";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+  standardControlApiErrorTests,
+} from "../../../helpers/standard-tests.js";
+import { mockQueue } from "../../../fixtures/control-api.js";
 
 describe("queues:create command", () => {
   const mockQueueName = "test-queue";
   const mockQueueId = "queue-550e8400-e29b-41d4-a716-446655440000";
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
   function createMockQueueResponse(appId: string) {
-    return {
-      id: mockQueueId,
-      appId,
-      name: mockQueueName,
-      region: "us-east-1-a",
-      state: "active",
-      maxLength: 10000,
-      ttl: 60,
-      deadletter: false,
-      deadletterId: "",
-      messages: {
-        ready: 0,
-        total: 0,
-        unacknowledged: 0,
-      },
-      stats: {
-        publishRate: null,
-        deliveryRate: null,
-        acknowledgementRate: null,
-      },
-      amqp: {
-        uri: "amqps://queue.ably.io:5671",
-        queueName: "test-queue",
-      },
-      stomp: {
-        uri: "stomp://queue.ably.io:61614",
-        host: "queue.ably.io",
-        destination: "/queue/test-queue",
-      },
-    };
+    return mockQueue({ id: mockQueueId, appId, name: mockQueueName });
   }
 
-  describe("successful queue creation", () => {
+  describe("functionality", () => {
     it("should create a queue successfully with default settings", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
       const accountId = mockConfig.getCurrentAccount()!.accountId!;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [{ id: appId, accountId, name: "Test App" }]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/queues`, {
           name: mockQueueName,
           maxLength: 10000,
@@ -91,14 +74,14 @@ describe("queues:create command", () => {
       const appId = mockConfig.getCurrentAppId()!;
       const accountId = mockConfig.getCurrentAccount()!.accountId!;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/queues`, {
           name: mockQueueName,
           maxLength: 50000,
@@ -138,14 +121,14 @@ describe("queues:create command", () => {
       const appId = mockConfig.getCurrentAppId()!;
       const accountId = mockConfig.getCurrentAccount()!.accountId!;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/queues`)
         .reply(201, createMockQueueResponse(appId));
 
@@ -167,18 +150,18 @@ describe("queues:create command", () => {
       const accountId = getMockConfigManager().getCurrentAccount()!.accountId!;
       const customAppId = "custom-app-id";
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [{ id: customAppId, accountId, name: customAppId }]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${customAppId}/queues`)
         .reply(201, {
           ...createMockQueueResponse(customAppId),
@@ -201,7 +184,7 @@ describe("queues:create command", () => {
 
       process.env.ABLY_ACCESS_TOKEN = customToken;
 
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -212,11 +195,11 @@ describe("queues:create command", () => {
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [{ id: appId, accountId, name: "Test App" }]);
 
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -234,30 +217,26 @@ describe("queues:create command", () => {
   });
 
   describe("error handling", () => {
-    it("should handle 401 authentication error", async () => {
-      const mockConfig = getMockConfigManager();
-      const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
-
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .reply(200, {
-          account: { id: accountId, name: "Test Account" },
-          user: { email: "test@example.com" },
-        });
-
-      nock("https://control.ably.net")
-        .post(`/v1/apps/${appId}/queues`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["queues:create", "--name", mockQueueName],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    standardControlApiErrorTests({
+      commandArgs: ["queues:create", "--name", mockQueueName],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const mockConfig = getMockConfigManager();
+        const appId = mockConfig.getCurrentAppId()!;
+        const accountId = mockConfig.getCurrentAccount()!.accountId!;
+        // Pre-mock /v1/me (needed for app resolution)
+        nockControl()
+          .get("/v1/me")
+          .reply(200, {
+            account: { id: accountId, name: "Test Account" },
+            user: { email: "test@example.com" },
+          });
+        const scope = nockControl().post(`/v1/apps/${appId}/queues`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
     });
 
     it("should handle 403 forbidden error", async () => {
@@ -265,14 +244,14 @@ describe("queues:create command", () => {
       const appId = mockConfig.getCurrentAppId()!;
       const accountId = mockConfig.getCurrentAccount()!.accountId!;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/queues`)
         .reply(403, { error: "Forbidden" });
 
@@ -291,14 +270,14 @@ describe("queues:create command", () => {
       const appId = mockConfig.getCurrentAppId()!;
       const accountId = mockConfig.getCurrentAccount()!.accountId!;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/queues`)
         .reply(404, { error: "App not found" });
 
@@ -309,32 +288,6 @@ describe("queues:create command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/404/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
-    });
-
-    it("should handle 500 server error", async () => {
-      const mockConfig = getMockConfigManager();
-      const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
-
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .reply(200, {
-          account: { id: accountId, name: "Test Account" },
-          user: { email: "test@example.com" },
-        });
-
-      nock("https://control.ably.net")
-        .post(`/v1/apps/${appId}/queues`)
-        .reply(500, { error: "Internal Server Error" });
-
-      const { error } = await runCommand(
-        ["queues:create", "--name", mockQueueName],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/500/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -359,50 +312,22 @@ describe("queues:create command", () => {
       expect(error?.message).toMatch(/No access token|No app|not logged in/i);
     });
 
-    it("should handle network errors", async () => {
-      const mockConfig = getMockConfigManager();
-      const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
-
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .reply(200, {
-          account: { id: accountId, name: "Test Account" },
-          user: { email: "test@example.com" },
-        });
-
-      nock("https://control.ably.net")
-        .post(`/v1/apps/${appId}/queues`)
-        .replyWithError("Network error");
-
-      const { error } = await runCommand(
-        ["queues:create", "--name", mockQueueName],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Network error/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
-    });
-
     it("should handle validation errors from API", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
       const accountId = mockConfig.getCurrentAccount()!.accountId!;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
-        .post(`/v1/apps/${appId}/queues`)
-        .reply(400, {
-          error: "Validation failed",
-          details: "Queue name already exists",
-        });
+      nockControl().post(`/v1/apps/${appId}/queues`).reply(400, {
+        error: "Validation failed",
+        details: "Queue name already exists",
+      });
 
       const { error } = await runCommand(
         ["queues:create", "--name", mockQueueName],
@@ -419,19 +344,17 @@ describe("queues:create command", () => {
       const appId = mockConfig.getCurrentAppId()!;
       const accountId = mockConfig.getCurrentAccount()!.accountId!;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
-        .post(`/v1/apps/${appId}/queues`)
-        .reply(429, {
-          error: "Rate limit exceeded",
-          details: "Too many requests",
-        });
+      nockControl().post(`/v1/apps/${appId}/queues`).reply(429, {
+        error: "Rate limit exceeded",
+        details: "Too many requests",
+      });
 
       const { error } = await runCommand(
         ["queues:create", "--name", mockQueueName],
@@ -450,14 +373,14 @@ describe("queues:create command", () => {
       const appId = mockConfig.getCurrentAppId()!;
       const accountId = mockConfig.getCurrentAccount()!.accountId!;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/queues`, {
           name: mockQueueName,
           maxLength: 1,
@@ -493,14 +416,14 @@ describe("queues:create command", () => {
       const appId = mockConfig.getCurrentAppId()!;
       const accountId = mockConfig.getCurrentAccount()!.accountId!;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/queues`, {
           name: mockQueueName,
           maxLength: 1000000,
@@ -535,4 +458,8 @@ describe("queues:create command", () => {
       expect(stdout).toContain("Max Length: 1000000 messages");
     });
   });
+
+  standardHelpTests("queues:create", import.meta.url);
+  standardArgValidationTests("queues:create", import.meta.url);
+  standardFlagTests("queues:create", import.meta.url, ["--name", "--json"]);
 });

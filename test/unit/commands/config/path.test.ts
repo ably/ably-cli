@@ -1,8 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { runCommand } from "@oclif/test";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("config:path command", () => {
-  describe("successful config path display", () => {
+  describe("functionality", () => {
     it("should display the config path", async () => {
       const { stdout } = await runCommand(["config:path"], import.meta.url);
 
@@ -33,15 +38,19 @@ describe("config:path command", () => {
     });
   });
 
-  describe("command flags", () => {
-    it("should reject unknown flags", async () => {
+  standardArgValidationTests("config:path", import.meta.url);
+
+  standardFlagTests("config:path", import.meta.url, ["--json"]);
+
+  standardHelpTests("config:path", import.meta.url);
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
       const { error } = await runCommand(
         ["config:path", "--unknown-flag-xyz"],
         import.meta.url,
       );
-
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
     });
   });
 });

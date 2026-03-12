@@ -1,21 +1,30 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+  standardControlApiErrorTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("auth:keys:list command", () => {
   beforeEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
-  describe("successful key listing", () => {
+  describe("functionality", () => {
     it("should list all keys for the current app", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/keys`)
         .reply(200, [
           {
@@ -48,7 +57,7 @@ describe("auth:keys:list command", () => {
 
     it("should list keys with --app flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/keys`)
         .reply(200, [
           {
@@ -73,9 +82,7 @@ describe("auth:keys:list command", () => {
 
     it("should show message when no keys found", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/keys`)
-        .reply(200, []);
+      nockControl().get(`/v1/apps/${appId}/keys`).reply(200, []);
 
       const { stdout } = await runCommand(["auth:keys:list"], import.meta.url);
 
@@ -84,7 +91,7 @@ describe("auth:keys:list command", () => {
 
     it("should output JSON format when --json flag is used", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/keys`)
         .reply(200, [
           {
@@ -113,6 +120,12 @@ describe("auth:keys:list command", () => {
     });
   });
 
+  standardHelpTests("auth:keys:list", import.meta.url);
+
+  standardArgValidationTests("auth:keys:list", import.meta.url);
+
+  standardFlagTests("auth:keys:list", import.meta.url, ["--json"]);
+
   describe("error handling", () => {
     it("should error when no app is selected", async () => {
       const mock = getMockConfigManager();
@@ -121,31 +134,20 @@ describe("auth:keys:list command", () => {
       const { error } = await runCommand(["auth:keys:list"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/No app specified/);
+      expect(error?.message).toMatch(/No app specified/);
     });
 
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/keys`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(["auth:keys:list"], import.meta.url);
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/401/);
-    });
-
-    it("should handle network errors", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/keys`)
-        .replyWithError("Network error");
-
-      const { error } = await runCommand(["auth:keys:list"], import.meta.url);
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Network error/);
+    standardControlApiErrorTests({
+      commandArgs: ["auth:keys:list"],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().get(`/v1/apps/${appId}/keys`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
     });
   });
 });

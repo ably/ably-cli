@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
 import { captureJsonLogs } from "../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("logs:subscribe command", () => {
   beforeEach(() => {
@@ -26,39 +31,15 @@ describe("logs:subscribe command", () => {
     });
   });
 
-  describe("command flags", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["logs:subscribe", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
+  standardHelpTests("logs:subscribe", import.meta.url);
+  standardArgValidationTests("logs:subscribe", import.meta.url);
+  standardFlagTests("logs:subscribe", import.meta.url, [
+    "--rewind",
+    "--type",
+    "--json",
+  ]);
 
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should accept --rewind flag", async () => {
-      // Run with --duration 0 to exit immediately
-      const { error } = await runCommand(
-        ["logs:subscribe", "--rewind", "10", "--duration", "0"],
-        import.meta.url,
-      );
-
-      // The command might error due to connection issues, but it should accept the flag
-      expect(error?.message || "").not.toMatch(/Unknown flag/);
-    });
-
-    it("should accept --type flag with valid option", async () => {
-      const { error } = await runCommand(
-        ["logs:subscribe", "--type", "channel.lifecycle", "--duration", "0"],
-        import.meta.url,
-      );
-
-      expect(error?.message || "").not.toMatch(/Unknown flag/);
-    });
-  });
-
-  describe("subscription behavior", () => {
+  describe("functionality", () => {
     it("should subscribe to log channel and show initial message", async () => {
       const { stdout } = await runCommand(["logs:subscribe"], import.meta.url);
 
@@ -98,10 +79,7 @@ describe("logs:subscribe command", () => {
     it("should set rewind channel param when --rewind > 0", async () => {
       const mock = getMockAblyRealtime();
 
-      await runCommand(
-        ["logs:subscribe", "--rewind", "5", "--duration", "0"],
-        import.meta.url,
-      );
+      await runCommand(["logs:subscribe", "--rewind", "5"], import.meta.url);
 
       expect(mock.channels.get).toHaveBeenCalledWith("[meta]log", {
         params: { rewind: "5" },
@@ -113,7 +91,7 @@ describe("logs:subscribe command", () => {
       const channel = mock.channels._getChannel("[meta]log");
 
       await runCommand(
-        ["logs:subscribe", "--type", "channel.presence", "--duration", "0"],
+        ["logs:subscribe", "--type", "channel.presence"],
         import.meta.url,
       );
 
@@ -134,7 +112,7 @@ describe("logs:subscribe command", () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("[meta]log");
 
-      await runCommand(["logs:subscribe", "--duration", "0"], import.meta.url);
+      await runCommand(["logs:subscribe"], import.meta.url);
 
       // Should subscribe to all 5 default log types
       const subscribeCalls = channel.subscribe.mock.calls.filter(

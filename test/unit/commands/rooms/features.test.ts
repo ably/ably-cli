@@ -7,7 +7,7 @@ describe("rooms feature commands", function () {
     getMockAblyChat();
   });
 
-  describe("rooms occupancy get", function () {
+  describe("functionality", function () {
     it("should get room occupancy metrics", async function () {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
@@ -179,6 +179,50 @@ describe("rooms feature commands", function () {
       expect(room.attach).toHaveBeenCalled();
       expect(room.typing.keystroke).toHaveBeenCalled();
       expect(stdout).toContain("typing");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle occupancy get failure", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.attach.mockRejectedValue(new Error("Connection failed"));
+
+      const { error } = await runCommand(
+        ["rooms:occupancy:get", "test-room"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+    });
+
+    it("should handle presence enter failure", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.attach.mockRejectedValue(new Error("Connection failed"));
+
+      const { error } = await runCommand(
+        ["rooms:presence:enter", "test-room"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+    });
+
+    it("should handle reactions send failure", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.reactions.send.mockRejectedValue(new Error("Send failed"));
+
+      const { error } = await runCommand(
+        ["rooms:reactions:send", "test-room", "thumbsup"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
     });
   });
 });

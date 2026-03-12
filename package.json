@@ -32,6 +32,7 @@
     "test:e2e:control": "vitest run --project e2e test/e2e/control",
     "test:e2e:bench": "vitest run --project e2e test/e2e/bench",
     "test:hooks": "vitest run --project hooks",
+    "test:tty": "VITEST_TTY=1 vitest run --project tty",
     "test:web-cli": "pnpm test:web-cli:build && playwright test --config test/e2e/web-cli/playwright.config.ts",
     "test:web-cli:build": "pnpm build && pnpm --filter @ably/react-web-cli build && pnpm --filter ./examples/web-cli build",
     "test:web-cli:parallel": "pnpm test:web-cli:build && playwright test --config test/e2e/web-cli/playwright-parallel.config.ts",

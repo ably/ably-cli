@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRest } from "../../../../helpers/mock-ably-rest.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("ChannelsOccupancyGet", function () {
   beforeEach(function () {
@@ -97,5 +102,42 @@ describe("ChannelsOccupancyGet", function () {
     expect(stdout).toContain("Connections: 0");
     expect(stdout).toContain("Publishers: 0");
     expect(stdout).toContain("Subscribers: 0");
+  });
+
+  describe("functionality", () => {
+    it("should retrieve and display occupancy data for a channel", async () => {
+      const mock = getMockAblyRest();
+
+      const { stdout } = await runCommand(
+        ["channels:occupancy:get", "my-channel"],
+        import.meta.url,
+      );
+
+      expect(mock.request).toHaveBeenCalledOnce();
+      expect(mock.request.mock.calls[0][1]).toBe("/channels/my-channel");
+      expect(stdout).toContain("my-channel");
+      expect(stdout).toContain("Connections: 10");
+      expect(stdout).toContain("Subscribers: 6");
+    });
+  });
+
+  standardHelpTests("channels:occupancy:get", import.meta.url);
+  standardArgValidationTests("channels:occupancy:get", import.meta.url, {
+    requiredArgs: ["test-channel"],
+  });
+  standardFlagTests("channels:occupancy:get", import.meta.url, ["--json"]);
+
+  describe("error handling", () => {
+    it("should handle API errors gracefully", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockRejectedValue(new Error("API error"));
+
+      const { error } = await runCommand(
+        ["channels:occupancy:get", "test-channel"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+    });
   });
 });

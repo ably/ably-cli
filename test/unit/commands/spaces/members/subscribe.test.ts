@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("spaces:members:subscribe command", () => {
   beforeEach(() => {
@@ -9,29 +14,13 @@ describe("spaces:members:subscribe command", () => {
     getMockAblySpaces();
   });
 
-  describe("command arguments and flags", () => {
-    it("should require space argument", async () => {
-      const { error } = await runCommand(
-        ["spaces:members:subscribe"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["spaces:members:subscribe", "test-space", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
+  standardHelpTests("spaces:members:subscribe", import.meta.url);
+  standardArgValidationTests("spaces:members:subscribe", import.meta.url, {
+    requiredArgs: ["test-space"],
   });
+  standardFlagTests("spaces:members:subscribe", import.meta.url, ["--json"]);
 
-  describe("initial member display", () => {
+  describe("functionality", () => {
     it("should display current members from getAll()", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
@@ -137,6 +126,21 @@ describe("spaces:members:subscribe command", () => {
       expect(result.success).toBe(true);
       expect(result.members).toHaveLength(1);
       expect(result.members[0].clientId).toBe("user-1");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.enter.mockRejectedValue(new Error("Connection failed"));
+
+      const { error } = await runCommand(
+        ["spaces:members:subscribe", "test-space"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Connection failed");
     });
   });
 });

@@ -1,0 +1,149 @@
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { runCommand } from "@oclif/test";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
+import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
+
+describe("apps:switch command", () => {
+  let mockAccountId: string;
+  let mockAppId: string;
+  const mockAppName = "Switched App";
+
+  beforeEach(() => {
+    const mockConfig = getMockConfigManager();
+    mockAccountId = mockConfig.getCurrentAccount()!.accountId!;
+    mockAppId = mockConfig.getCurrentAppId()!;
+  });
+
+  afterEach(() => {
+    controlApiCleanup();
+  });
+
+  standardHelpTests("apps:switch", import.meta.url);
+  standardArgValidationTests("apps:switch", import.meta.url);
+
+  describe("functionality", () => {
+    it("should switch to an app when appId is provided", async () => {
+      nockControl()
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: mockAccountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
+
+      nockControl()
+        .get(`/v1/accounts/${mockAccountId}/apps`)
+        .reply(200, [
+          {
+            id: mockAppId,
+            accountId: mockAccountId,
+            name: mockAppName,
+            status: "active",
+            created: 1640995200000,
+            modified: 1640995200000,
+            tlsOnly: false,
+          },
+        ]);
+
+      const { stdout } = await runCommand(
+        ["apps:switch", mockAppId],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Switched to app");
+      expect(stdout).toContain(mockAppName);
+      expect(stdout).toContain(mockAppId);
+    });
+
+    it("should output JSON when --json flag is used", async () => {
+      nockControl()
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: mockAccountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
+
+      nockControl()
+        .get(`/v1/accounts/${mockAccountId}/apps`)
+        .reply(200, [
+          {
+            id: mockAppId,
+            accountId: mockAccountId,
+            name: mockAppName,
+            status: "active",
+            created: 1640995200000,
+            modified: 1640995200000,
+            tlsOnly: false,
+          },
+        ]);
+
+      const { stdout } = await runCommand(
+        ["apps:switch", mockAppId, "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "apps:switch");
+      expect(result).toHaveProperty("success", true);
+      expect(result).toHaveProperty("appId", mockAppId);
+      expect(result).toHaveProperty("appName", mockAppName);
+    });
+  });
+
+  standardFlagTests("apps:switch", import.meta.url, [
+    "--json",
+    "--pretty-json",
+  ]);
+
+  describe("error handling", () => {
+    it("should handle app not found error", async () => {
+      nockControl()
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: mockAccountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
+
+      nockControl().get(`/v1/accounts/${mockAccountId}/apps`).reply(200, []);
+
+      const { error } = await runCommand(
+        ["apps:switch", "nonexistent-app"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+    });
+
+    it("should handle 401 authentication error", async () => {
+      nockControl().get("/v1/me").reply(401, { error: "Unauthorized" });
+
+      const { error } = await runCommand(
+        ["apps:switch", mockAppId],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/401/);
+    });
+
+    it("should handle network errors", async () => {
+      nockControl().get("/v1/me").replyWithError("Network error");
+
+      const { error } = await runCommand(
+        ["apps:switch", mockAppId],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/Network error/);
+    });
+  });
+});

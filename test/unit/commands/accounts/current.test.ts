@@ -1,7 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("accounts:current command", () => {
   const mockAccountId = "test-account-id";
@@ -9,19 +17,19 @@ describe("accounts:current command", () => {
   const mockUserEmail = "test@example.com";
 
   beforeEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
-  describe("displays account info", () => {
+  describe("functionality", () => {
     it("should display account info from getMe() API call", async () => {
       const mock = getMockConfigManager();
       const accessToken = mock.getAccessToken()!;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .matchHeader("authorization", `Bearer ${accessToken}`)
         .reply(200, {
@@ -45,7 +53,7 @@ describe("accounts:current command", () => {
       const mock = getMockConfigManager();
       const accessToken = mock.getAccessToken()!;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .matchHeader("authorization", `Bearer ${accessToken}`)
         .reply(200, {
@@ -66,9 +74,7 @@ describe("accounts:current command", () => {
 
   describe("fallback behavior", () => {
     it("should show cached info when API fails", async () => {
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .replyWithError("Network error");
+      nockControl().get("/v1/me").replyWithError("Network error");
 
       const { stdout, stderr } = await runCommand(
         ["accounts:current"],
@@ -81,9 +87,7 @@ describe("accounts:current command", () => {
     });
 
     it("should suggest re-login on failure", async () => {
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .replyWithError("Network error");
+      nockControl().get("/v1/me").replyWithError("Network error");
 
       const { stdout, stderr } = await runCommand(
         ["accounts:current"],
@@ -103,9 +107,13 @@ describe("accounts:current command", () => {
       const { error } = await runCommand(["accounts:current"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/No account.*currently selected/i);
+      expect(error?.message).toMatch(/No account.*currently selected/i);
     });
   });
+
+  standardHelpTests("accounts:current", import.meta.url);
+  standardArgValidationTests("accounts:current", import.meta.url);
+  standardFlagTests("accounts:current", import.meta.url, ["--json"]);
 
   describe("web-cli mode restriction", () => {
     let originalWebCliMode: string | undefined;
@@ -128,7 +136,7 @@ describe("accounts:current command", () => {
       const { error } = await runCommand(["accounts:current"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("not available in the web CLI");
+      expect(error?.message).toContain("not available in the web CLI");
     });
   });
 });

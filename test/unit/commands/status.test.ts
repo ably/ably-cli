@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../helpers/standard-tests.js";
 
 describe("status command", () => {
   beforeEach(() => {
@@ -11,7 +16,7 @@ describe("status command", () => {
     nock.cleanAll();
   });
 
-  describe("when Ably services are operational", () => {
+  describe("functionality", () => {
     it("should display operational status", async () => {
       nock("https://ably.com")
         .get("/status/up.json")
@@ -87,16 +92,7 @@ describe("status command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["status", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("Check the status of the Ably service");
-      expect(stdout).toContain("--open");
-      expect(stdout).toContain("USAGE");
-    });
-  });
+  standardHelpTests("status", import.meta.url);
+  standardArgValidationTests("status", import.meta.url);
+  standardFlagTests("status", import.meta.url, ["--json", "--open"]);
 });

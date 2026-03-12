@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("spaces:locks:acquire command", () => {
   beforeEach(() => {
@@ -9,7 +14,13 @@ describe("spaces:locks:acquire command", () => {
     getMockAblySpaces();
   });
 
-  describe("lock acquisition", () => {
+  standardHelpTests("spaces:locks:acquire", import.meta.url);
+  standardArgValidationTests("spaces:locks:acquire", import.meta.url, {
+    requiredArgs: ["test-space"],
+  });
+  standardFlagTests("spaces:locks:acquire", import.meta.url, ["--json"]);
+
+  describe("functionality", () => {
     it("should acquire lock and display details", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
@@ -22,7 +33,7 @@ describe("spaces:locks:acquire command", () => {
       });
 
       const { stdout } = await runCommand(
-        ["spaces:locks:acquire", "test-space", "my-lock", "--duration", "0"],
+        ["spaces:locks:acquire", "test-space", "my-lock"],
         import.meta.url,
       );
 
@@ -49,8 +60,6 @@ describe("spaces:locks:acquire command", () => {
           "my-lock",
           "--data",
           '{"type":"editor"}',
-          "--duration",
-          "0",
         ],
         import.meta.url,
       );
@@ -68,7 +77,7 @@ describe("spaces:locks:acquire command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Invalid lock data JSON");
+      expect(error?.message).toContain("Invalid lock data JSON");
     });
 
     it("should handle acquisition failure", async () => {
@@ -82,7 +91,7 @@ describe("spaces:locks:acquire command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Lock already held");
+      expect(error?.message).toContain("Lock already held");
     });
 
     it("should output JSON on success", async () => {
@@ -96,14 +105,7 @@ describe("spaces:locks:acquire command", () => {
       });
 
       const { stdout } = await runCommand(
-        [
-          "spaces:locks:acquire",
-          "test-space",
-          "my-lock",
-          "--json",
-          "--duration",
-          "0",
-        ],
+        ["spaces:locks:acquire", "test-space", "my-lock", "--json"],
         import.meta.url,
       );
 
@@ -112,6 +114,22 @@ describe("spaces:locks:acquire command", () => {
       expect(result).toHaveProperty("lock");
       expect(result.lock).toHaveProperty("lockId", "my-lock");
       expect(result.lock).toHaveProperty("status", "locked");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle space enter failure gracefully", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.enter.mockRejectedValue(new Error("Space connection failed"));
+
+      const { error } = await runCommand(
+        ["spaces:locks:acquire", "test-space", "my-lock"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Space connection failed");
     });
   });
 });

@@ -106,7 +106,11 @@ This document outlines the directory structure of the Ably CLI project.
 │   │   ├── mock-config-manager.ts  # MockConfigManager (provides test auth)
 │   │   ├── mock-control-api-keys.ts # Mock Control API key responses
 │   │   ├── ably-event-emitter.ts   # Event emitter helper for mock SDKs
-│   │   └── ndjson.ts                # NDJSON parsing helpers (parseNdjsonLines, parseLogLines, captureJsonLogs)
+│   │   ├── ndjson.ts                # NDJSON parsing helpers (parseNdjsonLines, parseLogLines, captureJsonLogs)
+│   │   ├── standard-tests.ts        # Standard test generators for the 5 required describe blocks
+│   │   └── control-api-test-helpers.ts # Shared helpers for Control API nock tests (nockControl, getControlApiContext)
+│   ├── fixtures/                 # Mock data factories
+│   │   └── control-api.ts           # Mock factory functions for Control API response bodies (mockApp, mockKey, mockRule, mockQueue, mockNamespace, mockStats)
 │   ├── unit/                   # Fast, mocked tests
 │   │   ├── setup.ts            # Unit test setup
 │   │   ├── base/               # Base command class tests
@@ -120,6 +124,9 @@ This document outlines the directory structure of the Ably CLI project.
 │   ├── integration/            # Multi-component tests (mocked external services)
 │   │   ├── commands/           # Command flow integration tests
 │   │   └── interactive-mode.test.ts # Interactive REPL integration tests
+│   ├── tty/                    # TTY-dependent tests (node-pty, local only)
+│   │   ├── tty-test-helper.ts     # PTY spawn/wait/write helpers
+│   │   └── commands/              # Interactive SIGINT tests
 │   ├── e2e/                    # End-to-end tests against real Ably
 │   │   ├── auth/               # Auth E2E tests
 │   │   ├── bench/              # Benchmark E2E tests

@@ -3,6 +3,11 @@ import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("spaces:cursors:subscribe command", () => {
   beforeEach(() => {
@@ -11,65 +16,13 @@ describe("spaces:cursors:subscribe command", () => {
     getMockAblySpaces();
   });
 
-  describe("command arguments and flags", () => {
-    it("should require space argument", async () => {
-      const { error } = await runCommand(
-        ["spaces:cursors:subscribe"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["spaces:cursors:subscribe", "test-space", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should accept --json flag", async () => {
-      const spacesMock = getMockAblySpaces();
-      const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([]);
-
-      // Emit SIGINT to exit the command
-
-      const { error } = await runCommand(
-        ["spaces:cursors:subscribe", "test-space", "--json"],
-        import.meta.url,
-      );
-
-      // Should not have unknown flag error
-      expect(error?.message || "").not.toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should accept --pretty-json flag", async () => {
-      const { error } = await runCommand(
-        ["spaces:cursors:subscribe", "test-space", "--pretty-json"],
-        import.meta.url,
-      );
-
-      // Should not have unknown flag error
-      expect(error?.message || "").not.toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should accept --duration flag", async () => {
-      const { error } = await runCommand(
-        ["spaces:cursors:subscribe", "test-space", "--duration", "1"],
-        import.meta.url,
-      );
-
-      // Should not have unknown flag error (command may fail for other reasons without mocks)
-      expect(error?.message || "").not.toMatch(/unknown|Nonexistent flag/i);
-    });
+  standardHelpTests("spaces:cursors:subscribe", import.meta.url);
+  standardArgValidationTests("spaces:cursors:subscribe", import.meta.url, {
+    requiredArgs: ["test-space"],
   });
+  standardFlagTests("spaces:cursors:subscribe", import.meta.url, ["--json"]);
 
-  describe("subscription behavior", () => {
+  describe("functionality", () => {
     it("should subscribe to cursor updates in a space", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
@@ -184,6 +137,20 @@ describe("spaces:cursors:subscribe command", () => {
         "attached",
         expect.any(Function),
       );
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle space entry failure", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.enter.mockRejectedValue(new Error("Connection failed"));
+
+      const { error } = await runCommand(
+        ["spaces:cursors:subscribe", "test-space"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
     });
   });
 });

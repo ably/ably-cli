@@ -8,9 +8,9 @@ All code changes, whether features or bug fixes, **MUST** follow the mandatory w
 
 In summary, this involves:
 
-1.  **Build:** Run `pnpm prepare` to compile, update manifests, and update the README.
+1.  **Build:** Run `pnpm prepare` to compile and update manifests, then `pnpm exec oclif readme` to regenerate the README.
 2.  **Lint:** Run `pnpm exec eslint .` and fix all errors/warnings.
-3.  **Test:** Run relevant tests (`pnpm test:unit`, `pnpm test:integration`, `pnpm test:e2e`, `pnpm test:playwright`, or specific files) and ensure they pass. Add new tests or update existing ones as needed.
+3.  **Test:** Run relevant tests (`pnpm test:unit`, `pnpm test:integration`, `pnpm test:e2e`, `pnpm test:playwright`, or specific files) and ensure they pass. For interactive mode changes, also run `pnpm run test:tty` (requires a real terminal, not run in CI). Add new tests or update existing ones as needed.
 4.  **Document:** Update all relevant documentation (`docs/`, `AGENTS.md`, `README.md`) to reflect your changes.
 
 **Pull requests will not be merged unless all these steps are completed and verified.**

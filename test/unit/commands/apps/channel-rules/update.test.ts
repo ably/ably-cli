@@ -1,41 +1,37 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+  standardControlApiErrorTests,
+} from "../../../../helpers/standard-tests.js";
+import { mockNamespace } from "../../../../fixtures/control-api.js";
 
 describe("apps:channel-rules:update command", () => {
   const mockRuleId = "chat";
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
-  describe("successful channel rule update", () => {
+  describe("functionality", () => {
     it("should update a channel rule with persisted flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock listing namespaces to find the rule
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, [
-          {
-            id: mockRuleId,
-            persisted: false,
-            pushEnabled: false,
-            created: Date.now(),
-            modified: Date.now(),
-          },
-        ]);
+        .reply(200, [mockNamespace()]);
 
       // Mock update endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}/namespaces/${mockRuleId}`)
-        .reply(200, {
-          id: mockRuleId,
-          persisted: true,
-          pushEnabled: false,
-          created: Date.now(),
-          modified: Date.now(),
-        });
+        .reply(200, mockNamespace({ persisted: true }));
 
       const { stdout } = await runCommand(
         ["apps:channel-rules:update", mockRuleId, "--persisted"],
@@ -48,27 +44,13 @@ describe("apps:channel-rules:update command", () => {
 
     it("should update a channel rule with push-enabled flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, [
-          {
-            id: mockRuleId,
-            persisted: false,
-            pushEnabled: false,
-            created: Date.now(),
-            modified: Date.now(),
-          },
-        ]);
+        .reply(200, [mockNamespace()]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}/namespaces/${mockRuleId}`)
-        .reply(200, {
-          id: mockRuleId,
-          persisted: false,
-          pushEnabled: true,
-          created: Date.now(),
-          modified: Date.now(),
-        });
+        .reply(200, mockNamespace({ pushEnabled: true }));
 
       const { stdout } = await runCommand(
         ["apps:channel-rules:update", mockRuleId, "--push-enabled"],
@@ -81,29 +63,17 @@ describe("apps:channel-rules:update command", () => {
 
     it("should update a channel rule with mutable-messages flag and auto-enable persisted", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, [
-          {
-            id: mockRuleId,
-            persisted: false,
-            pushEnabled: false,
-            created: Date.now(),
-            modified: Date.now(),
-          },
-        ]);
+        .reply(200, [mockNamespace()]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}/namespaces/${mockRuleId}`, (body) => {
           return body.mutableMessages === true && body.persisted === true;
         })
         .reply(200, {
-          id: mockRuleId,
-          persisted: true,
-          pushEnabled: false,
+          ...mockNamespace({ persisted: true }),
           mutableMessages: true,
-          created: Date.now(),
-          modified: Date.now(),
         });
 
       const { stdout, stderr } = await runCommand(
@@ -121,17 +91,9 @@ describe("apps:channel-rules:update command", () => {
 
     it("should error when --mutable-messages is used with --no-persisted", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, [
-          {
-            id: mockRuleId,
-            persisted: true,
-            pushEnabled: false,
-            created: Date.now(),
-            modified: Date.now(),
-          },
-        ]);
+        .reply(200, [mockNamespace({ persisted: true })]);
 
       const { error } = await runCommand(
         [
@@ -144,38 +106,24 @@ describe("apps:channel-rules:update command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(
+      expect(error?.message).toMatch(
         /Cannot disable persistence when mutable messages is enabled/,
       );
     });
 
     it("should allow --no-mutable-messages --no-persisted to disable both", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
         .reply(200, [
-          {
-            id: mockRuleId,
-            persisted: true,
-            pushEnabled: false,
-            mutableMessages: true,
-            created: Date.now(),
-            modified: Date.now(),
-          },
+          { ...mockNamespace({ persisted: true }), mutableMessages: true },
         ]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}/namespaces/${mockRuleId}`, (body) => {
           return body.mutableMessages === false && body.persisted === false;
         })
-        .reply(200, {
-          id: mockRuleId,
-          persisted: false,
-          pushEnabled: false,
-          mutableMessages: false,
-          created: Date.now(),
-          modified: Date.now(),
-        });
+        .reply(200, { ...mockNamespace(), mutableMessages: false });
 
       const { stdout } = await runCommand(
         [
@@ -193,17 +141,10 @@ describe("apps:channel-rules:update command", () => {
 
     it("should error when --no-persisted is used while existing rule has mutable messages", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
         .reply(200, [
-          {
-            id: mockRuleId,
-            persisted: true,
-            pushEnabled: false,
-            mutableMessages: true,
-            created: Date.now(),
-            modified: Date.now(),
-          },
+          { ...mockNamespace({ persisted: true }), mutableMessages: true },
         ]);
 
       const { error } = await runCommand(
@@ -212,34 +153,22 @@ describe("apps:channel-rules:update command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(
+      expect(error?.message).toMatch(
         /Cannot disable persistence when mutable messages is enabled/,
       );
     });
 
     it("should include mutableMessages in JSON output when updating", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, [
-          {
-            id: mockRuleId,
-            persisted: false,
-            pushEnabled: false,
-            created: Date.now(),
-            modified: Date.now(),
-          },
-        ]);
+        .reply(200, [mockNamespace()]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}/namespaces/${mockRuleId}`)
         .reply(200, {
-          id: mockRuleId,
-          persisted: true,
-          pushEnabled: false,
+          ...mockNamespace({ persisted: true }),
           mutableMessages: true,
-          created: Date.now(),
-          modified: Date.now(),
         });
 
       const { stdout } = await runCommand(
@@ -260,27 +189,13 @@ describe("apps:channel-rules:update command", () => {
 
     it("should output JSON format when --json flag is used", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, [
-          {
-            id: mockRuleId,
-            persisted: false,
-            pushEnabled: false,
-            created: Date.now(),
-            modified: Date.now(),
-          },
-        ]);
+        .reply(200, [mockNamespace()]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}/namespaces/${mockRuleId}`)
-        .reply(200, {
-          id: mockRuleId,
-          persisted: true,
-          pushEnabled: false,
-          created: Date.now(),
-          modified: Date.now(),
-        });
+        .reply(200, mockNamespace({ persisted: true }));
 
       const { stdout } = await runCommand(
         ["apps:channel-rules:update", mockRuleId, "--persisted", "--json"],
@@ -295,7 +210,26 @@ describe("apps:channel-rules:update command", () => {
     });
   });
 
+  standardHelpTests("apps:channel-rules:update", import.meta.url);
+  standardArgValidationTests("apps:channel-rules:update", import.meta.url, {
+    requiredArgs: ["test-rule"],
+  });
+  standardFlagTests("apps:channel-rules:update", import.meta.url, ["--json"]);
+
   describe("error handling", () => {
+    standardControlApiErrorTests({
+      commandArgs: ["apps:channel-rules:update", "chat", "--persisted"],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().get(`/v1/apps/${appId}/namespaces`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
+    });
+
     it("should require nameOrId argument", async () => {
       const { error } = await runCommand(
         ["apps:channel-rules:update", "--persisted"],
@@ -303,22 +237,14 @@ describe("apps:channel-rules:update command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing 1 required arg/);
+      expect(error?.message).toMatch(/Missing 1 required arg/);
     });
 
     it("should require at least one update parameter", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, [
-          {
-            id: mockRuleId,
-            persisted: false,
-            pushEnabled: false,
-            created: Date.now(),
-            modified: Date.now(),
-          },
-        ]);
+        .reply(200, [mockNamespace()]);
 
       const { error } = await runCommand(
         ["apps:channel-rules:update", mockRuleId],
@@ -326,14 +252,12 @@ describe("apps:channel-rules:update command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/No update parameters provided/);
+      expect(error?.message).toMatch(/No update parameters provided/);
     });
 
     it("should handle channel rule not found", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, []);
+      nockControl().get(`/v1/apps/${appId}/namespaces`).reply(200, []);
 
       const { error } = await runCommand(
         ["apps:channel-rules:update", "nonexistent", "--persisted"],
@@ -341,37 +265,7 @@ describe("apps:channel-rules:update command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/not found/);
-    });
-
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/namespaces`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["apps:channel-rules:update", mockRuleId, "--persisted"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/401/);
-    });
-
-    it("should handle network errors", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/namespaces`)
-        .replyWithError("Network error");
-
-      const { error } = await runCommand(
-        ["apps:channel-rules:update", mockRuleId, "--persisted"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Network error/);
+      expect(error?.message).toMatch(/not found/);
     });
   });
 });

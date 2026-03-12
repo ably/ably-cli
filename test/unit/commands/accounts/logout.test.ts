@@ -1,31 +1,17 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("accounts:logout command", () => {
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["accounts:logout", "--help"],
-        import.meta.url,
-      );
+  standardHelpTests("accounts:logout", import.meta.url);
+  standardArgValidationTests("accounts:logout", import.meta.url);
 
-      expect(stdout).toContain("Log out from an Ably account");
-      expect(stdout).toContain("USAGE");
-      expect(stdout).toContain("--force");
-    });
-
-    it("should display examples in help", async () => {
-      const { stdout } = await runCommand(
-        ["accounts:logout", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("EXAMPLES");
-    });
-  });
-
-  describe("with no logged in accounts", () => {
+  describe("functionality", () => {
     beforeEach(() => {
       // Clear accounts to simulate no logged in state
       const mock = getMockConfigManager();
@@ -194,4 +180,6 @@ describe("accounts:logout command", () => {
       expect(result.error).toContain("not found");
     });
   });
+
+  standardFlagTests("accounts:logout", import.meta.url, ["--json"]);
 });

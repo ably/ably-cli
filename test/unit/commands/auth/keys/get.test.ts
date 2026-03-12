@@ -1,24 +1,33 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 import {
   mockKeysList,
   buildMockKey,
 } from "../../../../helpers/mock-control-api-keys.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+  standardControlApiErrorTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("auth:keys:get command", () => {
   const mockKeyId = "testkey";
 
   beforeEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
-  describe("successful key retrieval", () => {
+  describe("functionality", () => {
     it("should get key details by full key name (APP_ID.KEY_ID)", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       mockKeysList(appId, [buildMockKey(appId, mockKeyId)]);
@@ -109,12 +118,20 @@ describe("auth:keys:get command", () => {
     });
   });
 
+  standardHelpTests("auth:keys:get", import.meta.url);
+
+  standardArgValidationTests("auth:keys:get", import.meta.url, {
+    requiredArgs: ["test-key"],
+  });
+
+  standardFlagTests("auth:keys:get", import.meta.url, ["--json"]);
+
   describe("error handling", () => {
     it("should require keyNameOrValue argument", async () => {
       const { error } = await runCommand(["auth:keys:get"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing 1 required arg/);
+      expect(error?.message).toMatch(/Missing 1 required arg/);
     });
 
     it("should handle key not found", async () => {
@@ -127,22 +144,20 @@ describe("auth:keys:get command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/not found/);
+      expect(error?.message).toMatch(/not found/);
     });
 
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/keys`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["auth:keys:get", `${appId}.${mockKeyId}`],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/401/);
+    standardControlApiErrorTests({
+      commandArgs: ["auth:keys:get", mockKeyId],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().get(`/v1/apps/${appId}/keys`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
     });
   });
 });

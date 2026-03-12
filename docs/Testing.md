@@ -31,6 +31,7 @@ Refer to [AGENTS.md](../AGENTS.md) for the mandatory requirement to run tests.
 | **Unit Tests** | `pnpm test:unit` | Fast tests with mocked dependencies |
 | **Integration Tests** | `pnpm test:integration` | Tests with mocked Ably services |
 | **E2E Tests** | `pnpm test:e2e` | Tests against real Ably services |
+| **TTY Tests** | `pnpm run test:tty` | Interactive mode SIGINT tests (requires real TTY, local only) |
 | **Playwright Tests** | `pnpm test:playwright` | Web CLI browser tests |
 
 **Run Specific Files:**
@@ -172,6 +173,19 @@ Everything else (exact countdown rendering, every internal state transition, con
 
 Refer to the [Debugging Guide](Debugging.md) for tips on debugging failed tests, including Playwright and Vitest tests.
 
+### 🖥️ TTY Tests (`test/tty`)
+
+*   **Primary Purpose:** Verify interactive mode behavior that depends on a real terminal (pseudo-TTY), such as SIGINT/Ctrl+C handling with readline.
+*   **Dependencies:** Requires `node-pty` (already in devDependencies) to create real pseudo-terminals. Cannot run in CI (GitHub Actions runners have no TTY).
+*   **Speed:** Fast (~2 seconds), but requires native module compilation.
+*   **Value:** Tests SIGINT handling that is fundamentally untestable with piped stdio — readline's signal handling only works in real TTY environments.
+*   **Tools:** Vitest, `node-pty`.
+*   **Location:** `test/tty/` directory.
+*   **Execution:** Run locally with `pnpm run test:tty`. Not included in `pnpm test:unit` or CI pipelines.
+*   **Helpers:** `test/tty/tty-test-helper.ts` provides `spawnTty()`, `waitForOutput()`, `writeTty()`, `sendCtrlC()`, `killTty()` (async), and constants `PROMPT_PATTERN` (`"ably>"`) and `DEFAULT_WAIT_TIMEOUT` (8000ms). `ABLY_CLI_DEFAULT_DURATION` is intentionally omitted from the TTY vitest config — TTY tests manage their own timing via explicit `--duration` flags and real PTY I/O.
+
+> **Note:** If `node-pty` fails to load, rebuild it with `pnpm rebuild node-pty`.
+
 ### 🌐 End-to-End (E2E) Tests (`test/e2e`)
 
 *   **Primary Purpose:** Verify critical user flows work correctly against **real Ably services** using actual credentials (provided via environment variables).
@@ -296,6 +310,73 @@ describe('channels commands', () => {
 E2E tests are organized by feature/topic (e.g., `channels-e2e.test.ts`, `presence-e2e.test.ts`) to improve maintainability and allow targeted runs. They use shared helpers from `test/helpers/e2e-test-helper.ts`.
 
 </details>
+
+---
+
+## 🧩 Shared Test Helpers & Conventions
+
+### Required Describe Block Order
+
+Every unit test file for a command MUST include all 5 of these describe blocks in this canonical order (exact names):
+
+1. **`"help"`** — verify `--help` shows USAGE
+2. **`"argument validation"`** — test required args or unknown flag rejection
+3. **`"functionality"`** — core happy-path behavior
+4. **`"flags"`** — verify flags exist and work
+5. **`"error handling"`** — API errors, network failures
+
+Do NOT use variants like `"command arguments and flags"`, `"command flags"`, `"flag options"`, or `"parameter validation"`. Exempt: `interactive.test.ts`, `interactive-sigint.test.ts`, `bench/*.test.ts`.
+
+### Standard Test Generators
+
+The file `test/helpers/standard-tests.ts` provides generator functions that produce the boilerplate tests for the required describe blocks:
+
+- **`standardHelpTests(command, importMetaUrl)`** — generates the `"help"` describe block, verifying `--help` output contains USAGE
+- **`standardArgValidationTests(command, importMetaUrl, options?)`** — generates the `"argument validation"` block, testing unknown flag rejection. If `options.requiredArgs` is provided, also tests that missing args produce an error.
+- **`standardFlagTests(command, importMetaUrl, flags)`** — generates the `"flags"` block, verifying each flag in the array appears in `--help` output
+- **`standardControlApiErrorTests(opts)`** — generates 401/500/network error tests for Control API commands. Call **inside** a `describe("error handling", ...)` block (does NOT create the describe block itself). Takes `{ commandArgs, importMetaUrl, setupNock }` where `setupNock(scenario)` receives `"401"`, `"500"`, or `"network"`.
+
+Call the generators at describe-block level (not inside nested describes). You still need to write `"functionality"` and `"error handling"` blocks manually since those are command-specific. For Control API commands, combine `standardControlApiErrorTests()` with command-specific error tests inside the same `describe("error handling", ...)` block.
+
+### Control API Test Helpers
+
+The file `test/helpers/control-api-test-helpers.ts` provides shared helpers for testing commands that use the Control API with nock:
+
+- **`nockControl()`** — returns a `nock` scope pre-configured for `https://control.ably.net`
+- **`getControlApiContext()`** — returns `{ appId, accountId, mock }` from `MockConfigManager`
+- **`controlApiCleanup()`** — calls `nock.cleanAll()` for use in `afterEach` hooks
+- **`CONTROL_HOST`** — the default Control API host constant (`"https://control.ably.net"`)
+
+### Mock Factory Functions
+
+The file `test/fixtures/control-api.ts` provides factory functions for building realistic Control API response bodies. Each accepts an optional `Partial<T>` to override any field:
+
+- **`mockApp(overrides?)`** — mock app object (id, name, status, tlsOnly, etc.)
+- **`mockKey(overrides?)`** — mock API key object (id, key, capability, etc.)
+- **`mockRule(overrides?)`** — mock integration rule object (ruleType, source, target, etc.)
+- **`mockQueue(overrides?)`** — mock queue object (name, region, state, messages, stats, amqp, stomp, etc.)
+- **`mockNamespace(overrides?)`** — mock namespace object (id, persisted, pushEnabled, etc.)
+- **`mockStats(overrides?)`** — mock stats object (intervalId, unit, all.messages, etc.)
+
+```typescript
+import { mockApp, mockQueue } from "../../../fixtures/control-api.js";
+
+// Use defaults
+nockControl().get(`/v1/apps/${appId}`).reply(200, mockApp());
+
+// Override specific fields
+nockControl().get(`/v1/apps/${appId}/queues`).reply(200, [
+  mockQueue({ id: "q-1", appId, name: "my-queue" }),
+]);
+```
+
+### NDJSON Test Helpers
+
+The file `test/helpers/ndjson.ts` provides helpers for testing JSON output:
+
+- **`parseNdjsonLines(stdout)`** — parse stdout containing one JSON object per line into an array of records
+- **`parseLogLines(lines)`** — parse an array of log lines into JSON records (skips non-JSON)
+- **`captureJsonLogs(fn)`** — capture all `console.log` output from an async function and parse as JSON records. Use to verify JSON envelope structure in `--json` mode.
 
 ---
 

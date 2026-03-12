@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("support:contact command", () => {
   const originalEnv = process.env.ABLY_WEB_CLI_MODE;
@@ -15,7 +20,7 @@ describe("support:contact command", () => {
     vi.clearAllMocks();
   });
 
-  describe("normal CLI mode", () => {
+  describe("functionality", () => {
     beforeEach(() => {
       delete process.env.ABLY_WEB_CLI_MODE;
     });
@@ -106,6 +111,22 @@ describe("support:contact command", () => {
       expect(stdout).toContain(
         "would open URL in browser: https://ably.com/support",
       );
+    });
+  });
+
+  standardHelpTests("support:contact", import.meta.url);
+
+  standardArgValidationTests("support:contact", import.meta.url);
+
+  standardFlagTests("support:contact", import.meta.url, ["--help"]);
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const { error } = await runCommand(
+        ["support:contact", "--unknown-flag-xyz"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
     });
   });
 });

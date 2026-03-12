@@ -1,9 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("apps:current command", () => {
-  describe("successful current app display", () => {
+  describe("functionality", () => {
     it("should display the current app", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
@@ -33,6 +38,10 @@ describe("apps:current command", () => {
     });
   });
 
+  standardHelpTests("apps:current", import.meta.url);
+  standardArgValidationTests("apps:current", import.meta.url);
+  standardFlagTests("apps:current", import.meta.url, ["--json"]);
+
   describe("error handling", () => {
     it("should error when no account is selected", async () => {
       const mock = getMockConfigManager();
@@ -41,7 +50,7 @@ describe("apps:current command", () => {
       const { error } = await runCommand(["apps:current"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/No account selected/);
+      expect(error?.message).toMatch(/No account selected/);
     });
 
     it("should error when no app is selected", async () => {
@@ -51,7 +60,7 @@ describe("apps:current command", () => {
       const { error } = await runCommand(["apps:current"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/No app selected/);
+      expect(error?.message).toMatch(/No app selected/);
     });
   });
 });

@@ -1,9 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("auth:keys:current command", () => {
-  describe("successful key display", () => {
+  describe("functionality", () => {
     it("should display the current API key", async () => {
       const mockConfig = getMockConfigManager();
       const keyId = mockConfig.getKeyId()!;
@@ -44,6 +49,12 @@ describe("auth:keys:current command", () => {
     });
   });
 
+  standardHelpTests("auth:keys:current", import.meta.url);
+
+  standardArgValidationTests("auth:keys:current", import.meta.url);
+
+  standardFlagTests("auth:keys:current", import.meta.url, ["--json"]);
+
   describe("error handling", () => {
     it("should reject unknown flags", async () => {
       const { error } = await runCommand(
@@ -52,7 +63,7 @@ describe("auth:keys:current command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
 
     it("should accept --app flag to specify a different app", async () => {

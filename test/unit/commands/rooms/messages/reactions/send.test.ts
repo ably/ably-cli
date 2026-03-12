@@ -1,61 +1,27 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../../helpers/mock-ably-chat.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../../helpers/standard-tests.js";
 
 describe("rooms:messages:reactions:send command", () => {
   beforeEach(() => {
     getMockAblyChat();
   });
 
-  describe("command arguments and flags", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        [
-          "rooms:messages:reactions:send",
-          "test-room",
-          "msg-serial",
-          "👍",
-          "--unknown-flag-xyz",
-        ],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should require room argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:reactions:send"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should require messageSerial argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:reactions:send", "test-room"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should require reaction argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:reactions:send", "test-room", "msg-serial"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
+  standardHelpTests("rooms:messages:reactions:send", import.meta.url);
+  standardArgValidationTests("rooms:messages:reactions:send", import.meta.url, {
+    requiredArgs: ["test-room", "msg-serial", "thumbsup"],
   });
+  standardFlagTests("rooms:messages:reactions:send", import.meta.url, [
+    "--json",
+    "--type",
+  ]);
 
-  describe("sending reactions", () => {
+  describe("functionality", () => {
     it("should send a reaction to a message", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
@@ -148,7 +114,25 @@ describe("rooms:messages:reactions:send command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Failed to send reaction");
+      expect(error?.message).toContain("Failed to send reaction");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle reaction send failure gracefully", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+      room.messages.reactions.send.mockRejectedValue(
+        new Error("Service unavailable"),
+      );
+
+      const { error } = await runCommand(
+        ["rooms:messages:reactions:send", "test-room", "msg-serial-123", "👍"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Service unavailable");
     });
   });
 });

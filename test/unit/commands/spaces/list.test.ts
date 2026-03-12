@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("spaces:list command", () => {
   const mockSpaceChannelsResponse = {
@@ -110,5 +115,33 @@ describe("spaces:list command", () => {
     expect(json.spaces.length).toBe(2);
     expect(json.spaces[0]).toHaveProperty("spaceName", "space1");
     expect(json.spaces[1]).toHaveProperty("spaceName", "space2");
+  });
+
+  standardHelpTests("spaces:list", import.meta.url);
+  standardArgValidationTests("spaces:list", import.meta.url);
+  standardFlagTests("spaces:list", import.meta.url, ["--json"]);
+
+  describe("functionality", () => {
+    it("should list active spaces successfully", async () => {
+      const { stdout, error } = await runCommand(
+        ["spaces:list"],
+        import.meta.url,
+      );
+
+      expect(error).toBeUndefined();
+      expect(stdout).toContain("space1");
+      expect(stdout).toContain("space2");
+      expect(stdout).not.toContain("regular-channel");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockRejectedValue(new Error("API error"));
+
+      const { error } = await runCommand(["spaces:list"], import.meta.url);
+      expect(error).toBeDefined();
+    });
   });
 });

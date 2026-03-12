@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("channels:presence:subscribe command", () => {
   let presenceCallback: ((msg: unknown) => void) | null = null;
@@ -36,39 +41,16 @@ describe("channels:presence:subscribe command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:presence:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("Subscribe to presence events");
-      expect(stdout).toContain("USAGE");
-      expect(stdout).toContain("CHANNEL");
-    });
-
-    it("should display examples in help", async () => {
-      const { stdout } = await runCommand(
-        ["channels:presence:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("EXAMPLES");
-      expect(stdout).toContain("presence subscribe");
-    });
-
-    it("should show channel argument is required", async () => {
-      const { stdout } = await runCommand(
-        ["channels:presence:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("CHANNEL");
-    });
+  standardHelpTests("channels:presence:subscribe", import.meta.url);
+  standardArgValidationTests("channels:presence:subscribe", import.meta.url, {
+    requiredArgs: ["test-channel"],
   });
+  standardFlagTests("channels:presence:subscribe", import.meta.url, [
+    "--json",
+    "--duration",
+  ]);
 
-  describe("presence subscription functionality", () => {
+  describe("functionality", () => {
     it("should subscribe to presence events on a channel", async () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("test-channel");
@@ -163,23 +145,19 @@ describe("channels:presence:subscribe command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:presence:subscribe", "--help"],
+  describe("error handling", () => {
+    it("should handle missing mock client in test mode", async () => {
+      if (globalThis.__TEST_MOCKS__) {
+        delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
+      }
+
+      const { error } = await runCommand(
+        ["channels:presence:subscribe", "test-channel"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("--json");
-    });
-
-    it("should accept --duration flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:presence:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--duration");
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/No mock|client/i);
     });
   });
 });

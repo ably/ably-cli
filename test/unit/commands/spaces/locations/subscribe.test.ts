@@ -3,6 +3,11 @@ import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("spaces:locations:subscribe command", () => {
   beforeEach(() => {
@@ -11,65 +16,13 @@ describe("spaces:locations:subscribe command", () => {
     getMockAblySpaces();
   });
 
-  describe("command arguments and flags", () => {
-    it("should require space argument", async () => {
-      const { error } = await runCommand(
-        ["spaces:locations:subscribe"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["spaces:locations:subscribe", "test-space", "--unknown-flag"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should accept --json flag", async () => {
-      const spacesMock = getMockAblySpaces();
-      const space = spacesMock._getSpace("test-space");
-      space.locations.getAll.mockResolvedValue({});
-
-      // Use SIGINT to exit the command
-
-      const { error } = await runCommand(
-        ["spaces:locations:subscribe", "test-space", "--json"],
-        import.meta.url,
-      );
-
-      // Should not have unknown flag error
-      expect(error?.message || "").not.toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should accept --pretty-json flag", async () => {
-      const { error } = await runCommand(
-        ["spaces:locations:subscribe", "test-space", "--pretty-json"],
-        import.meta.url,
-      );
-
-      // Should not have unknown flag error
-      expect(error?.message || "").not.toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should accept --duration flag", async () => {
-      const { error } = await runCommand(
-        ["spaces:locations:subscribe", "test-space", "--duration", "1"],
-        import.meta.url,
-      );
-
-      // Should not have unknown flag error (command may fail for other reasons without mocks)
-      expect(error?.message || "").not.toMatch(/unknown|Nonexistent flag/i);
-    });
+  standardHelpTests("spaces:locations:subscribe", import.meta.url);
+  standardArgValidationTests("spaces:locations:subscribe", import.meta.url, {
+    requiredArgs: ["test-space"],
   });
+  standardFlagTests("spaces:locations:subscribe", import.meta.url, ["--json"]);
 
-  describe("subscription behavior", () => {
+  describe("functionality", () => {
     it("should subscribe to location updates in a space", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
@@ -182,7 +135,7 @@ describe("spaces:locations:subscribe command", () => {
 
       // Command should report the error
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Failed to get locations");
+      expect(error?.message).toContain("Failed to get locations");
       // Command should NOT continue to subscribe after getAll fails
       expect(space.locations.subscribe).not.toHaveBeenCalled();
     });

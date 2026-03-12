@@ -1,12 +1,10 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import Interactive from "../../../src/commands/interactive.js";
 import { Config } from "@oclif/core";
-import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe("Interactive Command", () => {
   describe("static properties", () => {
@@ -49,13 +47,15 @@ describe("Interactive Command", () => {
         throw new Error("Test complete");
       };
 
-      // Temporarily suppress console.error and stub process.exit
-      const originalConsoleError = console.error;
-      const originalProcessExit = process.exit;
-      console.error = () => {};
-      process.exit = (() => {
-        throw new Error("Process exit called");
-      }) as never;
+      // Suppress console.error and stub process.exit using spies
+      const consoleErrorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      const processExitSpy = vi
+        .spyOn(process, "exit")
+        .mockImplementation((() => {
+          throw new Error("Process exit called");
+        }) as never);
 
       try {
         await cmd.run();
@@ -68,11 +68,10 @@ describe("Interactive Command", () => {
         ) {
           throw err;
         }
+      } finally {
+        consoleErrorSpy.mockRestore();
+        processExitSpy.mockRestore();
       }
-
-      // Restore console.error and process.exit
-      console.error = originalConsoleError;
-      process.exit = originalProcessExit;
 
       expect(process.env.ABLY_INTERACTIVE_MODE).toBe("true");
     });
@@ -144,108 +143,7 @@ describe("Interactive Command", () => {
     });
   });
 
-  // eslint-disable-next-line vitest/no-disabled-tests
-  describe.skip("Ctrl+C Handling Integration Tests - FLAKY in CI", () => {
-    // See: https://github.com/ably/cli/issues/70
-    it("should exit cleanly with code 130 when Ctrl+C is pressed during command execution", (done) => {
-      // Use the development.js script directly to test the actual CLI behavior
-      const binPath = path.join(__dirname, "../../../bin/development.js");
-      const child = spawn("node", [binPath, "interactive"], {
-        stdio: "pipe",
-        env: { ...process.env, ABLY_SUPPRESS_WELCOME: "1" },
-      });
-
-      let output = "";
-      let commandSent = false;
-      let ctrlCSent = false;
-
-      child.stdout.on("data", (data) => {
-        output += data.toString();
-
-        // Wait for prompt then send subscribe command
-        if (!commandSent && output.includes("$")) {
-          commandSent = true;
-          setTimeout(() => {
-            child.stdin.write(
-              "channels subscribe test-channel --duration 10\n",
-            );
-          }, 100);
-        }
-
-        // Wait for subscription to start then send Ctrl+C
-        if (
-          commandSent &&
-          !ctrlCSent &&
-          output.includes("Listening for messages")
-        ) {
-          ctrlCSent = true;
-          setTimeout(() => {
-            // Send SIGINT to the child process
-            child.kill("SIGINT");
-          }, 500);
-        }
-      });
-
-      child.stderr.on("data", () => {
-        // Intentionally discarded — stderr is expected but irrelevant to this test
-      });
-
-      child.on("exit", (code, signal) => {
-        // Should exit with code 130 (128 + 2 for SIGINT)
-        expect(code).toBe(130);
-        expect(signal).toBeNull();
-        expect(output).toContain("Listening for messages");
-        expect(output).not.toContain("Error: read EIO");
-        expect(output).not.toContain("setRawMode EIO");
-        done();
-      });
-
-      child.on("error", (err) => {
-        done(err);
-      });
-    }, 15000);
-
-    it("should handle Ctrl+C on empty prompt", (done) => {
-      const binPath = path.join(__dirname, "../../../bin/development.js");
-      const child = spawn("node", [binPath, "interactive"], {
-        stdio: "pipe",
-        env: { ...process.env, ABLY_SUPPRESS_WELCOME: "1" },
-      });
-
-      let output = "";
-      let ctrlCSent = false;
-      let exitSent = false;
-
-      child.stdout.on("data", (data) => {
-        output += data.toString();
-
-        // Send Ctrl+C on first prompt
-        if (!ctrlCSent && output.includes("$")) {
-          ctrlCSent = true;
-          setTimeout(() => {
-            // Send Ctrl+C character directly to stdin
-            child.stdin.write("\u0003");
-          }, 100);
-        }
-
-        // After ^C is displayed, send exit command
-        if (ctrlCSent && !exitSent && output.includes("^C")) {
-          exitSent = true;
-          setTimeout(() => {
-            child.stdin.write("exit\n");
-          }, 100);
-        }
-      });
-
-      child.on("exit", (code) => {
-        expect(code).toBe(0); // Normal exit after 'exit' command
-        expect(output).toContain("^C");
-        done();
-      });
-
-      child.on("error", (err) => {
-        done(err);
-      });
-    }, 10000);
-  });
+  // TTY-dependent Ctrl+C tests moved to: test/tty/commands/interactive-sigint.test.ts
+  // Run with: pnpm test:tty
+  // See: https://github.com/ably/cli/issues/70
 });

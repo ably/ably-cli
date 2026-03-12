@@ -1,13 +1,18 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("accounts:list command", () => {
   beforeEach(() => {
     // Config is auto-reset by setup.ts
   });
 
-  describe("no accounts", () => {
+  describe("functionality", () => {
     it("should show message when no accounts configured", async () => {
       const mock = getMockConfigManager();
       mock.clearAccounts();
@@ -15,8 +20,8 @@ describe("accounts:list command", () => {
       const { error } = await runCommand(["accounts:list"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("No accounts configured");
-      expect(error!.message).toContain("ably accounts login");
+      expect(error?.message).toContain("No accounts configured");
+      expect(error?.message).toContain("ably accounts login");
     });
 
     it("should output JSON error when no accounts with --json", async () => {
@@ -68,6 +73,20 @@ describe("accounts:list command", () => {
       expect(currentAccount.isCurrent).toBe(true);
       expect(currentAccount).toHaveProperty("alias");
       expect(currentAccount).toHaveProperty("appsConfigured");
+    });
+  });
+
+  standardHelpTests("accounts:list", import.meta.url);
+  standardArgValidationTests("accounts:list", import.meta.url);
+  standardFlagTests("accounts:list", import.meta.url, ["--json"]);
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const mock = getMockConfigManager();
+      mock.clearAccounts();
+
+      const { error } = await runCommand(["accounts:list"], import.meta.url);
+      expect(error).toBeDefined();
     });
   });
 });

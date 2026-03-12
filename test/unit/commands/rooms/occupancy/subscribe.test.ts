@@ -2,13 +2,24 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
 import { captureJsonLogs } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("rooms:occupancy:subscribe command", () => {
   beforeEach(() => {
     getMockAblyChat();
   });
 
-  describe("subscription behavior", () => {
+  standardHelpTests("rooms:occupancy:subscribe", import.meta.url);
+  standardArgValidationTests("rooms:occupancy:subscribe", import.meta.url, {
+    requiredArgs: ["test-room"],
+  });
+  standardFlagTests("rooms:occupancy:subscribe", import.meta.url, ["--json"]);
+
+  describe("functionality", () => {
     it("should display initial occupancy snapshot", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
@@ -18,7 +29,7 @@ describe("rooms:occupancy:subscribe command", () => {
       });
 
       const { stdout } = await runCommand(
-        ["rooms:occupancy:subscribe", "test-room", "--duration", "0"],
+        ["rooms:occupancy:subscribe", "test-room"],
         import.meta.url,
       );
 
@@ -34,7 +45,7 @@ describe("rooms:occupancy:subscribe command", () => {
       room.occupancy.get.mockRejectedValue(new Error("Fetch failed"));
 
       const { stdout } = await runCommand(
-        ["rooms:occupancy:subscribe", "test-room", "--duration", "0"],
+        ["rooms:occupancy:subscribe", "test-room"],
         import.meta.url,
       );
 
@@ -58,7 +69,7 @@ describe("rooms:occupancy:subscribe command", () => {
       });
 
       const commandPromise = runCommand(
-        ["rooms:occupancy:subscribe", "test-room", "--duration", "0"],
+        ["rooms:occupancy:subscribe", "test-room"],
         import.meta.url,
       );
 
@@ -91,13 +102,7 @@ describe("rooms:occupancy:subscribe command", () => {
 
       const allRecords = await captureJsonLogs(async () => {
         await runCommand(
-          [
-            "rooms:occupancy:subscribe",
-            "test-room",
-            "--json",
-            "--duration",
-            "0",
-          ],
+          ["rooms:occupancy:subscribe", "test-room", "--json"],
           import.meta.url,
         );
       });
@@ -112,6 +117,22 @@ describe("rooms:occupancy:subscribe command", () => {
       expect(parsed).toHaveProperty("type", "event");
       expect(parsed).toHaveProperty("eventType", "initialSnapshot");
       expect(parsed).toHaveProperty("room", "test-room");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.attach.mockRejectedValue(new Error("Connection failed"));
+
+      const { error } = await runCommand(
+        ["rooms:occupancy:subscribe", "test-room"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
     });
   });
 });

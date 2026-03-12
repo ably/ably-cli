@@ -23,6 +23,17 @@ Located in `test/integration/`, these test commands with mocked external APIs (A
 - Flag combinations and option handling
 - Input validation
 
+### TTY Tests
+
+Located in `test/tty/`, these test interactive mode behavior that requires a real pseudo-terminal (PTY). They use `node-pty` to create real terminals, which makes readline's SIGINT handling work correctly (unlike piped stdio). They cover:
+
+- Ctrl+C on empty prompt
+- Ctrl+C with partial command input
+- Ctrl+C during command execution
+- Signal handling and clean exit
+
+These tests are **not run in CI** — they require a real TTY environment. Run locally with `pnpm run test:tty`.
+
 ### End-to-End (E2E) Tests
 
 Located in `test/e2e/`, these use real API calls to Ably. They verify:
@@ -80,6 +91,11 @@ pnpm test:integration
 Run only e2e tests:
 ```bash
 pnpm test:e2e
+```
+
+Run TTY tests (local only, requires real terminal):
+```bash
+pnpm run test:tty
 ```
 
 ### Specific Test Suites

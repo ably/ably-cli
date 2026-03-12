@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 import { captureJsonLogs } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("LogsConnectionLifecycleSubscribe", function () {
   beforeEach(function () {
@@ -26,6 +31,35 @@ describe("LogsConnectionLifecycleSubscribe", function () {
       }
     });
   });
+
+  describe("functionality", () => {
+    it("should subscribe to the meta connection lifecycle channel", async () => {
+      const mock = getMockAblyRealtime();
+
+      const { stdout } = await runCommand(
+        ["logs:connection-lifecycle:subscribe"],
+        import.meta.url,
+      );
+
+      expect(mock.channels.get).toHaveBeenCalledWith(
+        "[meta]connection.lifecycle",
+        {},
+      );
+      const channel = mock.channels._getChannel("[meta]connection.lifecycle");
+      expect(channel.subscribe).toHaveBeenCalled();
+      expect(stdout).toContain("Subscribed to connection lifecycle logs");
+    });
+  });
+
+  standardHelpTests("logs:connection-lifecycle:subscribe", import.meta.url);
+  standardArgValidationTests(
+    "logs:connection-lifecycle:subscribe",
+    import.meta.url,
+  );
+  standardFlagTests("logs:connection-lifecycle:subscribe", import.meta.url, [
+    "--json",
+    "--rewind",
+  ]);
 
   it("should subscribe to [meta]connection.lifecycle channel", async function () {
     const mock = getMockAblyRealtime();
@@ -304,5 +338,23 @@ describe("LogsConnectionLifecycleSubscribe", function () {
 
     expect(error).toBeDefined();
     expect(error?.message).toMatch(/No mock|client/i);
+  });
+
+  describe("error handling", () => {
+    it("should handle channel subscribe failure gracefully", async function () {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("[meta]connection.lifecycle");
+      channel.subscribe.mockImplementation(() => {
+        throw new Error("Channel subscribe failed");
+      });
+
+      const { error } = await runCommand(
+        ["logs:connection-lifecycle:subscribe"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Channel subscribe failed");
+    });
   });
 });

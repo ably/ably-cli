@@ -2,11 +2,26 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
 import { captureJsonLogs } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("rooms:presence:enter command", () => {
   beforeEach(() => {
     getMockAblyChat();
   });
+
+  standardHelpTests("rooms:presence:enter", import.meta.url);
+  standardArgValidationTests("rooms:presence:enter", import.meta.url, {
+    requiredArgs: ["test-room"],
+  });
+  standardFlagTests("rooms:presence:enter", import.meta.url, [
+    "--json",
+    "--data",
+    "--show-others",
+  ]);
 
   it("should enter presence in room", async () => {
     const mock = getMockAblyChat();
@@ -63,7 +78,7 @@ describe("rooms:presence:enter command", () => {
     const room = mock.rooms._getRoom("test-room");
 
     await runCommand(
-      ["rooms:presence:enter", "test-room", "--show-others", "--duration", "0"],
+      ["rooms:presence:enter", "test-room", "--show-others"],
       import.meta.url,
     );
 
@@ -86,7 +101,7 @@ describe("rooms:presence:enter command", () => {
     });
 
     const commandPromise = runCommand(
-      ["rooms:presence:enter", "test-room", "--show-others", "--duration", "0"],
+      ["rooms:presence:enter", "test-room", "--show-others"],
       import.meta.url,
     );
 
@@ -137,14 +152,7 @@ describe("rooms:presence:enter command", () => {
 
     const allRecords = await captureJsonLogs(async () => {
       const commandPromise = runCommand(
-        [
-          "rooms:presence:enter",
-          "test-room",
-          "--show-others",
-          "--json",
-          "--duration",
-          "0",
-        ],
+        ["rooms:presence:enter", "test-room", "--show-others", "--json"],
         import.meta.url,
       );
 
@@ -178,5 +186,21 @@ describe("rooms:presence:enter command", () => {
     expect(parsed).toHaveProperty("type", "event");
     expect(parsed).toHaveProperty("eventType", "enter");
     expect(parsed.member).toHaveProperty("clientId", "other-user");
+  });
+
+  describe("error handling", () => {
+    it("should handle presence enter failure gracefully", async () => {
+      const mock = getMockAblyChat();
+      const room = mock.rooms._getRoom("test-room");
+      room.presence.enter.mockRejectedValue(new Error("Service unavailable"));
+
+      const { error } = await runCommand(
+        ["rooms:presence:enter", "test-room"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Service unavailable");
+    });
   });
 });

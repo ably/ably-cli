@@ -3,6 +3,10 @@ import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("spaces:cursors:set command", () => {
   beforeEach(() => {
@@ -10,7 +14,10 @@ describe("spaces:cursors:set command", () => {
     getMockAblySpaces();
   });
 
-  describe("command arguments and flags", () => {
+  standardHelpTests("spaces:cursors:set", import.meta.url);
+  standardFlagTests("spaces:cursors:set", import.meta.url, ["--json"]);
+
+  describe("argument validation", () => {
     it("should require space argument", async () => {
       const { error } = await runCommand(
         ["spaces:cursors:set"],
@@ -18,7 +25,14 @@ describe("spaces:cursors:set command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
+      expect(error?.message).toMatch(/Missing .* required arg/);
+    });
+
+    it("should reject unknown flags", async () => {
+      const args = ["spaces:cursors:set", "test-space", "--unknown-flag-xyz"];
+      const { error } = await runCommand(args, import.meta.url);
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
 
     it("should error when no position input provided", async () => {
@@ -28,11 +42,11 @@ describe("spaces:cursors:set command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Cursor position is required");
+      expect(error?.message).toContain("Cursor position is required");
     });
   });
 
-  describe("cursor data validation", () => {
+  describe("functionality", () => {
     it("should error on invalid --data JSON", async () => {
       const { error } = await runCommand(
         ["spaces:cursors:set", "test-space", "--data", "not-valid-json"],
@@ -40,7 +54,7 @@ describe("spaces:cursors:set command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Invalid JSON");
+      expect(error?.message).toContain("Invalid JSON");
     });
 
     it("should error when --data missing position.x/y", async () => {
@@ -55,7 +69,7 @@ describe("spaces:cursors:set command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("Invalid cursor position");
+      expect(error?.message).toContain("Invalid cursor position");
     });
   });
 
@@ -153,6 +167,22 @@ describe("spaces:cursors:set command", () => {
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("spaceName", "test-space");
       expect(result!.cursor.position).toEqual({ x: 100, y: 200 });
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle cursor set failure gracefully", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.cursors.set.mockRejectedValue(new Error("Cursor update failed"));
+
+      const { error } = await runCommand(
+        ["spaces:cursors:set", "test-space", "--x", "100", "--y", "200"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Cursor update failed");
     });
   });
 });

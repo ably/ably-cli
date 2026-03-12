@@ -131,10 +131,12 @@ test.describe("Web CLI E2E Tests", () => {
     await page.keyboard.type("help");
     await page.keyboard.press("Enter");
 
-    // Wait for specific output from 'help' using toContainText
-    await expect(page.locator(terminalSelector)).toContainText("COMMANDS", {
-      timeout: 15000,
-    });
+    // Wait for specific output from 'help' — use non-styled text to avoid
+    // xterm escape code rendering issues with bold headers
+    await expect(page.locator(terminalSelector)).toContainText(
+      "Subscribe to a channel",
+      { timeout: 15000 },
+    );
     log("'help' output verified.");
 
     // --- Run '--version' ---
@@ -365,9 +367,14 @@ test.describe("Web CLI E2E Tests", () => {
     await page.locator(terminalSelector).focus();
     await page.keyboard.type("help");
     await page.keyboard.press("Enter");
-    await expect(page.locator(terminalSelector)).toContainText("COMMANDS", {
-      timeout: 5000,
-    });
+    // Use a non-styled string from help output — bold headers like "COMMON COMMANDS"
+    // can be garbled by xterm escape codes when the terminal is resized in drawer mode
+    await expect(page.locator(terminalSelector)).toContainText(
+      "Subscribe to a channel",
+      {
+        timeout: 10000,
+      },
+    );
 
     // Close the drawer by clicking the X button
     const closeButton = drawer.locator('button[aria-label="Close drawer"]');

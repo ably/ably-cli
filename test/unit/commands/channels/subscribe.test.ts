@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
 import { captureJsonLogs } from "../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("channels:subscribe command", () => {
   let mockSubscribeCallback: ((message: unknown) => void) | null = null;
@@ -38,53 +43,18 @@ describe("channels:subscribe command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("Subscribe to");
-      expect(stdout).toContain("USAGE");
-      expect(stdout).toContain("--rewind");
-      expect(stdout).toContain("--delta");
-    });
-
-    it("should display examples in help", async () => {
-      const { stdout } = await runCommand(
-        ["channels:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("EXAMPLES");
-      expect(stdout).toContain("subscribe");
-    });
-
-    it("should show channel argument is required", async () => {
-      const { stdout } = await runCommand(
-        ["channels:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("CHANNELS");
-    });
+  standardHelpTests("channels:subscribe", import.meta.url);
+  standardArgValidationTests("channels:subscribe", import.meta.url, {
+    requiredArgs: ["test-channel"],
   });
+  standardFlagTests("channels:subscribe", import.meta.url, [
+    "--rewind",
+    "--delta",
+    "--cipher-key",
+    "--json",
+  ]);
 
-  describe("argument validation", () => {
-    it("should require at least one channel name", async () => {
-      const { error } = await runCommand(
-        ["channels:subscribe"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      // The error message may vary - just check an error is thrown for missing args
-      expect(error?.message).toMatch(/channel|required|argument/i);
-    });
-  });
-
-  describe("subscription functionality", () => {
+  describe("functionality", () => {
     it("should subscribe to a channel and attach", async () => {
       const mock = getMockAblyRealtime();
 
@@ -179,44 +149,7 @@ describe("channels:subscribe command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should accept --rewind flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--rewind");
-      expect(stdout).toMatch(/rewind.*messages/i);
-    });
-
-    it("should accept --delta flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--delta");
-    });
-
-    it("should accept --cipher-key flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--cipher-key");
-    });
-
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:subscribe", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--json");
-    });
-
+  describe("flag behavior", () => {
     it("should configure channel with rewind option", async () => {
       const mock = getMockAblyRealtime();
 
@@ -247,6 +180,22 @@ describe("channels:subscribe command", () => {
           params: expect.objectContaining({ delta: "vcdiff" }),
         }),
       );
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle missing mock client in test mode", async () => {
+      if (globalThis.__TEST_MOCKS__) {
+        delete globalThis.__TEST_MOCKS__.ablyRealtimeMock;
+      }
+
+      const { error } = await runCommand(
+        ["channels:subscribe", "test-channel"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/No mock|client/i);
     });
   });
 });

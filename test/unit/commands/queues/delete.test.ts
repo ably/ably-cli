@@ -1,59 +1,48 @@
 import { describe, it, expect, afterEach } from "vitest";
+import { Readable } from "node:stream";
 import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+  CONTROL_HOST,
+} from "../../../helpers/control-api-test-helpers.js";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+  standardControlApiErrorTests,
+} from "../../../helpers/standard-tests.js";
+import { mockQueue } from "../../../fixtures/control-api.js";
 
 describe("queues:delete command", () => {
   const mockQueueName = "test-queue";
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
   function createMockQueue(appId: string, queueId: string) {
-    return {
+    return mockQueue({
       id: queueId,
       appId,
       name: mockQueueName,
-      region: "us-east-1-a",
-      state: "active",
-      maxLength: 10000,
-      ttl: 60,
-      deadletter: false,
-      deadletterId: "",
-      messages: {
-        ready: 5,
-        total: 10,
-        unacknowledged: 5,
-      },
-      stats: {
-        publishRate: null,
-        deliveryRate: null,
-        acknowledgementRate: null,
-      },
-      amqp: {
-        uri: "amqps://queue.ably.io:5671",
-        queueName: mockQueueName,
-      },
-      stomp: {
-        uri: "stomp://queue.ably.io:61614",
-        host: "queue.ably.io",
-        destination: `/queue/${mockQueueName}`,
-      },
-    };
+      messages: { ready: 5, total: 10, unacknowledged: 5 },
+    });
   }
 
-  describe("successful queue deletion", () => {
+  describe("functionality", () => {
     it("should delete a queue successfully with --force flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [createMockQueue(appId, mockQueueId)]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${appId}/queues/${mockQueueId}`)
         .reply(204);
 
@@ -70,22 +59,22 @@ describe("queues:delete command", () => {
       const customAppId = "custom-app-id";
       const mockQueueId = `${customAppId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [{ id: customAppId, accountId, name: "Test App" }]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${customAppId}/queues`)
         .reply(200, [createMockQueue(customAppId, mockQueueId)]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${customAppId}/queues/${mockQueueId}`)
         .reply(204);
 
@@ -104,7 +93,7 @@ describe("queues:delete command", () => {
 
       process.env.ABLY_ACCESS_TOKEN = customToken;
 
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -112,7 +101,7 @@ describe("queues:delete command", () => {
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [createMockQueue(appId, mockQueueId)]);
 
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -130,29 +119,31 @@ describe("queues:delete command", () => {
   });
 
   describe("error handling", () => {
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
-
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/queues`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["queues:delete", mockQueueId, "--force"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    standardControlApiErrorTests({
+      get commandArgs() {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        return [
+          "queues:delete",
+          `${appId}:us-east-1-a:${mockQueueName}`,
+          "--force",
+        ];
+      },
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().get(`/v1/apps/${appId}/queues`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
     });
 
     it("should handle 403 forbidden error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(403, { error: "Forbidden" });
 
@@ -170,7 +161,7 @@ describe("queues:delete command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(404, { error: "App not found" });
 
@@ -184,31 +175,11 @@ describe("queues:delete command", () => {
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
-    it("should handle 500 server error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
-
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/queues`)
-        .reply(500, { error: "Internal Server Error" });
-
-      const { error } = await runCommand(
-        ["queues:delete", mockQueueId, "--force"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Queue.*not found|500/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
-    });
-
     it("should handle queue not found error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/queues`)
-        .reply(200, []);
+      nockControl().get(`/v1/apps/${appId}/queues`).reply(200, []);
 
       const { error } = await runCommand(
         ["queues:delete", mockQueueId, "--force"],
@@ -224,11 +195,11 @@ describe("queues:delete command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [createMockQueue(appId, mockQueueId)]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${appId}/queues/${mockQueueId}`)
         .reply(500, { error: "Internal Server Error" });
 
@@ -263,29 +234,11 @@ describe("queues:delete command", () => {
       expect(error?.message).toMatch(/No access token|No app|not logged in/i);
     });
 
-    it("should handle network errors", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
-
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/queues`)
-        .replyWithError("Network error");
-
-      const { error } = await runCommand(
-        ["queues:delete", mockQueueId, "--force"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Network error/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
-    });
-
     it("should handle when specific queue ID is not found in list", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [
           {
@@ -332,7 +285,7 @@ describe("queues:delete command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [
           {
@@ -346,7 +299,7 @@ describe("queues:delete command", () => {
           },
         ]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${appId}/queues/${mockQueueId}`)
         .reply(409, {
           error: "Conflict",
@@ -365,20 +318,43 @@ describe("queues:delete command", () => {
   });
 
   describe("confirmation prompt handling", () => {
-    it.skip("should cancel deletion when user responds no to confirmation", async () => {
-      // SKIPPED: stdin handling in tests is problematic with runCommand
-      // The runCommand test helper doesn't properly pipe stdin to the spawned process
+    const originalStdin = process.stdin;
+
+    function mockStdinAnswer(answer: string) {
+      const readable = new Readable({ read() {} });
+      Object.defineProperty(process, "stdin", {
+        value: readable,
+        writable: true,
+        configurable: true,
+      });
+      // Push the answer after a microtask so readline has time to attach its listener.
+      // The null signals EOF to the stream, causing readline to process the answer.
+      queueMicrotask(() => {
+        for (const chunk of [`${answer}\n`, null]) readable.push(chunk);
+      });
+    }
+
+    afterEach(() => {
+      Object.defineProperty(process, "stdin", {
+        value: originalStdin,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it("should cancel deletion when user responds no to confirmation", async () => {
+      mockStdinAnswer("n");
+
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [createMockQueue(appId, mockQueueId)]);
 
       const { stdout } = await runCommand(
         ["queues:delete", mockQueueId],
         import.meta.url,
-        { stdin: "n\n" },
       );
 
       expect(stdout).toContain("You are about to delete the following queue:");
@@ -392,13 +368,13 @@ describe("queues:delete command", () => {
       expect(stdout).toContain("Deletion cancelled");
     });
 
-    it.skip("should proceed with deletion when user confirms", async () => {
-      // SKIPPED: stdin handling in tests is problematic with runCommand
-      // The runCommand test helper doesn't properly pipe stdin to the spawned process
+    it("should proceed with deletion when user confirms", async () => {
+      mockStdinAnswer("yes");
+
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [
           {
@@ -407,19 +383,22 @@ describe("queues:delete command", () => {
           },
         ]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${appId}/queues/${mockQueueId}`)
         .reply(204);
 
       const { stdout } = await runCommand(
         ["queues:delete", mockQueueId],
         import.meta.url,
-        { stdin: "y\n" },
       );
 
-      expect(stdout).toContain("You are about to delete the following queue:");
-      expect(stdout).toContain(`Queue "${mockQueueName}"`);
-      expect(stdout).toContain("deleted successfully");
+      expect(stdout).toContain("Queue deleted:");
     });
   });
+
+  standardHelpTests("queues:delete", import.meta.url);
+  standardArgValidationTests("queues:delete", import.meta.url, {
+    requiredArgs: ["test-queue-id"],
+  });
+  standardFlagTests("queues:delete", import.meta.url, ["--json"]);
 });

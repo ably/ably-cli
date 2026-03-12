@@ -1,20 +1,21 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+  standardControlApiErrorTests,
+} from "../../../helpers/standard-tests.js";
+import { mockStats as mockStatsFactory } from "../../../fixtures/control-api.js";
 
 describe("stats:app command", () => {
   const mockAccessToken = "fake_access_token";
-  const mockStats = [
-    {
-      intervalId: "2023-01-01:00:00",
-      unit: "minute",
-      all: {
-        messages: { count: 100, data: 5000 },
-        all: { count: 100, data: 5000 },
-      },
-    },
-  ];
+  const mockStatsData = [mockStatsFactory()];
 
   let appId: string;
 
@@ -25,59 +26,104 @@ describe("stats:app command", () => {
   });
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
-  it("should accept ISO 8601 for --start and --end", async () => {
-    const scope = nock("https://control.ably.net")
-      .get(`/v1/apps/${appId}/stats`)
-      .query(true)
-      .reply(200, mockStats);
+  standardHelpTests("stats:app", import.meta.url);
+  standardArgValidationTests("stats:app", import.meta.url);
+  standardFlagTests("stats:app", import.meta.url, [
+    "--json",
+    "--start",
+    "--end",
+    "--limit",
+    "--unit",
+  ]);
 
-    const { stdout } = await runCommand(
-      [
-        "stats:app",
-        appId,
-        "--start",
-        "2023-01-01T00:00:00Z",
-        "--end",
-        "2023-01-02T00:00:00Z",
-      ],
-      import.meta.url,
-    );
+  describe("functionality", () => {
+    it("should display app stats successfully", async () => {
+      const scope = nockControl()
+        .get(`/v1/apps/${appId}/stats`)
+        .query(true)
+        .reply(200, mockStatsData);
 
-    expect(scope.isDone()).toBe(true);
-    expect(stdout).toContain("2023-01-01");
+      const { stdout, error } = await runCommand(
+        ["stats:app", appId, "--start", "1h"],
+        import.meta.url,
+      );
+
+      expect(error).toBeUndefined();
+      expect(scope.isDone()).toBe(true);
+      expect(stdout).toContain("2023-01-01");
+    });
+
+    it("should accept ISO 8601 for --start and --end", async () => {
+      const scope = nockControl()
+        .get(`/v1/apps/${appId}/stats`)
+        .query(true)
+        .reply(200, mockStatsData);
+
+      const { stdout } = await runCommand(
+        [
+          "stats:app",
+          appId,
+          "--start",
+          "2023-01-01T00:00:00Z",
+          "--end",
+          "2023-01-02T00:00:00Z",
+        ],
+        import.meta.url,
+      );
+
+      expect(scope.isDone()).toBe(true);
+      expect(stdout).toContain("2023-01-01");
+    });
+
+    it("should accept relative time for --start", async () => {
+      const scope = nockControl()
+        .get(`/v1/apps/${appId}/stats`)
+        .query(true)
+        .reply(200, mockStatsData);
+
+      const { stdout } = await runCommand(
+        ["stats:app", appId, "--start", "1h"],
+        import.meta.url,
+      );
+
+      expect(scope.isDone()).toBe(true);
+      expect(stdout).toContain("2023-01-01");
+    });
+
+    it("should accept Unix ms for --start", async () => {
+      const scope = nockControl()
+        .get(`/v1/apps/${appId}/stats`)
+        .query(true)
+        .reply(200, mockStatsData);
+
+      const { stdout } = await runCommand(
+        ["stats:app", appId, "--start", "1672531200000"],
+        import.meta.url,
+      );
+
+      expect(scope.isDone()).toBe(true);
+      expect(stdout).toContain("2023-01-01");
+    });
   });
 
-  it("should accept relative time for --start", async () => {
-    const scope = nock("https://control.ably.net")
-      .get(`/v1/apps/${appId}/stats`)
-      .query(true)
-      .reply(200, mockStats);
-
-    const { stdout } = await runCommand(
-      ["stats:app", appId, "--start", "1h"],
-      import.meta.url,
-    );
-
-    expect(scope.isDone()).toBe(true);
-    expect(stdout).toContain("2023-01-01");
-  });
-
-  it("should accept Unix ms for --start", async () => {
-    const scope = nock("https://control.ably.net")
-      .get(`/v1/apps/${appId}/stats`)
-      .query(true)
-      .reply(200, mockStats);
-
-    const { stdout } = await runCommand(
-      ["stats:app", appId, "--start", "1672531200000"],
-      import.meta.url,
-    );
-
-    expect(scope.isDone()).toBe(true);
-    expect(stdout).toContain("2023-01-01");
+  describe("error handling", () => {
+    standardControlApiErrorTests({
+      commandArgs: ["stats:app"],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const errorAppId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl()
+          .get(`/v1/apps/${errorAppId}/stats`)
+          .query(true);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
+    });
   });
 });

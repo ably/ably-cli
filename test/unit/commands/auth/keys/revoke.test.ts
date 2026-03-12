@@ -1,31 +1,40 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 import {
   mockKeysList,
   buildMockKey,
 } from "../../../../helpers/mock-control-api-keys.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+  standardControlApiErrorTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("auth:keys:revoke command", () => {
   const mockKeyId = "testkey";
 
   beforeEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
-  describe("successful key revocation", () => {
+  describe("functionality", () => {
     it("should display key info before revocation", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       // Mock list keys (getKey now uses list+filter)
       mockKeysList(appId, [buildMockKey(appId, mockKeyId)]);
 
       // Mock revoke key
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {});
 
@@ -46,7 +55,7 @@ describe("auth:keys:revoke command", () => {
         }),
       ]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {});
 
@@ -63,7 +72,7 @@ describe("auth:keys:revoke command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       mockKeysList(appId, [buildMockKey(appId, mockKeyId)]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .delete(`/v1/apps/${appId}/keys/${mockKeyId}`)
         .reply(200, {});
 
@@ -80,6 +89,14 @@ describe("auth:keys:revoke command", () => {
     });
   });
 
+  standardHelpTests("auth:keys:revoke", import.meta.url);
+
+  standardArgValidationTests("auth:keys:revoke", import.meta.url, {
+    requiredArgs: ["test-key"],
+  });
+
+  standardFlagTests("auth:keys:revoke", import.meta.url, ["--json"]);
+
   describe("error handling", () => {
     it("should require keyName argument", async () => {
       const { error } = await runCommand(
@@ -88,7 +105,7 @@ describe("auth:keys:revoke command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing 1 required arg/);
+      expect(error?.message).toMatch(/Missing 1 required arg/);
     });
 
     it("should handle key not found", async () => {
@@ -102,22 +119,20 @@ describe("auth:keys:revoke command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/not found/);
+      expect(error?.message).toMatch(/not found/);
     });
 
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/keys`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["auth:keys:revoke", `${appId}.${mockKeyId}`, "--force"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/401/);
+    standardControlApiErrorTests({
+      commandArgs: ["auth:keys:revoke", mockKeyId, "--force"],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().get(`/v1/apps/${appId}/keys`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
     });
   });
 });

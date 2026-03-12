@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("channels:inspect command", () => {
   const originalEnv = process.env.ABLY_WEB_CLI_MODE;
@@ -15,7 +20,7 @@ describe("channels:inspect command", () => {
     vi.clearAllMocks();
   });
 
-  describe("normal CLI mode", () => {
+  describe("functionality", () => {
     beforeEach(() => {
       delete process.env.ABLY_WEB_CLI_MODE;
     });
@@ -176,16 +181,37 @@ describe("channels:inspect command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:inspect", "--help"],
+  standardHelpTests("channels:inspect", import.meta.url);
+  standardArgValidationTests("channels:inspect", import.meta.url, {
+    requiredArgs: ["my-channel"],
+  });
+  standardFlagTests("channels:inspect", import.meta.url, ["--json"]);
+
+  describe("error handling", () => {
+    it("should handle missing account gracefully", async () => {
+      const mockConfig = getMockConfigManager();
+      mockConfig.clearAccounts();
+
+      const { error } = await runCommand(
+        ["channels:inspect", "my-channel"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Open the Ably dashboard to inspect");
-      expect(stdout).toContain("USAGE");
-      expect(stdout).toContain("ARGUMENTS");
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("No account configured");
+    });
+
+    it("should handle missing app gracefully", async () => {
+      const mockConfig = getMockConfigManager();
+      mockConfig.setCurrentAppIdForAccount(undefined);
+
+      const { error } = await runCommand(
+        ["channels:inspect", "my-channel"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("No app selected");
     });
   });
 });

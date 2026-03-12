@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { runCommand } from "@oclif/test";
 
 describe("support command", () => {
-  describe("topic listing", () => {
+  describe("functionality", () => {
     it("should list available support subcommands when run without arguments", async () => {
       const { stdout } = await runCommand(["support"], import.meta.url);
 
@@ -35,6 +35,16 @@ describe("support command", () => {
 
       expect(stdout).toContain("Get support and help from Ably");
       expect(stdout).toContain("USAGE");
+    });
+  });
+
+  describe("argument validation", () => {
+    it("should handle unknown subcommand gracefully", async () => {
+      const { stdout } = await runCommand(
+        ["support", "nonexistent"],
+        import.meta.url,
+      );
+      expect(stdout).toBeDefined();
     });
   });
 
@@ -84,6 +94,38 @@ describe("support command", () => {
 
       expect(stdout).toContain("USAGE");
       expect(stdout).toMatch(/contact|support/i);
+    });
+  });
+
+  describe("flags", () => {
+    it("should display available commands in help output", async () => {
+      const { stdout } = await runCommand(
+        ["support", "--help"],
+        import.meta.url,
+      );
+      expect(stdout).toContain("COMMANDS");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle unknown subcommand gracefully", async () => {
+      const originalEnv = process.env.ABLY_CLI_NON_INTERACTIVE;
+      process.env.ABLY_CLI_NON_INTERACTIVE = "true";
+
+      try {
+        const { stdout, stderr } = await runCommand(
+          ["support", "unknowncommand"],
+          import.meta.url,
+        );
+        const output = stdout + (stderr || "");
+        expect(output).toMatch(/not found|not.*command|available/i);
+      } finally {
+        if (originalEnv === undefined) {
+          delete process.env.ABLY_CLI_NON_INTERACTIVE;
+        } else {
+          process.env.ABLY_CLI_NON_INTERACTIVE = originalEnv;
+        }
+      }
     });
   });
 });

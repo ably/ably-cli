@@ -56,7 +56,7 @@ test.describe("Web CLI Prompt Integrity E2E Tests", () => {
     await waitForTerminalStable(page);
 
     // Run a few commands to establish terminal state
-    await executeCommandWithRetry(page, "help", "COMMANDS");
+    await executeCommandWithRetry(page, "help", "Subscribe to a channel");
     await waitForTerminalStable(page);
 
     // Skip version command for now as it's causing issues
@@ -127,7 +127,7 @@ test.describe("Web CLI Prompt Integrity E2E Tests", () => {
     expect(promptDifference).toBeLessThanOrEqual(1);
 
     // Verify that the previous commands are still visible
-    expect(terminalTextAfter).toContain("COMMANDS");
+    expect(terminalTextAfter).toContain("Subscribe to a channel");
     // The web CLI shows "browser-based interactive CLI"
     expect(terminalTextAfter).toContain("browser-based interactive CLI");
 
@@ -166,7 +166,7 @@ test.describe("Web CLI Prompt Integrity E2E Tests", () => {
     await waitForTerminalStable(page);
 
     // Run a command
-    await executeCommandWithRetry(page, "help", "COMMANDS");
+    await executeCommandWithRetry(page, "help", "Subscribe to a channel");
     await waitForTerminalStable(page);
 
     const initialTerminalContent = await getTerminalContent(page);

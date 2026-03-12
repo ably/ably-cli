@@ -1,7 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("accounts:switch command", () => {
   const mockAccountId = "switch-account-id";
@@ -9,14 +17,14 @@ describe("accounts:switch command", () => {
   const mockUserEmail = "switch@example.com";
 
   beforeEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
-  describe("switching accounts", () => {
+  describe("functionality", () => {
     it("should switch to existing alias", async () => {
       const mock = getMockConfigManager();
 
@@ -27,7 +35,7 @@ describe("accounts:switch command", () => {
         userEmail: mockUserEmail,
       });
 
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: mockAccountId, name: mockAccountName },
@@ -51,8 +59,8 @@ describe("accounts:switch command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toContain("not found");
-      expect(error!.message).toContain("ably accounts list");
+      expect(error?.message).toContain("not found");
+      expect(error?.message).toContain("ably accounts list");
     });
   });
 
@@ -113,9 +121,7 @@ describe("accounts:switch command", () => {
         userEmail: "expired@example.com",
       });
 
-      nock("https://control.ably.net")
-        .get("/v1/me")
-        .reply(401, { error: "Unauthorized" });
+      nockControl().get("/v1/me").reply(401, { error: "Unauthorized" });
 
       const { stdout } = await runCommand(
         ["accounts:switch", "expired-acct"],
@@ -127,6 +133,20 @@ describe("accounts:switch command", () => {
 
       // Verify the account was actually switched
       expect(mock.getCurrentAccountAlias()).toBe("expired-acct");
+    });
+  });
+
+  standardHelpTests("accounts:switch", import.meta.url);
+  standardArgValidationTests("accounts:switch", import.meta.url);
+  standardFlagTests("accounts:switch", import.meta.url, ["--json"]);
+
+  describe("error handling", () => {
+    it("should error on nonexistent alias", async () => {
+      const { error } = await runCommand(
+        ["accounts:switch", "nonexistent-alias"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
     });
   });
 });

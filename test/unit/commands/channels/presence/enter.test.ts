@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("channels:presence:enter command", () => {
   beforeEach(() => {
@@ -30,39 +35,17 @@ describe("channels:presence:enter command", () => {
     });
   });
 
-  describe("help", () => {
-    it("should display help with --help flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:presence:enter", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("Enter presence on a channel");
-      expect(stdout).toContain("USAGE");
-      expect(stdout).toContain("CHANNEL");
-    });
-
-    it("should display examples in help", async () => {
-      const { stdout } = await runCommand(
-        ["channels:presence:enter", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("EXAMPLES");
-      expect(stdout).toContain("presence enter");
-    });
-
-    it("should show channel argument is required", async () => {
-      const { stdout } = await runCommand(
-        ["channels:presence:enter", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("CHANNEL");
-    });
+  standardHelpTests("channels:presence:enter", import.meta.url);
+  standardArgValidationTests("channels:presence:enter", import.meta.url, {
+    requiredArgs: ["test-channel"],
   });
+  standardFlagTests("channels:presence:enter", import.meta.url, [
+    "--data",
+    "--json",
+    "--duration",
+  ]);
 
-  describe("presence enter functionality", () => {
+  describe("functionality", () => {
     it("should enter presence on a channel", async () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("test-channel");
@@ -173,32 +156,20 @@ describe("channels:presence:enter command", () => {
     });
   });
 
-  describe("flags", () => {
-    it("should accept --data flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:presence:enter", "--help"],
+  describe("error handling", () => {
+    it("should handle presence enter errors gracefully", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("test-channel");
+      channel.presence.enter.mockRejectedValue(
+        new Error("Presence enter failed"),
+      );
+
+      const { error } = await runCommand(
+        ["channels:presence:enter", "test-channel"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("--data");
-    });
-
-    it("should accept --json flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:presence:enter", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--json");
-    });
-
-    it("should accept --duration flag", async () => {
-      const { stdout } = await runCommand(
-        ["channels:presence:enter", "--help"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("--duration");
+      expect(error).toBeDefined();
     });
   });
 });

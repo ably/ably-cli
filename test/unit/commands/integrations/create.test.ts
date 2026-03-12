@@ -1,19 +1,28 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+  standardControlApiErrorTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("integrations:create command", () => {
   const mockRuleId = "rule-123456";
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
-  describe("successful integration creation", () => {
+  describe("functionality", () => {
     it("should create an HTTP integration successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`)
         .reply(201, {
           id: mockRuleId,
@@ -53,7 +62,7 @@ describe("integrations:create command", () => {
 
     it("should create an AMQP integration successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`)
         .reply(201, {
           id: mockRuleId,
@@ -89,7 +98,7 @@ describe("integrations:create command", () => {
 
     it("should create a disabled integration when status is disabled", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`, (body: Record<string, unknown>) => {
           return body.status === "disabled";
         })
@@ -133,7 +142,7 @@ describe("integrations:create command", () => {
 
     it("should create integration with batch request mode", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`, (body: Record<string, unknown>) => {
           return body.requestMode === "batch";
         })
@@ -177,7 +186,7 @@ describe("integrations:create command", () => {
 
     it("should output JSON format when --json flag is used", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`)
         .reply(201, {
           id: mockRuleId,
@@ -222,6 +231,29 @@ describe("integrations:create command", () => {
   });
 
   describe("error handling", () => {
+    standardControlApiErrorTests({
+      commandArgs: [
+        "integrations:create",
+        "--rule-type",
+        "http",
+        "--source-type",
+        "channel.message",
+        "--channel-filter",
+        "chat:*",
+        "--target-url",
+        "https://example.com/webhook",
+      ],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().post(`/v1/apps/${appId}/rules`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
+    });
+
     it("should require rule-type flag", async () => {
       const { error } = await runCommand(
         [
@@ -268,7 +300,7 @@ describe("integrations:create command", () => {
 
     it("should handle API errors", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`)
         .reply(400, { error: "Invalid configuration" });
 
@@ -291,31 +323,6 @@ describe("integrations:create command", () => {
       expect(error?.message).toMatch(/400/);
     });
 
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .post(`/v1/apps/${appId}/rules`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        [
-          "integrations:create",
-          "--rule-type",
-          "http",
-          "--source-type",
-          "channel.message",
-          "--channel-filter",
-          "chat:*",
-          "--target-url",
-          "https://example.com/webhook",
-        ],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
-    });
-
     it("should reject unknown flags", async () => {
       const { error } = await runCommand(
         ["integrations:create", "--rule-type", "http", "--unknown-flag"],
@@ -323,14 +330,14 @@ describe("integrations:create command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
   });
 
   describe("source type options", () => {
     it("should accept channel.presence source type", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`)
         .reply(201, {
           id: mockRuleId,
@@ -370,7 +377,7 @@ describe("integrations:create command", () => {
 
     it("should accept channel.lifecycle source type", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .post(`/v1/apps/${appId}/rules`)
         .reply(201, {
           id: mockRuleId,
@@ -408,4 +415,8 @@ describe("integrations:create command", () => {
       expect(result.integration.source.type).toBe("channel.lifecycle");
     });
   });
+
+  standardHelpTests("integrations:create", import.meta.url);
+  standardArgValidationTests("integrations:create", import.meta.url);
+  standardFlagTests("integrations:create", import.meta.url, ["--json"]);
 });

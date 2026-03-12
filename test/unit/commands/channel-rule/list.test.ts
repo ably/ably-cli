@@ -1,17 +1,25 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("channel-rule:list command (alias)", () => {
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
-  describe("alias behavior", () => {
+  describe("functionality", () => {
     it("should execute the same as apps:channel-rules:list", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
         .reply(200, [
           {
@@ -41,9 +49,7 @@ describe("channel-rule:list command (alias)", () => {
 
     it("should show message when no rules found", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/namespaces`)
-        .reply(200, []);
+      nockControl().get(`/v1/apps/${appId}/namespaces`).reply(200, []);
 
       const { stdout } = await runCommand(
         ["channel-rule:list"],
@@ -51,6 +57,25 @@ describe("channel-rule:list command (alias)", () => {
       );
 
       expect(stdout).toContain("No channel rules found");
+    });
+  });
+
+  standardHelpTests("channel-rule:list", import.meta.url);
+  standardArgValidationTests("channel-rule:list", import.meta.url);
+  standardFlagTests("channel-rule:list", import.meta.url, ["--json"]);
+
+  describe("error handling", () => {
+    it("should handle API errors gracefully", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .get(`/v1/apps/${appId}/namespaces`)
+        .reply(401, { error: "Unauthorized" });
+
+      const { error } = await runCommand(
+        ["channel-rule:list"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
     });
   });
 });

@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 import { captureJsonLogs } from "../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../helpers/standard-tests.js";
 
 describe("logs:channel-lifecycle:subscribe command", () => {
   beforeEach(() => {
@@ -26,38 +31,17 @@ describe("logs:channel-lifecycle:subscribe command", () => {
     });
   });
 
-  describe("command flags", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["logs:channel-lifecycle:subscribe", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
+  standardHelpTests("logs:channel-lifecycle:subscribe", import.meta.url);
+  standardArgValidationTests(
+    "logs:channel-lifecycle:subscribe",
+    import.meta.url,
+  );
+  standardFlagTests("logs:channel-lifecycle:subscribe", import.meta.url, [
+    "--rewind",
+    "--json",
+  ]);
 
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should accept --rewind flag", async () => {
-      // The command might error due to connection, but should accept the flag
-      const { error } = await runCommand(
-        ["logs:channel-lifecycle:subscribe", "--rewind", "10"],
-        import.meta.url,
-      );
-
-      expect(error?.message || "").not.toMatch(/Unknown flag/);
-    });
-
-    it("should accept --json flag", async () => {
-      const { error } = await runCommand(
-        ["logs:channel-lifecycle:subscribe", "--json"],
-        import.meta.url,
-      );
-
-      expect(error?.message || "").not.toMatch(/Unknown flag/);
-    });
-  });
-
-  describe("subscription behavior", () => {
+  describe("functionality", () => {
     it("should subscribe to channel lifecycle events and show initial message", async () => {
       const { stdout } = await runCommand(
         ["logs:channel-lifecycle:subscribe"],

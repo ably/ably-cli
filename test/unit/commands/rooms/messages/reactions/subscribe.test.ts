@@ -2,35 +2,28 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../../helpers/mock-ably-chat.js";
 import { captureJsonLogs } from "../../../../../helpers/ndjson.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../../../helpers/standard-tests.js";
 
 describe("rooms:messages:reactions:subscribe command", () => {
   beforeEach(() => {
     getMockAblyChat();
   });
 
-  describe("command arguments and flags", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:reactions:subscribe", "test-room", "--unknown-flag"],
-        import.meta.url,
-      );
+  standardHelpTests("rooms:messages:reactions:subscribe", import.meta.url);
+  standardArgValidationTests(
+    "rooms:messages:reactions:subscribe",
+    import.meta.url,
+    { requiredArgs: ["test-room"] },
+  );
+  standardFlagTests("rooms:messages:reactions:subscribe", import.meta.url, [
+    "--json",
+  ]);
 
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should require room argument", async () => {
-      const { error } = await runCommand(
-        ["rooms:messages:reactions:subscribe"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error!.message).toMatch(/Missing .* required arg/);
-    });
-  });
-
-  describe("subscription behavior", () => {
+  describe("functionality", () => {
     it("should subscribe to message reactions and display them", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
@@ -148,6 +141,22 @@ describe("rooms:messages:reactions:subscribe command", () => {
       expect(parsed).toHaveProperty("room", "test-room");
       expect(parsed.summary).toHaveProperty("unique");
       expect(parsed.summary.unique).toHaveProperty("heart");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle errors gracefully", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+
+      room.attach.mockRejectedValue(new Error("Connection failed"));
+
+      const { error } = await runCommand(
+        ["rooms:messages:reactions:subscribe", "test-room"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
     });
   });
 });

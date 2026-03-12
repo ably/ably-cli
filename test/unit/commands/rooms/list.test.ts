@@ -1,8 +1,21 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("rooms:list command", () => {
+  standardHelpTests("rooms:list", import.meta.url);
+  standardArgValidationTests("rooms:list", import.meta.url);
+  standardFlagTests("rooms:list", import.meta.url, [
+    "--json",
+    "--limit",
+    "--prefix",
+  ]);
+
   const mockChatChannelsResponse = {
     statusCode: 200,
     items: [
@@ -130,5 +143,28 @@ describe("rooms:list command", () => {
 
     expect(error).toBeDefined();
     expect(error?.message).toContain("Failed to list rooms");
+  });
+
+  describe("functionality", () => {
+    it("should list active chat rooms", async () => {
+      const { stdout } = await runCommand(["rooms:list"], import.meta.url);
+
+      expect(stdout).toContain("room1");
+      expect(stdout).toContain("room2");
+      expect(stdout).not.toContain("regular-channel");
+      expect(stdout).toContain("active chat rooms");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle API request failure gracefully", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockRejectedValue(new Error("Network error"));
+
+      const { error } = await runCommand(["rooms:list"], import.meta.url);
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Network error");
+    });
   });
 });

@@ -1,21 +1,32 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+  CONTROL_HOST,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardFlagTests,
+  standardControlApiErrorTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("apps:update command", () => {
   const mockAppName = "TestApp";
 
   beforeEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
     delete process.env.ABLY_ACCESS_TOKEN;
   });
 
-  describe("successful app update", () => {
+  describe("functionality", () => {
     it("should update an app name successfully", async () => {
       const mock = getMockConfigManager();
       const accountId = mock.getCurrentAccount()!.accountId!;
@@ -23,7 +34,7 @@ describe("apps:update command", () => {
       const updatedName = "UpdatedAppName";
 
       // Mock the app update endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}`, {
           name: updatedName,
         })
@@ -53,7 +64,7 @@ describe("apps:update command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock the app update endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}`, {
           tlsOnly: true,
         })
@@ -83,7 +94,7 @@ describe("apps:update command", () => {
       const updatedName = "UpdatedAppName";
 
       // Mock the app update endpoint
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}`, {
           name: updatedName,
           tlsOnly: true,
@@ -125,9 +136,7 @@ describe("apps:update command", () => {
       };
 
       // Mock the app update endpoint
-      nock("https://control.ably.net")
-        .patch(`/v1/apps/${appId}`)
-        .reply(200, mockApp);
+      nockControl().patch(`/v1/apps/${appId}`).reply(200, mockApp);
 
       const { stdout } = await runCommand(
         ["apps:update", appId, "--name", updatedName, "--json"],
@@ -153,7 +162,7 @@ describe("apps:update command", () => {
       process.env.ABLY_ACCESS_TOKEN = customToken;
 
       // Mock the app update endpoint with custom token
-      nock("https://control.ably.net", {
+      nock(CONTROL_HOST, {
         reqheaders: {
           authorization: `Bearer ${customToken}`,
         },
@@ -178,7 +187,41 @@ describe("apps:update command", () => {
     });
   });
 
+  standardHelpTests("apps:update", import.meta.url);
+  standardArgValidationTests("apps:update", import.meta.url, {
+    requiredArgs: ["test-app-id"],
+  });
+  standardFlagTests("apps:update", import.meta.url, ["--json"]);
+
   describe("error handling", () => {
+    standardControlApiErrorTests({
+      get commandArgs() {
+        return [
+          "apps:update",
+          getMockConfigManager().getCurrentAppId()!,
+          "--name",
+          "NewName",
+        ];
+      },
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        if (scenario === "401") {
+          nockControl()
+            .patch(`/v1/apps/${appId}`)
+            .reply(401, { error: "Unauthorized" });
+        } else if (scenario === "500") {
+          nockControl()
+            .patch(`/v1/apps/${appId}`)
+            .reply(500, { error: "Internal Server Error" });
+        } else {
+          nockControl()
+            .patch(`/v1/apps/${appId}`)
+            .replyWithError("Network error");
+        }
+      },
+    });
+
     it("should require at least one update parameter", async () => {
       const mock = getMockConfigManager();
       const appId = mock.getCurrentAppId()!;
@@ -219,30 +262,12 @@ describe("apps:update command", () => {
       expect(error?.message).toMatch(/Missing.*required arg/i);
     });
 
-    it("should handle 401 authentication error", async () => {
-      const mock = getMockConfigManager();
-      const appId = mock.getCurrentAppId()!;
-
-      // Mock authentication failure
-      nock("https://control.ably.net")
-        .patch(`/v1/apps/${appId}`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["apps:update", appId, "--name", "NewName"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
-    });
-
     it("should handle 403 forbidden error", async () => {
       const mock = getMockConfigManager();
       const appId = mock.getCurrentAppId()!;
 
       // Mock forbidden response
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}`)
         .reply(403, { error: "Forbidden" });
 
@@ -260,7 +285,7 @@ describe("apps:update command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock not found response
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}`)
         .reply(404, { error: "Not Found" });
 
@@ -273,48 +298,12 @@ describe("apps:update command", () => {
       expect(error?.message).toMatch(/404/);
     });
 
-    it("should handle 500 server error", async () => {
-      const mock = getMockConfigManager();
-      const appId = mock.getCurrentAppId()!;
-
-      // Mock server error
-      nock("https://control.ably.net")
-        .patch(`/v1/apps/${appId}`)
-        .reply(500, { error: "Internal Server Error" });
-
-      const { error } = await runCommand(
-        ["apps:update", appId, "--name", "NewName"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/500/);
-    });
-
-    it("should handle network errors", async () => {
-      const mock = getMockConfigManager();
-      const appId = mock.getCurrentAppId()!;
-
-      // Mock network error
-      nock("https://control.ably.net")
-        .patch(`/v1/apps/${appId}`)
-        .replyWithError("Network error");
-
-      const { error } = await runCommand(
-        ["apps:update", appId, "--name", "NewName"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Network error/);
-    });
-
     it("should handle JSON error output for API errors", async () => {
       const mock = getMockConfigManager();
       const appId = mock.getCurrentAppId()!;
 
       // Mock server error
-      nock("https://control.ably.net")
+      nockControl()
         .patch(`/v1/apps/${appId}`)
         .reply(500, { error: "Internal Server Error" });
 
@@ -339,7 +328,7 @@ describe("apps:update command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock the app update endpoint with APNS cert info
-      nock("https://control.ably.net").patch(`/v1/apps/${appId}`).reply(200, {
+      nockControl().patch(`/v1/apps/${appId}`).reply(200, {
         id: appId,
         accountId: accountId,
         name: mockAppName,
@@ -364,7 +353,7 @@ describe("apps:update command", () => {
       const appId = mock.getCurrentAppId()!;
 
       // Mock the app update endpoint with APNS cert info
-      nock("https://control.ably.net").patch(`/v1/apps/${appId}`).reply(200, {
+      nockControl().patch(`/v1/apps/${appId}`).reply(200, {
         id: appId,
         accountId: accountId,
         name: mockAppName,

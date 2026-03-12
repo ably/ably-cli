@@ -1,16 +1,24 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import nock from "nock";
+import {
+  nockControl,
+  controlApiCleanup,
+} from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  standardHelpTests,
+  standardArgValidationTests,
+  standardControlApiErrorTests,
+} from "../../../helpers/standard-tests.js";
 
 describe("integrations:get command", () => {
   const mockRuleId = "rule-123456";
 
   afterEach(() => {
-    nock.cleanAll();
+    controlApiCleanup();
   });
 
-  describe("successful integration retrieval", () => {
+  describe("functionality", () => {
     it("should get an integration by ID", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockIntegration = {
@@ -33,7 +41,7 @@ describe("integrations:get command", () => {
         modified: Date.now(),
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
@@ -71,7 +79,7 @@ describe("integrations:get command", () => {
         modified: Date.now(),
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
@@ -110,7 +118,7 @@ describe("integrations:get command", () => {
         modified: Date.now(),
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
@@ -147,7 +155,7 @@ describe("integrations:get command", () => {
         modified: Date.now(),
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
@@ -181,7 +189,7 @@ describe("integrations:get command", () => {
         modified: Date.now(),
       };
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
@@ -205,7 +213,7 @@ describe("integrations:get command", () => {
 
     it("should handle integration not found", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(404, { error: "Not found" });
 
@@ -218,36 +226,6 @@ describe("integrations:get command", () => {
       expect(error?.message).toMatch(/Error getting integration|404/i);
     });
 
-    it("should handle API errors", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
-        .reply(500, { error: "Internal server error" });
-
-      const { error } = await runCommand(
-        ["integrations:get", mockRuleId],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Error getting integration|500/i);
-    });
-
-    it("should handle 401 authentication error", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      nock("https://control.ably.net")
-        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
-        .reply(401, { error: "Unauthorized" });
-
-      const { error } = await runCommand(
-        ["integrations:get", mockRuleId],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/401/);
-    });
-
     it("should reject unknown flags", async () => {
       const { error } = await runCommand(
         ["integrations:get", mockRuleId, "--unknown-flag"],
@@ -255,11 +233,24 @@ describe("integrations:get command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error!.message).toMatch(/unknown|Nonexistent flag/i);
+      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
+    });
+
+    standardControlApiErrorTests({
+      commandArgs: ["integrations:get", "rule-123456"],
+      importMetaUrl: import.meta.url,
+      setupNock: (scenario) => {
+        const appId = getMockConfigManager().getCurrentAppId()!;
+        const scope = nockControl().get(`/v1/apps/${appId}/rules/rule-123456`);
+        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
+        else if (scenario === "500")
+          scope.reply(500, { error: "Internal Server Error" });
+        else scope.replyWithError("Network error");
+      },
     });
   });
 
-  describe("flag options", () => {
+  describe("flags", () => {
     it("should accept --app flag", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
@@ -285,7 +276,7 @@ describe("integrations:get command", () => {
       };
 
       // Mock the /me endpoint (needed by listApps in resolveAppIdFromNameOrId)
-      nock("https://control.ably.net")
+      nockControl()
         .get("/v1/me")
         .reply(200, {
           account: { id: accountId, name: "Test Account" },
@@ -293,11 +284,11 @@ describe("integrations:get command", () => {
         });
 
       // Mock the apps list API call for resolveAppIdFromNameOrId
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [{ id: appId, name: "Test App", accountId }]);
 
-      nock("https://control.ably.net")
+      nockControl()
         .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, mockIntegration);
 
@@ -309,5 +300,10 @@ describe("integrations:get command", () => {
       expect(stdout).toContain("Integration Rule Details");
       expect(stdout).toContain(mockRuleId);
     });
+  });
+
+  standardHelpTests("integrations:get", import.meta.url);
+  standardArgValidationTests("integrations:get", import.meta.url, {
+    requiredArgs: ["ruleId"],
   });
 });

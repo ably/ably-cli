@@ -121,10 +121,23 @@ For each changed command file, run the relevant checks. Spawn agents for paralle
 
 ### For changed test files (`test/unit/commands/**/*.ts`)
 
-1. **Grep** for `describe(` to check for required describe blocks: `help`, `argument validation`, `functionality`, `flags`, `error handling`
+1. **Grep** for `describe(` to check for the 5 required describe blocks with EXACT standard names:
+   - `describe("help"` — required in every test file
+   - `describe("argument validation"` — required (test required args OR unknown flag rejection)
+   - `describe("functionality"` — required (core happy-path tests)
+   - `describe("flags"` — required (verify flags exist and work)
+   - `describe("error handling"` — required (API errors, network failures)
+   Flag any non-standard variants: `"command arguments and flags"`, `"command flags"`, `"flag options"`, `"parameter validation"`. These must use the exact standard names above.
+   Exception: `interactive.test.ts`, `interactive-sigint.test.ts`, and `bench/*.test.ts` are exempt (REPL/benchmark tests, not command tests).
 2. **Grep** for `getMockAblyRealtime`, `getMockAblyRest`, `getMockConfigManager` to verify correct mock usage
-3. **Grep** for `--duration` in subscribe test files
+3. **Grep** for `--duration` in unit test `runCommand()` args — should NOT be present (env var handles it). Exceptions: `test:wait` tests, `interactive-sigint` tests, help output checks.
 4. **Grep** for `--api-key`, `--token`, `--access-token` — unit tests should not use CLI auth flags
+5. **Check** for use of shared test helpers where applicable:
+   - Control API tests should consider using `nockControl()`, `getControlApiContext()`, `controlApiCleanup()` from `test/helpers/control-api-test-helpers.ts` instead of manual nock setup
+   - Control API tests should consider using mock factories (`mockApp()`, `mockKey()`, `mockRule()`, `mockQueue()`, `mockNamespace()`, `mockStats()`) from `test/fixtures/control-api.ts` instead of inline response objects
+   - Tests with boilerplate help/arg-validation/flags blocks should consider using `standardHelpTests()`, `standardArgValidationTests()`, `standardFlagTests()` from `test/helpers/standard-tests.ts`
+   - Control API error handling blocks should use `standardControlApiErrorTests()` from `test/helpers/standard-tests.ts` for 401/500/network error tests
+   - JSON envelope tests should use `captureJsonLogs()` from `test/helpers/ndjson.ts` instead of manual console.log spying
 
 ### For new command files (added, not modified)
 
