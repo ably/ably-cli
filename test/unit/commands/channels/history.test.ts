@@ -127,7 +127,9 @@ describe("channels:history command", () => {
             timestamp: Date.now(),
             action: "message.update",
             serial: "serial-001",
-            version: "version-serial-001",
+            version: {
+              serial: "version-serial-001",
+            },
           },
         ],
       });
