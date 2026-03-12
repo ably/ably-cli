@@ -140,7 +140,7 @@ export function formatMessagesOutput(messages: MessageDisplayFields[]): string {
     }
 
     lines.push(
-      `${formatLabel("Timestamp")} ${msg.timestamp}`,
+      `${formatLabel("Timestamp")} ${formatMessageTimestamp(msg.timestamp)}`,
       `${formatLabel("Channel")} ${formatResource(msg.channel)}`,
       `${formatLabel("Event")} ${formatEventType(msg.event)}`,
     );
@@ -169,7 +169,9 @@ export function formatMessagesOutput(messages: MessageDisplayFields[]): string {
         `  ${formatLabel("Serial")} ${msg.version.serial}`,
       );
       if (msg.version.timestamp !== undefined) {
-        lines.push(`  ${formatLabel("Timestamp")} ${msg.version.timestamp}`);
+        lines.push(
+          `  ${formatLabel("Timestamp")} ${formatMessageTimestamp(msg.version.timestamp)}`,
+        );
       }
       if (msg.version.clientId) {
         lines.push(
@@ -237,7 +239,7 @@ export function formatPresenceOutput(
     }
 
     lines.push(
-      `${formatLabel("Timestamp")} ${msg.timestamp}`,
+      `${formatLabel("Timestamp")} ${formatMessageTimestamp(msg.timestamp)}`,
       `${formatLabel("Action")} ${formatEventType(msg.action)}`,
       `${formatLabel("Channel")} ${formatResource(msg.channel)}`,
     );

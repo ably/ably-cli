@@ -74,8 +74,9 @@ describe("channels:history command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Timestamp:");
-      expect(stdout).toContain("Channel:");
+      expect(stdout).toContain("Found");
+      expect(stdout).toContain("2");
+      expect(stdout).toContain("messages");
       expect(stdout).toContain("test-channel");
       expect(stdout).toContain("[1]");
       expect(stdout).toContain("[2]");
@@ -151,7 +152,7 @@ describe("channels:history command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("No messages found");
+      expect(stdout).toContain("No messages found in the channel history.");
     });
 
     it("should output JSON format when --json flag is used", async () => {

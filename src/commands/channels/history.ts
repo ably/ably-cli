@@ -8,6 +8,8 @@ import {
   formatTimestamp,
   formatMessageTimestamp,
   formatIndex,
+  formatCountLabel,
+  formatResource,
   formatLimitWarning,
   formatMessagesOutput,
 } from "../../utils/output.js";
@@ -87,6 +89,16 @@ export default class ChannelsHistory extends AblyBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult({ messages }, flags);
       } else {
+        if (messages.length === 0) {
+          this.log("No messages found in the channel history.");
+          return;
+        }
+
+        this.log(
+          `Found ${formatCountLabel(messages.length, "message")} in the history of channel: ${formatResource(channelName)}`,
+        );
+        this.log("");
+
         const displayMessages: MessageDisplayFields[] = messages.map(
           (message, index) => {
             const ts = message.timestamp ?? Date.now();
