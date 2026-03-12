@@ -6,7 +6,7 @@ import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { BaseFlags } from "../../types/cli.js";
 import { errorMessage } from "../../utils/errors.js";
-import { interpolateMessage } from "../../utils/message.js";
+import { prepareMessageFromInput } from "../../utils/message.js";
 import {
   formatProgress,
   formatResource,
@@ -142,77 +142,26 @@ export default class ChannelsPublish extends AblyBaseCommand {
           ),
         );
       } else if (errors === 0) {
+        const serial =
+          results[0]?.serial == null ? undefined : String(results[0].serial);
         this.log(
           formatSuccess(
             `Message published to channel: ${formatResource(args.channel as string)}.`,
           ),
         );
+        if (serial) {
+          this.log(`  Serial: ${formatResource(serial)}`);
+        }
       } else {
         // Error message already logged by publishMessages loop or prepareMessage
       }
     }
   }
 
-  private prepareMessage(
-    rawMessage: string,
-    flags: Record<string, unknown>,
-    index: number,
-  ): Ably.Message {
-    // Apply interpolation to the message
-    const interpolatedMessage = interpolateMessage(rawMessage, index);
-
-    // Parse the message
-    let messageData;
-    try {
-      messageData = JSON.parse(interpolatedMessage);
-    } catch {
-      // If parsing fails, use the raw message as data
-      messageData = { data: interpolatedMessage };
-    }
-
-    // Prepare the message
-    const message: Partial<Ably.Message> = {};
-
-    // If name is provided in flags, use it. Otherwise, check if it's in the message data
-    if (flags.name) {
-      message.name = flags.name as string;
-    } else if (messageData.name) {
-      message.name = messageData.name;
-      // Remove the name from the data to avoid duplication
-      delete messageData.name;
-    }
-
-    // Add extras if provided in the message data (before processing data)
-    if (
-      messageData.extras &&
-      typeof messageData.extras === "object" &&
-      Object.keys(messageData.extras).length > 0
-    ) {
-      message.extras = messageData.extras;
-      // Remove extras from messageData to avoid duplication in data
-      delete messageData.extras;
-    }
-
-    // If data is explicitly provided in the message, use it
-    if ("data" in messageData) {
-      message.data = messageData.data;
-    } else if (Object.keys(messageData).length > 0) {
-      // Otherwise use the entire messageData object (not empty) as the data
-      message.data = messageData;
-    }
-
-    // Add encoding if provided
-    if (flags.encoding) {
-      message.encoding = flags.encoding as string;
-    }
-
-    return message as Ably.Message;
-  }
-
   private async publishMessages(
     args: Record<string, unknown>,
     flags: Record<string, unknown>,
-    publisher: (msg: Ably.Message) => Promise<void>,
+    publisher: (msg: Ably.Message) => Promise<Ably.PublishResult | void>,
   ): Promise<void> {
     // Validate count and delay
     const count = Math.max(1, flags.count as number);
@@ -254,23 +203,32 @@ export default class ChannelsPublish extends AblyBaseCommand {
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
       const messageIndex = i + 1;
-      const message = this.prepareMessage(
-        args.message as string,
-        flags,
-        messageIndex,
-      );
+      const message = prepareMessageFromInput(args.message as string, flags, {
+        interpolationIndex: messageIndex,
+      });
 
       try {
-        await publisher(message);
+        const publishResult = await publisher(message);
         publishedCount++;
-        const result = { index: messageIndex, message, success: true };
+        const serial = publishResult?.serials?.[0] ?? undefined;
+        const result = {
+          index: messageIndex,
+          message,
+          success: true,
+          ...(serial === undefined ? {} : { serial }),
+        };
         results.push(result);
         this.logCliEvent(
           flags,
           "publish",
           "messagePublished",
           `Message ${messageIndex} published to channel ${args.channel}`,
-          { index: messageIndex, message, channel: args.channel },
+          {
+            index: messageIndex,
+            message,
+            channel: args.channel,
+            ...(serial === undefined ? {} : { serial }),
+          },
         );
         if (
           !this.shouldSuppressOutput(flags) &&
@@ -282,6 +240,9 @@ export default class ChannelsPublish extends AblyBaseCommand {
               `Message ${messageIndex} published to channel: ${formatResource(args.channel as string)}.`,
             ),
           );
+          if (serial) {
+            this.log(`  Serial: ${formatResource(serial)}`);
+          }
         }
       } catch (error) {
         errorCount++;
@@ -362,7 +323,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
       });
 
       await this.publishMessages(args, flags, async (msg) => {
-        await channel.publish(msg);
+        return channel.publish(msg);
       });
     } catch (error) {
       this.fail(error, flags as BaseFlags, "channelPublish");
@@ -390,7 +351,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
       );
 
       await this.publishMessages(args, flags, async (msg) => {
-        await channel.publish(msg);
+        return channel.publish(msg);
       });
     } catch (error) {
       this.fail(error, flags as BaseFlags, "channelPublish");

@@ -209,7 +209,7 @@ function createMockChannel(name: string): MockRealtimeChannel {
         emitter.off(eventOrCallback, callback);
       }
     }),
-    publish: vi.fn().mockImplementation(async () => {}),
+    publish: vi.fn().mockResolvedValue({ serials: ["mock-serial-001"] }),
     history: vi.fn().mockResolvedValue({ items: [] }),
     attach: vi.fn().mockImplementation(async function (
       this: MockRealtimeChannel,

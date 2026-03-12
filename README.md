@@ -106,7 +106,9 @@ $ ably-interactive
 * [`ably bench publisher CHANNEL`](#ably-bench-publisher-channel)
 * [`ably bench subscriber CHANNEL`](#ably-bench-subscriber-channel)
 * [`ably channels`](#ably-channels)
+* [`ably channels append CHANNEL SERIAL MESSAGE`](#ably-channels-append-channel-serial-message)
 * [`ably channels batch-publish [MESSAGE]`](#ably-channels-batch-publish-message)
+* [`ably channels delete CHANNEL SERIAL`](#ably-channels-delete-channel-serial)
 * [`ably channels history CHANNEL`](#ably-channels-history-channel)
 * [`ably channels inspect CHANNEL`](#ably-channels-inspect-channel)
 * [`ably channels list`](#ably-channels-list)
@@ -118,6 +120,7 @@ $ ably-interactive
 * [`ably channels presence subscribe CHANNEL`](#ably-channels-presence-subscribe-channel)
 * [`ably channels publish CHANNEL MESSAGE`](#ably-channels-publish-channel-message)
 * [`ably channels subscribe CHANNELS`](#ably-channels-subscribe-channels)
+* [`ably channels update CHANNEL SERIAL MESSAGE`](#ably-channels-update-channel-serial-message)
 * [`ably config`](#ably-config)
 * [`ably config path`](#ably-config-path)
 * [`ably config show`](#ably-config-show)
@@ -1370,7 +1373,9 @@ EXAMPLES
   $ ably channels list
 
 COMMANDS
+  ably channels append         Append data to a message on an Ably channel
   ably channels batch-publish  Publish messages to multiple Ably channels with a single request
+  ably channels delete         Delete a message on an Ably channel
   ably channels history        Retrieve message history for a channel
   ably channels inspect        Open the Ably dashboard to inspect a specific channel
   ably channels list           List active channels using the channel enumeration API
@@ -1378,9 +1383,53 @@ COMMANDS
   ably channels presence       Manage presence on Ably channels
   ably channels publish        Publish a message to an Ably channel
   ably channels subscribe      Subscribe to messages published on one or more Ably channels
+  ably channels update         Update a message on an Ably channel
 ```
 
 _See code: [src/commands/channels/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/index.ts)_
+
+## `ably channels append CHANNEL SERIAL MESSAGE`
+
+Append data to a message on an Ably channel
+
+```
+USAGE
+  $ ably channels append CHANNEL SERIAL MESSAGE [-v] [--json | --pretty-json] [--client-id <value>] [--description
+    <value>] [-e <value>] [-n <value>]
+
+ARGUMENTS
+  CHANNEL  The channel name
+  SERIAL   The serial of the message to append to
+  MESSAGE  The message to append (JSON format or plain text)
+
+FLAGS
+  -e, --encoding=<value>     The encoding for the message
+  -n, --name=<value>         The event name
+  -v, --verbose              Output verbose logs
+      --client-id=<value>    Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                             no client ID. Not applicable when using token authentication.
+      --description=<value>  Description of the append operation
+      --json                 Output in JSON format
+      --pretty-json          Output in colorized JSON format
+
+DESCRIPTION
+  Append data to a message on an Ably channel
+
+EXAMPLES
+  $ ably channels append my-channel "01234567890:0" '{"data":"appended content"}'
+
+  $ ably channels append my-channel "01234567890:0" "Appended plain text"
+
+  $ ably channels append my-channel "01234567890:0" '{"data":"appended"}' --name event-name
+
+  $ ably channels append my-channel "01234567890:0" '{"data":"appended"}' --description "Added context"
+
+  $ ably channels append my-channel "01234567890:0" '{"data":"appended"}' --json
+
+  $ ably channels append my-channel "01234567890:0" '{"data":"appended"}' --pretty-json
+```
+
+_See code: [src/commands/channels/append.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/append.ts)_
 
 ## `ably channels batch-publish [MESSAGE]`
 
@@ -1426,6 +1475,41 @@ EXAMPLES
 ```
 
 _See code: [src/commands/channels/batch-publish.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/batch-publish.ts)_
+
+## `ably channels delete CHANNEL SERIAL`
+
+Delete a message on an Ably channel
+
+```
+USAGE
+  $ ably channels delete CHANNEL SERIAL [-v] [--json | --pretty-json] [--client-id <value>] [--description <value>]
+
+ARGUMENTS
+  CHANNEL  The channel name
+  SERIAL   The serial of the message to delete
+
+FLAGS
+  -v, --verbose              Output verbose logs
+      --client-id=<value>    Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                             no client ID. Not applicable when using token authentication.
+      --description=<value>  Description of the delete operation
+      --json                 Output in JSON format
+      --pretty-json          Output in colorized JSON format
+
+DESCRIPTION
+  Delete a message on an Ably channel
+
+EXAMPLES
+  $ ably channels delete my-channel "01234567890:0"
+
+  $ ably channels delete my-channel "01234567890:0" --description "Removed by admin"
+
+  $ ably channels delete my-channel "01234567890:0" --json
+
+  $ ably channels delete my-channel "01234567890:0" --pretty-json
+```
+
+_See code: [src/commands/channels/delete.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/delete.ts)_
 
 ## `ably channels history CHANNEL`
 
@@ -1823,6 +1907,49 @@ EXAMPLES
 ```
 
 _See code: [src/commands/channels/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/subscribe.ts)_
+
+## `ably channels update CHANNEL SERIAL MESSAGE`
+
+Update a message on an Ably channel
+
+```
+USAGE
+  $ ably channels update CHANNEL SERIAL MESSAGE [-v] [--json | --pretty-json] [--client-id <value>] [--description
+    <value>] [-e <value>] [-n <value>]
+
+ARGUMENTS
+  CHANNEL  The channel name
+  SERIAL   The serial of the message to update
+  MESSAGE  The updated message (JSON format or plain text)
+
+FLAGS
+  -e, --encoding=<value>     The encoding for the message
+  -n, --name=<value>         The event name
+  -v, --verbose              Output verbose logs
+      --client-id=<value>    Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                             no client ID. Not applicable when using token authentication.
+      --description=<value>  Description of the update operation
+      --json                 Output in JSON format
+      --pretty-json          Output in colorized JSON format
+
+DESCRIPTION
+  Update a message on an Ably channel
+
+EXAMPLES
+  $ ably channels update my-channel "01234567890:0" '{"data":"updated content"}'
+
+  $ ably channels update my-channel "01234567890:0" "Updated plain text"
+
+  $ ably channels update my-channel "01234567890:0" '{"data":"updated"}' --name event-name
+
+  $ ably channels update my-channel "01234567890:0" '{"data":"updated"}' --description "Corrected typo"
+
+  $ ably channels update my-channel "01234567890:0" '{"data":"updated"}' --json
+
+  $ ably channels update my-channel "01234567890:0" '{"data":"updated"}' --pretty-json
+```
+
+_See code: [src/commands/channels/update.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/update.ts)_
 
 ## `ably config`
 
