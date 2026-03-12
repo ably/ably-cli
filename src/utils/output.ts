@@ -121,20 +121,26 @@ export function formatMessagesOutput(messages: MessageDisplayFields[]): string {
     const lines: string[] = [];
 
     if (msg.indexPrefix) {
-      lines.push(msg.indexPrefix);
+      const headerLine = msg.sequencePrefix
+        ? `${msg.sequencePrefix}${msg.indexPrefix}`
+        : msg.indexPrefix;
+      lines.push(headerLine);
     } else {
-      lines.push(formatTimestamp(new Date(msg.timestamp).toISOString()));
+      const headerTimestamp = formatTimestamp(
+        new Date(msg.timestamp).toISOString(),
+      );
+      const headerLine = msg.sequencePrefix
+        ? `${msg.sequencePrefix}${headerTimestamp}`
+        : headerTimestamp;
+      lines.push(headerLine);
     }
 
     if (msg.id) {
       lines.push(`${formatLabel("ID")} ${msg.id}`);
     }
 
-    const timestampLine = msg.sequencePrefix
-      ? `${msg.sequencePrefix}${formatLabel("Timestamp")} ${msg.timestamp}`
-      : `${formatLabel("Timestamp")} ${msg.timestamp}`;
     lines.push(
-      timestampLine,
+      `${formatLabel("Timestamp")} ${msg.timestamp}`,
       `${formatLabel("Channel")} ${formatResource(msg.channel)}`,
       `${formatLabel("Event")} ${formatEventType(msg.event)}`,
     );
@@ -181,10 +187,12 @@ export function formatMessagesOutput(messages: MessageDisplayFields[]): string {
       for (const [annotationType, value] of Object.entries(
         msg.annotations.summary,
       )) {
-        lines.push(
-          `  ${formatLabel(annotationType)}`,
-          `    ${formatMessageData(value)}`,
-        );
+        const formattedValue = formatMessageData(value)
+          .split("\n")
+          .map((line) => `    ${line}`)
+          .join("\n");
+
+        lines.push(`  ${formatLabel(annotationType)}`, formattedValue);
       }
     }
 

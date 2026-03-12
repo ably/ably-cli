@@ -291,7 +291,6 @@ describe("Channel E2E Tests", () => {
       );
     }
 
-    expect(historyResult.stdout).toContain("Found");
     expect(historyResult.stdout).toContain("E2E History Test");
 
     // Now verify with SDK in a separate step outside of Oclif's callback

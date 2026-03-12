@@ -88,22 +88,25 @@ export default class ChannelsHistory extends AblyBaseCommand {
         this.logJsonResult({ messages }, flags);
       } else {
         const displayMessages: MessageDisplayFields[] = messages.map(
-          (message, index) => ({
-            action:
-              message.action === undefined
-                ? undefined
-                : String(message.action),
-            channel: channelName,
-            clientId: message.clientId,
-            data: message.data,
-            event: message.name || "(none)",
-            id: message.id,
-            indexPrefix: `${formatIndex(index + 1)} ${formatTimestamp(formatMessageTimestamp(message.timestamp))}`,
-            serial: message.serial,
-            timestamp: message.timestamp ?? Date.now(),
-            version: message.version,
-            annotations: message.annotations,
-          }),
+          (message, index) => {
+            const ts = message.timestamp ?? Date.now();
+            return {
+              action:
+                message.action === undefined
+                  ? undefined
+                  : String(message.action),
+              channel: channelName,
+              clientId: message.clientId,
+              data: message.data,
+              event: message.name || "(none)",
+              id: message.id,
+              indexPrefix: `${formatIndex(index + 1)} ${formatTimestamp(formatMessageTimestamp(ts))}`,
+              serial: message.serial,
+              timestamp: ts,
+              version: message.version,
+              annotations: message.annotations,
+            };
+          },
         );
 
         this.log(formatMessagesOutput(displayMessages));
