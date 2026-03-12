@@ -153,6 +153,22 @@ describe("channels:presence:subscribe command", () => {
     });
   });
 
+  describe("flags", () => {
+    it("should accept --client-id flag", async () => {
+      const { error } = await runCommand(
+        [
+          "channels:presence:subscribe",
+          "test-channel",
+          "--client-id",
+          "my-client",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeUndefined();
+    });
+  });
+
   describe("error handling", () => {
     it("should handle missing mock client in test mode", async () => {
       if (globalThis.__TEST_MOCKS__) {

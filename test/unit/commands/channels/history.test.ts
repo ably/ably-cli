@@ -171,7 +171,9 @@ describe("channels:history command", () => {
       expect(result.messages[0]).toHaveProperty("data");
       expect(result.messages[0].data).toEqual({ text: "Hello world" });
     });
+  });
 
+  describe("flags", () => {
     it("should respect --limit flag", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
@@ -267,22 +269,6 @@ describe("channels:history command", () => {
       expect(callArgs.end).toBeLessThanOrEqual(thirtyMinAgo + 5000);
     });
 
-    it("should handle API errors gracefully", async () => {
-      const mock = getMockAblyRest();
-      const channel = mock.channels._getChannel("test-channel");
-      channel.history.mockRejectedValue(new Error("API error"));
-
-      const { error } = await runCommand(
-        ["channels:history", "test-channel"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toContain("API error");
-    });
-  });
-
-  describe("cipher behavior", () => {
     it("should pass cipher option to channel when --cipher flag is used", async () => {
       const mock = getMockAblyRest();
 
@@ -298,6 +284,22 @@ describe("channels:history command", () => {
           cipher: { key: "my-encryption-key" },
         }),
       );
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle API errors gracefully", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+      channel.history.mockRejectedValue(new Error("API error"));
+
+      const { error } = await runCommand(
+        ["channels:history", "test-channel"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("API error");
     });
   });
 });

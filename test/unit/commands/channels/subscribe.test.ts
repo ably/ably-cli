@@ -191,7 +191,7 @@ describe("channels:subscribe command", () => {
     });
   });
 
-  describe("flag behavior", () => {
+  describe("flags", () => {
     it("should configure channel with rewind option", async () => {
       const mock = getMockAblyRealtime();
 
