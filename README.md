@@ -86,7 +86,6 @@ $ ably-interactive
 * [`ably apps rules delete NAMEORID`](#ably-apps-rules-delete-nameorid)
 * [`ably apps rules list`](#ably-apps-rules-list)
 * [`ably apps rules update NAMEORID`](#ably-apps-rules-update-nameorid)
-* [`ably apps set-apns-p12 ID`](#ably-apps-set-apns-p12-id)
 * [`ably apps switch [APPID]`](#ably-apps-switch-appid)
 * [`ably apps update ID`](#ably-apps-update-id)
 * [`ably auth`](#ably-auth)
@@ -150,6 +149,27 @@ $ ably-interactive
 * [`ably logs push history`](#ably-logs-push-history)
 * [`ably logs push subscribe`](#ably-logs-push-subscribe)
 * [`ably logs subscribe`](#ably-logs-subscribe)
+* [`ably push`](#ably-push)
+* [`ably push batch-publish`](#ably-push-batch-publish)
+* [`ably push channels`](#ably-push-channels)
+* [`ably push channels list`](#ably-push-channels-list)
+* [`ably push channels list-channels`](#ably-push-channels-list-channels)
+* [`ably push channels remove`](#ably-push-channels-remove)
+* [`ably push channels remove-where`](#ably-push-channels-remove-where)
+* [`ably push channels save`](#ably-push-channels-save)
+* [`ably push config`](#ably-push-config)
+* [`ably push config clear-apns`](#ably-push-config-clear-apns)
+* [`ably push config clear-fcm`](#ably-push-config-clear-fcm)
+* [`ably push config set-apns`](#ably-push-config-set-apns)
+* [`ably push config set-fcm`](#ably-push-config-set-fcm)
+* [`ably push config show`](#ably-push-config-show)
+* [`ably push devices`](#ably-push-devices)
+* [`ably push devices get DEVICE-ID`](#ably-push-devices-get-device-id)
+* [`ably push devices list`](#ably-push-devices-list)
+* [`ably push devices remove DEVICE-ID`](#ably-push-devices-remove-device-id)
+* [`ably push devices remove-where`](#ably-push-devices-remove-where)
+* [`ably push devices save`](#ably-push-devices-save)
+* [`ably push publish`](#ably-push-publish)
 * [`ably queues`](#ably-queues)
 * [`ably queues create`](#ably-queues-create)
 * [`ably queues delete QUEUEID`](#ably-queues-delete-queueid)
@@ -409,14 +429,13 @@ EXAMPLES
   $ ably apps switch my-app
 
 COMMANDS
-  ably apps create        Create a new app
-  ably apps current       Show the currently selected app
-  ably apps delete        Delete an app
-  ably apps list          List all apps in the current account
-  ably apps rules         Manage Ably channel rules (namespaces)
-  ably apps set-apns-p12  Upload Apple Push Notification Service P12 certificate for an app
-  ably apps switch        Switch to a different Ably app
-  ably apps update        Update an app
+  ably apps create   Create a new app
+  ably apps current  Show the currently selected app
+  ably apps delete   Delete an app
+  ably apps list     List all apps in the current account
+  ably apps rules    Manage Ably channel rules (namespaces)
+  ably apps switch   Switch to a different Ably app
+  ably apps update   Update an app
 ```
 
 _See code: [src/commands/apps/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/index.ts)_
@@ -728,41 +747,6 @@ EXAMPLES
 ```
 
 _See code: [src/commands/apps/rules/update.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/rules/update.ts)_
-
-## `ably apps set-apns-p12 ID`
-
-Upload Apple Push Notification Service P12 certificate for an app
-
-```
-USAGE
-  $ ably apps set-apns-p12 ID --certificate <value> [-v] [--json | --pretty-json] [--password <value>]
-    [--use-for-sandbox]
-
-ARGUMENTS
-  ID  App ID to set the APNS certificate for
-
-FLAGS
-  -v, --verbose              Output verbose logs
-      --certificate=<value>  (required) Path to the P12 certificate file
-      --json                 Output in JSON format
-      --password=<value>     Password for the P12 certificate
-      --pretty-json          Output in colorized JSON format
-      --use-for-sandbox      Whether to use this certificate for the APNS sandbox environment
-
-DESCRIPTION
-  Upload Apple Push Notification Service P12 certificate for an app
-
-EXAMPLES
-  $ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12
-
-  $ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --password "YOUR_CERTIFICATE_PASSWORD"
-
-  $ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --use-for-sandbox
-
-  $ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12 --json
-```
-
-_See code: [src/commands/apps/set-apns-p12.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/set-apns-p12.ts)_
 
 ## `ably apps switch [APPID]`
 
@@ -2852,6 +2836,639 @@ EXAMPLES
 ```
 
 _See code: [src/commands/logs/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/logs/subscribe.ts)_
+
+## `ably push`
+
+Manage push notifications
+
+```
+USAGE
+  $ ably push
+
+DESCRIPTION
+  Manage push notifications
+
+EXAMPLES
+  $ ably push publish --device-id device1 --title Hello --body World
+
+  $ ably push devices list
+
+  $ ably push channels list --channel my-channel
+
+  $ ably push config show
+
+COMMANDS
+  ably push batch-publish  Publish push notifications to multiple recipients in a batch
+  ably push channels       Manage push notification channel subscriptions
+  ably push config         Manage push notification configuration (APNs, FCM)
+  ably push devices        Manage push notification device registrations
+  ably push publish        Publish a push notification to a device or client
+```
+
+_See code: [src/commands/push/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/index.ts)_
+
+## `ably push batch-publish`
+
+Publish push notifications to multiple recipients in a batch
+
+```
+USAGE
+  $ ably push batch-publish --payload <value> [-v] [--json | --pretty-json]
+
+FLAGS
+  -v, --verbose          Output verbose logs
+      --json             Output in JSON format
+      --payload=<value>  (required) Batch payload as JSON array, @filepath, or - for stdin
+      --pretty-json      Output in colorized JSON format
+
+DESCRIPTION
+  Publish push notifications to multiple recipients in a batch
+
+EXAMPLES
+  $ ably push batch-publish --payload '[{"recipient":{"deviceId":"dev1"},"notification":{"title":"Hello"}}]'
+
+  $ ably push batch-publish --payload @batch.json
+
+  cat batch.json | ably push batch-publish --payload -
+
+  $ ably push batch-publish --payload @batch.json --json
+```
+
+_See code: [src/commands/push/batch-publish.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/batch-publish.ts)_
+
+## `ably push channels`
+
+Manage push notification channel subscriptions
+
+```
+USAGE
+  $ ably push channels
+
+DESCRIPTION
+  Manage push notification channel subscriptions
+
+EXAMPLES
+  $ ably push channels list --channel my-channel
+
+  $ ably push channels save --channel my-channel --device-id device-123
+
+  $ ably push channels list-channels
+```
+
+_See code: [src/commands/push/channels/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/channels/index.ts)_
+
+## `ably push channels list`
+
+List push channel subscriptions
+
+```
+USAGE
+  $ ably push channels list --channel <value> [-v] [--json | --pretty-json] [--device-id <value>] [--client-id <value>]
+    [--limit <value>]
+
+FLAGS
+  -v, --verbose            Output verbose logs
+      --channel=<value>    (required) Channel name to list subscriptions for
+      --client-id=<value>  Filter by client ID
+      --device-id=<value>  Filter by device ID
+      --json               Output in JSON format
+      --limit=<value>      [default: 100] Maximum number of results to return (default: 100)
+      --pretty-json        Output in colorized JSON format
+
+DESCRIPTION
+  List push channel subscriptions
+
+EXAMPLES
+  $ ably push channels list --channel my-channel
+
+  $ ably push channels list --channel my-channel --device-id device-123
+
+  $ ably push channels list --channel my-channel --json
+```
+
+_See code: [src/commands/push/channels/list.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/channels/list.ts)_
+
+## `ably push channels list-channels`
+
+List channels with push subscriptions
+
+```
+USAGE
+  $ ably push channels list-channels [-v] [--json | --pretty-json] [--limit <value>]
+
+FLAGS
+  -v, --verbose        Output verbose logs
+      --json           Output in JSON format
+      --limit=<value>  [default: 100] Maximum number of results to return (default: 100)
+      --pretty-json    Output in colorized JSON format
+
+DESCRIPTION
+  List channels with push subscriptions
+
+EXAMPLES
+  $ ably push channels list-channels
+
+  $ ably push channels list-channels --limit 50
+
+  $ ably push channels list-channels --json
+```
+
+_See code: [src/commands/push/channels/list-channels.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/channels/list-channels.ts)_
+
+## `ably push channels remove`
+
+Remove a push channel subscription
+
+```
+USAGE
+  $ ably push channels remove --channel <value> [-v] [--json | --pretty-json] [--device-id <value> | --client-id <value>]
+    [-f]
+
+FLAGS
+  -f, --force              Skip confirmation prompt
+  -v, --verbose            Output verbose logs
+      --channel=<value>    (required) Channel name to unsubscribe from
+      --client-id=<value>  Client ID to unsubscribe
+      --device-id=<value>  Device ID to unsubscribe
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+
+DESCRIPTION
+  Remove a push channel subscription
+
+EXAMPLES
+  $ ably push channels remove --channel my-channel --device-id device-123
+
+  $ ably push channels remove --channel my-channel --client-id client-1 --force
+
+  $ ably push channels remove --channel my-channel --device-id device-123 --json
+```
+
+_See code: [src/commands/push/channels/remove.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/channels/remove.ts)_
+
+## `ably push channels remove-where`
+
+Remove push channel subscriptions matching filter criteria
+
+```
+USAGE
+  $ ably push channels remove-where --channel <value> [-v] [--json | --pretty-json] [--device-id <value>] [--client-id <value>]
+    [-f]
+
+FLAGS
+  -f, --force              Skip confirmation prompt
+  -v, --verbose            Output verbose logs
+      --channel=<value>    (required) Channel name to filter by
+      --client-id=<value>  Filter by client ID
+      --device-id=<value>  Filter by device ID
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+
+DESCRIPTION
+  Remove push channel subscriptions matching filter criteria
+
+EXAMPLES
+  $ ably push channels remove-where --channel my-channel
+
+  $ ably push channels remove-where --channel my-channel --device-id device-123 --force
+
+  $ ably push channels remove-where --channel my-channel --json
+```
+
+_See code: [src/commands/push/channels/remove-where.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/channels/remove-where.ts)_
+
+## `ably push channels save`
+
+Subscribe a device or client to push notifications on a channel
+
+```
+USAGE
+  $ ably push channels save --channel <value> [-v] [--json | --pretty-json] [--device-id <value> | --client-id <value>]
+
+FLAGS
+  -v, --verbose            Output verbose logs
+      --channel=<value>    (required) Channel name to subscribe to
+      --client-id=<value>  Client ID to subscribe
+      --device-id=<value>  Device ID to subscribe
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+
+DESCRIPTION
+  Subscribe a device or client to push notifications on a channel
+
+EXAMPLES
+  $ ably push channels save --channel my-channel --device-id device-123
+
+  $ ably push channels save --channel my-channel --client-id client-1
+
+  $ ably push channels save --channel my-channel --device-id device-123 --json
+```
+
+_See code: [src/commands/push/channels/save.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/channels/save.ts)_
+
+## `ably push config`
+
+Manage push notification configuration (APNs, FCM)
+
+```
+USAGE
+  $ ably push config
+
+DESCRIPTION
+  Manage push notification configuration (APNs, FCM)
+
+EXAMPLES
+  $ ably push config show
+
+  $ ably push config set-apns --certificate /path/to/cert.p12
+
+  $ ably push config set-fcm --service-account /path/to/service-account.json
+```
+
+_See code: [src/commands/push/config/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/config/index.ts)_
+
+## `ably push config clear-apns`
+
+Clear APNs push notification configuration for an app
+
+```
+USAGE
+  $ ably push config clear-apns [-v] [--json | --pretty-json] [--app <value>] [-f]
+
+FLAGS
+  -f, --force        Skip confirmation prompt
+  -v, --verbose      Output verbose logs
+      --app=<value>  The app ID or name (defaults to current app)
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
+
+DESCRIPTION
+  Clear APNs push notification configuration for an app
+
+EXAMPLES
+  $ ably push config clear-apns
+
+  $ ably push config clear-apns --app my-app --force
+
+  $ ably push config clear-apns --force --json
+```
+
+_See code: [src/commands/push/config/clear-apns.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/config/clear-apns.ts)_
+
+## `ably push config clear-fcm`
+
+Clear FCM push notification configuration for an app
+
+```
+USAGE
+  $ ably push config clear-fcm [-v] [--json | --pretty-json] [--app <value>] [-f]
+
+FLAGS
+  -f, --force        Skip confirmation prompt
+  -v, --verbose      Output verbose logs
+      --app=<value>  The app ID or name (defaults to current app)
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
+
+DESCRIPTION
+  Clear FCM push notification configuration for an app
+
+EXAMPLES
+  $ ably push config clear-fcm
+
+  $ ably push config clear-fcm --app my-app --force
+
+  $ ably push config clear-fcm --force --json
+```
+
+_See code: [src/commands/push/config/clear-fcm.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/config/clear-fcm.ts)_
+
+## `ably push config set-apns`
+
+Configure APNs push notifications for an app
+
+```
+USAGE
+  $ ably push config set-apns [-v] [--json | --pretty-json] [--app <value>] [--certificate <value> | --key-file <value>]
+    [--key-id <value>] [--password <value>] [--sandbox] [--team-id <value>] [--topic <value>]
+
+FLAGS
+  -v, --verbose              Output verbose logs
+      --app=<value>          The app ID or name (defaults to current app)
+      --certificate=<value>  Path to the P12 certificate file
+      --json                 Output in JSON format
+      --key-file=<value>     Path to the P8 key file
+      --key-id=<value>       The APNs key ID (required for P8)
+      --password=<value>     Password for the P12 certificate
+      --pretty-json          Output in colorized JSON format
+      --sandbox              Use the APNs sandbox environment
+      --team-id=<value>      The Apple Developer Team ID (required for P8)
+      --topic=<value>        The APNs topic / bundle ID (required for P8)
+
+DESCRIPTION
+  Configure APNs push notifications for an app
+
+EXAMPLES
+  $ ably push config set-apns --certificate /path/to/cert.p12
+
+  $ ably push config set-apns --certificate /path/to/cert.p12 --password secret --sandbox
+
+  $ ably push config set-apns --key-file /path/to/key.p8 --key-id ABC123 --team-id DEF456 --topic com.example.app
+
+  $ ably push config set-apns --certificate /path/to/cert.p12 --json
+```
+
+_See code: [src/commands/push/config/set-apns.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/config/set-apns.ts)_
+
+## `ably push config set-fcm`
+
+Configure FCM push notifications for an app
+
+```
+USAGE
+  $ ably push config set-fcm --service-account <value> [-v] [--json | --pretty-json] [--app <value>]
+
+FLAGS
+  -v, --verbose                  Output verbose logs
+      --app=<value>              The app ID or name (defaults to current app)
+      --json                     Output in JSON format
+      --pretty-json              Output in colorized JSON format
+      --service-account=<value>  (required) Path to the FCM service account JSON file
+
+DESCRIPTION
+  Configure FCM push notifications for an app
+
+EXAMPLES
+  $ ably push config set-fcm --service-account /path/to/service-account.json
+
+  $ ably push config set-fcm --service-account /path/to/service-account.json --app my-app
+
+  $ ably push config set-fcm --service-account /path/to/service-account.json --json
+```
+
+_See code: [src/commands/push/config/set-fcm.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/config/set-fcm.ts)_
+
+## `ably push config show`
+
+Show push notification configuration for an app
+
+```
+USAGE
+  $ ably push config show [-v] [--json | --pretty-json] [--app <value>]
+
+FLAGS
+  -v, --verbose      Output verbose logs
+      --app=<value>  The app ID or name (defaults to current app)
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
+
+DESCRIPTION
+  Show push notification configuration for an app
+
+EXAMPLES
+  $ ably push config show
+
+  $ ably push config show --app my-app
+
+  $ ably push config show --json
+```
+
+_See code: [src/commands/push/config/show.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/config/show.ts)_
+
+## `ably push devices`
+
+Manage push notification device registrations
+
+```
+USAGE
+  $ ably push devices
+
+DESCRIPTION
+  Manage push notification device registrations
+
+EXAMPLES
+  $ ably push devices list
+
+  $ ably push devices get device-123
+
+  $ ably push devices save --id device-123 --platform ios --form-factor phone --transport-type apns --device-token token123
+```
+
+_See code: [src/commands/push/devices/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/devices/index.ts)_
+
+## `ably push devices get DEVICE-ID`
+
+Get details of a push device registration
+
+```
+USAGE
+  $ ably push devices get DEVICE-ID [-v] [--json | --pretty-json]
+
+ARGUMENTS
+  DEVICE-ID  The device ID to retrieve
+
+FLAGS
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
+
+DESCRIPTION
+  Get details of a push device registration
+
+EXAMPLES
+  $ ably push devices get device-123
+
+  $ ably push devices get device-123 --json
+```
+
+_See code: [src/commands/push/devices/get.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/devices/get.ts)_
+
+## `ably push devices list`
+
+List push device registrations
+
+```
+USAGE
+  $ ably push devices list [-v] [--json | --pretty-json] [--device-id <value>] [--client-id <value>] [--state
+    ACTIVE|FAILING|FAILED] [--limit <value>]
+
+FLAGS
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Filter by client ID
+      --device-id=<value>  Filter by device ID
+      --json               Output in JSON format
+      --limit=<value>      [default: 100] Maximum number of results to return (default: 100)
+      --pretty-json        Output in colorized JSON format
+      --state=<option>     Filter by device state
+                           <options: ACTIVE|FAILING|FAILED>
+
+DESCRIPTION
+  List push device registrations
+
+EXAMPLES
+  $ ably push devices list
+
+  $ ably push devices list --device-id device-123
+
+  $ ably push devices list --client-id client-1
+
+  $ ably push devices list --limit 50 --json
+```
+
+_See code: [src/commands/push/devices/list.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/devices/list.ts)_
+
+## `ably push devices remove DEVICE-ID`
+
+Remove a push device registration
+
+```
+USAGE
+  $ ably push devices remove DEVICE-ID [-v] [--json | --pretty-json] [-f]
+
+ARGUMENTS
+  DEVICE-ID  The device ID to remove
+
+FLAGS
+  -f, --force        Skip confirmation prompt
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
+
+DESCRIPTION
+  Remove a push device registration
+
+EXAMPLES
+  $ ably push devices remove device-123
+
+  $ ably push devices remove device-123 --force
+
+  $ ably push devices remove device-123 --json
+```
+
+_See code: [src/commands/push/devices/remove.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/devices/remove.ts)_
+
+## `ably push devices remove-where`
+
+Remove push device registrations matching filter criteria
+
+```
+USAGE
+  $ ably push devices remove-where [-v] [--json | --pretty-json] [--device-id <value>] [--client-id <value>] [-f]
+
+FLAGS
+  -f, --force              Skip confirmation prompt
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Filter by client ID
+      --device-id=<value>  Filter by device ID
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+
+DESCRIPTION
+  Remove push device registrations matching filter criteria
+
+EXAMPLES
+  $ ably push devices remove-where --device-id device-123
+
+  $ ably push devices remove-where --client-id client-1 --force
+
+  $ ably push devices remove-where --device-id device-123 --json
+```
+
+_See code: [src/commands/push/devices/remove-where.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/devices/remove-where.ts)_
+
+## `ably push devices save`
+
+Register or update a push device
+
+```
+USAGE
+  $ ably push devices save [-v] [--json | --pretty-json] [--id <value>] [--platform ios|android|browser] [--form-factor
+    phone|tablet|desktop|tv|watch|car|embedded|other] [--transport-type apns|fcm|web] [--device-token <value>]
+    [--target-url <value>] [--p256dh-key <value>] [--auth-secret <value>] [--client-id <value>] [--metadata <value>]
+    [--data <value>]
+
+FLAGS
+  -v, --verbose                  Output verbose logs
+      --auth-secret=<value>      Web push auth secret (required for web transport)
+      --client-id=<value>        Client ID to associate with the device
+      --data=<value>             Full device details as JSON string or @filepath
+      --device-token=<value>     Push device token (required for apns/fcm transport)
+      --form-factor=<option>     Device form factor
+                                 <options: phone|tablet|desktop|tv|watch|car|embedded|other>
+      --id=<value>               Device ID
+      --json                     Output in JSON format
+      --metadata=<value>         Device metadata as JSON
+      --p256dh-key=<value>       Web push P256DH key (required for web transport)
+      --platform=<option>        Device platform
+                                 <options: ios|android|browser>
+      --pretty-json              Output in colorized JSON format
+      --target-url=<value>       Web push target URL (required for web transport)
+      --transport-type=<option>  Push transport type
+                                 <options: apns|fcm|web>
+
+DESCRIPTION
+  Register or update a push device
+
+EXAMPLES
+  $ ably push devices save --id device-123 --platform ios --form-factor phone --transport-type apns --device-token token123
+
+  $ ably push devices save --id browser-1 --platform browser --form-factor desktop --transport-type web --target-url https://push.example.com --p256dh-key KEY --auth-secret SECRET
+
+  $ ably push devices save --data '{"id":"device-123","platform":"ios","formFactor":"phone","push":{"recipient":{"transportType":"apns","deviceToken":"token123"}}}'
+
+  $ ably push devices save --data @device.json
+
+  $ ably push devices save --id device-123 --platform ios --form-factor phone --transport-type apns --device-token token123 --json
+```
+
+_See code: [src/commands/push/devices/save.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/devices/save.ts)_
+
+## `ably push publish`
+
+Publish a push notification to a device or client
+
+```
+USAGE
+  $ ably push publish [-v] [--json | --pretty-json] [--device-id <value> | --client-id <value> | --recipient
+    <value>] [--title <value>] [--body <value>] [--sound <value>] [--icon <value>] [--badge <value>] [--data <value>]
+    [--collapse-key <value>] [--ttl <value>] [--payload <value>] [--apns <value>] [--fcm <value>] [--web <value>]
+
+FLAGS
+  -v, --verbose               Output verbose logs
+      --apns=<value>          APNs-specific override as JSON
+      --badge=<value>         Notification badge count
+      --body=<value>          Notification body
+      --client-id=<value>     Target client ID
+      --collapse-key=<value>  Collapse key for notification grouping
+      --data=<value>          Custom data payload as JSON
+      --device-id=<value>     Target device ID
+      --fcm=<value>           FCM-specific override as JSON
+      --icon=<value>          Notification icon
+      --json                  Output in JSON format
+      --payload=<value>       Full notification payload as JSON (overrides convenience flags)
+      --pretty-json           Output in colorized JSON format
+      --recipient=<value>     Raw recipient JSON for advanced targeting
+      --sound=<value>         Notification sound
+      --title=<value>         Notification title
+      --ttl=<value>           Time to live in seconds
+      --web=<value>           Web push-specific override as JSON
+
+DESCRIPTION
+  Publish a push notification to a device or client
+
+EXAMPLES
+  $ ably push publish --device-id device-123 --title Hello --body World
+
+  $ ably push publish --client-id client-1 --title Hello --body World
+
+  $ ably push publish --device-id device-123 --payload '{"notification":{"title":"Hello","body":"World"}}'
+
+  $ ably push publish --recipient '{"transportType":"apns","deviceToken":"token123"}' --title Hello --body World
+
+  $ ably push publish --device-id device-123 --title Hello --body World --json
+```
+
+_See code: [src/commands/push/publish.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/publish.ts)_
 
 ## `ably queues`
 

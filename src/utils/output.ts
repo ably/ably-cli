@@ -95,6 +95,24 @@ export function formatIndex(n: number): string {
   return chalk.dim(`[${n}]`);
 }
 
+/** Device push state display — green for ACTIVE, yellow for FAILING, red for FAILED */
+export function formatDeviceState(state: string): string {
+  switch (state.toUpperCase()) {
+    case "ACTIVE": {
+      return chalk.green(state);
+    }
+    case "FAILING": {
+      return chalk.yellow(state);
+    }
+    case "FAILED": {
+      return chalk.red(state);
+    }
+    default: {
+      return state;
+    }
+  }
+}
+
 export interface MessageDisplayFields {
   action?: string;
   channel: string;
