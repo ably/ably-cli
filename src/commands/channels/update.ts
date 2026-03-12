@@ -9,6 +9,7 @@ import {
   formatProgress,
   formatResource,
   formatSuccess,
+  formatWarning,
 } from "../../utils/output.js";
 
 export default class ChannelsUpdate extends AblyBaseCommand {
@@ -73,7 +74,7 @@ export default class ChannelsUpdate extends AblyBaseCommand {
         );
       }
 
-      const message = prepareMessageFromInput(args.message, serial, flags);
+      const message = prepareMessageFromInput(args.message, flags, { serial });
       const operation: Ably.MessageOperation | undefined = flags.description
         ? { description: flags.description }
         : undefined;
@@ -103,6 +104,10 @@ export default class ChannelsUpdate extends AblyBaseCommand {
         );
         if (versionSerial) {
           this.log(`  Version serial: ${formatResource(versionSerial)}`);
+        } else if (versionSerial === null) {
+          this.log(
+            formatWarning("Message was superseded by a subsequent operation."),
+          );
         }
       }
     } catch (error) {

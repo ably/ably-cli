@@ -158,6 +158,19 @@ describe("channels:update command", () => {
       );
     });
 
+    it("should handle null versionSerial (operation superseded)", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+      channel.updateMessage.mockResolvedValue({ versionSerial: null });
+
+      const { stdout } = await runCommand(
+        ["channels:update", "test-channel", "serial-001", '{"data":"hello"}'],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("superseded");
+    });
+
     it("should display version serial in human-readable output", async () => {
       const { stdout } = await runCommand(
         ["channels:update", "test-channel", "serial-001", '{"data":"hello"}'],

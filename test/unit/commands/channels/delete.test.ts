@@ -90,6 +90,19 @@ describe("channels:delete command", () => {
       );
     });
 
+    it("should handle null versionSerial (operation superseded)", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+      channel.deleteMessage.mockResolvedValue({ versionSerial: null });
+
+      const { stdout } = await runCommand(
+        ["channels:delete", "test-channel", "serial-001"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("superseded");
+    });
+
     it("should display version serial in human-readable output", async () => {
       const { stdout } = await runCommand(
         ["channels:delete", "test-channel", "serial-001"],

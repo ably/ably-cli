@@ -209,6 +209,26 @@ describe("ChannelsPublish", function () {
       expect(realtimeChannel.publish).not.toHaveBeenCalled();
     });
 
+    it("should handle null serial from publish result (conflation)", async function () {
+      const restMock = getMockAblyRest();
+      const channel = restMock.channels._getChannel("test-channel");
+      channel.publish.mockResolvedValue({ serials: [null] });
+
+      const { stdout } = await runCommand(
+        [
+          "channels:publish",
+          "test-channel",
+          '{"data":"hello"}',
+          "--transport",
+          "rest",
+        ],
+        import.meta.url,
+      );
+
+      // Should NOT display "null" as a serial
+      expect(stdout).not.toContain("Serial:");
+    });
+
     it("should use rest transport for single message by default", async function () {
       const realtimeMock = getMockAblyRealtime();
       const restMock = getMockAblyRest();

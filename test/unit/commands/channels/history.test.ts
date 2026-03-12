@@ -74,6 +74,32 @@ describe("channels:history command", () => {
       expect(stdout).toContain("client-1");
     });
 
+    it("should display message versioning metadata", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+      channel.history.mockResolvedValue({
+        items: [
+          {
+            name: "test-event",
+            data: "hello",
+            timestamp: Date.now(),
+            action: "message.update",
+            serial: "serial-001",
+            version: "version-serial-001",
+          },
+        ],
+      });
+
+      const { stdout } = await runCommand(
+        ["channels:history", "test-channel"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("message.update");
+      expect(stdout).toContain("serial-001");
+      expect(stdout).toContain("version-serial-001");
+    });
+
     it("should handle empty history", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");

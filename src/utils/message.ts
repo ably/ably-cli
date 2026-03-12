@@ -8,12 +8,18 @@ export function interpolateMessage(template: string, count: number): string {
 
 export function prepareMessageFromInput(
   rawMessage: string,
-  serial: string,
   flags: Record<string, unknown>,
+  options?: { serial?: string; interpolationIndex?: number },
 ): Ably.Message {
+  // Apply interpolation if index provided
+  const processedMessage =
+    options?.interpolationIndex === undefined
+      ? rawMessage
+      : interpolateMessage(rawMessage, options.interpolationIndex);
+
   let messageData;
   try {
-    const parsed = JSON.parse(rawMessage);
+    const parsed = JSON.parse(processedMessage);
     // Only treat plain objects as structured message data; wrap primitives and arrays in { data: ... }
     if (
       typeof parsed === "object" &&
@@ -25,10 +31,14 @@ export function prepareMessageFromInput(
       messageData = { data: parsed };
     }
   } catch {
-    messageData = { data: rawMessage };
+    messageData = { data: processedMessage };
   }
 
-  const message: Partial<Ably.Message> = { serial };
+  const message: Partial<Ably.Message> = {};
+
+  if (options?.serial !== undefined) {
+    message.serial = options.serial;
+  }
 
   if (flags.name) {
     message.name = flags.name as string;
