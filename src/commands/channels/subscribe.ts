@@ -154,7 +154,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       });
 
       // Subscribe to messages on all channels
-      const attachPromises: Promise<void>[] = [];
+      const subscribePromises: Promise<unknown>[] = [];
 
       for (const channel of channels) {
         this.logCliEvent(
@@ -177,19 +177,8 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           includeUserFriendlyMessages: true,
         });
 
-        // Track attachment promise
-        const attachPromise = new Promise<void>((resolve) => {
-          const checkAttached = () => {
-            if (channel.state === "attached") {
-              resolve();
-            }
-          };
-          channel.once("attached", checkAttached);
-          checkAttached(); // Check if already attached
-        });
-        attachPromises.push(attachPromise);
-
-        channel.subscribe((message: Ably.Message) => {
+        // Subscribe and collect promise (rejects on capability/auth errors)
+        const subscribePromise = channel.subscribe((message: Ably.Message) => {
           this.sequenceCounter++;
           const timestamp = formatMessageTimestamp(message.timestamp);
           const messageData = {
@@ -251,10 +240,11 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
             this.log(""); // Empty line for readability between messages
           }
         });
+        subscribePromises.push(subscribePromise);
       }
 
-      // Wait for all channels to attach
-      await Promise.all(attachPromises);
+      // Wait for all channels to attach via subscribe
+      await Promise.all(subscribePromises);
 
       // Log the ready signal for E2E tests
       if (channelNames.length === 1 && !this.shouldOutputJson(flags)) {

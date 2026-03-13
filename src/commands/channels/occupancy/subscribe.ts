@@ -86,7 +86,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
         );
       }
 
-      channel.subscribe(occupancyEventName, (message: Ably.Message) => {
+      await channel.subscribe(occupancyEventName, (message: Ably.Message) => {
         const timestamp = formatMessageTimestamp(message.timestamp);
         const event = {
           channel: channelName,

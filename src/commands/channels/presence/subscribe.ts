@@ -79,41 +79,43 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
         );
       }
 
-      channel.presence.subscribe((presenceMessage: Ably.PresenceMessage) => {
-        const timestamp = formatMessageTimestamp(presenceMessage.timestamp);
-        const presenceData = {
-          id: presenceMessage.id,
-          timestamp,
-          action: presenceMessage.action,
-          channel: channelName,
-          clientId: presenceMessage.clientId,
-          connectionId: presenceMessage.connectionId,
-          data: presenceMessage.data,
-        };
-        this.logCliEvent(
-          flags,
-          "presence",
-          presenceMessage.action!,
-          `Presence event: ${presenceMessage.action} by ${presenceMessage.clientId}`,
-          presenceData,
-        );
-
-        if (this.shouldOutputJson(flags)) {
-          this.logJsonEvent({ presenceMessage: presenceData }, flags);
-        } else {
-          const displayFields: PresenceDisplayFields = {
+      await channel.presence.subscribe(
+        (presenceMessage: Ably.PresenceMessage) => {
+          const timestamp = formatMessageTimestamp(presenceMessage.timestamp);
+          const presenceData = {
             id: presenceMessage.id,
-            timestamp: presenceMessage.timestamp ?? Date.now(),
-            action: presenceMessage.action || "unknown",
+            timestamp,
+            action: presenceMessage.action,
             channel: channelName,
             clientId: presenceMessage.clientId,
             connectionId: presenceMessage.connectionId,
             data: presenceMessage.data,
           };
-          this.log(formatPresenceOutput([displayFields]));
-          this.log(""); // Empty line for better readability
-        }
-      });
+          this.logCliEvent(
+            flags,
+            "presence",
+            presenceMessage.action!,
+            `Presence event: ${presenceMessage.action} by ${presenceMessage.clientId}`,
+            presenceData,
+          );
+
+          if (this.shouldOutputJson(flags)) {
+            this.logJsonEvent({ presenceMessage: presenceData }, flags);
+          } else {
+            const displayFields: PresenceDisplayFields = {
+              id: presenceMessage.id,
+              timestamp: presenceMessage.timestamp ?? Date.now(),
+              action: presenceMessage.action || "unknown",
+              channel: channelName,
+              clientId: presenceMessage.clientId,
+              connectionId: presenceMessage.connectionId,
+              data: presenceMessage.data,
+            };
+            this.log(formatPresenceOutput([displayFields]));
+            this.log(""); // Empty line for better readability
+          }
+        },
+      );
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
