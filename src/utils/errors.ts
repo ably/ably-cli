@@ -4,3 +4,26 @@
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
+
+/**
+ * Return a friendly, actionable hint for known Ably error codes.
+ * Returns undefined for unknown codes.
+ */
+const hints: Record<number, string> = {
+  40101:
+    'The credentials provided are not valid. Check your API key or token, or re-authenticate with "ably login".',
+  40103: 'The token has expired. Please re-authenticate with "ably login".',
+  40110:
+    'Unable to authorize. Check your authentication configuration or re-authenticate with "ably login".',
+  40160:
+    "The current credentials do not have the capability to perform this operation on the requested resource. Check the token or key capability configuration in the Ably dashboard.",
+  40161:
+    "The current credentials do not have publish capability on this resource. Check the token or key capability configuration in the Ably dashboard.",
+  40171:
+    "The requested operation is not permitted by the current credentials' capabilities. Check the token or key capability configuration in the Ably dashboard.",
+};
+
+export function getFriendlyAblyErrorHint(code?: number): string | undefined {
+  if (code === undefined) return undefined;
+  return hints[code];
+}
