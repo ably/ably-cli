@@ -85,7 +85,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
       }
 
       // Subscribe to connection lifecycle logs
-      channel.subscribe((message: Ably.Message) => {
+      await channel.subscribe((message: Ably.Message) => {
         const timestamp = formatMessageTimestamp(message.timestamp);
         const event = {
           timestamp,

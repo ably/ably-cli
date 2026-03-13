@@ -120,40 +120,45 @@ export default class LogsSubscribe extends AblyBaseCommand {
       }
 
       // Subscribe to specified log types
+      const subscribePromises: Promise<unknown>[] = [];
       for (const logType of logTypes) {
-        channel.subscribe(logType, (message: Ably.Message) => {
-          const timestamp = formatMessageTimestamp(message.timestamp);
-          const event = {
-            logType,
-            timestamp,
-            data: message.data,
-            id: message.id,
-          };
-          this.logCliEvent(
-            flags,
-            "logs",
-            "logReceived",
-            `Log received: ${logType}`,
-            event,
-          );
-
-          if (this.shouldOutputJson(flags)) {
-            this.logJsonEvent(event, flags);
-          } else {
-            this.log(
-              `${formatTimestamp(timestamp)} Type: ${formatEventType(logType)}`,
+        subscribePromises.push(
+          channel.subscribe(logType, (message: Ably.Message) => {
+            const timestamp = formatMessageTimestamp(message.timestamp);
+            const event = {
+              logType,
+              timestamp,
+              data: message.data,
+              id: message.id,
+            };
+            this.logCliEvent(
+              flags,
+              "logs",
+              "logReceived",
+              `Log received: ${logType}`,
+              event,
             );
 
-            if (message.data !== null && message.data !== undefined) {
+            if (this.shouldOutputJson(flags)) {
+              this.logJsonEvent(event, flags);
+            } else {
               this.log(
-                `${formatLabel("Data")} ${JSON.stringify(message.data, null, 2)}`,
+                `${formatTimestamp(timestamp)} Type: ${formatEventType(logType)}`,
               );
-            }
 
-            this.log(""); // Empty line for better readability
-          }
-        });
+              if (message.data !== null && message.data !== undefined) {
+                this.log(
+                  `${formatLabel("Data")} ${JSON.stringify(message.data, null, 2)}`,
+                );
+              }
+
+              this.log(""); // Empty line for better readability
+            }
+          }),
+        );
       }
+
+      await Promise.all(subscribePromises);
 
       this.logCliEvent(
         flags,
