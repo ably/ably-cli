@@ -62,11 +62,7 @@ export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
         name: flags.name,
       });
       if (validationErrors.length > 0) {
-        this.fail(
-          new Error(validationErrors.join("\n")),
-          flags,
-          "annotationDelete",
-        );
+        this.fail(validationErrors.join("\n"), flags, "annotationDelete");
       }
 
       // Uses Realtime client because RestAnnotations.delete is not exposed in SDK types

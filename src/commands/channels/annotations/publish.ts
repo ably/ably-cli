@@ -71,11 +71,7 @@ export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
         name: flags.name,
       });
       if (validationErrors.length > 0) {
-        this.fail(
-          new Error(validationErrors.join("\n")),
-          flags,
-          "annotationPublish",
-        );
+        this.fail(validationErrors.join("\n"), flags, "annotationPublish");
       }
 
       const rest = await this.createAblyRestClient(flags);
