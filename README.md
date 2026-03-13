@@ -1006,7 +1006,7 @@ USAGE
 
 FLAGS
   -v, --verbose      Output verbose logs
-      --app=<value>  The app ID (defaults to current app)
+      --app=<value>  The app ID or name (defaults to current app)
       --json         Output in JSON format
       --pretty-json  Output in colorized JSON format
 
@@ -1067,7 +1067,7 @@ USAGE
 
 FLAGS
   -v, --verbose      Output verbose logs
-      --app=<value>  The app ID (defaults to current app)
+      --app=<value>  The app ID or name (defaults to current app)
       --json         Output in JSON format
       --pretty-json  Output in colorized JSON format
 
@@ -1099,7 +1099,7 @@ ARGUMENTS
 
 FLAGS
   -v, --verbose      Output verbose logs
-      --app=<value>  The app ID (defaults to current app)
+      --app=<value>  The app ID or name (defaults to current app)
       --force        Skip confirmation prompt
       --json         Output in JSON format
       --pretty-json  Output in colorized JSON format
@@ -1167,7 +1167,7 @@ ARGUMENTS
 
 FLAGS
   -v, --verbose               Output verbose logs
-      --app=<value>           The app ID (defaults to current app)
+      --app=<value>           The app ID or name (defaults to current app)
       --capabilities=<value>  New capabilities for the key (comma-separated list)
       --json                  Output in JSON format
       --name=<value>          New name for the key

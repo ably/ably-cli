@@ -33,8 +33,7 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(KeysSwitchCommand);
 
-    // Get app ID from flag or current config
-    let appId = flags.app || this.configManager.getCurrentAppId();
+    let appId: string | undefined;
     let keyId: string | undefined = args.keyNameOrValue;
 
     if (args.keyNameOrValue) {
@@ -44,11 +43,15 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
     }
 
     if (!appId) {
-      this.fail(
-        'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
-        flags,
-        "keySwitch",
-      );
+      const resolved = await this.resolveAppId(flags);
+      if (!resolved) {
+        this.fail(
+          'No app specified. Use --app flag, provide APP_ID.KEY_ID as the argument, or select an app with "ably apps switch"',
+          flags,
+          "keySwitch",
+        );
+      }
+      appId = resolved;
     }
 
     try {

@@ -17,7 +17,7 @@ export default class KeysListCommand extends ControlBaseCommand {
   static flags = {
     ...ControlBaseCommand.globalFlags,
     app: Flags.string({
-      description: "The app ID (defaults to current app)",
+      description: "The app ID or name (defaults to current app)",
       env: "ABLY_APP_ID",
     }),
   };
@@ -25,19 +25,12 @@ export default class KeysListCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(KeysListCommand);
 
-    // Display authentication information
+    // Get app ID from flag or current config (resolves app names to IDs)
+    // Must resolve before showAuthInfoIfNeeded so --app names display correctly
+    const appId = await this.requireAppId(flags);
+
+    // Display authentication information (after app resolution so name→ID is correct)
     await this.showAuthInfoIfNeeded(flags);
-
-    // Get app ID from flag or current config
-    const appId = flags.app || this.configManager.getCurrentAppId();
-
-    if (!appId) {
-      this.fail(
-        'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
-        flags,
-        "keyList",
-      );
-    }
 
     try {
       const controlApi = this.createControlApi(flags);
