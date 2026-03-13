@@ -14,7 +14,7 @@ describe("channels:delete command", () => {
 
   standardHelpTests("channels:delete", import.meta.url);
   standardArgValidationTests("channels:delete", import.meta.url, {
-    requiredArgs: ["test-channel"],
+    requiredArgs: ["test-channel", "serial-001"],
   });
   standardFlagTests("channels:delete", import.meta.url, [
     "--json",

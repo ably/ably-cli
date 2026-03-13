@@ -106,6 +106,11 @@ $ ably-interactive
 * [`ably bench publisher CHANNEL`](#ably-bench-publisher-channel)
 * [`ably bench subscriber CHANNEL`](#ably-bench-subscriber-channel)
 * [`ably channels`](#ably-channels)
+* [`ably channels annotations`](#ably-channels-annotations)
+* [`ably channels annotations delete CHANNEL SERIAL TYPE`](#ably-channels-annotations-delete-channel-serial-type)
+* [`ably channels annotations get CHANNEL SERIAL`](#ably-channels-annotations-get-channel-serial)
+* [`ably channels annotations publish CHANNEL SERIAL TYPE`](#ably-channels-annotations-publish-channel-serial-type)
+* [`ably channels annotations subscribe CHANNEL`](#ably-channels-annotations-subscribe-channel)
 * [`ably channels append CHANNEL SERIAL MESSAGE`](#ably-channels-append-channel-serial-message)
 * [`ably channels batch-publish [MESSAGE]`](#ably-channels-batch-publish-message)
 * [`ably channels delete CHANNEL SERIAL`](#ably-channels-delete-channel-serial)
@@ -1373,6 +1378,7 @@ EXAMPLES
   $ ably channels list
 
 COMMANDS
+  ably channels annotations    Manage annotations on Ably Pub/Sub channel messages
   ably channels append         Append data to a message on an Ably channel
   ably channels batch-publish  Publish messages to multiple Ably channels with a single request
   ably channels delete         Delete a message on an Ably channel
@@ -1387,6 +1393,179 @@ COMMANDS
 ```
 
 _See code: [src/commands/channels/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/index.ts)_
+
+## `ably channels annotations`
+
+Manage annotations on Ably Pub/Sub channel messages
+
+```
+USAGE
+  $ ably channels annotations
+
+DESCRIPTION
+  Manage annotations on Ably Pub/Sub channel messages
+
+EXAMPLES
+  $ ably channels annotations publish my-channel "01234567890:0" "reactions:flag.v1" --name thumbsup
+
+  $ ably channels annotations subscribe my-channel
+
+  $ ably channels annotations get my-channel "01234567890:0"
+```
+
+_See code: [src/commands/channels/annotations/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/annotations/index.ts)_
+
+## `ably channels annotations delete CHANNEL SERIAL TYPE`
+
+Delete an annotation from a channel message
+
+```
+USAGE
+  $ ably channels annotations delete CHANNEL SERIAL TYPE [-v] [--json | --pretty-json] [--client-id <value>] [--count <value>]
+    [-n <value>]
+
+ARGUMENTS
+  CHANNEL  The channel name
+  SERIAL   The serial of the message to remove annotation from
+  TYPE     The annotation type (e.g., reactions:flag.v1, reactions:multiple.v1)
+
+FLAGS
+  -n, --name=<value>       The annotation name (e.g., emoji name for reactions)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --count=<value>      The annotation count (for multiple.v1 types)
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+
+DESCRIPTION
+  Delete an annotation from a channel message
+
+EXAMPLES
+  $ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --name thumbsup
+
+  $ ably channels annotations delete my-channel "01234567890:0" "reactions:multiple.v1" --name thumbsup --count 2
+
+  $ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --json
+
+  $ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --pretty-json
+```
+
+_See code: [src/commands/channels/annotations/delete.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/annotations/delete.ts)_
+
+## `ably channels annotations get CHANNEL SERIAL`
+
+Get annotations for a channel message
+
+```
+USAGE
+  $ ably channels annotations get CHANNEL SERIAL [-v] [--json | --pretty-json] [--limit <value>]
+
+ARGUMENTS
+  CHANNEL  The channel name
+  SERIAL   The serial of the message to get annotations for
+
+FLAGS
+  -v, --verbose        Output verbose logs
+      --json           Output in JSON format
+      --limit=<value>  [default: 50] Maximum number of results to return (default: 50)
+      --pretty-json    Output in colorized JSON format
+
+DESCRIPTION
+  Get annotations for a channel message
+
+EXAMPLES
+  $ ably channels annotations get my-channel "01234567890:0"
+
+  $ ably channels annotations get my-channel "01234567890:0" --limit 100
+
+  $ ably channels annotations get my-channel "01234567890:0" --json
+
+  $ ably channels annotations get my-channel "01234567890:0" --pretty-json
+```
+
+_See code: [src/commands/channels/annotations/get.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/annotations/get.ts)_
+
+## `ably channels annotations publish CHANNEL SERIAL TYPE`
+
+Publish an annotation on a channel message
+
+```
+USAGE
+  $ ably channels annotations publish CHANNEL SERIAL TYPE [-v] [--json | --pretty-json] [--client-id <value>] [--count <value>]
+    [--data <value>] [-e <value>] [-n <value>]
+
+ARGUMENTS
+  CHANNEL  The channel name
+  SERIAL   The serial of the message to annotate
+  TYPE     The annotation type (e.g., reactions:flag.v1, reactions:multiple.v1)
+
+FLAGS
+  -e, --encoding=<value>   The encoding for the annotation data
+  -n, --name=<value>       The annotation name (e.g., emoji name for reactions)
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --count=<value>      The annotation count (for multiple.v1 types)
+      --data=<value>       Arbitrary annotation payload (JSON string or plain text)
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+
+DESCRIPTION
+  Publish an annotation on a channel message
+
+EXAMPLES
+  $ ably channels annotations publish my-channel "01234567890:0" "reactions:flag.v1" --name thumbsup
+
+  $ ably channels annotations publish my-channel "01234567890:0" "reactions:multiple.v1" --name thumbsup --count 3
+
+  $ ably channels annotations publish my-channel "01234567890:0" "reactions:flag.v1" --data '{"key":"value"}'
+
+  $ ably channels annotations publish my-channel "01234567890:0" "reactions:flag.v1" --json
+
+  $ ably channels annotations publish my-channel "01234567890:0" "reactions:flag.v1" --pretty-json
+```
+
+_See code: [src/commands/channels/annotations/publish.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/annotations/publish.ts)_
+
+## `ably channels annotations subscribe CHANNEL`
+
+Subscribe to annotations on an Ably channel
+
+```
+USAGE
+  $ ably channels annotations subscribe CHANNEL [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>] [--rewind <value>]
+    [--type <value>]
+
+ARGUMENTS
+  CHANNEL  The channel name to subscribe to annotations on
+
+FLAGS
+  -D, --duration=<value>   Automatically exit after N seconds
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+      --rewind=<value>     Number of messages to rewind when subscribing (default: 0)
+      --type=<value>       Filter annotations by type
+
+DESCRIPTION
+  Subscribe to annotations on an Ably channel
+
+EXAMPLES
+  $ ably channels annotations subscribe my-channel
+
+  $ ably channels annotations subscribe my-channel --type "reactions:flag.v1"
+
+  $ ably channels annotations subscribe my-channel --json
+
+  $ ably channels annotations subscribe my-channel --pretty-json
+
+  $ ably channels annotations subscribe my-channel --duration 30
+```
+
+_See code: [src/commands/channels/annotations/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/annotations/subscribe.ts)_
 
 ## `ably channels append CHANNEL SERIAL MESSAGE`
 

@@ -43,7 +43,7 @@ This document outlines the directory structure of the Ably CLI project.
 │   │   ├── auth/               # Authentication (keys, tokens)
 │   │   ├── bench/              # Benchmarking (publisher, subscriber)
 │   │   ├── channel-rule/       # Hidden alias → apps/rules/
-│   │   ├── channels/           # Pub/Sub channels (publish, subscribe, presence, history, etc.)
+│   │   ├── channels/           # Pub/Sub channels (publish, subscribe, presence, history, annotations, etc.)
 │   │   ├── config/             # CLI config management (show, path)
 │   │   ├── connections/        # Client connections (test)
 │   │   ├── integrations/       # Integration rules

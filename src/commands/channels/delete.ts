@@ -3,7 +3,6 @@ import * as Ably from "ably";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
-import { BaseFlags } from "../../types/cli.js";
 import {
   formatProgress,
   formatResource,
@@ -46,7 +45,7 @@ export default class ChannelsDelete extends AblyBaseCommand {
     const serial = args.serial;
 
     try {
-      const rest = await this.createAblyRestClient(flags as BaseFlags);
+      const rest = await this.createAblyRestClient(flags);
       if (!rest) return;
 
       const channel = rest.channels.get(channelName);
@@ -99,7 +98,7 @@ export default class ChannelsDelete extends AblyBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags as BaseFlags, "channelDelete", {
+      this.fail(error, flags, "channelDelete", {
         channel: channelName,
         serial,
       });
