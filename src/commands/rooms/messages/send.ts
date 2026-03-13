@@ -100,7 +100,11 @@ export default class MessagesSend extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
-        this.fail("Failed to create Chat client", flags, "roomMessageSend");
+        return this.fail(
+          "Failed to create Chat client",
+          flags,
+          "roomMessageSend",
+        );
       }
 
       // Set up connection state logging
