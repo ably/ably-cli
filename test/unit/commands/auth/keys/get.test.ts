@@ -18,13 +18,21 @@ import {
 
 describe("auth:keys:get command", () => {
   const mockKeyId = "testkey";
+  let savedAblyApiKey: string | undefined;
 
   beforeEach(() => {
     controlApiCleanup();
+    savedAblyApiKey = process.env.ABLY_API_KEY;
+    delete process.env.ABLY_API_KEY;
   });
 
   afterEach(() => {
     controlApiCleanup();
+    if (savedAblyApiKey === undefined) {
+      delete process.env.ABLY_API_KEY;
+    } else {
+      process.env.ABLY_API_KEY = savedAblyApiKey;
+    }
   });
 
   describe("functionality", () => {
@@ -115,6 +123,93 @@ describe("auth:keys:get command", () => {
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("key");
       expect(result.key).toHaveProperty("id", mockKeyId);
+    });
+
+    it("should show warning when fetched key is current and ABLY_API_KEY env var overrides it", async () => {
+      const mockConfig = getMockConfigManager();
+      const appId = mockConfig.getCurrentAppId()!;
+      const currentKeyId = mockConfig.getKeyId(appId)!;
+      // Build a mock key whose appId.id matches the current key
+      const keyIdPart = currentKeyId.includes(".")
+        ? currentKeyId.split(".")[1]
+        : currentKeyId;
+      mockKeysList(appId, [buildMockKey(appId, keyIdPart)]);
+
+      // Set env var to a different key
+      process.env.ABLY_API_KEY = `${appId}.differentkey:secret`;
+
+      const { stderr } = await runCommand(
+        ["auth:keys:get", `${appId}.${keyIdPart}`],
+        import.meta.url,
+      );
+
+      expect(stderr).toContain(
+        "ABLY_API_KEY environment variable is set to a different key",
+      );
+      expect(stderr).toContain(`${appId}.differentkey`);
+    });
+
+    it("should not show warning when fetched key is not the current key", async () => {
+      const mockConfig = getMockConfigManager();
+      const appId = mockConfig.getCurrentAppId()!;
+      mockKeysList(appId, [
+        buildMockKey(appId, mockKeyId),
+        buildMockKey(appId, "otherkey", { name: "Other" }),
+      ]);
+
+      // Set env var to a different key — but we're fetching a non-current key
+      process.env.ABLY_API_KEY = `${appId}.differentkey:secret`;
+
+      const { stderr } = await runCommand(
+        ["auth:keys:get", mockKeyId, "--app", appId],
+        import.meta.url,
+      );
+
+      expect(stderr).not.toContain("ABLY_API_KEY environment variable");
+    });
+
+    it("should not show warning when ABLY_API_KEY matches the fetched key", async () => {
+      const mockConfig = getMockConfigManager();
+      const appId = mockConfig.getCurrentAppId()!;
+      const currentKeyId = mockConfig.getKeyId(appId)!;
+      const keyIdPart = currentKeyId.includes(".")
+        ? currentKeyId.split(".")[1]
+        : currentKeyId;
+      mockKeysList(appId, [buildMockKey(appId, keyIdPart)]);
+
+      // Set env var to same key
+      process.env.ABLY_API_KEY = `${appId}.${keyIdPart}:secret`;
+
+      const { stdout } = await runCommand(
+        ["auth:keys:get", `${appId}.${keyIdPart}`],
+        import.meta.url,
+      );
+
+      expect(stdout).not.toContain("ABLY_API_KEY environment variable");
+    });
+
+    it("should include envKeyOverride in JSON when condition is met", async () => {
+      const mockConfig = getMockConfigManager();
+      const appId = mockConfig.getCurrentAppId()!;
+      const currentKeyId = mockConfig.getKeyId(appId)!;
+      const keyIdPart = currentKeyId.includes(".")
+        ? currentKeyId.split(".")[1]
+        : currentKeyId;
+      mockKeysList(appId, [buildMockKey(appId, keyIdPart)]);
+
+      process.env.ABLY_API_KEY = `${appId}.differentkey:secret`;
+
+      const { stdout } = await runCommand(
+        ["auth:keys:get", `${appId}.${keyIdPart}`, "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("envKeyOverride");
+      expect(result.envKeyOverride).toHaveProperty(
+        "keyName",
+        `${appId}.differentkey`,
+      );
     });
   });
 
