@@ -14,6 +14,10 @@ import {
   formatMessagesOutput,
 } from "../../utils/output.js";
 import type { MessageDisplayFields } from "../../utils/output.js";
+import {
+  collectPaginatedResults,
+  formatPaginationWarning,
+} from "../../utils/pagination.js";
 
 export default class ChannelsHistory extends AblyBaseCommand {
   static override args = {
@@ -83,11 +87,23 @@ export default class ChannelsHistory extends AblyBaseCommand {
 
       // Get history
       const history = await channel.history(historyParams);
-      const messages = history.items;
+      const {
+        items: messages,
+        hasMore,
+        pagesConsumed,
+      } = await collectPaginatedResults(history, flags.limit);
+
+      const paginationWarning = formatPaginationWarning(
+        pagesConsumed,
+        messages.length,
+      );
+      if (paginationWarning && !this.shouldOutputJson(flags)) {
+        this.logToStderr(paginationWarning);
+      }
 
       // Display results based on format
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ messages }, flags);
+        this.logJsonResult({ messages, hasMore }, flags);
       } else {
         if (messages.length === 0) {
           this.log("No messages found in the channel history.");
@@ -123,12 +139,14 @@ export default class ChannelsHistory extends AblyBaseCommand {
 
         this.log(formatMessagesOutput(displayMessages));
 
-        const warning = formatLimitWarning(
-          messages.length,
-          flags.limit,
-          "messages",
-        );
-        if (warning) this.log(warning);
+        if (hasMore) {
+          const warning = formatLimitWarning(
+            messages.length,
+            flags.limit,
+            "messages",
+          );
+          if (warning) this.logToStderr(warning);
+        }
       }
     } catch (error) {
       this.fail(error, flags, "channelHistory", {

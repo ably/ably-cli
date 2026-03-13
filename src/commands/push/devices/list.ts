@@ -12,6 +12,10 @@ import {
   formatCountLabel,
   formatLimitWarning,
 } from "../../../utils/output.js";
+import {
+  collectPaginatedResults,
+  formatPaginationWarning,
+} from "../../../utils/pagination.js";
 
 export default class PushDevicesList extends AblyBaseCommand {
   static override description = "List push device registrations";
@@ -60,10 +64,22 @@ export default class PushDevicesList extends AblyBaseCommand {
       if (flags.state) params.state = flags.state;
 
       const result = await rest.push.admin.deviceRegistrations.list(params);
-      const devices = result.items;
+      const {
+        items: devices,
+        hasMore,
+        pagesConsumed,
+      } = await collectPaginatedResults(result, flags.limit);
+
+      const paginationWarning = formatPaginationWarning(
+        pagesConsumed,
+        devices.length,
+      );
+      if (paginationWarning && !this.shouldOutputJson(flags)) {
+        this.logToStderr(paginationWarning);
+      }
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ devices }, flags);
+        this.logJsonResult({ devices, hasMore }, flags);
         return;
       }
 
@@ -104,12 +120,14 @@ export default class PushDevicesList extends AblyBaseCommand {
         this.log("");
       }
 
-      const limitWarning = formatLimitWarning(
-        devices.length,
-        flags.limit,
-        "device registrations",
-      );
-      if (limitWarning) this.log(limitWarning);
+      if (hasMore) {
+        const limitWarning = formatLimitWarning(
+          devices.length,
+          flags.limit,
+          "device registrations",
+        );
+        if (limitWarning) this.logToStderr(limitWarning);
+      }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushDeviceList");
     }

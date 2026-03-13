@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import {
+  getMockAblyRest,
+  createMockPaginatedResult,
+} from "../../../helpers/mock-ably-rest.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -10,8 +13,7 @@ import {
 describe("channels:list command", () => {
   // Mock channel response data
   const mockChannelsResponse = {
-    statusCode: 200,
-    items: [
+    ...createMockPaginatedResult([
       {
         channelId: "test-channel-1",
         status: {
@@ -38,7 +40,8 @@ describe("channels:list command", () => {
           },
         },
       },
-    ],
+    ]),
+    statusCode: 200,
   };
 
   beforeEach(() => {
@@ -81,7 +84,10 @@ describe("channels:list command", () => {
 
     it("should handle empty channels response", async () => {
       const mock = getMockAblyRest();
-      mock.request.mockResolvedValue({ statusCode: 200, items: [] });
+      mock.request.mockResolvedValue({
+        ...createMockPaginatedResult([]),
+        statusCode: 200,
+      });
 
       const { stdout } = await runCommand(["channels:list"], import.meta.url);
 

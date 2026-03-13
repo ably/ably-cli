@@ -7,6 +7,10 @@ import {
   formatResource,
   formatLabel,
 } from "../../utils/output.js";
+import {
+  collectFilteredPaginatedResults,
+  formatPaginationWarning,
+} from "../../utils/pagination.js";
 
 // Add interface definitions at the beginning of the file
 interface RoomMetrics {
@@ -67,9 +71,12 @@ export default class RoomsList extends ChatBaseCommand {
       if (!rest) return;
 
       // Build params for channel listing
-      // We request more channels than the limit to account for filtering
+      // Request 5x the user's limit (capped at the API max of 1000) because
+      // client-side filtering (only ::$chat channels, deduplicated by room name)
+      // yields ~1 room per 3-5 raw channels. This minimizes API round trips.
+      // collectFilteredPaginatedResults fetches additional pages if still needed.
       const params: RoomListParams = {
-        limit: flags.limit * 5, // Request more to allow for filtering
+        limit: Math.min(flags.limit * 5, 1000),
       };
 
       if (flags.prefix) {
@@ -93,47 +100,41 @@ export default class RoomsList extends ChatBaseCommand {
         );
       }
 
-      // Filter to only include chat channels
-      const allChannels = channelsResponse.items || [];
-
-      // Map to store deduplicated rooms
-      const chatRooms = new Map<string, RoomItem>();
-
-      // Filter for chat channels and deduplicate
-      for (const channel of allChannels) {
-        const { channelId } = channel;
-
-        // Check if this is a chat channel (has ::$chat suffix)
-        if (channelId.includes("::$chat")) {
-          // Extract the base room name (everything before the first ::$chat)
-          // We need to escape the $ in the regex pattern since it's a special character
+      // Use filtered pagination to collect chat channels, deduplicate by room name
+      const seenRooms = new Set<string>();
+      const {
+        items: limitedRooms,
+        hasMore,
+        pagesConsumed,
+      } = await collectFilteredPaginatedResults<RoomItem>(
+        channelsResponse,
+        flags.limit,
+        (channel: RoomItem) => {
+          const { channelId } = channel;
+          if (!channelId.includes("::$chat")) return false;
           const roomNameMatch = channelId.match(/^(.+?)::\$chat.*$/);
-          if (roomNameMatch && roomNameMatch[1]) {
-            const roomName = roomNameMatch[1];
-            // Only add if we haven't seen this room before
-            if (!chatRooms.has(roomName)) {
-              // Store the original channel data but with the simple room name
-              const roomData = {
-                ...channel,
-                channelId: roomName,
-                room: roomName,
-              };
-              chatRooms.set(roomName, roomData);
-            }
-          }
-        }
+          if (!roomNameMatch || !roomNameMatch[1]) return false;
+          const roomName = roomNameMatch[1];
+          if (seenRooms.has(roomName)) return false;
+          seenRooms.add(roomName);
+          channel.channelId = roomName;
+          channel.room = roomName;
+          return true;
+        },
+      );
+
+      const paginationWarning = formatPaginationWarning(
+        pagesConsumed,
+        limitedRooms.length,
+      );
+      if (paginationWarning && !this.shouldOutputJson(flags)) {
+        this.log(paginationWarning);
       }
-
-      // Convert map to array
-      const rooms = [...chatRooms.values()];
-
-      // Limit the results to the requested number
-      const limitedRooms = rooms.slice(0, flags.limit);
 
       // Output rooms based on format
       if (this.shouldOutputJson(flags)) {
         // Wrap the array in an object for formatJsonRecord
-        this.logJsonResult({ items: limitedRooms }, flags);
+        this.logJsonResult({ items: limitedRooms, hasMore }, flags);
       } else {
         if (limitedRooms.length === 0) {
           this.log("No active chat rooms found.");
@@ -176,12 +177,14 @@ export default class RoomsList extends ChatBaseCommand {
           this.log(""); // Add a line break between rooms
         }
 
-        const warning = formatLimitWarning(
-          limitedRooms.length,
-          flags.limit,
-          "rooms",
-        );
-        if (warning) this.log(warning);
+        if (hasMore) {
+          const warning = formatLimitWarning(
+            limitedRooms.length,
+            flags.limit,
+            "rooms",
+          );
+          if (warning) this.log(warning);
+        }
       }
     } catch (error) {
       this.fail(error, flags, "roomList");

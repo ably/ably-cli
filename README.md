@@ -543,12 +543,13 @@ List all apps in the current account
 
 ```
 USAGE
-  $ ably apps list [-v] [--json | --pretty-json]
+  $ ably apps list [-v] [--json | --pretty-json] [--limit <value>]
 
 FLAGS
-  -v, --verbose      Output verbose logs
-      --json         Output in JSON format
-      --pretty-json  Output in colorized JSON format
+  -v, --verbose        Output verbose logs
+      --json           Output in JSON format
+      --limit=<value>  [default: 100] Maximum number of results to return (default: 100)
+      --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
   List all apps in the current account
@@ -676,13 +677,14 @@ List channel rules for an app
 
 ```
 USAGE
-  $ ably apps rules list [-v] [--json | --pretty-json] [--app <value>]
+  $ ably apps rules list [-v] [--json | --pretty-json] [--app <value>] [--limit <value>]
 
 FLAGS
-  -v, --verbose      Output verbose logs
-      --app=<value>  The app ID or name (defaults to current app)
-      --json         Output in JSON format
-      --pretty-json  Output in colorized JSON format
+  -v, --verbose        Output verbose logs
+      --app=<value>    The app ID or name (defaults to current app)
+      --json           Output in JSON format
+      --limit=<value>  [default: 100] Maximum number of results to return (default: 100)
+      --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
   List channel rules for an app
@@ -1063,13 +1065,14 @@ List all keys in the app
 
 ```
 USAGE
-  $ ably auth keys list [-v] [--json | --pretty-json] [--app <value>]
+  $ ably auth keys list [-v] [--json | --pretty-json] [--app <value>] [--limit <value>]
 
 FLAGS
-  -v, --verbose      Output verbose logs
-      --app=<value>  The app ID or name (defaults to current app)
-      --json         Output in JSON format
-      --pretty-json  Output in colorized JSON format
+  -v, --verbose        Output verbose logs
+      --app=<value>    The app ID or name (defaults to current app)
+      --json           Output in JSON format
+      --limit=<value>  [default: 100] Maximum number of results to return (default: 100)
+      --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
   List all keys in the app
@@ -2407,13 +2410,14 @@ List all integrations
 
 ```
 USAGE
-  $ ably integrations list [-v] [--json | --pretty-json] [--app <value>]
+  $ ably integrations list [-v] [--json | --pretty-json] [--app <value>] [--limit <value>]
 
 FLAGS
-  -v, --verbose      Output verbose logs
-      --app=<value>  The app ID or name (defaults to current app)
-      --json         Output in JSON format
-      --pretty-json  Output in colorized JSON format
+  -v, --verbose        Output verbose logs
+      --app=<value>    The app ID or name (defaults to current app)
+      --json           Output in JSON format
+      --limit=<value>  [default: 100] Maximum number of results to return (default: 100)
+      --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
   List all integrations
@@ -3570,13 +3574,14 @@ List all queues
 
 ```
 USAGE
-  $ ably queues list [-v] [--json | --pretty-json] [--app <value>]
+  $ ably queues list [-v] [--json | --pretty-json] [--app <value>] [--limit <value>]
 
 FLAGS
-  -v, --verbose      Output verbose logs
-      --app=<value>  The app ID or name (defaults to current app)
-      --json         Output in JSON format
-      --pretty-json  Output in colorized JSON format
+  -v, --verbose        Output verbose logs
+      --app=<value>    The app ID or name (defaults to current app)
+      --json           Output in JSON format
+      --limit=<value>  [default: 100] Maximum number of results to return (default: 100)
+      --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
   List all queues

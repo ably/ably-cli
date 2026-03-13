@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import {
+  getMockAblyRest,
+  createMockPaginatedResult,
+} from "../../../helpers/mock-ably-rest.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -36,7 +39,7 @@ describe("logs:history command", () => {
     it("should pass --start to history params", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("[meta]log");
-      channel.history.mockResolvedValue({ items: [] });
+      channel.history.mockResolvedValue(createMockPaginatedResult([]));
 
       const start = "2023-06-01T00:00:00Z";
       await runCommand(["logs:history", "--start", start], import.meta.url);
@@ -51,7 +54,7 @@ describe("logs:history command", () => {
     it("should error when --start is after --end", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("[meta]log");
-      channel.history.mockResolvedValue({ items: [] });
+      channel.history.mockResolvedValue(createMockPaginatedResult([]));
 
       const { error } = await runCommand(
         [
@@ -73,7 +76,7 @@ describe("logs:history command", () => {
     it("should pass --direction to history params", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("[meta]log");
-      channel.history.mockResolvedValue({ items: [] });
+      channel.history.mockResolvedValue(createMockPaginatedResult([]));
 
       await runCommand(
         ["logs:history", "--direction", "forwards"],
@@ -88,7 +91,7 @@ describe("logs:history command", () => {
     it("should default to backwards direction", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("[meta]log");
-      channel.history.mockResolvedValue({ items: [] });
+      channel.history.mockResolvedValue(createMockPaginatedResult([]));
 
       await runCommand(["logs:history"], import.meta.url);
 
@@ -100,7 +103,7 @@ describe("logs:history command", () => {
     it("should pass --limit to history params", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("[meta]log");
-      channel.history.mockResolvedValue({ items: [] });
+      channel.history.mockResolvedValue(createMockPaginatedResult([]));
 
       await runCommand(["logs:history", "--limit", "50"], import.meta.url);
 
@@ -122,7 +125,9 @@ describe("logs:history command", () => {
         clientId: "client-1",
         connectionId: "conn-1",
       }));
-      channel.history.mockResolvedValue({ items: messages });
+      channel.history.mockResolvedValue(
+        createMockPaginatedResult(messages, { items: [{ id: "more" }] }),
+      );
 
       const { stdout } = await runCommand(
         ["logs:history", "--limit", "10"],
@@ -136,7 +141,7 @@ describe("logs:history command", () => {
     it("should show 'No application logs found' on empty results", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("[meta]log");
-      channel.history.mockResolvedValue({ items: [] });
+      channel.history.mockResolvedValue(createMockPaginatedResult([]));
 
       const { stdout } = await runCommand(["logs:history"], import.meta.url);
 

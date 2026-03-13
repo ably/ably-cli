@@ -3,7 +3,11 @@ import type { Namespace } from "../../../services/control-api.js";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
-import { formatCountLabel, formatHeading } from "../../../utils/output.js";
+import {
+  formatCountLabel,
+  formatHeading,
+  formatLimitWarning,
+} from "../../../utils/output.js";
 
 interface ChannelRuleOutput {
   authenticated: boolean;
@@ -40,6 +44,10 @@ export default class RulesListCommand extends ControlBaseCommand {
       description: "The app ID or name (defaults to current app)",
       required: false,
     }),
+    limit: Flags.integer({
+      default: 100,
+      description: "Maximum number of results to return (default: 100)",
+    }),
   };
 
   async run(): Promise<void> {
@@ -48,12 +56,15 @@ export default class RulesListCommand extends ControlBaseCommand {
 
     try {
       const controlApi = this.createControlApi(flags);
-      const namespaces = await controlApi.listNamespaces(appId);
+      const allNamespaces = await controlApi.listNamespaces(appId);
+      const hasMore = allNamespaces.length > flags.limit;
+      const namespaces = allNamespaces.slice(0, flags.limit);
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
             appId,
+            hasMore,
             rules: namespaces.map(
               (rule: Namespace): ChannelRuleOutput => ({
                 authenticated: rule.authenticated || false,
@@ -102,6 +113,15 @@ export default class RulesListCommand extends ControlBaseCommand {
 
           this.log(""); // Add a blank line between rules
         });
+
+        if (hasMore) {
+          const warning = formatLimitWarning(
+            namespaces.length,
+            flags.limit,
+            "channel rules",
+          );
+          if (warning) this.logToStderr(warning);
+        }
       }
     } catch (error) {
       this.fail(error, flags, "ruleList", { appId });

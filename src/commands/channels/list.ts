@@ -7,6 +7,10 @@ import {
   formatLimitWarning,
   formatResource,
 } from "../../utils/output.js";
+import {
+  collectHttpPaginatedResults,
+  formatPaginationWarning,
+} from "../../utils/pagination.js";
 
 interface ChannelMetrics {
   connections?: number;
@@ -93,7 +97,22 @@ export default class ChannelsList extends AblyBaseCommand {
         );
       }
 
-      const channels = channelsResponse.items || [];
+      const {
+        items: channels,
+        hasMore,
+        pagesConsumed,
+      } = await collectHttpPaginatedResults<ChannelItem>(
+        channelsResponse,
+        flags.limit,
+      );
+
+      const paginationWarning = formatPaginationWarning(
+        pagesConsumed,
+        channels.length,
+      );
+      if (paginationWarning && !this.shouldOutputJson(flags)) {
+        this.log(paginationWarning);
+      }
 
       // Output channels based on format
       if (this.shouldOutputJson(flags)) {
@@ -103,7 +122,7 @@ export default class ChannelsList extends AblyBaseCommand {
               channelId: channel.channelId,
               metrics: channel.status?.occupancy?.metrics || {},
             })),
-            hasMore: channels.length === flags.limit,
+            hasMore,
             timestamp: new Date().toISOString(),
             total: channels.length,
           },
@@ -119,7 +138,7 @@ export default class ChannelsList extends AblyBaseCommand {
           `Found ${formatCountLabel(channels.length, "active channel")}:`,
         );
 
-        for (const channel of channels as ChannelItem[]) {
+        for (const channel of channels) {
           this.log(`${formatResource(channel.channelId)}`);
 
           // Show occupancy if available
@@ -151,12 +170,14 @@ export default class ChannelsList extends AblyBaseCommand {
           this.log(""); // Add a line break between channels
         }
 
-        const warning = formatLimitWarning(
-          channels.length,
-          flags.limit,
-          "channels",
-        );
-        if (warning) this.log(warning);
+        if (hasMore) {
+          const warning = formatLimitWarning(
+            channels.length,
+            flags.limit,
+            "channels",
+          );
+          if (warning) this.log(warning);
+        }
       }
     } catch (error) {
       this.fail(error, flags, "channelList");

@@ -6,6 +6,7 @@ import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../../flags.js";
 import {
   formatLabel,
+  formatLimitWarning,
   formatProgress,
   formatSuccess,
   formatResource,
@@ -14,6 +15,10 @@ import {
   formatEventType,
   formatClientId,
 } from "../../../utils/output.js";
+import {
+  collectPaginatedResults,
+  formatPaginationWarning,
+} from "../../../utils/pagination.js";
 import { parseTimestamp } from "../../../utils/time.js";
 
 export default class MessagesHistory extends ChatBaseCommand {
@@ -134,11 +139,23 @@ export default class MessagesHistory extends ChatBaseCommand {
 
       // Get historical messages
       const messagesResult = await room.messages.history(historyParams);
-      const { items } = messagesResult;
+      const { items, hasMore, pagesConsumed } = await collectPaginatedResults(
+        messagesResult,
+        flags.limit,
+      );
+
+      const paginationWarning = formatPaginationWarning(
+        pagesConsumed,
+        items.length,
+      );
+      if (paginationWarning && !this.shouldOutputJson(flags)) {
+        this.logToStderr(paginationWarning);
+      }
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
+            hasMore,
             messages: items.map((message) => ({
               clientId: message.clientId,
               text: message.text,
@@ -184,6 +201,15 @@ export default class MessagesHistory extends ChatBaseCommand {
               );
             }
           }
+        }
+
+        if (hasMore) {
+          const warning = formatLimitWarning(
+            items.length,
+            flags.limit,
+            "messages",
+          );
+          if (warning) this.logToStderr(warning);
         }
       }
     } catch (error) {

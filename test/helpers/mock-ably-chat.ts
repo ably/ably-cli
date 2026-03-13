@@ -57,6 +57,7 @@ export interface MockRoomMessages {
   get: Mock;
   update: Mock;
   delete: Mock;
+  history: Mock;
   reactions: MockMessageReactions;
   // Internal emitter for simulating events
   _emitter: AblyEventEmitter;
@@ -251,6 +252,11 @@ function createMockRoomMessages(): MockRoomMessages {
       text: "",
       timestamp: new Date(),
       version: { serial: "mock-version-serial", timestamp: new Date() },
+    }),
+    history: vi.fn().mockResolvedValue({
+      items: [],
+      hasNext: () => false,
+      next: async () => null,
     }),
     reactions: createMockMessageReactions(),
     _emitter: emitter,

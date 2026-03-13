@@ -14,6 +14,10 @@ import {
   formatTimestamp,
   formatLabel,
 } from "../../../utils/output.js";
+import {
+  collectPaginatedResults,
+  formatPaginationWarning,
+} from "../../../utils/pagination.js";
 
 export default class LogsPushHistory extends AblyBaseCommand {
   static override description = "Retrieve push notification log history";
@@ -59,12 +63,25 @@ export default class LogsPushHistory extends AblyBaseCommand {
       const historyOptions = buildHistoryParams(flags);
 
       const historyPage = await channel.history(historyOptions);
-      const messages = historyPage.items;
+      const {
+        items: messages,
+        hasMore,
+        pagesConsumed,
+      } = await collectPaginatedResults(historyPage, flags.limit);
+
+      const paginationWarning = formatPaginationWarning(
+        pagesConsumed,
+        messages.length,
+      );
+      if (paginationWarning && !this.shouldOutputJson(flags)) {
+        this.log(paginationWarning);
+      }
 
       // Output results based on format
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
+            hasMore,
             messages: messages.map((msg) => ({
               channel: channelName,
               clientId: msg.clientId,
@@ -145,12 +162,14 @@ export default class LogsPushHistory extends AblyBaseCommand {
           this.log("");
         }
 
-        const warning = formatLimitWarning(
-          messages.length,
-          flags.limit,
-          "logs",
-        );
-        if (warning) this.log(warning);
+        if (hasMore) {
+          const warning = formatLimitWarning(
+            messages.length,
+            flags.limit,
+            "logs",
+          );
+          if (warning) this.log(warning);
+        }
       }
     } catch (error) {
       this.fail(error, flags, "pushHistory");

@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import { getMockAblyRest } from "../../../../helpers/mock-ably-rest.js";
+import {
+  getMockAblyRest,
+  createMockPaginatedResult,
+} from "../../../../helpers/mock-ably-rest.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -25,8 +28,8 @@ describe("push:devices:list command", () => {
   describe("functionality", () => {
     it("should list devices successfully", async () => {
       const mock = getMockAblyRest();
-      mock.push.admin.deviceRegistrations.list.mockResolvedValue({
-        items: [
+      mock.push.admin.deviceRegistrations.list.mockResolvedValue(
+        createMockPaginatedResult([
           {
             id: "device-1",
             platform: "ios",
@@ -37,8 +40,8 @@ describe("push:devices:list command", () => {
               recipient: { transportType: "apns" },
             },
           },
-        ],
-      });
+        ]),
+      );
 
       const { stdout } = await runCommand(
         ["push:devices:list"],
@@ -52,9 +55,9 @@ describe("push:devices:list command", () => {
 
     it("should handle empty list", async () => {
       const mock = getMockAblyRest();
-      mock.push.admin.deviceRegistrations.list.mockResolvedValue({
-        items: [],
-      });
+      mock.push.admin.deviceRegistrations.list.mockResolvedValue(
+        createMockPaginatedResult([]),
+      );
 
       const { stdout } = await runCommand(
         ["push:devices:list"],
@@ -66,9 +69,9 @@ describe("push:devices:list command", () => {
 
     it("should output JSON when requested", async () => {
       const mock = getMockAblyRest();
-      mock.push.admin.deviceRegistrations.list.mockResolvedValue({
-        items: [{ id: "device-1", platform: "ios" }],
-      });
+      mock.push.admin.deviceRegistrations.list.mockResolvedValue(
+        createMockPaginatedResult([{ id: "device-1", platform: "ios" }]),
+      );
 
       const { stdout } = await runCommand(
         ["push:devices:list", "--json"],
@@ -83,9 +86,9 @@ describe("push:devices:list command", () => {
 
     it("should pass filter params to SDK", async () => {
       const mock = getMockAblyRest();
-      mock.push.admin.deviceRegistrations.list.mockResolvedValue({
-        items: [],
-      });
+      mock.push.admin.deviceRegistrations.list.mockResolvedValue(
+        createMockPaginatedResult([]),
+      );
 
       await runCommand(
         [
