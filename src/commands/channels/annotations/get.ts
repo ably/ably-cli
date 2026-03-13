@@ -4,18 +4,16 @@ import * as Ably from "ably";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
 import {
+  formatAnnotationsOutput,
   formatCountLabel,
   formatIndex,
-  formatLabel,
   formatLimitWarning,
+  formatMessageTimestamp,
   formatProgress,
   formatResource,
   formatTimestamp,
-  formatMessageTimestamp,
-  formatClientId,
-  formatEventType,
 } from "../../../utils/output.js";
-import { formatMessageData } from "../../../utils/json-formatter.js";
+import type { AnnotationDisplayFields } from "../../../utils/output.js";
 
 export default class ChannelsAnnotationsGet extends AblyBaseCommand {
   static override args = {
@@ -94,37 +92,29 @@ export default class ChannelsAnnotationsGet extends AblyBaseCommand {
         );
         this.log("");
 
-        for (const [index, annotation] of annotations.entries()) {
-          const timestampDisplay = annotation.timestamp
-            ? formatTimestamp(formatMessageTimestamp(annotation.timestamp))
-            : formatTimestamp("Unknown timestamp");
+        const displayAnnotations: AnnotationDisplayFields[] = annotations.map(
+          (annotation, index) => {
+            const ts = annotation.timestamp ?? Date.now();
+            return {
+              id: annotation.id,
+              timestamp: ts,
+              channel: channelName,
+              type: annotation.type,
+              action:
+                annotation.action === undefined
+                  ? undefined
+                  : String(annotation.action),
+              name: annotation.name,
+              clientId: annotation.clientId,
+              count: annotation.count,
+              serial: annotation.serial,
+              data: annotation.data,
+              indexPrefix: `${formatIndex(index + 1)} ${formatTimestamp(formatMessageTimestamp(ts))}`,
+            };
+          },
+        );
 
-          this.log(`${formatIndex(index + 1)} ${timestampDisplay}`);
-          this.log(
-            `${formatLabel("Type")} ${formatEventType(annotation.type || "(none)")}`,
-          );
-
-          if (annotation.name) {
-            this.log(`${formatLabel("Name")} ${annotation.name}`);
-          }
-
-          if (annotation.clientId) {
-            this.log(
-              `${formatLabel("Client ID")} ${formatClientId(annotation.clientId)}`,
-            );
-          }
-
-          if (annotation.count !== undefined) {
-            this.log(`${formatLabel("Count")} ${annotation.count}`);
-          }
-
-          if (annotation.data !== undefined) {
-            this.log(formatLabel("Data"));
-            this.log(formatMessageData(annotation.data));
-          }
-
-          this.log("");
-        }
+        this.log(formatAnnotationsOutput(displayAnnotations));
 
         const warning = formatLimitWarning(
           annotations.length,

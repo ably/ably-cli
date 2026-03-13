@@ -88,6 +88,7 @@ describe("channels:annotations:subscribe command", () => {
       });
 
       mockAnnotationCallback!({
+        id: "ann-id-001",
         action: "annotation.create",
         type: "reactions:flag.v1",
         name: "thumbsup",
@@ -100,8 +101,18 @@ describe("channels:annotations:subscribe command", () => {
       const { stdout } = await commandPromise;
 
       expect(stdout).toContain("test-channel");
-      expect(stdout).toContain("reactions:flag.v1");
+      expect(stdout).toContain("ID:");
+      expect(stdout).toContain("ann-id-001");
+      expect(stdout).toContain("Timestamp:");
+      expect(stdout).toContain("Channel:");
+      expect(stdout).toContain("Type: reactions:flag.v1");
+      expect(stdout).toContain("Action:");
+      expect(stdout).toContain("Name:");
       expect(stdout).toContain("thumbsup");
+      expect(stdout).toContain("Client ID:");
+      expect(stdout).toContain("user-1");
+      expect(stdout).toContain("Serial:");
+      expect(stdout).toContain("ann-serial-001");
     });
 
     it("should run with --json flag without errors", async () => {
@@ -126,6 +137,7 @@ describe("channels:annotations:subscribe command", () => {
         });
 
         mockAnnotationCallback!({
+          id: "ann-json-001",
           action: "annotation.create",
           type: "reactions:flag.v1",
           name: "thumbsup",
@@ -139,7 +151,11 @@ describe("channels:annotations:subscribe command", () => {
       });
 
       const events = records.filter(
-        (r) => r.type === "event" && r.channel === "test-channel",
+        (r) =>
+          r.type === "event" &&
+          (r as Record<string, unknown>).annotation &&
+          ((r as Record<string, unknown>).annotation as Record<string, unknown>)
+            .channel === "test-channel",
       );
       expect(events.length).toBeGreaterThan(0);
       const record = events[0];
@@ -148,7 +164,9 @@ describe("channels:annotations:subscribe command", () => {
         "command",
         "channels:annotations:subscribe",
       );
-      expect(record).toHaveProperty("channel", "test-channel");
+      expect(record).toHaveProperty("annotation.channel", "test-channel");
+      expect(record).toHaveProperty("annotation.id", "ann-json-001");
+      expect(record).toHaveProperty("annotation.serial");
     });
 
     it("should include annotationType in JSON event envelope", async () => {
@@ -163,6 +181,7 @@ describe("channels:annotations:subscribe command", () => {
         });
 
         mockAnnotationCallback!({
+          id: "ann-type-001",
           action: "annotation.create",
           type: "reactions:flag.v1",
           name: "thumbsup",
@@ -176,10 +195,17 @@ describe("channels:annotations:subscribe command", () => {
       });
 
       const events = records.filter(
-        (r) => r.type === "event" && r.channel === "test-channel",
+        (r) =>
+          r.type === "event" &&
+          (r as Record<string, unknown>).annotation &&
+          ((r as Record<string, unknown>).annotation as Record<string, unknown>)
+            .channel === "test-channel",
       );
       expect(events.length).toBeGreaterThan(0);
-      expect(events[0]).toHaveProperty("annotationType", "reactions:flag.v1");
+      expect(events[0]).toHaveProperty(
+        "annotation.annotationType",
+        "reactions:flag.v1",
+      );
       // "type" key in data would collide with envelope — must use "annotationType"
       expect(events[0].type).toBe("event");
     });
@@ -195,6 +221,7 @@ describe("channels:annotations:subscribe command", () => {
       });
 
       mockAnnotationCallback!({
+        id: "ann-data-001",
         action: "annotation.create",
         type: "reactions:flag.v1",
         name: "thumbsup",
@@ -207,7 +234,7 @@ describe("channels:annotations:subscribe command", () => {
 
       const { stdout } = await commandPromise;
 
-      expect(stdout).toContain("Data");
+      expect(stdout).toContain("Data:");
       expect(stdout).toContain("emoji");
       expect(stdout).toContain("thumbs-up");
     });

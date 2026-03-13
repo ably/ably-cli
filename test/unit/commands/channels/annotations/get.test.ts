@@ -29,9 +29,11 @@ describe("channels:annotations:get command", () => {
       channel.annotations.get.mockResolvedValue({
         items: [
           {
+            id: "ann-get-001",
             type: "reactions:flag.v1",
             name: "thumbsup",
             clientId: "user-1",
+            serial: "ann-serial-001",
             timestamp: 1700000000000,
           },
         ],
@@ -49,8 +51,19 @@ describe("channels:annotations:get command", () => {
           limit: 100,
         },
       );
-      expect(stdout).toContain("reactions:flag.v1");
+      expect(stdout).toContain("[1]");
+      expect(stdout).toContain("ID:");
+      expect(stdout).toContain("ann-get-001");
+      expect(stdout).toContain("Timestamp:");
+      expect(stdout).toContain("Channel:");
+      expect(stdout).toContain("test-channel");
+      expect(stdout).toContain("Type: reactions:flag.v1");
+      expect(stdout).toContain("Name:");
       expect(stdout).toContain("thumbsup");
+      expect(stdout).toContain("Client ID:");
+      expect(stdout).toContain("user-1");
+      expect(stdout).toContain("Serial:");
+      expect(stdout).toContain("ann-serial-001");
     });
 
     it("should display empty message when no annotations found", async () => {
@@ -123,10 +136,12 @@ describe("channels:annotations:get command", () => {
       channel.annotations.get.mockResolvedValue({
         items: [
           {
+            id: "ann-detail-001",
             type: "reactions:flag.v1",
             name: "thumbsup",
             clientId: "user-1",
             count: 5,
+            serial: "ann-serial-detail",
             data: { extra: "info" },
             timestamp: 1700000000000,
           },
@@ -138,10 +153,15 @@ describe("channels:annotations:get command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("reactions:flag.v1");
+      expect(stdout).toContain("Type: reactions:flag.v1");
+      expect(stdout).toContain("Name:");
       expect(stdout).toContain("thumbsup");
+      expect(stdout).toContain("Client ID:");
       expect(stdout).toContain("user-1");
+      expect(stdout).toContain("Count:");
       expect(stdout).toContain("5");
+      expect(stdout).toContain("Data:");
+      expect(stdout).toContain("extra");
     });
   });
 

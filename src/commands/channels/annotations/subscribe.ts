@@ -8,18 +8,15 @@ import {
   productApiFlags,
   rewindFlag,
 } from "../../../flags.js";
-import { formatMessageData } from "../../../utils/json-formatter.js";
 import {
-  formatEventType,
-  formatLabel,
+  formatAnnotationsOutput,
   formatListening,
+  formatMessageTimestamp,
   formatProgress,
   formatResource,
   formatSuccess,
-  formatTimestamp,
-  formatMessageTimestamp,
-  formatClientId,
 } from "../../../utils/output.js";
+import type { AnnotationDisplayFields } from "../../../utils/output.js";
 
 export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
   static override args = {
@@ -114,17 +111,17 @@ export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
           annotation.timestamp !== undefined && annotation.timestamp !== null
             ? formatMessageTimestamp(annotation.timestamp)
             : "[Unknown timestamp]";
-        const annotationEvent: Record<string, unknown> = {
+        const annotationData = {
+          id: annotation.id,
+          timestamp,
           channel: channelName,
-          action: annotation.action,
           annotationType: annotation.type,
+          action: annotation.action,
           name: annotation.name,
           clientId: annotation.clientId,
           count: annotation.count,
-          data: annotation.data,
           serial: annotation.serial,
-          messageSerial: annotation.messageSerial,
-          timestamp,
+          data: annotation.data,
         };
 
         this.logCliEvent(
@@ -132,51 +129,28 @@ export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
           "annotationSubscribe",
           "annotationReceived",
           `Received annotation on channel ${channelName}`,
-          annotationEvent,
+          annotationData,
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonEvent(annotationEvent, flags);
+          this.logJsonEvent({ annotation: annotationData }, flags);
         } else {
-          this.log(
-            `${formatTimestamp(timestamp)} ${formatResource(`Channel: ${channelName}`)} | Type: ${formatEventType(annotation.type || "(none)")}`,
-          );
-
-          if (annotation.action !== undefined) {
-            this.log(
-              `${formatLabel("Action")} ${formatEventType(String(annotation.action))}`,
-            );
-          }
-
-          if (annotation.name) {
-            this.log(`${formatLabel("Name")} ${annotation.name}`);
-          }
-
-          if (annotation.clientId) {
-            this.log(
-              `${formatLabel("Client ID")} ${formatClientId(annotation.clientId)}`,
-            );
-          }
-
-          if (annotation.count !== undefined) {
-            this.log(`${formatLabel("Count")} ${annotation.count}`);
-          }
-
-          if (annotation.serial) {
-            this.log(`${formatLabel("Serial")} ${annotation.serial}`);
-          }
-
-          if (annotation.messageSerial) {
-            this.log(
-              `${formatLabel("Message Serial")} ${annotation.messageSerial}`,
-            );
-          }
-
-          if (annotation.data !== undefined) {
-            this.log(formatLabel("Data"));
-            this.log(formatMessageData(annotation.data));
-          }
-
+          const displayFields: AnnotationDisplayFields = {
+            id: annotation.id,
+            timestamp: annotation.timestamp ?? Date.now(),
+            channel: channelName,
+            type: annotation.type,
+            action:
+              annotation.action === undefined
+                ? undefined
+                : String(annotation.action),
+            name: annotation.name,
+            clientId: annotation.clientId,
+            count: annotation.count,
+            serial: annotation.serial,
+            data: annotation.data,
+          };
+          this.log(formatAnnotationsOutput([displayFields]));
           this.log("");
         }
       };
@@ -196,6 +170,7 @@ export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
           ),
         );
         this.log(formatListening("Listening for annotations."));
+        this.log("");
       }
 
       this.logCliEvent(

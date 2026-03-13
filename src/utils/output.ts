@@ -266,6 +266,82 @@ export function formatPresenceOutput(
   return blocks.join("\n\n");
 }
 
+export interface AnnotationDisplayFields {
+  id?: string;
+  timestamp: number;
+  channel: string;
+  type: string;
+  action?: string;
+  name?: string;
+  clientId?: string;
+  count?: number;
+  serial?: string;
+  data?: unknown;
+  indexPrefix?: string;
+}
+
+export function formatAnnotationsOutput(
+  annotations: AnnotationDisplayFields[],
+): string {
+  if (annotations.length === 0) {
+    return "No annotations found.";
+  }
+
+  const blocks: string[] = [];
+
+  for (const ann of annotations) {
+    const lines: string[] = [];
+
+    if (ann.indexPrefix) {
+      lines.push(ann.indexPrefix);
+    } else {
+      lines.push(formatTimestamp(new Date(ann.timestamp).toISOString()));
+    }
+
+    if (ann.id) {
+      lines.push(`${formatLabel("ID")} ${ann.id}`);
+    }
+
+    lines.push(
+      `${formatLabel("Timestamp")} ${formatMessageTimestamp(ann.timestamp)}`,
+      `${formatLabel("Channel")} ${formatResource(ann.channel)}`,
+      `${formatLabel("Type")} ${formatEventType(ann.type || "(none)")}`,
+    );
+
+    if (ann.action) {
+      lines.push(`${formatLabel("Action")} ${formatEventType(ann.action)}`);
+    }
+
+    if (ann.name) {
+      lines.push(`${formatLabel("Name")} ${ann.name}`);
+    }
+
+    if (ann.clientId) {
+      lines.push(`${formatLabel("Client ID")} ${formatClientId(ann.clientId)}`);
+    }
+
+    if (ann.count !== undefined) {
+      lines.push(`${formatLabel("Count")} ${ann.count}`);
+    }
+
+    if (ann.serial) {
+      lines.push(`${formatLabel("Serial")} ${ann.serial}`);
+    }
+
+    if (ann.data !== undefined) {
+      if (isJsonData(ann.data)) {
+        lines.push(`${formatLabel("Data")}`, formatMessageData(ann.data));
+      } else {
+        lines.push(`${formatLabel("Data")} ${String(ann.data)}`);
+      }
+    }
+
+    blocks.push(lines.join("\n"));
+  }
+
+  return blocks.join("\n\n");
+}
+
 export type JsonRecordType = "error" | "event" | "log" | "result";
 
 /**
