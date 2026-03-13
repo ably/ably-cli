@@ -38,24 +38,12 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(KeysRevokeCommand);
 
-    let appId: string | undefined;
     let keyId = args.keyName;
 
     const parsed = parseKeyIdentifier(args.keyName);
-    if (parsed.appId) appId = parsed.appId;
     keyId = parsed.keyId;
 
-    if (!appId) {
-      const resolved = await this.resolveAppId(flags);
-      if (!resolved) {
-        this.fail(
-          'No app specified. Use --app flag, provide APP_ID.KEY_ID as the argument, or select an app with "ably apps switch"',
-          flags,
-          "keyRevoke",
-        );
-      }
-      appId = resolved;
-    }
+    const appId = parsed.appId ?? (await this.requireAppId(flags));
 
     try {
       const controlApi = this.createControlApi(flags);

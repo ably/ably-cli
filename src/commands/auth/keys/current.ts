@@ -40,7 +40,7 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
       this.fail(
         `No API key configured for app ${appId}. Use "ably auth keys switch" to select a key.`,
         flags,
-        "KeyCurrent",
+        "keyCurrent",
       );
     }
 
@@ -97,7 +97,7 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
       this.fail(
         "ABLY_API_KEY environment variable is not set",
         flags,
-        "KeyCurrent",
+        "keyCurrent",
       );
     }
 
