@@ -138,6 +138,8 @@ For single-shot publish, REST is preferred (simpler, no connection overhead). Se
 ## History Pattern
 
 ```typescript
+import { collectPaginatedResults, formatPaginationWarning } from "../../utils/pagination.js";
+
 async run(): Promise<void> {
   const { args, flags } = await this.parse(MyHistoryCommand);
 
@@ -155,13 +157,23 @@ async run(): Promise<void> {
     };
 
     const history = await channel.history(historyParams);
-    const messages = history.items;
+    const { items: messages, hasMore, pagesConsumed } = await collectPaginatedResults(history, flags.limit);
+
+    const paginationWarning = formatPaginationWarning(pagesConsumed, messages.length);
+    if (paginationWarning && !this.shouldOutputJson(flags)) {
+      this.log(paginationWarning);
+    }
 
     if (this.shouldOutputJson(flags)) {
-      this.logJsonResult({ messages }, flags);
+      this.logJsonResult({ messages, hasMore }, flags);
     } else {
       this.log(formatSuccess(`Found ${messages.length} messages.`));
       // Display each message
+
+      if (hasMore) {
+        const warning = formatLimitWarning(messages.length, flags.limit, "messages");
+        if (warning) this.log(warning);
+      }
     }
   } catch (error) {
     this.fail(error, flags, "history", { channel: args.channel });
@@ -334,11 +346,59 @@ async run(): Promise<void> {
 }
 ```
 
+**Product API list with pagination** (e.g., `push devices list`, `channels list`) — use `collectPaginatedResults` or `collectHttpPaginatedResults`:
+```typescript
+import { collectPaginatedResults, collectHttpPaginatedResults, formatPaginationWarning } from "../../utils/pagination.js";
+
+async run(): Promise<void> {
+  const { flags } = await this.parse(MyListCommand);
+
+  try {
+    const rest = await this.createAblyRestClient(flags);
+    if (!rest) return;
+
+    // For SDK methods that return PaginatedResult:
+    const firstPage = await rest.someResource.list({ limit: flags.limit });
+    const { items, hasMore, pagesConsumed } = await collectPaginatedResults(firstPage, flags.limit);
+
+    // For rest.request() that returns HttpPaginatedResponse:
+    // const firstPage = await rest.request("get", "/some/endpoint", 2, { limit: String(flags.limit) });
+    // const { items, hasMore, pagesConsumed } = await collectHttpPaginatedResults(firstPage, flags.limit);
+
+    const paginationWarning = formatPaginationWarning(pagesConsumed, items.length);
+    if (paginationWarning && !this.shouldOutputJson(flags)) {
+      this.log(paginationWarning);
+    }
+
+    if (this.shouldOutputJson(flags)) {
+      this.logJsonResult({ items, hasMore }, flags);
+    } else {
+      this.log(`Found ${items.length} items:\n`);
+      for (const item of items) {
+        this.log(formatHeading(`Item ID: ${item.id}`));
+        this.log(`  ${formatLabel("Type")} ${item.type}`);
+        this.log("");
+      }
+
+      if (hasMore) {
+        const warning = formatLimitWarning(items.length, flags.limit, "items");
+        if (warning) this.log(warning);
+      }
+    }
+  } catch (error) {
+    this.fail(error, flags, "listItems");
+  }
+}
+```
+
 Key conventions for list output:
 - `formatResource()` is for inline resource name references, not for record headings
 - `formatHeading()` is for record heading lines that act as visual separators between multi-field records
 - `formatLabel(text)` for field labels in detail lines (automatically appends `:`)
 - `formatSuccess()` is not used in list commands — it's for confirming an action completed
+- `formatLimitWarning()` should only be shown when `hasMore` is true — it means there are more results beyond the limit
+- Always include `hasMore` in JSON output for paginated commands so consumers know if results are truncated
+- Use `collectPaginatedResults()` for SDK paginated results, `collectHttpPaginatedResults()` for `rest.request()` results, and `collectFilteredPaginatedResults()` when a client-side filter is applied across pages
 
 ---
 

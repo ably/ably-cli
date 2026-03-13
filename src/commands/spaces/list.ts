@@ -7,6 +7,10 @@ import {
   formatLimitWarning,
   formatResource,
 } from "../../utils/output.js";
+import {
+  collectFilteredPaginatedResults,
+  formatPaginationWarning,
+} from "../../utils/pagination.js";
 import { SpacesBaseCommand } from "../../spaces-base-command.js";
 
 interface SpaceMetrics {
@@ -62,14 +66,12 @@ export default class SpacesList extends SpacesBaseCommand {
       if (!rest) return;
 
       // Build params for channel listing
-      // We request more channels than the limit to account for filtering
-      interface ChannelParams {
-        limit: number;
-        prefix?: string;
-      }
-
-      const params: ChannelParams = {
-        limit: flags.limit * 5, // Request more to allow for filtering
+      // Request 5x the user's limit (capped at the API max of 1000) because
+      // client-side filtering (only ::$space channels, deduplicated by space name)
+      // yields ~1 space per 3-5 raw channels. This minimizes API round trips.
+      // collectFilteredPaginatedResults fetches additional pages if still needed.
+      const params: { limit: number; prefix?: string } = {
+        limit: Math.min(flags.limit * 5, 1000),
       };
 
       if (flags.prefix) {
@@ -92,54 +94,48 @@ export default class SpacesList extends SpacesBaseCommand {
         );
       }
 
-      // Filter to only include space channels
-      const allChannels = channelsResponse.items || [];
+      // Use filtered pagination to collect space channels, deduplicate by space name
+      const seenSpaces = new Set<string>();
+      const {
+        items: limitedSpaces,
+        hasMore,
+        pagesConsumed,
+      } = await collectFilteredPaginatedResults<SpaceItem>(
+        channelsResponse,
+        flags.limit,
+        (channel: SpaceItem) => {
+          const { channelId } = channel;
+          if (!channelId) return false;
+          const spaceNameMatch = channelId.match(/^(.+?)::\$space(?:$|::)/);
+          if (!spaceNameMatch || !spaceNameMatch[1]) return false;
+          const spaceName = spaceNameMatch[1];
+          if (seenSpaces.has(spaceName)) return false;
+          seenSpaces.add(spaceName);
+          channel.channelId = spaceName;
+          channel.spaceName = spaceName;
+          return true;
+        },
+      );
 
-      // Map to store deduplicated spaces
-      const spaces = new Map<string, SpaceItem>();
-
-      // Filter for space channels and deduplicate
-      for (const channel of allChannels) {
-        const { channelId } = channel;
-
-        // Check if this is a space channel (has ::$space suffix)
-        if (channelId.includes("::$space")) {
-          // Extract the base space name (everything before the first ::$space)
-          // We need to escape the $ in the regex pattern since it's a special character
-          const spaceNameMatch = channelId.match(/^(.+?)::\$space.*$/);
-          if (spaceNameMatch && spaceNameMatch[1]) {
-            const spaceName = spaceNameMatch[1];
-            // Only add if we haven't seen this space before
-            if (!spaces.has(spaceName)) {
-              // Store the original channel data but with the simple space name
-              const spaceData: SpaceItem = {
-                ...channel,
-                channelId: spaceName,
-                spaceName,
-              };
-              spaces.set(spaceName, spaceData);
-            }
-          }
-        }
+      const paginationWarning = formatPaginationWarning(
+        pagesConsumed,
+        limitedSpaces.length,
+      );
+      if (paginationWarning && !this.shouldOutputJson(flags)) {
+        this.logToStderr(paginationWarning);
       }
-
-      // Convert map to array
-      const spacesList = [...spaces.values()];
-
-      // Limit the results to the requested number
-      const limitedSpaces = spacesList.slice(0, flags.limit);
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            hasMore: spacesList.length > flags.limit,
+            hasMore,
             shown: limitedSpaces.length,
             spaces: limitedSpaces.map((space: SpaceItem) => ({
               metrics: space.status?.occupancy?.metrics || {},
               spaceName: space.spaceName,
             })),
             timestamp: new Date().toISOString(),
-            total: spacesList.length,
+            total: limitedSpaces.length,
           },
           flags,
         );
@@ -185,12 +181,14 @@ export default class SpacesList extends SpacesBaseCommand {
           this.log(""); // Add a line break between spaces
         });
 
-        const warning = formatLimitWarning(
-          limitedSpaces.length,
-          flags.limit,
-          "spaces",
-        );
-        if (warning) this.log(warning);
+        if (hasMore) {
+          const warning = formatLimitWarning(
+            limitedSpaces.length,
+            flags.limit,
+            "spaces",
+          );
+          if (warning) this.logToStderr(warning);
+        }
       }
     } catch (error) {
       this.fail(error, flags, "spaceList");

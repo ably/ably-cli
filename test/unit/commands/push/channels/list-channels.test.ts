@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import { getMockAblyRest } from "../../../../helpers/mock-ably-rest.js";
+import {
+  getMockAblyRest,
+  createMockPaginatedResult,
+} from "../../../../helpers/mock-ably-rest.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -22,9 +25,9 @@ describe("push:channels:list-channels command", () => {
   describe("functionality", () => {
     it("should list channels with push subscriptions", async () => {
       const mock = getMockAblyRest();
-      mock.push.admin.channelSubscriptions.listChannels.mockResolvedValue({
-        items: ["channel-1", "channel-2", "channel-3"],
-      });
+      mock.push.admin.channelSubscriptions.listChannels.mockResolvedValue(
+        createMockPaginatedResult(["channel-1", "channel-2", "channel-3"]),
+      );
 
       const { stdout } = await runCommand(
         ["push:channels:list-channels"],
@@ -38,9 +41,9 @@ describe("push:channels:list-channels command", () => {
 
     it("should handle empty list", async () => {
       const mock = getMockAblyRest();
-      mock.push.admin.channelSubscriptions.listChannels.mockResolvedValue({
-        items: [],
-      });
+      mock.push.admin.channelSubscriptions.listChannels.mockResolvedValue(
+        createMockPaginatedResult([]),
+      );
 
       const { stdout } = await runCommand(
         ["push:channels:list-channels"],
@@ -52,9 +55,9 @@ describe("push:channels:list-channels command", () => {
 
     it("should output JSON when requested", async () => {
       const mock = getMockAblyRest();
-      mock.push.admin.channelSubscriptions.listChannels.mockResolvedValue({
-        items: ["channel-1"],
-      });
+      mock.push.admin.channelSubscriptions.listChannels.mockResolvedValue(
+        createMockPaginatedResult(["channel-1"]),
+      );
 
       const { stdout } = await runCommand(
         ["push:channels:list-channels", "--json"],
