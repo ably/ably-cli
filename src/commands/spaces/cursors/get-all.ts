@@ -1,3 +1,4 @@
+import { type CursorUpdate } from "@ably/spaces";
 import { Args } from "@oclif/core";
 import chalk from "chalk";
 
@@ -5,23 +6,13 @@ import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import isTestMode from "../../../utils/test-mode.js";
 import {
-  formatProgress,
-  formatSuccess,
-  formatResource,
   formatClientId,
+  formatHeading,
+  formatProgress,
+  formatResource,
+  formatSuccess,
+  formatWarning,
 } from "../../../utils/output.js";
-
-interface CursorPosition {
-  x: number;
-  y: number;
-}
-
-interface CursorUpdate {
-  clientId?: string;
-  connectionId?: string;
-  data?: Record<string, unknown>;
-  position: CursorPosition;
-}
 
 export default class SpacesCursorsGetAll extends SpacesBaseCommand {
   static override args = {
@@ -194,34 +185,17 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
         const allCursors = await this.space!.cursors.getAll();
 
         // Add any cached cursors that we didn't see in live updates
-        if (Array.isArray(allCursors)) {
-          allCursors.forEach((cursor) => {
-            if (
-              cursor &&
-              cursor.connectionId &&
-              !cursorMap.has(cursor.connectionId)
-            ) {
-              cursorMap.set(cursor.connectionId, cursor as CursorUpdate);
-            }
-          });
-        } else if (allCursors && typeof allCursors === "object") {
-          // Handle object return type
-          Object.values(allCursors).forEach((cursor) => {
-            if (
-              cursor &&
-              cursor.connectionId &&
-              !cursorMap.has(cursor.connectionId)
-            ) {
-              cursorMap.set(cursor.connectionId, cursor as CursorUpdate);
-            }
-          });
+        for (const cursor of Object.values(allCursors)) {
+          if (cursor && !cursorMap.has(cursor.connectionId)) {
+            cursorMap.set(cursor.connectionId, cursor);
+          }
         }
       } catch {
         // If getAll fails due to connection issues, use only the live updates we collected
         if (!this.shouldOutputJson(flags)) {
           this.log(
-            chalk.yellow(
-              "Warning: Could not fetch all cursors, showing only live updates",
+            formatWarning(
+              "Could not fetch all cursors, showing only live updates.",
             ),
           );
         }
@@ -247,7 +221,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
         if (!cursorUpdateReceived && cursors.length === 0) {
           this.log(chalk.dim("─".repeat(60)));
           this.log(
-            chalk.yellow(
+            formatWarning(
               "No cursor updates are being sent in this space. Make sure other clients are actively setting cursor positions.",
             ),
           );
@@ -256,16 +230,14 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
 
         if (cursors.length === 0) {
           this.log(chalk.dim("─".repeat(60)));
-          this.log(chalk.yellow("No active cursors found in space."));
+          this.log(formatWarning("No active cursors found in space."));
           return;
         }
 
         // Show summary table
         this.log(chalk.dim("─".repeat(60)));
         this.log(
-          chalk.bold(
-            `\nCursor Summary - ${cursors.length} cursor${cursors.length === 1 ? "" : "s"} found:\n`,
-          ),
+          `\n${formatHeading("Cursor Summary")} - ${cursors.length} cursor${cursors.length === 1 ? "" : "s"} found:\n`,
         );
 
         // Table header
@@ -351,7 +323,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
         // Show additional data if any cursor has it
         const cursorsWithData = cursors.filter((c) => c.data);
         if (cursorsWithData.length > 0) {
-          this.log(`\n${chalk.bold("Additional Data:")}`);
+          this.log(`\n${formatHeading("Additional Data")}:`);
           cursorsWithData.forEach((cursor: CursorUpdate) => {
             this.log(
               `  ${formatClientId(cursor.clientId || "Unknown")}: ${JSON.stringify(cursor.data)}`,

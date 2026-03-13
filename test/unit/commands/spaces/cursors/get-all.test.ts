@@ -26,20 +26,20 @@ describe("spaces:cursors:get-all command", () => {
     it("should get all cursors from a space", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([
-        {
+      space.cursors.getAll.mockResolvedValue({
+        "conn-1": {
           clientId: "user-1",
           connectionId: "conn-1",
           position: { x: 100, y: 200 },
           data: { color: "red" },
         },
-        {
+        "conn-2": {
           clientId: "user-2",
           connectionId: "conn-2",
           position: { x: 300, y: 400 },
           data: { color: "blue" },
         },
-      ]);
+      });
 
       const { stdout } = await runCommand(
         ["spaces:cursors:get-all", "test-space", "--json"],
@@ -61,7 +61,7 @@ describe("spaces:cursors:get-all command", () => {
     it("should handle no cursors found", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([]);
+      space.cursors.getAll.mockResolvedValue({});
 
       const { stdout } = await runCommand(
         ["spaces:cursors:get-all", "test-space", "--json"],
@@ -98,14 +98,14 @@ describe("spaces:cursors:get-all command", () => {
     it("should output JSON envelope with type and command for cursor results", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([
-        {
+      space.cursors.getAll.mockResolvedValue({
+        "conn-1": {
           clientId: "user-1",
           connectionId: "conn-1",
           position: { x: 10, y: 20 },
           data: null,
         },
-      ]);
+      });
 
       const { stdout } = await runCommand(
         ["spaces:cursors:get-all", "test-space", "--json"],
@@ -130,7 +130,7 @@ describe("spaces:cursors:get-all command", () => {
       const realtimeMock = getMockAblyRealtime();
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([]);
+      space.cursors.getAll.mockResolvedValue({});
 
       await runCommand(
         ["spaces:cursors:get-all", "test-space", "--json"],

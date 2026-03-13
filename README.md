@@ -24,7 +24,7 @@ $ npm install -g @ably/cli
 $ ably COMMAND
 running command...
 $ ably (--version)
-@ably/cli/0.17.0 darwin-arm64 node-v24.4.1
+@ably/cli/0.17.0 darwin-arm64 node-v25.3.0
 $ ably --help [COMMAND]
 USAGE
   $ ably COMMAND

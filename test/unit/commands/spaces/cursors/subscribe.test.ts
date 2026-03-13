@@ -26,7 +26,7 @@ describe("spaces:cursors:subscribe command", () => {
     it("should subscribe to cursor updates in a space", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([]);
+      space.cursors.getAll.mockResolvedValue({});
 
       await runCommand(
         ["spaces:cursors:subscribe", "test-space"],
@@ -43,7 +43,7 @@ describe("spaces:cursors:subscribe command", () => {
     it("should display initial subscription message", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([]);
+      space.cursors.getAll.mockResolvedValue({});
 
       const { stdout } = await runCommand(
         ["spaces:cursors:subscribe", "test-space"],
@@ -60,7 +60,7 @@ describe("spaces:cursors:subscribe command", () => {
       const realtimeMock = getMockAblyRealtime();
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([]);
+      space.cursors.getAll.mockResolvedValue({});
 
       // Use SIGINT to exit
 
@@ -78,7 +78,7 @@ describe("spaces:cursors:subscribe command", () => {
     it("should output JSON event with envelope when cursor update is received", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([]);
+      space.cursors.getAll.mockResolvedValue({});
 
       // Fire a cursor event synchronously when subscribe is called
       space.cursors.subscribe.mockImplementation(
@@ -114,7 +114,7 @@ describe("spaces:cursors:subscribe command", () => {
     it("should wait for cursors channel to attach if not already attached", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([]);
+      space.cursors.getAll.mockResolvedValue({});
 
       // Mock channel as attaching
       space.cursors.channel.state = "attaching";

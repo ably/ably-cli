@@ -1,39 +1,26 @@
 import type { LocationsEvents } from "@ably/spaces";
 import { Args } from "@oclif/core";
-import chalk from "chalk";
 
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
   formatClientId,
+  formatCountLabel,
   formatEventType,
   formatHeading,
+  formatLabel,
   formatListening,
   formatProgress,
   formatResource,
   formatSuccess,
   formatTimestamp,
-  formatLabel,
+  formatWarning,
 } from "../../../utils/output.js";
 
-// Define interfaces for location types
-interface SpaceMember {
-  clientId: string;
+interface LocationEntry {
   connectionId: string;
-  isConnected: boolean;
-  profileData: Record<string, unknown> | null;
+  location: unknown;
 }
-
-interface LocationData {
-  [key: string]: unknown;
-}
-
-interface LocationItem {
-  location: LocationData;
-  member: SpaceMember;
-}
-
-// Define type for subscription
 
 export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
   static override args = {
@@ -98,7 +85,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
         );
       }
 
-      let locations: LocationItem[] = [];
+      let locations: LocationEntry[] = [];
       try {
         const result = await this.space!.locations.getAll();
         this.logCliEvent(
@@ -109,47 +96,25 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
           { locations: result },
         );
 
-        if (result && typeof result === "object") {
-          if (Array.isArray(result)) {
-            // Unlikely based on current docs, but handle if API changes
-            // Need to map Array result to LocationItem[] if structure differs
-            this.logCliEvent(
-              flags,
-              "location",
-              "initialFormatWarning",
-              "Received array format for initial locations, expected object",
-            );
-            // Assuming array elements match expected structure for now:
-            locations = result.map(
-              (item: { location: LocationData; member: SpaceMember }) => ({
-                location: item.location,
-                member: item.member,
-              }),
-            );
-          } else if (Object.keys(result).length > 0) {
-            // Standard case: result is an object { connectionId: locationData }
-            locations = Object.entries(result).map(
-              ([connectionId, locationData]) => ({
-                location: locationData as LocationData,
-                member: {
-                  // Construct a partial SpaceMember as SDK doesn't provide full details here
-                  clientId: "unknown", // clientId not directly available in getAll response
-                  connectionId,
-                  isConnected: true, // Assume connected for initial state
-                  profileData: null,
-                },
-              }),
-            );
-          }
+        if (
+          result &&
+          typeof result === "object" &&
+          Object.keys(result).length > 0
+        ) {
+          locations = Object.entries(result)
+            .filter(([, loc]) => loc != null)
+            .map(([connectionId, locationData]) => ({
+              connectionId,
+              location: locationData,
+            }));
         }
 
         if (this.shouldOutputJson(flags)) {
           this.logJsonResult(
             {
-              locations: locations.map((item) => ({
-                // Map to a simpler structure for output if needed
-                connectionId: item.member.connectionId,
-                location: item.location,
+              locations: locations.map((entry) => ({
+                connectionId: entry.connectionId,
+                location: entry.location,
               })),
               spaceName,
               eventType: "locations_snapshot",
@@ -158,18 +123,16 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
           );
         } else if (locations.length === 0) {
           this.log(
-            chalk.yellow("No locations are currently set in this space."),
+            formatWarning("No locations are currently set in this space."),
           );
         } else {
           this.log(
-            `\n${formatHeading("Current locations")} (${chalk.bold(locations.length.toString())}):\n`,
+            `\n${formatHeading("Current locations")} (${formatCountLabel(locations.length, "location")}):\n`,
           );
-          for (const item of locations) {
+          for (const entry of locations) {
+            this.log(`- ${formatClientId(entry.connectionId)}:`);
             this.log(
-              `- Connection ID: ${chalk.blue(item.member.connectionId || "Unknown")}`,
-            ); // Use connectionId as key
-            this.log(
-              `  ${formatLabel("Location")} ${JSON.stringify(item.location)}`,
+              `  ${formatLabel("Location")} ${JSON.stringify(entry.location)}`,
             );
           }
         }
@@ -273,7 +236,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
       this.fail(error, flags, "locationSubscribe", { spaceName });
     } finally {
       // Wrap all cleanup in a timeout to prevent hanging
-      if (!this.shouldOutputJson(flags || {})) {
+      if (!this.shouldOutputJson(flags)) {
         if (this.cleanupInProgress) {
           this.log(formatSuccess("Graceful shutdown complete."));
         } else {
