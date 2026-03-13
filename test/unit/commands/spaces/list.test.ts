@@ -1,51 +1,56 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import {
+  getMockAblyRest,
+  createMockPaginatedResult,
+} from "../../../helpers/mock-ably-rest.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../helpers/standard-tests.js";
 
-describe("spaces:list command", () => {
-  const mockSpaceChannelsResponse = {
-    statusCode: 200,
-    items: [
-      {
-        channelId: "space1::$space::$locks",
-        status: {
-          occupancy: {
-            metrics: { connections: 3, publishers: 1, subscribers: 2 },
-          },
+function createMockSpaceChannelItems() {
+  return [
+    {
+      channelId: "space1::$space::$locks",
+      status: {
+        occupancy: {
+          metrics: { connections: 3, publishers: 1, subscribers: 2 },
         },
       },
-      {
-        channelId: "space1::$space::$cursors",
-        status: {
-          occupancy: { metrics: { connections: 2 } },
+    },
+    {
+      channelId: "space1::$space::$cursors",
+      status: {
+        occupancy: { metrics: { connections: 2 } },
+      },
+    },
+    {
+      channelId: "space2::$space::$locks",
+      status: {
+        occupancy: {
+          metrics: { connections: 1, publishers: 0, subscribers: 1 },
         },
       },
-      {
-        channelId: "space2::$space::$locks",
-        status: {
-          occupancy: {
-            metrics: { connections: 1, publishers: 0, subscribers: 1 },
-          },
-        },
+    },
+    {
+      channelId: "regular-channel",
+      status: {
+        occupancy: { metrics: { connections: 1 } },
       },
-      {
-        channelId: "regular-channel",
-        status: {
-          occupancy: { metrics: { connections: 1 } },
-        },
-      },
-    ],
-  };
+    },
+  ];
+}
 
+describe("spaces:list command", () => {
   beforeEach(() => {
     const mock = getMockAblyRest();
     mock.request.mockClear();
-    mock.request.mockResolvedValue(mockSpaceChannelsResponse);
+    mock.request.mockResolvedValue({
+      ...createMockPaginatedResult(createMockSpaceChannelItems()),
+      statusCode: 200,
+    });
   });
 
   it("should filter to ::$space channels only", async () => {
@@ -92,7 +97,10 @@ describe("spaces:list command", () => {
 
   it("should show 'No active spaces' on empty response", async () => {
     const mock = getMockAblyRest();
-    mock.request.mockResolvedValue({ statusCode: 200, items: [] });
+    mock.request.mockResolvedValue({
+      ...createMockPaginatedResult([]),
+      statusCode: 200,
+    });
 
     const { stdout } = await runCommand(["spaces:list"], import.meta.url);
 

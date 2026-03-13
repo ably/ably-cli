@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
+import { createMockPaginatedResult } from "../../../../helpers/mock-ably-rest.js";
 import { captureJsonLogs } from "../../../../helpers/ndjson.js";
 import {
   standardHelpTests,
@@ -31,8 +32,8 @@ describe("rooms:messages:history command", () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
 
-      room.messages.history = vi.fn().mockResolvedValue({
-        items: [
+      room.messages.history = vi.fn().mockResolvedValue(
+        createMockPaginatedResult([
           {
             text: "Historical message 1",
             clientId: "client1",
@@ -45,8 +46,8 @@ describe("rooms:messages:history command", () => {
             timestamp: new Date(Date.now() - 5000),
             serial: "msg-2",
           },
-        ],
-      });
+        ]),
+      );
 
       const { stdout } = await runCommand(
         ["rooms:messages:history", "test-room"],
@@ -63,7 +64,9 @@ describe("rooms:messages:history command", () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
 
-      room.messages.history = vi.fn().mockResolvedValue({ items: [] });
+      room.messages.history = vi
+        .fn()
+        .mockResolvedValue(createMockPaginatedResult([]));
 
       const { stdout } = await runCommand(
         ["rooms:messages:history", "test-room"],
@@ -79,8 +82,8 @@ describe("rooms:messages:history command", () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
 
-      room.messages.history = vi.fn().mockResolvedValue({
-        items: [
+      room.messages.history = vi.fn().mockResolvedValue(
+        createMockPaginatedResult([
           {
             text: "Msg with metadata",
             clientId: "client1",
@@ -88,8 +91,8 @@ describe("rooms:messages:history command", () => {
             serial: "msg-m1",
             metadata: { priority: "high" },
           },
-        ],
-      });
+        ]),
+      );
 
       const { stdout } = await runCommand(
         ["rooms:messages:history", "test-room", "--show-metadata"],
@@ -104,16 +107,16 @@ describe("rooms:messages:history command", () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
 
-      room.messages.history = vi.fn().mockResolvedValue({
-        items: [
+      room.messages.history = vi.fn().mockResolvedValue(
+        createMockPaginatedResult([
           {
             text: "History msg",
             clientId: "client1",
             timestamp: new Date(Date.now() - 5000),
             serial: "msg-h1",
           },
-        ],
-      });
+        ]),
+      );
 
       const records = await captureJsonLogs(async () => {
         await runCommand(
@@ -157,7 +160,9 @@ describe("rooms:messages:history command", () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
 
-      room.messages.history = vi.fn().mockResolvedValue({ items: [] });
+      room.messages.history = vi
+        .fn()
+        .mockResolvedValue(createMockPaginatedResult([]));
 
       const { error } = await runCommand(
         [

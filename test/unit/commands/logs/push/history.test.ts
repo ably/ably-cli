@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import { getMockAblyRest } from "../../../../helpers/mock-ably-rest.js";
+import {
+  getMockAblyRest,
+  createMockPaginatedResult,
+} from "../../../../helpers/mock-ably-rest.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -11,8 +14,8 @@ describe("logs:push:history command", () => {
   beforeEach(() => {
     const mock = getMockAblyRest();
     const channel = mock.channels._getChannel("[meta]log:push");
-    channel.history.mockResolvedValue({
-      items: [
+    channel.history.mockResolvedValue(
+      createMockPaginatedResult([
         {
           id: "msg-1",
           name: "push.delivered",
@@ -21,8 +24,8 @@ describe("logs:push:history command", () => {
           clientId: "client-1",
           connectionId: "conn-1",
         },
-      ],
-    });
+      ]),
+    );
   });
 
   standardHelpTests("logs:push:history", import.meta.url);
@@ -67,7 +70,7 @@ describe("logs:push:history command", () => {
     it("should handle empty history", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("[meta]log:push");
-      channel.history.mockResolvedValue({ items: [] });
+      channel.history.mockResolvedValue(createMockPaginatedResult([]));
 
       const { stdout } = await runCommand(
         ["logs:push:history"],

@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import { getMockAblyRest } from "../../../../helpers/mock-ably-rest.js";
+import {
+  getMockAblyRest,
+  createMockPaginatedResult,
+} from "../../../../helpers/mock-ably-rest.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -11,8 +14,8 @@ describe("logs:connection-lifecycle:history command", () => {
   beforeEach(() => {
     const mock = getMockAblyRest();
     const channel = mock.channels._getChannel("[meta]connection.lifecycle");
-    channel.history.mockResolvedValue({
-      items: [
+    channel.history.mockResolvedValue(
+      createMockPaginatedResult([
         {
           id: "msg-1",
           name: "connection.opened",
@@ -21,8 +24,8 @@ describe("logs:connection-lifecycle:history command", () => {
           clientId: "client-1",
           connectionId: "conn-1",
         },
-      ],
-    });
+      ]),
+    );
   });
 
   standardHelpTests("logs:connection-lifecycle:history", import.meta.url);
@@ -70,7 +73,7 @@ describe("logs:connection-lifecycle:history command", () => {
     it("should handle empty history", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("[meta]connection.lifecycle");
-      channel.history.mockResolvedValue({ items: [] });
+      channel.history.mockResolvedValue(createMockPaginatedResult([]));
 
       const { stdout } = await runCommand(
         ["logs:connection-lifecycle:history"],

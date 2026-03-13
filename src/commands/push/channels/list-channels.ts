@@ -10,6 +10,10 @@ import {
   formatResource,
   formatSuccess,
 } from "../../../utils/output.js";
+import {
+  collectPaginatedResults,
+  formatPaginationWarning,
+} from "../../../utils/pagination.js";
 
 export default class PushChannelsListChannels extends AblyBaseCommand {
   static override description = "List channels with push subscriptions";
@@ -42,10 +46,22 @@ export default class PushChannelsListChannels extends AblyBaseCommand {
       const result = await rest.push.admin.channelSubscriptions.listChannels({
         limit: flags.limit,
       });
-      const channels = result.items;
+      const {
+        items: channels,
+        hasMore,
+        pagesConsumed,
+      } = await collectPaginatedResults(result, flags.limit);
+
+      const paginationWarning = formatPaginationWarning(
+        pagesConsumed,
+        channels.length,
+      );
+      if (paginationWarning && !this.shouldOutputJson(flags)) {
+        this.logToStderr(paginationWarning);
+      }
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ channels }, flags);
+        this.logJsonResult({ channels, hasMore }, flags);
         return;
       }
 
@@ -64,12 +80,14 @@ export default class PushChannelsListChannels extends AblyBaseCommand {
       }
       this.log("");
 
-      const limitWarning = formatLimitWarning(
-        channels.length,
-        flags.limit,
-        "channels",
-      );
-      if (limitWarning) this.log(limitWarning);
+      if (hasMore) {
+        const limitWarning = formatLimitWarning(
+          channels.length,
+          flags.limit,
+          "channels",
+        );
+        if (limitWarning) this.logToStderr(limitWarning);
+      }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushChannelListChannels");
     }

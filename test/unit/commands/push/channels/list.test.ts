@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import { getMockAblyRest } from "../../../../helpers/mock-ably-rest.js";
+import {
+  getMockAblyRest,
+  createMockPaginatedResult,
+} from "../../../../helpers/mock-ably-rest.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -25,12 +28,12 @@ describe("push:channels:list command", () => {
   describe("functionality", () => {
     it("should list subscriptions for a channel", async () => {
       const mock = getMockAblyRest();
-      mock.push.admin.channelSubscriptions.list.mockResolvedValue({
-        items: [
+      mock.push.admin.channelSubscriptions.list.mockResolvedValue(
+        createMockPaginatedResult([
           { channel: "my-channel", deviceId: "device-1" },
           { channel: "my-channel", clientId: "client-1" },
-        ],
-      });
+        ]),
+      );
 
       const { stdout } = await runCommand(
         ["push:channels:list", "--channel", "my-channel"],
@@ -43,23 +46,25 @@ describe("push:channels:list command", () => {
 
     it("should handle empty list", async () => {
       const mock = getMockAblyRest();
-      mock.push.admin.channelSubscriptions.list.mockResolvedValue({
-        items: [],
-      });
+      mock.push.admin.channelSubscriptions.list.mockResolvedValue(
+        createMockPaginatedResult([]),
+      );
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["push:channels:list", "--channel", "my-channel"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("No subscriptions found");
+      expect(stderr).toContain("No subscriptions found");
     });
 
     it("should output JSON when requested", async () => {
       const mock = getMockAblyRest();
-      mock.push.admin.channelSubscriptions.list.mockResolvedValue({
-        items: [{ channel: "my-channel", deviceId: "device-1" }],
-      });
+      mock.push.admin.channelSubscriptions.list.mockResolvedValue(
+        createMockPaginatedResult([
+          { channel: "my-channel", deviceId: "device-1" },
+        ]),
+      );
 
       const { stdout } = await runCommand(
         ["push:channels:list", "--channel", "my-channel", "--json"],

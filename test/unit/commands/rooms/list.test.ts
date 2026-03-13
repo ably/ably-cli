@@ -1,11 +1,53 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import {
+  getMockAblyRest,
+  createMockPaginatedResult,
+} from "../../../helpers/mock-ably-rest.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../helpers/standard-tests.js";
+
+function createMockChatChannelItems() {
+  return [
+    {
+      channelId: "room1::$chat::$chatMessages",
+      status: {
+        occupancy: {
+          metrics: { connections: 5, publishers: 2, subscribers: 3 },
+        },
+      },
+    },
+    {
+      channelId: "room1::$chat::$chatMessages::$reactions",
+      status: {
+        occupancy: { metrics: { connections: 5 } },
+      },
+    },
+    {
+      channelId: "room1::$chat::$typingIndicators",
+      status: {
+        occupancy: { metrics: { connections: 3 } },
+      },
+    },
+    {
+      channelId: "room2::$chat::$chatMessages",
+      status: {
+        occupancy: {
+          metrics: { connections: 2, publishers: 1, subscribers: 0 },
+        },
+      },
+    },
+    {
+      channelId: "regular-channel",
+      status: {
+        occupancy: { metrics: { connections: 1 } },
+      },
+    },
+  ];
+}
 
 describe("rooms:list command", () => {
   standardHelpTests("rooms:list", import.meta.url);
@@ -16,49 +58,12 @@ describe("rooms:list command", () => {
     "--prefix",
   ]);
 
-  const mockChatChannelsResponse = {
-    statusCode: 200,
-    items: [
-      {
-        channelId: "room1::$chat::$chatMessages",
-        status: {
-          occupancy: {
-            metrics: { connections: 5, publishers: 2, subscribers: 3 },
-          },
-        },
-      },
-      {
-        channelId: "room1::$chat::$chatMessages::$reactions",
-        status: {
-          occupancy: { metrics: { connections: 5 } },
-        },
-      },
-      {
-        channelId: "room1::$chat::$typingIndicators",
-        status: {
-          occupancy: { metrics: { connections: 3 } },
-        },
-      },
-      {
-        channelId: "room2::$chat::$chatMessages",
-        status: {
-          occupancy: {
-            metrics: { connections: 2, publishers: 1, subscribers: 0 },
-          },
-        },
-      },
-      {
-        channelId: "regular-channel",
-        status: {
-          occupancy: { metrics: { connections: 1 } },
-        },
-      },
-    ],
-  };
-
   beforeEach(() => {
     const mock = getMockAblyRest();
-    mock.request.mockResolvedValue(mockChatChannelsResponse);
+    mock.request.mockResolvedValue({
+      ...createMockPaginatedResult(createMockChatChannelItems()),
+      statusCode: 200,
+    });
   });
 
   it("should filter to ::$chat channels only", async () => {
@@ -106,7 +111,10 @@ describe("rooms:list command", () => {
 
   it("should show 'No active chat rooms' on empty response", async () => {
     const mock = getMockAblyRest();
-    mock.request.mockResolvedValue({ statusCode: 200, items: [] });
+    mock.request.mockResolvedValue({
+      ...createMockPaginatedResult([]),
+      statusCode: 200,
+    });
 
     const { stdout } = await runCommand(["rooms:list"], import.meta.url);
 

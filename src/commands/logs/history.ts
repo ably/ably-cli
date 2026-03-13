@@ -12,6 +12,10 @@ import {
   formatMessageTimestamp,
   formatLimitWarning,
 } from "../../utils/output.js";
+import {
+  collectPaginatedResults,
+  formatPaginationWarning,
+} from "../../utils/pagination.js";
 
 export default class LogsHistory extends AblyBaseCommand {
   static override description = "Retrieve application log history";
@@ -58,12 +62,25 @@ export default class LogsHistory extends AblyBaseCommand {
 
       // Get history
       const history = await channel.history(historyParams);
-      const messages = history.items;
+      const {
+        items: messages,
+        hasMore,
+        pagesConsumed,
+      } = await collectPaginatedResults(history, flags.limit);
+
+      const paginationWarning = formatPaginationWarning(
+        pagesConsumed,
+        messages.length,
+      );
+      if (paginationWarning && !this.shouldOutputJson(flags)) {
+        this.log(paginationWarning);
+      }
 
       // Output results based on format
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
+            hasMore,
             messages: messages.map((msg) => ({
               clientId: msg.clientId,
               connectionId: msg.connectionId,
@@ -109,12 +126,14 @@ export default class LogsHistory extends AblyBaseCommand {
           this.log("");
         }
 
-        const warning = formatLimitWarning(
-          messages.length,
-          flags.limit,
-          "logs",
-        );
-        if (warning) this.log(warning);
+        if (hasMore) {
+          const warning = formatLimitWarning(
+            messages.length,
+            flags.limit,
+            "logs",
+          );
+          if (warning) this.log(warning);
+        }
       }
     } catch (error) {
       this.fail(error, flags, "logHistory");
