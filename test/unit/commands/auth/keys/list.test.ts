@@ -3,6 +3,8 @@ import { runCommand } from "@oclif/test";
 import {
   nockControl,
   controlApiCleanup,
+  mockAppResolution,
+  getControlApiContext,
 } from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 import {
@@ -57,6 +59,7 @@ describe("auth:keys:list command", () => {
 
     it("should list keys with --app flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
+      mockAppResolution(appId);
       nockControl()
         .get(`/v1/apps/${appId}/keys`)
         .reply(200, [
@@ -78,6 +81,44 @@ describe("auth:keys:list command", () => {
 
       expect(stdout).toContain(`Key Name: ${appId}.key1`);
       expect(stdout).toContain("Key Label: Test Key");
+    });
+
+    it("should resolve app name to ID when --app is a name", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const { accountId } = getControlApiContext();
+      const meReply = {
+        account: { id: accountId, name: "Test Account" },
+        user: { email: "test@example.com" },
+      };
+      const appsReply = [{ id: appId, name: "MyApp", accountId }];
+
+      // displayAuthInfo calls getApp → listApps (consumes /me + /apps)
+      nockControl().get("/v1/me").reply(200, meReply);
+      nockControl().get(`/v1/accounts/${accountId}/apps`).reply(200, appsReply);
+      // requireAppId → resolveAppIdFromNameOrId also calls listApps
+      nockControl().get("/v1/me").reply(200, meReply);
+      nockControl().get(`/v1/accounts/${accountId}/apps`).reply(200, appsReply);
+      nockControl()
+        .get(`/v1/apps/${appId}/keys`)
+        .reply(200, [
+          {
+            id: "key1",
+            appId,
+            name: "Key One",
+            key: `${appId}.key1:secret1`,
+            capability: { "*": ["publish", "subscribe"] },
+            created: Date.now(),
+            modified: Date.now(),
+          },
+        ]);
+
+      const { stdout } = await runCommand(
+        ["auth:keys:list", "--app", "MyApp"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain(`Key Name: ${appId}.key1`);
+      expect(stdout).toContain("Key Label: Key One");
     });
 
     it("should show message when no keys found", async () => {
@@ -129,12 +170,22 @@ describe("auth:keys:list command", () => {
   describe("error handling", () => {
     it("should error when no app is selected", async () => {
       const mock = getMockConfigManager();
+      const { accountId } = getControlApiContext();
       mock.setCurrentAppIdForAccount(undefined);
+
+      // Mock the app resolution flow (requireAppId → promptForApp → listApps)
+      nockControl()
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: accountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
+      nockControl().get(`/v1/accounts/${accountId}/apps`).reply(200, []);
 
       const { error } = await runCommand(["auth:keys:list"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error?.message).toMatch(/No app specified/);
+      expect(error?.message).toMatch(/No apps found/);
     });
 
     standardControlApiErrorTests({

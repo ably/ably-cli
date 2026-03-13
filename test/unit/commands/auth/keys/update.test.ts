@@ -3,6 +3,7 @@ import { runCommand } from "@oclif/test";
 import {
   nockControl,
   controlApiCleanup,
+  mockAppResolution,
 } from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 import {
@@ -88,6 +89,7 @@ describe("auth:keys:update command", () => {
 
     it("should update key with --app flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
+      mockAppResolution(appId);
       mockKeysList(appId, [
         buildMockKey(appId, mockKeyId, {
           name: "OldName",

@@ -32,11 +32,13 @@ export default class KeysGetCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(KeysGetCommand);
 
-    // Display authentication information
-    await this.showAuthInfoIfNeeded(flags);
-
-    let appId = flags.app || this.configManager.getCurrentAppId();
+    let appId: string | undefined;
     const keyIdentifier = args.keyNameOrValue;
+
+    // If flags.app is set, resolve it (could be a name or ID)
+    if (flags.app) {
+      appId = await this.resolveAppIdFromNameOrId(flags.app, flags);
+    }
 
     // If keyNameOrValue is in APP_ID.KEY_ID format (one period, no colon), extract appId.
     // Only attempt this when no appId is already known (from --app flag or current app),
@@ -51,12 +53,11 @@ export default class KeysGetCommand extends ControlBaseCommand {
     }
 
     if (!appId) {
-      this.fail(
-        'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
-        flags,
-        "keyGet",
-      );
+      appId = await this.requireAppId(flags);
     }
+
+    // Display authentication information (after app resolution so name→ID is correct)
+    await this.showAuthInfoIfNeeded(flags);
 
     try {
       const controlApi = this.createControlApi(flags);
