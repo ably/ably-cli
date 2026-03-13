@@ -41,8 +41,8 @@ export default class ChannelsAnnotationsGet extends AblyBaseCommand {
   static override flags = {
     ...productApiFlags,
     limit: Flags.integer({
-      default: 50,
-      description: "Maximum number of results to return (default: 50)",
+      default: 100,
+      description: "Maximum number of results to return (default: 100)",
     }),
   };
 

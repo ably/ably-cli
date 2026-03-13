@@ -46,7 +46,7 @@ describe("channels:annotations:get command", () => {
       expect(channel.annotations.get).toHaveBeenCalledExactlyOnceWith(
         "serial-001",
         {
-          limit: 50,
+          limit: 100,
         },
       );
       expect(stdout).toContain("reactions:flag.v1");

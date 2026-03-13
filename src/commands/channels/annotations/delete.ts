@@ -4,6 +4,10 @@ import * as Ably from "ably";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../../flags.js";
 import {
+  extractSummarizationType,
+  validateAnnotationParams,
+} from "../../../utils/annotations.js";
+import {
   formatProgress,
   formatResource,
   formatSuccess,
@@ -30,7 +34,7 @@ export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
 
   static override examples = [
     '$ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --name thumbsup',
-    '$ ably channels annotations delete my-channel "01234567890:0" "reactions:multiple.v1" --name thumbsup --count 2',
+    '$ ably channels annotations delete my-channel "01234567890:0" "reactions:multiple.v1" --name thumbsup',
     '$ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --json',
     '$ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --pretty-json',
   ];
@@ -38,9 +42,6 @@ export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
   static override flags = {
     ...productApiFlags,
     ...clientIdFlag,
-    count: Flags.integer({
-      description: "The annotation count (for multiple.v1 types)",
-    }),
     name: Flags.string({
       char: "n",
       description: "The annotation name (e.g., emoji name for reactions)",
@@ -56,6 +57,18 @@ export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
     let client: Ably.Realtime | null = null;
 
     try {
+      const summarization = extractSummarizationType(type);
+      const validationErrors = validateAnnotationParams(summarization, {
+        name: flags.name,
+      });
+      if (validationErrors.length > 0) {
+        this.fail(
+          new Error(validationErrors.join("\n")),
+          flags,
+          "annotationDelete",
+        );
+      }
+
       // Uses Realtime client because RestAnnotations.delete is not exposed in SDK types
       client = await this.createAblyRealtimeClient(flags);
       if (!client) return;
@@ -72,7 +85,6 @@ export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
 
       const annotation: Ably.OutboundAnnotation = { type };
       if (flags.name !== undefined) annotation.name = flags.name;
-      if (flags.count !== undefined) annotation.count = flags.count;
 
       await channel.annotations.delete(serial, annotation);
 
@@ -86,7 +98,6 @@ export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
           serial,
           type,
           name: flags.name,
-          count: flags.count,
         },
       );
 
@@ -97,7 +108,6 @@ export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
             serial,
             type,
             name: flags.name,
-            count: flags.count,
           },
           flags,
         );

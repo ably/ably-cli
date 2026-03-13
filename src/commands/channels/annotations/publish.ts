@@ -4,6 +4,10 @@ import * as Ably from "ably";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../../flags.js";
 import {
+  extractSummarizationType,
+  validateAnnotationParams,
+} from "../../../utils/annotations.js";
+import {
   formatProgress,
   formatResource,
   formatSuccess,
@@ -62,6 +66,18 @@ export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
     const type = args.type;
 
     try {
+      const summarization = extractSummarizationType(type);
+      const validationErrors = validateAnnotationParams(summarization, {
+        name: flags.name,
+      });
+      if (validationErrors.length > 0) {
+        this.fail(
+          new Error(validationErrors.join("\n")),
+          flags,
+          "annotationPublish",
+        );
+      }
+
       const rest = await this.createAblyRestClient(flags);
       if (!rest) return;
 

@@ -29,7 +29,6 @@ describe("channels:annotations:delete command", () => {
   standardFlagTests("channels:annotations:delete", import.meta.url, [
     "--json",
     "--name",
-    "--count",
   ]);
 
   describe("functionality", () => {
@@ -79,11 +78,11 @@ describe("channels:annotations:delete command", () => {
       });
     });
 
-    it("should pass --count flag to annotation", async () => {
+    it("should succeed with multiple.v1 delete + --name (no count needed)", async () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("test-channel");
 
-      await runCommand(
+      const { stdout } = await runCommand(
         [
           "channels:annotations:delete",
           "test-channel",
@@ -91,8 +90,6 @@ describe("channels:annotations:delete command", () => {
           "reactions:multiple.v1",
           "--name",
           "thumbsup",
-          "--count",
-          "2",
         ],
         import.meta.url,
       );
@@ -100,8 +97,8 @@ describe("channels:annotations:delete command", () => {
       expect(channel.annotations.delete).toHaveBeenCalledWith("serial-001", {
         type: "reactions:multiple.v1",
         name: "thumbsup",
-        count: 2,
       });
+      expect(stdout).toContain("Annotation deleted");
     });
 
     it("should output JSON when --json flag is used", async () => {
@@ -129,6 +126,51 @@ describe("channels:annotations:delete command", () => {
   });
 
   describe("error handling", () => {
+    it("should error when --name is missing for distinct.v1 type", async () => {
+      const { error } = await runCommand(
+        [
+          "channels:annotations:delete",
+          "test-channel",
+          "serial-001",
+          "reactions:distinct.v1",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("--name is required");
+    });
+
+    it("should error when --name is missing for unique.v1 type", async () => {
+      const { error } = await runCommand(
+        [
+          "channels:annotations:delete",
+          "test-channel",
+          "serial-001",
+          "reactions:unique.v1",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("--name is required");
+    });
+
+    it("should error on invalid annotation type format", async () => {
+      const { error } = await runCommand(
+        [
+          "channels:annotations:delete",
+          "test-channel",
+          "serial-001",
+          "invalidformat",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Invalid annotation type format");
+    });
+
     it("should handle API errors gracefully", async () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("test-channel");
