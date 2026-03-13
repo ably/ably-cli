@@ -25,6 +25,24 @@ export function getControlApiContext() {
   };
 }
 
+/**
+ * Mock the app resolution flow used by `requireAppId` / `resolveAppIdFromNameOrId`.
+ * Call this **before** other nock mocks in tests that pass `--app`.
+ * Mocks `GET /v1/me` and `GET /v1/accounts/{accountId}/apps`.
+ */
+export function mockAppResolution(appId: string): void {
+  const { accountId } = getControlApiContext();
+  nockControl()
+    .get("/v1/me")
+    .reply(200, {
+      account: { id: accountId, name: "Test Account" },
+      user: { email: "test@example.com" },
+    });
+  nockControl()
+    .get(`/v1/accounts/${accountId}/apps`)
+    .reply(200, [{ id: appId, name: "Test App", accountId }]);
+}
+
 /** Clean up all nock interceptors. Call in afterEach. */
 export function controlApiCleanup(): void {
   nock.cleanAll();

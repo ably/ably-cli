@@ -3,6 +3,7 @@ import { runCommand } from "@oclif/test";
 import {
   nockControl,
   controlApiCleanup,
+  getControlApiContext,
 } from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 import {
@@ -107,7 +108,17 @@ describe("auth:keys:switch command", () => {
 
     it("should handle no app specified when config has no current app", async () => {
       const mockConfig = getMockConfigManager();
+      const { accountId } = getControlApiContext();
       mockConfig.setCurrentAppIdForAccount(undefined);
+
+      // Mock the app resolution flow (requireAppId → promptForApp → listApps)
+      nockControl()
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: accountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
+      nockControl().get(`/v1/accounts/${accountId}/apps`).reply(200, []);
 
       const { error } = await runCommand(
         ["auth:keys:switch", "just-a-key-id"],
@@ -115,7 +126,7 @@ describe("auth:keys:switch command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error?.message).toMatch(/No app specified/i);
+      expect(error?.message).toMatch(/No apps found/i);
     });
 
     it("should handle 401 authentication error", async () => {

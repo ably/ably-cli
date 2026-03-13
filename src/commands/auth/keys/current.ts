@@ -17,7 +17,7 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
   static flags = {
     ...ControlBaseCommand.globalFlags,
     app: Flags.string({
-      description: "The app ID (defaults to current app)",
+      description: "The app ID or name (defaults to current app)",
       env: "ABLY_APP_ID",
     }),
   };
@@ -30,16 +30,8 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
       return this.handleWebCliMode(flags);
     }
 
-    // Get app ID from flag or current config
-    const appId = flags.app || this.configManager.getCurrentAppId();
-
-    if (!appId) {
-      this.fail(
-        'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
-        flags,
-        "KeyCurrent",
-      );
-    }
+    // Get app ID from flag or current config (resolves app names to IDs)
+    const appId = await this.requireAppId(flags);
 
     // Get the current key for this app
     const apiKey = this.configManager.getApiKey(appId);
@@ -48,7 +40,7 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
       this.fail(
         `No API key configured for app ${appId}. Use "ably auth keys switch" to select a key.`,
         flags,
-        "KeyCurrent",
+        "keyCurrent",
       );
     }
 
@@ -105,7 +97,7 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
       this.fail(
         "ABLY_API_KEY environment variable is not set",
         flags,
-        "KeyCurrent",
+        "keyCurrent",
       );
     }
 

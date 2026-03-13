@@ -26,7 +26,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
   static flags = {
     ...ControlBaseCommand.globalFlags,
     app: Flags.string({
-      description: "The app ID (defaults to current app)",
+      description: "The app ID or name (defaults to current app)",
       env: "ABLY_APP_ID",
     }),
     force: Flags.boolean({
@@ -38,20 +38,12 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(KeysRevokeCommand);
 
-    let appId = flags.app || this.configManager.getCurrentAppId();
     let keyId = args.keyName;
 
     const parsed = parseKeyIdentifier(args.keyName);
-    if (parsed.appId) appId = parsed.appId;
     keyId = parsed.keyId;
 
-    if (!appId) {
-      this.fail(
-        'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
-        flags,
-        "keyRevoke",
-      );
-    }
+    const appId = parsed.appId ?? (await this.requireAppId(flags));
 
     try {
       const controlApi = this.createControlApi(flags);
