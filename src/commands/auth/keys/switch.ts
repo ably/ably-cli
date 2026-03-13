@@ -33,26 +33,16 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(KeysSwitchCommand);
 
-    let appId: string | undefined;
     let keyId: string | undefined = args.keyNameOrValue;
+    let extractedAppId: string | undefined;
 
     if (args.keyNameOrValue) {
       const parsed = parseKeyIdentifier(args.keyNameOrValue);
-      if (parsed.appId) appId = parsed.appId;
+      if (parsed.appId) extractedAppId = parsed.appId;
       keyId = parsed.keyId;
     }
 
-    if (!appId) {
-      const resolved = await this.resolveAppId(flags);
-      if (!resolved) {
-        this.fail(
-          'No app specified. Use --app flag, provide APP_ID.KEY_ID as the argument, or select an app with "ably apps switch"',
-          flags,
-          "keySwitch",
-        );
-      }
-      appId = resolved;
-    }
+    const appId = extractedAppId ?? (await this.requireAppId(flags));
 
     try {
       const controlApi = this.createControlApi(flags);

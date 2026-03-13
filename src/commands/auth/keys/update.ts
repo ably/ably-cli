@@ -49,24 +49,12 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
       );
     }
 
-    let appId: string | undefined;
     let keyId = args.keyName;
 
     const parsed = parseKeyIdentifier(args.keyName);
-    if (parsed.appId) appId = parsed.appId;
     keyId = parsed.keyId;
 
-    if (!appId) {
-      const resolved = await this.resolveAppId(flags);
-      if (!resolved) {
-        this.fail(
-          'No app specified. Use --app flag, provide APP_ID.KEY_ID as the argument, or select an app with "ably apps switch"',
-          flags,
-          "keyUpdate",
-        );
-      }
-      appId = resolved;
-    }
+    const appId = parsed.appId ?? (await this.requireAppId(flags));
 
     try {
       const controlApi = this.createControlApi(flags);
