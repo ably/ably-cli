@@ -62,7 +62,7 @@ describe("push:config:set-apns command", () => {
 
     it("should upload P12 certificate successfully", async () => {
       nockControl()
-        .post(`/v1/apps/${appId}/push/certificate`)
+        .post(`/v1/apps/${appId}/pkcs12`)
         .reply(200, { id: "cert-123" });
 
       const { stdout } = await runCommand(
@@ -100,7 +100,7 @@ describe("push:config:set-apns command", () => {
 
     it("should output JSON for P12 certificate when requested", async () => {
       nockControl()
-        .post(`/v1/apps/${appId}/push/certificate`)
+        .post(`/v1/apps/${appId}/pkcs12`)
         .reply(200, { id: "cert-123" });
 
       const { stdout } = await runCommand(

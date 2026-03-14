@@ -39,7 +39,7 @@ describe("apps:set-apns-p12 command", () => {
   describe("functionality", () => {
     it("should upload APNS P12 certificate successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl().post(`/v1/apps/${appId}/push/certificate`).reply(200, {
+      nockControl().post(`/v1/apps/${appId}/pkcs12`).reply(200, {
         id: "cert-123",
         appId,
       });
@@ -54,7 +54,7 @@ describe("apps:set-apns-p12 command", () => {
 
     it("should upload certificate with password", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl().post(`/v1/apps/${appId}/push/certificate`).reply(200, {
+      nockControl().post(`/v1/apps/${appId}/pkcs12`).reply(200, {
         id: "cert-123",
         appId,
       });
@@ -76,10 +76,11 @@ describe("apps:set-apns-p12 command", () => {
 
     it("should upload certificate for sandbox environment", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      nockControl().post(`/v1/apps/${appId}/push/certificate`).reply(200, {
+      nockControl().post(`/v1/apps/${appId}/pkcs12`).reply(200, {
         id: "cert-123",
         appId,
       });
+      nockControl().patch(`/v1/apps/${appId}`).reply(200, { id: appId });
 
       const { stdout } = await runCommand(
         [
@@ -144,7 +145,7 @@ describe("apps:set-apns-p12 command", () => {
     it("should handle API errors", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
-        .post(`/v1/apps/${appId}/push/certificate`)
+        .post(`/v1/apps/${appId}/pkcs12`)
         .reply(400, { error: "Invalid certificate" });
 
       const { error } = await runCommand(
@@ -159,7 +160,7 @@ describe("apps:set-apns-p12 command", () => {
     it("should handle 401 authentication error", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
-        .post(`/v1/apps/${appId}/push/certificate`)
+        .post(`/v1/apps/${appId}/pkcs12`)
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
