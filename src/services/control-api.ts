@@ -494,11 +494,7 @@ export class ControlApi {
     };
 
     // App ID-specific operations don't need account ID in the path
-    return this.request<{ id: string }>(
-      `/apps/${appId}/push/certificate`,
-      "POST",
-      data,
-    );
+    return this.request<{ id: string }>(`/apps/${appId}/pkcs12`, "POST", data);
   }
 
   private async request<T>(
