@@ -499,7 +499,7 @@ export class ControlApi {
     );
     formData.append("p12Pass", options.password ?? "");
 
-    if (options.useForSandbox !== undefined) {
+    if (options.useForSandbox) {
       await this.request<App>(`/apps/${appId}/pkcs12`, "POST", formData);
       return this.updateApp(appId, {
         apnsUseSandboxEndpoint: options.useForSandbox,
