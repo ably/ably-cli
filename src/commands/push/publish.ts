@@ -1,4 +1,6 @@
 import { Flags } from "@oclif/core";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
@@ -110,8 +112,36 @@ export default class PushPublish extends AblyBaseCommand {
       // Build notification payload
       let payload: Record<string, unknown>;
       if (flags.payload) {
+        let jsonString: string;
+        if (flags.payload.startsWith("@")) {
+          const filePath = path.resolve(flags.payload.slice(1));
+          if (!fs.existsSync(filePath)) {
+            this.fail(
+              `File not found: ${filePath}`,
+              flags as BaseFlags,
+              "pushPublish",
+            );
+          }
+          jsonString = fs.readFileSync(filePath, "utf8");
+        } else if (
+          flags.payload.startsWith("/") ||
+          flags.payload.startsWith("./") ||
+          flags.payload.startsWith("../")
+        ) {
+          const filePath = path.resolve(flags.payload);
+          if (!fs.existsSync(filePath)) {
+            this.fail(
+              `File not found: ${filePath}`,
+              flags as BaseFlags,
+              "pushPublish",
+            );
+          }
+          jsonString = fs.readFileSync(filePath, "utf8");
+        } else {
+          jsonString = flags.payload;
+        }
         try {
-          const parsed = JSON.parse(flags.payload);
+          const parsed = JSON.parse(jsonString);
           if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
             throw new Error("not an object");
           }

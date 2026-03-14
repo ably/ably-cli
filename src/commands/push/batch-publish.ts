@@ -16,7 +16,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
     "Publish push notifications to multiple recipients in a batch";
 
   static override examples = [
-    '<%= config.bin %> <%= command.id %> --payload \'[{"recipient":{"deviceId":"dev1"},"notification":{"title":"Hello"}}]\'',
+    '<%= config.bin %> <%= command.id %> --payload \'[{"recipient":{"deviceId":"dev1"},"payload":{"notification":{"title":"Hello","body":"World"}}}]\'',
     "<%= config.bin %> <%= command.id %> --payload @batch.json",
     "cat batch.json | <%= config.bin %> <%= command.id %> --payload -",
     "<%= config.bin %> <%= command.id %> --payload @batch.json --json",
@@ -44,6 +44,20 @@ export default class PushBatchPublish extends AblyBaseCommand {
         jsonString = await this.readStdin();
       } else if (flags.payload.startsWith("@")) {
         const filePath = path.resolve(flags.payload.slice(1));
+        if (!fs.existsSync(filePath)) {
+          this.fail(
+            `File not found: ${filePath}`,
+            flags as BaseFlags,
+            "pushBatchPublish",
+          );
+        }
+        jsonString = fs.readFileSync(filePath, "utf8");
+      } else if (
+        flags.payload.startsWith("/") ||
+        flags.payload.startsWith("./") ||
+        flags.payload.startsWith("../")
+      ) {
+        const filePath = path.resolve(flags.payload);
         if (!fs.existsSync(filePath)) {
           this.fail(
             `File not found: ${filePath}`,
@@ -93,9 +107,12 @@ export default class PushBatchPublish extends AblyBaseCommand {
           );
         }
 
-        if (!entry.notification && !entry.data) {
+        const itemPayload = entry.payload as
+          | Record<string, unknown>
+          | undefined;
+        if (!itemPayload?.notification && !itemPayload?.data) {
           this.fail(
-            `Item at index ${index} must have a "notification" or "data" field`,
+            `Item at index ${index} must have a "payload.notification" or "payload.data" field`,
             flags as BaseFlags,
             "pushBatchPublish",
           );

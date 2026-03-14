@@ -23,7 +23,7 @@ describe("push:batch-publish command", () => {
     it("should batch publish notifications", async () => {
       const mock = getMockAblyRest();
       const payload =
-        '[{"recipient":{"deviceId":"dev-1"},"notification":{"title":"Hello"}}]';
+        '[{"recipient":{"deviceId":"dev-1"},"payload":{"notification":{"title":"Hello"}}}]';
 
       const { stdout } = await runCommand(
         ["push:batch-publish", "--payload", payload],
@@ -43,7 +43,7 @@ describe("push:batch-publish command", () => {
     it("should output JSON when requested", async () => {
       getMockAblyRest();
       const payload =
-        '[{"recipient":{"deviceId":"dev-1"},"notification":{"title":"Hello"}}]';
+        '[{"recipient":{"deviceId":"dev-1"},"payload":{"notification":{"title":"Hello"}}}]';
 
       const { stdout } = await runCommand(
         ["push:batch-publish", "--payload", payload, "--json"],
@@ -98,7 +98,7 @@ describe("push:batch-publish command", () => {
     });
 
     it("should reject items missing notification and data", async () => {
-      const payload = '[{"recipient":{"deviceId":"dev-1"}}]';
+      const payload = '[{"recipient":{"deviceId":"dev-1"},"payload":{}}]';
 
       const { error } = await runCommand(
         ["push:batch-publish", "--payload", payload],
@@ -115,7 +115,7 @@ describe("push:batch-publish command", () => {
       mock.request.mockRejectedValue(new Error("Batch publish failed"));
 
       const payload =
-        '[{"recipient":{"deviceId":"dev-1"},"notification":{"title":"Hello"}}]';
+        '[{"recipient":{"deviceId":"dev-1"},"payload":{"notification":{"title":"Hello"}}}]';
 
       const { error } = await runCommand(
         ["push:batch-publish", "--payload", payload],
