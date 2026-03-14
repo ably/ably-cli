@@ -481,20 +481,32 @@ export class ControlApi {
   // Upload Apple Push Notification Service P12 certificate for an app
   async uploadApnsP12(
     appId: string,
-    certificateData: string,
+    certificateData: Buffer | string,
     options: {
       password?: string;
       useForSandbox?: boolean;
     } = {},
-  ): Promise<{ id: string }> {
-    const data = {
-      p12Certificate: certificateData,
-      password: options.password,
-      useForSandbox: options.useForSandbox,
-    };
+  ): Promise<App> {
+    const certBuffer =
+      typeof certificateData === "string"
+        ? Buffer.from(certificateData, "base64")
+        : certificateData;
+    const formData = new FormData();
+    formData.append(
+      "p12File",
+      new Blob([certBuffer], { type: "application/x-pkcs12" }),
+      "certificate.p12",
+    );
+    formData.append("p12Pass", options.password ?? "");
 
-    // App ID-specific operations don't need account ID in the path
-    return this.request<{ id: string }>(`/apps/${appId}/pkcs12`, "POST", data);
+    if (options.useForSandbox !== undefined) {
+      await this.request<App>(`/apps/${appId}/pkcs12`, "POST", formData);
+      return this.updateApp(appId, {
+        apnsUseSandboxEndpoint: options.useForSandbox,
+      });
+    }
+
+    return this.request<App>(`/apps/${appId}/pkcs12`, "POST", formData);
   }
 
   private async request<T>(
@@ -506,18 +518,19 @@ export class ControlApi {
       ? `http://${this.controlHost}/api/v1${path}`
       : `https://${this.controlHost}/v1${path}`;
 
+    const isFormData = body instanceof FormData;
     const options: RequestInit = {
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${this.accessToken}`,
-        "Content-Type": "application/json",
+        ...(!isFormData && { "Content-Type": "application/json" }),
         "Ably-Agent": `ably-cli/${getCliVersion()}`,
       },
       method,
     };
 
     if (body && (method === "POST" || method === "PUT" || method === "PATCH")) {
-      options.body = JSON.stringify(body);
+      options.body = isFormData ? body : JSON.stringify(body);
     }
 
     const response = await fetch(url, options);

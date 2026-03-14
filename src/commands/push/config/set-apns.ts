@@ -84,7 +84,7 @@ export default class PushConfigSetApns extends ControlBaseCommand {
             );
           }
 
-          const certificateData = fs.readFileSync(certPath).toString("base64");
+          const certificateData = fs.readFileSync(certPath);
 
           const result = await controlApi.uploadApnsP12(
             appId,
