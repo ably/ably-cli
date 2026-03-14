@@ -240,11 +240,11 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
       const batchPayload = JSON.stringify([
         {
           recipient: { deviceId: testDeviceId },
-          notification: { title: "Batch 1", body: "First" },
+          payload: { notification: { title: "Batch 1", body: "First" } },
         },
         {
           recipient: { deviceId: testDeviceId },
-          notification: { title: "Batch 2", body: "Second" },
+          payload: { notification: { title: "Batch 2", body: "Second" } },
         },
       ]);
 
@@ -264,7 +264,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
       const batchPayload = JSON.stringify([
         {
           recipient: { deviceId: testDeviceId },
-          notification: { title: "JSON Batch", body: "Test" },
+          payload: { notification: { title: "JSON Batch", body: "Test" } },
         },
       ]);
 
