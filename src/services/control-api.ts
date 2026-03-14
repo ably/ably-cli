@@ -20,6 +20,7 @@ export interface App {
   apnsUseSandboxEndpoint?: boolean | null;
   apnsUsesSandboxCert?: boolean;
   created: number;
+  fcmProjectId?: string | null;
   fcmServiceAccount?: string | null;
   id: string;
   modified: number;

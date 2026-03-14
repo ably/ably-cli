@@ -82,6 +82,7 @@ export default class PushConfigSetFcm extends ControlBaseCommand {
         }
 
         await controlApi.updateApp(appId, {
+          fcmProjectId: parsed.project_id as string,
           fcmServiceAccount: contents,
         });
 
