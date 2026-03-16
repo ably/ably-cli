@@ -2,6 +2,13 @@ import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
+import {
+  formatHeading,
+  formatLabel,
+  formatProgress,
+  formatResource,
+  formatWarning,
+} from "../../../utils/output.js";
 
 export default class KeysGetCommand extends ControlBaseCommand {
   static args = {
@@ -51,34 +58,53 @@ export default class KeysGetCommand extends ControlBaseCommand {
     }
 
     if (!appId) {
-      this.fail(
-        'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
-        flags,
-        "keyGet",
-      );
+      appId = await this.requireAppId(flags);
     }
 
     try {
+      if (!this.shouldOutputJson(flags)) {
+        this.log(formatProgress("Fetching key details"));
+      }
+
       const controlApi = this.createControlApi(flags);
       const key = await controlApi.getKey(appId, keyIdentifier);
 
+      const keyName = `${key.appId}.${key.id}`;
+
+      // Check if env var overrides the current key
+      const currentKeyId = this.configManager.getKeyId(appId);
+      const currentKeyName = currentKeyId?.includes(".")
+        ? currentKeyId
+        : currentKeyId
+          ? `${appId}.${currentKeyId}`
+          : undefined;
+      const envKey = process.env.ABLY_API_KEY;
+      const envKeyPrefix = envKey ? envKey.split(":")[0] : undefined;
+      const hasEnvOverride =
+        envKey && currentKeyName === keyName && envKeyPrefix !== keyName;
+
       if (this.shouldOutputJson(flags)) {
-        // Add the full key name to the JSON output
         this.logJsonResult(
           {
             key: {
               ...key,
-              keyName: `${key.appId}.${key.id}`,
+              keyName,
             },
+            ...(hasEnvOverride
+              ? {
+                  envKeyOverride: {
+                    keyName: envKeyPrefix,
+                    note: "ABLY_API_KEY env var overrides this key for product API commands",
+                  },
+                }
+              : {}),
           },
           flags,
         );
       } else {
-        this.log(`Key Details:\n`);
-
-        const keyName = `${key.appId}.${key.id}`;
-        this.log(`Key Name: ${keyName}`);
-        this.log(`Key Label: ${key.name || "Unnamed key"}`);
+        this.log(formatHeading("Key Details"));
+        this.log(`${formatLabel("Key Name")} ${formatResource(keyName)}`);
+        this.log(`${formatLabel("Key Label")} ${key.name || "Unnamed key"}`);
 
         for (const line of formatCapabilities(
           key.capability as Record<string, string[] | string>,
@@ -86,9 +112,19 @@ export default class KeysGetCommand extends ControlBaseCommand {
           this.log(line);
         }
 
-        this.log(`Created: ${this.formatDate(key.created)}`);
-        this.log(`Updated: ${this.formatDate(key.modified)}`);
-        this.log(`Full key: ${key.key}`);
+        this.log(`${formatLabel("Created")} ${this.formatDate(key.created)}`);
+        this.log(`${formatLabel("Updated")} ${this.formatDate(key.modified)}`);
+        this.log(`${formatLabel("Full key")} ${key.key}`);
+
+        if (hasEnvOverride) {
+          this.logToStderr("");
+          this.logToStderr(
+            formatWarning(
+              `ABLY_API_KEY environment variable is set to a different key (${envKeyPrefix}). ` +
+                `The env var overrides this key for product API commands.`,
+            ),
+          );
+        }
       }
     } catch (error) {
       this.fail(error, flags, "keyGet", { appId, keyIdentifier });
