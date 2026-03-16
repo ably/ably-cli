@@ -107,9 +107,6 @@ describe("spaces:list command", () => {
 
     const json = JSON.parse(stdout);
     expect(json).toHaveProperty("spaces");
-    expect(json).toHaveProperty("total");
-    expect(json).toHaveProperty("shown");
-    expect(json).toHaveProperty("hasMore");
     expect(json).toHaveProperty("success", true);
     expect(json.spaces).toBeInstanceOf(Array);
     expect(json.spaces.length).toBe(2);

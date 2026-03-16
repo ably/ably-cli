@@ -53,8 +53,8 @@ describe("spaces:cursors:get-all command", () => {
       );
       expect(space.cursors.getAll).toHaveBeenCalled();
 
-      // The command outputs multiple JSON lines - check the content contains expected data
-      expect(stdout).toContain("test-space");
+      // The command outputs JSON with cursors array
+      expect(stdout).toContain("cursors");
       expect(stdout).toContain("success");
     });
 
@@ -120,7 +120,6 @@ describe("spaces:cursors:get-all command", () => {
       expect(resultRecord).toHaveProperty("type", "result");
       expect(resultRecord).toHaveProperty("command");
       expect(resultRecord).toHaveProperty("success", true);
-      expect(resultRecord).toHaveProperty("spaceName", "test-space");
       expect(resultRecord!.cursors).toBeInstanceOf(Array);
     });
   });

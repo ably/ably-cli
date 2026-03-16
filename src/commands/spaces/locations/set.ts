@@ -1,6 +1,5 @@
 import type { LocationsEvents } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
-import chalk from "chalk";
 
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
@@ -9,9 +8,8 @@ import {
   formatListening,
   formatResource,
   formatTimestamp,
-  formatClientId,
-  formatLabel,
 } from "../../../utils/output.js";
+import { formatLocationUpdateBlock } from "../../../utils/spaces-output.js";
 
 // Define the type for location subscription
 interface LocationSubscription {
@@ -133,7 +131,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
         });
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonResult({ location, spaceName }, flags);
+          this.logJsonResult({ location }, flags);
         } else {
           this.log(
             formatSuccess(
@@ -144,7 +142,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       } catch {
         // If an error occurs in E2E mode, just exit cleanly after showing what we can
         if (this.shouldOutputJson(flags)) {
-          this.logJsonResult({ location, spaceName }, flags);
+          this.logJsonResult({ location }, flags);
         }
         // Don't call this.error() in E2E mode as it sets exit code to 1
       }
@@ -188,7 +186,6 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       this.locationHandler = (locationUpdate: LocationsEvents.UpdateEvent) => {
         const timestamp = new Date().toISOString();
         const { member } = locationUpdate;
-        const { currentLocation } = locationUpdate; // Use current location
         const { connectionId } = member;
 
         // Skip self events - check connection ID
@@ -197,36 +194,37 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
           return;
         }
 
-        const eventData = {
-          action: "update",
-          location: currentLocation,
-          member: {
-            clientId: member.clientId,
-            connectionId: member.connectionId,
-          },
-          timestamp,
-        };
         this.logCliEvent(
           flags,
           "location",
           "updateReceived",
           "Location update received",
-          eventData,
+          {
+            clientId: member.clientId,
+            connectionId: member.connectionId,
+            timestamp,
+          },
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonEvent(eventData, flags);
+          this.logJsonEvent(
+            {
+              location: {
+                member: {
+                  clientId: member.clientId,
+                  connectionId: member.connectionId,
+                },
+                currentLocation: locationUpdate.currentLocation,
+                previousLocation: locationUpdate.previousLocation,
+                timestamp,
+              },
+            },
+            flags,
+          );
         } else {
-          // For locations, use yellow for updates
-          const actionColor = chalk.yellow;
-          const action = "update";
-
-          this.log(
-            `${formatTimestamp(timestamp)} ${formatClientId(member.clientId || "Unknown")} ${actionColor(action)}d location:`,
-          );
-          this.log(
-            `  ${formatLabel("Location")} ${JSON.stringify(currentLocation, null, 2)}`,
-          );
+          this.log(formatTimestamp(timestamp));
+          this.log(formatLocationUpdateBlock(locationUpdate));
+          this.log("");
         }
       };
 

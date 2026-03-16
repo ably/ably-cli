@@ -7,9 +7,11 @@ import {
   formatResource,
   formatSuccess,
   formatTimestamp,
-  formatClientId,
-  formatLabel,
 } from "../../../utils/output.js";
+import {
+  formatCursorBlock,
+  formatCursorOutput,
+} from "../../../utils/spaces-output.js";
 
 export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
   static override args = {
@@ -56,35 +58,27 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
         this.listener = (cursorUpdate: CursorUpdate) => {
           try {
             const timestamp = new Date().toISOString();
-            const eventData = {
-              member: {
-                clientId: cursorUpdate.clientId,
-                connectionId: cursorUpdate.connectionId,
-              },
-              position: cursorUpdate.position,
-              data: cursorUpdate.data,
-              spaceName,
-              timestamp,
-              eventType: "cursor_update",
-            };
             this.logCliEvent(
               flags,
               "cursor",
               "updateReceived",
               "Cursor update received",
-              eventData,
+              {
+                clientId: cursorUpdate.clientId,
+                position: cursorUpdate.position,
+                timestamp,
+              },
             );
 
             if (this.shouldOutputJson(flags)) {
-              this.logJsonEvent(eventData, flags);
-            } else {
-              // Include data field in the output if present
-              const dataString = cursorUpdate.data
-                ? ` data: ${JSON.stringify(cursorUpdate.data)}`
-                : "";
-              this.log(
-                `${formatTimestamp(timestamp)} ${formatClientId(cursorUpdate.clientId)} ${formatLabel("position")} ${JSON.stringify(cursorUpdate.position)}${dataString}`,
+              this.logJsonEvent(
+                { cursor: formatCursorOutput(cursorUpdate) },
+                flags,
               );
+            } else {
+              this.log(formatTimestamp(timestamp));
+              this.log(formatCursorBlock(cursorUpdate));
+              this.log("");
             }
           } catch (error) {
             this.fail(error, flags, "cursorSubscribe", {

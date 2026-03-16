@@ -9,11 +9,16 @@ import {
   formatClientId,
   formatCountLabel,
   formatHeading,
+  formatIndex,
   formatProgress,
   formatResource,
   formatSuccess,
   formatWarning,
 } from "../../../utils/output.js";
+import {
+  formatCursorBlock,
+  formatCursorOutput,
+} from "../../../utils/spaces-output.js";
 
 export default class SpacesCursorsGetAll extends SpacesBaseCommand {
   static override args = {
@@ -198,21 +203,14 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            connectionId: this.realtimeClient!.connection.id,
-            cursors: cursors.map((cursor: CursorUpdate) => ({
-              clientId: cursor.clientId,
-              connectionId: cursor.connectionId,
-              data: cursor.data,
-              position: cursor.position,
-            })),
-            spaceName,
-            cursorUpdateReceived,
+            cursors: cursors.map((cursor: CursorUpdate) =>
+              formatCursorOutput(cursor),
+            ),
           },
           flags,
         );
       } else {
         if (!cursorUpdateReceived && cursors.length === 0) {
-          this.log(chalk.dim("─".repeat(60)));
           this.log(
             formatWarning(
               "No cursor updates are being sent in this space. Make sure other clients are actively setting cursor positions.",
@@ -222,107 +220,20 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
         }
 
         if (cursors.length === 0) {
-          this.log(chalk.dim("─".repeat(60)));
           this.log(formatWarning("No active cursors found in space."));
           return;
         }
 
-        // Show summary table
-        this.log(chalk.dim("─".repeat(60)));
         this.log(
-          `\n${formatHeading("Cursor Summary")} - ${formatCountLabel(cursors.length, "cursor")} found:\n`,
+          `\n${formatHeading("Current cursors")} (${formatCountLabel(cursors.length, "cursor")}):\n`,
         );
 
-        // Table header
-        const colWidths = { client: 20, x: 8, y: 8, connection: 20 };
-        this.log(
-          chalk.gray(
-            "┌" +
-              "─".repeat(colWidths.client + 2) +
-              "┬" +
-              "─".repeat(colWidths.x + 2) +
-              "┬" +
-              "─".repeat(colWidths.y + 2) +
-              "┬" +
-              "─".repeat(colWidths.connection + 2) +
-              "┐",
-          ),
-        );
-        this.log(
-          chalk.gray("│ ") +
-            chalk.bold("Client ID".padEnd(colWidths.client)) +
-            chalk.gray(" │ ") +
-            chalk.bold("X".padEnd(colWidths.x)) +
-            chalk.gray(" │ ") +
-            chalk.bold("Y".padEnd(colWidths.y)) +
-            chalk.gray(" │ ") +
-            chalk.bold("connection".padEnd(colWidths.connection)) +
-            chalk.gray(" │"),
-        );
-        this.log(
-          chalk.gray(
-            "├" +
-              "─".repeat(colWidths.client + 2) +
-              "┼" +
-              "─".repeat(colWidths.x + 2) +
-              "┼" +
-              "─".repeat(colWidths.y + 2) +
-              "┼" +
-              "─".repeat(colWidths.connection + 2) +
-              "┤",
-          ),
-        );
-
-        // Table rows
-        cursors.forEach((cursor: CursorUpdate) => {
-          const clientId = (cursor.clientId || "Unknown").slice(
-            0,
-            colWidths.client,
-          );
-          const x = cursor.position.x.toString().slice(0, colWidths.x);
-          const y = cursor.position.y.toString().slice(0, colWidths.y);
-          const connectionId = (cursor.connectionId || "Unknown").slice(
-            0,
-            colWidths.connection,
-          );
-
+        cursors.forEach((cursor: CursorUpdate, index: number) => {
           this.log(
-            chalk.gray("│ ") +
-              formatClientId(clientId.padEnd(colWidths.client)) +
-              chalk.gray(" │ ") +
-              chalk.yellow(x.padEnd(colWidths.x)) +
-              chalk.gray(" │ ") +
-              chalk.yellow(y.padEnd(colWidths.y)) +
-              chalk.gray(" │ ") +
-              chalk.dim(connectionId.padEnd(colWidths.connection)) +
-              chalk.gray(" │"),
+            `${formatIndex(index + 1)} ${formatCursorBlock(cursor, { indent: "    " })}`,
           );
+          this.log("");
         });
-
-        this.log(
-          chalk.gray(
-            "└" +
-              "─".repeat(colWidths.client + 2) +
-              "┴" +
-              "─".repeat(colWidths.x + 2) +
-              "┴" +
-              "─".repeat(colWidths.y + 2) +
-              "┴" +
-              "─".repeat(colWidths.connection + 2) +
-              "┘",
-          ),
-        );
-
-        // Show additional data if any cursor has it
-        const cursorsWithData = cursors.filter((c) => c.data);
-        if (cursorsWithData.length > 0) {
-          this.log(`\n${formatHeading("Additional Data")}:`);
-          cursorsWithData.forEach((cursor: CursorUpdate) => {
-            this.log(
-              `  ${formatClientId(cursor.clientId || "Unknown")}: ${JSON.stringify(cursor.data)}`,
-            );
-          });
-        }
       }
     } catch (error) {
       this.fail(error, flags, "cursorGetAll", { spaceName });

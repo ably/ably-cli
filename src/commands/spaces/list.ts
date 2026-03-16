@@ -132,14 +132,10 @@ export default class SpacesList extends SpacesBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            hasMore: spacesList.length > flags.limit,
-            shown: limitedSpaces.length,
             spaces: limitedSpaces.map((space: SpaceItem) => ({
-              metrics: space.status?.occupancy?.metrics || {},
               spaceName: space.spaceName,
+              metrics: space.status?.occupancy?.metrics || {},
             })),
-            timestamp: new Date().toISOString(),
-            total: spacesList.length,
           },
           flags,
         );

@@ -191,7 +191,7 @@ describe("Spaces E2E Tests", () => {
             `bin/run.js spaces locations subscribe ${testSpaceId} --client-id ${client1Id} --duration 20`,
             outputPath,
             {
-              readySignal: "Fetching current locations for space",
+              readySignal: "Subscribing to location updates",
               timeoutMs: process.env.CI ? 40000 : 30000, // Increased timeout
               retryCount: 2,
             },
@@ -400,7 +400,7 @@ describe("Spaces E2E Tests", () => {
 
             if (
               output.includes(client2Id) &&
-              output.includes("position:") &&
+              output.includes("Position:") &&
               output.includes("TestUser2") &&
               output.includes("#ff0000")
             ) {

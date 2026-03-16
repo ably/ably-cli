@@ -3,11 +3,11 @@ import chalk from "chalk";
 
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
+import { formatResource, formatSuccess } from "../../../utils/output.js";
 import {
-  formatLabel,
-  formatResource,
-  formatSuccess,
-} from "../../../utils/output.js";
+  formatLockBlock,
+  formatLockOutput,
+} from "../../../utils/spaces-output.js";
 
 export default class SpacesLocksGet extends SpacesBaseCommand {
   static override args = {
@@ -55,7 +55,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
 
         if (!lock) {
           if (this.shouldOutputJson(flags)) {
-            this.logJsonResult({ found: false, lockId }, flags);
+            this.logJsonResult({ locks: [] }, flags);
           } else {
             this.log(
               chalk.yellow(
@@ -68,14 +68,9 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
         }
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonResult(
-            structuredClone(lock) as Record<string, unknown>,
-            flags,
-          );
+          this.logJsonResult({ locks: [formatLockOutput(lock)] }, flags);
         } else {
-          this.log(
-            `${formatLabel("Lock details")} ${this.formatJsonOutput(structuredClone(lock), flags)}`,
-          );
+          this.log(formatLockBlock(lock));
         }
       } catch (error) {
         this.fail(error, flags, "lockGet");

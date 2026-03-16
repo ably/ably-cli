@@ -27,8 +27,16 @@ describe("spaces:locks:acquire command", () => {
       space.locks.acquire.mockResolvedValue({
         id: "my-lock",
         status: "locked",
-        member: { clientId: "mock-client-id", connectionId: "conn-1" },
+        member: {
+          clientId: "mock-client-id",
+          connectionId: "conn-1",
+          isConnected: true,
+          profileData: null,
+          location: null,
+          lastEvent: { name: "enter", timestamp: Date.now() },
+        },
         timestamp: Date.now(),
+        attributes: undefined,
         reason: undefined,
       });
 
@@ -49,8 +57,17 @@ describe("spaces:locks:acquire command", () => {
       space.locks.acquire.mockResolvedValue({
         id: "my-lock",
         status: "locked",
-        member: { clientId: "mock-client-id", connectionId: "conn-1" },
+        member: {
+          clientId: "mock-client-id",
+          connectionId: "conn-1",
+          isConnected: true,
+          profileData: null,
+          location: null,
+          lastEvent: { name: "enter", timestamp: Date.now() },
+        },
         timestamp: Date.now(),
+        attributes: undefined,
+        reason: undefined,
       });
 
       const { stdout } = await runCommand(
@@ -100,8 +117,17 @@ describe("spaces:locks:acquire command", () => {
       space.locks.acquire.mockResolvedValue({
         id: "my-lock",
         status: "locked",
-        member: { clientId: "mock-client-id", connectionId: "conn-1" },
+        member: {
+          clientId: "mock-client-id",
+          connectionId: "conn-1",
+          isConnected: true,
+          profileData: null,
+          location: null,
+          lastEvent: { name: "enter", timestamp: 1700000000000 },
+        },
         timestamp: 1700000000000,
+        attributes: undefined,
+        reason: undefined,
       });
 
       const { stdout } = await runCommand(
@@ -111,9 +137,17 @@ describe("spaces:locks:acquire command", () => {
 
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("lock");
-      expect(result.lock).toHaveProperty("lockId", "my-lock");
-      expect(result.lock).toHaveProperty("status", "locked");
+      expect(result).toHaveProperty("locks");
+      expect(result.locks).toHaveLength(1);
+      expect(result.locks[0]).toHaveProperty("id", "my-lock");
+      expect(result.locks[0]).toHaveProperty("status", "locked");
+      expect(result.locks[0]).toHaveProperty("member");
+      expect(result.locks[0].member).toHaveProperty(
+        "clientId",
+        "mock-client-id",
+      );
+      expect(result.locks[0]).toHaveProperty("attributes", null);
+      expect(result.locks[0]).toHaveProperty("reason", null);
     });
   });
 

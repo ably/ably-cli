@@ -112,7 +112,6 @@ describe("spaces:locations:set command", () => {
       const result = JSON.parse(stdout);
       expect(result.success).toBe(true);
       expect(result.location).toEqual(location);
-      expect(result.spaceName).toBe("test-space");
     });
 
     it("should output JSON error on invalid location", async () => {
