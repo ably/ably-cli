@@ -3,20 +3,16 @@ import { Args } from "@oclif/core";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
-  formatClientId,
   formatCountLabel,
   formatHeading,
+  formatIndex,
   formatLabel,
   formatProgress,
   formatResource,
   formatSuccess,
   formatWarning,
 } from "../../../utils/output.js";
-
-interface LocationEntry {
-  connectionId: string;
-  location: unknown;
-}
+import type { LocationEntry } from "../../../utils/spaces-output.js";
 
 export default class SpacesLocationsGetAll extends SpacesBaseCommand {
   static override args = {
@@ -127,8 +123,6 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
                 connectionId: entry.connectionId,
                 location: entry.location,
               })),
-              spaceName,
-              timestamp: new Date().toISOString(),
             },
             flags,
           );
@@ -141,11 +135,15 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
             `\n${formatHeading("Current locations")} (${formatCountLabel(entries.length, "location")}):\n`,
           );
 
-          for (const entry of entries) {
-            this.log(`- ${formatClientId(entry.connectionId)}:`);
+          for (let i = 0; i < entries.length; i++) {
+            const entry = entries[i];
             this.log(
-              `  ${formatLabel("Location")} ${JSON.stringify(entry.location, null, 2)}`,
+              `${formatIndex(i + 1)} ${formatLabel("Connection ID")} ${entry.connectionId}`,
             );
+            this.log(
+              `    ${formatLabel("Location")} ${JSON.stringify(entry.location)}`,
+            );
+            this.log("");
           }
         }
       } catch (error) {

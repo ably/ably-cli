@@ -100,13 +100,16 @@ describe("spaces:cursors:subscribe command", () => {
 
       const records = parseNdjsonLines(stdout);
       const eventRecords = records.filter(
-        (r) => r.type === "event" && r.eventType === "cursor_update",
+        (r) => r.type === "event" && r.cursor,
       );
       expect(eventRecords.length).toBeGreaterThan(0);
       const event = eventRecords[0];
       expect(event).toHaveProperty("command");
-      expect(event).toHaveProperty("spaceName", "test-space");
-      expect(event).toHaveProperty("position");
+      expect(event).toHaveProperty("cursor");
+      expect(event.cursor).toHaveProperty("clientId", "user-1");
+      expect(event.cursor).toHaveProperty("connectionId", "conn-1");
+      expect(event.cursor).toHaveProperty("position");
+      expect(event.cursor.position).toEqual({ x: 50, y: 75 });
     });
   });
 

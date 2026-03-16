@@ -8,8 +8,11 @@ import {
   formatSuccess,
   formatListening,
   formatResource,
-  formatLabel,
 } from "../../../utils/output.js";
+import {
+  formatLockBlock,
+  formatLockOutput,
+} from "../../../utils/spaces-output.js";
 
 export default class SpacesLocksAcquire extends SpacesBaseCommand {
   static override args = {
@@ -109,33 +112,19 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
           lockId,
           lockData as LockOptions,
         );
-        const lockDetails = {
-          lockId: lock.id,
-          member: lock.member
-            ? {
-                clientId: lock.member.clientId,
-                connectionId: lock.member.connectionId,
-              }
-            : null,
-          reason: lock.reason,
-          status: lock.status,
-          timestamp: lock.timestamp,
-        };
         this.logCliEvent(
           flags,
           "lock",
           "acquired",
           `Lock acquired: ${lockId}`,
-          lockDetails,
+          { lockId: lock.id, status: lock.status },
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonResult({ lock: lockDetails }, flags);
+          this.logJsonResult({ locks: [formatLockOutput(lock)] }, flags);
         } else {
           this.log(formatSuccess(`Lock acquired: ${formatResource(lockId)}.`));
-          this.log(
-            `${formatLabel("Lock details")} ${this.formatJsonOutput(lockDetails, { ...flags, "pretty-json": true })}`,
-          );
+          this.log(formatLockBlock(lock));
           this.log(`\n${formatListening("Holding lock.")}`);
         }
       } catch (error) {

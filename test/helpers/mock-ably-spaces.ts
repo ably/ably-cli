@@ -158,6 +158,8 @@ function createMockSpaceMembers(): MockSpaceMembers {
       connectionId: "mock-connection-id",
       isConnected: true,
       profileData: {},
+      location: null,
+      lastEvent: { name: "enter", timestamp: Date.now() },
     }),
     _emitter: emitter,
     _emit: (member: SpaceMember) => {
@@ -204,7 +206,21 @@ function createMockSpaceLocks(): MockSpaceLocks {
   const emitter = new EventEmitter();
 
   return {
-    acquire: vi.fn().mockResolvedValue({ id: "mock-lock-id" }),
+    acquire: vi.fn().mockResolvedValue({
+      id: "mock-lock-id",
+      status: "locked",
+      member: {
+        clientId: "mock-client-id",
+        connectionId: "mock-connection-id",
+        isConnected: true,
+        profileData: null,
+        location: null,
+        lastEvent: { name: "enter", timestamp: Date.now() },
+      },
+      timestamp: Date.now(),
+      attributes: undefined,
+      reason: undefined,
+    }),
     release: vi.fn().mockImplementation(async () => {}),
     get: vi.fn().mockResolvedValue(null),
     getAll: vi.fn().mockResolvedValue([]),

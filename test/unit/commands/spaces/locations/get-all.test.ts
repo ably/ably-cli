@@ -37,7 +37,7 @@ describe("spaces:locations:get-all command", () => {
 
       expect(space.enter).toHaveBeenCalled();
       expect(space.locations.getAll).toHaveBeenCalled();
-      expect(stdout).toContain("test-space");
+      expect(stdout).toContain("locations");
     });
 
     it("should output JSON envelope with type and command for location results", async () => {
@@ -60,7 +60,6 @@ describe("spaces:locations:get-all command", () => {
       expect(resultRecord).toHaveProperty("type", "result");
       expect(resultRecord).toHaveProperty("command");
       expect(resultRecord).toHaveProperty("success", true);
-      expect(resultRecord).toHaveProperty("spaceName", "test-space");
       expect(resultRecord!.locations).toBeInstanceOf(Array);
       expect(resultRecord!.locations.length).toBe(1);
       expect(resultRecord!.locations[0]).toHaveProperty(
@@ -68,8 +67,6 @@ describe("spaces:locations:get-all command", () => {
         "conn-1",
       );
       expect(resultRecord!.locations[0]).toHaveProperty("location");
-      expect(resultRecord!.locations[0]).not.toHaveProperty("memberId");
-      expect(resultRecord!.locations[0]).not.toHaveProperty("isCurrentMember");
     });
 
     it("should handle no locations found", async () => {

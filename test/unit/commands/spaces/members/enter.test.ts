@@ -88,8 +88,16 @@ describe("spaces:members:enter command", () => {
 
       const result = JSON.parse(stdout);
       expect(result.success).toBe(true);
-      expect(result.spaceName).toBe("test-space");
-      expect(result.status).toBe("connected");
+      expect(result.members).toBeDefined();
+      expect(result.members).toHaveLength(1);
+      expect(result.members[0]).toHaveProperty("clientId", "mock-client-id");
+      expect(result.members[0]).toHaveProperty(
+        "connectionId",
+        "mock-connection-id",
+      );
+      expect(result.members[0]).toHaveProperty("isConnected", true);
+      expect(result.members[0]).toHaveProperty("location", null);
+      expect(result.members[0]).toHaveProperty("lastEvent");
     });
 
     it("should output JSON error on invalid profile", async () => {

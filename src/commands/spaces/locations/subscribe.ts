@@ -4,23 +4,11 @@ import { Args } from "@oclif/core";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
-  formatClientId,
-  formatCountLabel,
-  formatEventType,
-  formatHeading,
-  formatLabel,
   formatListening,
-  formatProgress,
-  formatResource,
   formatSuccess,
   formatTimestamp,
-  formatWarning,
 } from "../../../utils/output.js";
-
-interface LocationEntry {
-  connectionId: string;
-  location: unknown;
-}
+import { formatLocationUpdateBlock } from "../../../utils/spaces-output.js";
 
 export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
   static override args = {
@@ -70,78 +58,6 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
 
       await this.initializeSpace(flags, spaceName, { enterSpace: true });
 
-      // Get current locations
-      this.logCliEvent(
-        flags,
-        "location",
-        "gettingInitial",
-        `Fetching initial locations for space ${spaceName}`,
-      );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Fetching current locations for space ${formatResource(spaceName)}`,
-          ),
-        );
-      }
-
-      let locations: LocationEntry[] = [];
-      try {
-        const result = await this.space!.locations.getAll();
-        this.logCliEvent(
-          flags,
-          "location",
-          "gotInitial",
-          `Fetched initial locations`,
-          { locations: result },
-        );
-
-        if (
-          result &&
-          typeof result === "object" &&
-          Object.keys(result).length > 0
-        ) {
-          locations = Object.entries(result)
-            .filter(([, loc]) => loc != null)
-            .map(([connectionId, locationData]) => ({
-              connectionId,
-              location: locationData,
-            }));
-        }
-
-        if (this.shouldOutputJson(flags)) {
-          this.logJsonResult(
-            {
-              locations: locations.map((entry) => ({
-                connectionId: entry.connectionId,
-                location: entry.location,
-              })),
-              spaceName,
-              eventType: "locations_snapshot",
-            },
-            flags,
-          );
-        } else if (locations.length === 0) {
-          this.log(
-            formatWarning("No locations are currently set in this space."),
-          );
-        } else {
-          this.log(
-            `\n${formatHeading("Current locations")} (${formatCountLabel(locations.length, "location")}):\n`,
-          );
-          for (const entry of locations) {
-            this.log(`- ${formatClientId(entry.connectionId)}:`);
-            this.log(
-              `  ${formatLabel("Location")} ${JSON.stringify(entry.location)}`,
-            );
-          }
-        }
-      } catch (error) {
-        this.fail(error, flags, "locationSubscribe", {
-          spaceName,
-        });
-      }
-
       this.logCliEvent(
         flags,
         "location",
@@ -163,43 +79,37 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
         const locationHandler = (update: LocationsEvents.UpdateEvent) => {
           try {
             const timestamp = new Date().toISOString();
-            const eventData = {
-              action: "update",
-              location: update.currentLocation,
-              member: {
-                clientId: update.member.clientId,
-                connectionId: update.member.connectionId,
-              },
-              previousLocation: update.previousLocation,
-              timestamp,
-            };
             this.logCliEvent(
               flags,
               "location",
               "updateReceived",
               "Location update received",
-              { spaceName, ...eventData },
+              {
+                clientId: update.member.clientId,
+                connectionId: update.member.connectionId,
+                timestamp,
+              },
             );
 
             if (this.shouldOutputJson(flags)) {
               this.logJsonEvent(
                 {
-                  spaceName,
-                  eventType: "location_update",
-                  ...eventData,
+                  location: {
+                    member: {
+                      clientId: update.member.clientId,
+                      connectionId: update.member.connectionId,
+                    },
+                    currentLocation: update.currentLocation,
+                    previousLocation: update.previousLocation,
+                    timestamp,
+                  },
                 },
                 flags,
               );
             } else {
-              this.log(
-                `${formatTimestamp(timestamp)} ${formatClientId(update.member.clientId)} ${formatEventType("updated")} location:`,
-              );
-              this.log(
-                `  ${formatLabel("Current")} ${JSON.stringify(update.currentLocation)}`,
-              );
-              this.log(
-                `  ${formatLabel("Previous")} ${JSON.stringify(update.previousLocation)}`,
-              );
+              this.log(formatTimestamp(timestamp));
+              this.log(formatLocationUpdateBlock(update));
+              this.log("");
             }
           } catch (error) {
             this.fail(error, flags, "locationSubscribe", {

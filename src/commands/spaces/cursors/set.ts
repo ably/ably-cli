@@ -1,6 +1,5 @@
+import type { CursorData, CursorPosition } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
-import chalk from "chalk";
-
 import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
@@ -11,18 +10,6 @@ import {
   formatSuccess,
   formatLabel,
 } from "../../../utils/output.js";
-
-// Define cursor types based on Ably documentation
-interface CursorPosition {
-  x: number;
-  y: number;
-}
-
-interface CursorData {
-  [key: string]: unknown;
-}
-
-// CursorUpdate interface no longer required in this file
 
 export default class SpacesCursorsSet extends SpacesBaseCommand {
   static override args = {
@@ -191,17 +178,31 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            cursor: cursorForOutput,
-            spaceName,
+            cursors: [
+              {
+                clientId: this.realtimeClient!.auth.clientId,
+                connectionId: this.realtimeClient!.connection.id,
+                position: (
+                  cursorForOutput as { position: { x: number; y: number } }
+                ).position,
+                data:
+                  (cursorForOutput as { data?: Record<string, unknown> })
+                    .data ?? null,
+              },
+            ],
           },
           flags,
         );
       } else {
         this.log(
-          formatSuccess(
-            `Set cursor in space ${formatResource(spaceName)} with data: ${chalk.blue(JSON.stringify(cursorForOutput))}.`,
-          ),
+          formatSuccess(`Set cursor in space ${formatResource(spaceName)}.`),
         );
+        const lines: string[] = [];
+        lines.push(`${formatLabel("Position")} (${position.x}, ${position.y})`);
+        if (data) {
+          lines.push(`${formatLabel("Data")} ${JSON.stringify(data)}`);
+        }
+        this.log(lines.join("\n"));
       }
 
       // Decide how long to remain connected

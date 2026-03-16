@@ -8,10 +8,12 @@ import {
   formatListening,
   formatResource,
   formatTimestamp,
-  formatPresenceAction,
-  formatClientId,
   formatLabel,
 } from "../../../utils/output.js";
+import {
+  formatMemberEventBlock,
+  formatMemberOutput,
+} from "../../../utils/spaces-output.js";
 
 export default class SpacesMembersEnter extends SpacesBaseCommand {
   static override args = {
@@ -83,22 +85,14 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         { profileData },
       );
       await this.space!.enter(profileData);
-      const enteredEventData = {
+      this.logCliEvent(flags, "member", "enteredSpace", "Entered space", {
         connectionId: this.realtimeClient!.connection.id,
-        profile: profileData,
-        spaceName,
-        status: "connected",
-      };
-      this.logCliEvent(
-        flags,
-        "member",
-        "enteredSpace",
-        "Entered space",
-        enteredEventData,
-      );
+        profileData,
+      });
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult(enteredEventData, flags);
+        const self = await this.space!.members.getSelf();
+        this.logJsonResult({ members: [formatMemberOutput(self!)] }, flags);
       } else {
         this.log(formatSuccess(`Entered space: ${formatResource(spaceName)}.`));
         if (profileData) {
@@ -171,76 +165,20 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
           timestamp: now,
         });
 
-        const memberEventData = {
-          action,
-          member: {
-            clientId: member.clientId,
-            connectionId: member.connectionId,
-            isConnected: member.isConnected,
-            profileData: member.profileData,
-          },
-          spaceName,
-          timestamp,
-          eventType: "member_update",
-        };
         this.logCliEvent(
           flags,
           "member",
           `update-${action}`,
           `Member event '${action}' received`,
-          memberEventData,
+          { action, clientId, connectionId },
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonEvent(memberEventData, flags);
+          this.logJsonEvent({ member: formatMemberOutput(member) }, flags);
         } else {
-          const { symbol: actionSymbol, color: actionColor } =
-            formatPresenceAction(action);
-
-          this.log(
-            `${formatTimestamp(timestamp)} ${actionColor(actionSymbol)} ${formatClientId(clientId)} ${actionColor(action)}`,
-          );
-
-          const hasProfileData =
-            member.profileData && Object.keys(member.profileData).length > 0;
-
-          if (hasProfileData) {
-            this.log(
-              `  ${formatLabel("Profile")} ${JSON.stringify(member.profileData, null, 2)}`,
-            );
-          } else {
-            // No profile data available
-            this.logCliEvent(
-              flags,
-              "member",
-              "noProfileDataForMember",
-              "No profile data available for member",
-            );
-          }
-
-          if (connectionId === "Unknown") {
-            // Connection ID is unknown
-            this.logCliEvent(
-              flags,
-              "member",
-              "unknownConnectionId",
-              "Connection ID is unknown for member",
-            );
-          } else {
-            this.log(`  ${formatLabel("Connection ID")} ${connectionId}`);
-          }
-
-          if (member.isConnected === false) {
-            this.log(`  ${formatLabel("Status")} Not connected`);
-          } else {
-            // Member is connected
-            this.logCliEvent(
-              flags,
-              "member",
-              "memberConnected",
-              "Member is connected",
-            );
-          }
+          this.log(formatTimestamp(timestamp));
+          this.log(formatMemberEventBlock(member, action));
+          this.log("");
         }
       };
 

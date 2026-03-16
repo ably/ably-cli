@@ -1,17 +1,13 @@
 import { type Lock } from "@ably/spaces";
 import { Args } from "@oclif/core";
-import chalk from "chalk";
 
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
+import { formatListening, formatTimestamp } from "../../../utils/output.js";
 import {
-  formatHeading,
-  formatLabel,
-  formatListening,
-  formatProgress,
-  formatResource,
-  formatTimestamp,
-} from "../../../utils/output.js";
+  formatLockBlock,
+  formatLockOutput,
+} from "../../../utils/spaces-output.js";
 
 export default class SpacesLocksSubscribe extends SpacesBaseCommand {
   static override args = {
@@ -38,35 +34,6 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
 
   private listener: ((lock: Lock) => void) | null = null;
 
-  private displayLockDetails(lock: Lock): void {
-    this.log(`  ${formatLabel("Status")} ${lock.status}`);
-    this.log(
-      `  ${formatLabel("Member")} ${lock.member?.clientId || "Unknown"}`,
-    );
-
-    if (lock.member?.connectionId) {
-      this.log(`  ${formatLabel("Connection ID")} ${lock.member.connectionId}`);
-    }
-
-    if (lock.timestamp) {
-      this.log(
-        `  ${formatLabel("Timestamp")} ${new Date(lock.timestamp).toISOString()}`,
-      );
-    }
-
-    if (lock.attributes) {
-      this.log(
-        `  ${formatLabel("Attributes")} ${JSON.stringify(lock.attributes)}`,
-      );
-    }
-
-    if (lock.reason) {
-      this.log(
-        `  ${formatLabel("Reason")} ${lock.reason.message || lock.reason.toString()}`,
-      );
-    }
-  }
-
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksSubscribe);
     const { space: spaceName } = args;
@@ -91,70 +58,6 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
 
       await this.initializeSpace(flags, spaceName, { enterSpace: true });
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(`Connecting to space: ${formatResource(spaceName)}`),
-        );
-      }
-
-      // Get current locks
-      this.logCliEvent(
-        flags,
-        "lock",
-        "gettingInitial",
-        "Fetching initial locks",
-      );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Fetching current locks for space ${formatResource(spaceName)}`,
-          ),
-        );
-      }
-
-      const locks = await this.space!.locks.getAll();
-      this.logCliEvent(
-        flags,
-        "lock",
-        "gotInitial",
-        `Fetched ${locks.length} initial locks`,
-        { count: locks.length, locks },
-      );
-
-      // Output current locks
-      if (locks.length === 0) {
-        if (!this.shouldOutputJson(flags)) {
-          this.log(
-            chalk.yellow("No locks are currently active in this space."),
-          );
-        }
-      } else if (this.shouldOutputJson(flags)) {
-        this.logJsonResult(
-          {
-            locks: locks.map((lock) => ({
-              id: lock.id,
-              member: lock.member,
-              status: lock.status,
-              timestamp: lock.timestamp,
-              ...(lock.attributes && { attributes: lock.attributes }),
-              ...(lock.reason && { reason: lock.reason }),
-            })),
-            spaceName,
-            status: "connected",
-          },
-          flags,
-        );
-      } else {
-        this.log(
-          `\n${formatHeading("Current locks")} (${chalk.bold(locks.length.toString())}):\n`,
-        );
-
-        for (const lock of locks) {
-          this.log(`- Lock ID: ${formatResource(lock.id)}`);
-          this.displayLockDetails(lock);
-        }
-      }
-
       // Subscribe to lock events
       this.logCliEvent(
         flags,
@@ -176,35 +79,17 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
       this.listener = (lock: Lock) => {
         const timestamp = new Date().toISOString();
 
-        const eventData = {
-          lock: {
-            id: lock.id,
-            member: lock.member,
-            status: lock.status,
-            timestamp: lock.timestamp,
-            ...(lock.attributes && { attributes: lock.attributes }),
-            ...(lock.reason && { reason: lock.reason }),
-          },
-          spaceName,
-          timestamp,
-          eventType: "lock_event",
-        };
-
-        this.logCliEvent(
-          flags,
-          "lock",
-          "event-update",
-          "Lock event received",
-          eventData,
-        );
+        this.logCliEvent(flags, "lock", "event-update", "Lock event received", {
+          lockId: lock.id,
+          status: lock.status,
+        });
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonEvent(eventData, flags);
+          this.logJsonEvent({ lock: formatLockOutput(lock) }, flags);
         } else {
-          this.log(
-            `${formatTimestamp(timestamp)} Lock ${formatResource(lock.id)} updated`,
-          );
-          this.displayLockDetails(lock);
+          this.log(formatTimestamp(timestamp));
+          this.log(formatLockBlock(lock));
+          this.log("");
         }
       };
 

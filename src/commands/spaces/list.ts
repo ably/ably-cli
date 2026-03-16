@@ -136,8 +136,8 @@ export default class SpacesList extends SpacesBaseCommand {
         this.logJsonResult(
           {
             spaces: spaces.map((space) => ({
-              metrics: space.status?.occupancy?.metrics || {},
               spaceName: space.spaceName,
+              metrics: space.status?.occupancy?.metrics || {},
             })),
             hasMore,
             ...(next && { next }),
