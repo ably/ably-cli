@@ -10,7 +10,7 @@ export interface ControlApiOptions {
 
 export interface App {
   accountId: string;
-  apnsAuthType?: string | null;
+  apnsAuthType?: "certificate" | "token" | null;
   apnsCertificate?: string | null;
   apnsCertificateConfigured?: boolean;
   apnsIssuerKey?: string | null;
