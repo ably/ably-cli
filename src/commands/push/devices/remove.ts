@@ -1,8 +1,8 @@
-import { Args, Flags } from "@oclif/core";
+import { Args } from "@oclif/core";
 import inquirer from "inquirer";
 
 import { AblyBaseCommand } from "../../../base-command.js";
-import { productApiFlags } from "../../../flags.js";
+import { forceFlag, productApiFlags } from "../../../flags.js";
 import { BaseFlags } from "../../../types/cli.js";
 import {
   formatProgress,
@@ -28,11 +28,7 @@ export default class PushDevicesRemove extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
-    force: Flags.boolean({
-      char: "f",
-      default: false,
-      description: "Skip confirmation prompt",
-    }),
+    ...forceFlag,
   };
 
   async run(): Promise<void> {

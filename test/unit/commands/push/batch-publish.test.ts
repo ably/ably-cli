@@ -58,7 +58,9 @@ describe("push:batch-publish command", () => {
       expect(result).toHaveProperty("succeeded");
       expect(result).toHaveProperty("failed", 0);
     });
+  });
 
+  describe("argument validation", () => {
     it("should require --payload flag", async () => {
       const { error } = await runCommand(
         ["push:batch-publish"],

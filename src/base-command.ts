@@ -1469,6 +1469,21 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   }
 
   /**
+   * Parse a flag value as a JSON object. Rejects arrays and primitives.
+   */
+  protected parseJsonObjectFlag(
+    value: string,
+    flagName: string,
+    flags: BaseFlags = {},
+  ): Record<string, unknown> {
+    const parsed = this.parseJsonFlag(value, flagName, flags);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      this.fail(`${flagName} must be a JSON object`, flags, "parse");
+    }
+    return parsed as Record<string, unknown>;
+  }
+
+  /**
    * Unified error handler for command catch blocks.
    * Logs the error event, preserves structured error data (Ably codes, HTTP status),
    * and outputs either JSON error envelope or human-readable error.

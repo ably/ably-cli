@@ -14,6 +14,18 @@ describe("push:publish command", () => {
 
   standardHelpTests("push:publish", import.meta.url);
   standardArgValidationTests("push:publish", import.meta.url);
+
+  describe("argument validation", () => {
+    it("should require a recipient", async () => {
+      const { error } = await runCommand(
+        ["push:publish", "--title", "Hello"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+    });
+  });
+
   standardFlagTests("push:publish", import.meta.url, [
     "--json",
     "--device-id",
@@ -87,15 +99,6 @@ describe("push:publish command", () => {
           data: { key: "val" },
         }),
       );
-    });
-
-    it("should require a recipient", async () => {
-      const { error } = await runCommand(
-        ["push:publish", "--title", "Hello"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
     });
 
     it("should output JSON when requested", async () => {

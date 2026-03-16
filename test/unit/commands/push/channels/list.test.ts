@@ -71,7 +71,9 @@ describe("push:channels:list command", () => {
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("subscriptions");
     });
+  });
 
+  describe("argument validation", () => {
     it("should require --channel flag", async () => {
       const { error } = await runCommand(
         ["push:channels:list"],

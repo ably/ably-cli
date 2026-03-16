@@ -5,7 +5,6 @@ import {
   formatLabel,
   formatProgress,
   formatResource,
-  formatSuccess,
 } from "../../../utils/output.js";
 
 export default class PushConfigShow extends ControlBaseCommand {
@@ -75,9 +74,7 @@ export default class PushConfigShow extends ControlBaseCommand {
           return;
         }
 
-        this.log(
-          formatSuccess(`Push configuration for app ${formatResource(appId)}.`),
-        );
+        this.log(`Push configuration for app ${formatResource(appId)}:`);
         this.log("");
 
         this.log("APNs Configuration:");

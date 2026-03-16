@@ -14,10 +14,12 @@ import {
 
 describe("push:config:clear-fcm command", () => {
   let appId: string;
+  let accountId: string;
 
   beforeEach(() => {
     const ctx = getControlApiContext();
     appId = ctx.appId;
+    accountId = ctx.accountId;
     process.env.ABLY_ACCESS_TOKEN = "fake_access_token";
   });
 
@@ -39,15 +41,15 @@ describe("push:config:clear-fcm command", () => {
       nockControl()
         .get("/v1/me")
         .reply(200, {
-          account: { id: "test-account", name: "Test" },
+          account: { id: accountId, name: "Test" },
           user: { email: "test@test.com" },
         });
       nockControl()
-        .get(`/v1/accounts/test-account/apps`)
+        .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [
           {
             id: appId,
-            accountId: "test-account",
+            accountId,
             name: "Test App",
             status: "active",
             created: 1640995200000,
@@ -70,15 +72,15 @@ describe("push:config:clear-fcm command", () => {
       nockControl()
         .get("/v1/me")
         .reply(200, {
-          account: { id: "test-account", name: "Test" },
+          account: { id: accountId, name: "Test" },
           user: { email: "test@test.com" },
         });
       nockControl()
-        .get(`/v1/accounts/test-account/apps`)
+        .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [
           {
             id: appId,
-            accountId: "test-account",
+            accountId,
             name: "Test App",
             status: "active",
             created: 1640995200000,
@@ -100,15 +102,15 @@ describe("push:config:clear-fcm command", () => {
       nockControl()
         .get("/v1/me")
         .reply(200, {
-          account: { id: "test-account", name: "Test" },
+          account: { id: accountId, name: "Test" },
           user: { email: "test@test.com" },
         });
       nockControl()
-        .get(`/v1/accounts/test-account/apps`)
+        .get(`/v1/accounts/${accountId}/apps`)
         .reply(200, [
           {
             id: appId,
-            accountId: "test-account",
+            accountId,
             name: "Test App",
             status: "active",
             created: 1640995200000,

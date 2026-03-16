@@ -2,7 +2,7 @@ import { Flags } from "@oclif/core";
 import inquirer from "inquirer";
 
 import { AblyBaseCommand } from "../../../base-command.js";
-import { productApiFlags } from "../../../flags.js";
+import { forceFlag, productApiFlags } from "../../../flags.js";
 import { BaseFlags } from "../../../types/cli.js";
 import {
   formatProgress,
@@ -33,11 +33,7 @@ export default class PushChannelsRemove extends AblyBaseCommand {
       description: "Client ID to unsubscribe",
       exclusive: ["device-id"],
     }),
-    force: Flags.boolean({
-      char: "f",
-      default: false,
-      description: "Skip confirmation prompt",
-    }),
+    ...forceFlag,
   };
 
   async run(): Promise<void> {

@@ -147,14 +147,18 @@ describe("push:devices:save command", () => {
             recipient: {
               transportType: "web",
               targetUrl: "https://push.example.com",
-              encryptionKey: "BNcRdreALRFX...",
-              auth: "tBHItJI5svbpC...",
+              encryptionKey: {
+                p256dh: "BNcRdreALRFX...",
+                auth: "tBHItJI5svbpC...",
+              },
             },
           },
         }),
       );
     });
+  });
 
+  describe("argument validation", () => {
     it("should require web push flags for web transport", async () => {
       const { error } = await runCommand(
         [

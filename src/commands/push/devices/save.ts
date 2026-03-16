@@ -113,7 +113,7 @@ export default class PushDevicesSave extends AblyBaseCommand {
         }
 
         const transportType = flags["transport-type"];
-        let recipient: Record<string, string>;
+        let recipient: Record<string, unknown>;
 
         if (transportType === "web") {
           if (!flags["target-url"]) {
@@ -140,8 +140,10 @@ export default class PushDevicesSave extends AblyBaseCommand {
           recipient = {
             transportType: "web",
             targetUrl: flags["target-url"],
-            encryptionKey: flags["p256dh-key"],
-            auth: flags["auth-secret"],
+            encryptionKey: {
+              p256dh: flags["p256dh-key"],
+              auth: flags["auth-secret"],
+            },
           };
         } else {
           if (!flags["device-token"]) {
@@ -171,30 +173,11 @@ export default class PushDevicesSave extends AblyBaseCommand {
         }
 
         if (flags.metadata) {
-          let parsedMetadata: unknown;
-          try {
-            parsedMetadata = JSON.parse(flags.metadata);
-          } catch {
-            this.fail(
-              "--metadata must be valid JSON",
-              flags as BaseFlags,
-              "pushDeviceSave",
-            );
-          }
-
-          if (
-            !parsedMetadata ||
-            typeof parsedMetadata !== "object" ||
-            Array.isArray(parsedMetadata)
-          ) {
-            this.fail(
-              "--metadata must be a JSON object",
-              flags as BaseFlags,
-              "pushDeviceSave",
-            );
-          }
-
-          deviceData.metadata = parsedMetadata;
+          deviceData.metadata = this.parseJsonObjectFlag(
+            flags.metadata,
+            "--metadata",
+            flags as BaseFlags,
+          );
         }
       }
 

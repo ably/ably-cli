@@ -94,19 +94,11 @@ export default class PushPublish extends AblyBaseCommand {
       } else if (flags["client-id"]) {
         recipient = { clientId: flags["client-id"] };
       } else {
-        try {
-          const parsed = JSON.parse(flags.recipient!);
-          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-            throw new Error("not an object");
-          }
-          recipient = parsed as Record<string, unknown>;
-        } catch {
-          this.fail(
-            "--recipient must be a valid JSON object",
-            flags as BaseFlags,
-            "pushPublish",
-          );
-        }
+        recipient = this.parseJsonObjectFlag(
+          flags.recipient!,
+          "--recipient",
+          flags as BaseFlags,
+        );
       }
 
       // Build notification payload
@@ -140,19 +132,11 @@ export default class PushPublish extends AblyBaseCommand {
         } else {
           jsonString = flags.payload;
         }
-        try {
-          const parsed = JSON.parse(jsonString);
-          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-            throw new Error("not an object");
-          }
-          payload = parsed as Record<string, unknown>;
-        } catch {
-          this.fail(
-            "--payload must be a valid JSON object",
-            flags as BaseFlags,
-            "pushPublish",
-          );
-        }
+        payload = this.parseJsonObjectFlag(
+          jsonString,
+          "--payload",
+          flags as BaseFlags,
+        );
       } else {
         const notification: Record<string, unknown> = {};
         if (flags.title) notification.title = flags.title;
@@ -170,23 +154,11 @@ export default class PushPublish extends AblyBaseCommand {
         }
 
         if (flags.data) {
-          try {
-            const parsed = JSON.parse(flags.data);
-            if (
-              !parsed ||
-              typeof parsed !== "object" ||
-              Array.isArray(parsed)
-            ) {
-              throw new Error("not an object");
-            }
-            payload.data = parsed;
-          } catch {
-            this.fail(
-              "--data must be a valid JSON object",
-              flags as BaseFlags,
-              "pushPublish",
-            );
-          }
+          payload.data = this.parseJsonObjectFlag(
+            flags.data,
+            "--data",
+            flags as BaseFlags,
+          );
         }
       }
 
@@ -205,49 +177,25 @@ export default class PushPublish extends AblyBaseCommand {
 
       // Add platform-specific overrides
       if (flags.apns) {
-        try {
-          const parsed = JSON.parse(flags.apns);
-          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-            throw new Error("not an object");
-          }
-          payload.apns = parsed;
-        } catch {
-          this.fail(
-            "--apns must be a valid JSON object",
-            flags as BaseFlags,
-            "pushPublish",
-          );
-        }
+        payload.apns = this.parseJsonObjectFlag(
+          flags.apns,
+          "--apns",
+          flags as BaseFlags,
+        );
       }
       if (flags.fcm) {
-        try {
-          const parsed = JSON.parse(flags.fcm);
-          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-            throw new Error("not an object");
-          }
-          payload.fcm = parsed;
-        } catch {
-          this.fail(
-            "--fcm must be a valid JSON object",
-            flags as BaseFlags,
-            "pushPublish",
-          );
-        }
+        payload.fcm = this.parseJsonObjectFlag(
+          flags.fcm,
+          "--fcm",
+          flags as BaseFlags,
+        );
       }
       if (flags.web) {
-        try {
-          const parsed = JSON.parse(flags.web);
-          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-            throw new Error("not an object");
-          }
-          payload.web = parsed;
-        } catch {
-          this.fail(
-            "--web must be a valid JSON object",
-            flags as BaseFlags,
-            "pushPublish",
-          );
-        }
+        payload.web = this.parseJsonObjectFlag(
+          flags.web,
+          "--web",
+          flags as BaseFlags,
+        );
       }
 
       if (!this.shouldOutputJson(flags)) {

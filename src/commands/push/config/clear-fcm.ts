@@ -2,6 +2,7 @@ import { Flags } from "@oclif/core";
 import inquirer from "inquirer";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { forceFlag } from "../../../flags.js";
 import {
   formatProgress,
   formatResource,
@@ -24,11 +25,7 @@ export default class PushConfigClearFcm extends ControlBaseCommand {
     app: Flags.string({
       description: "The app ID or name (defaults to current app)",
     }),
-    force: Flags.boolean({
-      char: "f",
-      default: false,
-      description: "Skip confirmation prompt",
-    }),
+    ...forceFlag,
   };
 
   async run(): Promise<void> {
