@@ -53,7 +53,7 @@ describe("push:config:clear-fcm command", () => {
             created: 1640995200000,
             modified: 1640995200000,
             tlsOnly: false,
-            fcmServiceAccount: "some-account",
+            fcmServiceAccountConfigured: true,
           },
         ]);
       nockControl().patch(`/v1/apps/${appId}`).reply(200, { id: appId });
@@ -114,7 +114,7 @@ describe("push:config:clear-fcm command", () => {
             created: 1640995200000,
             modified: 1640995200000,
             tlsOnly: false,
-            fcmServiceAccount: "some-account",
+            fcmServiceAccountConfigured: true,
           },
         ]);
       nockControl().patch(`/v1/apps/${appId}`).reply(200, { id: appId });

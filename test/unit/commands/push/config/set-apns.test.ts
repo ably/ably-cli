@@ -193,6 +193,22 @@ describe("push:config:set-apns command", () => {
       expect(error).toBeDefined();
     });
 
+    it("should upload P12 certificate with --sandbox and PATCH sandbox flag", async () => {
+      nockControl()
+        .post(`/v1/apps/${appId}/pkcs12`)
+        .reply(200, { id: "cert-123" });
+      nockControl()
+        .patch(`/v1/apps/${appId}`)
+        .reply(200, { id: appId, apnsUseSandboxEndpoint: true });
+
+      const { stdout } = await runCommand(
+        ["push:config:set-apns", "--certificate", p8FixturePath, "--sandbox"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("APNs P12 certificate uploaded");
+    });
+
     it("should fail when certificate file not found", async () => {
       const { error } = await runCommand(
         ["push:config:set-apns", "--certificate", "/nonexistent/cert.p12"],

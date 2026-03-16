@@ -85,7 +85,7 @@ describe("push:config:show command", () => {
             modified: 1640995200000,
             tlsOnly: false,
             apnsAuthType: "token",
-            apnsSigningKey: "some-key",
+            apnsSigningKeyConfigured: true,
             apnsSigningKeyId: "KEY123",
             apnsIssuerKey: "TEAM456",
             apnsTopicHeader: "com.example.app",
@@ -121,7 +121,7 @@ describe("push:config:show command", () => {
             created: 1640995200000,
             modified: 1640995200000,
             tlsOnly: false,
-            fcmServiceAccount: "some-account",
+            fcmServiceAccountConfigured: true,
             fcmProjectId: "my-project",
           },
         ]);

@@ -64,7 +64,7 @@ export default class PushConfigClearFcm extends ControlBaseCommand {
         }
 
         const app = await controlApi.getApp(appId);
-        const fcmConfigured = !!app.fcmServiceAccount;
+        const fcmConfigured = !!app.fcmServiceAccountConfigured;
 
         if (!fcmConfigured) {
           if (this.shouldOutputJson(flags)) {

@@ -43,8 +43,10 @@ export default class PushConfigShow extends ControlBaseCommand {
 
         const app = await controlApi.getApp(appId);
 
-        const apnsConfigured = !!(app.apnsCertificate || app.apnsSigningKey);
-        const fcmConfigured = !!app.fcmServiceAccount;
+        const apnsConfigured = !!(
+          app.apnsCertificateConfigured || app.apnsSigningKeyConfigured
+        );
+        const fcmConfigured = !!app.fcmServiceAccountConfigured;
 
         const config = {
           appId,
@@ -56,19 +58,15 @@ export default class PushConfigShow extends ControlBaseCommand {
             ...(app.apnsIssuerKey ? { teamId: app.apnsIssuerKey } : {}),
             ...(app.apnsSigningKeyId ? { keyId: app.apnsSigningKeyId } : {}),
             ...(app.apnsAuthType ? { authType: app.apnsAuthType } : {}),
-            hasP12Certificate: !!app.apnsCertificate,
-            hasP8Key: !!app.apnsSigningKey,
+            hasP12Certificate: !!app.apnsCertificateConfigured,
+            hasP8Key: !!app.apnsSigningKeyConfigured,
           },
           fcm: {
             configured: fcmConfigured,
             ...(app.fcmProjectId ? { projectId: app.fcmProjectId } : {}),
           },
           web: {
-            available: !!(
-              app.apnsCertificate ||
-              app.apnsSigningKey ||
-              fcmConfigured
-            ),
+            available: !!(apnsConfigured || fcmConfigured),
           },
         };
 

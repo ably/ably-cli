@@ -12,9 +12,11 @@ export interface App {
   accountId: string;
   apnsAuthType?: string | null;
   apnsCertificate?: string | null;
+  apnsCertificateConfigured?: boolean;
   apnsIssuerKey?: string | null;
   apnsPrivateKey?: string | null;
   apnsSigningKey?: string | null;
+  apnsSigningKeyConfigured?: boolean;
   apnsSigningKeyId?: string | null;
   apnsTopicHeader?: string | null;
   apnsUseSandboxEndpoint?: boolean | null;
@@ -22,6 +24,7 @@ export interface App {
   created: number;
   fcmProjectId?: string | null;
   fcmServiceAccount?: string | null;
+  fcmServiceAccountConfigured?: boolean;
   id: string;
   modified: number;
   name: string;

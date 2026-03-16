@@ -1405,8 +1405,8 @@ Delete an annotation from a channel message
 
 ```
 USAGE
-  $ ably channels annotations delete CHANNEL SERIAL TYPE [-v] [--json | --pretty-json] [--client-id <value>] [--count <value>]
-    [-n <value>]
+  $ ably channels annotations delete CHANNEL SERIAL TYPE [-v] [--json | --pretty-json] [--client-id <value>] [-n
+  <value>]
 
 ARGUMENTS
   CHANNEL  The channel name
@@ -1418,7 +1418,6 @@ FLAGS
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
-      --count=<value>      The annotation count (for multiple.v1 types)
       --json               Output in JSON format
       --pretty-json        Output in colorized JSON format
 
@@ -1428,7 +1427,7 @@ DESCRIPTION
 EXAMPLES
   $ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --name thumbsup
 
-  $ ably channels annotations delete my-channel "01234567890:0" "reactions:multiple.v1" --name thumbsup --count 2
+  $ ably channels annotations delete my-channel "01234567890:0" "reactions:multiple.v1" --name thumbsup
 
   $ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --json
 
@@ -1452,7 +1451,7 @@ ARGUMENTS
 FLAGS
   -v, --verbose        Output verbose logs
       --json           Output in JSON format
-      --limit=<value>  [default: 50] Maximum number of results to return (default: 50)
+      --limit=<value>  [default: 100] Maximum number of results to return (default: 100)
       --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
@@ -2885,7 +2884,7 @@ DESCRIPTION
   Publish push notifications to multiple recipients in a batch
 
 EXAMPLES
-  $ ably push batch-publish --payload '[{"recipient":{"deviceId":"dev1"},"notification":{"title":"Hello"}}]'
+  $ ably push batch-publish --payload '[{"recipient":{"deviceId":"dev1"},"payload":{"notification":{"title":"Hello","body":"World"}}}]'
 
   $ ably push batch-publish --payload @batch.json
 

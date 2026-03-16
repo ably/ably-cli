@@ -248,5 +248,53 @@ describe("push:devices:save command", () => {
 
       expect(error).toBeDefined();
     });
+
+    it("should reject non-object --metadata (string)", async () => {
+      const { error } = await runCommand(
+        [
+          "push:devices:save",
+          "--id",
+          "device-1",
+          "--platform",
+          "ios",
+          "--form-factor",
+          "phone",
+          "--transport-type",
+          "apns",
+          "--device-token",
+          "token123",
+          "--metadata",
+          "42",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("must be a JSON object");
+    });
+
+    it("should reject non-object --metadata (array)", async () => {
+      const { error } = await runCommand(
+        [
+          "push:devices:save",
+          "--id",
+          "device-1",
+          "--platform",
+          "ios",
+          "--form-factor",
+          "phone",
+          "--transport-type",
+          "apns",
+          "--device-token",
+          "token123",
+          "--metadata",
+          "[1,2,3]",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("must be a JSON object");
+    });
   });
 });

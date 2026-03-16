@@ -53,7 +53,7 @@ describe("push:config:clear-apns command", () => {
             created: 1640995200000,
             modified: 1640995200000,
             tlsOnly: false,
-            apnsCertificate: "some-cert",
+            apnsCertificateConfigured: true,
           },
         ]);
       nockControl().patch(`/v1/apps/${appId}`).reply(200, { id: appId });
@@ -114,7 +114,7 @@ describe("push:config:clear-apns command", () => {
             created: 1640995200000,
             modified: 1640995200000,
             tlsOnly: false,
-            apnsSigningKey: "some-key",
+            apnsSigningKeyConfigured: true,
           },
         ]);
       nockControl().patch(`/v1/apps/${appId}`).reply(200, { id: appId });

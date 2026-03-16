@@ -65,9 +65,7 @@ export default class PushConfigClearApns extends ControlBaseCommand {
 
         const app = await controlApi.getApp(appId);
         const apnsConfigured = !!(
-          app.apnsCertificate ||
-          app.apnsSigningKey ||
-          app.apnsPrivateKey
+          app.apnsCertificateConfigured || app.apnsSigningKeyConfigured
         );
 
         if (!apnsConfigured) {

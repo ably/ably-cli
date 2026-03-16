@@ -171,8 +171,9 @@ export default class PushDevicesSave extends AblyBaseCommand {
         }
 
         if (flags.metadata) {
+          let parsedMetadata: unknown;
           try {
-            deviceData.metadata = JSON.parse(flags.metadata);
+            parsedMetadata = JSON.parse(flags.metadata);
           } catch {
             this.fail(
               "--metadata must be valid JSON",
@@ -180,6 +181,20 @@ export default class PushDevicesSave extends AblyBaseCommand {
               "pushDeviceSave",
             );
           }
+
+          if (
+            !parsedMetadata ||
+            typeof parsedMetadata !== "object" ||
+            Array.isArray(parsedMetadata)
+          ) {
+            this.fail(
+              "--metadata must be a JSON object",
+              flags as BaseFlags,
+              "pushDeviceSave",
+            );
+          }
+
+          deviceData.metadata = parsedMetadata;
         }
       }
 
