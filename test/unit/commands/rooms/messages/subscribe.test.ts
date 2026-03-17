@@ -43,7 +43,7 @@ describe("rooms:messages:subscribe command", () => {
       expect(stdout).toContain("Subscribed to room");
     });
 
-    it("should display received messages", async () => {
+    it("should display received messages with action and serial", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
 
@@ -51,6 +51,7 @@ describe("rooms:messages:subscribe command", () => {
         (callback: (event: unknown) => void) => {
           setTimeout(() => {
             callback({
+              type: "message.created",
               message: {
                 text: "Hello from chat",
                 clientId: "sender-client",
@@ -70,6 +71,9 @@ describe("rooms:messages:subscribe command", () => {
 
       expect(stdout).toContain("sender-client");
       expect(stdout).toContain("Hello from chat");
+      expect(stdout).toContain("message.created");
+      expect(stdout).toContain("Serial");
+      expect(stdout).toContain("msg-123");
     });
 
     it("should display metadata when --show-metadata is passed", async () => {
@@ -80,6 +84,7 @@ describe("rooms:messages:subscribe command", () => {
         (callback: (event: unknown) => void) => {
           setTimeout(() => {
             callback({
+              type: "message.created",
               message: {
                 text: "Msg with meta",
                 clientId: "user1",
@@ -145,6 +150,10 @@ describe("rooms:messages:subscribe command", () => {
       expect(record).toHaveProperty("type", "event");
       expect(record).toHaveProperty("command", "rooms:messages:subscribe");
       expect(record).toHaveProperty("room", "test-room");
+      expect(record).toHaveProperty("eventType", "message.created");
+      const msg = record.message as Record<string, unknown>;
+      expect(msg).toHaveProperty("serial", "msg-json");
+      expect(msg).toHaveProperty("action", "message.created");
     });
   });
 

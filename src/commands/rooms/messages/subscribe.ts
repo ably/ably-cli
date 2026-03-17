@@ -11,6 +11,7 @@ import {
   formatTimestamp,
   formatMessageTimestamp,
   formatIndex,
+  formatEventType,
 } from "../../../utils/output.js";
 
 // Define message interface
@@ -18,6 +19,8 @@ interface ChatMessage {
   clientId: string;
   text: string;
   timestamp: number | Date; // Support both timestamp types
+  serial: string;
+  action: string;
   metadata?: Record<string, unknown>;
   [key: string]: unknown;
 }
@@ -97,10 +100,9 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         clientId: message.clientId,
         text: message.text,
         timestamp: message.timestamp,
+        serial: message.serial,
+        action: String(messageEvent.type),
         ...(message.metadata ? { metadata: message.metadata } : {}),
-        ...(flags["sequence-numbers"]
-          ? { sequence: this.sequenceCounter }
-          : {}),
       };
       this.logCliEvent(flags, "message", "received", "Message received", {
         message: messageLog,
@@ -134,7 +136,12 @@ export default class MessagesSubscribe extends ChatBaseCommand {
 
         // Message content with consistent formatting
         this.log(
-          `${roomPrefix}${formatTimestamp(timestamp)}${sequencePrefix} ${chalk.blue(`${author}:`)} ${message.text}`,
+          `${roomPrefix}${formatTimestamp(timestamp)}${sequencePrefix} ${formatEventType(String(messageEvent.type))} ${chalk.blue(`${author}:`)} ${message.text}`,
+        );
+
+        // Show serial
+        this.log(
+          `${roomPrefix}  ${formatLabel("Serial")} ${formatResource(message.serial)}`,
         );
 
         // Show metadata if enabled and available

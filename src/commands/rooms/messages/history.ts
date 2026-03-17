@@ -11,6 +11,7 @@ import {
   formatResource,
   formatTimestamp,
   formatMessageTimestamp,
+  formatEventType,
 } from "../../../utils/output.js";
 import { parseTimestamp } from "../../../utils/time.js";
 
@@ -141,9 +142,9 @@ export default class MessagesHistory extends ChatBaseCommand {
               clientId: message.clientId,
               text: message.text,
               timestamp: message.timestamp,
-              ...(flags["show-metadata"] && message.metadata
-                ? { metadata: message.metadata }
-                : {}),
+              serial: message.serial,
+              action: String(message.action),
+              ...(message.metadata ? { metadata: message.metadata } : {}),
             })),
             room: args.room,
           },
@@ -166,7 +167,12 @@ export default class MessagesHistory extends ChatBaseCommand {
             const author = message.clientId || "Unknown";
 
             this.log(
-              `${formatTimestamp(timestamp)} ${chalk.blue(`${author}:`)} ${message.text}`,
+              `${formatTimestamp(timestamp)} ${formatEventType(String(message.action))} ${chalk.blue(`${author}:`)} ${message.text}`,
+            );
+
+            // Show serial
+            this.log(
+              `  ${formatLabel("Serial")} ${formatResource(message.serial)}`,
             );
 
             // Show metadata if enabled and available
