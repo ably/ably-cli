@@ -3,6 +3,7 @@ import { Args, Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatCapabilityInline } from "../../../utils/key-display.js";
 import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
+import { formatLabel, formatResource } from "../../../utils/output.js";
 
 export default class KeysUpdateCommand extends ControlBaseCommand {
   static args = {
@@ -24,7 +25,7 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
   static flags = {
     ...ControlBaseCommand.globalFlags,
     app: Flags.string({
-      description: "The app ID (defaults to current app)",
+      description: "The app ID or name (defaults to current app)",
       env: "ABLY_APP_ID",
     }),
     capabilities: Flags.string({
@@ -40,22 +41,7 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(KeysUpdateCommand);
 
-    let appId = flags.app || this.configManager.getCurrentAppId();
-    let keyId = args.keyName;
-
-    const parsed = parseKeyIdentifier(args.keyName);
-    if (parsed.appId) appId = parsed.appId;
-    keyId = parsed.keyId;
-
-    if (!appId) {
-      this.fail(
-        'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
-        flags,
-        "keyUpdate",
-      );
-    }
-
-    // Check if any update flags were provided
+    // Check if any update flags were provided before doing any API calls
     if (!flags.name && !flags.capabilities) {
       this.fail(
         "No updates specified. Please provide at least one property to update (--name or --capabilities).",
@@ -63,6 +49,13 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
         "keyUpdate",
       );
     }
+
+    let keyId = args.keyName;
+
+    const parsed = parseKeyIdentifier(args.keyName);
+    keyId = parsed.keyId;
+
+    const appId = parsed.appId ?? (await this.requireAppId(flags));
 
     try {
       const controlApi = this.createControlApi(flags);
@@ -104,36 +97,36 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
       const keyName = `${updatedKey.appId}.${updatedKey.id}`;
 
       if (this.shouldOutputJson(flags)) {
-        const result: Record<string, unknown> = { keyName };
+        const keyData: Record<string, unknown> = { keyName };
         if (flags.name) {
-          result.name = {
+          keyData.name = {
             before: originalKey.name || "Unnamed key",
             after: updatedKey.name || "Unnamed key",
           };
         }
         if (flags.capabilities) {
-          result.capabilities = {
+          keyData.capabilities = {
             before: originalKey.capability,
             after: updatedKey.capability,
           };
         }
-        this.logJsonResult(result, flags);
+        this.logJsonResult({ key: keyData }, flags);
       } else {
-        this.log(`Key Name: ${keyName}`);
+        this.log(`${formatLabel("Key Name")} ${formatResource(keyName)}`);
 
         if (flags.name) {
           this.log(
-            `Key Label: "${originalKey.name || "Unnamed key"}" → "${updatedKey.name || "Unnamed key"}"`,
+            `${formatLabel("Key Label")} "${originalKey.name || "Unnamed key"}" → "${updatedKey.name || "Unnamed key"}"`,
           );
         }
 
         if (flags.capabilities) {
-          this.log(`Capabilities:`);
+          this.log(`${formatLabel("Capabilities")}`);
           this.log(
-            `  Before: ${formatCapabilityInline(originalKey.capability as Record<string, string[]>)}`,
+            `  ${formatLabel("Before")} ${formatCapabilityInline(originalKey.capability as Record<string, string[]>)}`,
           );
           this.log(
-            `  After:  ${formatCapabilityInline(updatedKey.capability as Record<string, string[]>)}`,
+            `  ${formatLabel("After")} ${formatCapabilityInline(updatedKey.capability as Record<string, string[]>)}`,
           );
         }
       }

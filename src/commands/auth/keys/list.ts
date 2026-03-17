@@ -3,6 +3,11 @@ import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
+import {
+  formatHeading,
+  formatLabel,
+  formatResource,
+} from "../../../utils/output.js";
 
 export default class KeysListCommand extends ControlBaseCommand {
   static description = "List all keys in the app";
@@ -17,7 +22,7 @@ export default class KeysListCommand extends ControlBaseCommand {
   static flags = {
     ...ControlBaseCommand.globalFlags,
     app: Flags.string({
-      description: "The app ID (defaults to current app)",
+      description: "The app ID or name (defaults to current app)",
       env: "ABLY_APP_ID",
     }),
   };
@@ -25,19 +30,12 @@ export default class KeysListCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(KeysListCommand);
 
-    // Display authentication information
+    // Get app ID from flag or current config (resolves app names to IDs)
+    // Must resolve before showAuthInfoIfNeeded so --app names display correctly
+    const appId = await this.requireAppId(flags);
+
+    // Display authentication information (after app resolution so name→ID is correct)
     await this.showAuthInfoIfNeeded(flags);
-
-    // Get app ID from flag or current config
-    const appId = flags.app || this.configManager.getCurrentAppId();
-
-    if (!appId) {
-      this.fail(
-        'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
-        flags,
-        "keyList",
-      );
-    }
 
     try {
       const controlApi = this.createControlApi(flags);
@@ -81,14 +79,17 @@ export default class KeysListCommand extends ControlBaseCommand {
           const keyName = `${key.appId}.${key.id}`;
           const isCurrent = keyName === currentKeyName;
           const prefix = isCurrent ? chalk.green("▶ ") : "  ";
-          const titleStyle = isCurrent ? chalk.green.bold : chalk.bold;
 
           this.log(
             prefix +
-              titleStyle(`Key Name: ${keyName}`) +
+              formatHeading(
+                `${formatLabel("Key Name")} ${formatResource(keyName)}`,
+              ) +
               (isCurrent ? chalk.green(" (current)") : ""),
           );
-          this.log(`  Key Label: ${key.name || "Unnamed key"}`);
+          this.log(
+            `  ${formatLabel("Key Label")} ${key.name || "Unnamed key"}`,
+          );
 
           for (const line of formatCapabilities(
             key.capability as Record<string, string[] | string>,

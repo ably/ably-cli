@@ -1,6 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
+import {
+  mockAppResolution,
+  controlApiCleanup,
+} from "../../../../helpers/control-api-test-helpers.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -8,6 +12,10 @@ import {
 } from "../../../../helpers/standard-tests.js";
 
 describe("auth:keys:current command", () => {
+  afterEach(() => {
+    controlApiCleanup();
+  });
+
   describe("functionality", () => {
     it("should display the current API key", async () => {
       const mockConfig = getMockConfigManager();
@@ -43,6 +51,9 @@ describe("auth:keys:current command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "auth:keys:current");
+      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("app");
       expect(result).toHaveProperty("key");
       expect(result.key).toHaveProperty("value");
@@ -69,6 +80,7 @@ describe("auth:keys:current command", () => {
     it("should accept --app flag to specify a different app", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
+      mockAppResolution(appId);
       const keyId = mockConfig.getKeyId()!;
       const { stdout } = await runCommand(
         ["auth:keys:current", "--app", appId],

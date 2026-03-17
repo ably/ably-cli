@@ -3,6 +3,7 @@ import { Args, Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { ControlApi } from "../../../services/control-api.js";
 import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
+import { formatResource, formatSuccess } from "../../../utils/output.js";
 
 export default class KeysSwitchCommand extends ControlBaseCommand {
   static args = {
@@ -33,23 +34,16 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(KeysSwitchCommand);
 
-    // Get app ID from flag or current config
-    let appId = flags.app || this.configManager.getCurrentAppId();
     let keyId: string | undefined = args.keyNameOrValue;
+    let extractedAppId: string | undefined;
 
     if (args.keyNameOrValue) {
       const parsed = parseKeyIdentifier(args.keyNameOrValue);
-      if (parsed.appId) appId = parsed.appId;
+      if (parsed.appId) extractedAppId = parsed.appId;
       keyId = parsed.keyId;
     }
 
-    if (!appId) {
-      this.fail(
-        'No app specified. Please provide --app flag, include APP_ID in the key name, or switch to an app with "ably apps switch".',
-        flags,
-        "keySwitch",
-      );
-    }
+    const appId = extractedAppId ?? (await this.requireAppId(flags));
 
     try {
       const controlApi = this.createControlApi(flags);
@@ -103,15 +97,17 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
         if (this.shouldOutputJson(flags)) {
           this.logJsonResult(
             {
-              appId,
-              keyName,
-              keyLabel: selectedKey.name || "Unnamed key",
+              key: {
+                appId,
+                keyName,
+                keyLabel: selectedKey.name || "Unnamed key",
+              },
             },
             flags,
           );
         } else {
           this.log(
-            `Switched to key: ${selectedKey.name || "Unnamed key"} (${keyName})`,
+            formatSuccess(`Switched to key ${formatResource(keyName)}.`),
           );
         }
       } else {
@@ -161,14 +157,16 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            appId,
-            keyName,
-            keyLabel: key.name || "Unnamed key",
+            key: {
+              appId,
+              keyName,
+              keyLabel: key.name || "Unnamed key",
+            },
           },
           flags,
         );
       } else {
-        this.log(`Switched to key: ${key.name || "Unnamed key"} (${keyName})`);
+        this.log(formatSuccess(`Switched to key ${formatResource(keyName)}.`));
       }
     } catch {
       this.fail(

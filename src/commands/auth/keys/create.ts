@@ -43,15 +43,7 @@ export default class KeysCreateCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(KeysCreateCommand);
 
-    const appId = flags.app || this.configManager.getCurrentAppId();
-
-    if (!appId) {
-      this.fail(
-        'No app specified. Please provide --app flag or switch to an app with "ably apps switch".',
-        flags,
-        "keyCreate",
-      );
-    }
+    const appId = await this.requireAppId(flags);
 
     let capabilities;
     try {

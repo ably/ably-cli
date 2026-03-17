@@ -3,6 +3,7 @@ import { runCommand } from "@oclif/test";
 import {
   nockControl,
   controlApiCleanup,
+  mockAppResolution,
 } from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 import {
@@ -49,6 +50,7 @@ describe("auth:keys:revoke command", () => {
 
     it("should revoke key with --app flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
+      mockAppResolution(appId);
       mockKeysList(appId, [
         buildMockKey(appId, mockKeyId, {
           capability: { "*": ["publish"] },

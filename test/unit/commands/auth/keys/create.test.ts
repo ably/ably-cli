@@ -5,6 +5,8 @@ import {
   nockControl,
   controlApiCleanup,
   CONTROL_HOST,
+  mockAppResolution,
+  getControlApiContext,
 } from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 import {
@@ -32,6 +34,7 @@ describe("auth:keys:create command", () => {
   describe("functionality", () => {
     it("should create a key successfully", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
       // Mock the key creation endpoint
       nockControl()
         .post(`/v1/apps/${appId}/keys`, {
@@ -62,6 +65,7 @@ describe("auth:keys:create command", () => {
 
     it("should create a key with custom capabilities", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
       // Mock the key creation endpoint with custom capabilities
       nockControl()
         .post(`/v1/apps/${appId}/keys`, {
@@ -107,6 +111,7 @@ describe("auth:keys:create command", () => {
 
     it("should output JSON format when --json flag is used", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
       const mockKey = {
         id: mockKeyId,
         appId,
@@ -146,6 +151,7 @@ describe("auth:keys:create command", () => {
 
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
       const customToken = "custom_access_token";
 
       process.env.ABLY_ACCESS_TOKEN = customToken;
@@ -185,6 +191,7 @@ describe("auth:keys:create command", () => {
   describe("argument validation", () => {
     it("should require name parameter", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
       const { error } = await runCommand(
         ["auth:keys:create", "--app", appId],
         import.meta.url,
@@ -195,17 +202,28 @@ describe("auth:keys:create command", () => {
     });
 
     it("should require app parameter when no current app is set", async () => {
+      const { accountId } = getControlApiContext();
+      // Mock the app resolution flow (requireAppId → promptForApp → listApps)
+      nockControl()
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: accountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
+      nockControl().get(`/v1/accounts/${accountId}/apps`).reply(200, []);
+
       const { error } = await runCommand(
         ["auth:keys:create", "--name", `"${mockKeyName}"`],
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error?.message).toMatch(/No app specified/);
+      expect(error?.message).toMatch(/No apps found/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
     it("should handle invalid capabilities JSON", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
       // Mock the key creation endpoint with invalid capabilities
       nockControl().post(`/v1/apps/${appId}/keys`).reply(400, {
         error: "Invalid capabilities format",
@@ -232,6 +250,7 @@ describe("auth:keys:create command", () => {
   describe("error handling", () => {
     it("should handle 401 authentication error", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
       // Mock authentication failure
       nockControl()
         .post(`/v1/apps/${appId}/keys`)
@@ -248,6 +267,7 @@ describe("auth:keys:create command", () => {
 
     it("should handle 403 forbidden error", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
       // Mock forbidden response
       nockControl()
         .post(`/v1/apps/${appId}/keys`)
@@ -264,6 +284,7 @@ describe("auth:keys:create command", () => {
 
     it("should handle 404 not found error", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
       // Mock not found response (app doesn't exist)
       nockControl()
         .post(`/v1/apps/${appId}/keys`)
@@ -280,6 +301,7 @@ describe("auth:keys:create command", () => {
 
     it("should handle 500 server error", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
       // Mock server error
       nockControl()
         .post(`/v1/apps/${appId}/keys`)
@@ -296,6 +318,7 @@ describe("auth:keys:create command", () => {
 
     it("should handle network errors", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
       // Mock network error
       nockControl()
         .post(`/v1/apps/${appId}/keys`)
@@ -312,6 +335,7 @@ describe("auth:keys:create command", () => {
 
     it("should handle validation errors from API", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
       // Mock validation error
       nockControl().post(`/v1/apps/${appId}/keys`).reply(400, {
         error: "Validation failed",
@@ -329,6 +353,7 @@ describe("auth:keys:create command", () => {
 
     it("should handle rate limit errors", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
       // Mock rate limit error
       nockControl()
         .post(`/v1/apps/${appId}/keys`)
@@ -347,6 +372,7 @@ describe("auth:keys:create command", () => {
   describe("capability configurations", () => {
     it("should create a publish-only key", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
       // Mock the key creation endpoint with publish-only capabilities
       nockControl()
         .post(`/v1/apps/${appId}/keys`, {
@@ -384,6 +410,7 @@ describe("auth:keys:create command", () => {
 
     it("should create a key with mixed capabilities", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
       // Mock the key creation endpoint with subscribe-only capabilities
       nockControl()
         .post(`/v1/apps/${appId}/keys`, {

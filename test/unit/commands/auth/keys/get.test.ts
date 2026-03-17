@@ -3,6 +3,7 @@ import { runCommand } from "@oclif/test";
 import {
   nockControl,
   controlApiCleanup,
+  mockAppResolution,
 } from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 import {
@@ -51,6 +52,7 @@ describe("auth:keys:get command", () => {
 
     it("should get key details with --app flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
+      mockAppResolution(appId);
       mockKeysList(appId, [buildMockKey(appId, mockKeyId)]);
 
       const { stdout } = await runCommand(
@@ -64,6 +66,7 @@ describe("auth:keys:get command", () => {
 
     it("should get key details by label name", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
+      mockAppResolution(appId);
       mockKeysList(appId, [
         buildMockKey(appId, mockKeyId, { name: "Root" }),
         buildMockKey(appId, "otherkey", { name: "Secondary" }),
@@ -80,6 +83,7 @@ describe("auth:keys:get command", () => {
 
     it("should get key details by label containing a period (e.g. v1.0)", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
+      mockAppResolution(appId);
       mockKeysList(appId, [
         buildMockKey(appId, mockKeyId, { name: "v1.0" }),
         buildMockKey(appId, "otherkey", { name: "Secondary" }),
@@ -96,6 +100,7 @@ describe("auth:keys:get command", () => {
 
     it("should get key details by key ID only", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
+      mockAppResolution(appId);
       mockKeysList(appId, [
         buildMockKey(appId, mockKeyId),
         buildMockKey(appId, "otherkey", { name: "Secondary" }),
