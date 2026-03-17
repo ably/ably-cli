@@ -3,6 +3,11 @@ import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
+import {
+  formatHeading,
+  formatLabel,
+  formatResource,
+} from "../../../utils/output.js";
 
 export default class KeysListCommand extends ControlBaseCommand {
   static description = "List all keys in the app";
@@ -74,14 +79,17 @@ export default class KeysListCommand extends ControlBaseCommand {
           const keyName = `${key.appId}.${key.id}`;
           const isCurrent = keyName === currentKeyName;
           const prefix = isCurrent ? chalk.green("▶ ") : "  ";
-          const titleStyle = isCurrent ? chalk.green.bold : chalk.bold;
 
           this.log(
             prefix +
-              titleStyle(`Key Name: ${keyName}`) +
+              formatHeading(
+                `${formatLabel("Key Name")} ${formatResource(keyName)}`,
+              ) +
               (isCurrent ? chalk.green(" (current)") : ""),
           );
-          this.log(`  Key Label: ${key.name || "Unnamed key"}`);
+          this.log(
+            `  ${formatLabel("Key Label")} ${key.name || "Unnamed key"}`,
+          );
 
           for (const line of formatCapabilities(
             key.capability as Record<string, string[] | string>,

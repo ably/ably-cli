@@ -53,7 +53,7 @@ describe("auth:keys:switch command", () => {
       );
 
       expect(stdout).toContain("Switched to key");
-      expect(stdout).toContain(mockKeyName);
+      expect(stdout).toContain(`${appId}.${mockKeyId}`);
     });
 
     it("should output JSON when --json flag is used", async () => {
@@ -83,8 +83,9 @@ describe("auth:keys:switch command", () => {
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "auth:keys:switch");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("appId", appId);
-      expect(result).toHaveProperty("keyLabel", mockKeyName);
+      expect(result).toHaveProperty("key");
+      expect(result.key).toHaveProperty("appId", appId);
+      expect(result.key).toHaveProperty("keyLabel", mockKeyName);
     });
   });
 

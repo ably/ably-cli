@@ -3,6 +3,7 @@ import { Args, Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatCapabilityInline } from "../../../utils/key-display.js";
 import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
+import { formatLabel, formatResource } from "../../../utils/output.js";
 
 export default class KeysUpdateCommand extends ControlBaseCommand {
   static args = {
@@ -96,36 +97,36 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
       const keyName = `${updatedKey.appId}.${updatedKey.id}`;
 
       if (this.shouldOutputJson(flags)) {
-        const result: Record<string, unknown> = { keyName };
+        const keyData: Record<string, unknown> = { keyName };
         if (flags.name) {
-          result.name = {
+          keyData.name = {
             before: originalKey.name || "Unnamed key",
             after: updatedKey.name || "Unnamed key",
           };
         }
         if (flags.capabilities) {
-          result.capabilities = {
+          keyData.capabilities = {
             before: originalKey.capability,
             after: updatedKey.capability,
           };
         }
-        this.logJsonResult(result, flags);
+        this.logJsonResult({ key: keyData }, flags);
       } else {
-        this.log(`Key Name: ${keyName}`);
+        this.log(`${formatLabel("Key Name")} ${formatResource(keyName)}`);
 
         if (flags.name) {
           this.log(
-            `Key Label: "${originalKey.name || "Unnamed key"}" → "${updatedKey.name || "Unnamed key"}"`,
+            `${formatLabel("Key Label")} "${originalKey.name || "Unnamed key"}" → "${updatedKey.name || "Unnamed key"}"`,
           );
         }
 
         if (flags.capabilities) {
-          this.log(`Capabilities:`);
+          this.log(`${formatLabel("Capabilities")}`);
           this.log(
-            `  Before: ${formatCapabilityInline(originalKey.capability as Record<string, string[]>)}`,
+            `  ${formatLabel("Before")} ${formatCapabilityInline(originalKey.capability as Record<string, string[]>)}`,
           );
           this.log(
-            `  After:  ${formatCapabilityInline(updatedKey.capability as Record<string, string[]>)}`,
+            `  ${formatLabel("After")} ${formatCapabilityInline(updatedKey.capability as Record<string, string[]>)}`,
           );
         }
       }

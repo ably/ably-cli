@@ -51,6 +51,9 @@ describe("auth:keys:current command", () => {
       );
 
       const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "auth:keys:current");
+      expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("app");
       expect(result).toHaveProperty("key");
       expect(result.key).toHaveProperty("value");

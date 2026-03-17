@@ -3,7 +3,11 @@ import { Args, Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
 import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
-import { formatResource } from "../../../utils/output.js";
+import {
+  formatLabel,
+  formatResource,
+  formatSuccess,
+} from "../../../utils/output.js";
 
 export default class KeysRevokeCommand extends ControlBaseCommand {
   static args = {
@@ -54,9 +58,9 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
 
       if (!this.shouldOutputJson(flags)) {
         this.log(`Key to revoke:`);
-        this.log(`Key Name: ${keyName}`);
-        this.log(`Key Label: ${key.name || "Unnamed key"}`);
-        this.log(`Full key: ${key.key}`);
+        this.log(`${formatLabel("Key Name")} ${formatResource(keyName)}`);
+        this.log(`${formatLabel("Key Label")} ${key.name || "Unnamed key"}`);
+        this.log(`${formatLabel("Full key")} ${key.key}`);
 
         for (const line of formatCapabilities(
           key.capability as Record<string, string[] | string>,
@@ -92,13 +96,17 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            keyName,
-            message: "Key has been revoked",
+            key: {
+              keyName,
+              message: "Key has been revoked",
+            },
           },
           flags,
         );
       } else {
-        this.log(`Key ${formatResource(keyName)} has been revoked.`);
+        this.log(
+          formatSuccess(`Key ${formatResource(keyName)} has been revoked.`),
+        );
       }
 
       // Check if the revoked key is the current key for this app

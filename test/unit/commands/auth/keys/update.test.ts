@@ -84,7 +84,47 @@ describe("auth:keys:update command", () => {
       );
 
       expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
-      expect(stdout).toContain("After:  * → subscribe");
+      expect(stdout).toContain("After:");
+      expect(stdout).toContain("* → subscribe");
+    });
+
+    it("should output JSON with nested key data when --json flag is used", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      mockKeysList(appId, [
+        buildMockKey(appId, mockKeyId, { name: "OldName" }),
+      ]);
+
+      nockControl()
+        .patch(`/v1/apps/${appId}/keys/${mockKeyId}`)
+        .reply(200, {
+          id: mockKeyId,
+          appId,
+          name: "NewName",
+          key: `${appId}.${mockKeyId}:secret`,
+          capability: { "*": ["publish", "subscribe"] },
+          created: Date.now(),
+          modified: Date.now(),
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "auth:keys:update",
+          `${appId}.${mockKeyId}`,
+          "--name=NewName",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "auth:keys:update");
+      expect(result).toHaveProperty("success", true);
+      expect(result).toHaveProperty("key");
+      expect(result.key).toHaveProperty("keyName", `${appId}.${mockKeyId}`);
+      expect(result.key).toHaveProperty("name");
+      expect(result.key.name.before).toBe("OldName");
+      expect(result.key.name.after).toBe("NewName");
     });
 
     it("should update key with --app flag", async () => {
