@@ -31,66 +31,67 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
   protected spaces: Spaces | null = null;
   protected realtimeClient: Ably.Realtime | null = null;
   protected parsedFlags: BaseFlags = {};
+  protected hasEnteredSpace = false;
+
+  protected markAsEntered(): void {
+    this.hasEnteredSpace = true;
+  }
 
   async finally(error: Error | undefined): Promise<void> {
-    // Always clean up connections
     try {
-      // Unsubscribe from all namespace listeners
       if (this.space !== null) {
+        // Unsubscribe from all namespace listeners
         try {
           await this.space.members.unsubscribe();
           await this.space.locks.unsubscribe();
           this.space.locations.unsubscribe();
           this.space.cursors.unsubscribe();
         } catch (error) {
-          // Log but don't throw unsubscribe errors
-          if (!this.shouldOutputJson(this.parsedFlags)) {
-            this.debug(`Namespace unsubscribe error: ${error}`);
-          }
+          this.debug(`Namespace unsubscribe error: ${error}`);
         }
 
-        await this.space!.leave();
-        // Wait a bit after leaving space
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        // Only leave and wait for member cleanup if we actually entered the space
+        if (this.hasEnteredSpace) {
+          await this.space!.leave();
+          await new Promise((resolve) => setTimeout(resolve, 200));
 
-        // Spaces maintains an internal map of members which have timeouts. This keeps node alive.
-        // This is a workaround to hold off until those timeouts are cleared by the client, as otherwise
-        // we'll get unhandled presence rejections as the connection closes.
-        await new Promise<void>((resolve) => {
-          let intervalId: ReturnType<typeof setInterval>;
-          const maxWaitMs = 10000; // 10 second timeout
-          const startTime = Date.now();
-          const getAll = async () => {
-            // Avoid waiting forever
-            if (Date.now() - startTime > maxWaitMs) {
-              clearInterval(intervalId);
-              this.debug("Timed out waiting for space members to clear");
-              resolve();
-              return;
-            }
+          // Spaces maintains an internal map of members which have timeouts. This keeps node alive.
+          // This is a workaround to hold off until those timeouts are cleared by the client, as otherwise
+          // we'll get unhandled presence rejections as the connection closes.
+          await new Promise<void>((resolve) => {
+            let intervalId: ReturnType<typeof setInterval>;
+            const maxWaitMs = 10000;
+            const startTime = Date.now();
+            const getAll = async () => {
+              if (Date.now() - startTime > maxWaitMs) {
+                clearInterval(intervalId);
+                this.debug("Timed out waiting for space members to clear");
+                resolve();
+                return;
+              }
 
-            const members = await this.space!.members.getAll();
-            if (members.filter((member) => !member.isConnected).length === 0) {
-              clearInterval(intervalId);
-              this.debug("space members cleared");
-              resolve();
-            } else {
-              this.debug(
-                `waiting for spaces members to clear, ${members.length} remaining`,
-              );
-            }
-          };
+              const members = await this.space!.members.getAll();
+              if (
+                members.filter((member) => !member.isConnected).length === 0
+              ) {
+                clearInterval(intervalId);
+                this.debug("space members cleared");
+                resolve();
+              } else {
+                this.debug(
+                  `waiting for spaces members to clear, ${members.length} remaining`,
+                );
+              }
+            };
 
-          intervalId = setInterval(() => {
-            getAll();
-          }, 1000);
-        });
+            intervalId = setInterval(() => {
+              getAll();
+            }, 1000);
+          });
+        }
       }
     } catch (error) {
-      // Log but don't throw cleanup errors
-      if (!this.shouldOutputJson(this.parsedFlags)) {
-        this.debug(`Space leave error: ${error}`);
-      }
+      this.debug(`Space cleanup error: ${error}`);
     }
 
     await super.finally(error);
@@ -247,6 +248,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     if (enterSpace) {
       this.logCliEvent(flags, "spaces", "entering", "Entering space...");
       await this.space!.enter();
+      this.markAsEntered();
       this.logCliEvent(flags, "spaces", "entered", "Entered space", {
         clientId: this.realtimeClient!.auth.clientId,
       });

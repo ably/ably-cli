@@ -90,7 +90,7 @@ describe("spaces:locations:set command", () => {
   });
 
   describe("JSON output", () => {
-    it("should output JSON on success with --duration 0", async () => {
+    it("should output JSON on success", async () => {
       const spacesMock = getMockAblySpaces();
       spacesMock._getSpace("test-space");
 
@@ -103,8 +103,6 @@ describe("spaces:locations:set command", () => {
           "--location",
           JSON.stringify(location),
           "--json",
-          "--duration",
-          "0",
         ],
         import.meta.url,
       );

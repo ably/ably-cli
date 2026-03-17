@@ -32,7 +32,7 @@ describe("spaces:locations:subscribe command", () => {
         import.meta.url,
       );
 
-      expect(space.enter).toHaveBeenCalled();
+      expect(space.enter).not.toHaveBeenCalled();
       expect(space.locations.subscribe).toHaveBeenCalledWith(
         "update",
         expect.any(Function),

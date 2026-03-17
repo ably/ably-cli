@@ -49,7 +49,7 @@ describe("spaces:locks:get-all command", () => {
         import.meta.url,
       );
 
-      expect(space.enter).toHaveBeenCalled();
+      expect(space.enter).not.toHaveBeenCalled();
       expect(space.locks.getAll).toHaveBeenCalled();
       expect(stdout).toContain("locks");
     });

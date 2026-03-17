@@ -32,7 +32,7 @@ describe("spaces:locks:subscribe command", () => {
         import.meta.url,
       );
 
-      expect(space.enter).toHaveBeenCalled();
+      expect(space.enter).not.toHaveBeenCalled();
       expect(space.locks.subscribe).toHaveBeenCalledWith(expect.any(Function));
     });
 

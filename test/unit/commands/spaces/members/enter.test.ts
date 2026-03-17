@@ -62,20 +62,6 @@ describe("spaces:members:enter command", () => {
     });
   });
 
-  describe("member event handling", () => {
-    it("should subscribe to member update events", async () => {
-      const spacesMock = getMockAblySpaces();
-      const space = spacesMock._getSpace("test-space");
-
-      await runCommand(["spaces:members:enter", "test-space"], import.meta.url);
-
-      expect(space.members.subscribe).toHaveBeenCalledWith(
-        "update",
-        expect.any(Function),
-      );
-    });
-  });
-
   describe("JSON output", () => {
     it("should output JSON on success", async () => {
       const spacesMock = getMockAblySpaces();

@@ -2,30 +2,14 @@ import { Flags } from "@oclif/core";
 
 import { productApiFlags } from "../../flags.js";
 import {
-  formatLabel,
   formatCountLabel,
   formatLimitWarning,
   formatResource,
 } from "../../utils/output.js";
 import { SpacesBaseCommand } from "../../spaces-base-command.js";
 
-interface SpaceMetrics {
-  connections?: number;
-  presenceConnections?: number;
-  presenceMembers?: number;
-  publishers?: number;
-  subscribers?: number;
-}
-
-interface SpaceStatus {
-  occupancy?: {
-    metrics?: SpaceMetrics;
-  };
-}
-
 interface SpaceItem {
   spaceName: string;
-  status?: SpaceStatus;
   channelId?: string;
   [key: string]: unknown;
 }
@@ -61,8 +45,6 @@ export default class SpacesList extends SpacesBaseCommand {
       const rest = await this.createAblyRestClient(flags);
       if (!rest) return;
 
-      // Build params for channel listing
-      // We request more channels than the limit to account for filtering
       interface ChannelParams {
         limit: number;
         prefix?: string;
@@ -76,7 +58,6 @@ export default class SpacesList extends SpacesBaseCommand {
         params.prefix = flags.prefix;
       }
 
-      // Fetch channels
       const channelsResponse = await rest.request(
         "get",
         "/channels",
@@ -92,41 +73,27 @@ export default class SpacesList extends SpacesBaseCommand {
         );
       }
 
-      // Filter to only include space channels
       const allChannels = channelsResponse.items || [];
-
-      // Map to store deduplicated spaces
       const spaces = new Map<string, SpaceItem>();
 
-      // Filter for space channels and deduplicate
       for (const channel of allChannels) {
         const { channelId } = channel;
 
-        // Check if this is a space channel (has ::$space suffix)
         if (channelId.includes("::$space")) {
-          // Extract the base space name (everything before the first ::$space)
-          // We need to escape the $ in the regex pattern since it's a special character
           const spaceNameMatch = channelId.match(/^(.+?)::\$space.*$/);
           if (spaceNameMatch && spaceNameMatch[1]) {
             const spaceName = spaceNameMatch[1];
-            // Only add if we haven't seen this space before
             if (!spaces.has(spaceName)) {
-              // Store the original channel data but with the simple space name
-              const spaceData: SpaceItem = {
-                ...channel,
+              spaces.set(spaceName, {
                 channelId: spaceName,
                 spaceName,
-              };
-              spaces.set(spaceName, spaceData);
+              });
             }
           }
         }
       }
 
-      // Convert map to array
       const spacesList = [...spaces.values()];
-
-      // Limit the results to the requested number
       const limitedSpaces = spacesList.slice(0, flags.limit);
 
       if (this.shouldOutputJson(flags)) {
@@ -134,7 +101,6 @@ export default class SpacesList extends SpacesBaseCommand {
           {
             spaces: limitedSpaces.map((space: SpaceItem) => ({
               spaceName: space.spaceName,
-              metrics: space.status?.occupancy?.metrics || {},
             })),
           },
           flags,
@@ -146,39 +112,11 @@ export default class SpacesList extends SpacesBaseCommand {
         }
 
         this.log(
-          `Found ${formatCountLabel(limitedSpaces.length, "active space")}:`,
+          `Found ${formatCountLabel(limitedSpaces.length, "active space")}:\n`,
         );
 
         limitedSpaces.forEach((space: SpaceItem) => {
           this.log(`${formatResource(space.spaceName)}`);
-
-          // Show occupancy if available
-          if (space.status?.occupancy?.metrics) {
-            const { metrics } = space.status.occupancy;
-            this.log(
-              `  ${formatLabel("Connections")} ${metrics.connections || 0}`,
-            );
-            this.log(
-              `  ${formatLabel("Publishers")} ${metrics.publishers || 0}`,
-            );
-            this.log(
-              `  ${formatLabel("Subscribers")} ${metrics.subscribers || 0}`,
-            );
-
-            if (metrics.presenceConnections !== undefined) {
-              this.log(
-                `  ${formatLabel("Presence Connections")} ${metrics.presenceConnections}`,
-              );
-            }
-
-            if (metrics.presenceMembers !== undefined) {
-              this.log(
-                `  ${formatLabel("Presence Members")} ${metrics.presenceMembers}`,
-              );
-            }
-          }
-
-          this.log(""); // Add a line break between spaces
         });
 
         const warning = formatLimitWarning(
@@ -186,7 +124,7 @@ export default class SpacesList extends SpacesBaseCommand {
           flags.limit,
           "spaces",
         );
-        if (warning) this.log(warning);
+        if (warning) this.log(`\n${warning}`);
       }
     } catch (error) {
       this.fail(error, flags, "spaceList");

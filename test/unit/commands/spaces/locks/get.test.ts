@@ -72,7 +72,7 @@ describe("spaces:locks:get command", () => {
         import.meta.url,
       );
 
-      expect(space.enter).toHaveBeenCalled();
+      expect(space.enter).not.toHaveBeenCalled();
       expect(space.locks.get).toHaveBeenCalledWith("my-lock");
       expect(stdout).toContain("my-lock");
     });

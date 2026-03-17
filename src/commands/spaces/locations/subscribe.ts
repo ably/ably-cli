@@ -5,7 +5,7 @@ import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
   formatListening,
-  formatSuccess,
+  formatProgress,
   formatTimestamp,
 } from "../../../utils/output.js";
 import { formatLocationUpdateBlock } from "../../../utils/spaces-output.js";
@@ -37,26 +37,17 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsSubscribe);
     const { space: spaceName } = args;
-    this.logCliEvent(
-      flags,
-      "subscribe.run",
-      "start",
-      `Starting spaces locations subscribe for space: ${spaceName}`,
-    );
 
     try {
-      // Always show the readiness signal first, before attempting auth
       if (!this.shouldOutputJson(flags)) {
-        this.log("Subscribing to location updates");
+        this.log(formatProgress("Subscribing to location updates"));
       }
-      this.logCliEvent(
-        flags,
-        "subscribe.run",
-        "initialSignalLogged",
-        "Initial readiness signal logged.",
-      );
 
-      await this.initializeSpace(flags, spaceName, { enterSpace: true });
+      await this.initializeSpace(flags, spaceName, { enterSpace: false });
+
+      if (!this.shouldOutputJson(flags)) {
+        this.log(`\n${formatListening("Listening for location updates.")}\n`);
+      }
 
       this.logCliEvent(
         flags,
@@ -64,18 +55,8 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
         "subscribing",
         "Subscribing to location updates",
       );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatListening("Subscribing to location updates."));
-      }
-      this.logCliEvent(
-        flags,
-        "location.subscribe",
-        "readySignalLogged",
-        "Final readiness signal 'Subscribing to location updates' logged.",
-      );
 
       try {
-        // Define the location update handler
         const locationHandler = (update: LocationsEvents.UpdateEvent) => {
           try {
             const timestamp = new Date().toISOString();
@@ -118,7 +99,6 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
           }
         };
 
-        // Subscribe to location updates
         this.space!.locations.subscribe("update", locationHandler);
 
         this.logCliEvent(
@@ -133,28 +113,9 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
         });
       }
 
-      this.logCliEvent(
-        flags,
-        "location",
-        "listening",
-        "Listening for location updates...",
-      );
-
-      // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "location", flags.duration);
     } catch (error) {
       this.fail(error, flags, "locationSubscribe", { spaceName });
-    } finally {
-      // Wrap all cleanup in a timeout to prevent hanging
-      if (!this.shouldOutputJson(flags)) {
-        if (this.cleanupInProgress) {
-          this.log(formatSuccess("Graceful shutdown complete."));
-        } else {
-          this.log(
-            formatSuccess("Duration elapsed, command finished cleanly."),
-          );
-        }
-      }
     }
   }
 }

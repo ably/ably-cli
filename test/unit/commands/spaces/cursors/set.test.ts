@@ -91,8 +91,10 @@ describe("spaces:cursors:set command", () => {
       );
       expect(stdout).toContain("Set cursor");
       expect(stdout).toContain("test-space");
-      expect(stdout).toContain("Position:");
-      expect(stdout).toContain("(100, 200)");
+      expect(stdout).toContain("Position X:");
+      expect(stdout).toContain("100");
+      expect(stdout).toContain("Position Y:");
+      expect(stdout).toContain("200");
     });
 
     it("should set cursor from --data with position object", async () => {

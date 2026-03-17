@@ -57,7 +57,6 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
   private simulationIntervalId: NodeJS.Timeout | null = null;
 
-  // Override finally to ensure resources are cleaned up
   async finally(err: Error | undefined): Promise<void> {
     if (this.simulationIntervalId) {
       clearInterval(this.simulationIntervalId);
@@ -76,14 +75,12 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       let cursorData: Record<string, unknown>;
 
       if (flags.simulate) {
-        // For simulate mode, use provided x/y or generate random starting position
         const startX = flags.x ?? Math.floor(Math.random() * 1000);
         const startY = flags.y ?? Math.floor(Math.random() * 1000);
         cursorData = {
           position: { x: startX, y: startY },
         };
 
-        // If --data is also provided with simulate, treat it as additional cursor data
         if (flags.data) {
           try {
             const additionalData = JSON.parse(flags.data);
@@ -98,12 +95,10 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           }
         }
       } else if (flags.x !== undefined && flags.y !== undefined) {
-        // Use x & y flags
         cursorData = {
           position: { x: flags.x, y: flags.y },
         };
 
-        // If --data is also provided with x/y flags, treat it as additional cursor data
         if (flags.data) {
           try {
             const additionalData = JSON.parse(flags.data);
@@ -118,7 +113,6 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           }
         }
       } else if (flags.data) {
-        // Use --data JSON format
         try {
           cursorData = JSON.parse(flags.data);
         } catch {
@@ -130,7 +124,6 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           );
         }
 
-        // Validate position when using --data
         if (
           !cursorData.position ||
           typeof (cursorData.position as Record<string, unknown>).x !==
@@ -197,25 +190,17 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         this.log(
           formatSuccess(`Set cursor in space ${formatResource(spaceName)}.`),
         );
-        const lines: string[] = [];
-        lines.push(`${formatLabel("Position")} (${position.x}, ${position.y})`);
+        const lines: string[] = [
+          `${formatLabel("Position X")} ${position.x}`,
+          `${formatLabel("Position Y")} ${position.y}`,
+        ];
         if (data) {
           lines.push(`${formatLabel("Data")} ${JSON.stringify(data)}`);
         }
         this.log(lines.join("\n"));
       }
 
-      // Decide how long to remain connected
-      if (flags.duration === 0) {
-        // Give Ably a moment to propagate the cursor update before exiting so that
-        // subscribers in automated tests have a chance to receive the event.
-        await new Promise((resolve) => setTimeout(resolve, 600));
-
-        // In immediate exit mode, we don't keep the process alive beyond this.
-        this.exit(0);
-      }
-
-      // Start simulation if requested
+      // In simulate mode, keep running with periodic cursor updates
       if (flags.simulate) {
         this.logCliEvent(
           flags,
@@ -232,7 +217,6 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
         this.simulationIntervalId = setInterval(async () => {
           try {
-            // Generate random position within reasonable bounds
             const simulatedX = Math.floor(Math.random() * 1000);
             const simulatedY = Math.floor(Math.random() * 800);
 
@@ -267,29 +251,15 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
             );
           }
         }, 250);
+
+        if (!this.shouldOutputJson(flags)) {
+          this.log(formatListening("Simulating cursor movement."));
+        }
+
+        await this.waitAndTrackCleanup(flags, "cursor", flags.duration);
       }
 
-      // Inform the user and wait until interrupted or timeout (if provided)
-      this.logCliEvent(
-        flags,
-        "cursor",
-        "waiting",
-        "Cursor set – waiting for further instructions",
-        { duration: flags.duration ?? "indefinite" },
-      );
-
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          flags.duration
-            ? `Waiting ${flags.duration}s before exiting… Press Ctrl+C to exit sooner.`
-            : formatListening("Cursor set."),
-        );
-      }
-
-      await this.waitAndTrackCleanup(flags, "cursor", flags.duration);
-
-      // After cleanup (handled in finally), ensure the process exits so user doesn't need multiple Ctrl-C
-      this.exit(0);
+      // Non-simulate mode: run() completes, finally() handles cleanup
     } catch (error) {
       this.fail(error, flags, "cursorSet", { spaceName });
     }
