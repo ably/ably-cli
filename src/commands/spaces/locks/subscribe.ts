@@ -3,7 +3,11 @@ import { Args } from "@oclif/core";
 
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { formatListening, formatTimestamp } from "../../../utils/output.js";
+import {
+  formatListening,
+  formatProgress,
+  formatTimestamp,
+} from "../../../utils/output.js";
 import {
   formatLockBlock,
   formatLockOutput,
@@ -37,45 +41,21 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksSubscribe);
     const { space: spaceName } = args;
-    this.logCliEvent(
-      flags,
-      "subscribe.run",
-      "start",
-      `Starting spaces locks subscribe for space: ${spaceName}`,
-    );
 
     try {
-      // Always show the readiness signal first, before attempting auth
       if (!this.shouldOutputJson(flags)) {
-        this.log("Subscribing to lock events");
+        this.log(formatProgress("Subscribing to lock events"));
       }
-      this.logCliEvent(
-        flags,
-        "subscribe.run",
-        "initialSignalLogged",
-        "Initial readiness signal logged.",
-      );
 
-      await this.initializeSpace(flags, spaceName, { enterSpace: true });
+      await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
-      // Subscribe to lock events
       this.logCliEvent(
         flags,
         "lock",
         "subscribing",
         "Subscribing to lock events",
       );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatListening("Subscribing to lock events."));
-      }
-      this.logCliEvent(
-        flags,
-        "lock.subscribe",
-        "readySignalLogged",
-        "Final readiness signal 'Subscribing to lock events' logged.",
-      );
 
-      // Define the listener function
       this.listener = (lock: Lock) => {
         const timestamp = new Date().toISOString();
 
@@ -93,7 +73,6 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
         }
       };
 
-      // Subscribe using the stored listener
       await this.space!.locks.subscribe(this.listener);
 
       this.logCliEvent(
@@ -103,19 +82,13 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
         "Successfully subscribed to lock events",
       );
 
-      this.logCliEvent(
-        flags,
-        "lock",
-        "listening",
-        "Listening for lock events...",
-      );
+      if (!this.shouldOutputJson(flags)) {
+        this.log(`\n${formatListening("Listening for lock events.")}\n`);
+      }
 
-      // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "lock", flags.duration);
     } catch (error) {
       this.fail(error, flags, "lockSubscribe");
-    } finally {
-      // Cleanup is now handled by base class finally() method
     }
   }
 }

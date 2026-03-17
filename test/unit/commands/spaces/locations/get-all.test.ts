@@ -35,7 +35,7 @@ describe("spaces:locations:get-all command", () => {
         import.meta.url,
       );
 
-      expect(space.enter).toHaveBeenCalled();
+      expect(space.enter).not.toHaveBeenCalled();
       expect(space.locations.getAll).toHaveBeenCalled();
       expect(stdout).toContain("locations");
     });

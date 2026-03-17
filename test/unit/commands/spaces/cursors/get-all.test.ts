@@ -46,11 +46,7 @@ describe("spaces:cursors:get-all command", () => {
         import.meta.url,
       );
 
-      expect(space.enter).toHaveBeenCalled();
-      expect(space.cursors.subscribe).toHaveBeenCalledWith(
-        "update",
-        expect.any(Function),
-      );
+      expect(space.enter).not.toHaveBeenCalled();
       expect(space.cursors.getAll).toHaveBeenCalled();
 
       // The command outputs JSON with cursors array
@@ -137,7 +133,6 @@ describe("spaces:cursors:get-all command", () => {
       );
 
       // Verify cleanup was performed
-      expect(space.leave).toHaveBeenCalled();
       expect(realtimeMock.close).toHaveBeenCalled();
     });
   });

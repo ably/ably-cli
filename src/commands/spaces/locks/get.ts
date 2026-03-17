@@ -1,9 +1,8 @@
 import { Args } from "@oclif/core";
-import chalk from "chalk";
 
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { formatResource, formatSuccess } from "../../../utils/output.js";
+import { formatResource, formatWarning } from "../../../utils/output.js";
 import {
   formatLockBlock,
   formatLockOutput,
@@ -45,11 +44,6 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
         setupConnectionLogging: false,
       });
 
-      await this.space!.enter();
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatSuccess(`Entered space: ${formatResource(spaceName)}.`));
-      }
-
       try {
         const lock = await this.space!.locks.get(lockId);
 
@@ -58,8 +52,8 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
             this.logJsonResult({ locks: [] }, flags);
           } else {
             this.log(
-              chalk.yellow(
-                `Lock ${formatResource(lockId)} not found in space ${formatResource(spaceName)}`,
+              formatWarning(
+                `Lock ${formatResource(lockId)} not found in space ${formatResource(spaceName)}.`,
               ),
             );
           }

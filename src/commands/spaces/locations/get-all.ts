@@ -9,7 +9,6 @@ import {
   formatLabel,
   formatProgress,
   formatResource,
-  formatSuccess,
   formatWarning,
 } from "../../../utils/output.js";
 import type { LocationEntry } from "../../../utils/spaces-output.js";
@@ -43,55 +42,6 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
       await this.initializeSpace(flags, spaceName, {
         enterSpace: false,
         setupConnectionLogging: false,
-      });
-
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(`Connecting to space: ${formatResource(spaceName)}`),
-        );
-      }
-
-      await this.space!.enter();
-
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error("Timed out waiting for space connection"));
-        }, 5000);
-
-        const checkSpaceStatus = () => {
-          try {
-            if (this.realtimeClient!.connection.state === "connected") {
-              clearTimeout(timeout);
-              if (!this.shouldOutputJson(flags)) {
-                this.log(
-                  formatSuccess(
-                    `Connected to space: ${formatResource(spaceName)}.`,
-                  ),
-                );
-              }
-
-              resolve();
-            } else if (
-              this.realtimeClient!.connection.state === "failed" ||
-              this.realtimeClient!.connection.state === "closed" ||
-              this.realtimeClient!.connection.state === "suspended"
-            ) {
-              clearTimeout(timeout);
-              reject(
-                new Error(
-                  `Space connection failed with connection state: ${this.realtimeClient!.connection.state}`,
-                ),
-              );
-            } else {
-              setTimeout(checkSpaceStatus, 100);
-            }
-          } catch (error) {
-            clearTimeout(timeout);
-            reject(error);
-          }
-        };
-
-        checkSpaceStatus();
       });
 
       if (!this.shouldOutputJson(flags)) {
@@ -137,11 +87,10 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
 
           for (let i = 0; i < entries.length; i++) {
             const entry = entries[i];
+            this.log(`${formatIndex(i + 1)}`);
+            this.log(`  ${formatLabel("Connection ID")} ${entry.connectionId}`);
             this.log(
-              `${formatIndex(i + 1)} ${formatLabel("Connection ID")} ${entry.connectionId}`,
-            );
-            this.log(
-              `    ${formatLabel("Location")} ${JSON.stringify(entry.location)}`,
+              `  ${formatLabel("Location")} ${JSON.stringify(entry.location)}`,
             );
             this.log("");
           }

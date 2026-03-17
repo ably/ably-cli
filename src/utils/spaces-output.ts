@@ -157,7 +157,8 @@ export function formatCursorBlock(
   const lines: string[] = [
     `${indent}${formatLabel("Client ID")} ${formatClientId(cursor.clientId)}`,
     `${indent}${formatLabel("Connection ID")} ${cursor.connectionId}`,
-    `${indent}${formatLabel("Position")} (${cursor.position.x}, ${cursor.position.y})`,
+    `${indent}${formatLabel("Position X")} ${cursor.position.x}`,
+    `${indent}${formatLabel("Position Y")} ${cursor.position.y}`,
   ];
 
   if (

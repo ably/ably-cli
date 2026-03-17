@@ -33,7 +33,7 @@ describe("spaces:cursors:subscribe command", () => {
         import.meta.url,
       );
 
-      expect(space.enter).toHaveBeenCalled();
+      expect(space.enter).not.toHaveBeenCalled();
       expect(space.cursors.subscribe).toHaveBeenCalledWith(
         "update",
         expect.any(Function),
@@ -50,8 +50,8 @@ describe("spaces:cursors:subscribe command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Subscribing");
-      expect(stdout).toContain("test-space");
+      expect(stdout).toContain("Subscribing to cursor updates");
+      expect(stdout).toContain("Listening for cursor movements");
     });
   });
 
@@ -144,10 +144,10 @@ describe("spaces:cursors:subscribe command", () => {
   });
 
   describe("error handling", () => {
-    it("should handle space entry failure", async () => {
+    it("should handle subscribe failure", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.enter.mockRejectedValue(new Error("Connection failed"));
+      space.cursors.subscribe.mockRejectedValue(new Error("Connection failed"));
 
       const { error } = await runCommand(
         ["spaces:cursors:subscribe", "test-space"],

@@ -55,7 +55,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
         this.log(formatProgress("Subscribing to member updates"));
       }
 
-      await this.initializeSpace(flags, spaceName, { enterSpace: true });
+      await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
       if (!this.shouldOutputJson(flags)) {
         this.log(`\n${formatListening("Listening for member events.")}\n`);

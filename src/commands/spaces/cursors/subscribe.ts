@@ -4,8 +4,7 @@ import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
   formatListening,
-  formatResource,
-  formatSuccess,
+  formatProgress,
   formatTimestamp,
 } from "../../../utils/output.js";
 import {
@@ -43,9 +42,12 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
     const { space: spaceName } = args;
 
     try {
-      await this.initializeSpace(flags, spaceName, { enterSpace: true });
+      if (!this.shouldOutputJson(flags)) {
+        this.log(formatProgress("Subscribing to cursor updates"));
+      }
 
-      // Subscribe to cursor updates
+      await this.initializeSpace(flags, spaceName, { enterSpace: false });
+
       this.logCliEvent(
         flags,
         "cursor",
@@ -54,7 +56,6 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
       );
 
       try {
-        // Define the listener function
         this.listener = (cursorUpdate: CursorUpdate) => {
           try {
             const timestamp = new Date().toISOString();
@@ -87,10 +88,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
           }
         };
 
-        // Workaround for known SDK issue: cursors.subscribe() fails if the underlying ::$cursors channel is not attached
         await this.waitForCursorsChannelAttachment(flags);
-
-        // Subscribe using the listener
         await this.space!.cursors.subscribe("update", this.listener);
 
         this.logCliEvent(
@@ -105,32 +103,13 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
         });
       }
 
-      this.logCliEvent(
-        flags,
-        "cursor",
-        "listening",
-        "Listening for cursor updates...",
-      );
-
       if (!this.shouldOutputJson(flags)) {
-        // Log the ready signal for E2E tests
-        this.log("Subscribing to cursor movements");
+        this.log(`\n${formatListening("Listening for cursor movements.")}\n`);
       }
 
-      // Print success message
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(`Subscribed to space: ${formatResource(spaceName)}.`),
-        );
-        this.log(formatListening("Listening for cursor movements."));
-      }
-
-      // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "cursor", flags.duration);
     } catch (error) {
       this.fail(error, flags, "cursorSubscribe", { spaceName });
-    } finally {
-      // Cleanup is now handled by base class finally() method
     }
   }
 }
