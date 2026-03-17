@@ -22,6 +22,7 @@ interface MessageResult {
   index?: number;
   message?: MessageToSend;
   room: string;
+  serial?: string;
   success: boolean;
   error?: string;
   [key: string]: unknown;
@@ -340,10 +341,11 @@ export default class MessagesSend extends ChatBaseCommand {
           );
 
           // Send the message
-          await room.messages.send(messageToSend);
+          const sentMessage = await room.messages.send(messageToSend);
           const result: MessageResult = {
             message: messageToSend,
             room: args.room,
+            serial: sentMessage.serial,
             success: true,
           };
           this.logCliEvent(
@@ -357,7 +359,11 @@ export default class MessagesSend extends ChatBaseCommand {
           if (!this.shouldSuppressOutput(flags)) {
             if (this.shouldOutputJson(flags)) {
               this.logJsonResult(
-                { message: messageToSend, room: args.room },
+                {
+                  message: messageToSend,
+                  room: args.room,
+                  serial: sentMessage.serial,
+                },
                 flags,
               );
             } else {
@@ -366,6 +372,7 @@ export default class MessagesSend extends ChatBaseCommand {
                   `Message sent to room ${formatResource(args.room)}.`,
                 ),
               );
+              this.log(`  Serial: ${formatResource(sentMessage.serial)}`);
             }
           }
         } catch (error) {

@@ -12,6 +12,7 @@ import {
   formatMessageTimestamp,
   formatIndex,
   formatEventType,
+  formatClientId,
 } from "../../../utils/output.js";
 
 // Define message interface
@@ -134,12 +135,15 @@ export default class MessagesSubscribe extends ChatBaseCommand {
           ? `${formatIndex(this.sequenceCounter)}`
           : "";
 
-        // Message content with consistent formatting
+        // Message content with multi-line labeled block
+        this.log(`${roomPrefix}${formatTimestamp(timestamp)}${sequencePrefix}`);
         this.log(
-          `${roomPrefix}${formatTimestamp(timestamp)}${sequencePrefix} ${formatEventType(String(messageEvent.type))} ${chalk.blue(`${author}:`)} ${message.text}`,
+          `${roomPrefix}  ${formatLabel("Action")} ${formatEventType(String(messageEvent.type))}`,
         );
-
-        // Show serial
+        this.log(
+          `${roomPrefix}  ${formatLabel("Client ID")} ${formatClientId(author)}`,
+        );
+        this.log(`${roomPrefix}  ${formatLabel("Text")} ${message.text}`);
         this.log(
           `${roomPrefix}  ${formatLabel("Serial")} ${formatResource(message.serial)}`,
         );

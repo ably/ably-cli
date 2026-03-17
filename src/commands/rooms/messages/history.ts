@@ -12,6 +12,7 @@ import {
   formatTimestamp,
   formatMessageTimestamp,
   formatEventType,
+  formatClientId,
 } from "../../../utils/output.js";
 import { parseTimestamp } from "../../../utils/time.js";
 
@@ -166,11 +167,12 @@ export default class MessagesHistory extends ChatBaseCommand {
             const timestamp = formatMessageTimestamp(message.timestamp);
             const author = message.clientId || "Unknown";
 
+            this.log(formatTimestamp(timestamp));
             this.log(
-              `${formatTimestamp(timestamp)} ${formatEventType(String(message.action))} ${chalk.blue(`${author}:`)} ${message.text}`,
+              `  ${formatLabel("Action")} ${formatEventType(String(message.action))}`,
             );
-
-            // Show serial
+            this.log(`  ${formatLabel("Client ID")} ${formatClientId(author)}`);
+            this.log(`  ${formatLabel("Text")} ${message.text}`);
             this.log(
               `  ${formatLabel("Serial")} ${formatResource(message.serial)}`,
             );
