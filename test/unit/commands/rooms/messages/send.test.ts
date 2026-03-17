@@ -39,7 +39,6 @@ describe("rooms:messages:send command", () => {
         import.meta.url,
       );
 
-      expect(room.attach).toHaveBeenCalled();
       expect(room.messages.send).toHaveBeenCalledWith({
         text: "HelloWorld",
       });

@@ -19,6 +19,7 @@ Every command in this CLI falls into one of these patterns. Pick the right one b
 | **Get** | One-shot query for current state | `AblyBaseCommand` | REST | `channels occupancy get`, `rooms occupancy get` |
 | **List** | Enumerate resources via REST API | `AblyBaseCommand` | REST | `channels list`, `rooms list` |
 | **Enter** | Join presence/space then optionally listen | `AblyBaseCommand` | Realtime | `channels presence enter`, `spaces members enter` |
+| **REST Mutation** | One-shot REST mutation (no subscription) | `AblyBaseCommand` | REST | `rooms messages update`, `rooms messages delete` |
 | **CRUD** | Create/read/update/delete via Control API | `ControlBaseCommand` | Control API (HTTP) | `integrations create`, `queues delete` |
 
 **Specialized base classes** — some command groups have dedicated base classes that handle common setup (client lifecycle, cleanup, shared flags):
@@ -30,6 +31,25 @@ Every command in this CLI falls into one of these patterns. Pick the right one b
 | Stats commands | `StatsBaseCommand` | `stats app`, `stats account` | `src/stats-base-command.ts` |
 
 If your command falls into one of these groups, extend the specialized base class instead of `AblyBaseCommand` or `ControlBaseCommand` directly. **Exception:** if your command only needs a REST client (e.g., history queries that don't enter a space or join a room), you may use `AblyBaseCommand` directly — the specialized base class is most valuable when the command needs realtime connections, cleanup lifecycle, or shared setup like `room.attach()` / `space.enter()`.
+
+### When to call `room.attach()` / `space.enter()`
+
+**Not every Chat/Spaces command needs `room.attach()` or `space.enter()`.** Before adding attachment, check whether the SDK method you're calling requires an active realtime connection or is a pure REST call:
+
+| Needs `room.attach()` | Does NOT need `room.attach()` |
+|------------------------|-------------------------------|
+| Subscribe (realtime listener) | Send (REST via `chatApi.sendMessage`) |
+| Presence enter/get/update/leave | Update (REST via `chatApi.updateMessage`) |
+| Occupancy subscribe | Delete (REST via `chatApi.deleteMessage`) |
+| Typing keystroke/stop | Annotate/append (REST mutation) |
+| Reactions send (realtime publish) | History queries (REST via `chatApi.history`) |
+| Reactions subscribe | Occupancy get (REST via `chatApi.getOccupancy`) |
+
+**How it works in the SDK:** Methods that go through `this._chatApi.*` are REST calls and don't need attachment. Methods that use `this._channel.publish()`, `this._channel.presence.*`, or subscribe to channel events require the realtime channel to be attached. Room-level reactions use `this._channel.publish()` (realtime), but messages send/update/delete use `this._chatApi.*` (REST).
+
+**Rule of thumb:** If the SDK method is a one-shot REST call (returns a Promise with a result, no callback/listener), you do NOT need `room.attach()`. Just call `chatClient.rooms.get(roomId)` to get the room handle and invoke the method directly. Attaching unnecessarily adds latency and creates a realtime connection that isn't needed.
+
+**How to verify:** Check the Chat SDK source or typedoc — methods that are REST-based don't require the room to be in an `attached` state. When in doubt, test without `room.attach()` — if the SDK method works, attachment isn't needed.
 
 ## Step 2: Create the command file
 
@@ -176,14 +196,23 @@ if (!this.shouldOutputJson(flags)) {
   this.log(formatListening("Listening for messages."));
 }
 
-// JSON output — use logJsonResult for one-shot results:
+// JSON output — nest data under a domain key, not spread at top level.
+// Envelope provides top-level: type, command, success.
+// One-shot single result — singular domain key:
 if (this.shouldOutputJson(flags)) {
-  this.logJsonResult({ channel: args.channel, message }, flags);
+  this.logJsonResult({ message: messageData }, flags);
+  // → {"type":"result","command":"...","success":true,"message":{...}}
 }
 
-// Streaming events — use logJsonEvent:
+// One-shot collection result — plural domain key + optional metadata:
 if (this.shouldOutputJson(flags)) {
-  this.logJsonEvent({ eventType: event.type, message, channel: channelName }, flags);
+  this.logJsonResult({ messages: items, total: items.length }, flags);
+}
+
+// Streaming events — singular domain key:
+if (this.shouldOutputJson(flags)) {
+  this.logJsonEvent({ message: messageData }, flags);
+  // → {"type":"event","command":"...","message":{...}}
 }
 ```
 
@@ -389,8 +418,15 @@ See the "Keeping Skills Up to Date" section in `CLAUDE.md` for the full list of 
 - [ ] All human output wrapped in `if (!this.shouldOutputJson(flags))`
 - [ ] Output helpers used correctly (`formatProgress`, `formatSuccess`, `formatWarning`, `formatListening`, `formatResource`, `formatTimestamp`, `formatClientId`, `formatEventType`, `formatLabel`, `formatHeading`, `formatIndex`)
 - [ ] `formatSuccess()` messages end with `.` (period)
+- [ ] Non-JSON data output uses multi-line labeled blocks (see `patterns.md` "Human-Readable Output Format"), not tables or custom grids
+- [ ] Non-JSON output exposes all available SDK fields (same data as JSON mode, omitting only null/empty values)
+- [ ] SDK types imported directly (`import type { CursorUpdate } from "@ably/spaces"`) — no local interface redefinitions of SDK types (display interfaces in `src/utils/` are fine)
+- [ ] Field coverage checked against SDK type definitions (`node_modules/ably/ably.d.ts`, `node_modules/@ably/spaces/dist/mjs/types.d.ts`)
+- [ ] Subscribe commands do NOT fetch initial state — they only listen for new events (use `get-all` for current state)
 - [ ] Resource names use `formatResource(name)`, never quoted
 - [ ] JSON output uses `logJsonResult()` (one-shot) or `logJsonEvent()` (streaming), not direct `formatJsonRecord()`
+- [ ] JSON data nested under a domain key (singular for events/single items, plural for collections) — not spread at top level (see `patterns.md` "JSON Data Nesting Convention")
+- [ ] `room.attach()` / `space.enter()` only called when the SDK method requires a realtime connection (subscribe, send, presence) — NOT for REST mutations (update, delete, annotate, history)
 - [ ] Subscribe/enter commands use `this.waitAndTrackCleanup(flags, component, flags.duration)` (not `waitUntilInterruptedOrTimeout`)
 - [ ] Error handling uses `this.fail()` exclusively, not `this.error()` or `this.log(chalk.red(...))`
 - [ ] Component strings are camelCase: single-word lowercase (`"room"`, `"auth"`), multi-word camelCase (`"channelPublish"`, `"roomPresenceSubscribe"`)

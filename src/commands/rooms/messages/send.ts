@@ -22,6 +22,7 @@ interface MessageResult {
   index?: number;
   message?: MessageToSend;
   room: string;
+  serial?: string;
   success: boolean;
   error?: string;
   [key: string]: unknown;
@@ -100,62 +101,44 @@ export default class MessagesSend extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
-        this.fail("Failed to create Chat client", flags, "roomMessageSend");
+        return this.fail(
+          "Failed to create Chat client",
+          flags,
+          "roomMessageSend",
+        );
       }
 
       // Set up connection state logging
       this.setupConnectionStateLogging(this.chatClient.realtime, flags);
 
       // Parse metadata if provided
-      let metadata;
+      let metadata: JsonObject | undefined;
       if (flags.metadata) {
-        try {
-          metadata = JSON.parse(flags.metadata);
-          this.logCliEvent(
-            flags,
-            "message",
-            "metadataParsed",
-            "Message metadata parsed",
-            { metadata },
-          );
-        } catch (error) {
-          this.fail(
-            `Invalid metadata JSON: ${errorMessage(error)}`,
-            flags,
-            "roomMessageSend",
-          );
+        const parsedMetadata = this.parseJsonFlag(
+          flags.metadata,
+          "metadata",
+          flags,
+        );
+        if (
+          typeof parsedMetadata !== "object" ||
+          parsedMetadata === null ||
+          Array.isArray(parsedMetadata)
+        ) {
+          this.fail("Metadata must be a JSON object", flags, "roomMessageSend");
         }
+
+        metadata = parsedMetadata as JsonObject;
+
+        this.logCliEvent(
+          flags,
+          "message",
+          "metadataParsed",
+          "Message metadata parsed",
+          { metadata },
+        );
       }
 
-      // Get the room with default options
-      this.logCliEvent(
-        flags,
-        "room",
-        "gettingRoom",
-        `Getting room handle for ${args.room}`,
-      );
       const room = await this.chatClient.rooms.get(args.room);
-      this.logCliEvent(
-        flags,
-        "room",
-        "gotRoom",
-        `Got room handle for ${args.room}`,
-      );
-
-      // Attach to the room
-      this.logCliEvent(
-        flags,
-        "room",
-        "attaching",
-        `Attaching to room ${args.room}`,
-      );
-      await room.attach();
-      this.logCliEvent(
-        flags,
-        "room",
-        "attached",
-        `Attached to room ${args.room}`,
-      );
 
       // Validate count and delay
       const count = Math.max(1, flags.count);
@@ -358,10 +341,11 @@ export default class MessagesSend extends ChatBaseCommand {
           );
 
           // Send the message
-          await room.messages.send(messageToSend);
+          const sentMessage = await room.messages.send(messageToSend);
           const result: MessageResult = {
             message: messageToSend,
             room: args.room,
+            serial: sentMessage.serial,
             success: true,
           };
           this.logCliEvent(
@@ -375,7 +359,11 @@ export default class MessagesSend extends ChatBaseCommand {
           if (!this.shouldSuppressOutput(flags)) {
             if (this.shouldOutputJson(flags)) {
               this.logJsonResult(
-                { message: messageToSend, room: args.room },
+                {
+                  message: messageToSend,
+                  room: args.room,
+                  serial: sentMessage.serial,
+                },
                 flags,
               );
             } else {
@@ -384,6 +372,7 @@ export default class MessagesSend extends ChatBaseCommand {
                   `Message sent to room ${formatResource(args.room)}.`,
                 ),
               );
+              this.log(`  Serial: ${formatResource(sentMessage.serial)}`);
             }
           }
         } catch (error) {

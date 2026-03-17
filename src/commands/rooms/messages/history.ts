@@ -11,6 +11,8 @@ import {
   formatResource,
   formatTimestamp,
   formatMessageTimestamp,
+  formatEventType,
+  formatClientId,
 } from "../../../utils/output.js";
 import { parseTimestamp } from "../../../utils/time.js";
 
@@ -66,14 +68,14 @@ export default class MessagesHistory extends ChatBaseCommand {
       const chatClient = await this.createChatClient(flags);
 
       if (!chatClient) {
-        this.fail("Failed to create Chat client", flags, "roomMessageHistory");
+        return this.fail(
+          "Failed to create Chat client",
+          flags,
+          "roomMessageHistory",
+        );
       }
 
-      // Get the room
       const room = await chatClient.rooms.get(args.room);
-
-      // Attach to the room
-      await room.attach();
 
       if (!this.shouldSuppressOutput(flags)) {
         if (this.shouldOutputJson(flags)) {
@@ -122,7 +124,7 @@ export default class MessagesHistory extends ChatBaseCommand {
         historyParams.end !== undefined &&
         historyParams.start > historyParams.end
       ) {
-        this.fail(
+        return this.fail(
           "--start must be earlier than or equal to --end",
           flags,
           "roomMessageHistory",
@@ -141,9 +143,9 @@ export default class MessagesHistory extends ChatBaseCommand {
               clientId: message.clientId,
               text: message.text,
               timestamp: message.timestamp,
-              ...(flags["show-metadata"] && message.metadata
-                ? { metadata: message.metadata }
-                : {}),
+              serial: message.serial,
+              action: String(message.action),
+              ...(message.metadata ? { metadata: message.metadata } : {}),
             })),
             room: args.room,
           },
@@ -165,8 +167,14 @@ export default class MessagesHistory extends ChatBaseCommand {
             const timestamp = formatMessageTimestamp(message.timestamp);
             const author = message.clientId || "Unknown";
 
+            this.log(formatTimestamp(timestamp));
             this.log(
-              `${formatTimestamp(timestamp)} ${chalk.blue(`${author}:`)} ${message.text}`,
+              `  ${formatLabel("Action")} ${formatEventType(String(message.action))}`,
+            );
+            this.log(`  ${formatLabel("Client ID")} ${formatClientId(author)}`);
+            this.log(`  ${formatLabel("Text")} ${message.text}`);
+            this.log(
+              `  ${formatLabel("Serial")} ${formatResource(message.serial)}`,
             );
 
             // Show metadata if enabled and available

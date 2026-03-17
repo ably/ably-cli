@@ -67,7 +67,11 @@ export default class TypingKeystroke extends ChatBaseCommand {
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);
       if (!this.chatClient) {
-        this.fail("Failed to initialize clients", flags, "roomTypingKeystroke");
+        return this.fail(
+          "Failed to initialize clients",
+          flags,
+          "roomTypingKeystroke",
+        );
       }
 
       const { room: roomName } = args;

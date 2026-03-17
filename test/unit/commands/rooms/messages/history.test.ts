@@ -27,7 +27,7 @@ describe("rooms:messages:history command", () => {
   ]);
 
   describe("functionality", () => {
-    it("should retrieve room message history", async () => {
+    it("should retrieve room message history with action and serial", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
 
@@ -38,12 +38,14 @@ describe("rooms:messages:history command", () => {
             clientId: "client1",
             timestamp: new Date(Date.now() - 10_000),
             serial: "msg-1",
+            action: "message.created",
           },
           {
             text: "Historical message 2",
             clientId: "client2",
             timestamp: new Date(Date.now() - 5000),
             serial: "msg-2",
+            action: "message.updated",
           },
         ],
       });
@@ -53,10 +55,14 @@ describe("rooms:messages:history command", () => {
         import.meta.url,
       );
 
-      expect(room.attach).toHaveBeenCalled();
       expect(room.messages.history).toHaveBeenCalled();
       expect(stdout).toContain("Historical message 1");
       expect(stdout).toContain("Historical message 2");
+      expect(stdout).toContain("message.created");
+      expect(stdout).toContain("message.updated");
+      expect(stdout).toContain("Serial");
+      expect(stdout).toContain("msg-1");
+      expect(stdout).toContain("msg-2");
     });
 
     it("should display no messages found when history is empty", async () => {
@@ -86,6 +92,7 @@ describe("rooms:messages:history command", () => {
             clientId: "client1",
             timestamp: new Date(),
             serial: "msg-m1",
+            action: "message.created",
             metadata: { priority: "high" },
           },
         ],
@@ -100,7 +107,7 @@ describe("rooms:messages:history command", () => {
       expect(stdout).toContain("priority");
     });
 
-    it("should emit JSON envelope with type result for --json", async () => {
+    it("should emit JSON envelope with serial, action, and metadata", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
 
@@ -111,6 +118,8 @@ describe("rooms:messages:history command", () => {
             clientId: "client1",
             timestamp: new Date(Date.now() - 5000),
             serial: "msg-h1",
+            action: "message.created",
+            metadata: { key: "value" },
           },
         ],
       });
@@ -132,6 +141,10 @@ describe("rooms:messages:history command", () => {
       expect(record).toHaveProperty("success", true);
       expect(record).toHaveProperty("room", "test-room");
       expect(record).toHaveProperty("messages");
+      const messages = record.messages as Array<Record<string, unknown>>;
+      expect(messages[0]).toHaveProperty("serial", "msg-h1");
+      expect(messages[0]).toHaveProperty("action", "message.created");
+      expect(messages[0]).toHaveProperty("metadata", { key: "value" });
     });
   });
 

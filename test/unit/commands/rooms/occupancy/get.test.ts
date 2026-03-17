@@ -32,7 +32,6 @@ describe("rooms:occupancy:get command", () => {
         import.meta.url,
       );
 
-      expect(room.attach).toHaveBeenCalled();
       expect(room.occupancy.get).toHaveBeenCalled();
       expect(stdout).toContain("Connections: 5");
       expect(stdout).toContain("Presence Members: 3");
@@ -79,9 +78,7 @@ describe("rooms:occupancy:get command", () => {
     it("should output JSON error on failure", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
-      room.attach.mockImplementation(async () => {
-        throw new Error("Room attach timeout");
-      });
+      room.occupancy.get.mockRejectedValue(new Error("Service unavailable"));
 
       const { stdout } = await runCommand(
         ["rooms:occupancy:get", "test-room", "--json"],

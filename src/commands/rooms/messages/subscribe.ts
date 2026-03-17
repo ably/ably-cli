@@ -11,6 +11,8 @@ import {
   formatTimestamp,
   formatMessageTimestamp,
   formatIndex,
+  formatEventType,
+  formatClientId,
 } from "../../../utils/output.js";
 
 // Define message interface
@@ -18,6 +20,8 @@ interface ChatMessage {
   clientId: string;
   text: string;
   timestamp: number | Date; // Support both timestamp types
+  serial: string;
+  action: string;
   metadata?: Record<string, unknown>;
   [key: string]: unknown;
 }
@@ -97,10 +101,9 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         clientId: message.clientId,
         text: message.text,
         timestamp: message.timestamp,
+        serial: message.serial,
+        action: String(messageEvent.type),
         ...(message.metadata ? { metadata: message.metadata } : {}),
-        ...(flags["sequence-numbers"]
-          ? { sequence: this.sequenceCounter }
-          : {}),
       };
       this.logCliEvent(flags, "message", "received", "Message received", {
         message: messageLog,
@@ -132,9 +135,17 @@ export default class MessagesSubscribe extends ChatBaseCommand {
           ? `${formatIndex(this.sequenceCounter)}`
           : "";
 
-        // Message content with consistent formatting
+        // Message content with multi-line labeled block
+        this.log(`${roomPrefix}${formatTimestamp(timestamp)}${sequencePrefix}`);
         this.log(
-          `${roomPrefix}${formatTimestamp(timestamp)}${sequencePrefix} ${chalk.blue(`${author}:`)} ${message.text}`,
+          `${roomPrefix}  ${formatLabel("Action")} ${formatEventType(String(messageEvent.type))}`,
+        );
+        this.log(
+          `${roomPrefix}  ${formatLabel("Client ID")} ${formatClientId(author)}`,
+        );
+        this.log(`${roomPrefix}  ${formatLabel("Text")} ${message.text}`);
+        this.log(
+          `${roomPrefix}  ${formatLabel("Serial")} ${formatResource(message.serial)}`,
         );
 
         // Show metadata if enabled and available

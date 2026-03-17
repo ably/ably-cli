@@ -11,5 +11,7 @@ export default class MessagesIndex extends BaseTopicCommand {
     '<%= config.bin %> <%= command.id %> send my-room "Hello world!"',
     "<%= config.bin %> <%= command.id %> subscribe my-room",
     "<%= config.bin %> <%= command.id %> history my-room",
+    '<%= config.bin %> <%= command.id %> update my-room "serial" "Updated text"',
+    '<%= config.bin %> <%= command.id %> delete my-room "serial"',
   ];
 }

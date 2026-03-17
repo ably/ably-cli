@@ -60,7 +60,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
       this.chatClient = await this.createChatClient(flags);
 
       if (!this.chatClient) {
-        this.fail(
+        return this.fail(
           "Failed to initialize clients",
           flags,
           "roomMessageReactionSubscribe",

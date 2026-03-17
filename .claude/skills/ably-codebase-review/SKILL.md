@@ -103,13 +103,23 @@ Launch these agents **in parallel**. Each agent gets a focused mandate and uses 
 5. **Read** command files and look for unguarded `this.log()` calls (not inside `if (!this.shouldOutputJson(flags))`)
 6. **Grep** for quoted resource names patterns like `"${` or `'${` near `channel`, `name`, `app` variables — should use `formatResource()`
 
+**Method (grep — structured output format):**
+7. **Grep** for box-drawing characters (`┌`, `┬`, `├`, `└`, `│`) in command files — non-JSON output must use multi-line labeled blocks, not ASCII tables or grids
+8. **Grep** for subscribe commands that call `getAll()` or equivalent before subscribing — subscribe commands must NOT fetch initial state (they should only listen for new events)
+9. For data-outputting commands, **read** both the JSON and non-JSON output paths and compare fields — non-JSON should expose the same fields as JSON mode (omitting only null/empty values)
+10. **Grep** for local `interface` definitions in `src/commands/` that duplicate SDK types (e.g., `interface CursorPosition`, `interface CursorData`, `interface PresenceMessage`) — these should import from `ably`, `@ably/spaces`, or `@ably/chat` instead. Display/output interfaces in `src/utils/` are intentional and fine.
+
 **Method (LSP — for completeness mapping):**
-7. Use `LSP findReferences` on `shouldOutputJson` to get the definitive list of all commands that check for JSON mode — cross-reference against the full command list to find commands missing JSON guards
+11. Use `LSP findReferences` on `shouldOutputJson` to get the definitive list of all commands that check for JSON mode — cross-reference against the full command list to find commands missing JSON guards
 
 **Reasoning guidance:**
 - List commands don't use `formatSuccess()` (no action to confirm) — this is correct, not a deviation
 - `chalk.red("✗")` / `chalk.green("✓")` as visual indicators in test/bench output is acceptable
 - `chalk.yellow("Warning: ...")` should use `formatWarning()` instead — `formatWarning` adds the `⚠` symbol automatically and "Warning:" prefix is unnecessary
+- ASCII tables/grids in non-JSON output are deviations — use multi-line labeled blocks with `formatLabel()` instead
+- Subscribe commands fetching initial state (via `getAll()`, `getSelf()`, etc.) before subscribing are deviations — subscribe should only listen for new events
+- Non-JSON output that hides fields available in JSON mode is a deviation — both modes should expose the same data
+- Local `interface` definitions in command files that duplicate SDK types are deviations — import from the SDK package instead. Display/output interfaces in `src/utils/` (e.g., `MemberOutput`, `MessageDisplayFields`) are intentional transformations, not duplicates.
 
 ### Agent 4: Flag Architecture Sweep
 
@@ -143,11 +153,14 @@ Launch these agents **in parallel**. Each agent gets a focused mandate and uses 
 3. **Grep** for `shouldOutputJson` in command files to find all JSON-aware commands
 4. Cross-reference: every leaf command should appear in both the `logJsonResult`/`logJsonEvent` list and the `shouldOutputJson` list
 5. **Read** streaming commands to verify they use `logJsonEvent`, one-shot commands use `logJsonResult`
+6. **Read** each `logJsonResult`/`logJsonEvent` call and verify data is nested under a domain key — singular for events/single items (e.g., `{message: ...}`, `{cursor: ...}`), plural for collections (e.g., `{cursors: [...]}`, `{rules: [...]}`). Top-level envelope fields are `type`, `command`, `success` only. Metadata like `total`, `timestamp`, `appId` may sit alongside the domain key.
 
 **Reasoning guidance:**
 - Commands that ONLY have human output (no JSON path) are deviations
 - Direct `formatJsonRecord` usage in command files should use `logJsonResult`/`logJsonEvent` instead
 - Topic index commands (showing help) don't need JSON output
+- Data spread at the top level without a domain key is a deviation — nest under a singular or plural domain noun
+- Metadata fields (`total`, `timestamp`, `hasMore`, `appId`) alongside the domain key are acceptable — they describe the result, not the domain objects
 
 ### Agent 6: Test Pattern Sweep
 
@@ -184,8 +197,9 @@ Launch these agents **in parallel**. Each agent gets a focused mandate and uses 
 **Method (grep/read — text patterns):**
 1. **Grep** for `waitUntilInterruptedOrTimeout` in command files — should use `this.waitAndTrackCleanup()` instead
 2. **Grep** for `setupChannelStateLogging` in subscribe commands (rooms/*, spaces/*) — flag those that don't call it
-3. **Read** command files and check `static examples` arrays for `--json` or `--pretty-json` examples — flag leaf commands that have examples but no JSON variant
-4. **Compare** skill templates (`patterns.md`, `SKILL.md`, `testing.md` — already read in Step 1) against actual codebase method names/imports — flag any outdated patterns
+3. **Grep** for `room.attach()` or `space.enter()` in all rooms/* and spaces/* commands — verify it's only called for commands that need a realtime connection. In the Chat SDK, methods using `this._chatApi.*` are REST (no attach needed), while methods using `this._channel.publish()` or `this._channel.presence.*` need realtime attachment. REST-only: messages send/update/delete/history, occupancy get. Needs attach: presence enter/get/subscribe, typing keystroke/stop, reactions send/subscribe, occupancy subscribe, messages subscribe. Unnecessary attachment adds latency and creates an unneeded realtime connection.
+4. **Read** command files and check `static examples` arrays for `--json` or `--pretty-json` examples — flag leaf commands that have examples but no JSON variant
+5. **Compare** skill templates (`patterns.md`, `SKILL.md`, `testing.md` — already read in Step 1) against actual codebase method names/imports — flag any outdated patterns
 
 **Method (LSP — for base class verification):**
 5. If a subscribe command doesn't call `setupChannelStateLogging` directly, use `LSP goToDefinition` on the base class to check if it's handled there
@@ -193,6 +207,7 @@ Launch these agents **in parallel**. Each agent gets a focused mandate and uses 
 **Reasoning guidance:**
 - `waitUntilInterruptedOrTimeout` in bench commands may be acceptable (different lifecycle)
 - Missing `setupChannelStateLogging` in rooms/spaces may be handled by `ChatBaseCommand`/`SpacesBaseCommand` — check the base class
+- `room.attach()` in REST-based commands is a deviation. Chat SDK methods using `this._chatApi.*` (messages send/update/delete/history, occupancy get) are pure REST calls. Methods using `this._channel.publish()` or `this._channel.presence.*` (reactions send, typing keystroke, presence enter/get/subscribe, occupancy subscribe, messages subscribe) DO need attachment.
 - Topic index commands and `help.ts` don't need `--json` examples
 - Skill template accuracy issues are low-effort, high-value fixes
 

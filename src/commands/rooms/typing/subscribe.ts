@@ -39,7 +39,11 @@ export default class TypingSubscribe extends ChatBaseCommand {
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);
       if (!this.chatClient) {
-        this.fail("Failed to initialize clients", flags, "roomTypingSubscribe");
+        return this.fail(
+          "Failed to initialize clients",
+          flags,
+          "roomTypingSubscribe",
+        );
       }
 
       const { room: roomName } = args;

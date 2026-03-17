@@ -177,6 +177,7 @@ $ ably-interactive
 * [`ably rooms`](#ably-rooms)
 * [`ably rooms list`](#ably-rooms-list)
 * [`ably rooms messages`](#ably-rooms-messages)
+* [`ably rooms messages delete ROOM SERIAL`](#ably-rooms-messages-delete-room-serial)
 * [`ably rooms messages history ROOM`](#ably-rooms-messages-history-room)
 * [`ably rooms messages reactions`](#ably-rooms-messages-reactions)
 * [`ably rooms messages reactions remove ROOM MESSAGESERIAL REACTION`](#ably-rooms-messages-reactions-remove-room-messageserial-reaction)
@@ -184,6 +185,7 @@ $ ably-interactive
 * [`ably rooms messages reactions subscribe ROOM`](#ably-rooms-messages-reactions-subscribe-room)
 * [`ably rooms messages send ROOM TEXT`](#ably-rooms-messages-send-room-text)
 * [`ably rooms messages subscribe ROOMS`](#ably-rooms-messages-subscribe-rooms)
+* [`ably rooms messages update ROOM SERIAL TEXT`](#ably-rooms-messages-update-room-serial-text)
 * [`ably rooms occupancy`](#ably-rooms-occupancy)
 * [`ably rooms occupancy get ROOM`](#ably-rooms-occupancy-get-room)
 * [`ably rooms occupancy subscribe ROOM`](#ably-rooms-occupancy-subscribe-room)
@@ -3667,9 +3669,46 @@ EXAMPLES
   $ ably rooms messages subscribe my-room
 
   $ ably rooms messages history my-room
+
+  $ ably rooms messages update my-room "serial" "Updated text"
+
+  $ ably rooms messages delete my-room "serial"
 ```
 
 _See code: [src/commands/rooms/messages/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/messages/index.ts)_
+
+## `ably rooms messages delete ROOM SERIAL`
+
+Delete a message in an Ably Chat room
+
+```
+USAGE
+  $ ably rooms messages delete ROOM SERIAL [-v] [--json | --pretty-json] [--client-id <value>] [--description <value>]
+
+ARGUMENTS
+  ROOM    The room containing the message to delete
+  SERIAL  The serial of the message to delete
+
+FLAGS
+  -v, --verbose              Output verbose logs
+      --client-id=<value>    Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                             no client ID. Not applicable when using token authentication.
+      --description=<value>  Description of the delete operation
+      --json                 Output in JSON format
+      --pretty-json          Output in colorized JSON format
+
+DESCRIPTION
+  Delete a message in an Ably Chat room
+
+EXAMPLES
+  $ ably rooms messages delete my-room "serial-001"
+
+  $ ably rooms messages delete my-room "serial-001" --description "spam removal"
+
+  $ ably rooms messages delete my-room "serial-001" --json
+```
+
+_See code: [src/commands/rooms/messages/delete.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/messages/delete.ts)_
 
 ## `ably rooms messages history ROOM`
 
@@ -3941,6 +3980,47 @@ EXAMPLES
 ```
 
 _See code: [src/commands/rooms/messages/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/messages/subscribe.ts)_
+
+## `ably rooms messages update ROOM SERIAL TEXT`
+
+Update a message in an Ably Chat room
+
+```
+USAGE
+  $ ably rooms messages update ROOM SERIAL TEXT [-v] [--json | --pretty-json] [--client-id <value>] [--description <value>]
+    [--headers <value>] [--metadata <value>]
+
+ARGUMENTS
+  ROOM    The room containing the message to update
+  SERIAL  The serial of the message to update
+  TEXT    The new message text
+
+FLAGS
+  -v, --verbose              Output verbose logs
+      --client-id=<value>    Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                             no client ID. Not applicable when using token authentication.
+      --description=<value>  Description of the update operation
+      --headers=<value>      Additional headers for the message (JSON format)
+      --json                 Output in JSON format
+      --metadata=<value>     Additional metadata for the message (JSON format)
+      --pretty-json          Output in colorized JSON format
+
+DESCRIPTION
+  Update a message in an Ably Chat room
+
+EXAMPLES
+  $ ably rooms messages update my-room "serial-001" "Updated text"
+
+  $ ably rooms messages update my-room "serial-001" "Updated text" --description "typo fix"
+
+  $ ably rooms messages update my-room "serial-001" "Updated text" --metadata '{"edited":true}'
+
+  $ ably rooms messages update my-room "serial-001" "Updated text" --headers '{"source":"cli"}'
+
+  $ ably rooms messages update my-room "serial-001" "Updated text" --json
+```
+
+_See code: [src/commands/rooms/messages/update.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/messages/update.ts)_
 
 ## `ably rooms occupancy`
 

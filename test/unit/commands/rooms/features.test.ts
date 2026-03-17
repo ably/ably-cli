@@ -22,7 +22,6 @@ describe("rooms feature commands", function () {
         import.meta.url,
       );
 
-      expect(room.attach).toHaveBeenCalled();
       expect(room.occupancy.get).toHaveBeenCalled();
       expect(stdout).toContain("5");
     });
@@ -187,7 +186,7 @@ describe("rooms feature commands", function () {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
 
-      room.attach.mockRejectedValue(new Error("Connection failed"));
+      room.occupancy.get.mockRejectedValue(new Error("Connection failed"));
 
       const { error } = await runCommand(
         ["rooms:occupancy:get", "test-room"],
