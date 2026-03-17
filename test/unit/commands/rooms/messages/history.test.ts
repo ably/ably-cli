@@ -53,7 +53,6 @@ describe("rooms:messages:history command", () => {
         import.meta.url,
       );
 
-      expect(room.attach).toHaveBeenCalled();
       expect(room.messages.history).toHaveBeenCalled();
       expect(stdout).toContain("Historical message 1");
       expect(stdout).toContain("Historical message 2");

@@ -111,55 +111,33 @@ export default class MessagesSend extends ChatBaseCommand {
       this.setupConnectionStateLogging(this.chatClient.realtime, flags);
 
       // Parse metadata if provided
-      let metadata;
+      let metadata: JsonObject | undefined;
       if (flags.metadata) {
-        try {
-          metadata = JSON.parse(flags.metadata);
-          this.logCliEvent(
-            flags,
-            "message",
-            "metadataParsed",
-            "Message metadata parsed",
-            { metadata },
-          );
-        } catch (error) {
-          this.fail(
-            `Invalid metadata JSON: ${errorMessage(error)}`,
-            flags,
-            "roomMessageSend",
-          );
+        const parsedMetadata = this.parseJsonFlag(
+          flags.metadata,
+          "metadata",
+          flags,
+        );
+        if (
+          typeof parsedMetadata !== "object" ||
+          parsedMetadata === null ||
+          Array.isArray(parsedMetadata)
+        ) {
+          this.fail("Metadata must be a JSON object", flags, "roomMessageSend");
         }
+
+        metadata = parsedMetadata as JsonObject;
+
+        this.logCliEvent(
+          flags,
+          "message",
+          "metadataParsed",
+          "Message metadata parsed",
+          { metadata },
+        );
       }
 
-      // Get the room with default options
-      this.logCliEvent(
-        flags,
-        "room",
-        "gettingRoom",
-        `Getting room handle for ${args.room}`,
-      );
       const room = await this.chatClient.rooms.get(args.room);
-      this.logCliEvent(
-        flags,
-        "room",
-        "gotRoom",
-        `Got room handle for ${args.room}`,
-      );
-
-      // Attach to the room
-      this.logCliEvent(
-        flags,
-        "room",
-        "attaching",
-        `Attaching to room ${args.room}`,
-      );
-      await room.attach();
-      this.logCliEvent(
-        flags,
-        "room",
-        "attached",
-        `Attached to room ${args.room}`,
-      );
 
       // Validate count and delay
       const count = Math.max(1, flags.count);

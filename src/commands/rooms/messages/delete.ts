@@ -53,34 +53,7 @@ export default class MessagesDelete extends ChatBaseCommand {
 
       this.setupConnectionStateLogging(chatClient.realtime, flags);
 
-      // Get the room and attach
-      this.logCliEvent(
-        flags,
-        "room",
-        "gettingRoom",
-        `Getting room handle for ${args.room}`,
-      );
       const room = await chatClient.rooms.get(args.room);
-      this.logCliEvent(
-        flags,
-        "room",
-        "gotRoom",
-        `Got room handle for ${args.room}`,
-      );
-
-      this.logCliEvent(
-        flags,
-        "room",
-        "attaching",
-        `Attaching to room ${args.room}`,
-      );
-      await room.attach();
-      this.logCliEvent(
-        flags,
-        "room",
-        "attached",
-        `Successfully attached to room ${args.room}`,
-      );
 
       if (!this.shouldOutputJson(flags)) {
         this.log(

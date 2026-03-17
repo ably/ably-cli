@@ -1,7 +1,11 @@
 import { Args, Flags } from "@oclif/core";
-import type { OperationDetails, UpdateMessageParams } from "@ably/chat";
+import type {
+  Headers,
+  JsonObject,
+  OperationDetails,
+  UpdateMessageParams,
+} from "@ably/chat";
 
-import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import {
@@ -55,29 +59,26 @@ export default class MessagesUpdate extends ChatBaseCommand {
 
     try {
       // Parse and validate metadata before any client setup
-      let metadata;
+      let metadata: JsonObject | undefined;
       if (flags.metadata !== undefined) {
-        try {
-          metadata = JSON.parse(flags.metadata);
-        } catch (error) {
-          return this.fail(
-            `Invalid metadata JSON: ${errorMessage(error)}`,
-            flags,
-            "roomMessageUpdate",
-          );
-        }
-
+        const parsedMetadata = this.parseJsonFlag(
+          flags.metadata,
+          "metadata",
+          flags,
+        );
         if (
-          typeof metadata !== "object" ||
-          metadata === null ||
-          Array.isArray(metadata)
+          typeof parsedMetadata !== "object" ||
+          parsedMetadata === null ||
+          Array.isArray(parsedMetadata)
         ) {
-          return this.fail(
+          this.fail(
             "Metadata must be a JSON object",
             flags,
             "roomMessageUpdate",
           );
         }
+
+        metadata = parsedMetadata as JsonObject;
 
         this.logCliEvent(
           flags,
@@ -89,29 +90,26 @@ export default class MessagesUpdate extends ChatBaseCommand {
       }
 
       // Parse and validate headers before any client setup
-      let headers;
+      let headers: Headers | undefined;
       if (flags.headers !== undefined) {
-        try {
-          headers = JSON.parse(flags.headers);
-        } catch (error) {
-          return this.fail(
-            `Invalid headers JSON: ${errorMessage(error)}`,
-            flags,
-            "roomMessageUpdate",
-          );
-        }
-
+        const parsedHeaders = this.parseJsonFlag(
+          flags.headers,
+          "headers",
+          flags,
+        );
         if (
-          typeof headers !== "object" ||
-          headers === null ||
-          Array.isArray(headers)
+          typeof parsedHeaders !== "object" ||
+          parsedHeaders === null ||
+          Array.isArray(parsedHeaders)
         ) {
-          return this.fail(
+          this.fail(
             "Headers must be a JSON object",
             flags,
             "roomMessageUpdate",
           );
         }
+
+        headers = parsedHeaders as Headers;
 
         this.logCliEvent(
           flags,
@@ -134,34 +132,7 @@ export default class MessagesUpdate extends ChatBaseCommand {
 
       this.setupConnectionStateLogging(chatClient.realtime, flags);
 
-      // Get the room and attach
-      this.logCliEvent(
-        flags,
-        "room",
-        "gettingRoom",
-        `Getting room handle for ${args.room}`,
-      );
       const room = await chatClient.rooms.get(args.room);
-      this.logCliEvent(
-        flags,
-        "room",
-        "gotRoom",
-        `Got room handle for ${args.room}`,
-      );
-
-      this.logCliEvent(
-        flags,
-        "room",
-        "attaching",
-        `Attaching to room ${args.room}`,
-      );
-      await room.attach();
-      this.logCliEvent(
-        flags,
-        "room",
-        "attached",
-        `Successfully attached to room ${args.room}`,
-      );
 
       if (!this.shouldOutputJson(flags)) {
         this.log(
@@ -177,8 +148,8 @@ export default class MessagesUpdate extends ChatBaseCommand {
       // Build update params
       const updateParams: UpdateMessageParams = {
         text: args.text,
-        ...(metadata ? { metadata } : {}),
-        ...(headers ? { headers } : {}),
+        ...(metadata && { metadata }),
+        ...(headers && { headers }),
       };
 
       // Build operation details

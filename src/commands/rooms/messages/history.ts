@@ -73,11 +73,7 @@ export default class MessagesHistory extends ChatBaseCommand {
         );
       }
 
-      // Get the room
       const room = await chatClient.rooms.get(args.room);
-
-      // Attach to the room
-      await room.attach();
 
       if (!this.shouldSuppressOutput(flags)) {
         if (this.shouldOutputJson(flags)) {

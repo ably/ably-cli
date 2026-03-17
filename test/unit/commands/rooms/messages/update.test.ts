@@ -42,7 +42,6 @@ describe("rooms:messages:update command", () => {
         import.meta.url,
       );
 
-      expect(room.attach).toHaveBeenCalled();
       expect(room.messages.update).toHaveBeenCalledWith(
         "serial-001",
         { text: "updated-text" },

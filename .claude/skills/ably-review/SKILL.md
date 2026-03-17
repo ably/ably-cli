@@ -117,8 +117,9 @@ For each changed command file, run the relevant checks. Spawn agents for paralle
 
 **Lifecycle check (grep/read):**
 1. **Grep** for `waitUntilInterruptedOrTimeout` — should use `this.waitAndTrackCleanup()` instead
-2. **Read** `static examples` and check for `--json` or `--pretty-json` variant
-3. **Read** the command description — verify imperative mood, sentence case, no trailing period
+2. **Grep** for `room.attach()` or `space.enter()` — verify it's only called for commands that need a realtime connection. In the Chat SDK, methods using `this._chatApi.*` are REST (no attach needed), while methods using `this._channel.publish()` or `this._channel.presence.*` need realtime attachment. REST-only: messages send/update/delete/history, occupancy get. Needs attach: presence enter/get/subscribe, typing keystroke/stop, reactions send/subscribe, occupancy subscribe, messages subscribe. Unnecessary attachment adds latency and creates an unneeded realtime connection.
+3. **Read** `static examples` and check for `--json` or `--pretty-json` variant
+4. **Read** the command description — verify imperative mood, sentence case, no trailing period
 
 ### For changed test files (`test/unit/commands/**/*.ts`)
 

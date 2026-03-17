@@ -23,7 +23,6 @@ describe("rooms messages commands", function () {
         import.meta.url,
       );
 
-      expect(room.attach).toHaveBeenCalled();
       expect(room.messages.send).toHaveBeenCalledWith({
         text: "HelloWorld",
       });
@@ -382,7 +381,6 @@ describe("rooms messages commands", function () {
           import.meta.url,
         );
 
-        expect(room.attach).toHaveBeenCalled();
         expect(room.messages.history).toHaveBeenCalled();
         expect(stdout).toContain("Historical message 1");
         expect(stdout).toContain("Historical message 2");

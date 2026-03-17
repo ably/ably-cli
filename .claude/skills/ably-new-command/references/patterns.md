@@ -5,6 +5,7 @@ Pick the pattern that matches your command from Step 1 of the skill, then follow
 ## Table of Contents
 - [Subscribe Pattern](#subscribe-pattern)
 - [Publish/Send Pattern](#publishsend-pattern)
+- [REST Mutation Pattern](#rest-mutation-pattern)
 - [History Pattern](#history-pattern)
 - [Get Pattern](#get-pattern)
 - [Enter/Presence Pattern](#enterpresence-pattern)
@@ -132,6 +133,57 @@ For multi-message publish or realtime transport, see `src/commands/channels/publ
 - When the command needs to maintain a persistent connection for other reasons
 
 For single-shot publish, REST is preferred (simpler, no connection overhead). See `src/commands/channels/publish.ts` which supports both via a `--transport` flag.
+
+---
+
+## REST Mutation Pattern
+
+For one-shot SDK operations that are pure REST calls (send, update, delete, annotate, history, occupancy get). These do **NOT** need `room.attach()` or `space.enter()` — they only need a room/space handle. In the Chat SDK, methods that go through `this._chatApi.*` are REST-based, while methods that use `this._channel.publish()` or `this._channel.presence.*` require realtime attachment.
+
+Flags for REST mutation commands:
+```typescript
+static override flags = {
+  ...productApiFlags,
+  ...clientIdFlag,  // Users may want to test "can client B update client A's message?"
+  // command-specific flags here
+};
+```
+
+```typescript
+async run(): Promise<void> {
+  const { args, flags } = await this.parse(MyMutationCommand);
+
+  try {
+    const chatClient = await this.createChatClient(flags);
+    if (!chatClient) {
+      return this.fail("Failed to create Chat client", flags, "roomMessageUpdate");
+    }
+
+    this.setupConnectionStateLogging(chatClient.realtime, flags);
+
+    // NO room.attach() — update/delete/annotate are REST calls
+    const room = await chatClient.rooms.get(args.room);
+
+    if (!this.shouldOutputJson(flags)) {
+      this.log(formatProgress("Updating message " + formatResource(args.serial) + " in room " + formatResource(args.room)));
+    }
+
+    const result = await room.messages.update(args.serial, updateParams, details);
+
+    if (this.shouldOutputJson(flags)) {
+      this.logJsonResult({ room: args.room, serial: args.serial, versionSerial: result.version.serial }, flags);
+    } else {
+      this.log(formatSuccess(`Message ${formatResource(args.serial)} updated in room ${formatResource(args.room)}.`));
+    }
+  } catch (error) {
+    this.fail(error, flags, "roomMessageUpdate", { room: args.room, serial: args.serial });
+  }
+}
+```
+
+**Key difference from Subscribe/Send:** No `room.attach()`, no `durationFlag`, no `rewindFlag`, no `waitAndTrackCleanup`. The command creates the client, gets the room handle, calls the REST method, and exits.
+
+See `src/commands/rooms/messages/update.ts` and `src/commands/rooms/messages/delete.ts` as references.
 
 ---
 

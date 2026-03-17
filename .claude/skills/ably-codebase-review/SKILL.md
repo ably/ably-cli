@@ -184,8 +184,9 @@ Launch these agents **in parallel**. Each agent gets a focused mandate and uses 
 **Method (grep/read — text patterns):**
 1. **Grep** for `waitUntilInterruptedOrTimeout` in command files — should use `this.waitAndTrackCleanup()` instead
 2. **Grep** for `setupChannelStateLogging` in subscribe commands (rooms/*, spaces/*) — flag those that don't call it
-3. **Read** command files and check `static examples` arrays for `--json` or `--pretty-json` examples — flag leaf commands that have examples but no JSON variant
-4. **Compare** skill templates (`patterns.md`, `SKILL.md`, `testing.md` — already read in Step 1) against actual codebase method names/imports — flag any outdated patterns
+3. **Grep** for `room.attach()` or `space.enter()` in all rooms/* and spaces/* commands — verify it's only called for commands that need a realtime connection. In the Chat SDK, methods using `this._chatApi.*` are REST (no attach needed), while methods using `this._channel.publish()` or `this._channel.presence.*` need realtime attachment. REST-only: messages send/update/delete/history, occupancy get. Needs attach: presence enter/get/subscribe, typing keystroke/stop, reactions send/subscribe, occupancy subscribe, messages subscribe. Unnecessary attachment adds latency and creates an unneeded realtime connection.
+4. **Read** command files and check `static examples` arrays for `--json` or `--pretty-json` examples — flag leaf commands that have examples but no JSON variant
+5. **Compare** skill templates (`patterns.md`, `SKILL.md`, `testing.md` — already read in Step 1) against actual codebase method names/imports — flag any outdated patterns
 
 **Method (LSP — for base class verification):**
 5. If a subscribe command doesn't call `setupChannelStateLogging` directly, use `LSP goToDefinition` on the base class to check if it's handled there
@@ -193,6 +194,7 @@ Launch these agents **in parallel**. Each agent gets a focused mandate and uses 
 **Reasoning guidance:**
 - `waitUntilInterruptedOrTimeout` in bench commands may be acceptable (different lifecycle)
 - Missing `setupChannelStateLogging` in rooms/spaces may be handled by `ChatBaseCommand`/`SpacesBaseCommand` — check the base class
+- `room.attach()` in REST-based commands is a deviation. Chat SDK methods using `this._chatApi.*` (messages send/update/delete/history, occupancy get) are pure REST calls. Methods using `this._channel.publish()` or `this._channel.presence.*` (reactions send, typing keystroke, presence enter/get/subscribe, occupancy subscribe, messages subscribe) DO need attachment.
 - Topic index commands and `help.ts` don't need `--json` examples
 - Skill template accuracy issues are low-effort, high-value fixes
 

@@ -40,7 +40,6 @@ describe("rooms:messages:delete command", () => {
         import.meta.url,
       );
 
-      expect(room.attach).toHaveBeenCalled();
       expect(room.messages.delete).toHaveBeenCalledWith(
         "serial-001",
         undefined,

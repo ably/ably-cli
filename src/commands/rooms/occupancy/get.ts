@@ -1,5 +1,5 @@
 import { Args } from "@oclif/core";
-import { ChatClient, Room, OccupancyData } from "@ably/chat";
+import { ChatClient, Room } from "@ably/chat";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { clientIdFlag, productApiFlags } from "../../../flags.js";
 import { formatResource } from "../../../utils/output.js";
@@ -46,35 +46,9 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
 
       const { room: roomName } = args;
 
-      // Get the room with occupancy enabled
       this.room = await this.chatClient.rooms.get(roomName);
 
-      // Attach to the room to access occupancy with timeout
-      let attachTimeout;
-      await Promise.race([
-        this.room.attach(),
-        new Promise((_, reject) => {
-          attachTimeout = setTimeout(
-            () => reject(new Error("Room attach timeout")),
-            10000,
-          );
-        }),
-      ]);
-
-      clearTimeout(attachTimeout);
-
-      // Get occupancy metrics using the Chat SDK's occupancy API
-      let occupancyTimeout;
-      const occupancyMetrics = await Promise.race([
-        this.room.occupancy.get(),
-        new Promise<OccupancyData>((_, reject) => {
-          occupancyTimeout = setTimeout(
-            () => reject(new Error("Occupancy get timeout")),
-            5000,
-          );
-        }),
-      ]);
-      clearTimeout(occupancyTimeout);
+      const occupancyMetrics = await this.room.occupancy.get();
 
       // Output the occupancy metrics based on format
       if (this.shouldOutputJson(flags)) {
