@@ -24,7 +24,7 @@ $ npm install -g @ably/cli
 $ ably COMMAND
 running command...
 $ ably (--version)
-@ably/cli/0.17.0 darwin-arm64 node-v24.4.1
+@ably/cli/0.17.0 darwin-arm64 node-v25.3.0
 $ ably --help [COMMAND]
 USAGE
   $ ably COMMAND
@@ -177,10 +177,12 @@ $ ably-interactive
 * [`ably rooms typing keystroke ROOM`](#ably-rooms-typing-keystroke-room)
 * [`ably rooms typing subscribe ROOM`](#ably-rooms-typing-subscribe-room)
 * [`ably spaces`](#ably-spaces)
+* [`ably spaces create SPACE`](#ably-spaces-create-space)
 * [`ably spaces cursors`](#ably-spaces-cursors)
 * [`ably spaces cursors get-all SPACE`](#ably-spaces-cursors-get-all-space)
 * [`ably spaces cursors set SPACE`](#ably-spaces-cursors-set-space)
 * [`ably spaces cursors subscribe SPACE`](#ably-spaces-cursors-subscribe-space)
+* [`ably spaces get SPACE`](#ably-spaces-get-space)
 * [`ably spaces list`](#ably-spaces-list)
 * [`ably spaces locations`](#ably-spaces-locations)
 * [`ably spaces locations get-all SPACE`](#ably-spaces-locations-get-all-space)
@@ -193,7 +195,9 @@ $ ably-interactive
 * [`ably spaces locks subscribe SPACE`](#ably-spaces-locks-subscribe-space)
 * [`ably spaces members`](#ably-spaces-members)
 * [`ably spaces members enter SPACE`](#ably-spaces-members-enter-space)
+* [`ably spaces members get-all SPACE`](#ably-spaces-members-get-all-space)
 * [`ably spaces members subscribe SPACE`](#ably-spaces-members-subscribe-space)
+* [`ably spaces subscribe SPACE`](#ably-spaces-subscribe-space)
 * [`ably stats`](#ably-stats)
 * [`ably stats account`](#ably-stats-account)
 * [`ably stats app [ID]`](#ably-stats-app-id)
@@ -1421,8 +1425,8 @@ Delete an annotation from a channel message
 
 ```
 USAGE
-  $ ably channels annotations delete CHANNEL SERIAL TYPE [-v] [--json | --pretty-json] [--client-id <value>] [--count <value>]
-    [-n <value>]
+  $ ably channels annotations delete CHANNEL SERIAL TYPE [-v] [--json | --pretty-json] [--client-id <value>] [-n
+  <value>]
 
 ARGUMENTS
   CHANNEL  The channel name
@@ -1434,7 +1438,6 @@ FLAGS
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
-      --count=<value>      The annotation count (for multiple.v1 types)
       --json               Output in JSON format
       --pretty-json        Output in colorized JSON format
 
@@ -1444,7 +1447,7 @@ DESCRIPTION
 EXAMPLES
   $ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --name thumbsup
 
-  $ ably channels annotations delete my-channel "01234567890:0" "reactions:multiple.v1" --name thumbsup --count 2
+  $ ably channels annotations delete my-channel "01234567890:0" "reactions:multiple.v1" --name thumbsup
 
   $ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --json
 
@@ -1468,7 +1471,7 @@ ARGUMENTS
 FLAGS
   -v, --verbose        Output verbose logs
       --json           Output in JSON format
-      --limit=<value>  [default: 50] Maximum number of results to return (default: 50)
+      --limit=<value>  [default: 100] Maximum number of results to return (default: 100)
       --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
@@ -3691,19 +3694,59 @@ DESCRIPTION
 EXAMPLES
   $ ably spaces list
 
+  $ ably spaces get my-space
+
+  $ ably spaces create my-space
+
+  $ ably spaces subscribe my-space
+
   $ ably spaces members enter my-space
 
   $ ably spaces locations set my-space
 
 COMMANDS
+  ably spaces create     Create a new space
   ably spaces cursors    Commands for interacting with Cursors in Ably Spaces
+  ably spaces get        Get the current state of a space
   ably spaces list       List active spaces
   ably spaces locations  Commands for location management in Ably Spaces
   ably spaces locks      Commands for component locking in Ably Spaces
   ably spaces members    Commands for managing members in Ably Spaces
+  ably spaces subscribe  Subscribe to space update events
 ```
 
 _See code: [src/commands/spaces/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/index.ts)_
+
+## `ably spaces create SPACE`
+
+Create a new space
+
+```
+USAGE
+  $ ably spaces create SPACE [-v] [--json | --pretty-json] [--client-id <value>]
+
+ARGUMENTS
+  SPACE  Space to create
+
+FLAGS
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+
+DESCRIPTION
+  Create a new space
+
+EXAMPLES
+  $ ably spaces create my-space
+
+  $ ably spaces create my-space --json
+
+  $ ably spaces create my-space --pretty-json
+```
+
+_See code: [src/commands/spaces/create.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/create.ts)_
 
 ## `ably spaces cursors`
 
@@ -3840,6 +3883,35 @@ EXAMPLES
 
 _See code: [src/commands/spaces/cursors/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/cursors/subscribe.ts)_
 
+## `ably spaces get SPACE`
+
+Get the current state of a space
+
+```
+USAGE
+  $ ably spaces get SPACE [-v] [--json | --pretty-json]
+
+ARGUMENTS
+  SPACE  Space to get
+
+FLAGS
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
+
+DESCRIPTION
+  Get the current state of a space
+
+EXAMPLES
+  $ ably spaces get my-space
+
+  $ ably spaces get my-space --json
+
+  $ ably spaces get my-space --pretty-json
+```
+
+_See code: [src/commands/spaces/get.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/get.ts)_
+
 ## `ably spaces list`
 
 List active spaces
@@ -3930,13 +4002,12 @@ Set your location in a space
 
 ```
 USAGE
-  $ ably spaces locations set SPACE --location <value> [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
+  $ ably spaces locations set SPACE --location <value> [-v] [--json | --pretty-json] [--client-id <value>]
 
 ARGUMENTS
   SPACE  Space to set location in
 
 FLAGS
-  -D, --duration=<value>   Automatically exit after N seconds
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
@@ -4202,6 +4273,37 @@ EXAMPLES
 
 _See code: [src/commands/spaces/members/enter.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/members/enter.ts)_
 
+## `ably spaces members get-all SPACE`
+
+Get all members in a space
+
+```
+USAGE
+  $ ably spaces members get-all SPACE [-v] [--json | --pretty-json] [--client-id <value>]
+
+ARGUMENTS
+  SPACE  Space to get members from
+
+FLAGS
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+
+DESCRIPTION
+  Get all members in a space
+
+EXAMPLES
+  $ ably spaces members get-all my-space
+
+  $ ably spaces members get-all my-space --json
+
+  $ ably spaces members get-all my-space --pretty-json
+```
+
+_See code: [src/commands/spaces/members/get-all.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/members/get-all.ts)_
+
 ## `ably spaces members subscribe SPACE`
 
 Subscribe to member presence events in a space
@@ -4235,6 +4337,40 @@ EXAMPLES
 ```
 
 _See code: [src/commands/spaces/members/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/members/subscribe.ts)_
+
+## `ably spaces subscribe SPACE`
+
+Subscribe to space update events
+
+```
+USAGE
+  $ ably spaces subscribe SPACE [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
+
+ARGUMENTS
+  SPACE  Space to subscribe to
+
+FLAGS
+  -D, --duration=<value>   Automatically exit after N seconds
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+
+DESCRIPTION
+  Subscribe to space update events
+
+EXAMPLES
+  $ ably spaces subscribe my-space
+
+  $ ably spaces subscribe my-space --json
+
+  $ ably spaces subscribe my-space --pretty-json
+
+  $ ably spaces subscribe my-space --duration 30
+```
+
+_See code: [src/commands/spaces/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/subscribe.ts)_
 
 ## `ably stats`
 

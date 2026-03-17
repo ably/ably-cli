@@ -109,11 +109,17 @@ export interface MockSpace {
   name: string;
   enter: Mock;
   leave: Mock;
+  subscribe: Mock;
+  unsubscribe: Mock;
   updateProfileData: Mock;
   members: MockSpaceMembers;
   locations: MockSpaceLocations;
   locks: MockSpaceLocks;
   cursors: MockSpaceCursors;
+  // Internal emitter for simulating space-level events
+  _emitter: AblyEventEmitter;
+  // Helper to emit space events
+  _emit: (event: string, data: unknown) => void;
 }
 
 /**
@@ -284,15 +290,43 @@ function createMockSpaceCursors(): MockSpaceCursors {
  * Create a mock space object.
  */
 function createMockSpace(name: string): MockSpace {
+  const emitter = new EventEmitter();
+
   return {
     name,
     enter: vi.fn().mockImplementation(async () => {}),
     leave: vi.fn().mockImplementation(async () => {}),
+    subscribe: vi.fn((eventOrCallback: unknown, callback?: unknown) => {
+      const cb = (callback ?? eventOrCallback) as (...args: unknown[]) => void;
+      const event = callback
+        ? (eventOrCallback as string)
+        : (null as unknown as string);
+      emitter.on(event, cb);
+    }),
+    unsubscribe: vi.fn((eventOrCallback?: unknown, callback?: unknown) => {
+      if (!eventOrCallback) {
+        emitter.off();
+      } else if (typeof eventOrCallback === "function") {
+        emitter.off(
+          null as unknown as string,
+          eventOrCallback as (...args: unknown[]) => void,
+        );
+      } else if (callback) {
+        emitter.off(
+          eventOrCallback as string,
+          callback as (...args: unknown[]) => void,
+        );
+      }
+    }),
     updateProfileData: vi.fn().mockImplementation(async () => {}),
     members: createMockSpaceMembers(),
     locations: createMockSpaceLocations(),
     locks: createMockSpaceLocks(),
     cursors: createMockSpaceCursors(),
+    _emitter: emitter,
+    _emit: (event: string, data: unknown) => {
+      emitter.emit(event, data);
+    },
   };
 }
 

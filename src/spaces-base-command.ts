@@ -38,6 +38,20 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
   }
 
   async finally(error: Error | undefined): Promise<void> {
+    // The Spaces SDK subscribes to channel.presence internally (in the Space
+    // constructor) but provides no dispose/cleanup method. When the connection
+    // closes, the SDK's internal handlers receive errors that surface as
+    // unhandled rejections crashing the process. We suppress these during
+    // cleanup, matching the ChatBaseCommand pattern of tolerating SDK errors
+    // during teardown.
+    const suppressedErrors: unknown[] = [];
+    const onUnhandledRejection = (reason: unknown) => {
+      suppressedErrors.push(reason);
+      this.debug(`Suppressed unhandled rejection during cleanup: ${reason}`);
+    };
+
+    process.on("unhandledRejection", onUnhandledRejection);
+
     try {
       if (this.space !== null) {
         // Unsubscribe from all namespace listeners
@@ -48,6 +62,20 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
           this.space.cursors.unsubscribe();
         } catch (error) {
           this.debug(`Namespace unsubscribe error: ${error}`);
+        }
+
+        // Unsubscribe the SDK's internal presence handler on the space channel.
+        // This removes the Spaces SDK's listener but cannot fully prevent
+        // errors from the Ably SDK's own channel state transitions during close.
+        try {
+          const spaceChannel = (
+            this.space as unknown as { channel: Ably.RealtimeChannel }
+          ).channel;
+          if (spaceChannel) {
+            spaceChannel.presence.unsubscribe();
+          }
+        } catch (error) {
+          this.debug(`Space channel presence unsubscribe error: ${error}`);
         }
 
         // Only leave and wait for member cleanup if we actually entered the space
@@ -95,6 +123,11 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     }
 
     await super.finally(error);
+
+    // Allow a tick for any remaining SDK-internal rejections to fire
+    // before removing the suppression handler.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    process.removeListener("unhandledRejection", onUnhandledRejection);
   }
 
   // Ensure we have the spaces client and its related authentication resources
