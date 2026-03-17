@@ -83,7 +83,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
       );
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(`\n${formatListening("Listening for lock events.")}\n`);
+        this.log(formatListening("Listening for lock events."));
       }
 
       await this.waitAndTrackCleanup(flags, "lock", flags.duration);

@@ -102,19 +102,16 @@ describe("spaces:locks:get command", () => {
       );
 
       const records = parseNdjsonLines(stdout);
-      const resultRecord = records.find(
-        (r) => r.type === "result" && Array.isArray(r.locks),
-      );
+      const resultRecord = records.find((r) => r.type === "result" && r.lock);
       expect(resultRecord).toBeDefined();
       expect(resultRecord).toHaveProperty("type", "result");
       expect(resultRecord).toHaveProperty("command", "spaces:locks:get");
       expect(resultRecord).toHaveProperty("success", true);
-      expect(resultRecord!.locks).toHaveLength(1);
-      expect(resultRecord!.locks[0]).toHaveProperty("id", "my-lock");
-      expect(resultRecord!.locks[0]).toHaveProperty("status", "locked");
-      expect(resultRecord!.locks[0]).toHaveProperty("member");
-      expect(resultRecord!.locks[0]).toHaveProperty("attributes", null);
-      expect(resultRecord!.locks[0]).toHaveProperty("reason", null);
+      expect(resultRecord!.lock).toHaveProperty("id", "my-lock");
+      expect(resultRecord!.lock).toHaveProperty("status", "locked");
+      expect(resultRecord!.lock).toHaveProperty("member");
+      expect(resultRecord!.lock).toHaveProperty("attributes", null);
+      expect(resultRecord!.lock).toHaveProperty("reason", null);
     });
 
     it("should handle lock not found", async () => {
@@ -129,11 +126,9 @@ describe("spaces:locks:get command", () => {
 
       expect(space.locks.get).toHaveBeenCalledWith("nonexistent-lock");
       const records = parseNdjsonLines(stdout);
-      const resultRecord = records.find(
-        (r) => r.type === "result" && Array.isArray(r.locks),
-      );
+      const resultRecord = records.find((r) => r.type === "result");
       expect(resultRecord).toBeDefined();
-      expect(resultRecord!.locks).toEqual([]);
+      expect(resultRecord!.lock).toBeNull();
     });
   });
 

@@ -58,7 +58,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(`\n${formatListening("Listening for member events.")}\n`);
+        this.log(formatListening("Listening for member events."));
       }
 
       // Subscribe to member presence events
@@ -149,8 +149,6 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
       await this.waitAndTrackCleanup(flags, "member", flags.duration);
     } catch (error) {
       this.fail(error, flags, "memberSubscribe");
-    } finally {
-      // Cleanup is now handled by base class finally() method
     }
   }
 }

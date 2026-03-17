@@ -122,11 +122,11 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonResult({ locks: [formatLockOutput(lock)] }, flags);
+          this.logJsonResult({ lock: formatLockOutput(lock) }, flags);
         } else {
           this.log(formatSuccess(`Lock acquired: ${formatResource(lockId)}.`));
           this.log(formatLockBlock(lock));
-          this.log(`\n${formatListening("Holding lock.")}`);
+          this.log(formatListening("Holding lock."));
         }
       } catch (error) {
         this.fail(error, flags, "lockAcquire", {

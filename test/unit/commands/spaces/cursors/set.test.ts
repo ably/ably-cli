@@ -169,12 +169,11 @@ describe("spaces:cursors:set command", () => {
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "spaces:cursors:set");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("cursors");
-      expect(result!.cursors).toHaveLength(1);
-      expect(result!.cursors[0]).toHaveProperty("position");
-      expect(result!.cursors[0].position).toEqual({ x: 100, y: 200 });
-      expect(result!.cursors[0]).toHaveProperty("clientId");
-      expect(result!.cursors[0]).toHaveProperty("connectionId");
+      expect(result).toHaveProperty("cursor");
+      expect(result!.cursor).toHaveProperty("position");
+      expect(result!.cursor.position).toEqual({ x: 100, y: 200 });
+      expect(result!.cursor).toHaveProperty("clientId");
+      expect(result!.cursor).toHaveProperty("connectionId");
     });
   });
 

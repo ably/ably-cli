@@ -46,7 +46,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(`\n${formatListening("Listening for location updates.")}\n`);
+        this.log(formatListening("Listening for location updates."));
       }
 
       this.logCliEvent(

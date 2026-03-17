@@ -137,17 +137,13 @@ describe("spaces:locks:acquire command", () => {
 
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("locks");
-      expect(result.locks).toHaveLength(1);
-      expect(result.locks[0]).toHaveProperty("id", "my-lock");
-      expect(result.locks[0]).toHaveProperty("status", "locked");
-      expect(result.locks[0]).toHaveProperty("member");
-      expect(result.locks[0].member).toHaveProperty(
-        "clientId",
-        "mock-client-id",
-      );
-      expect(result.locks[0]).toHaveProperty("attributes", null);
-      expect(result.locks[0]).toHaveProperty("reason", null);
+      expect(result).toHaveProperty("lock");
+      expect(result.lock).toHaveProperty("id", "my-lock");
+      expect(result.lock).toHaveProperty("status", "locked");
+      expect(result.lock).toHaveProperty("member");
+      expect(result.lock.member).toHaveProperty("clientId", "mock-client-id");
+      expect(result.lock).toHaveProperty("attributes", null);
+      expect(result.lock).toHaveProperty("reason", null);
     });
   });
 

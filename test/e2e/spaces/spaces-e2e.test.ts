@@ -400,7 +400,7 @@ describe("Spaces E2E Tests", () => {
 
             if (
               output.includes(client2Id) &&
-              output.includes("Position:") &&
+              output.includes("Position X:") &&
               output.includes("TestUser2") &&
               output.includes("#ff0000")
             ) {

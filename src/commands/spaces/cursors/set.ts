@@ -171,18 +171,16 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            cursors: [
-              {
-                clientId: this.realtimeClient!.auth.clientId,
-                connectionId: this.realtimeClient!.connection.id,
-                position: (
-                  cursorForOutput as { position: { x: number; y: number } }
-                ).position,
-                data:
-                  (cursorForOutput as { data?: Record<string, unknown> })
-                    .data ?? null,
-              },
-            ],
+            cursor: {
+              clientId: this.realtimeClient!.auth.clientId,
+              connectionId: this.realtimeClient!.connection.id,
+              position: (
+                cursorForOutput as { position: { x: number; y: number } }
+              ).position,
+              data:
+                (cursorForOutput as { data?: Record<string, unknown> }).data ??
+                null,
+            },
           },
           flags,
         );

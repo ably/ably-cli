@@ -84,7 +84,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
 
       if (this.shouldOutputJson(flags)) {
         const self = await this.space!.members.getSelf();
-        this.logJsonResult({ members: [formatMemberOutput(self!)] }, flags);
+        this.logJsonResult({ member: formatMemberOutput(self!) }, flags);
       } else {
         this.log(formatSuccess(`Entered space: ${formatResource(spaceName)}.`));
         this.log(
@@ -99,7 +99,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
       }
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(`\n${formatListening("Holding presence.")}\n`);
+        this.log(formatListening("Holding presence."));
       }
 
       // Wait until the user interrupts or the optional duration elapses

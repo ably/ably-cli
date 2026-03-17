@@ -49,7 +49,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
 
         if (!lock) {
           if (this.shouldOutputJson(flags)) {
-            this.logJsonResult({ locks: [] }, flags);
+            this.logJsonResult({ lock: null }, flags);
           } else {
             this.log(
               formatWarning(
@@ -62,7 +62,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
         }
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonResult({ locks: [formatLockOutput(lock)] }, flags);
+          this.logJsonResult({ lock: formatLockOutput(lock) }, flags);
         } else {
           this.log(formatLockBlock(lock));
         }

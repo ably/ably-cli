@@ -104,7 +104,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
       }
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(`\n${formatListening("Listening for cursor movements.")}\n`);
+        this.log(formatListening("Listening for cursor movements."));
       }
 
       await this.waitAndTrackCleanup(flags, "cursor", flags.duration);
