@@ -176,14 +176,23 @@ if (!this.shouldOutputJson(flags)) {
   this.log(formatListening("Listening for messages."));
 }
 
-// JSON output — use logJsonResult for one-shot results:
+// JSON output — nest data under a domain key, not spread at top level.
+// Envelope provides top-level: type, command, success.
+// One-shot single result — singular domain key:
 if (this.shouldOutputJson(flags)) {
-  this.logJsonResult({ channel: args.channel, message }, flags);
+  this.logJsonResult({ message: messageData }, flags);
+  // → {"type":"result","command":"...","success":true,"message":{...}}
 }
 
-// Streaming events — use logJsonEvent:
+// One-shot collection result — plural domain key + optional metadata:
 if (this.shouldOutputJson(flags)) {
-  this.logJsonEvent({ eventType: event.type, message, channel: channelName }, flags);
+  this.logJsonResult({ messages: items, total: items.length }, flags);
+}
+
+// Streaming events — singular domain key:
+if (this.shouldOutputJson(flags)) {
+  this.logJsonEvent({ message: messageData }, flags);
+  // → {"type":"event","command":"...","message":{...}}
 }
 ```
 
@@ -389,8 +398,14 @@ See the "Keeping Skills Up to Date" section in `CLAUDE.md` for the full list of 
 - [ ] All human output wrapped in `if (!this.shouldOutputJson(flags))`
 - [ ] Output helpers used correctly (`formatProgress`, `formatSuccess`, `formatWarning`, `formatListening`, `formatResource`, `formatTimestamp`, `formatClientId`, `formatEventType`, `formatLabel`, `formatHeading`, `formatIndex`)
 - [ ] `formatSuccess()` messages end with `.` (period)
+- [ ] Non-JSON data output uses multi-line labeled blocks (see `patterns.md` "Human-Readable Output Format"), not tables or custom grids
+- [ ] Non-JSON output exposes all available SDK fields (same data as JSON mode, omitting only null/empty values)
+- [ ] SDK types imported directly (`import type { CursorUpdate } from "@ably/spaces"`) — no local interface redefinitions of SDK types (display interfaces in `src/utils/` are fine)
+- [ ] Field coverage checked against SDK type definitions (`node_modules/ably/ably.d.ts`, `node_modules/@ably/spaces/dist/mjs/types.d.ts`)
+- [ ] Subscribe commands do NOT fetch initial state — they only listen for new events (use `get-all` for current state)
 - [ ] Resource names use `formatResource(name)`, never quoted
 - [ ] JSON output uses `logJsonResult()` (one-shot) or `logJsonEvent()` (streaming), not direct `formatJsonRecord()`
+- [ ] JSON data nested under a domain key (singular for events/single items, plural for collections) — not spread at top level (see `patterns.md` "JSON Data Nesting Convention")
 - [ ] Subscribe/enter commands use `this.waitAndTrackCleanup(flags, component, flags.duration)` (not `waitUntilInterruptedOrTimeout`)
 - [ ] Error handling uses `this.fail()` exclusively, not `this.error()` or `this.log(chalk.red(...))`
 - [ ] Component strings are camelCase: single-word lowercase (`"room"`, `"auth"`), multi-word camelCase (`"channelPublish"`, `"roomPresenceSubscribe"`)

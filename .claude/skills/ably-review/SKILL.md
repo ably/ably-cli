@@ -98,6 +98,14 @@ For each changed command file, run the relevant checks. Spawn agents for paralle
 4. **Grep** for `formatSuccess(` and check lines end with `.`
 5. **Read** the file and look for unguarded `this.log()` calls (not inside `if (!this.shouldOutputJson(flags))`)
 6. Look for quoted resource names instead of `formatResource(name)`
+7. **Grep** for box-drawing characters (`┌`, `┬`, `├`, `└`, `─.*─`, `│`) — non-JSON output must use multi-line labeled blocks, not ASCII tables or grids
+8. **Read** the file and check that non-JSON data output uses `formatLabel()` for field labels in multi-line blocks, not inline or single-line formatting
+9. **Check** subscribe commands do NOT fetch initial state (no `getAll()` or equivalent before subscribing) — subscribe should only listen for new events
+
+**Field completeness check (read — for data-outputting commands):**
+1. **Read** the JSON output path and compare fields emitted vs the non-JSON output path — non-JSON should expose the same fields as JSON mode (omitting only null/empty values)
+2. **Check** that available SDK fields (e.g., `connectionId`, `clientId`, `isConnected`, `profileData`, `lastEvent`) are shown in non-JSON output, not just in JSON mode
+3. **Grep** for local `interface` definitions in command files that duplicate SDK types (e.g., `interface CursorPosition`, `interface CursorData`) — these should import from `ably`, `@ably/spaces`, or `@ably/chat` instead. Display/output interfaces in `src/utils/` are fine.
 
 **Flag architecture check (grep, with LSP for ambiguous cases):**
 1. **Grep** for flag spreads (`productApiFlags`, `clientIdFlag`, `durationFlag`, `rewindFlag`, `timeRangeFlags`, `ControlBaseCommand.globalFlags`)
@@ -110,6 +118,7 @@ For each changed command file, run the relevant checks. Spawn agents for paralle
 2. **Grep** for `formatJsonRecord` — direct usage should be flagged as needing migration
 3. **Grep** for `shouldOutputJson` — verify human output is guarded
 4. **Read** the file to verify streaming commands use `logJsonEvent` and one-shot commands use `logJsonResult`
+5. **Read** `logJsonResult`/`logJsonEvent` call sites and check data is nested under a domain key (singular for events/single items, plural for collections) — not spread at top level. Top-level envelope fields are `type`, `command`, `success` only. Metadata like `total`, `timestamp`, `appId` may sit alongside the domain key.
 
 **Control API helper check (grep — for Control API commands only):**
 1. **Grep** for `resolveAppId` — should use `requireAppId` instead (encapsulates null check and `fail()`)

@@ -219,9 +219,34 @@ All output helpers use the `format` prefix and are exported from `src/utils/outp
 - **Count labels**: `formatCountLabel(n, "message")` — cyan count + pluralized label.
 - **Limit warnings**: `formatLimitWarning(count, limit, "items")` — yellow warning if results truncated.
 - **JSON guard**: All human-readable output (progress, success, listening messages) must be wrapped in `if (!this.shouldOutputJson(flags))` so it doesn't pollute `--json` output. Only JSON payloads should be emitted when `--json` is active.
-- **JSON envelope**: Use `this.logJsonResult(data, flags)` for one-shot results and `this.logJsonEvent(data, flags)` for streaming events. These are shorthand for `this.log(this.formatJsonRecord("result"|"event", data, flags))`. The envelope wraps data in `{type, command, success?, ...data}`. Do NOT add ad-hoc `success: true/false` — the envelope handles it. `--json` produces compact single-line output (NDJSON for streaming). `--pretty-json` is unchanged.
+- **JSON envelope**: Use `this.logJsonResult(data, flags)` for one-shot results and `this.logJsonEvent(data, flags)` for streaming events. The envelope adds three top-level fields (`type`, `command`, `success?`). Nest domain data under a **domain key** (see "JSON data nesting convention" below). Do NOT add ad-hoc `success: true/false` — the envelope handles it. `--json` produces compact single-line output (NDJSON for streaming). `--pretty-json` is unchanged.
 - **JSON errors**: Use `this.fail(error, flags, component, context?)` as the single error funnel in command `run()` methods. It logs the CLI event, preserves structured error data (Ably codes, HTTP status), emits JSON error envelope when `--json` is active, and calls `this.error()` for human-readable output. Returns `never` — no `return;` needed after calling it. Do NOT call `this.error()` directly — it is an internal implementation detail of `fail`.
-- **History output**: Use `[index] timestamp` ordering: `` `${formatIndex(index + 1)} ${formatTimestamp(timestamp)}` ``. Consistent across all history commands (channels, logs, connection-lifecycle, push).
+- **History output**: Use `[index] [timestamp]` on the same line as a heading: `` `${formatIndex(index + 1)} ${formatTimestamp(timestamp)}` ``, then fields indented below. This is distinct from **get-all output** which uses `[index]` alone on its own line. See `references/patterns.md` "History results" and "One-shot results" for both patterns.
+
+### Structured output format (non-JSON)
+
+All non-JSON output for data records must use **multi-line labeled blocks** — one block per record, separated by blank lines. Never use ASCII tables (`┌─┬─┐`, `│`, box-drawing characters) or custom grid layouts. Non-JSON output must expose the same fields as JSON output (omit only null/undefined/empty values). Use `formatLabel()` for field names, type-appropriate formatters for values (`formatClientId`, `formatResource`, `formatEventType`, `formatTimestamp`). Check SDK type definitions (see "Ably Knowledge" below) as the source of truth for available fields — import SDK types directly, never redefine them locally. See `references/patterns.md` "Human-Readable Output Format" in the `ably-new-command` skill for detailed examples.
+
+### JSON data nesting convention
+
+The envelope provides three top-level fields: `type`, `command`, and `success`. All domain data must be nested under a **domain key** — never spread raw data fields at the top level alongside envelope fields.
+
+- **Events and single results**: nest under a **singular** domain key (`message`, `cursor`, `lock`)
+- **Collection results**: nest under a **plural** domain key (`cursors`, `rules`, `keys`)
+- **Metadata** (`total`, `timestamp`, `hasMore`, `appId`) may sit alongside the domain key
+
+See `references/patterns.md` "JSON Data Nesting Convention" in the `ably-new-command` skill for detailed examples and domain key naming.
+
+### Command behavior semantics
+
+Each command type has strict rules about what side effects it may have. Remove unintended side effects (e.g., auto-entering presence) and support passive ("dumb") operations where applicable. Key principles:
+- **Subscribe** = passive observer (no `space.enter()`, no fetching initial state)
+- **Get-all / get** = one-shot query (no `space.enter()`, no subscribing)
+- **Set** = one-shot mutation (enter, set, exit — no subscribing after)
+- **Enter / acquire** = hold state until Ctrl+C / `--duration`
+- Call `space.enter()` only when SDK requires it; always call `this.markAsEntered()` after
+
+See `references/patterns.md` "Command behavior semantics" in the `ably-new-command` skill for full rules, side-effect table, and code examples.
 
 ### Error handling architecture
 
@@ -288,6 +313,7 @@ When adding COMMANDS sections in `src/help.ts`, use `chalk.bold()` for headers, 
   - Platform: https://ably.com/docs/platform
 - The CLI uses Ably SDKs for all data plane commands. When an API exists in the data plane REST API but has no corresponding SDK method, use the Pub/Sub SDK's request method.
 - The Control API has no official SDK, so raw HTTP requests are used.
+- **SDK packages (`node_modules/ably/`, `node_modules/@ably/spaces/`, `node_modules/@ably/chat/`) are the local source of truth** for types and method behavior. Type definitions (e.g., `ably.d.ts`, `types.d.ts`) tell you what fields exist; source code (e.g., `Space.js`, `Members.js`) tells you how methods behave (side effects, prerequisites like `space.enter()`). When in doubt, read the implementation — not just the types. See `references/patterns.md` "Field display rules" in the `ably-new-command` skill for the full path table and import conventions.
 
 ## Development Standards
 
