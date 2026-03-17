@@ -5,6 +5,7 @@ import chalk from "chalk";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../../flags.js";
 import {
+  formatIndex,
   formatLabel,
   formatLimitWarning,
   formatProgress,
@@ -16,6 +17,7 @@ import {
   formatClientId,
 } from "../../../utils/output.js";
 import {
+  buildPaginationNext,
   collectPaginatedResults,
   formatPaginationWarning,
 } from "../../../utils/pagination.js";
@@ -149,10 +151,13 @@ export default class MessagesHistory extends ChatBaseCommand {
         items.length,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
-        this.logToStderr(paginationWarning);
+        this.log(paginationWarning);
       }
 
       if (this.shouldOutputJson(flags)) {
+        const lastTimestamp =
+          items.length > 0 ? items.at(-1)!.timestamp : undefined;
+        const next = buildPaginationNext(hasMore, lastTimestamp);
         this.logJsonResult(
           {
             hasMore,
@@ -164,6 +169,7 @@ export default class MessagesHistory extends ChatBaseCommand {
               action: String(message.action),
               ...(message.metadata ? { metadata: message.metadata } : {}),
             })),
+            ...(next && { next }),
             room: args.room,
           },
           flags,
@@ -179,12 +185,12 @@ export default class MessagesHistory extends ChatBaseCommand {
 
           // Display messages in order provided
           const messagesInOrder = [...items];
-          for (const message of messagesInOrder) {
-            // Format message with timestamp, author and content
+          for (let i = 0; i < messagesInOrder.length; i++) {
+            const message = messagesInOrder[i];
             const timestamp = formatMessageTimestamp(message.timestamp);
             const author = message.clientId || "Unknown";
 
-            this.log(formatTimestamp(timestamp));
+            this.log(`${formatIndex(i + 1)} ${formatTimestamp(timestamp)}`);
             this.log(
               `  ${formatLabel("Action")} ${formatEventType(String(message.action))}`,
             );
@@ -209,7 +215,7 @@ export default class MessagesHistory extends ChatBaseCommand {
             flags.limit,
             "messages",
           );
-          if (warning) this.logToStderr(warning);
+          if (warning) this.log(warning);
         }
       }
     } catch (error) {

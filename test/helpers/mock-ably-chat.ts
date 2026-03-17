@@ -29,6 +29,7 @@
  */
 
 import { vi, type Mock } from "vitest";
+import { createMockPaginatedResult } from "./mock-ably-rest.js";
 import {
   RoomStatus,
   type Message,
@@ -253,11 +254,7 @@ function createMockRoomMessages(): MockRoomMessages {
       timestamp: new Date(),
       version: { serial: "mock-version-serial", timestamp: new Date() },
     }),
-    history: vi.fn().mockResolvedValue({
-      items: [],
-      hasNext: () => false,
-      next: async () => null,
-    }),
+    history: vi.fn().mockResolvedValue(createMockPaginatedResult([])),
     reactions: createMockMessageReactions(),
     _emitter: emitter,
     _emit: (message: Message) => {

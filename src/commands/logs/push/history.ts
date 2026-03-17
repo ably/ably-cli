@@ -15,6 +15,7 @@ import {
   formatLabel,
 } from "../../../utils/output.js";
 import {
+  buildPaginationNext,
   collectPaginatedResults,
   formatPaginationWarning,
 } from "../../../utils/pagination.js";
@@ -79,6 +80,9 @@ export default class LogsPushHistory extends AblyBaseCommand {
 
       // Output results based on format
       if (this.shouldOutputJson(flags)) {
+        const lastTimestamp =
+          messages.length > 0 ? messages.at(-1)!.timestamp : undefined;
+        const next = buildPaginationNext(hasMore, lastTimestamp);
         this.logJsonResult(
           {
             hasMore,
@@ -92,6 +96,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
               name: msg.name,
               timestamp: formatMessageTimestamp(msg.timestamp),
             })),
+            ...(next && { next }),
           },
           flags,
         );

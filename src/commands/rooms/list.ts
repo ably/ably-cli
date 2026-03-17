@@ -8,6 +8,7 @@ import {
   formatLabel,
 } from "../../utils/output.js";
 import {
+  buildPaginationNext,
   collectFilteredPaginatedResults,
   formatPaginationWarning,
 } from "../../utils/pagination.js";
@@ -117,15 +118,19 @@ export default class RoomsList extends ChatBaseCommand {
           const roomName = roomNameMatch[1];
           if (seenRooms.has(roomName)) return false;
           seenRooms.add(roomName);
-          channel.channelId = roomName;
-          channel.room = roomName;
           return true;
         },
       );
 
+      // Normalize names in a separate step (keep filter as pure predicate)
+      const rooms = limitedRooms.map((r) => {
+        const match = r.channelId.match(/^(.+?)::\$chat.*$/)!;
+        return { ...r, channelId: match[1], room: match[1] };
+      });
+
       const paginationWarning = formatPaginationWarning(
         pagesConsumed,
-        limitedRooms.length,
+        rooms.length,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
         this.log(paginationWarning);
@@ -133,19 +138,19 @@ export default class RoomsList extends ChatBaseCommand {
 
       // Output rooms based on format
       if (this.shouldOutputJson(flags)) {
-        // Wrap the array in an object for formatJsonRecord
-        this.logJsonResult({ items: limitedRooms, hasMore }, flags);
+        const next = buildPaginationNext(hasMore);
+        this.logJsonResult({ rooms, hasMore, ...(next && { next }) }, flags);
       } else {
-        if (limitedRooms.length === 0) {
+        if (rooms.length === 0) {
           this.log("No active chat rooms found.");
           return;
         }
 
         this.log(
-          `Found ${formatCountLabel(limitedRooms.length, "active chat room")}:`,
+          `Found ${formatCountLabel(rooms.length, "active chat room")}:`,
         );
 
-        for (const room of limitedRooms) {
+        for (const room of rooms) {
           this.log(`${formatResource(room.room)}`);
 
           // Show occupancy if available
@@ -179,7 +184,7 @@ export default class RoomsList extends ChatBaseCommand {
 
         if (hasMore) {
           const warning = formatLimitWarning(
-            limitedRooms.length,
+            rooms.length,
             flags.limit,
             "rooms",
           );

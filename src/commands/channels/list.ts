@@ -8,7 +8,8 @@ import {
   formatResource,
 } from "../../utils/output.js";
 import {
-  collectHttpPaginatedResults,
+  buildPaginationNext,
+  collectPaginatedResults,
   formatPaginationWarning,
 } from "../../utils/pagination.js";
 
@@ -101,7 +102,7 @@ export default class ChannelsList extends AblyBaseCommand {
         items: channels,
         hasMore,
         pagesConsumed,
-      } = await collectHttpPaginatedResults<ChannelItem>(
+      } = await collectPaginatedResults<ChannelItem>(
         channelsResponse,
         flags.limit,
       );
@@ -116,6 +117,7 @@ export default class ChannelsList extends AblyBaseCommand {
 
       // Output channels based on format
       if (this.shouldOutputJson(flags)) {
+        const next = buildPaginationNext(hasMore);
         this.logJsonResult(
           {
             channels: channels.map((channel: ChannelItem) => ({
@@ -123,6 +125,7 @@ export default class ChannelsList extends AblyBaseCommand {
               metrics: channel.status?.occupancy?.metrics || {},
             })),
             hasMore,
+            ...(next && { next }),
             timestamp: new Date().toISOString(),
             total: channels.length,
           },

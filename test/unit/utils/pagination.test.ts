@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   collectPaginatedResults,
-  collectHttpPaginatedResults,
   collectFilteredPaginatedResults,
 } from "../../../src/utils/pagination.js";
 
@@ -145,20 +144,6 @@ describe("collectPaginatedResults", () => {
     expect(result.items).toEqual([1, 2, 3]);
     expect(result.hasMore).toBe(true);
     expect(result.pagesConsumed).toBe(1);
-  });
-});
-
-describe("collectHttpPaginatedResults", () => {
-  it("should work identically to collectPaginatedResults", async () => {
-    const page = createMockPage([{ id: 1 }, { id: 2 }], {
-      items: [{ id: 3 }],
-      hasNext: false,
-    });
-    const result = await collectHttpPaginatedResults(page, 10);
-
-    expect(result.items).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
-    expect(result.hasMore).toBe(false);
-    expect(result.pagesConsumed).toBe(2);
   });
 });
 

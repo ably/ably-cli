@@ -13,6 +13,38 @@ export interface PaginationResult<T> {
   pagesConsumed: number;
 }
 
+export interface PaginationNext {
+  hint: string;
+  start?: string;
+}
+
+/**
+ * Build a `next` object for JSON output when `hasMore` is true.
+ * For history commands, pass `lastTimestamp` to include a `start` value
+ * that users can pass to `--start` to continue from where they left off.
+ */
+export function buildPaginationNext(
+  hasMore: boolean,
+  lastTimestamp?: Date | number,
+): PaginationNext | undefined {
+  if (!hasMore) return undefined;
+
+  const next: PaginationNext = {
+    hint: "Increase --limit to fetch more results, or use --start to continue from a specific point in time",
+  };
+
+  if (lastTimestamp !== undefined) {
+    const ts =
+      lastTimestamp instanceof Date
+        ? lastTimestamp.toISOString()
+        : new Date(lastTimestamp).toISOString();
+    next.start = ts;
+    next.hint = `Use --start "${ts}" to continue from where this result set ended, or increase --limit`;
+  }
+
+  return next;
+}
+
 /**
  * Returns a formatted warning when multiple pages were fetched, or empty string if only one page.
  */
@@ -66,19 +98,6 @@ export async function collectPaginatedResults<T>(
     hasMore: hasMore || truncated.length < items.length,
     pagesConsumed,
   };
-}
-
-/**
- * Collect items from an HttpPaginatedResponse until the limit is reached or no more pages.
- * Semantic alias for collectPaginatedResults — the underlying interface is identical,
- * but this signals that the caller is working with rest.request() results rather than
- * SDK PaginatedResult objects.
- */
-export async function collectHttpPaginatedResults<T>(
-  firstPage: PaginatedPage<T>,
-  limit: number,
-): Promise<PaginationResult<T>> {
-  return collectPaginatedResults(firstPage, limit);
 }
 
 /**

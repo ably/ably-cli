@@ -126,7 +126,7 @@ describe("logs:history command", () => {
         connectionId: "conn-1",
       }));
       channel.history.mockResolvedValue(
-        createMockPaginatedResult(messages, { items: [{ id: "more" }] }),
+        createMockPaginatedResult(messages, [{ id: "more" }]),
       );
 
       const { stdout } = await runCommand(

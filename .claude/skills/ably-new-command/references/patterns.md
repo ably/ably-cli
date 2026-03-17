@@ -419,9 +419,9 @@ async run(): Promise<void> {
 }
 ```
 
-**Product API list with pagination** (e.g., `push devices list`, `channels list`) — use `collectPaginatedResults` or `collectHttpPaginatedResults`:
+**Product API list with pagination** (e.g., `push devices list`, `channels list`) — use `collectPaginatedResults`:
 ```typescript
-import { collectPaginatedResults, collectHttpPaginatedResults, formatPaginationWarning } from "../../utils/pagination.js";
+import { buildPaginationNext, collectPaginatedResults, formatPaginationWarning } from "../../utils/pagination.js";
 
 async run(): Promise<void> {
   const { flags } = await this.parse(MyListCommand);
@@ -430,13 +430,8 @@ async run(): Promise<void> {
     const rest = await this.createAblyRestClient(flags);
     if (!rest) return;
 
-    // For SDK methods that return PaginatedResult:
     const firstPage = await rest.someResource.list({ limit: flags.limit });
     const { items, hasMore, pagesConsumed } = await collectPaginatedResults(firstPage, flags.limit);
-
-    // For rest.request() that returns HttpPaginatedResponse:
-    // const firstPage = await rest.request("get", "/some/endpoint", 2, { limit: String(flags.limit) });
-    // const { items, hasMore, pagesConsumed } = await collectHttpPaginatedResults(firstPage, flags.limit);
 
     const paginationWarning = formatPaginationWarning(pagesConsumed, items.length);
     if (paginationWarning && !this.shouldOutputJson(flags)) {
@@ -444,7 +439,8 @@ async run(): Promise<void> {
     }
 
     if (this.shouldOutputJson(flags)) {
-      this.logJsonResult({ items, hasMore }, flags);
+      const next = buildPaginationNext(hasMore);
+      this.logJsonResult({ items, hasMore, ...(next && { next }) }, flags);
     } else {
       this.log(`Found ${items.length} items:\n`);
       for (const item of items) {
@@ -470,8 +466,8 @@ Key conventions for list output:
 - `formatLabel(text)` for field labels in detail lines (automatically appends `:`)
 - `formatSuccess()` is not used in list commands — it's for confirming an action completed
 - `formatLimitWarning()` should only be shown when `hasMore` is true — it means there are more results beyond the limit
-- Always include `hasMore` in JSON output for paginated commands so consumers know if results are truncated
-- Use `collectPaginatedResults()` for SDK paginated results, `collectHttpPaginatedResults()` for `rest.request()` results, and `collectFilteredPaginatedResults()` when a client-side filter is applied across pages
+- Always include `hasMore` and `next` in JSON output for paginated commands. `next` provides continuation hints (and `start` timestamp for history commands)
+- Use `collectPaginatedResults()` for SDK paginated results and `collectFilteredPaginatedResults()` when a client-side filter is applied across pages
 
 ---
 

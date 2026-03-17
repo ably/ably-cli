@@ -15,6 +15,7 @@ import {
 } from "../../utils/output.js";
 import type { MessageDisplayFields } from "../../utils/output.js";
 import {
+  buildPaginationNext,
   collectPaginatedResults,
   formatPaginationWarning,
 } from "../../utils/pagination.js";
@@ -98,12 +99,15 @@ export default class ChannelsHistory extends AblyBaseCommand {
         messages.length,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
-        this.logToStderr(paginationWarning);
+        this.log(paginationWarning);
       }
 
       // Display results based on format
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ messages, hasMore }, flags);
+        const lastTimestamp =
+          messages.length > 0 ? messages.at(-1)!.timestamp : undefined;
+        const next = buildPaginationNext(hasMore, lastTimestamp);
+        this.logJsonResult({ messages, hasMore, ...(next && { next }) }, flags);
       } else {
         if (messages.length === 0) {
           this.log("No messages found in the channel history.");
@@ -145,7 +149,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
             flags.limit,
             "messages",
           );
-          if (warning) this.logToStderr(warning);
+          if (warning) this.log(warning);
         }
       }
     } catch (error) {

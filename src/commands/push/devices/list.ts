@@ -13,6 +13,7 @@ import {
   formatLimitWarning,
 } from "../../../utils/output.js";
 import {
+  buildPaginationNext,
   collectPaginatedResults,
   formatPaginationWarning,
 } from "../../../utils/pagination.js";
@@ -75,11 +76,12 @@ export default class PushDevicesList extends AblyBaseCommand {
         devices.length,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
-        this.logToStderr(paginationWarning);
+        this.log(paginationWarning);
       }
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ devices, hasMore }, flags);
+        const next = buildPaginationNext(hasMore);
+        this.logJsonResult({ devices, hasMore, ...(next && { next }) }, flags);
         return;
       }
 
@@ -126,7 +128,7 @@ export default class PushDevicesList extends AblyBaseCommand {
           flags.limit,
           "device registrations",
         );
-        if (limitWarning) this.logToStderr(limitWarning);
+        if (limitWarning) this.log(limitWarning);
       }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushDeviceList");

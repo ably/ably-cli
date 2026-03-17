@@ -136,11 +136,11 @@ describe("rooms:list command", () => {
     );
 
     const json = JSON.parse(stdout);
-    expect(json).toHaveProperty("items");
-    expect(json.items).toBeInstanceOf(Array);
-    expect(json.items.length).toBe(2);
-    expect(json.items[0]).toHaveProperty("room", "room1");
-    expect(json.items[1]).toHaveProperty("room", "room2");
+    expect(json).toHaveProperty("rooms");
+    expect(json.rooms).toBeInstanceOf(Array);
+    expect(json.rooms.length).toBe(2);
+    expect(json.rooms[0]).toHaveProperty("room", "room1");
+    expect(json.rooms[1]).toHaveProperty("room", "room2");
   });
 
   it("should handle non-200 response with error", async () => {

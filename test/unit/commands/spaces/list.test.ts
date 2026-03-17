@@ -116,7 +116,6 @@ describe("spaces:list command", () => {
     const json = JSON.parse(stdout);
     expect(json).toHaveProperty("spaces");
     expect(json).toHaveProperty("total");
-    expect(json).toHaveProperty("shown");
     expect(json).toHaveProperty("hasMore");
     expect(json).toHaveProperty("success", true);
     expect(json.spaces).toBeInstanceOf(Array);
@@ -141,6 +140,46 @@ describe("spaces:list command", () => {
       expect(stdout).toContain("space2");
       expect(stdout).not.toContain("regular-channel");
     });
+  });
+
+  it("should deduplicate across multiple pages and show pagination warning", async () => {
+    const mock = getMockAblyRest();
+    const page1 = [
+      {
+        channelId: "space1::$space::$locks",
+        status: { occupancy: { metrics: { connections: 1 } } },
+      },
+      {
+        channelId: "space1::$space::$cursors",
+        status: { occupancy: { metrics: { connections: 1 } } },
+      },
+    ];
+    const page2 = [
+      {
+        channelId: "space1::$space::$locations",
+        status: { occupancy: { metrics: { connections: 1 } } },
+      },
+      {
+        channelId: "space2::$space::$locks",
+        status: { occupancy: { metrics: { connections: 2 } } },
+      },
+    ];
+    mock.request.mockResolvedValue({
+      ...createMockPaginatedResult(page1, page2),
+      statusCode: 200,
+    });
+
+    const { stdout } = await runCommand(
+      ["spaces:list", "--limit", "10"],
+      import.meta.url,
+    );
+
+    // space1 appears on both pages but should be deduplicated
+    expect(stdout).toContain("space1");
+    expect(stdout).toContain("space2");
+    expect(stdout).toContain("2 active spaces");
+    // Pagination warning for multi-page fetch
+    expect(stdout).toContain("pages");
   });
 
   describe("error handling", () => {

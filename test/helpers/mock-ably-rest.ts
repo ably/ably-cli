@@ -268,11 +268,16 @@ function createMockAblyRest(): MockAblyRest {
 
 /**
  * Create a mock PaginatedResult-like object for testing pagination.
- * Provides hasNext(), next(), isLast(), first(), and current() methods.
+ * Supports arbitrary page chains: pass additional arrays for subsequent pages.
+ *
+ * @example
+ * createMockPaginatedResult([1, 2])                    // single page
+ * createMockPaginatedResult([1, 2], [3, 4])            // two pages
+ * createMockPaginatedResult([1, 2], [3, 4], [5, 6])   // three pages
  */
 export function createMockPaginatedResult<T>(
   items: T[],
-  nextPage?: { items: T[]; hasNext?: boolean },
+  ...remainingPages: T[][]
 ): {
   items: T[];
   hasNext: () => boolean;
@@ -281,17 +286,16 @@ export function createMockPaginatedResult<T>(
   first: () => Promise<ReturnType<typeof createMockPaginatedResult<T>>>;
   current: () => Promise<ReturnType<typeof createMockPaginatedResult<T>>>;
 } {
+  const hasNextPage = remainingPages.length > 0;
   const result = {
     items,
-    hasNext: () => !!nextPage,
+    hasNext: () => hasNextPage,
     next: async () => {
-      if (!nextPage) return null;
-      return createMockPaginatedResult<T>(
-        nextPage.items,
-        nextPage.hasNext ? { items: [], hasNext: false } : undefined,
-      );
+      if (!hasNextPage) return null;
+      const [nextItems, ...rest] = remainingPages;
+      return createMockPaginatedResult<T>(nextItems, ...rest);
     },
-    isLast: () => !nextPage,
+    isLast: () => !hasNextPage,
     first: async () => result,
     current: async () => result,
   };

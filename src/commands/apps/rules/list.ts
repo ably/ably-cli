@@ -120,7 +120,7 @@ export default class RulesListCommand extends ControlBaseCommand {
             flags.limit,
             "channel rules",
           );
-          if (warning) this.logToStderr(warning);
+          if (warning) this.log(warning);
         }
       }
     } catch (error) {

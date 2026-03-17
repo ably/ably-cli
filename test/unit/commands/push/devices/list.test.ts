@@ -82,6 +82,26 @@ describe("push:devices:list command", () => {
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("devices");
+      expect(result).toHaveProperty("hasMore", false);
+    });
+
+    it("should report hasMore and pagination warning with multi-page results", async () => {
+      const mock = getMockAblyRest();
+      mock.push.admin.deviceRegistrations.list.mockResolvedValue(
+        createMockPaginatedResult(
+          [{ id: "device-1", platform: "ios" }],
+          [{ id: "device-2", platform: "android" }],
+        ),
+      );
+
+      const { stdout } = await runCommand(
+        ["push:devices:list", "--json", "--limit", "10"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("hasMore", false);
+      expect(result.devices).toHaveLength(2);
     });
 
     it("should pass filter params to SDK", async () => {

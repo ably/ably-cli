@@ -8,6 +8,7 @@ import {
   formatResource,
 } from "../../utils/output.js";
 import {
+  buildPaginationNext,
   collectFilteredPaginatedResults,
   formatPaginationWarning,
 } from "../../utils/pagination.js";
@@ -111,45 +112,48 @@ export default class SpacesList extends SpacesBaseCommand {
           const spaceName = spaceNameMatch[1];
           if (seenSpaces.has(spaceName)) return false;
           seenSpaces.add(spaceName);
-          channel.channelId = spaceName;
-          channel.spaceName = spaceName;
           return true;
         },
       );
 
+      // Normalize names in a separate step (keep filter as pure predicate)
+      const spaces = limitedSpaces.map((s) => {
+        const match = s.channelId!.match(/^(.+?)::\$space(?:$|::)/)!;
+        return { ...s, channelId: match[1], spaceName: match[1] };
+      });
+
       const paginationWarning = formatPaginationWarning(
         pagesConsumed,
-        limitedSpaces.length,
+        spaces.length,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
-        this.logToStderr(paginationWarning);
+        this.log(paginationWarning);
       }
 
       if (this.shouldOutputJson(flags)) {
+        const next = buildPaginationNext(hasMore);
         this.logJsonResult(
           {
             hasMore,
-            shown: limitedSpaces.length,
-            spaces: limitedSpaces.map((space: SpaceItem) => ({
+            ...(next && { next }),
+            spaces: spaces.map((space) => ({
               metrics: space.status?.occupancy?.metrics || {},
               spaceName: space.spaceName,
             })),
             timestamp: new Date().toISOString(),
-            total: limitedSpaces.length,
+            total: spaces.length,
           },
           flags,
         );
       } else {
-        if (limitedSpaces.length === 0) {
+        if (spaces.length === 0 && !hasMore) {
           this.log("No active spaces found.");
           return;
         }
 
-        this.log(
-          `Found ${formatCountLabel(limitedSpaces.length, "active space")}:`,
-        );
+        this.log(`Found ${formatCountLabel(spaces.length, "active space")}:`);
 
-        limitedSpaces.forEach((space: SpaceItem) => {
+        spaces.forEach((space) => {
           this.log(`${formatResource(space.spaceName)}`);
 
           // Show occupancy if available
@@ -183,11 +187,11 @@ export default class SpacesList extends SpacesBaseCommand {
 
         if (hasMore) {
           const warning = formatLimitWarning(
-            limitedSpaces.length,
+            spaces.length,
             flags.limit,
             "spaces",
           );
-          if (warning) this.logToStderr(warning);
+          if (warning) this.log(warning);
         }
       }
     } catch (error) {

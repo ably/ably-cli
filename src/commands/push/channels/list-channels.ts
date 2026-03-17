@@ -11,6 +11,7 @@ import {
   formatSuccess,
 } from "../../../utils/output.js";
 import {
+  buildPaginationNext,
   collectPaginatedResults,
   formatPaginationWarning,
 } from "../../../utils/pagination.js";
@@ -57,11 +58,12 @@ export default class PushChannelsListChannels extends AblyBaseCommand {
         channels.length,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
-        this.logToStderr(paginationWarning);
+        this.log(paginationWarning);
       }
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ channels, hasMore }, flags);
+        const next = buildPaginationNext(hasMore);
+        this.logJsonResult({ channels, hasMore, ...(next && { next }) }, flags);
         return;
       }
 
@@ -86,7 +88,7 @@ export default class PushChannelsListChannels extends AblyBaseCommand {
           flags.limit,
           "channels",
         );
-        if (limitWarning) this.logToStderr(limitWarning);
+        if (limitWarning) this.log(limitWarning);
       }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushChannelListChannels");
