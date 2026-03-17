@@ -71,6 +71,9 @@ export const WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS = [
   "integrations*",
   "queues*",
 
+  // Push notification management is not available to anonymous users
+  "push*",
+
   // Stats commands expose account/app usage data
   "stats*",
 ];
@@ -1463,6 +1466,21 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
         "parse",
       );
     }
+  }
+
+  /**
+   * Parse a flag value as a JSON object. Rejects arrays and primitives.
+   */
+  protected parseJsonObjectFlag(
+    value: string,
+    flagName: string,
+    flags: BaseFlags = {},
+  ): Record<string, unknown> {
+    const parsed = this.parseJsonFlag(value, flagName, flags);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      this.fail(`${flagName} must be a JSON object`, flags, "parse");
+    }
+    return parsed as Record<string, unknown>;
   }
 
   /**

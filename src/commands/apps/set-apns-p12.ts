@@ -8,6 +8,7 @@ import {
   formatProgress,
   formatResource,
   formatSuccess,
+  formatWarning,
 } from "../../utils/output.js";
 
 export default class AppsSetApnsP12Command extends ControlBaseCommand {
@@ -20,6 +21,8 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
 
   static description =
     "Upload Apple Push Notification Service P12 certificate for an app";
+
+  static hidden = true;
 
   static examples = [
     "$ ably apps set-apns-p12 app-id --certificate /path/to/certificate.p12",
@@ -46,6 +49,14 @@ export default class AppsSetApnsP12Command extends ControlBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(AppsSetApnsP12Command);
+
+    if (!this.shouldOutputJson(flags)) {
+      this.logToStderr(
+        formatWarning(
+          'This command is deprecated. Use "ably push config set-apns" instead.',
+        ),
+      );
+    }
 
     // Display authentication information
     this.showAuthInfoIfNeeded(flags);

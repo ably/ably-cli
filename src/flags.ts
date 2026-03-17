@@ -110,6 +110,17 @@ export const durationFlag = {
 };
 
 /**
+ * Force flag for commands that require confirmation.
+ */
+export const forceFlag = {
+  force: Flags.boolean({
+    char: "f",
+    default: false,
+    description: "Skip confirmation prompt",
+  }),
+};
+
+/**
  * Rewind flag for subscribe commands that support message replay.
  */
 export const rewindFlag = {
