@@ -313,58 +313,64 @@ export default class BenchPublisher extends AblyBaseCommand {
         "waitingForSubscribers",
         "Waiting for subscribers...",
       );
-      await new Promise<void>((resolve) => {
-        const subscriberCheck = (member: Ably.PresenceMessage) => {
-          if (
-            member.data &&
-            typeof member.data === "object" &&
-            "role" in member.data &&
-            member.data.role === "subscriber"
-          ) {
-            this.logCliEvent(
-              flags,
-              "benchmark",
-              "subscriberDetected",
-              `Subscriber detected: ${member.clientId}`,
-              { clientId: member.clientId },
-            );
-            channel.presence.unsubscribe("enter", subscriberCheck);
-            resolve();
-          }
-        };
-
-        channel.presence.subscribe("enter", subscriberCheck);
-        channel.presence
-          .get()
-          .then((members) => {
-            const subscribers = members.filter(
-              (m) =>
-                m.data &&
-                typeof m.data === "object" &&
-                "role" in m.data &&
-                m.data.role === "subscriber",
-            );
-            if (subscribers.length > 0) {
-              this.logCliEvent(
-                flags,
-                "benchmark",
-                "subscribersFound",
-                `Found ${subscribers.length} subscribers already present`,
-              );
-              channel.presence.unsubscribe("enter", subscriberCheck);
-              resolve();
-            }
-          })
-          .catch((error) => {
-            this.logCliEvent(
-              flags,
-              "presence",
-              "getPresenceError",
-              `Error getting initial presence: ${errorMessage(error)}`,
-            );
-            // Continue waiting
-          });
+      let foundSubscriber: () => void;
+      const subscriberPromise = new Promise<void>((resolve) => {
+        foundSubscriber = resolve;
       });
+
+      const subscriberCheck = (member: Ably.PresenceMessage) => {
+        if (
+          member.data &&
+          typeof member.data === "object" &&
+          "role" in member.data &&
+          member.data.role === "subscriber"
+        ) {
+          this.logCliEvent(
+            flags,
+            "benchmark",
+            "subscriberDetected",
+            `Subscriber detected: ${member.clientId}`,
+            { clientId: member.clientId },
+          );
+          channel.presence.unsubscribe("enter", subscriberCheck);
+          foundSubscriber();
+        }
+      };
+
+      await channel.presence.subscribe("enter", subscriberCheck);
+
+      // Check if subscribers are already present
+      try {
+        const members = await channel.presence.get();
+        const subscribers = members.filter(
+          (m) =>
+            m.data &&
+            typeof m.data === "object" &&
+            "role" in m.data &&
+            m.data.role === "subscriber",
+        );
+        if (subscribers.length > 0) {
+          this.logCliEvent(
+            flags,
+            "benchmark",
+            "subscribersFound",
+            `Found ${subscribers.length} subscribers already present`,
+          );
+          channel.presence.unsubscribe("enter", subscriberCheck);
+          // Already found, no need to wait
+        } else {
+          await subscriberPromise;
+        }
+      } catch (error) {
+        this.logCliEvent(
+          flags,
+          "presence",
+          "getPresenceError",
+          `Error getting initial presence: ${errorMessage(error)}`,
+        );
+        // Continue waiting for subscribe callback
+        await subscriberPromise;
+      }
     } else {
       const members = await channel.presence.get();
       const subscribers = members.filter(
@@ -583,33 +589,42 @@ export default class BenchPublisher extends AblyBaseCommand {
       testId,
     };
 
-    channel.presence.subscribe("enter", (member: Ably.PresenceMessage) => {
-      this.logCliEvent(
-        flags,
-        "presence",
-        "memberEntered",
-        `Member entered presence: ${member.clientId}`,
-        { clientId: member.clientId, data: member.data },
-      );
-    });
-    channel.presence.subscribe("leave", (member: Ably.PresenceMessage) => {
-      this.logCliEvent(
-        flags,
-        "presence",
-        "memberLeft",
-        `Member left presence: ${member.clientId}`,
-        { clientId: member.clientId },
-      );
-    });
-    channel.presence.subscribe("update", (member: Ably.PresenceMessage) => {
-      this.logCliEvent(
-        flags,
-        "presence",
-        "memberUpdated",
-        `Member updated presence: ${member.clientId}`,
-        { clientId: member.clientId, data: member.data },
-      );
-    });
+    await channel.presence.subscribe(
+      "enter",
+      (member: Ably.PresenceMessage) => {
+        this.logCliEvent(
+          flags,
+          "presence",
+          "memberEntered",
+          `Member entered presence: ${member.clientId}`,
+          { clientId: member.clientId, data: member.data },
+        );
+      },
+    );
+    await channel.presence.subscribe(
+      "leave",
+      (member: Ably.PresenceMessage) => {
+        this.logCliEvent(
+          flags,
+          "presence",
+          "memberLeft",
+          `Member left presence: ${member.clientId}`,
+          { clientId: member.clientId },
+        );
+      },
+    );
+    await channel.presence.subscribe(
+      "update",
+      (member: Ably.PresenceMessage) => {
+        this.logCliEvent(
+          flags,
+          "presence",
+          "memberUpdated",
+          `Member updated presence: ${member.clientId}`,
+          { clientId: member.clientId, data: member.data },
+        );
+      },
+    );
 
     this.logCliEvent(
       flags,

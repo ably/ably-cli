@@ -105,7 +105,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
       await this.handlePresence(channel, metrics, flags);
 
-      this.subscribeToMessages(channel, metrics, flags);
+      await this.subscribeToMessages(channel, metrics, flags);
 
       await this.checkInitialPresence(channel, metrics, flags);
 
@@ -402,109 +402,115 @@ export default class BenchSubscriber extends AblyBaseCommand {
     );
 
     // --- Presence Enter Handler ---
-    channel.presence.subscribe("enter", (member: Ably.PresenceMessage) => {
-      const { clientId, data } = member; // Destructure member
-      this.logCliEvent(
-        flags,
-        "presence",
-        "memberEntered",
-        `Member entered presence: ${clientId}`,
-        { clientId, data },
-      );
-
-      if (
-        data &&
-        typeof data === "object" &&
-        "role" in data &&
-        data.role === "publisher" &&
-        "testDetails" in data &&
-        "testId" in data
-      ) {
-        const { testDetails, testId } = data as {
-          testDetails: Record<string, unknown>;
-          testId: string;
-        }; // Destructure data
+    await channel.presence.subscribe(
+      "enter",
+      (member: Ably.PresenceMessage) => {
+        const { clientId, data } = member; // Destructure member
         this.logCliEvent(
           flags,
-          "benchmark",
-          "publisherDetected",
-          `Publisher detected with test ID: ${testId}`,
-          { testDetails, testId },
+          "presence",
+          "memberEntered",
+          `Member entered presence: ${clientId}`,
+          { clientId, data },
         );
-        metrics.testDetails = testDetails;
-        metrics.publisherActive = true;
-        metrics.lastMessageTime = Date.now();
-        // Do not start a new test here, wait for the first message
-        if (!this.shouldOutputJson(flags)) {
-          this.log(`\nPublisher detected with test ID: ${testId}`);
-          this.log(
-            `Test will send ${testDetails.messageCount} messages at ${testDetails.messageRate} msg/sec using ${testDetails.transport} transport`,
-          );
-        }
-      }
-    });
 
-    // --- Presence Leave Handler ---
-    channel.presence.subscribe("leave", (member: Ably.PresenceMessage) => {
-      const { clientId, data } = member; // Destructure member
-      this.logCliEvent(
-        flags,
-        "presence",
-        "memberLeft",
-        `Member left presence: ${clientId}`,
-        { clientId },
-      );
-
-      if (
-        data &&
-        typeof data === "object" &&
-        "role" in data &&
-        data.role === "publisher"
-      ) {
-        const { testId } = (data as { testId?: string }) || {};
-
-        // Only finish the test if the leaving publisher matches the current test (or we don't know yet)
-        if (metrics.testId && testId && testId !== metrics.testId) {
-          return; // different test, ignore
-        }
-        this.logCliEvent(
-          flags,
-          "benchmark",
-          "publisherLeft",
-          `Publisher has left. Finishing test.`,
-          { testId },
-        );
-        metrics.publisherActive = false;
-        this.finishTest(flags, metrics);
-        this.testInProgress = false;
-
-        if (this.intervalId) {
-          clearInterval(this.intervalId);
-          this.intervalId = null;
-        }
-
-        if (this.checkPublisherIntervalId) {
-          clearInterval(this.checkPublisherIntervalId);
-          this.checkPublisherIntervalId = null;
-        }
-
-        if (this.shouldOutputJson(flags)) {
+        if (
+          data &&
+          typeof data === "object" &&
+          "role" in data &&
+          data.role === "publisher" &&
+          "testDetails" in data &&
+          "testId" in data
+        ) {
+          const { testDetails, testId } = data as {
+            testDetails: Record<string, unknown>;
+            testId: string;
+          }; // Destructure data
           this.logCliEvent(
             flags,
             "benchmark",
-            "waitingForTest",
-            "Waiting for a new benchmark test to start...",
+            "publisherDetected",
+            `Publisher detected with test ID: ${testId}`,
+            { testDetails, testId },
           );
-        } else {
-          this.log("\nWaiting for a new benchmark test to start...");
-          this.displayTable = this.createStatusDisplay(null);
-          this.log(this.displayTable.toString());
+          metrics.testDetails = testDetails;
+          metrics.publisherActive = true;
+          metrics.lastMessageTime = Date.now();
+          // Do not start a new test here, wait for the first message
+          if (!this.shouldOutputJson(flags)) {
+            this.log(`\nPublisher detected with test ID: ${testId}`);
+            this.log(
+              `Test will send ${testDetails.messageCount} messages at ${testDetails.messageRate} msg/sec using ${testDetails.transport} transport`,
+            );
+          }
         }
+      },
+    );
 
-        this.displayTable = null;
-        this.testInProgress = false;
-      }
-    });
+    // --- Presence Leave Handler ---
+    await channel.presence.subscribe(
+      "leave",
+      (member: Ably.PresenceMessage) => {
+        const { clientId, data } = member; // Destructure member
+        this.logCliEvent(
+          flags,
+          "presence",
+          "memberLeft",
+          `Member left presence: ${clientId}`,
+          { clientId },
+        );
+
+        if (
+          data &&
+          typeof data === "object" &&
+          "role" in data &&
+          data.role === "publisher"
+        ) {
+          const { testId } = (data as { testId?: string }) || {};
+
+          // Only finish the test if the leaving publisher matches the current test (or we don't know yet)
+          if (metrics.testId && testId && testId !== metrics.testId) {
+            return; // different test, ignore
+          }
+          this.logCliEvent(
+            flags,
+            "benchmark",
+            "publisherLeft",
+            `Publisher has left. Finishing test.`,
+            { testId },
+          );
+          metrics.publisherActive = false;
+          this.finishTest(flags, metrics);
+          this.testInProgress = false;
+
+          if (this.intervalId) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+          }
+
+          if (this.checkPublisherIntervalId) {
+            clearInterval(this.checkPublisherIntervalId);
+            this.checkPublisherIntervalId = null;
+          }
+
+          if (this.shouldOutputJson(flags)) {
+            this.logCliEvent(
+              flags,
+              "benchmark",
+              "waitingForTest",
+              "Waiting for a new benchmark test to start...",
+            );
+          } else {
+            this.log("\nWaiting for a new benchmark test to start...");
+            this.displayTable = this.createStatusDisplay(null);
+            this.log(this.displayTable.toString());
+          }
+
+          this.displayTable = null;
+          this.testInProgress = false;
+        }
+      },
+    );
   }
 
   private resetDisplay(displayTable: InstanceType<typeof Table>): void {
@@ -655,12 +661,12 @@ export default class BenchSubscriber extends AblyBaseCommand {
     }, 1000);
   }
 
-  private subscribeToMessages(
+  private async subscribeToMessages(
     channel: Ably.RealtimeChannel,
     metrics: TestMetrics,
     flags: Record<string, unknown>,
-  ): void {
-    channel.subscribe((message: Ably.Message) => {
+  ): Promise<void> {
+    await channel.subscribe((message: Ably.Message) => {
       const currentTime = Date.now();
 
       // Check if this message is the start of a new test
