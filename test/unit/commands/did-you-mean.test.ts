@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { spawn, exec } from "node:child_process";
+import { spawn, exec, type ChildProcess } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
@@ -7,6 +7,85 @@ import { promisify } from "node:util";
 const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/**
+ * Helper to spawn an interactive CLI process and wait for it to be ready
+ * before sending commands. Fixes flakiness from hardcoded setTimeout delays.
+ */
+function spawnInteractive(
+  binPath: string,
+): ChildProcess & { ready: Promise<void> } {
+  const child = spawn("node", [binPath, "interactive"], {
+    stdio: ["pipe", "pipe", "pipe"],
+    env: {
+      ...process.env,
+      ABLY_INTERACTIVE_MODE: "true",
+      ABLY_SUPPRESS_WELCOME: "1",
+    },
+  });
+
+  // Wait for the interactive prompt to appear before sending input
+  const ready = new Promise<void>((resolve) => {
+    let buf = "";
+    const onData = (data: Buffer) => {
+      buf += data.toString();
+      if (buf.includes("ably>")) {
+        child.stdout!.removeListener("data", onData);
+        resolve();
+      }
+    };
+    child.stdout!.on("data", onData);
+    // Fallback in case prompt text differs
+    setTimeout(resolve, 3000);
+  });
+
+  return Object.assign(child, { ready });
+}
+
+/**
+ * Collect all stdout/stderr from a child process and return on exit.
+ * Assertions run inside the returned promise so failures reject properly.
+ */
+function collectOutput(child: ChildProcess): {
+  stdout: () => string;
+  stderr: () => string;
+  onExit: (
+    assertions: (stdout: string, stderr: string) => void,
+  ) => Promise<void>;
+} {
+  let stdout = "";
+  let stderr = "";
+  child.stdout?.on("data", (d) => (stdout += d.toString()));
+  child.stderr?.on("data", (d) => (stderr += d.toString()));
+
+  return {
+    stdout: () => stdout,
+    stderr: () => stderr,
+    onExit: (assertions) =>
+      new Promise<void>((resolve, reject) => {
+        const killTimeout = setTimeout(() => {
+          child.kill("SIGTERM");
+          reject(
+            new Error(
+              "Test timed out - process did not exit. Output: " +
+                stdout +
+                stderr,
+            ),
+          );
+        }, 10000);
+
+        child.on("exit", () => {
+          clearTimeout(killTimeout);
+          try {
+            assertions(stdout, stderr);
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }),
+  };
+}
 
 describe("Did You Mean Functionality", () => {
   const timeout = 15000;
@@ -20,60 +99,31 @@ describe("Did You Mean Functionality", () => {
     describe("Interactive Mode", () => {
       it(
         "should show Y/N prompt for misspelled commands",
-        async () =>
-          new Promise<void>((resolve, reject) => {
-            const child = spawn("node", [binPath, "interactive"], {
-              stdio: ["pipe", "pipe", "pipe"],
-              env: {
-                ...process.env,
-                ABLY_INTERACTIVE_MODE: "true",
-                ABLY_SUPPRESS_WELCOME: "1",
-              },
-            });
+        async () => {
+          const child = spawnInteractive(binPath);
+          const io = collectOutput(child);
+          let foundPrompt = false;
 
-            let output = "";
-            let foundPrompt = false;
+          child.stdout!.on("data", (data) => {
+            if (
+              data.toString().includes("(Y/n)") ||
+              data.toString().includes("Did you mean accounts current?")
+            ) {
+              foundPrompt = true;
+              setTimeout(() => child.stdin!.write("n\n"), 100);
+            }
+          });
 
-            // Safety timeout to force kill if process hangs
-            const killTimeout = setTimeout(() => {
-              child.kill("SIGTERM");
-              reject(
-                new Error(
-                  "Test timed out - process did not exit. Output: " + output,
-                ),
-              );
-            }, 10000);
+          await child.ready;
+          child.stdin!.write("account current\n");
 
-            child.stdout.on("data", (data) => {
-              output += data.toString();
-              if (
-                data.toString().includes("(Y/n)") ||
-                data.toString().includes("Did you mean accounts current?")
-              ) {
-                foundPrompt = true;
-                setTimeout(() => {
-                  child.stdin.write("n\n");
-                }, 100);
-              }
-            });
+          setTimeout(() => child.stdin!.write("exit\n"), 3000);
 
-            setTimeout(() => {
-              child.stdin.write("account current\n");
-            }, 500);
-
-            setTimeout(() => {
-              child.stdin.write("exit\n");
-            }, 2000);
-
-            child.on("exit", () => {
-              clearTimeout(killTimeout);
-              expect(foundPrompt).toBe(true);
-              expect(output).toContain(
-                "account current is not an ably command",
-              );
-              resolve();
-            });
-          }),
+          await io.onExit((stdout) => {
+            expect(foundPrompt).toBe(true);
+            expect(stdout).toContain("account current is not an ably command");
+          });
+        },
         timeout,
       );
     });
@@ -122,141 +172,96 @@ describe("Did You Mean Functionality", () => {
     describe("Interactive Mode", () => {
       it(
         'should show Y/N prompt for "accounts curren"',
-        async () =>
-          new Promise<void>((resolve) => {
-            const child = spawn("node", [binPath, "interactive"], {
-              stdio: ["pipe", "pipe", "pipe"],
-              env: {
-                ...process.env,
-                ABLY_INTERACTIVE_MODE: "true",
-                ABLY_SUPPRESS_WELCOME: "1",
-              },
-            });
+        async () => {
+          const child = spawnInteractive(binPath);
+          const io = collectOutput(child);
+          let foundPrompt = false;
 
-            let output = "";
-            let errorOutput = "";
-            let foundPrompt = false;
+          child.stdout!.on("data", (data) => {
+            if (
+              data.toString().includes("Did you mean accounts current?") ||
+              data.toString().includes("(Y/n)")
+            ) {
+              foundPrompt = true;
+              setTimeout(() => child.stdin!.write("n\n"), 100);
+            }
 
-            child.stdout.on("data", (data) => {
-              output += data.toString();
-              if (
-                data.toString().includes("Did you mean accounts current?") ||
-                data.toString().includes("(Y/n)")
-              ) {
-                foundPrompt = true;
-                setTimeout(() => {
-                  child.stdin.write("n\n");
-                }, 100);
-              }
+            // If we see this, then the `n` was received
+            if (data.toString().includes("Ably accounts management commands")) {
+              setTimeout(() => child.stdin!.write("exit\n"), 1000);
+            }
+          });
 
-              // If we see this, then the `n` was received
-              if (
-                data.toString().includes("Ably accounts management commands")
-              ) {
-                setTimeout(() => {
-                  child.stdin.write("exit\n");
-                }, 1000);
-              }
-            });
+          await child.ready;
+          child.stdin!.write("accounts curren\n");
 
-            child.stderr.on("data", (data) => {
-              errorOutput += data.toString();
-            });
-
-            // Wait for interactive prompt
-            setTimeout(() => {
-              child.stdin.write("accounts curren\n");
-            }, 1000);
-
-            child.on("exit", () => {
-              const fullOutput = output + errorOutput;
-              expect(foundPrompt).toBe(true);
-              expect(fullOutput).toContain(
-                "accounts curren is not an ably command",
-              );
-              resolve();
-            });
-          }),
+          await io.onExit((stdout, stderr) => {
+            const fullOutput = stdout + stderr;
+            expect(foundPrompt).toBe(true);
+            expect(fullOutput).toContain(
+              "accounts curren is not an ably command",
+            );
+          });
+        },
         timeout,
       );
 
       it(
         "should execute command when confirmed with Y",
-        async () =>
-          new Promise<void>((resolve) => {
-            const child = spawn("node", [binPath, "interactive"], {
-              stdio: ["pipe", "pipe", "pipe"],
-              env: {
-                ...process.env,
-                ABLY_INTERACTIVE_MODE: "true",
-                ABLY_SUPPRESS_WELCOME: "1",
-              },
-            });
+        async () => {
+          const child = spawnInteractive(binPath);
+          const io = collectOutput(child);
+          let foundPrompt = false;
+          let executedCommand = false;
 
-            let foundPrompt = false;
-            let executedCommand = false;
+          child.stdout!.on("data", (data) => {
+            if (
+              data.toString().includes("Did you mean accounts current?") ||
+              data.toString().includes("(Y/n)")
+            ) {
+              foundPrompt = true;
+              setTimeout(() => child.stdin!.write("y\n"), 100);
+            }
 
-            child.stdout.on("data", (data) => {
-              if (
-                data.toString().includes("Did you mean accounts current?") ||
-                data.toString().includes("(Y/n)")
-              ) {
-                foundPrompt = true;
-                setTimeout(() => {
-                  child.stdin.write("y\n");
-                }, 100);
-              }
+            // Check for various outputs that indicate the command was executed
+            const chunk = data.toString();
+            if (
+              chunk.includes("Account:") ||
+              chunk.includes("Show the current Ably account") ||
+              chunk.includes("No access token provided") ||
+              chunk.includes("accounts current") ||
+              chunk.includes("No account currently selected") ||
+              chunk.includes("You are not logged in") ||
+              chunk.includes("Authentication required") ||
+              chunk.includes("Error:")
+            ) {
+              executedCommand = true;
+              setTimeout(() => child.stdin!.write("exit\n"), 1000);
+            }
+          });
 
-              // Check for various outputs that indicate the command was executed
-              const chunk = data.toString();
-              if (
-                chunk.includes("Account:") ||
-                chunk.includes("Show the current Ably account") ||
-                chunk.includes("No access token provided") ||
-                chunk.includes("accounts current") ||
-                chunk.includes("No account currently selected") ||
-                chunk.includes("You are not logged in") ||
-                chunk.includes("Authentication required") ||
-                chunk.includes("Error:")
-              ) {
-                executedCommand = true;
+          child.stderr!.on("data", (data) => {
+            const errorOutput = data.toString();
+            if (
+              errorOutput.includes("No access token provided") ||
+              errorOutput.includes("No account currently selected") ||
+              errorOutput.includes("You are not logged in") ||
+              errorOutput.includes("Authentication required") ||
+              errorOutput.includes("Error:")
+            ) {
+              executedCommand = true;
+              setTimeout(() => child.stdin!.write("exit\n"), 1000);
+            }
+          });
 
-                // Give more time for command execution
-                setTimeout(() => {
-                  child.stdin.write("exit\n");
-                }, 1000);
-              }
-            });
+          await child.ready;
+          child.stdin!.write("accounts curren\n");
 
-            child.stderr.on("data", (data) => {
-              const errorOutput = data.toString();
-              if (
-                errorOutput.includes("No access token provided") ||
-                errorOutput.includes("No account currently selected") ||
-                errorOutput.includes("You are not logged in") ||
-                errorOutput.includes("Authentication required") ||
-                errorOutput.includes("Error:")
-              ) {
-                executedCommand = true;
-
-                // Give more time for command execution
-                setTimeout(() => {
-                  child.stdin.write("exit\n");
-                }, 1000);
-              }
-            });
-
-            // Wait for interactive prompt
-            setTimeout(() => {
-              child.stdin.write("accounts curren\n");
-            }, 1000);
-
-            child.on("exit", () => {
-              expect(foundPrompt).toBe(true);
-              expect(executedCommand).toBe(true);
-              resolve();
-            });
-          }),
+          await io.onExit(() => {
+            expect(foundPrompt).toBe(true);
+            expect(executedCommand).toBe(true);
+          });
+        },
         timeout,
       );
     });
@@ -281,104 +286,68 @@ describe("Did You Mean Functionality", () => {
   describe("Command List Display", () => {
     it(
       "should show available commands after declining suggestion",
-      async () =>
-        new Promise<void>((resolve) => {
-          const child = spawn("node", [binPath, "interactive"], {
-            stdio: ["pipe", "pipe", "pipe"],
-            env: {
-              ...process.env,
-              ABLY_INTERACTIVE_MODE: "true",
-              ABLY_SUPPRESS_WELCOME: "1",
-            },
-          });
+      async () => {
+        const child = spawnInteractive(binPath);
+        const io = collectOutput(child);
+        let foundPrompt = false;
+        let foundCommandsList = false;
 
-          let output = "";
-          let foundPrompt = false;
-          let foundCommandsList = false;
+        child.stdout!.on("data", (data) => {
+          if (data.toString().includes("Did you mean accounts current?")) {
+            foundPrompt = true;
+            setTimeout(() => child.stdin!.write("n\n"), 100);
+          }
 
-          child.stdout.on("data", (data) => {
-            output += data.toString();
+          if (
+            data.toString().includes("accounts current") &&
+            data.toString().includes("Show the current Ably account")
+          ) {
+            foundCommandsList = true;
+          }
+        });
 
-            if (data.toString().includes("Did you mean accounts current?")) {
-              foundPrompt = true;
-              setTimeout(() => {
-                child.stdin.write("n\n");
-              }, 100);
-            }
+        await child.ready;
+        child.stdin!.write("accounts curren\n");
 
-            if (
-              data.toString().includes("accounts current") &&
-              data.toString().includes("Show the current Ably account")
-            ) {
-              foundCommandsList = true;
-            }
-          });
+        setTimeout(() => child.stdin!.write("exit\n"), 4000);
 
-          setTimeout(() => {
-            child.stdin.write("accounts curren\n");
-          }, 500);
-
-          setTimeout(() => {
-            child.stdin.write("exit\n");
-          }, 2500);
-
-          child.on("exit", () => {
-            expect(foundPrompt).toBe(true);
-            expect(foundCommandsList).toBe(true);
-            expect(output).toContain("Ably accounts management commands:");
-            resolve();
-          });
-        }),
+        await io.onExit((stdout) => {
+          expect(foundPrompt).toBe(true);
+          expect(foundCommandsList).toBe(true);
+          expect(stdout).toContain("Ably accounts management commands:");
+        });
+      },
       timeout,
     );
 
     it(
       "should show commands when no suggestion found",
-      async () =>
-        new Promise<void>((resolve) => {
-          const child = spawn("node", [binPath, "interactive"], {
-            stdio: ["pipe", "pipe", "pipe"],
-            env: {
-              ...process.env,
-              ABLY_INTERACTIVE_MODE: "true",
-              ABLY_SUPPRESS_WELCOME: "1",
-            },
-          });
+      async () => {
+        const child = spawnInteractive(binPath);
+        const io = collectOutput(child);
+        let foundCommandsList = false;
 
-          let output = "";
-          let errorOutput = "";
-          let foundCommandsList = false;
+        child.stdout!.on("data", (data) => {
+          if (
+            data.toString().includes("accounts current") &&
+            data.toString().includes("Show the current Ably account")
+          ) {
+            foundCommandsList = true;
+            setTimeout(() => child.stdin!.write("exit\n"), 1500);
+          }
+        });
 
-          child.stdout.on("data", (data) => {
-            output += data.toString();
-            if (
-              data.toString().includes("accounts current") &&
-              data.toString().includes("Show the current Ably account")
-            ) {
-              foundCommandsList = true;
-              setTimeout(() => {
-                child.stdin.write("exit\n");
-              }, 1500);
-            }
-          });
+        await child.ready;
+        child.stdin!.write("accounts xyz\n");
 
-          child.stderr.on("data", (data) => {
-            errorOutput += data.toString();
-          });
-
-          setTimeout(() => {
-            child.stdin.write("accounts xyz\n");
-          }, 500);
-
-          child.on("exit", () => {
-            const fullOutput = output + errorOutput;
-            expect(foundCommandsList).toBe(true);
-            expect(fullOutput).toContain("Command accounts xyz not found");
-            expect(fullOutput).toContain("Ably accounts management commands:");
-            expect(fullOutput).not.toContain("(Y/n)");
-            resolve();
-          });
-        }),
+        await io.onExit((stdout, stderr) => {
+          const fullOutput = stdout + stderr;
+          expect(foundCommandsList).toBe(true);
+          expect(fullOutput).toContain("Command accounts xyz not found");
+          expect(fullOutput).toContain("Ably accounts management commands:");
+          expect(fullOutput).not.toContain("(Y/n)");
+        });
+      },
       timeout,
     );
   });
