@@ -54,7 +54,8 @@ export default class ChannelsList extends AblyBaseCommand {
     ...productApiFlags,
     limit: Flags.integer({
       default: 100,
-      description: "Maximum number of results to return (default: 100)",
+      description: "Maximum number of results to return",
+      min: 1,
     }),
     prefix: Flags.string({
       char: "p",

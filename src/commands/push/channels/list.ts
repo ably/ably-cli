@@ -42,8 +42,9 @@ export default class PushChannelsList extends AblyBaseCommand {
       description: "Filter by client ID",
     }),
     limit: Flags.integer({
-      description: "Maximum number of results to return (default: 100)",
+      description: "Maximum number of results to return",
       default: 100,
+      min: 1,
     }),
   };
 

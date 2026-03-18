@@ -43,7 +43,8 @@ export default class LogsPushHistory extends AblyBaseCommand {
     }),
     limit: Flags.integer({
       default: 100,
-      description: "Maximum number of results to return (default: 100)",
+      description: "Maximum number of results to return",
+      min: 1,
     }),
   };
 
@@ -73,6 +74,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
       const paginationWarning = formatPaginationWarning(
         pagesConsumed,
         messages.length,
+        true,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
         this.log(paginationWarning);
@@ -85,7 +87,6 @@ export default class LogsPushHistory extends AblyBaseCommand {
         const next = buildPaginationNext(hasMore, lastTimestamp);
         this.logJsonResult(
           {
-            hasMore,
             messages: messages.map((msg) => ({
               channel: channelName,
               clientId: msg.clientId,
@@ -96,6 +97,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
               name: msg.name,
               timestamp: formatMessageTimestamp(msg.timestamp),
             })),
+            hasMore,
             ...(next && { next }),
           },
           flags,

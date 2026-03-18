@@ -41,8 +41,9 @@ export default class PushDevicesList extends AblyBaseCommand {
       options: ["ACTIVE", "FAILING", "FAILED"],
     }),
     limit: Flags.integer({
-      description: "Maximum number of results to return (default: 100)",
+      description: "Maximum number of results to return",
       default: 100,
+      min: 1,
     }),
   };
 

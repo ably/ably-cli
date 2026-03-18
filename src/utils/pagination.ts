@@ -30,7 +30,7 @@ export function buildPaginationNext(
   if (!hasMore) return undefined;
 
   const next: PaginationNext = {
-    hint: "Increase --limit to fetch more results, or use --start to continue from a specific point in time",
+    hint: "Increase --limit to fetch more results",
   };
 
   if (lastTimestamp !== undefined) {
@@ -51,10 +51,14 @@ export function buildPaginationNext(
 export function formatPaginationWarning(
   pagesConsumed: number,
   itemCount: number,
+  isBillable = false,
 ): string {
   if (pagesConsumed <= 1) return "";
+  const billing = isBillable
+    ? " Each page request counts as a billable message."
+    : "";
   return formatWarning(
-    `Fetched ${pagesConsumed} pages to retrieve ${itemCount} results. Each result counts as a billable message.`,
+    `Fetched ${pagesConsumed} pages to retrieve ${itemCount} results.${billing}`,
   );
 }
 
@@ -95,7 +99,7 @@ export async function collectPaginatedResults<T>(
 
   return {
     items: truncated,
-    hasMore: hasMore || truncated.length < items.length,
+    hasMore,
     pagesConsumed,
   };
 }
@@ -126,7 +130,12 @@ export async function collectFilteredPaginatedResults<T>(
       }
     }
 
-    if (items.length >= limit || !currentPage.hasNext()) break;
+    if (
+      items.length >= limit ||
+      !currentPage.hasNext() ||
+      pagesConsumed >= maxPages
+    )
+      break;
     currentPage = await currentPage.next();
   }
 
@@ -136,7 +145,7 @@ export async function collectFilteredPaginatedResults<T>(
 
   return {
     items: truncated,
-    hasMore: hasMore || truncated.length < items.length,
+    hasMore,
     pagesConsumed,
   };
 }

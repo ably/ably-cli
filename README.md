@@ -548,7 +548,7 @@ USAGE
 FLAGS
   -v, --verbose        Output verbose logs
       --json           Output in JSON format
-      --limit=<value>  [default: 100] Maximum number of results to return (default: 100)
+      --limit=<value>  [default: 100] Maximum number of results to return
       --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
@@ -683,7 +683,7 @@ FLAGS
   -v, --verbose        Output verbose logs
       --app=<value>    The app ID or name (defaults to current app)
       --json           Output in JSON format
-      --limit=<value>  [default: 100] Maximum number of results to return (default: 100)
+      --limit=<value>  [default: 100] Maximum number of results to return
       --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
@@ -1071,7 +1071,7 @@ FLAGS
   -v, --verbose        Output verbose logs
       --app=<value>    The app ID or name (defaults to current app)
       --json           Output in JSON format
-      --limit=<value>  [default: 100] Maximum number of results to return (default: 100)
+      --limit=<value>  [default: 100] Maximum number of results to return
       --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
@@ -1456,7 +1456,7 @@ ARGUMENTS
 FLAGS
   -v, --verbose        Output verbose logs
       --json           Output in JSON format
-      --limit=<value>  [default: 100] Maximum number of results to return (default: 100)
+      --limit=<value>  [default: 100] Maximum number of results to return
       --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
@@ -1697,7 +1697,7 @@ FLAGS
                             <options: backwards|forwards>
       --end=<value>         End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --json                Output in JSON format
-      --limit=<value>       [default: 50] Maximum number of results to return (default: 50)
+      --limit=<value>       [default: 50] Maximum number of results to return
       --pretty-json         Output in colorized JSON format
       --start=<value>       Start time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
 
@@ -1760,7 +1760,7 @@ FLAGS
   -p, --prefix=<value>  Filter channels by prefix
   -v, --verbose         Output verbose logs
       --json            Output in JSON format
-      --limit=<value>   [default: 100] Maximum number of results to return (default: 100)
+      --limit=<value>   [default: 100] Maximum number of results to return
       --pretty-json     Output in colorized JSON format
 
 DESCRIPTION
@@ -2416,7 +2416,7 @@ FLAGS
   -v, --verbose        Output verbose logs
       --app=<value>    The app ID or name (defaults to current app)
       --json           Output in JSON format
-      --limit=<value>  [default: 100] Maximum number of results to return (default: 100)
+      --limit=<value>  [default: 100] Maximum number of results to return
       --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
@@ -2613,7 +2613,7 @@ FLAGS
                             <options: backwards|forwards>
       --end=<value>         End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --json                Output in JSON format
-      --limit=<value>       [default: 100] Maximum number of results to return (default: 100)
+      --limit=<value>       [default: 100] Maximum number of results to return
       --pretty-json         Output in colorized JSON format
       --start=<value>       Start time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
 
@@ -2686,7 +2686,7 @@ FLAGS
                             <options: backwards|forwards>
       --end=<value>         End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --json                Output in JSON format
-      --limit=<value>       [default: 100] Maximum number of results to return (default: 100)
+      --limit=<value>       [default: 100] Maximum number of results to return
       --pretty-json         Output in colorized JSON format
       --start=<value>       Start time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
 
@@ -2747,7 +2747,7 @@ FLAGS
                             <options: backwards|forwards>
       --end=<value>         End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --json                Output in JSON format
-      --limit=<value>       [default: 100] Maximum number of results to return (default: 100)
+      --limit=<value>       [default: 100] Maximum number of results to return
       --pretty-json         Output in colorized JSON format
       --start=<value>       Start time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
 
@@ -2937,7 +2937,7 @@ FLAGS
       --client-id=<value>  Filter by client ID
       --device-id=<value>  Filter by device ID
       --json               Output in JSON format
-      --limit=<value>      [default: 100] Maximum number of results to return (default: 100)
+      --limit=<value>      [default: 100] Maximum number of results to return
       --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
@@ -2964,7 +2964,7 @@ USAGE
 FLAGS
   -v, --verbose        Output verbose logs
       --json           Output in JSON format
-      --limit=<value>  [default: 100] Maximum number of results to return (default: 100)
+      --limit=<value>  [default: 100] Maximum number of results to return
       --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
@@ -3302,7 +3302,7 @@ FLAGS
       --client-id=<value>  Filter by client ID
       --device-id=<value>  Filter by device ID
       --json               Output in JSON format
-      --limit=<value>      [default: 100] Maximum number of results to return (default: 100)
+      --limit=<value>      [default: 100] Maximum number of results to return
       --pretty-json        Output in colorized JSON format
       --state=<option>     Filter by device state
                            <options: ACTIVE|FAILING|FAILED>
@@ -3580,7 +3580,7 @@ FLAGS
   -v, --verbose        Output verbose logs
       --app=<value>    The app ID or name (defaults to current app)
       --json           Output in JSON format
-      --limit=<value>  [default: 100] Maximum number of results to return (default: 100)
+      --limit=<value>  [default: 100] Maximum number of results to return
       --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
@@ -3637,7 +3637,7 @@ FLAGS
   -p, --prefix=<value>  Filter rooms by prefix
   -v, --verbose         Output verbose logs
       --json            Output in JSON format
-      --limit=<value>   [default: 100] Maximum number of results to return (default: 100)
+      --limit=<value>   [default: 100] Maximum number of results to return
       --pretty-json     Output in colorized JSON format
 
 DESCRIPTION
@@ -3728,7 +3728,7 @@ ARGUMENTS
   ROOM  The room to get message history from
 
 FLAGS
-  -l, --limit=<value>   [default: 50] Maximum number of results to return (default: 50)
+  -l, --limit=<value>   [default: 50] Maximum number of results to return
   -v, --verbose         Output verbose logs
       --end=<value>     End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --json            Output in JSON format
@@ -4553,7 +4553,7 @@ FLAGS
   -p, --prefix=<value>  Filter spaces by prefix
   -v, --verbose         Output verbose logs
       --json            Output in JSON format
-      --limit=<value>   [default: 100] Maximum number of results to return (default: 100)
+      --limit=<value>   [default: 100] Maximum number of results to return
       --pretty-json     Output in colorized JSON format
 
 DESCRIPTION
@@ -4983,7 +4983,7 @@ FLAGS
       --end=<value>       End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --interval=<value>  [default: 6] Polling interval in seconds (only used with --live)
       --json              Output in JSON format
-      --limit=<value>     [default: 10] Maximum number of results to return (default: 10)
+      --limit=<value>     [default: 10] Maximum number of results to return
       --live              Subscribe to live stats updates (uses minute interval)
       --pretty-json       Output in colorized JSON format
       --start=<value>     Start time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
@@ -5033,7 +5033,7 @@ FLAGS
       --end=<value>       End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --interval=<value>  [default: 6] Polling interval in seconds (only used with --live)
       --json              Output in JSON format
-      --limit=<value>     [default: 10] Maximum number of results to return (default: 10)
+      --limit=<value>     [default: 10] Maximum number of results to return
       --live              Subscribe to live stats updates (uses minute interval)
       --pretty-json       Output in colorized JSON format
       --start=<value>     Start time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")

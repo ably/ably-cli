@@ -53,7 +53,8 @@ export default class MessagesHistory extends ChatBaseCommand {
     limit: Flags.integer({
       char: "l",
       default: 50,
-      description: "Maximum number of results to return (default: 50)",
+      description: "Maximum number of results to return",
+      min: 1,
     }),
     order: Flags.string({
       default: "newestFirst",
@@ -149,6 +150,7 @@ export default class MessagesHistory extends ChatBaseCommand {
       const paginationWarning = formatPaginationWarning(
         pagesConsumed,
         items.length,
+        true,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
         this.log(paginationWarning);

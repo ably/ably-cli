@@ -28,8 +28,9 @@ export default class PushChannelsListChannels extends AblyBaseCommand {
   static override flags = {
     ...productApiFlags,
     limit: Flags.integer({
-      description: "Maximum number of results to return (default: 100)",
+      description: "Maximum number of results to return",
       default: 100,
+      min: 1,
     }),
   };
 

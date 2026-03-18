@@ -55,7 +55,8 @@ export default class RoomsList extends ChatBaseCommand {
     ...productApiFlags,
     limit: Flags.integer({
       default: 100,
-      description: "Maximum number of results to return (default: 100)",
+      description: "Maximum number of results to return",
+      min: 1,
     }),
     prefix: Flags.string({
       char: "p",

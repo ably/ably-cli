@@ -54,7 +54,8 @@ export default class ChannelsHistory extends AblyBaseCommand {
     ...timeRangeFlags,
     limit: Flags.integer({
       default: 50,
-      description: "Maximum number of results to return (default: 50)",
+      description: "Maximum number of results to return",
+      min: 1,
     }),
   };
 
@@ -97,6 +98,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
       const paginationWarning = formatPaginationWarning(
         pagesConsumed,
         messages.length,
+        true,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
         this.log(paginationWarning);

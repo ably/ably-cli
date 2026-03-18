@@ -50,7 +50,8 @@ export default class SpacesList extends SpacesBaseCommand {
     ...productApiFlags,
     limit: Flags.integer({
       default: 100,
-      description: "Maximum number of results to return (default: 100)",
+      description: "Maximum number of results to return",
+      min: 1,
     }),
     prefix: Flags.string({
       char: "p",
@@ -134,12 +135,12 @@ export default class SpacesList extends SpacesBaseCommand {
         const next = buildPaginationNext(hasMore);
         this.logJsonResult(
           {
-            hasMore,
-            ...(next && { next }),
             spaces: spaces.map((space) => ({
               metrics: space.status?.occupancy?.metrics || {},
               spaceName: space.spaceName,
             })),
+            hasMore,
+            ...(next && { next }),
             timestamp: new Date().toISOString(),
             total: spaces.length,
           },

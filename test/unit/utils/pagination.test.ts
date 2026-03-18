@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   collectPaginatedResults,
@@ -209,6 +209,48 @@ describe("collectFilteredPaginatedResults", () => {
     expect(result.items).toEqual([1, 2, 3, 4]);
     expect(result.hasMore).toBe(false);
     expect(result.pagesConsumed).toBe(2);
+  });
+
+  it("should propagate errors from next()", async () => {
+    const page = {
+      items: [1, 2],
+      hasNext: () => true,
+      next: async () => {
+        throw new Error("Network failure");
+      },
+    };
+
+    await expect(
+      collectFilteredPaginatedResults(page, 10, () => true),
+    ).rejects.toThrow("Network failure");
+  });
+
+  it("should not fetch a page it will not process when maxPages is reached", async () => {
+    const page3Next = vi.fn();
+    const page2 = {
+      items: [5, 6, 7],
+      hasNext: () => true,
+      next: page3Next,
+    };
+    const page1 = {
+      items: [1, 2, 3, 4],
+      hasNext: () => true,
+      next: async () => page2,
+    };
+
+    // maxPages=2, limit=100, filter passes even numbers only
+    const result = await collectFilteredPaginatedResults(
+      page1,
+      100,
+      (n) => n % 2 === 0,
+      2,
+    );
+
+    // Should process page1 and page2 (2 pages), but NOT fetch page3
+    expect(result.pagesConsumed).toBe(2);
+    expect(result.items).toEqual([2, 4, 6]);
+    expect(result.hasMore).toBe(true); // page2 has next
+    expect(page3Next).not.toHaveBeenCalled();
   });
 
   it("should return empty when no items match filter", async () => {
