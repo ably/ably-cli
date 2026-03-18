@@ -193,5 +193,26 @@ describe("logs:subscribe command", () => {
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/No mock|client/i);
     });
+
+    it("should handle capability error gracefully", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("[meta]log");
+
+      channel.subscribe.mockRejectedValue(
+        Object.assign(
+          new Error("Channel denied access based on given capability"),
+          {
+            code: 40160,
+            statusCode: 401,
+            href: "https://help.ably.io/error/40160",
+          },
+        ),
+      );
+
+      const { error } = await runCommand(["logs:subscribe"], import.meta.url);
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Channel denied access");
+    });
   });
 });

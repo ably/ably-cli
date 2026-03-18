@@ -111,48 +111,53 @@ export default class LogsSubscribe extends AblyBaseCommand {
         { logTypes, channel: logsChannelName },
       );
 
+      // Subscribe to specified log types
+      const subscribePromises: Promise<unknown>[] = [];
+      for (const logType of logTypes) {
+        subscribePromises.push(
+          channel.subscribe(logType, (message: Ably.Message) => {
+            const timestamp = formatMessageTimestamp(message.timestamp);
+            const event = {
+              logType,
+              timestamp,
+              data: message.data,
+              id: message.id,
+            };
+            this.logCliEvent(
+              flags,
+              "logs",
+              "logReceived",
+              `Log received: ${logType}`,
+              event,
+            );
+
+            if (this.shouldOutputJson(flags)) {
+              this.logJsonEvent(event, flags);
+            } else {
+              this.log(
+                `${formatTimestamp(timestamp)} Type: ${formatEventType(logType)}`,
+              );
+
+              if (message.data !== null && message.data !== undefined) {
+                this.log(
+                  `${formatLabel("Data")} ${JSON.stringify(message.data, null, 2)}`,
+                );
+              }
+
+              this.log(""); // Empty line for better readability
+            }
+          }),
+        );
+      }
+
+      await Promise.all(subscribePromises);
+
       if (!this.shouldOutputJson(flags)) {
         this.log(
           formatSuccess(
             `Subscribed to app logs: ${formatResource(logTypes.join(", "))}.`,
           ),
         );
-      }
-
-      // Subscribe to specified log types
-      for (const logType of logTypes) {
-        channel.subscribe(logType, (message: Ably.Message) => {
-          const timestamp = formatMessageTimestamp(message.timestamp);
-          const event = {
-            logType,
-            timestamp,
-            data: message.data,
-            id: message.id,
-          };
-          this.logCliEvent(
-            flags,
-            "logs",
-            "logReceived",
-            `Log received: ${logType}`,
-            event,
-          );
-
-          if (this.shouldOutputJson(flags)) {
-            this.logJsonEvent(event, flags);
-          } else {
-            this.log(
-              `${formatTimestamp(timestamp)} Type: ${formatEventType(logType)}`,
-            );
-
-            if (message.data !== null && message.data !== undefined) {
-              this.log(
-                `${formatLabel("Data")} ${JSON.stringify(message.data, null, 2)}`,
-              );
-            }
-
-            this.log(""); // Empty line for better readability
-          }
-        });
       }
 
       this.logCliEvent(

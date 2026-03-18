@@ -10,6 +10,7 @@ import {
 } from "./services/config-manager.js";
 import { ControlApi } from "./services/control-api.js";
 import { CommandError } from "./errors/command-error.js";
+import { getFriendlyAblyErrorHint } from "./utils/errors.js";
 import { coreGlobalFlags } from "./flags.js";
 import { InteractiveHelper } from "./services/interactive-helper.js";
 import { BaseFlags, CommandConfig } from "./types/cli.js";
@@ -939,9 +940,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             logData,
           );
         } else if (level <= 1) {
-          // Standard Non-JSON: Log only SDK ERRORS (level <= 1) clearly
-          // Use a format similar to logCliEvent's non-JSON output
-          this.log(`${chalk.red.bold(`[AblySDK Error]`)} ${message}`);
+          // SDK errors are handled by setupChannelStateLogging() and fail()
+          // Only show raw SDK errors in verbose mode (handled above)
+          // In non-verbose mode, log to stderr for debugging without polluting stdout
+          this.logToStderr(`${chalk.red.bold(`[AblySDK Error]`)} ${message}`);
         }
         // If not verbose non-JSON and level > 1, suppress non-error SDK logs
       }
@@ -1515,12 +1517,27 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       },
     );
 
+    const friendlyHint = getFriendlyAblyErrorHint(
+      cmdError.code ??
+        (typeof cmdError.context.errorCode === "number"
+          ? cmdError.context.errorCode
+          : undefined),
+    );
+
     if (this.shouldOutputJson(flags)) {
-      this.log(this.formatJsonRecord("error", cmdError.toJsonData(), flags));
+      const jsonData = cmdError.toJsonData();
+      if (friendlyHint) {
+        jsonData.hint = friendlyHint;
+      }
+      this.log(this.formatJsonRecord("error", jsonData, flags));
       this.exit(1);
     }
 
     let humanMessage = cmdError.message;
+    if (friendlyHint) {
+      humanMessage += `\n${friendlyHint}`;
+    }
+
     const code = cmdError.code ?? cmdError.context.errorCode;
     if (code !== undefined) {
       const helpUrl = cmdError.context.helpUrl;

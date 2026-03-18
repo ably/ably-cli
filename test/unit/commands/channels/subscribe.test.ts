@@ -239,5 +239,67 @@ describe("channels:subscribe command", () => {
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/No mock|client/i);
     });
+
+    it("should handle capability error gracefully", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("test-channel");
+
+      channel.subscribe.mockRejectedValue(
+        Object.assign(
+          new Error("Channel denied access based on given capability"),
+          {
+            code: 40160,
+            statusCode: 401,
+            href: "https://help.ably.io/error/40160",
+          },
+        ),
+      );
+
+      const { error } = await runCommand(
+        ["channels:subscribe", "test-channel"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Channel denied access");
+      expect(error?.message).toContain("capability");
+      expect(error?.message).toContain("Ably dashboard");
+    });
+
+    it("should include hint in JSON error output for capability errors", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("test-channel");
+
+      channel.subscribe.mockRejectedValue(
+        Object.assign(
+          new Error("Channel denied access based on given capability"),
+          {
+            code: 40160,
+            statusCode: 401,
+            href: "https://help.ably.io/error/40160",
+          },
+        ),
+      );
+
+      const { error, stdout } = await runCommand(
+        ["channels:subscribe", "test-channel", "--json"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      const jsonLines = stdout
+        .split("\n")
+        .filter((l: string) => l.trim().startsWith("{"));
+      const errorLine = jsonLines.find((l: string) =>
+        l.includes('"type":"error"'),
+      );
+      expect(errorLine).toBeDefined();
+      const parsed = JSON.parse(errorLine!);
+      expect(parsed.type).toBe("error");
+      expect(parsed.success).toBe(false);
+      expect(parsed.code).toBe(40160);
+      expect(parsed.hint).toBeDefined();
+      expect(parsed.hint).toContain("Ably dashboard");
+    });
   });
 });

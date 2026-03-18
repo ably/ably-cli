@@ -104,7 +104,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
 
       // Subscribe to presence events before entering (if show-others is enabled)
       if (flags["show-others"]) {
-        this.channel.presence.subscribe((presenceMessage) => {
+        await this.channel.presence.subscribe((presenceMessage) => {
           // Filter out own presence events
           if (presenceMessage.clientId === client.auth.clientId) {
             return;

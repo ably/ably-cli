@@ -79,16 +79,8 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
         "subscribing",
         `Subscribing to ${channelName}...`,
       );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(`Subscribed to ${formatResource(channelName)}.`),
-        );
-        this.log(formatListening("Listening for channel lifecycle logs."));
-        this.log("");
-      }
-
       // Subscribe to the channel
-      channel.subscribe((message) => {
+      await channel.subscribe((message) => {
         const timestamp = formatMessageTimestamp(message.timestamp);
         const event = message.name || "unknown";
         const logEvent = {
@@ -136,6 +128,15 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
 
         this.log(""); // Empty line for better readability
       });
+
+      if (!this.shouldOutputJson(flags)) {
+        this.log(
+          formatSuccess(`Subscribed to ${formatResource(channelName)}.`),
+        );
+        this.log(formatListening("Listening for channel lifecycle logs."));
+        this.log("");
+      }
+
       this.logCliEvent(
         flags,
         "logs",

@@ -79,7 +79,7 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
       );
 
       // Subscribe to the channel
-      channel.subscribe((message) => {
+      await channel.subscribe((message) => {
         const timestamp = formatMessageTimestamp(message.timestamp);
         const event = message.name || "unknown";
         const logEvent = {
