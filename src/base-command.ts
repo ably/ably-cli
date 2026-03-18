@@ -1517,18 +1517,23 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       },
     );
 
-    if (this.shouldOutputJson(flags)) {
-      this.log(this.formatJsonRecord("error", cmdError.toJsonData(), flags));
-      this.exit(1);
-    }
-
-    let humanMessage = cmdError.message;
     const friendlyHint = getFriendlyAblyErrorHint(
       cmdError.code ??
         (typeof cmdError.context.errorCode === "number"
           ? cmdError.context.errorCode
           : undefined),
     );
+
+    if (this.shouldOutputJson(flags)) {
+      const jsonData = cmdError.toJsonData();
+      if (friendlyHint) {
+        jsonData.hint = friendlyHint;
+      }
+      this.log(this.formatJsonRecord("error", jsonData, flags));
+      this.exit(1);
+    }
+
+    let humanMessage = cmdError.message;
     if (friendlyHint) {
       humanMessage += `\n${friendlyHint}`;
     }

@@ -18,18 +18,20 @@ describe("errorMessage", () => {
 describe("getFriendlyAblyErrorHint", () => {
   it("should return capability hint for code 40160", () => {
     const hint = getFriendlyAblyErrorHint(40160);
-    expect(hint).toContain("capability");
-    expect(hint).toContain("Ably dashboard");
+    expect(hint).toContain("ably auth keys list");
+    expect(hint).toContain("capabilities");
   });
 
   it("should return publish capability hint for code 40161", () => {
     const hint = getFriendlyAblyErrorHint(40161);
+    expect(hint).toContain("ably auth keys list");
     expect(hint).toContain("publish capability");
   });
 
-  it("should return operation not permitted hint for code 40171", () => {
+  it("should return capabilities hint for code 40171", () => {
     const hint = getFriendlyAblyErrorHint(40171);
-    expect(hint).toContain("not permitted");
+    expect(hint).toContain("ably auth keys list");
+    expect(hint).toContain("capabilities");
   });
 
   it("should return invalid credentials hint for code 40101", () => {

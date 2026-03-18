@@ -16,11 +16,11 @@ const hints: Record<number, string> = {
   40110:
     'Unable to authorize. Check your authentication configuration or re-authenticate with "ably login".',
   40160:
-    "The current credentials do not have the capability to perform this operation on the requested resource. Check the token or key capability configuration in the Ably dashboard.",
+    'Run "ably auth keys list" to check your key\'s capabilities for this resource, or update them in the Ably dashboard.',
   40161:
-    "The current credentials do not have publish capability on this resource. Check the token or key capability configuration in the Ably dashboard.",
+    'Run "ably auth keys list" to check your key\'s publish capability, or update it in the Ably dashboard.',
   40171:
-    "The requested operation is not permitted by the current credentials' capabilities. Check the token or key capability configuration in the Ably dashboard.",
+    'Run "ably auth keys list" to check your key\'s capabilities, or update them in the Ably dashboard.',
 };
 
 export function getFriendlyAblyErrorHint(code?: number): string | undefined {
