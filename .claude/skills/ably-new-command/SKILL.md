@@ -151,6 +151,34 @@ static override flags = {
 };
 ```
 
+For history and list commands, use pagination utilities:
+```typescript
+import {
+  buildPaginationNext,
+  collectPaginatedResults,
+  formatPaginationWarning,
+} from "../../utils/pagination.js";
+
+// In run():
+const { items, hasMore, pagesConsumed } = await collectPaginatedResults(firstPage, flags.limit);
+const paginationWarning = formatPaginationWarning(pagesConsumed, items.length, true); // true for history (billable)
+if (paginationWarning && !this.shouldOutputJson(flags)) {
+  this.log(paginationWarning);
+}
+// For JSON output:
+const next = buildPaginationNext(hasMore, lastTimestamp); // lastTimestamp only for history commands
+this.logJsonResult({ [domainKey]: items, hasMore, ...(next && { next }) }, flags);
+```
+
+For list commands that need client-side filtering (e.g., rooms/spaces with prefix), use `collectFilteredPaginatedResults`:
+```typescript
+import { collectFilteredPaginatedResults } from "../../utils/pagination.js";
+
+const { items, hasMore, pagesConsumed } = await collectFilteredPaginatedResults(
+  firstPage, flags.limit, (item) => item.name.startsWith(prefix),
+);
+```
+
 ### Command metadata
 
 ```typescript

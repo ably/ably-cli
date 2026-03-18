@@ -205,6 +205,8 @@ See `src/commands/rooms/messages/update.ts` and `src/commands/rooms/messages/del
 ## History Pattern
 
 ```typescript
+import { collectPaginatedResults, formatPaginationWarning } from "../../utils/pagination.js";
+
 async run(): Promise<void> {
   const { args, flags } = await this.parse(MyHistoryCommand);
 
@@ -222,14 +224,24 @@ async run(): Promise<void> {
     };
 
     const history = await channel.history(historyParams);
-    const messages = history.items;
+    const { items: messages, hasMore, pagesConsumed } = await collectPaginatedResults(history, flags.limit);
+
+    const paginationWarning = formatPaginationWarning(pagesConsumed, messages.length);
+    if (paginationWarning && !this.shouldOutputJson(flags)) {
+      this.log(paginationWarning);
+    }
 
     if (this.shouldOutputJson(flags)) {
       // Plural domain key for collections, optional metadata alongside
-      this.logJsonResult({ messages, total: messages.length }, flags);
+      this.logJsonResult({ messages, hasMore, total: messages.length }, flags);
     } else {
       this.log(formatSuccess(`Found ${messages.length} messages.`));
       // Display each message using multi-line labeled blocks
+
+      if (hasMore) {
+        const warning = formatLimitWarning(messages.length, flags.limit, "messages");
+        if (warning) this.log(warning);
+      }
     }
   } catch (error) {
     this.fail(error, flags, "history", { channel: args.channel });
@@ -407,11 +419,55 @@ async run(): Promise<void> {
 }
 ```
 
+**Product API list with pagination** (e.g., `push devices list`, `channels list`) — use `collectPaginatedResults`:
+```typescript
+import { buildPaginationNext, collectPaginatedResults, formatPaginationWarning } from "../../utils/pagination.js";
+
+async run(): Promise<void> {
+  const { flags } = await this.parse(MyListCommand);
+
+  try {
+    const rest = await this.createAblyRestClient(flags);
+    if (!rest) return;
+
+    const firstPage = await rest.someResource.list({ limit: flags.limit });
+    const { items, hasMore, pagesConsumed } = await collectPaginatedResults(firstPage, flags.limit);
+
+    const paginationWarning = formatPaginationWarning(pagesConsumed, items.length);
+    if (paginationWarning && !this.shouldOutputJson(flags)) {
+      this.log(paginationWarning);
+    }
+
+    if (this.shouldOutputJson(flags)) {
+      const next = buildPaginationNext(hasMore);
+      this.logJsonResult({ items, hasMore, ...(next && { next }) }, flags);
+    } else {
+      this.log(`Found ${items.length} items:\n`);
+      for (const item of items) {
+        this.log(formatHeading(`Item ID: ${item.id}`));
+        this.log(`  ${formatLabel("Type")} ${item.type}`);
+        this.log("");
+      }
+
+      if (hasMore) {
+        const warning = formatLimitWarning(items.length, flags.limit, "items");
+        if (warning) this.log(warning);
+      }
+    }
+  } catch (error) {
+    this.fail(error, flags, "listItems");
+  }
+}
+```
+
 Key conventions for list output:
 - `formatResource()` is for inline resource name references, not for record headings
 - `formatHeading()` is for record heading lines that act as visual separators between multi-field records
 - `formatLabel(text)` for field labels in detail lines (automatically appends `:`)
 - `formatSuccess()` is not used in list commands — it's for confirming an action completed
+- `formatLimitWarning()` should only be shown when `hasMore` is true — it means there are more results beyond the limit
+- Always include `hasMore` and `next` in JSON output for paginated commands. `next` provides continuation hints (and `start` timestamp for history commands)
+- Use `collectPaginatedResults()` for SDK paginated results and `collectFilteredPaginatedResults()` when a client-side filter is applied across pages
 
 ---
 

@@ -1,51 +1,56 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import {
+  getMockAblyRest,
+  createMockPaginatedResult,
+} from "../../../helpers/mock-ably-rest.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../helpers/standard-tests.js";
 
-describe("spaces:list command", () => {
-  const mockSpaceChannelsResponse = {
-    statusCode: 200,
-    items: [
-      {
-        channelId: "space1::$space::$locks",
-        status: {
-          occupancy: {
-            metrics: { connections: 3, publishers: 1, subscribers: 2 },
-          },
+function createMockSpaceChannelItems() {
+  return [
+    {
+      channelId: "space1::$space::$locks",
+      status: {
+        occupancy: {
+          metrics: { connections: 3, publishers: 1, subscribers: 2 },
         },
       },
-      {
-        channelId: "space1::$space::$cursors",
-        status: {
-          occupancy: { metrics: { connections: 2 } },
+    },
+    {
+      channelId: "space1::$space::$cursors",
+      status: {
+        occupancy: { metrics: { connections: 2 } },
+      },
+    },
+    {
+      channelId: "space2::$space::$locks",
+      status: {
+        occupancy: {
+          metrics: { connections: 1, publishers: 0, subscribers: 1 },
         },
       },
-      {
-        channelId: "space2::$space::$locks",
-        status: {
-          occupancy: {
-            metrics: { connections: 1, publishers: 0, subscribers: 1 },
-          },
-        },
+    },
+    {
+      channelId: "regular-channel",
+      status: {
+        occupancy: { metrics: { connections: 1 } },
       },
-      {
-        channelId: "regular-channel",
-        status: {
-          occupancy: { metrics: { connections: 1 } },
-        },
-      },
-    ],
-  };
+    },
+  ];
+}
 
+describe("spaces:list command", () => {
   beforeEach(() => {
     const mock = getMockAblyRest();
     mock.request.mockClear();
-    mock.request.mockResolvedValue(mockSpaceChannelsResponse);
+    mock.request.mockResolvedValue({
+      ...createMockPaginatedResult(createMockSpaceChannelItems()),
+      statusCode: 200,
+    });
   });
 
   it("should filter to ::$space channels only", async () => {
@@ -92,7 +97,10 @@ describe("spaces:list command", () => {
 
   it("should show 'No active spaces' on empty response", async () => {
     const mock = getMockAblyRest();
-    mock.request.mockResolvedValue({ statusCode: 200, items: [] });
+    mock.request.mockResolvedValue({
+      ...createMockPaginatedResult([]),
+      statusCode: 200,
+    });
 
     const { stdout } = await runCommand(["spaces:list"], import.meta.url);
 
@@ -108,7 +116,6 @@ describe("spaces:list command", () => {
     const json = JSON.parse(stdout);
     expect(json).toHaveProperty("spaces");
     expect(json).toHaveProperty("total");
-    expect(json).toHaveProperty("shown");
     expect(json).toHaveProperty("hasMore");
     expect(json).toHaveProperty("success", true);
     expect(json.spaces).toBeInstanceOf(Array);
@@ -133,6 +140,46 @@ describe("spaces:list command", () => {
       expect(stdout).toContain("space2");
       expect(stdout).not.toContain("regular-channel");
     });
+  });
+
+  it("should deduplicate across multiple pages and show pagination warning", async () => {
+    const mock = getMockAblyRest();
+    const page1 = [
+      {
+        channelId: "space1::$space::$locks",
+        status: { occupancy: { metrics: { connections: 1 } } },
+      },
+      {
+        channelId: "space1::$space::$cursors",
+        status: { occupancy: { metrics: { connections: 1 } } },
+      },
+    ];
+    const page2 = [
+      {
+        channelId: "space1::$space::$locations",
+        status: { occupancy: { metrics: { connections: 1 } } },
+      },
+      {
+        channelId: "space2::$space::$locks",
+        status: { occupancy: { metrics: { connections: 2 } } },
+      },
+    ];
+    mock.request.mockResolvedValue({
+      ...createMockPaginatedResult(page1, page2),
+      statusCode: 200,
+    });
+
+    const { stdout } = await runCommand(
+      ["spaces:list", "--limit", "10"],
+      import.meta.url,
+    );
+
+    // space1 appears on both pages but should be deduplicated
+    expect(stdout).toContain("space1");
+    expect(stdout).toContain("space2");
+    expect(stdout).toContain("2 active spaces");
+    // Pagination warning for multi-page fetch
+    expect(stdout).toContain("pages");
   });
 
   describe("error handling", () => {

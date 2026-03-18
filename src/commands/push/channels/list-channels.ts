@@ -10,6 +10,11 @@ import {
   formatResource,
   formatSuccess,
 } from "../../../utils/output.js";
+import {
+  buildPaginationNext,
+  collectPaginatedResults,
+  formatPaginationWarning,
+} from "../../../utils/pagination.js";
 
 export default class PushChannelsListChannels extends AblyBaseCommand {
   static override description = "List channels with push subscriptions";
@@ -23,8 +28,9 @@ export default class PushChannelsListChannels extends AblyBaseCommand {
   static override flags = {
     ...productApiFlags,
     limit: Flags.integer({
-      description: "Maximum number of results to return (default: 100)",
+      description: "Maximum number of results to return",
       default: 100,
+      min: 1,
     }),
   };
 
@@ -42,10 +48,23 @@ export default class PushChannelsListChannels extends AblyBaseCommand {
       const result = await rest.push.admin.channelSubscriptions.listChannels({
         limit: flags.limit,
       });
-      const channels = result.items;
+      const {
+        items: channels,
+        hasMore,
+        pagesConsumed,
+      } = await collectPaginatedResults(result, flags.limit);
+
+      const paginationWarning = formatPaginationWarning(
+        pagesConsumed,
+        channels.length,
+      );
+      if (paginationWarning && !this.shouldOutputJson(flags)) {
+        this.log(paginationWarning);
+      }
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ channels }, flags);
+        const next = buildPaginationNext(hasMore);
+        this.logJsonResult({ channels, hasMore, ...(next && { next }) }, flags);
         return;
       }
 
@@ -64,12 +83,14 @@ export default class PushChannelsListChannels extends AblyBaseCommand {
       }
       this.log("");
 
-      const limitWarning = formatLimitWarning(
-        channels.length,
-        flags.limit,
-        "channels",
-      );
-      if (limitWarning) this.log(limitWarning);
+      if (hasMore) {
+        const limitWarning = formatLimitWarning(
+          channels.length,
+          flags.limit,
+          "channels",
+        );
+        if (limitWarning) this.log(limitWarning);
+      }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushChannelListChannels");
     }

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../helpers/mock-ably-chat.js";
+import { createMockPaginatedResult } from "../../../helpers/mock-ably-rest.js";
 import { captureJsonLogs } from "../../../helpers/ndjson.js";
 
 describe("rooms messages commands", function () {
@@ -359,8 +360,8 @@ describe("rooms messages commands", function () {
         const room = chatMock.rooms._getRoom("test-room");
 
         // Add history mock to messages
-        room.messages.history = vi.fn().mockResolvedValue({
-          items: [
+        room.messages.history = vi.fn().mockResolvedValue(
+          createMockPaginatedResult([
             {
               text: "Historical message 1",
               clientId: "client1",
@@ -373,8 +374,8 @@ describe("rooms messages commands", function () {
               timestamp: new Date(Date.now() - 5000),
               serial: "msg-2",
             },
-          ],
-        });
+          ]),
+        );
 
         const { stdout } = await runCommand(
           ["rooms:messages:history", "test-room"],
@@ -390,7 +391,9 @@ describe("rooms messages commands", function () {
         const chatMock = getMockAblyChat();
         const room = chatMock.rooms._getRoom("test-room");
 
-        room.messages.history = vi.fn().mockResolvedValue({ items: [] });
+        room.messages.history = vi
+          .fn()
+          .mockResolvedValue(createMockPaginatedResult([]));
 
         await runCommand(
           [
@@ -416,7 +419,9 @@ describe("rooms messages commands", function () {
         const chatMock = getMockAblyChat();
         const room = chatMock.rooms._getRoom("test-room");
 
-        room.messages.history = vi.fn().mockResolvedValue({ items: [] });
+        room.messages.history = vi
+          .fn()
+          .mockResolvedValue(createMockPaginatedResult([]));
 
         const start = "2025-01-01T00:00:00Z";
         const end = "2025-01-02T00:00:00Z";
@@ -445,7 +450,9 @@ describe("rooms messages commands", function () {
         const chatMock = getMockAblyChat();
         const room = chatMock.rooms._getRoom("test-room");
 
-        room.messages.history = vi.fn().mockResolvedValue({ items: [] });
+        room.messages.history = vi
+          .fn()
+          .mockResolvedValue(createMockPaginatedResult([]));
 
         await runCommand(
           ["rooms:messages:history", "test-room", "--start", "1700000000000"],
@@ -463,7 +470,9 @@ describe("rooms messages commands", function () {
         const chatMock = getMockAblyChat();
         const room = chatMock.rooms._getRoom("test-room");
 
-        room.messages.history = vi.fn().mockResolvedValue({ items: [] });
+        room.messages.history = vi
+          .fn()
+          .mockResolvedValue(createMockPaginatedResult([]));
 
         await runCommand(
           ["rooms:messages:history", "test-room", "--start", "1h"],
@@ -480,16 +489,16 @@ describe("rooms messages commands", function () {
         const chatMock = getMockAblyChat();
         const room = chatMock.rooms._getRoom("test-room");
 
-        room.messages.history = vi.fn().mockResolvedValue({
-          items: [
+        room.messages.history = vi.fn().mockResolvedValue(
+          createMockPaginatedResult([
             {
               text: "History msg",
               clientId: "client1",
               timestamp: new Date(Date.now() - 5000),
               serial: "msg-h1",
             },
-          ],
-        });
+          ]),
+        );
 
         const records = await captureJsonLogs(async () => {
           await runCommand(

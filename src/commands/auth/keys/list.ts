@@ -6,6 +6,7 @@ import { formatCapabilities } from "../../../utils/key-display.js";
 import {
   formatHeading,
   formatLabel,
+  formatLimitWarning,
   formatResource,
 } from "../../../utils/output.js";
 
@@ -25,6 +26,11 @@ export default class KeysListCommand extends ControlBaseCommand {
       description: "The app ID or name (defaults to current app)",
       env: "ABLY_APP_ID",
     }),
+    limit: Flags.integer({
+      default: 100,
+      description: "Maximum number of results to return",
+      min: 1,
+    }),
   };
 
   async run(): Promise<void> {
@@ -39,7 +45,9 @@ export default class KeysListCommand extends ControlBaseCommand {
 
     try {
       const controlApi = this.createControlApi(flags);
-      const keys = await controlApi.listKeys(appId);
+      const allKeys = await controlApi.listKeys(appId);
+      const hasMore = allKeys.length > flags.limit;
+      const keys = allKeys.slice(0, flags.limit);
 
       // Get the current key name for highlighting (app_id.key_Id)
       const currentKeyId = this.configManager.getKeyId(appId);
@@ -63,6 +71,7 @@ export default class KeysListCommand extends ControlBaseCommand {
         this.logJsonResult(
           {
             appId,
+            hasMore,
             keys: keysWithCurrent,
           },
           flags,
@@ -99,6 +108,11 @@ export default class KeysListCommand extends ControlBaseCommand {
           }
 
           this.log("");
+        }
+
+        if (hasMore) {
+          const warning = formatLimitWarning(keys.length, flags.limit, "keys");
+          if (warning) this.log(warning);
         }
       }
     } catch (error) {

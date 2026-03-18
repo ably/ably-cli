@@ -217,7 +217,11 @@ All output helpers use the `format` prefix and are exported from `src/utils/outp
 - **Headings**: `formatHeading("Record ID: " + id)` — bold, for record headings in list output.
 - **Index**: `formatIndex(n)` — dim bracketed number `[n]`, for history/list ordering.
 - **Count labels**: `formatCountLabel(n, "message")` — cyan count + pluralized label.
-- **Limit warnings**: `formatLimitWarning(count, limit, "items")` — yellow warning if results truncated.
+- **Limit warnings**: `formatLimitWarning(count, limit, "items")` — yellow warning if results truncated. Only show when `hasMore === true`.
+- **Pagination collection**: `collectPaginatedResults(firstPage, limit)` — walks cursor-based pages until `limit` items are collected. Returns `{ items, hasMore, pagesConsumed }`. Use for both SDK and HTTP paginated commands.
+- **Filtered pagination**: `collectFilteredPaginatedResults(firstPage, limit, filter, maxPages?)` — same as above but applies a client-side filter. Use for rooms/spaces list where channels need prefix filtering. `maxPages` (default: 20) prevents runaway requests.
+- **Pagination warning**: `formatPaginationWarning(pagesConsumed, itemCount, isBillable?)` — shows "Fetched N pages" when `pagesConsumed > 1`. Pass `isBillable: true` for history commands (billable API calls). Guard with `!this.shouldOutputJson(flags)`.
+- **Pagination next hint**: `buildPaginationNext(hasMore, lastTimestamp?)` — returns `{ hint, start? }` for JSON output when `hasMore` is true. Pass `lastTimestamp` only for history commands (which have `--start`).
 - **JSON guard**: All human-readable output (progress, success, listening messages) must be wrapped in `if (!this.shouldOutputJson(flags))` so it doesn't pollute `--json` output. Only JSON payloads should be emitted when `--json` is active.
 - **JSON envelope**: Use `this.logJsonResult(data, flags)` for one-shot results and `this.logJsonEvent(data, flags)` for streaming events. The envelope adds three top-level fields (`type`, `command`, `success?`). Nest domain data under a **domain key** (see "JSON data nesting convention" below). Do NOT add ad-hoc `success: true/false` — the envelope handles it. `--json` produces compact single-line output (NDJSON for streaming). `--pretty-json` is unchanged.
 - **JSON errors**: Use `this.fail(error, flags, component, context?)` as the single error funnel in command `run()` methods. It logs the CLI event, preserves structured error data (Ably codes, HTTP status), emits JSON error envelope when `--json` is active, and calls `this.error()` for human-readable output. Returns `never` — no `return;` needed after calling it. Do NOT call `this.error()` directly — it is an internal implementation detail of `fail`.
@@ -294,7 +298,7 @@ When adding COMMANDS sections in `src/help.ts`, use `chalk.bold()` for headers, 
 ### Flag conventions
 - All flags kebab-case: `--my-flag` (never camelCase)
 - `--app`: `"The app ID or name (defaults to current app)"` (for commands with `resolveAppId`), `"The app ID (defaults to current app)"` (for commands without)
-- `--limit`: `"Maximum number of results to return (default: N)"`
+- `--limit`: `"Maximum number of results to return"` with `min: 1` (oclif shows `[default: N]` automatically, don't duplicate in description)
 - `--duration`: Use `durationFlag` from `src/flags.ts`. `"Automatically exit after N seconds"`, alias `-D`.
 - `--rewind`: Use `rewindFlag` from `src/flags.ts`. `"Number of messages to rewind when subscribing (default: 0)"`. Apply with `this.configureRewind(channelOptions, flags.rewind, flags, component, channelName)`.
 - `--start`/`--end`: Use `timeRangeFlags` from `src/flags.ts` and parse with `parseTimestamp()` from `src/utils/time.ts`. Accepts ISO 8601, Unix ms, or relative (e.g., `"1h"`, `"30m"`, `"2d"`).

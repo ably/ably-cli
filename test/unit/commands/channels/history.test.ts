@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import {
+  getMockAblyRest,
+  createMockPaginatedResult,
+} from "../../../helpers/mock-ably-rest.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -12,8 +15,8 @@ describe("channels:history command", () => {
     // Configure the centralized mock with test data
     const mock = getMockAblyRest();
     const channel = mock.channels._getChannel("test-channel");
-    channel.history.mockResolvedValue({
-      items: [
+    channel.history.mockResolvedValue(
+      createMockPaginatedResult([
         {
           id: "msg-1",
           name: "test-event",
@@ -47,8 +50,8 @@ describe("channels:history command", () => {
           clientId: "client-2",
           connectionId: "conn-2",
         },
-      ],
-    });
+      ]),
+    );
   });
 
   standardHelpTests("channels:history", import.meta.url);
@@ -119,8 +122,8 @@ describe("channels:history command", () => {
     it("should display message versioning metadata", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
-      channel.history.mockResolvedValue({
-        items: [
+      channel.history.mockResolvedValue(
+        createMockPaginatedResult([
           {
             name: "test-event",
             data: "hello",
@@ -131,8 +134,8 @@ describe("channels:history command", () => {
               serial: "version-serial-001",
             },
           },
-        ],
-      });
+        ]),
+      );
 
       const { stdout } = await runCommand(
         ["channels:history", "test-channel"],
@@ -147,7 +150,7 @@ describe("channels:history command", () => {
     it("should handle empty history", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
-      channel.history.mockResolvedValue({ items: [] });
+      channel.history.mockResolvedValue(createMockPaginatedResult([]));
 
       const { stdout } = await runCommand(
         ["channels:history", "test-channel"],

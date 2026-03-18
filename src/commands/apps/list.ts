@@ -1,6 +1,8 @@
+import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { formatLimitWarning } from "../../utils/output.js";
 
 export default class AppsList extends ControlBaseCommand {
   static override description = "List all apps in the current account";
@@ -13,6 +15,11 @@ export default class AppsList extends ControlBaseCommand {
 
   static override flags = {
     ...ControlBaseCommand.globalFlags,
+    limit: Flags.integer({
+      default: 100,
+      description: "Maximum number of results to return",
+      min: 1,
+    }),
   };
 
   async run(): Promise<void> {
@@ -21,7 +28,9 @@ export default class AppsList extends ControlBaseCommand {
     await this.runControlCommand(
       flags,
       async (controlApi) => {
-        const apps = await controlApi.listApps();
+        const allApps = await controlApi.listApps();
+        const hasMore = allApps.length > flags.limit;
+        const apps = allApps.slice(0, flags.limit);
 
         // Get current app ID from config
         const currentAppId = this.configManager.getCurrentAppId();
@@ -33,7 +42,7 @@ export default class AppsList extends ControlBaseCommand {
             isCurrent: app.id === currentAppId,
           }));
 
-          this.logJsonResult({ apps: appsWithCurrentFlag }, flags);
+          this.logJsonResult({ apps: appsWithCurrentFlag, hasMore }, flags);
           return;
         }
 
@@ -76,6 +85,11 @@ export default class AppsList extends ControlBaseCommand {
           }
 
           this.log(""); // Add a blank line between apps
+        }
+
+        if (hasMore) {
+          const warning = formatLimitWarning(apps.length, flags.limit, "apps");
+          if (warning) this.log(warning);
         }
       },
       "Error listing apps",

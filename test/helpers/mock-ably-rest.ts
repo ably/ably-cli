@@ -118,8 +118,8 @@ export interface MockAblyRest {
  */
 function createMockRestPresence(): MockRestPresence {
   return {
-    get: vi.fn().mockResolvedValue({ items: [] }),
-    history: vi.fn().mockResolvedValue({ items: [] }),
+    get: vi.fn().mockResolvedValue(createMockPaginatedResult([])),
+    history: vi.fn().mockResolvedValue(createMockPaginatedResult([])),
   };
 }
 
@@ -141,7 +141,7 @@ function createMockRestChannel(name: string): MockRestChannel {
   return {
     name,
     publish: vi.fn().mockResolvedValue({ serials: ["mock-serial-001"] }),
-    history: vi.fn().mockResolvedValue({ items: [] }),
+    history: vi.fn().mockResolvedValue(createMockPaginatedResult([])),
     updateMessage: vi
       .fn()
       .mockResolvedValue({ versionSerial: "mock-version-serial-update" }),
@@ -219,14 +219,14 @@ function createMockPush(): MockPush {
     admin: {
       publish: vi.fn().mockImplementation(async () => {}),
       channelSubscriptions: {
-        list: vi.fn().mockResolvedValue({ items: [] }),
-        listChannels: vi.fn().mockResolvedValue({ items: [] }),
+        list: vi.fn().mockResolvedValue(createMockPaginatedResult([])),
+        listChannels: vi.fn().mockResolvedValue(createMockPaginatedResult([])),
         save: vi.fn().mockImplementation(async () => {}),
         remove: vi.fn().mockImplementation(async () => {}),
         removeWhere: vi.fn().mockImplementation(async () => {}),
       },
       deviceRegistrations: {
-        list: vi.fn().mockResolvedValue({ items: [] }),
+        list: vi.fn().mockResolvedValue(createMockPaginatedResult([])),
         get: vi.fn().mockResolvedValue(null),
         save: vi.fn().mockImplementation(async () => {}),
         remove: vi.fn().mockImplementation(async () => {}),
@@ -248,7 +248,7 @@ function createMockAblyRest(): MockAblyRest {
     channels,
     auth,
     request: vi.fn().mockResolvedValue({
-      items: [],
+      ...createMockPaginatedResult([]),
       statusCode: 200,
       success: true,
     }),
@@ -264,6 +264,42 @@ function createMockAblyRest(): MockAblyRest {
   };
 
   return mock;
+}
+
+/**
+ * Create a mock PaginatedResult-like object for testing pagination.
+ * Supports arbitrary page chains: pass additional arrays for subsequent pages.
+ *
+ * @example
+ * createMockPaginatedResult([1, 2])                    // single page
+ * createMockPaginatedResult([1, 2], [3, 4])            // two pages
+ * createMockPaginatedResult([1, 2], [3, 4], [5, 6])   // three pages
+ */
+export function createMockPaginatedResult<T>(
+  items: T[],
+  ...remainingPages: T[][]
+): {
+  items: T[];
+  hasNext: () => boolean;
+  next: () => Promise<ReturnType<typeof createMockPaginatedResult<T>> | null>;
+  isLast: () => boolean;
+  first: () => Promise<ReturnType<typeof createMockPaginatedResult<T>>>;
+  current: () => Promise<ReturnType<typeof createMockPaginatedResult<T>>>;
+} {
+  const hasNextPage = remainingPages.length > 0;
+  const result = {
+    items,
+    hasNext: () => hasNextPage,
+    next: async () => {
+      if (!hasNextPage) return null;
+      const [nextItems, ...rest] = remainingPages;
+      return createMockPaginatedResult<T>(nextItems, ...rest);
+    },
+    isLast: () => !hasNextPage,
+    first: async () => result,
+    current: async () => result,
+  };
+  return result;
 }
 
 // Singleton instance

@@ -24,7 +24,8 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
     }),
     limit: Flags.integer({
       default: 10,
-      description: "Maximum number of results to return (default: 10)",
+      description: "Maximum number of results to return",
+      min: 1,
     }),
     live: Flags.boolean({
       default: false,

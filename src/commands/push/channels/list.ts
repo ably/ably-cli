@@ -12,7 +12,13 @@ import {
   formatProgress,
   formatResource,
   formatSuccess,
+  formatWarning,
 } from "../../../utils/output.js";
+import {
+  buildPaginationNext,
+  collectPaginatedResults,
+  formatPaginationWarning,
+} from "../../../utils/pagination.js";
 
 export default class PushChannelsList extends AblyBaseCommand {
   static override description = "List push channel subscriptions";
@@ -36,8 +42,9 @@ export default class PushChannelsList extends AblyBaseCommand {
       description: "Filter by client ID",
     }),
     limit: Flags.integer({
-      description: "Maximum number of results to return (default: 100)",
+      description: "Maximum number of results to return",
       default: 100,
+      min: 1,
     }),
   };
 
@@ -64,15 +71,31 @@ export default class PushChannelsList extends AblyBaseCommand {
       if (flags["client-id"]) params.clientId = flags["client-id"];
 
       const result = await rest.push.admin.channelSubscriptions.list(params);
-      const subscriptions = result.items;
+      const {
+        items: subscriptions,
+        hasMore,
+        pagesConsumed,
+      } = await collectPaginatedResults(result, flags.limit);
+
+      const paginationWarning = formatPaginationWarning(
+        pagesConsumed,
+        subscriptions.length,
+      );
+      if (paginationWarning && !this.shouldOutputJson(flags)) {
+        this.log(paginationWarning);
+      }
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ subscriptions }, flags);
+        const next = buildPaginationNext(hasMore);
+        this.logJsonResult(
+          { subscriptions, hasMore, ...(next && { next }) },
+          flags,
+        );
         return;
       }
 
       if (subscriptions.length === 0) {
-        this.log("No subscriptions found.");
+        this.logToStderr(formatWarning("No subscriptions found."));
         return;
       }
 
@@ -97,12 +120,14 @@ export default class PushChannelsList extends AblyBaseCommand {
         this.log("");
       }
 
-      const limitWarning = formatLimitWarning(
-        subscriptions.length,
-        flags.limit,
-        "subscriptions",
-      );
-      if (limitWarning) this.log(limitWarning);
+      if (hasMore) {
+        const limitWarning = formatLimitWarning(
+          subscriptions.length,
+          flags.limit,
+          "subscriptions",
+        );
+        if (limitWarning) this.log(limitWarning);
+      }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushChannelList");
     }

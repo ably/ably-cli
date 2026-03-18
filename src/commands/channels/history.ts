@@ -14,6 +14,11 @@ import {
   formatMessagesOutput,
 } from "../../utils/output.js";
 import type { MessageDisplayFields } from "../../utils/output.js";
+import {
+  buildPaginationNext,
+  collectPaginatedResults,
+  formatPaginationWarning,
+} from "../../utils/pagination.js";
 
 export default class ChannelsHistory extends AblyBaseCommand {
   static override args = {
@@ -49,7 +54,8 @@ export default class ChannelsHistory extends AblyBaseCommand {
     ...timeRangeFlags,
     limit: Flags.integer({
       default: 50,
-      description: "Maximum number of results to return (default: 50)",
+      description: "Maximum number of results to return",
+      min: 1,
     }),
   };
 
@@ -83,11 +89,27 @@ export default class ChannelsHistory extends AblyBaseCommand {
 
       // Get history
       const history = await channel.history(historyParams);
-      const messages = history.items;
+      const {
+        items: messages,
+        hasMore,
+        pagesConsumed,
+      } = await collectPaginatedResults(history, flags.limit);
+
+      const paginationWarning = formatPaginationWarning(
+        pagesConsumed,
+        messages.length,
+        true,
+      );
+      if (paginationWarning && !this.shouldOutputJson(flags)) {
+        this.log(paginationWarning);
+      }
 
       // Display results based on format
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ messages }, flags);
+        const lastTimestamp =
+          messages.length > 0 ? messages.at(-1)!.timestamp : undefined;
+        const next = buildPaginationNext(hasMore, lastTimestamp);
+        this.logJsonResult({ messages, hasMore, ...(next && { next }) }, flags);
       } else {
         if (messages.length === 0) {
           this.log("No messages found in the channel history.");
@@ -123,12 +145,14 @@ export default class ChannelsHistory extends AblyBaseCommand {
 
         this.log(formatMessagesOutput(displayMessages));
 
-        const warning = formatLimitWarning(
-          messages.length,
-          flags.limit,
-          "messages",
-        );
-        if (warning) this.log(warning);
+        if (hasMore) {
+          const warning = formatLimitWarning(
+            messages.length,
+            flags.limit,
+            "messages",
+          );
+          if (warning) this.log(warning);
+        }
       }
     } catch (error) {
       this.fail(error, flags, "channelHistory", {

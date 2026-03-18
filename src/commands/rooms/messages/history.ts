@@ -5,7 +5,9 @@ import chalk from "chalk";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../../flags.js";
 import {
+  formatIndex,
   formatLabel,
+  formatLimitWarning,
   formatProgress,
   formatSuccess,
   formatResource,
@@ -14,6 +16,11 @@ import {
   formatEventType,
   formatClientId,
 } from "../../../utils/output.js";
+import {
+  buildPaginationNext,
+  collectPaginatedResults,
+  formatPaginationWarning,
+} from "../../../utils/pagination.js";
 import { parseTimestamp } from "../../../utils/time.js";
 
 export default class MessagesHistory extends ChatBaseCommand {
@@ -46,7 +53,8 @@ export default class MessagesHistory extends ChatBaseCommand {
     limit: Flags.integer({
       char: "l",
       default: 50,
-      description: "Maximum number of results to return (default: 50)",
+      description: "Maximum number of results to return",
+      min: 1,
     }),
     order: Flags.string({
       default: "newestFirst",
@@ -134,11 +142,27 @@ export default class MessagesHistory extends ChatBaseCommand {
 
       // Get historical messages
       const messagesResult = await room.messages.history(historyParams);
-      const { items } = messagesResult;
+      const { items, hasMore, pagesConsumed } = await collectPaginatedResults(
+        messagesResult,
+        flags.limit,
+      );
+
+      const paginationWarning = formatPaginationWarning(
+        pagesConsumed,
+        items.length,
+        true,
+      );
+      if (paginationWarning && !this.shouldOutputJson(flags)) {
+        this.log(paginationWarning);
+      }
 
       if (this.shouldOutputJson(flags)) {
+        const lastTimestamp =
+          items.length > 0 ? items.at(-1)!.timestamp : undefined;
+        const next = buildPaginationNext(hasMore, lastTimestamp);
         this.logJsonResult(
           {
+            hasMore,
             messages: items.map((message) => ({
               clientId: message.clientId,
               text: message.text,
@@ -147,6 +171,7 @@ export default class MessagesHistory extends ChatBaseCommand {
               action: String(message.action),
               ...(message.metadata ? { metadata: message.metadata } : {}),
             })),
+            ...(next && { next }),
             room: args.room,
           },
           flags,
@@ -162,12 +187,12 @@ export default class MessagesHistory extends ChatBaseCommand {
 
           // Display messages in order provided
           const messagesInOrder = [...items];
-          for (const message of messagesInOrder) {
-            // Format message with timestamp, author and content
+          for (let i = 0; i < messagesInOrder.length; i++) {
+            const message = messagesInOrder[i];
             const timestamp = formatMessageTimestamp(message.timestamp);
             const author = message.clientId || "Unknown";
 
-            this.log(formatTimestamp(timestamp));
+            this.log(`${formatIndex(i + 1)} ${formatTimestamp(timestamp)}`);
             this.log(
               `  ${formatLabel("Action")} ${formatEventType(String(message.action))}`,
             );
@@ -184,6 +209,15 @@ export default class MessagesHistory extends ChatBaseCommand {
               );
             }
           }
+        }
+
+        if (hasMore) {
+          const warning = formatLimitWarning(
+            items.length,
+            flags.limit,
+            "messages",
+          );
+          if (warning) this.log(warning);
         }
       }
     } catch (error) {

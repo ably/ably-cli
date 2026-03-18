@@ -88,6 +88,7 @@ This document outlines the directory structure of the Ably CLI project.
 │       ├── history.ts               # History query parameter builder
 │       ├── message.ts              # Message interpolation ({{.Count}}, {{.Timestamp}})
 │       ├── output.ts               # Output helpers (progress, success, resource, etc.)
+│       ├── pagination.ts           # Generic pagination utilities (collectPaginatedResults, collectFilteredPaginatedResults)
 │       ├── prompt-confirmation.ts  # Y/N confirmation prompts
 │       ├── readline-helper.ts      # Readline utilities for interactive mode
 │       ├── sigint-exit.ts          # SIGINT/Ctrl+C handling (exit code 130)

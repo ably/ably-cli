@@ -12,6 +12,11 @@ import {
   formatCountLabel,
   formatLimitWarning,
 } from "../../../utils/output.js";
+import {
+  buildPaginationNext,
+  collectPaginatedResults,
+  formatPaginationWarning,
+} from "../../../utils/pagination.js";
 
 export default class PushDevicesList extends AblyBaseCommand {
   static override description = "List push device registrations";
@@ -36,8 +41,9 @@ export default class PushDevicesList extends AblyBaseCommand {
       options: ["ACTIVE", "FAILING", "FAILED"],
     }),
     limit: Flags.integer({
-      description: "Maximum number of results to return (default: 100)",
+      description: "Maximum number of results to return",
       default: 100,
+      min: 1,
     }),
   };
 
@@ -60,10 +66,23 @@ export default class PushDevicesList extends AblyBaseCommand {
       if (flags.state) params.state = flags.state;
 
       const result = await rest.push.admin.deviceRegistrations.list(params);
-      const devices = result.items;
+      const {
+        items: devices,
+        hasMore,
+        pagesConsumed,
+      } = await collectPaginatedResults(result, flags.limit);
+
+      const paginationWarning = formatPaginationWarning(
+        pagesConsumed,
+        devices.length,
+      );
+      if (paginationWarning && !this.shouldOutputJson(flags)) {
+        this.log(paginationWarning);
+      }
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ devices }, flags);
+        const next = buildPaginationNext(hasMore);
+        this.logJsonResult({ devices, hasMore, ...(next && { next }) }, flags);
         return;
       }
 
@@ -104,12 +123,14 @@ export default class PushDevicesList extends AblyBaseCommand {
         this.log("");
       }
 
-      const limitWarning = formatLimitWarning(
-        devices.length,
-        flags.limit,
-        "device registrations",
-      );
-      if (limitWarning) this.log(limitWarning);
+      if (hasMore) {
+        const limitWarning = formatLimitWarning(
+          devices.length,
+          flags.limit,
+          "device registrations",
+        );
+        if (limitWarning) this.log(limitWarning);
+      }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushDeviceList");
     }

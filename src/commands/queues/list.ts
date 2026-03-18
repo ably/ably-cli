@@ -1,6 +1,6 @@
 import { Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { formatHeading } from "../../utils/output.js";
+import { formatHeading, formatLimitWarning } from "../../utils/output.js";
 
 interface QueueStats {
   acknowledgementRate: null | number;
@@ -56,6 +56,11 @@ export default class QueuesListCommand extends ControlBaseCommand {
       description: "The app ID or name (defaults to current app)",
       required: false,
     }),
+    limit: Flags.integer({
+      default: 100,
+      description: "Maximum number of results to return",
+      min: 1,
+    }),
   };
 
   async run(): Promise<void> {
@@ -65,12 +70,15 @@ export default class QueuesListCommand extends ControlBaseCommand {
 
     try {
       const controlApi = this.createControlApi(flags);
-      const queues = await controlApi.listQueues(appId);
+      const allQueues = await controlApi.listQueues(appId);
+      const hasMore = allQueues.length > flags.limit;
+      const queues = allQueues.slice(0, flags.limit);
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
             appId,
+            hasMore,
             queues: queues.map((queue: Queue) => ({
               amqp: queue.amqp,
               deadletter: queue.deadletter || false,
@@ -147,6 +155,15 @@ export default class QueuesListCommand extends ControlBaseCommand {
 
           this.log(""); // Add a blank line between queues
         });
+
+        if (hasMore) {
+          const warning = formatLimitWarning(
+            queues.length,
+            flags.limit,
+            "queues",
+          );
+          if (warning) this.log(warning);
+        }
       }
     } catch (error) {
       this.fail(error, flags, "queueList", { appId });

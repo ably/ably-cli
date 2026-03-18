@@ -1,6 +1,6 @@
 import { Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { formatHeading } from "../../utils/output.js";
+import { formatHeading, formatLimitWarning } from "../../utils/output.js";
 
 export default class IntegrationsListCommand extends ControlBaseCommand {
   static description = "List all integrations";
@@ -18,6 +18,11 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
       description: "The app ID or name (defaults to current app)",
       required: false,
     }),
+    limit: Flags.integer({
+      default: 100,
+      description: "Maximum number of results to return",
+      min: 1,
+    }),
   };
 
   async run(): Promise<void> {
@@ -30,12 +35,15 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
 
     try {
       const controlApi = this.createControlApi(flags);
-      const integrations = await controlApi.listRules(appId);
+      const allIntegrations = await controlApi.listRules(appId);
+      const hasMore = allIntegrations.length > flags.limit;
+      const integrations = allIntegrations.slice(0, flags.limit);
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
             appId,
+            hasMore,
             integrations: integrations.map((integration) => ({
               appId: integration.appId,
               created: new Date(integration.created).toISOString(),
@@ -79,6 +87,15 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
           this.log(`  Created: ${this.formatDate(integration.created)}`);
           this.log(`  Updated: ${this.formatDate(integration.modified)}`);
           this.log(""); // Add a blank line between integrations
+        }
+
+        if (hasMore) {
+          const warning = formatLimitWarning(
+            integrations.length,
+            flags.limit,
+            "integrations",
+          );
+          if (warning) this.log(warning);
         }
       }
     } catch (error) {

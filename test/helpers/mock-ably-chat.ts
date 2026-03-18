@@ -29,6 +29,7 @@
  */
 
 import { vi, type Mock } from "vitest";
+import { createMockPaginatedResult } from "./mock-ably-rest.js";
 import {
   RoomStatus,
   type Message,
@@ -57,6 +58,7 @@ export interface MockRoomMessages {
   get: Mock;
   update: Mock;
   delete: Mock;
+  history: Mock;
   reactions: MockMessageReactions;
   // Internal emitter for simulating events
   _emitter: AblyEventEmitter;
@@ -252,6 +254,7 @@ function createMockRoomMessages(): MockRoomMessages {
       timestamp: new Date(),
       version: { serial: "mock-version-serial", timestamp: new Date() },
     }),
+    history: vi.fn().mockResolvedValue(createMockPaginatedResult([])),
     reactions: createMockMessageReactions(),
     _emitter: emitter,
     _emit: (message: Message) => {

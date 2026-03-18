@@ -7,6 +7,11 @@ import {
   formatLimitWarning,
   formatResource,
 } from "../../utils/output.js";
+import {
+  buildPaginationNext,
+  collectPaginatedResults,
+  formatPaginationWarning,
+} from "../../utils/pagination.js";
 
 interface ChannelMetrics {
   connections?: number;
@@ -49,7 +54,8 @@ export default class ChannelsList extends AblyBaseCommand {
     ...productApiFlags,
     limit: Flags.integer({
       default: 100,
-      description: "Maximum number of results to return (default: 100)",
+      description: "Maximum number of results to return",
+      min: 1,
     }),
     prefix: Flags.string({
       char: "p",
@@ -93,17 +99,34 @@ export default class ChannelsList extends AblyBaseCommand {
         );
       }
 
-      const channels = channelsResponse.items || [];
+      const {
+        items: channels,
+        hasMore,
+        pagesConsumed,
+      } = await collectPaginatedResults<ChannelItem>(
+        channelsResponse,
+        flags.limit,
+      );
+
+      const paginationWarning = formatPaginationWarning(
+        pagesConsumed,
+        channels.length,
+      );
+      if (paginationWarning && !this.shouldOutputJson(flags)) {
+        this.log(paginationWarning);
+      }
 
       // Output channels based on format
       if (this.shouldOutputJson(flags)) {
+        const next = buildPaginationNext(hasMore);
         this.logJsonResult(
           {
             channels: channels.map((channel: ChannelItem) => ({
               channelId: channel.channelId,
               metrics: channel.status?.occupancy?.metrics || {},
             })),
-            hasMore: channels.length === flags.limit,
+            hasMore,
+            ...(next && { next }),
             timestamp: new Date().toISOString(),
             total: channels.length,
           },
@@ -119,7 +142,7 @@ export default class ChannelsList extends AblyBaseCommand {
           `Found ${formatCountLabel(channels.length, "active channel")}:`,
         );
 
-        for (const channel of channels as ChannelItem[]) {
+        for (const channel of channels) {
           this.log(`${formatResource(channel.channelId)}`);
 
           // Show occupancy if available
@@ -151,12 +174,14 @@ export default class ChannelsList extends AblyBaseCommand {
           this.log(""); // Add a line break between channels
         }
 
-        const warning = formatLimitWarning(
-          channels.length,
-          flags.limit,
-          "channels",
-        );
-        if (warning) this.log(warning);
+        if (hasMore) {
+          const warning = formatLimitWarning(
+            channels.length,
+            flags.limit,
+            "channels",
+          );
+          if (warning) this.log(warning);
+        }
       }
     } catch (error) {
       this.fail(error, flags, "channelList");
