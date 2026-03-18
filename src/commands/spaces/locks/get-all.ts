@@ -65,7 +65,9 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
           flags,
         );
       } else if (locks.length === 0) {
-        this.log(formatWarning("No locks are currently active in this space."));
+        this.logToStderr(
+          formatWarning("No locks are currently active in this space."),
+        );
       } else {
         this.log(
           `\n${formatHeading("Current locks")} (${formatCountLabel(locks.length, "lock")}):\n`,

@@ -134,9 +134,7 @@ export default class SpacesList extends SpacesBaseCommand {
           return;
         }
 
-        this.log(
-          `Found ${formatCountLabel(spaces.length, "active space")}:\n`,
-        );
+        this.log(`Found ${formatCountLabel(spaces.length, "active space")}:\n`);
 
         spaces.forEach((space) => {
           this.log(`${formatResource(space.spaceName)}`);

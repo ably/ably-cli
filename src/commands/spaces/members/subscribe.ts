@@ -5,6 +5,7 @@ import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
   formatListening,
+  formatMessageTimestamp,
   formatProgress,
   formatTimestamp,
 } from "../../../utils/output.js";
@@ -70,7 +71,6 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
       );
       // Define the listener function
       this.listener = (member: SpaceMember) => {
-        const timestamp = new Date().toISOString();
         const now = Date.now();
 
         // Determine the action from the member's lastEvent
@@ -122,7 +122,9 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
         if (this.shouldOutputJson(flags)) {
           this.logJsonEvent({ member: formatMemberOutput(member) }, flags);
         } else {
-          this.log(formatTimestamp(timestamp));
+          this.log(
+            formatTimestamp(formatMessageTimestamp(member.lastEvent.timestamp)),
+          );
           this.log(formatMemberEventBlock(member, action));
           this.log("");
         }

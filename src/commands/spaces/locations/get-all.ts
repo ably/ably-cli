@@ -77,7 +77,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
             flags,
           );
         } else if (entries.length === 0) {
-          this.log(
+          this.logToStderr(
             formatWarning("No locations are currently set in this space."),
           );
         } else {

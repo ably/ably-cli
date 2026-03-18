@@ -5,6 +5,7 @@ import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
   formatListening,
+  formatMessageTimestamp,
   formatProgress,
   formatTimestamp,
 } from "../../../utils/output.js";
@@ -57,8 +58,6 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
       );
 
       this.listener = (lock: Lock) => {
-        const timestamp = new Date().toISOString();
-
         this.logCliEvent(flags, "lock", "event-update", "Lock event received", {
           lockId: lock.id,
           status: lock.status,
@@ -67,7 +66,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
         if (this.shouldOutputJson(flags)) {
           this.logJsonEvent({ lock: formatLockOutput(lock) }, flags);
         } else {
-          this.log(formatTimestamp(timestamp));
+          this.log(formatTimestamp(formatMessageTimestamp(lock.timestamp)));
           this.log(formatLockBlock(lock));
           this.log("");
         }

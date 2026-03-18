@@ -66,7 +66,10 @@ describe("spaces:locations:get-all command", () => {
         "connectionId",
         "conn-1",
       );
-      expect(resultRecord!.locations[0]).toHaveProperty("location");
+      expect(resultRecord!.locations[0]).toHaveProperty("location", {
+        x: 100,
+        y: 200,
+      });
     });
 
     it("should handle no locations found", async () => {

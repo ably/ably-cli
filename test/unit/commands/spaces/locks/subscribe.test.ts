@@ -162,6 +162,7 @@ describe("spaces:locks:subscribe command", () => {
 
       // Command should have attempted to run and reported the error
       expect(error).toBeDefined();
+      expect(error?.message).toContain("Failed to subscribe");
     });
   });
 });

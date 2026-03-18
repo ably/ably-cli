@@ -69,7 +69,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
           flags,
         );
       } else if (cursors.length === 0) {
-        this.log(formatWarning("No active cursors found in space."));
+        this.logToStderr(formatWarning("No active cursors found in space."));
       } else {
         this.log(
           `\n${formatHeading("Current cursors")} (${formatCountLabel(cursors.length, "cursor")}):\n`,

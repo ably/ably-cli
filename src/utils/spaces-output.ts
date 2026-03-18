@@ -143,6 +143,10 @@ export function formatMemberEventBlock(
     lines.push(`${formatLabel("Location")} ${JSON.stringify(member.location)}`);
   }
 
+  lines.push(
+    `${formatLabel("Last Event")} ${action} at ${formatMessageTimestamp(member.lastEvent.timestamp)}`,
+  );
+
   return lines.join("\n");
 }
 
