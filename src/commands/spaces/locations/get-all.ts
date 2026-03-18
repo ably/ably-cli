@@ -15,8 +15,8 @@ import type { LocationEntry } from "../../../utils/spaces-output.js";
 
 export default class SpacesLocationsGetAll extends SpacesBaseCommand {
   static override args = {
-    space: Args.string({
-      description: "Space to get locations from",
+    space_name: Args.string({
+      description: "Name of the space to get locations from",
       required: true,
     }),
   };
@@ -36,7 +36,7 @@ export default class SpacesLocationsGetAll extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsGetAll);
-    const { space: spaceName } = args;
+    const { space_name: spaceName } = args;
 
     try {
       await this.initializeSpace(flags, spaceName, {

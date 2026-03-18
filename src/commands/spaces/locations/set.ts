@@ -6,8 +6,8 @@ import { formatSuccess, formatResource } from "../../../utils/output.js";
 
 export default class SpacesLocationsSet extends SpacesBaseCommand {
   static override args = {
-    space: Args.string({
-      description: "Space to set location in",
+    space_name: Args.string({
+      description: "Name of the space to set location in",
       required: true,
     }),
   };
@@ -47,7 +47,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsSet);
-    const { space: spaceName } = args;
+    const { space_name: spaceName } = args;
 
     // Parse location data first
     const location = this.parseJsonFlag(flags.location, "location", flags);

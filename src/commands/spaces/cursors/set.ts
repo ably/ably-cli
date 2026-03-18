@@ -13,8 +13,8 @@ import {
 
 export default class SpacesCursorsSet extends SpacesBaseCommand {
   static override args = {
-    space: Args.string({
-      description: "The space to set cursor in",
+    space_name: Args.string({
+      description: "Name of the space to set cursor in",
       required: true,
     }),
   };
@@ -68,7 +68,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsSet);
-    const { space: spaceName } = args;
+    const { space_name: spaceName } = args;
 
     try {
       // Validate and parse cursor data - either x/y flags or --data JSON

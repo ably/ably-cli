@@ -15,8 +15,8 @@ import {
 
 export default class SpacesMembersSubscribe extends SpacesBaseCommand {
   static override args = {
-    space: Args.string({
-      description: "Space to subscribe to members for",
+    space_name: Args.string({
+      description: "Name of the space to subscribe to members for",
       required: true,
     }),
   };
@@ -41,7 +41,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesMembersSubscribe);
-    const { space: spaceName } = args;
+    const { space_name: spaceName } = args;
 
     // Keep track of the last event we've seen for each client to avoid duplicates
     const lastSeenEvents = new Map<

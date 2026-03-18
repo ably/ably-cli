@@ -18,8 +18,8 @@ import {
 
 export default class SpacesLocksGetAll extends SpacesBaseCommand {
   static override args = {
-    space: Args.string({
-      description: "Space to get locks from",
+    space_name: Args.string({
+      description: "Name of the space to get locks from",
       required: true,
     }),
   };
@@ -39,7 +39,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksGetAll);
-    const { space: spaceName } = args;
+    const { space_name: spaceName } = args;
 
     try {
       await this.initializeSpace(flags, spaceName, {

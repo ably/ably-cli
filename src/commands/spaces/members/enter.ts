@@ -15,8 +15,8 @@ import { formatMemberOutput } from "../../../utils/spaces-output.js";
 
 export default class SpacesMembersEnter extends SpacesBaseCommand {
   static override args = {
-    space: Args.string({
-      description: "Space to enter",
+    space_name: Args.string({
+      description: "Name of the space to enter",
       required: true,
     }),
   };
@@ -44,7 +44,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesMembersEnter);
-    const { space: spaceName } = args;
+    const { space_name: spaceName } = args;
 
     try {
       if (!this.shouldOutputJson(flags)) {

@@ -12,8 +12,8 @@ import { formatLocationUpdateBlock } from "../../../utils/spaces-output.js";
 
 export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
   static override args = {
-    space: Args.string({
-      description: "Space to subscribe to locations for",
+    space_name: Args.string({
+      description: "Name of the space to subscribe to locations for",
       required: true,
     }),
   };
@@ -36,7 +36,7 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsSubscribe);
-    const { space: spaceName } = args;
+    const { space_name: spaceName } = args;
 
     try {
       if (!this.shouldOutputJson(flags)) {

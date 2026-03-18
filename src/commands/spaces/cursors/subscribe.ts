@@ -14,8 +14,8 @@ import {
 
 export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
   static override args = {
-    space: Args.string({
-      description: "Space to subscribe to cursors for",
+    space_name: Args.string({
+      description: "Name of the space to subscribe to cursors for",
       required: true,
     }),
   };
@@ -39,7 +39,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsSubscribe);
-    const { space: spaceName } = args;
+    const { space_name: spaceName } = args;
 
     try {
       if (!this.shouldOutputJson(flags)) {

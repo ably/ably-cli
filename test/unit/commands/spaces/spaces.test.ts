@@ -78,7 +78,7 @@ describe("spaces commands", () => {
 
       expect(stdout).toContain("Enter a space");
       expect(stdout).toContain("USAGE");
-      expect(stdout).toContain("SPACE");
+      expect(stdout).toContain("SPACE_NAME");
     });
 
     it("should enter a space successfully", async () => {
@@ -125,7 +125,7 @@ describe("spaces commands", () => {
 
       expect(stdout).toContain("Subscribe to member");
       expect(stdout).toContain("USAGE");
-      expect(stdout).toContain("SPACE");
+      expect(stdout).toContain("SPACE_NAME");
     });
 
     it("should subscribe and display member events with action and client info", async () => {
@@ -177,7 +177,7 @@ describe("spaces commands", () => {
 
       expect(stdout).toContain("Set your location");
       expect(stdout).toContain("USAGE");
-      expect(stdout).toContain("SPACE");
+      expect(stdout).toContain("SPACE_NAME");
     });
 
     it("should set location with --location flag", async () => {
@@ -208,7 +208,7 @@ describe("spaces commands", () => {
 
       expect(stdout).toContain("Acquire a lock");
       expect(stdout).toContain("USAGE");
-      expect(stdout).toContain("SPACE");
+      expect(stdout).toContain("SPACE_NAME");
       expect(stdout).toContain("LOCKID");
     });
 
@@ -243,7 +243,7 @@ describe("spaces commands", () => {
 
       expect(stdout).toContain("cursor");
       expect(stdout).toContain("USAGE");
-      expect(stdout).toContain("SPACE");
+      expect(stdout).toContain("SPACE_NAME");
     });
 
     it("should set cursor with x and y flags", async () => {
