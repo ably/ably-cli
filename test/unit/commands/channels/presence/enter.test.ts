@@ -171,5 +171,35 @@ describe("channels:presence:enter command", () => {
 
       expect(error).toBeDefined();
     });
+
+    it("should handle capability error with --show-others gracefully", async () => {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("test-channel");
+
+      channel.presence.subscribe.mockRejectedValue(
+        Object.assign(
+          new Error("Channel denied access based on given capability"),
+          {
+            code: 40160,
+            statusCode: 401,
+            href: "https://help.ably.io/error/40160",
+          },
+        ),
+      );
+
+      const { error } = await runCommand(
+        [
+          "channels:presence:enter",
+          "test-channel",
+          "--client-id",
+          "test-client",
+          "--show-others",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Channel denied access");
+    });
   });
 });

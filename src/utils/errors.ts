@@ -21,6 +21,10 @@ const hints: Record<number, string> = {
     'Run "ably auth keys list" to check your key\'s publish capability, or update it in the Ably dashboard.',
   40171:
     'Run "ably auth keys list" to check your key\'s capabilities, or update them in the Ably dashboard.',
+  40300:
+    "This application has been disabled. Check the app status in the Ably dashboard at https://ably.com/dashboard",
+  80003:
+    "The connection was lost. Check your network connection and try again.",
 };
 
 export function getFriendlyAblyErrorHint(code?: number): string | undefined {

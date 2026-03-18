@@ -58,4 +58,15 @@ describe("getFriendlyAblyErrorHint", () => {
   it("should return undefined when code is not provided", () => {
     expect(getFriendlyAblyErrorHint()).toBeUndefined();
   });
+
+  it("should return app disabled hint for code 40300", () => {
+    const hint = getFriendlyAblyErrorHint(40300);
+    expect(hint).toContain("disabled");
+    expect(hint).toContain("dashboard");
+  });
+
+  it("should return disconnected hint for code 80003", () => {
+    const hint = getFriendlyAblyErrorHint(80003);
+    expect(hint).toContain("connection was lost");
+  });
 });

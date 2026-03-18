@@ -111,14 +111,6 @@ export default class LogsSubscribe extends AblyBaseCommand {
         { logTypes, channel: logsChannelName },
       );
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(
-            `Subscribed to app logs: ${formatResource(logTypes.join(", "))}.`,
-          ),
-        );
-      }
-
       // Subscribe to specified log types
       const subscribePromises: Promise<unknown>[] = [];
       for (const logType of logTypes) {
@@ -159,6 +151,14 @@ export default class LogsSubscribe extends AblyBaseCommand {
       }
 
       await Promise.all(subscribePromises);
+
+      if (!this.shouldOutputJson(flags)) {
+        this.log(
+          formatSuccess(
+            `Subscribed to app logs: ${formatResource(logTypes.join(", "))}.`,
+          ),
+        );
+      }
 
       this.logCliEvent(
         flags,
