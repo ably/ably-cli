@@ -112,7 +112,8 @@ export function formatMemberBlock(
   }
 
   lines.push(
-    `${indent}${formatLabel("Last Event")} ${member.lastEvent.name} at ${formatMessageTimestamp(member.lastEvent.timestamp)}`,
+    `${indent}${formatLabel("Last Event")} ${formatEventType(member.lastEvent.name)}`,
+    `${indent}${formatLabel("Event Timestamp")} ${formatMessageTimestamp(member.lastEvent.timestamp)}`,
   );
 
   return lines.join("\n");

@@ -110,10 +110,15 @@ export interface MockSpace {
   enter: Mock;
   leave: Mock;
   updateProfileData: Mock;
+  subscribe: Mock;
+  unsubscribe: Mock;
+  getState: Mock;
   members: MockSpaceMembers;
   locations: MockSpaceLocations;
   locks: MockSpaceLocks;
   cursors: MockSpaceCursors;
+  // Internal emitter for simulating space-level events
+  _emitter: AblyEventEmitter;
 }
 
 /**
@@ -284,15 +289,33 @@ function createMockSpaceCursors(): MockSpaceCursors {
  * Create a mock space object.
  */
 function createMockSpace(name: string): MockSpace {
+  const emitter = new EventEmitter();
+
   return {
     name,
     enter: vi.fn().mockImplementation(async () => {}),
     leave: vi.fn().mockImplementation(async () => {}),
     updateProfileData: vi.fn().mockImplementation(async () => {}),
+    subscribe: vi.fn((eventOrCallback, callback?) => {
+      const cb = callback ?? eventOrCallback;
+      const event = callback ? eventOrCallback : null;
+      emitter.on(event, cb);
+    }),
+    unsubscribe: vi.fn((eventOrCallback?, callback?) => {
+      if (!eventOrCallback) {
+        emitter.off();
+      } else if (typeof eventOrCallback === "function") {
+        emitter.off(null, eventOrCallback);
+      } else if (callback) {
+        emitter.off(eventOrCallback, callback);
+      }
+    }),
+    getState: vi.fn().mockResolvedValue({ members: [] }),
     members: createMockSpaceMembers(),
     locations: createMockSpaceLocations(),
     locks: createMockSpaceLocks(),
     cursors: createMockSpaceCursors(),
+    _emitter: emitter,
   };
 }
 
