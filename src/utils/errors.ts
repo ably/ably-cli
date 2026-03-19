@@ -11,20 +11,22 @@ export function errorMessage(error: unknown): string {
  */
 const hints: Record<number, string> = {
   40101:
-    'The credentials provided are not valid. Check your API key or token, or re-authenticate with "ably login".',
-  40103: 'The token has expired. Please re-authenticate with "ably login".',
+    "The credentials provided are not valid. Check your API key or token, or re-authenticate with 'ably login'.",
+  40103: "The token has expired. Please re-authenticate with 'ably login'.",
   40110:
-    'Unable to authorize. Check your authentication configuration or re-authenticate with "ably login".',
+    "Unable to authorize. Check your authentication configuration or re-authenticate with 'ably login'.",
   40160:
-    'Run "ably auth keys list" to check your key\'s capabilities for this resource, or update them in the Ably dashboard.',
+    "Run 'ably auth keys list' to check your key's capabilities for this resource, or update them in the Ably dashboard.",
   40161:
-    'Run "ably auth keys list" to check your key\'s publish capability, or update it in the Ably dashboard.',
+    "Run 'ably auth keys list' to check your key's publish capability, or update it in the Ably dashboard.",
   40171:
-    'Run "ably auth keys list" to check your key\'s capabilities, or update them in the Ably dashboard.',
+    "Run 'ably auth keys list' to check your key's capabilities, or update them in the Ably dashboard.",
   40300:
     "This application has been disabled. Check the app status in the Ably dashboard at https://ably.com/dashboard",
   80003:
     "The connection was lost. Check your network connection and try again.",
+  93002:
+    "This channel requires mutableMessages to be enabled.\nRun 'ably apps rules list' to check your channel rules,\nor enable it with 'ably apps rules create channel_name --mutable-messages' or 'ably apps rules update channel_name --mutable-messages'.",
 };
 
 export function getFriendlyAblyErrorHint(code?: number): string | undefined {

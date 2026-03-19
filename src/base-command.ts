@@ -872,7 +872,6 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
 
   protected getClientOptions(flags: BaseFlags): Ably.ClientOptions {
     const options: Ably.ClientOptions = {};
-    const isJsonMode = this.shouldOutputJson(flags);
 
     // Handle authentication: ABLY_TOKEN env → flags["api-key"] (set by ensureAppAndKey) → ABLY_API_KEY env → config
     if (process.env.ABLY_TOKEN) {
@@ -920,54 +919,22 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       options.tls = flags.tls === "true";
     }
 
-    // Always add a log handler to control SDK output formatting and destination
+    // SDK log handler: only surface logs in --verbose mode.
+    // Most SDK errors (NACKs, auth, connection) also propagate via promise
+    // rejections or state changes, so fail() / setupChannelStateLogging()
+    // handle them with structured output + actionable hints.
+    // A few SDK errors (presence/annotation decode failures) only surface here,
+    // but those are rare edge cases — users can use --verbose to diagnose them.
     options.logHandler = (message: string, level: number) => {
-      if (isJsonMode) {
-        // JSON Mode Handling
-        if (flags.verbose && level <= 2) {
-          // Verbose JSON: Log ALL SDK messages via logCliEvent
-          const logData = { sdkLogLevel: level, sdkMessage: message };
-          this.logCliEvent(
-            flags,
-            "ablySdk",
-            `LogLevel-${level}`,
-            message,
-            logData,
-          );
-        } else if (level <= 1) {
-          // Standard JSON: Log only SDK ERRORS (level <= 1) to stderr as JSON
-          const errorData = {
-            level,
-            logType: "sdkError",
-            message,
-            timestamp: new Date().toISOString(),
-          };
-          // Log to stderr with standard JSON envelope for consistency
-          this.logToStderr(
-            this.formatJsonRecord(JsonRecordType.Log, errorData, flags),
-          );
-        }
-        // If not verbose JSON and level > 1, suppress non-error SDK logs
-      } else {
-        // Non-JSON Mode Handling
-        if (flags.verbose && level <= 2) {
-          // Verbose Non-JSON: Log ALL SDK messages via logCliEvent (human-readable)
-          const logData = { sdkLogLevel: level, sdkMessage: message };
-          // logCliEvent handles non-JSON formatting when verbose is true
-          this.logCliEvent(
-            flags,
-            "ablySdk",
-            `LogLevel-${level}`,
-            message,
-            logData,
-          );
-        } else if (level <= 1) {
-          // SDK errors are handled by setupChannelStateLogging() and fail()
-          // Only show raw SDK errors in verbose mode (handled above)
-          // In non-verbose mode, log to stderr for debugging without polluting stdout
-          this.logToStderr(`${chalk.red.bold(`[AblySDK Error]`)} ${message}`);
-        }
-        // If not verbose non-JSON and level > 1, suppress non-error SDK logs
+      if (flags.verbose && level <= 2) {
+        const logData = { sdkLogLevel: level, sdkMessage: message };
+        this.logCliEvent(
+          flags,
+          "ablySdk",
+          `LogLevel-${level}`,
+          message,
+          logData,
+        );
       }
     };
 
@@ -1363,6 +1330,16 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     const connectionStateHandler = (
       stateChange: Ably.ConnectionStateChange,
     ) => {
+      // Skip closing/closed — these are CLI-initiated teardown, not actionable.
+      // The SDK attaches an _ErrorInfo reason even on normal close, which looks
+      // alarming in verbose output.
+      if (
+        stateChange.current === "closing" ||
+        stateChange.current === "closed"
+      ) {
+        return;
+      }
+
       this.logCliEvent(
         flags,
         component,
@@ -1379,7 +1356,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             break;
           }
           case "disconnected": {
-            this.log(formatWarning("Disconnected from Ably"));
+            this.log(formatWarning("Disconnected from Ably."));
             break;
           }
           case "failed": {
@@ -1391,7 +1368,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             break;
           }
           case "suspended": {
-            this.log(formatWarning("Connection suspended"));
+            this.log(formatWarning("Connection suspended."));
             break;
           }
           case "connecting": {
@@ -1567,7 +1544,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     if (this.shouldOutputJson(flags)) {
       const jsonData = cmdError.toJsonData();
       if (friendlyHint) {
-        jsonData.hint = friendlyHint;
+        jsonData.hint = friendlyHint.replaceAll("\n", " ");
       }
       this.log(this.formatJsonRecord(JsonRecordType.Error, jsonData, flags));
       this.exit(1);
