@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -111,7 +112,7 @@ describe("spaces:locks:acquire command", () => {
       expect(error?.message).toContain("Lock already held");
     });
 
-    it("should output JSON on success", async () => {
+    it("should output JSON result and hold status", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
       space.locks.acquire.mockResolvedValue({
@@ -135,15 +136,24 @@ describe("spaces:locks:acquire command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const records = parseNdjsonLines(stdout);
+      const result = records.find((r) => r.type === "result");
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("lock");
-      expect(result.lock).toHaveProperty("id", "my-lock");
-      expect(result.lock).toHaveProperty("status", "locked");
-      expect(result.lock).toHaveProperty("member");
-      expect(result.lock.member).toHaveProperty("clientId", "mock-client-id");
-      expect(result.lock).toHaveProperty("attributes", null);
-      expect(result.lock).toHaveProperty("reason", null);
+      const lock = result!.lock as Record<string, unknown>;
+      expect(lock).toHaveProperty("id", "my-lock");
+      expect(lock).toHaveProperty("status", "locked");
+      expect(lock).toHaveProperty("member");
+      const member = lock.member as Record<string, unknown>;
+      expect(member).toHaveProperty("clientId", "mock-client-id");
+      expect(lock).toHaveProperty("attributes", null);
+      expect(lock).toHaveProperty("reason", null);
+
+      const status = records.find((r) => r.type === "status");
+      expect(status).toBeDefined();
+      expect(status).toHaveProperty("status", "holding");
+      expect(status!.message).toContain("Holding lock");
     });
   });
 

@@ -360,7 +360,7 @@ export function formatAnnotationsOutput(
   return blocks.join("\n\n");
 }
 
-export type JsonRecordType = "error" | "event" | "log" | "result";
+export type JsonRecordType = "error" | "event" | "log" | "result" | "status";
 
 /**
  * Build a typed JSON envelope record.

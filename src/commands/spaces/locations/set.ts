@@ -1,8 +1,15 @@
 import { Args, Flags } from "@oclif/core";
 
-import { productApiFlags, clientIdFlag } from "../../../flags.js";
+import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { formatSuccess, formatResource } from "../../../utils/output.js";
+import {
+  formatSuccess,
+  formatListening,
+  formatProgress,
+  formatResource,
+  formatLabel,
+  formatClientId,
+} from "../../../utils/output.js";
 
 export default class SpacesLocationsSet extends SpacesBaseCommand {
   static override args = {
@@ -12,7 +19,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
     }),
   };
 
-  static override description = "Set your location in a space";
+  static override description = "Set location in a space";
 
   static override examples = [
     '$ ably spaces locations set my-space --location \'{"x":10,"y":20}\'',
@@ -27,42 +34,29 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       description: "Location data to set (JSON format)",
       required: true,
     }),
+    ...durationFlag,
   };
-
-  async finally(err: Error | undefined): Promise<void> {
-    // Clear location before leaving space
-    if (this.space && this.hasEnteredSpace) {
-      try {
-        await Promise.race([
-          this.space.locations.set(null),
-          new Promise<void>((resolve) => setTimeout(resolve, 1000)),
-        ]);
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
-
-    return super.finally(err);
-  }
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsSet);
     const { space_name: spaceName } = args;
 
-    // Parse location data first
     const location = this.parseJsonFlag(flags.location, "location", flags);
-    this.logCliEvent(
-      flags,
-      "location",
-      "dataParsed",
-      "Location data parsed successfully",
-      { location },
-    );
 
     try {
-      await this.initializeSpace(flags, spaceName, { enterSpace: true });
+      if (!this.shouldOutputJson(flags)) {
+        this.log(formatProgress("Entering space"));
+      }
 
-      // Set the location
+      await this.initializeSpace(flags, spaceName, { enterSpace: false });
+
+      this.logCliEvent(flags, "spaces", "entering", "Entering space...");
+      await this.space!.enter();
+      this.markAsEntered();
+      this.logCliEvent(flags, "spaces", "entered", "Entered space", {
+        clientId: this.realtimeClient!.auth.clientId,
+      });
+
       this.logCliEvent(flags, "location", "setting", "Setting location", {
         location,
       });
@@ -77,7 +71,23 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
         this.log(
           formatSuccess(`Location set in space: ${formatResource(spaceName)}.`),
         );
+        this.log(
+          `${formatLabel("Client ID")} ${formatClientId(this.realtimeClient!.auth.clientId)}`,
+        );
+        this.log(
+          `${formatLabel("Connection ID")} ${this.realtimeClient!.connection.id}`,
+        );
+        this.log(`${formatLabel("Location")} ${JSON.stringify(location)}`);
+        this.log(formatListening("Holding location."));
       }
+
+      this.logJsonStatus(
+        "holding",
+        "Holding location. Press Ctrl+C to exit.",
+        flags,
+      );
+
+      await this.waitAndTrackCleanup(flags, "location", flags.duration);
     } catch (error) {
       this.fail(error, flags, "locationSet");
     }

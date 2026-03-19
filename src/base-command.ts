@@ -828,7 +828,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * or pretty-printed for --pretty-json.
    */
   protected formatJsonRecord(
-    type: "error" | "event" | "log" | "result",
+    type: "error" | "event" | "log" | "result" | "status",
     data: Record<string, unknown>,
     flags: BaseFlags,
   ): string {
@@ -848,6 +848,16 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     flags: BaseFlags,
   ): void {
     this.log(this.formatJsonRecord("event", data, flags));
+  }
+
+  protected logJsonStatus(
+    status: string,
+    message: string,
+    flags: BaseFlags,
+  ): void {
+    if (this.shouldOutputJson(flags)) {
+      this.log(this.formatJsonRecord("status", { status, message }, flags));
+    }
   }
 
   protected getClientOptions(flags: BaseFlags): Ably.ClientOptions {

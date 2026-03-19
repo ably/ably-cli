@@ -96,11 +96,14 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         if (profileData) {
           this.log(`${formatLabel("Profile")} ${JSON.stringify(profileData)}`);
         }
-      }
-
-      if (!this.shouldOutputJson(flags)) {
         this.log(formatListening("Holding presence."));
       }
+
+      this.logJsonStatus(
+        "holding",
+        "Holding presence. Press Ctrl+C to exit.",
+        flags,
+      );
 
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "member", flags.duration);

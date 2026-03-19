@@ -146,7 +146,18 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         );
       }
 
-      await this.initializeSpace(flags, spaceName, { enterSpace: true });
+      if (!this.shouldOutputJson(flags)) {
+        this.log(formatProgress("Entering space"));
+      }
+
+      await this.initializeSpace(flags, spaceName, { enterSpace: false });
+
+      this.logCliEvent(flags, "spaces", "entering", "Entering space...");
+      await this.space!.enter();
+      this.markAsEntered();
+      this.logCliEvent(flags, "spaces", "entered", "Entered space", {
+        clientId: this.realtimeClient!.auth.clientId,
+      });
 
       const { position, data } = cursorData as {
         position: CursorPosition;
@@ -174,12 +185,8 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
             cursor: {
               clientId: this.realtimeClient!.auth.clientId,
               connectionId: this.realtimeClient!.connection.id,
-              position: (
-                cursorForOutput as { position: { x: number; y: number } }
-              ).position,
-              data:
-                (cursorForOutput as { data?: Record<string, unknown> }).data ??
-                null,
+              position,
+              data: data ?? null,
             },
           },
           flags,
@@ -249,15 +256,24 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
             );
           }
         }, 250);
-
-        if (!this.shouldOutputJson(flags)) {
-          this.log(formatListening("Simulating cursor movement."));
-        }
-
-        await this.waitAndTrackCleanup(flags, "cursor", flags.duration);
       }
 
-      // Non-simulate mode: run() completes, finally() handles cleanup
+      // Hold in both simulate and non-simulate modes
+      if (!this.shouldOutputJson(flags)) {
+        this.log(
+          formatListening(
+            flags.simulate ? "Simulating cursor movement." : "Holding cursor.",
+          ),
+        );
+      }
+
+      this.logJsonStatus(
+        "holding",
+        "Holding cursor. Press Ctrl+C to exit.",
+        flags,
+      );
+
+      await this.waitAndTrackCleanup(flags, "cursor", flags.duration);
     } catch (error) {
       this.fail(error, flags, "cursorSet", { spaceName });
     }

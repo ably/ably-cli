@@ -223,7 +223,8 @@ All output helpers use the `format` prefix and are exported from `src/utils/outp
 - **Pagination warning**: `formatPaginationWarning(pagesConsumed, itemCount, isBillable?)` — shows "Fetched N pages" when `pagesConsumed > 1`. Pass `isBillable: true` for history commands (billable API calls). Guard with `!this.shouldOutputJson(flags)`.
 - **Pagination next hint**: `buildPaginationNext(hasMore, lastTimestamp?)` — returns `{ hint, start? }` for JSON output when `hasMore` is true. Pass `lastTimestamp` only for history commands (which have `--start`).
 - **JSON guard**: All human-readable output (progress, success, listening messages) must be wrapped in `if (!this.shouldOutputJson(flags))` so it doesn't pollute `--json` output. Only JSON payloads should be emitted when `--json` is active.
-- **JSON envelope**: Use `this.logJsonResult(data, flags)` for one-shot results and `this.logJsonEvent(data, flags)` for streaming events. The envelope adds three top-level fields (`type`, `command`, `success?`). Nest domain data under a **domain key** (see "JSON data nesting convention" below). Do NOT add ad-hoc `success: true/false` — the envelope handles it. `--json` produces compact single-line output (NDJSON for streaming). `--pretty-json` is unchanged.
+- **JSON envelope**: Use `this.logJsonResult(data, flags)` for one-shot results, `this.logJsonEvent(data, flags)` for streaming events, and `this.logJsonStatus(status, message, flags)` for hold/status signals in long-running commands. The envelope adds top-level fields (`type`, `command`, `success?`). Nest domain data under a **domain key** (see "JSON data nesting convention" below). Do NOT add ad-hoc `success: true/false` — the envelope handles it. `--json` produces compact single-line output (NDJSON for streaming). `--pretty-json` is unchanged.
+- **JSON hold status**: Long-running hold commands (e.g. `spaces members enter`, `spaces locations set`, `spaces locks acquire`, `spaces cursors set`) must emit a `logJsonStatus("holding", "Holding <thing>. Press Ctrl+C to exit.", flags)` line after the result. This tells LLM agents and scripts that the command is alive and waiting. `logJsonStatus` has a built-in `shouldOutputJson` guard — no outer `if` needed.
 - **JSON errors**: Use `this.fail(error, flags, component, context?)` as the single error funnel in command `run()` methods. It logs the CLI event, preserves structured error data (Ably codes, HTTP status), emits JSON error envelope when `--json` is active, and calls `this.error()` for human-readable output. Returns `never` — no `return;` needed after calling it. Do NOT call `this.error()` directly — it is an internal implementation detail of `fail`.
 - **History output**: Use `[index] [timestamp]` on the same line as a heading: `` `${formatIndex(index + 1)} ${formatTimestamp(timestamp)}` ``, then fields indented below. This is distinct from **get-all output** which uses `[index]` alone on its own line. See `references/patterns.md` "History results" and "One-shot results" for both patterns.
 
@@ -246,9 +247,9 @@ See `references/patterns.md` "JSON Data Nesting Convention" in the `ably-new-com
 Each command type has strict rules about what side effects it may have. Remove unintended side effects (e.g., auto-entering presence) and support passive ("dumb") operations where applicable. Key principles:
 - **Subscribe** = passive observer (no `space.enter()`, no fetching initial state)
 - **Get-all / get** = one-shot query (no `space.enter()`, no subscribing)
-- **Set** = one-shot mutation (enter, set, exit — no subscribing after)
-- **Enter / acquire** = hold state until Ctrl+C / `--duration`
+- **Set / enter / acquire** = hold state until Ctrl+C / `--duration` (enter, operate, hold — no subscribing after)
 - Call `space.enter()` only when SDK requires it; always call `this.markAsEntered()` after
+- Hold commands use manual entry (`enterSpace: false` + `space.enter()` + `markAsEntered()`) for consistency
 
 See `references/patterns.md` "Command behavior semantics" in the `ably-new-command` skill for full rules, side-effect table, and code examples.
 

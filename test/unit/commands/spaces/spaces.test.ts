@@ -175,7 +175,7 @@ describe("spaces commands", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Set your location");
+      expect(stdout).toContain("Set location");
       expect(stdout).toContain("USAGE");
       expect(stdout).toContain("SPACE_NAME");
     });

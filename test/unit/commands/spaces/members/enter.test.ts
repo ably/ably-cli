@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -63,7 +64,7 @@ describe("spaces:members:enter command", () => {
   });
 
   describe("JSON output", () => {
-    it("should output JSON on success", async () => {
+    it("should output JSON result and hold status", async () => {
       const spacesMock = getMockAblySpaces();
       spacesMock._getSpace("test-space");
 
@@ -72,17 +73,22 @@ describe("spaces:members:enter command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result.success).toBe(true);
-      expect(result.member).toBeDefined();
-      expect(result.member).toHaveProperty("clientId", "mock-client-id");
-      expect(result.member).toHaveProperty(
-        "connectionId",
-        "mock-connection-id",
-      );
-      expect(result.member).toHaveProperty("isConnected", true);
-      expect(result.member).toHaveProperty("location", null);
-      expect(result.member).toHaveProperty("lastEvent");
+      const records = parseNdjsonLines(stdout);
+      const result = records.find((r) => r.type === "result");
+      expect(result).toBeDefined();
+      expect(result!.success).toBe(true);
+      expect(result!.member).toBeDefined();
+      const member = result!.member as Record<string, unknown>;
+      expect(member).toHaveProperty("clientId", "mock-client-id");
+      expect(member).toHaveProperty("connectionId", "mock-connection-id");
+      expect(member).toHaveProperty("isConnected", true);
+      expect(member).toHaveProperty("location", null);
+      expect(member).toHaveProperty("lastEvent");
+
+      const status = records.find((r) => r.type === "status");
+      expect(status).toBeDefined();
+      expect(status).toHaveProperty("status", "holding");
+      expect(status!.message).toContain("Holding presence");
     });
 
     it("should output JSON error on invalid profile", async () => {

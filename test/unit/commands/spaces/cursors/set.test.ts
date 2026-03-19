@@ -118,6 +118,19 @@ describe("spaces:cursors:set command", () => {
       );
     });
 
+    it("should display hold message in non-simulate mode", async () => {
+      const spacesMock = getMockAblySpaces();
+      spacesMock._getSpace("test-space");
+
+      const { stdout } = await runCommand(
+        ["spaces:cursors:set", "test-space", "--x", "100", "--y", "200"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Holding cursor.");
+      expect(stdout).toContain("Press Ctrl+C to exit.");
+    });
+
     it("should merge --data with --x/--y as additional cursor data", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
@@ -146,7 +159,7 @@ describe("spaces:cursors:set command", () => {
   });
 
   describe("JSON output", () => {
-    it("should output JSON on success", async () => {
+    it("should output JSON result and hold status", async () => {
       const spacesMock = getMockAblySpaces();
       spacesMock._getSpace("test-space");
 
@@ -170,10 +183,16 @@ describe("spaces:cursors:set command", () => {
       expect(result).toHaveProperty("command", "spaces:cursors:set");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("cursor");
-      expect(result!.cursor).toHaveProperty("position");
-      expect(result!.cursor.position).toEqual({ x: 100, y: 200 });
-      expect(result!.cursor).toHaveProperty("clientId");
-      expect(result!.cursor).toHaveProperty("connectionId");
+      const cursor = result!.cursor as Record<string, unknown>;
+      expect(cursor).toHaveProperty("position");
+      expect(cursor.position).toEqual({ x: 100, y: 200 });
+      expect(cursor).toHaveProperty("clientId");
+      expect(cursor).toHaveProperty("connectionId");
+
+      const status = records.find((r) => r.type === "status");
+      expect(status).toBeDefined();
+      expect(status).toHaveProperty("status", "holding");
+      expect(status!.message).toContain("Holding cursor");
     });
   });
 

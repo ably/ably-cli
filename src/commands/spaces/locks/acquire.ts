@@ -7,6 +7,7 @@ import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
   formatSuccess,
   formatListening,
+  formatProgress,
   formatResource,
 } from "../../../utils/output.js";
 import {
@@ -76,6 +77,10 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
     const { lockId } = this;
 
     try {
+      if (!this.shouldOutputJson(flags)) {
+        this.log(formatProgress("Entering space"));
+      }
+
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
       // Parse lock data if provided
@@ -133,6 +138,12 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
           lockId,
         });
       }
+
+      this.logJsonStatus(
+        "holding",
+        "Holding lock. Press Ctrl+C to exit.",
+        flags,
+      );
 
       this.logCliEvent(
         flags,
