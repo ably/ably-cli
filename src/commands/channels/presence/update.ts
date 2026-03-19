@@ -77,7 +77,7 @@ export default class ChannelsPresenceUpdate extends AblyBaseCommand {
         `Entering presence on channel ${channelName}`,
         { channel: channelName, clientId: client.auth.clientId },
       );
-      await this.channel.presence.enter();
+      await this.channel.presence.enter(data);
       this.logCliEvent(
         flags,
         "presence",

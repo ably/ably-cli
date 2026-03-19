@@ -66,15 +66,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
 
     const rawData = flags.data;
     if (rawData && rawData !== "{}") {
-      let trimmed = rawData.trim();
-      // If the string is wrapped in single or double quotes (common when passed through a shell), remove them first.
-      if (
-        (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
-        (trimmed.startsWith('"') && trimmed.endsWith('"'))
-      ) {
-        trimmed = trimmed.slice(1, -1);
-      }
-      const parsed = this.parseJsonFlag(trimmed, "data", flags);
+      const parsed = this.parseJsonFlag(rawData, "data", flags);
       this.data = parsed as PresenceData;
     }
 

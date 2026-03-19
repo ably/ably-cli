@@ -1481,9 +1481,27 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     flagName: string,
     flags: BaseFlags = {},
   ): Record<string, unknown> {
+    const trimmed = value.trim();
     try {
-      return JSON.parse(value.trim());
+      return JSON.parse(trimmed);
     } catch (error) {
+      // If parsing fails and the value is wrapped in a single pair of quotes
+      // (common when shells pass through values like '{"a":1}'), strip them and retry.
+      if (
+        trimmed.length >= 2 &&
+        ((trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+          (trimmed.startsWith('"') && trimmed.endsWith('"')))
+      ) {
+        try {
+          return JSON.parse(trimmed.slice(1, -1));
+        } catch (innerError) {
+          this.fail(
+            `Invalid ${flagName} JSON: ${innerError instanceof Error ? innerError.message : String(innerError)}`,
+            flags,
+            "parse",
+          );
+        }
+      }
       this.fail(
         `Invalid ${flagName} JSON: ${error instanceof Error ? error.message : String(error)}`,
         flags,
