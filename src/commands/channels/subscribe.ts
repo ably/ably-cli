@@ -41,7 +41,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
     "$ ably channels subscribe my-channel --json",
     "$ ably channels subscribe my-channel --pretty-json",
     "$ ably channels subscribe my-channel --duration 30",
-    "$ ably channels subscribe --token-streaming my-channel",
+    "$ ably channels subscribe my-channel --token-streaming",
     '$ ABLY_API_KEY="YOUR_API_KEY" ably channels subscribe my-channel',
   ];
 
@@ -82,11 +82,13 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
   static override strict = false;
 
+  private activeDisplaySerial: string | null = null; // Which serial owns the current TTY in-place line
   private client: Ably.Realtime | null = null;
   private sequenceCounter = 0;
-  private tokenStreamAccumulatedData = "";
-  private tokenStreamAppendCount = 0;
-  private tokenStreamSerial: string | null = null;
+  private tokenStreams = new Map<
+    string,
+    { accumulatedData: string; appendCount: number }
+  >();
 
   async run(): Promise<void> {
     const parseResult = await this.parse(ChannelsSubscribe);
@@ -106,6 +108,14 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       if (channelNames.length === 0) {
         this.fail(
           "At least one channel name is required",
+          flags,
+          "channelSubscribe",
+        );
+      }
+
+      if (flags["token-streaming"] && channelNames.length > 1) {
+        this.fail(
+          "Token streaming mode supports only a single channel",
           flags,
           "channelSubscribe",
         );
@@ -239,9 +249,9 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "subscribe", flags.duration);
 
-      // Finalize any in-progress stream before exit
+      // Finalize any in-progress streams before exit
       if (flags["token-streaming"]) {
-        this.finalizeTokenStream(flags);
+        this.finalizeAllTokenStreams(flags);
       }
     } catch (error) {
       this.fail(error, flags, "channelSubscribe", {
@@ -250,27 +260,64 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
     }
   }
 
-  private finalizeTokenStream(flags: Record<string, unknown>): void {
-    if (this.tokenStreamSerial === null) return;
+  // End the TTY in-place line for the active display serial without removing the stream from the Map
+  private endDisplayLine(flags: Record<string, unknown>): void {
+    if (!this.activeDisplaySerial) return;
+    const state = this.tokenStreams.get(this.activeDisplaySerial);
 
     if (!this.shouldOutputJson(flags)) {
       if (this.shouldUseTerminalUpdates()) {
-        // Using process.stdout.write to end the in-place line update started in handleTokenStreamMessage
         process.stdout.write("\n");
       }
-      if (this.tokenStreamAppendCount > 0) {
+
+      if (state && state.appendCount > 0) {
         this.log(
           chalk.dim(
-            `  (${this.tokenStreamAppendCount} append${this.tokenStreamAppendCount === 1 ? "" : "s"})`,
+            `  (${state.appendCount} append${state.appendCount === 1 ? "" : "s"})`,
           ),
         );
       }
+
       this.log("");
     }
 
-    this.tokenStreamSerial = null;
-    this.tokenStreamAccumulatedData = "";
-    this.tokenStreamAppendCount = 0;
+    this.activeDisplaySerial = null;
+  }
+
+  private finalizeTokenStream(
+    flags: Record<string, unknown>,
+    serial?: string,
+  ): void {
+    if (serial) {
+      if (!this.tokenStreams.has(serial)) return;
+
+      if (this.activeDisplaySerial === serial) {
+        this.endDisplayLine(flags);
+      } else {
+        // Stream is not the active display line but still has state — show its append summary
+        const state = this.tokenStreams.get(serial);
+        if (state && state.appendCount > 0 && !this.shouldOutputJson(flags)) {
+          this.log(
+            chalk.dim(
+              `  (${state.appendCount} append${state.appendCount === 1 ? "" : "s"})`,
+            ),
+          );
+        }
+      }
+
+      this.tokenStreams.delete(serial);
+    } else {
+      // Finalize whatever is active (used by non-stream-action fallthrough)
+      if (this.activeDisplaySerial) {
+        this.finalizeTokenStream(flags, this.activeDisplaySerial);
+      }
+    }
+  }
+
+  private finalizeAllTokenStreams(flags: Record<string, unknown>): void {
+    for (const [serial] of this.tokenStreams) {
+      this.finalizeTokenStream(flags, serial);
+    }
   }
 
   private handleTokenStreamMessage(
@@ -281,29 +328,83 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
     const action =
       message.action === undefined ? undefined : String(message.action);
 
-    // Only handle create/append in stream mode; everything else falls through
-    if (action !== "message.create" && action !== "message.append") {
-      // Non-streaming action: finalize any in-progress stream, then display normally
+    const serial = message.serial;
+
+    const streamLabel = `${formatResource(channelName)} ${chalk.dim("[")}${formatEventType("token-stream")}${chalk.dim("]")}`;
+
+    // Handle message.update as stream replacement when serial matches a tracked stream
+    if (action === "message.update") {
+      if (serial && this.tokenStreams.has(serial)) {
+        // Replace accumulated data (resync/conflation scenario)
+        const dataStr = message.data == null ? "" : String(message.data);
+        const state = this.tokenStreams.get(serial)!;
+        state.accumulatedData = dataStr;
+        state.appendCount = 0;
+
+        this.logCliEvent(
+          flags,
+          "subscribe",
+          "streamUpdateReceived",
+          `Received stream update (replacement) on channel ${channelName}`,
+          { action, serial, channel: channelName, data: dataStr },
+        );
+
+        if (this.shouldOutputJson(flags)) {
+          this.logJsonEvent(
+            {
+              message: {
+                id: message.id,
+                action,
+                serial,
+                channel: channelName,
+                data: dataStr,
+                accumulatedData: dataStr,
+                encoding: message.encoding,
+                ...(message.name ? { name: message.name } : {}),
+                clientId: message.clientId,
+                connectionId: message.connectionId,
+                timestamp: formatMessageTimestamp(message.timestamp),
+              },
+            },
+            flags,
+          );
+        } else if (
+          this.shouldUseTerminalUpdates() &&
+          this.activeDisplaySerial === serial
+        ) {
+          process.stdout.write(`\r\u001B[K${streamLabel} ${dataStr}`);
+        } else if (!this.shouldUseTerminalUpdates()) {
+          this.log(`${streamLabel} ${dataStr}`);
+        }
+        return;
+      }
+
+      // message.update with unknown serial or no tracked stream: fall through to normal display
       this.finalizeTokenStream(flags);
       this.displayNormalMessage(message, channelName, flags);
       return;
     }
 
-    const serial = message.serial!;
-
-    // If serial changed, finalize the previous stream
-    if (this.tokenStreamSerial !== null && this.tokenStreamSerial !== serial) {
+    // Only handle create/append in stream mode; everything else falls through
+    if (action !== "message.create" && action !== "message.append") {
       this.finalizeTokenStream(flags);
+      this.displayNormalMessage(message, channelName, flags);
+      return;
     }
 
     const dataStr = message.data == null ? "" : String(message.data);
 
-    const streamLabel = `${formatResource(channelName)} ${chalk.dim("[")}${formatEventType("token-stream")}${chalk.dim("]")}`;
-
     if (action === "message.create") {
-      this.tokenStreamSerial = serial;
-      this.tokenStreamAccumulatedData = dataStr;
-      this.tokenStreamAppendCount = 0;
+      // If a different serial currently owns the TTY display, end its line (but keep it in the Map)
+      if (this.activeDisplaySerial && this.activeDisplaySerial !== serial) {
+        this.endDisplayLine(flags);
+      }
+
+      this.tokenStreams.set(serial!, {
+        accumulatedData: dataStr,
+        appendCount: 0,
+      });
+      this.activeDisplaySerial = serial!;
 
       this.logCliEvent(
         flags,
@@ -332,16 +433,20 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           flags,
         );
       } else if (this.shouldUseTerminalUpdates()) {
-        // Using process.stdout.write instead of this.log() to avoid trailing newline,
-        // enabling in-place line updates via \r for streaming token display
         process.stdout.write(`${streamLabel} ${dataStr}`);
       } else {
         this.log(`${streamLabel} ${dataStr}`);
       }
     } else {
       // message.append
-      this.tokenStreamAccumulatedData += dataStr;
-      this.tokenStreamAppendCount++;
+      const state = this.tokenStreams.get(serial!);
+      if (!state) {
+        // Late arrival for already-finalized stream — ignore gracefully
+        return;
+      }
+
+      state.accumulatedData += dataStr;
+      state.appendCount++;
 
       this.logCliEvent(
         flags,
@@ -353,7 +458,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           serial,
           channel: channelName,
           data: dataStr,
-          appendCount: this.tokenStreamAppendCount,
+          appendCount: state.appendCount,
         },
       );
 
@@ -367,8 +472,8 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
               channel: channelName,
               data: dataStr,
               encoding: message.encoding,
-              accumulatedData: this.tokenStreamAccumulatedData,
-              appendCount: this.tokenStreamAppendCount,
+              accumulatedData: state.accumulatedData,
+              appendCount: state.appendCount,
               ...(message.name ? { name: message.name } : {}),
               clientId: message.clientId,
               connectionId: message.connectionId,
@@ -377,13 +482,14 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           },
           flags,
         );
-      } else if (this.shouldUseTerminalUpdates()) {
-        // Using process.stdout.write with \r to overwrite the current line in-place,
-        // showing accumulated token data without scrolling — this.log() can't do \r rewriting
+      } else if (
+        this.shouldUseTerminalUpdates() &&
+        this.activeDisplaySerial === serial
+      ) {
         process.stdout.write(
-          `\r${streamLabel} ${this.tokenStreamAccumulatedData}`,
+          `\r\u001B[K${streamLabel} ${state.accumulatedData}`,
         );
-      } else {
+      } else if (!this.shouldUseTerminalUpdates()) {
         this.log(`${chalk.dim("+")} ${dataStr}`);
       }
     }

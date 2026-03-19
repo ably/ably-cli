@@ -343,7 +343,15 @@ export default class ChannelsPublish extends AblyBaseCommand {
         flags,
         {},
       );
-      const text = String(message.data ?? args.message);
+      const rawData = message.data ?? args.message;
+      if (typeof rawData === "object" && rawData !== null) {
+        this.fail(
+          "Token streaming requires text data. JSON objects cannot be streamed as tokens.",
+          flags as BaseFlags,
+          "channelPublish",
+        );
+      }
+      const text = String(rawData);
       const tokenSize = flags["token-size"] as number;
       const tokens = chunkText(text, tokenSize);
 
