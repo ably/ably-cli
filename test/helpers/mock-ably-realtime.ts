@@ -47,6 +47,8 @@ export interface MockRealtimeChannel {
   subscribe: Mock;
   unsubscribe: Mock;
   publish: Mock;
+  appendMessage: Mock;
+  updateMessage: Mock;
   history: Mock;
   attach: Mock;
   detach: Mock;
@@ -261,6 +263,12 @@ function createMockChannel(name: string): MockRealtimeChannel {
       }
     }),
     publish: vi.fn().mockResolvedValue({ serials: ["mock-serial-001"] }),
+    appendMessage: vi
+      .fn()
+      .mockResolvedValue({ versionSerial: "mock-version-serial-append" }),
+    updateMessage: vi
+      .fn()
+      .mockResolvedValue({ versionSerial: "mock-version-serial-update" }),
     history: vi.fn().mockResolvedValue({ items: [] }),
     attach: vi.fn().mockImplementation(async function (
       this: MockRealtimeChannel,

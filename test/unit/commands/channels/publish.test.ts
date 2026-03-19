@@ -22,6 +22,9 @@ describe("ChannelsPublish", function () {
   standardFlagTests("channels:publish", import.meta.url, [
     "--json",
     "--transport",
+    "--token-streaming",
+    "--stream-duration",
+    "--token-size",
   ]);
 
   describe("functionality", function () {
@@ -379,6 +382,249 @@ describe("ChannelsPublish", function () {
           "Message 4",
           "Message 5",
         ]);
+      });
+    });
+
+    describe("token streaming mode", function () {
+      it("should publish text as streamed token appends with --token-streaming", async function () {
+        const realtimeMock = getMockAblyRealtime();
+        const channel = realtimeMock.channels._getChannel("test-channel");
+
+        const { stdout } = await runCommand(
+          [
+            "channels:publish",
+            "test-channel",
+            "HelloWorldTestData",
+            "--token-streaming",
+            "--stream-duration",
+            "1",
+            "--token-size",
+            "6",
+          ],
+          import.meta.url,
+        );
+
+        // Should have published initial message
+        expect(channel.publish).toHaveBeenCalledOnce();
+        // Should have appended remaining tokens
+        expect(channel.appendMessage).toHaveBeenCalled();
+        expect(stdout).toContain("Streamed");
+        expect(stdout).toContain("tokens");
+      });
+
+      it("should reject --token-streaming with --count > 1", async function () {
+        const { error } = await runCommand(
+          [
+            "channels:publish",
+            "test-channel",
+            "HelloWorld",
+            "--token-streaming",
+            "--count",
+            "3",
+          ],
+          import.meta.url,
+        );
+
+        expect(error).toBeDefined();
+        expect(error?.message).toContain("--token-streaming");
+        expect(error?.message).toContain("--count");
+      });
+
+      it("should show stream progress in human-readable output", async function () {
+        getMockAblyRealtime();
+
+        const { stdout } = await runCommand(
+          [
+            "channels:publish",
+            "test-channel",
+            "StreamingDemoTextHere",
+            "--token-streaming",
+            "--stream-duration",
+            "1",
+            "--token-size",
+            "5",
+          ],
+          import.meta.url,
+        );
+
+        expect(stdout).toContain("Streaming");
+        expect(stdout).toContain("tokens");
+        expect(stdout).toContain("Initial token published");
+      });
+
+      it("should stream text with spaces when passed as JSON data", async function () {
+        const realtimeMock = getMockAblyRealtime();
+        const channel = realtimeMock.channels._getChannel("test-channel");
+
+        const { stdout } = await runCommand(
+          [
+            "channels:publish",
+            "test-channel",
+            '{"data":"The quick brown fox jumps over"}',
+            "--token-streaming",
+            "--stream-duration",
+            "1",
+            "--token-size",
+            "6",
+          ],
+          import.meta.url,
+        );
+
+        // Should have published initial message
+        expect(channel.publish).toHaveBeenCalledOnce();
+        // Text has spaces so should produce multiple tokens
+        expect(channel.appendMessage).toHaveBeenCalled();
+        expect(stdout).toContain("Streamed");
+        expect(stdout).toContain("tokens");
+
+        // Verify the initial publish contains part of the text
+        const publishArgs = channel.publish.mock.calls[0][0];
+        expect(publishArgs.data).toBeTruthy();
+
+        // Verify appended tokens are part of the original text
+        const appendedChunks = channel.appendMessage.mock.calls.map(
+          (call: unknown[]) => (call[0] as { data: string }).data,
+        );
+        const allText = publishArgs.data + appendedChunks.join("");
+        expect(allText).toBe("The quick brown fox jumps over");
+      });
+
+      it("should work with --token-streaming and explicit --count 1", async function () {
+        getMockAblyRealtime();
+
+        const { stdout, error } = await runCommand(
+          [
+            "channels:publish",
+            "test-channel",
+            "HelloWorldTest",
+            "--token-streaming",
+            "--count",
+            "1",
+            "--stream-duration",
+            "1",
+            "--token-size",
+            "5",
+          ],
+          import.meta.url,
+        );
+
+        expect(error).toBeUndefined();
+        expect(stdout).toContain("Streamed");
+        expect(stdout).toContain("tokens");
+      });
+
+      it("should report partial progress when appendMessage fails mid-stream", async function () {
+        const realtimeMock = getMockAblyRealtime();
+        const channel = realtimeMock.channels._getChannel("test-channel");
+
+        let appendCallCount = 0;
+        channel.appendMessage.mockImplementation(async () => {
+          appendCallCount++;
+          if (appendCallCount >= 2) {
+            throw new Error("Network timeout");
+          }
+          return { versionSerial: "mock-version" };
+        });
+
+        const { error } = await runCommand(
+          [
+            "channels:publish",
+            "test-channel",
+            '{"data":"The quick brown fox jumps over"}',
+            "--token-streaming",
+            "--stream-duration",
+            "1",
+            "--token-size",
+            "4",
+          ],
+          import.meta.url,
+        );
+
+        expect(error).toBeDefined();
+        expect(error?.message).toContain("Network timeout");
+      });
+
+      it("should take longer with a higher --stream-duration value", async function () {
+        getMockAblyRealtime();
+
+        const startTime = Date.now();
+        await runCommand(
+          [
+            "channels:publish",
+            "test-channel",
+            "HelloWorldTestData",
+            "--token-streaming",
+            "--stream-duration",
+            "2",
+            "--token-size",
+            "6",
+          ],
+          import.meta.url,
+        );
+        const elapsed = Date.now() - startTime;
+
+        // With --stream-duration 2, should take at least ~1.5s (accounting for overhead)
+        expect(elapsed).toBeGreaterThanOrEqual(1500);
+      });
+
+      it("should fail when initial publish returns no serial in streaming mode", async function () {
+        const realtimeMock = getMockAblyRealtime();
+        const channel = realtimeMock.channels._getChannel("test-channel");
+        channel.publish.mockResolvedValue({ serials: [] });
+
+        const { error } = await runCommand(
+          [
+            "channels:publish",
+            "test-channel",
+            "HelloWorld",
+            "--token-streaming",
+            "--stream-duration",
+            "1",
+          ],
+          import.meta.url,
+        );
+
+        expect(error).toBeDefined();
+        expect(error?.message).toContain("serial");
+      });
+
+      it("should output JSON events per token with --token-streaming --json", async function () {
+        getMockAblyRealtime();
+
+        const { stdout } = await runCommand(
+          [
+            "channels:publish",
+            "test-channel",
+            "HelloWorldText",
+            "--token-streaming",
+            "--stream-duration",
+            "1",
+            "--token-size",
+            "5",
+            "--json",
+          ],
+          import.meta.url,
+        );
+
+        // Parse NDJSON output
+        const lines = stdout
+          .trim()
+          .split("\n")
+          .filter((l: string) => l.trim());
+        const records = lines.map((l: string) => JSON.parse(l));
+
+        // Should have events for each token plus a final result
+        const events = records.filter(
+          (r: Record<string, unknown>) => r.type === "event",
+        );
+        const results = records.filter(
+          (r: Record<string, unknown>) => r.type === "result",
+        );
+
+        expect(events.length).toBeGreaterThanOrEqual(1);
+        expect(results.length).toBe(1);
+        expect(results[0]).toHaveProperty("stream.totalTokens");
+        expect(results[0]).toHaveProperty("stream.serial");
       });
     });
 

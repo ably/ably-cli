@@ -12,6 +12,7 @@ import {
   formatResource,
   formatSuccess,
 } from "../../utils/output.js";
+import { chunkText } from "../../utils/text-chunker.js";
 
 export default class ChannelsPublish extends AblyBaseCommand {
   static override args = {
@@ -38,12 +39,20 @@ export default class ChannelsPublish extends AblyBaseCommand {
     '$ ably channels publish my-channel "Hello World" --json',
     '$ ably channels publish my-channel "Hello World" --pretty-json',
     '$ ably channels publish my-channel \'{"data":"Push notification","extras":{"push":{"notification":{"title":"Hello","body":"World"}}}}\'',
+    '$ ably channels publish my-channel "The quick brown fox jumps over the lazy dog" --token-streaming --stream-duration 5',
+    '$ ably channels publish --name ai-response my-channel "The quick brown fox" --token-streaming',
     '$ ABLY_API_KEY="YOUR_API_KEY" ably channels publish my-channel \'{"data":"Simple message"}\'',
   ];
 
   static override flags = {
     ...productApiFlags,
     ...clientIdFlag,
+    "token-size": Flags.integer({
+      default: 4,
+      dependsOn: ["token-streaming"],
+      description: "Approximate characters per token",
+      min: 1,
+    }),
     count: Flags.integer({
       char: "c",
       default: 1,
@@ -63,6 +72,18 @@ export default class ChannelsPublish extends AblyBaseCommand {
       char: "n",
       description: "The event name (if not specified in the message JSON)",
     }),
+    "stream-duration": Flags.integer({
+      default: 10,
+      dependsOn: ["token-streaming"],
+      description: "Total duration in seconds over which to stream tokens",
+      min: 1,
+    }),
+    "token-streaming": Flags.boolean({
+      default: false,
+      description:
+        "Enable token streaming: publish initial message then stream remaining text as appends (message-per-response pattern)",
+      exclusive: ["transport"],
+    }),
     transport: Flags.string({
       description: "Transport method to use for publishing (rest or realtime)",
       options: ["rest", "realtime"],
@@ -70,7 +91,6 @@ export default class ChannelsPublish extends AblyBaseCommand {
   };
 
   private progressIntervalId: NodeJS.Timeout | null = null;
-  private realtime: Ably.Realtime | null = null;
 
   // Override finally to ensure resources are cleaned up
   async finally(err: Error | undefined): Promise<void> {
@@ -87,6 +107,21 @@ export default class ChannelsPublish extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsPublish);
+
+    // Validate --token-streaming mutual exclusivity with --count > 1
+    if (flags["token-streaming"] && flags.count > 1) {
+      this.fail(
+        "Cannot use --token-streaming with --count > 1",
+        flags,
+        "channelPublish",
+      );
+    }
+
+    // Stream text mode always uses realtime
+    if (flags["token-streaming"]) {
+      await this.publishTokenStream(args, flags);
+      return;
+    }
 
     // Use Realtime transport by default when publishing multiple messages to ensure ordering
     // If transport is not explicitly set and count > 1, use realtime
@@ -278,13 +313,13 @@ export default class ChannelsPublish extends AblyBaseCommand {
     );
   }
 
-  private async publishWithRealtime(
+  private async publishTokenStream(
     args: Record<string, unknown>,
     flags: Record<string, unknown>,
   ): Promise<void> {
     try {
-      this.realtime = await this.createAblyRealtimeClient(flags as BaseFlags);
-      if (!this.realtime) {
+      const client = await this.createAblyRealtimeClient(flags as BaseFlags);
+      if (!client) {
         this.fail(
           "Failed to create Ably client. Please check your API key and try again.",
           flags as BaseFlags,
@@ -292,16 +327,171 @@ export default class ChannelsPublish extends AblyBaseCommand {
         );
       }
 
-      const client = this.realtime;
+      this.setupConnectionStateLogging(client, flags as BaseFlags, {
+        includeUserFriendlyMessages: true,
+      });
 
-      client.connection.on((stateChange: Ably.ConnectionStateChange) => {
-        this.logCliEvent(
-          flags,
-          "connection",
-          stateChange.current,
-          `Connection state changed to ${stateChange.current}`,
-          { reason: stateChange.reason },
+      const channel = client.channels.get(args.channel as string);
+
+      this.setupChannelStateLogging(channel, flags as BaseFlags, {
+        includeUserFriendlyMessages: true,
+      });
+
+      // Get the text to stream
+      const message = prepareMessageFromInput(
+        args.message as string,
+        flags,
+        {},
+      );
+      const text = String(message.data ?? args.message);
+      const tokenSize = flags["token-size"] as number;
+      const tokens = chunkText(text, tokenSize);
+
+      if (tokens.length === 0) {
+        this.fail("No text to stream", flags as BaseFlags, "channelPublish");
+      }
+
+      const streamDuration = flags["stream-duration"] as number;
+
+      if (!this.shouldOutputJson(flags)) {
+        this.log(
+          formatProgress(
+            `Streaming ${tokens.length} tokens to channel ${formatResource(args.channel as string)} over ${streamDuration}s`,
+          ),
         );
+      }
+
+      // Publish initial message
+      const firstToken = tokens[0];
+      const publishResult = await channel.publish({
+        data: firstToken,
+        ...(message.name ? { name: message.name } : {}),
+      } as Ably.Message);
+      const serial = publishResult?.serials?.[0];
+
+      if (!serial) {
+        this.fail(
+          "Publish did not return a serial — streaming appends require a serial",
+          flags as BaseFlags,
+          "channelPublish",
+        );
+      }
+
+      this.logCliEvent(
+        flags,
+        "publish",
+        "streamInitialPublished",
+        `Initial token published to channel ${args.channel}`,
+        { serial, token: firstToken, tokenIndex: 0 },
+      );
+
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonEvent(
+          {
+            message: {
+              action: "message.create",
+              serial,
+              channel: args.channel,
+              data: firstToken,
+              tokenIndex: 0,
+              totalTokens: tokens.length,
+            },
+          },
+          flags,
+        );
+      } else {
+        this.log(
+          formatSuccess(
+            `Initial token published (serial: ${formatResource(serial)}).`,
+          ),
+        );
+      }
+
+      // Stream remaining tokens as appends
+      if (tokens.length > 1) {
+        const remainingTokens = tokens.slice(1);
+        const delay = (streamDuration * 1000) / remainingTokens.length;
+
+        for (let i = 0; i < remainingTokens.length; i++) {
+          await new Promise((resolve) => setTimeout(resolve, delay));
+
+          const token = remainingTokens[i];
+          try {
+            // Cast needed: SDK appendMessage() expects full Message but only reads serial/data fields
+            await channel.appendMessage({
+              serial,
+              data: token,
+            } as Ably.Message);
+
+            this.logCliEvent(
+              flags,
+              "publish",
+              "streamAppendPublished",
+              `Append token ${i + 1} published to channel ${args.channel}`,
+              { serial, token, tokenIndex: i + 1 },
+            );
+
+            if (this.shouldOutputJson(flags)) {
+              this.logJsonEvent(
+                {
+                  message: {
+                    action: "message.append",
+                    serial,
+                    channel: args.channel,
+                    data: token,
+                    tokenIndex: i + 1,
+                    totalTokens: tokens.length,
+                  },
+                },
+                flags,
+              );
+            }
+          } catch (appendError) {
+            this.fail(appendError, flags as BaseFlags, "channelPublish");
+          }
+        }
+      }
+
+      // Final summary
+      const summaryData = {
+        stream: {
+          serial,
+          channel: args.channel,
+          totalTokens: tokens.length,
+          streamDuration,
+        },
+      };
+
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonResult(summaryData, flags);
+      } else {
+        this.log(
+          formatSuccess(
+            `Streamed ${tokens.length} tokens to channel ${formatResource(args.channel as string)} (serial: ${formatResource(serial)}).`,
+          ),
+        );
+      }
+    } catch (error) {
+      this.fail(error, flags as BaseFlags, "channelPublish");
+    }
+  }
+
+  private async publishWithRealtime(
+    args: Record<string, unknown>,
+    flags: Record<string, unknown>,
+  ): Promise<void> {
+    try {
+      const client = await this.createAblyRealtimeClient(flags as BaseFlags);
+      if (!client) {
+        this.fail(
+          "Failed to create Ably client. Please check your API key and try again.",
+          flags as BaseFlags,
+          "channelPublish",
+        );
+      }
+
+      this.setupConnectionStateLogging(client, flags as BaseFlags, {
+        includeUserFriendlyMessages: true,
       });
 
       this.logCliEvent(
@@ -312,14 +502,8 @@ export default class ChannelsPublish extends AblyBaseCommand {
       );
       const channel = client.channels.get(args.channel as string);
 
-      channel.on((stateChange: Ably.ChannelStateChange) => {
-        this.logCliEvent(
-          flags,
-          "channel",
-          stateChange.current,
-          `Channel '${args.channel}' state changed to ${stateChange.current}`,
-          { reason: stateChange.reason },
-        );
+      this.setupChannelStateLogging(channel, flags as BaseFlags, {
+        includeUserFriendlyMessages: true,
       });
 
       await this.publishMessages(args, flags, async (msg) => {
