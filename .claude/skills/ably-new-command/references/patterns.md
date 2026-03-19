@@ -67,7 +67,7 @@ async run(): Promise<void> {
           id: message.id,
           timestamp: message.timestamp,
           channel: args.channel,
-          event: message.name,
+          ...(message.name ? { name: message.name } : {}),
           clientId: message.clientId,
           serial: message.serial,
           data: message.data,
@@ -81,7 +81,7 @@ async run(): Promise<void> {
       if (message.id) this.log(`${formatLabel("ID")} ${message.id}`);
       this.log(`${formatLabel("Timestamp")} ${timestamp}`);
       this.log(`${formatLabel("Channel")} ${formatResource(args.channel)}`);
-      this.log(`${formatLabel("Event")} ${formatEventType(message.name || "(none)")}`);
+      if (message.name) this.log(`${formatLabel("Name")} ${formatEventType(message.name)}`);
       if (message.clientId) this.log(`${formatLabel("Client ID")} ${formatClientId(message.clientId)}`);
       if (message.serial) this.log(`${formatLabel("Serial")} ${message.serial}`);
       this.log(`${formatLabel("Data")} ${String(message.data)}`);
@@ -527,7 +527,7 @@ this.log(formatTimestamp(timestamp));                                    // dim 
 if (message.id) this.log(`${formatLabel("ID")} ${message.id}`);
 this.log(`${formatLabel("Timestamp")} ${timestamp}`);
 this.log(`${formatLabel("Channel")} ${formatResource(channelName)}`);
-this.log(`${formatLabel("Event")} ${formatEventType(message.name)}`);
+if (message.name) this.log(`${formatLabel("Name")} ${formatEventType(message.name)}`);
 if (message.clientId) this.log(`${formatLabel("Client ID")} ${formatClientId(message.clientId)}`);
 this.log(`${formatLabel("Data")} ${String(message.data)}`);
 this.log("");  // blank line separator
@@ -593,7 +593,7 @@ for (let i = 0; i < messages.length; i++) {
   const msg = messages[i];
   const ts = formatMessageTimestamp(msg.timestamp);
   this.log(`${formatIndex(i + 1)} ${formatTimestamp(ts)}`);  // index + timestamp on same line
-  this.log(`  ${formatLabel("Event")} ${formatEventType(msg.name || "(none)")}`);
+  if (msg.name) this.log(`  ${formatLabel("Name")} ${formatEventType(msg.name)}`);
   this.log(`  ${formatLabel("Channel")} ${formatResource(channelName)}`);
   if (msg.clientId) this.log(`  ${formatLabel("Client ID")} ${formatClientId(msg.clientId)}`);
   this.log(`  ${formatLabel("Data")} ${String(msg.data)}`);
@@ -780,3 +780,20 @@ This emits two NDJSON lines in `--json` mode:
 | Collection result (list/get-all) | Plural noun | `keys`, `apps`, `rules`, `cursors` |
 
 The key name should match the SDK/domain terminology, not be generic. Use `message` not `data`, `cursor` not `item`.
+
+## Error Hints
+
+Add actionable hints for known Ably error codes in `src/utils/errors.ts`. `this.fail()` automatically looks up and appends these via `getFriendlyAblyErrorHint(code)`.
+
+**Formatting rules:**
+- Use `\n` to control line wrapping in terminal output — oclif auto-wraps long lines at awkward positions, so manual `\n` gives precise control
+- `\n` is automatically stripped (replaced with space) for `--json` / `--pretty-json` output, keeping hints as clean single-line strings
+- Use single quotes for CLI command references (e.g., `'ably apps rules list'`) — double quotes become `\"` in JSON
+
+```typescript
+// src/utils/errors.ts
+const hints: Record<number, string> = {
+  93002:
+    "This channel requires mutableMessages to be enabled.\nRun 'ably apps rules list' to check your channel rules,\nor enable it with 'ably apps rules create' or 'ably apps rules update'.",
+};
+```

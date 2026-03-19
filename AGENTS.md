@@ -280,6 +280,20 @@ this.error()         ← oclif exit (ONLY inside fail, nowhere else)
 - **`requireAppId`** returns `Promise<string>` (not nullable) — calls `this.fail()` internally if no app found.
 - **`runControlCommand<T>`** returns `Promise<T>` (not nullable) — calls `this.fail()` internally on error.
 
+### Error hints (`src/utils/errors.ts`)
+
+`getFriendlyAblyErrorHint(code)` maps Ably error codes to actionable CLI hints. `this.fail()` automatically looks up and appends these hints.
+
+**Line breaks in hints:** Use `\n` to control where hint text wraps in non-JSON terminal output — oclif auto-wraps long lines at awkward positions, so manual `\n` gives us control. The `\n` is automatically stripped (replaced with a space) for JSON output so the hint is a clean single-line string. Always use single quotes for CLI command references (e.g., `'ably apps rules list'`) — double quotes become `\"` in JSON output.
+
+```typescript
+// In src/utils/errors.ts
+const hints: Record<number, string> = {
+  93002:
+    "This channel requires mutableMessages to be enabled.\nRun 'ably apps rules list' to check your channel rules,\nor enable it with 'ably apps rules create' or 'ably apps rules update'.",
+};
+```
+
 ### Additional output patterns (direct chalk, not helpers)
 - **No app error**: `'No app specified. Use --app flag or select an app with "ably apps switch"'`
 

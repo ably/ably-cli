@@ -77,7 +77,7 @@ This document outlines the directory structure of the Ably CLI project.
 │   └── utils/
 │       ├── channel-rule-display.ts # Channel rule human-readable display
 │       ├── chat-constants.ts       # Shared Chat SDK constants (REACTION_TYPE_MAP)
-│       ├── errors.ts               # Error utilities (errorMessage)
+│       ├── errors.ts               # Error utilities (errorMessage, getFriendlyAblyErrorHint)
 │       ├── interrupt-feedback.ts   # Ctrl+C feedback messages
 │       ├── json-formatter.ts       # JSON output formatting (formatJson, formatMessageData)
 │       ├── key-display.ts          # Key capability formatting
@@ -94,6 +94,7 @@ This document outlines the directory structure of the Ably CLI project.
 │       ├── sigint-exit.ts          # SIGINT/Ctrl+C handling (exit code 130)
 │       ├── string-distance.ts      # Levenshtein distance for fuzzy matching
 │       ├── terminal-diagnostics.ts # Terminal capability detection
+│       ├── text-chunker.ts        # Text chunking for token streaming (chunkText)
 │       ├── test-mode.ts            # isTestMode() helper
 │       ├── version.ts              # Version string utilities
 │       └── web-mode.ts             # Web CLI mode detection

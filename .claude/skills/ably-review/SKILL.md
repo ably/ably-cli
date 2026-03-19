@@ -161,6 +161,12 @@ Apply the full checklist from the `ably-new-command` skill. These deserve the mo
 2. **Grep** for new helper functions and check naming conventions (`format*` prefix for output helpers)
 3. **Grep** for `this\.error\(` — should only be used inside `fail()`, not directly
 
+### For changed error hints (`src/utils/errors.ts`)
+
+1. **Grep** for `"` (double quotes) inside hint strings — must use single quotes for CLI command references (double quotes become `\"` in JSON output)
+2. **Check** that long hints use `\n` for line breaks — oclif auto-wraps at awkward positions, so `\n` gives control over terminal line wrapping
+3. **Verify** that `this.fail()` in `src/base-command.ts` strips `\n` from hints in JSON output (`.replaceAll("\n", " ")`)
+
 ## Step 4: Check for missing test coverage
 
 **Glob** for each new or modified command file and check if a corresponding test file exists at `test/unit/commands/`. If a command was added but no test was added, flag it.

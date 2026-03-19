@@ -91,6 +91,11 @@ Launch these agents **in parallel**. Each agent gets a focused mandate and uses 
 - `chalk.red("✗")` used as visual indicators (not error handling) is exempt
 - Component strings must be camelCase for consistency in verbose logs and JSON envelopes
 
+**Error hints (`src/utils/errors.ts`):**
+7. **Grep** for double-quoted CLI commands inside hint strings (e.g., `"ably login"`) — must use single quotes to avoid `\"` in JSON output
+8. **Check** that long hints use `\n` for manual line breaks — oclif auto-wraps at awkward positions
+9. **Verify** that `this.fail()` in base-command.ts strips `\n` from hints in JSON output (`.replaceAll("\n", " ")`)
+
 ### Agent 3: Output Formatting Sweep
 
 **Goal:** Verify all human output uses the correct format helpers and is JSON-guarded.

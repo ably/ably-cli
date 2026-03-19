@@ -24,7 +24,7 @@ $ npm install -g @ably/cli
 $ ably COMMAND
 running command...
 $ ably (--version)
-@ably/cli/0.17.0 darwin-arm64 node-v25.3.0
+@ably/cli/0.17.0 darwin-arm64 node-v24.4.1
 $ ably --help [COMMAND]
 USAGE
   $ ably COMMAND
@@ -2037,6 +2037,8 @@ EXAMPLES
 
   $ ably channels presence update my-channel --data '{"status":"busy"}' --json
 
+  $ ably channels presence update my-channel --data '{"status":"busy"}' --pretty-json
+
   $ ably channels presence update my-channel --data '{"status":"online"}' --duration 60
 ```
 
@@ -2048,25 +2050,31 @@ Publish a message to an Ably channel
 
 ```
 USAGE
-  $ ably channels publish CHANNEL MESSAGE [-v] [--json | --pretty-json] [--client-id <value>] [-c <value>] [-d
-    <value>] [-e <value>] [-n <value>] [--transport rest|realtime]
+  $ ably channels publish CHANNEL MESSAGE [-v] [--json | --pretty-json] [--client-id <value>] [--token-size <value>
+    --token-streaming] [-c <value>] [-d <value>] [-e <value>] [-n <value>] [--stream-duration <value> ] [--transport
+    rest|realtime]
 
 ARGUMENTS
   CHANNEL  The channel name to publish to
   MESSAGE  The message to publish (JSON format or plain text)
 
 FLAGS
-  -c, --count=<value>       [default: 1] Number of messages to publish (default: 1)
-  -d, --delay=<value>       [default: 40] Delay between messages in milliseconds (default: 40ms, max 25 msgs/sec)
-  -e, --encoding=<value>    The encoding for the message
-  -n, --name=<value>        The event name (if not specified in the message JSON)
-  -v, --verbose             Output verbose logs
-      --client-id=<value>   Overrides any default client ID when using API authentication. Use "none" to explicitly set
-                            no client ID. Not applicable when using token authentication.
-      --json                Output in JSON format
-      --pretty-json         Output in colorized JSON format
-      --transport=<option>  Transport method to use for publishing (rest or realtime)
-                            <options: rest|realtime>
+  -c, --count=<value>            [default: 1] Number of messages to publish (default: 1)
+  -d, --delay=<value>            [default: 40] Delay between messages in milliseconds (default: 40ms, max 25 msgs/sec)
+  -e, --encoding=<value>         The encoding for the message
+  -n, --name=<value>             The event name (if not specified in the message JSON)
+  -v, --verbose                  Output verbose logs
+      --client-id=<value>        Overrides any default client ID when using API authentication. Use "none" to explicitly
+                                 set no client ID. Not applicable when using token authentication.
+      --json                     Output in JSON format
+      --pretty-json              Output in colorized JSON format
+      --stream-duration=<value>  [default: 10] Total duration in seconds over which to stream tokens
+      --token-size=<value>       [default: 4] Approximate characters per streamed chunk (simulates token-sized
+                                 fragments)
+      --token-streaming          Enable token streaming: publish initial message then stream remaining text as appends
+                                 (message-per-response pattern)
+      --transport=<option>       Transport method to use for publishing (rest or realtime)
+                                 <options: rest|realtime>
 
 DESCRIPTION
   Publish a message to an Ably channel
@@ -2092,6 +2100,10 @@ EXAMPLES
 
   $ ably channels publish my-channel '{"data":"Push notification","extras":{"push":{"notification":{"title":"Hello","body":"World"}}}}'
 
+  $ ably channels publish my-channel "The quick brown fox jumps over the lazy dog" --token-streaming --stream-duration 5
+
+  $ ably channels publish my-channel "The quick brown fox" --token-streaming --name ai-response
+
   $ ABLY_API_KEY="YOUR_API_KEY" ably channels publish my-channel '{"data":"Simple message"}'
 ```
 
@@ -2105,7 +2117,7 @@ Subscribe to messages published on one or more Ably channels
 USAGE
   $ ably channels subscribe CHANNELS... [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>] [--rewind
     <value>] [--cipher-algorithm <value>] [--cipher-key <value>] [--cipher-key-length <value>] [--cipher-mode <value>]
-    [--delta] [--sequence-numbers]
+    [--delta] [--sequence-numbers] [--token-streaming]
 
 ARGUMENTS
   CHANNELS...  Channel name(s) to subscribe to
@@ -2124,6 +2136,9 @@ FLAGS
       --pretty-json                Output in colorized JSON format
       --rewind=<value>             Number of messages to rewind when subscribing (default: 0)
       --sequence-numbers           Include sequence numbers in output
+      --token-streaming            Enable token streaming mode: accumulates message.append data for the same serial,
+                                   displaying the growing response in-place (requires message interactions enabled on
+                                   the channel)
 
 DESCRIPTION
   Subscribe to messages published on one or more Ably channels
@@ -2144,6 +2159,8 @@ EXAMPLES
   $ ably channels subscribe my-channel --pretty-json
 
   $ ably channels subscribe my-channel --duration 30
+
+  $ ably channels subscribe my-channel --token-streaming
 
   $ ABLY_API_KEY="YOUR_API_KEY" ably channels subscribe my-channel
 ```
