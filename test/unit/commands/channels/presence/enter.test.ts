@@ -43,6 +43,9 @@ describe("channels:presence:enter command", () => {
     "--data",
     "--json",
     "--duration",
+    "--client-id",
+    "--show-others",
+    "--sequence-numbers",
   ]);
 
   describe("functionality", () => {
@@ -55,7 +58,8 @@ describe("channels:presence:enter command", () => {
         import.meta.url,
       );
 
-      // Should show successful entry
+      // Should show progress and successful entry
+      expect(stdout).toContain("Entering presence on channel");
       expect(stdout).toContain("test-channel");
       expect(stdout).toContain("Entered");
       // Verify presence.enter was called
@@ -82,6 +86,16 @@ describe("channels:presence:enter command", () => {
         status: "online",
         name: "TestUser",
       });
+    });
+
+    it("should show client ID and connection ID labels in human output", async () => {
+      const { stdout } = await runCommand(
+        ["channels:presence:enter", "test-channel"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Client ID");
+      expect(stdout).toContain("Connection ID");
     });
 
     it("should show presence events when --show-others flag is passed", async () => {
@@ -113,19 +127,44 @@ describe("channels:presence:enter command", () => {
       expect(channel.presence.subscribe).toHaveBeenCalled();
     });
 
-    it("should run with --json flag without errors", async () => {
+    it("should output JSON with presenceMessage domain key", async () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("test-channel");
 
-      const { error } = await runCommand(
+      const { stdout } = await runCommand(
         ["channels:presence:enter", "test-channel", "--json"],
         import.meta.url,
       );
 
       // Should not have errors - command runs successfully in JSON mode
-      expect(error).toBeUndefined();
-      // Verify presence.enter was still called
       expect(channel.presence.enter).toHaveBeenCalled();
+
+      // Parse JSON lines
+      const lines = stdout.trim().split("\n").filter(Boolean);
+      expect(lines.length).toBeGreaterThanOrEqual(1);
+
+      const result = JSON.parse(lines[0]);
+      expect(result.type).toBe("result");
+      expect(result.presenceMessage).toBeDefined();
+      expect(result.presenceMessage.action).toBe("enter");
+      expect(result.presenceMessage.channel).toBe("test-channel");
+      expect(result.presenceMessage.clientId).toBeDefined();
+      expect(result.presenceMessage.connectionId).toBeDefined();
+    });
+
+    it("should emit hold status in JSON mode", async () => {
+      const { stdout } = await runCommand(
+        ["channels:presence:enter", "test-channel", "--json"],
+        import.meta.url,
+      );
+
+      const lines = stdout.trim().split("\n").filter(Boolean);
+      expect(lines.length).toBeGreaterThanOrEqual(2);
+
+      const status = JSON.parse(lines[1]);
+      expect(status.type).toBe("status");
+      expect(status.status).toBe("holding");
+      expect(status.message).toContain("Holding presence");
     });
 
     it("should handle invalid JSON data gracefully", async () => {
@@ -153,6 +192,24 @@ describe("channels:presence:enter command", () => {
       // But should still show entry confirmation
       expect(stdout).toContain("Entered");
       expect(stdout).toContain("test-channel");
+    });
+
+    it("should show holding message without --show-others", async () => {
+      const { stdout } = await runCommand(
+        ["channels:presence:enter", "test-channel"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Holding presence");
+    });
+
+    it("should show listening message with --show-others", async () => {
+      const { stdout } = await runCommand(
+        ["channels:presence:enter", "test-channel", "--show-others"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Listening for presence events");
     });
   });
 
