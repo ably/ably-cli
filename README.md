@@ -24,7 +24,7 @@ $ npm install -g @ably/cli
 $ ably COMMAND
 running command...
 $ ably (--version)
-@ably/cli/0.17.0 darwin-arm64 node-v24.4.1
+@ably/cli/0.17.0 darwin-arm64 node-v25.3.0
 $ ably --help [COMMAND]
 USAGE
   $ ably COMMAND
@@ -200,22 +200,25 @@ $ ably-interactive
 * [`ably rooms typing subscribe ROOM`](#ably-rooms-typing-subscribe-room)
 * [`ably spaces`](#ably-spaces)
 * [`ably spaces cursors`](#ably-spaces-cursors)
-* [`ably spaces cursors get-all SPACE`](#ably-spaces-cursors-get-all-space)
-* [`ably spaces cursors set SPACE`](#ably-spaces-cursors-set-space)
-* [`ably spaces cursors subscribe SPACE`](#ably-spaces-cursors-subscribe-space)
+* [`ably spaces cursors get-all SPACE_NAME`](#ably-spaces-cursors-get-all-space_name)
+* [`ably spaces cursors set SPACE_NAME`](#ably-spaces-cursors-set-space_name)
+* [`ably spaces cursors subscribe SPACE_NAME`](#ably-spaces-cursors-subscribe-space_name)
 * [`ably spaces list`](#ably-spaces-list)
 * [`ably spaces locations`](#ably-spaces-locations)
-* [`ably spaces locations get-all SPACE`](#ably-spaces-locations-get-all-space)
-* [`ably spaces locations set SPACE`](#ably-spaces-locations-set-space)
-* [`ably spaces locations subscribe SPACE`](#ably-spaces-locations-subscribe-space)
+* [`ably spaces locations get-all SPACE_NAME`](#ably-spaces-locations-get-all-space_name)
+* [`ably spaces locations set SPACE_NAME`](#ably-spaces-locations-set-space_name)
+* [`ably spaces locations subscribe SPACE_NAME`](#ably-spaces-locations-subscribe-space_name)
 * [`ably spaces locks`](#ably-spaces-locks)
-* [`ably spaces locks acquire SPACE LOCKID`](#ably-spaces-locks-acquire-space-lockid)
-* [`ably spaces locks get SPACE LOCKID`](#ably-spaces-locks-get-space-lockid)
-* [`ably spaces locks get-all SPACE`](#ably-spaces-locks-get-all-space)
-* [`ably spaces locks subscribe SPACE`](#ably-spaces-locks-subscribe-space)
+* [`ably spaces locks acquire SPACE_NAME LOCKID`](#ably-spaces-locks-acquire-space_name-lockid)
+* [`ably spaces locks get SPACE_NAME LOCKID`](#ably-spaces-locks-get-space_name-lockid)
+* [`ably spaces locks get-all SPACE_NAME`](#ably-spaces-locks-get-all-space_name)
+* [`ably spaces locks subscribe SPACE_NAME`](#ably-spaces-locks-subscribe-space_name)
 * [`ably spaces members`](#ably-spaces-members)
-* [`ably spaces members enter SPACE`](#ably-spaces-members-enter-space)
-* [`ably spaces members subscribe SPACE`](#ably-spaces-members-subscribe-space)
+* [`ably spaces members enter SPACE_NAME`](#ably-spaces-members-enter-space_name)
+* [`ably spaces members subscribe SPACE_NAME`](#ably-spaces-members-subscribe-space_name)
+* [`ably spaces occupancy`](#ably-spaces-occupancy)
+* [`ably spaces occupancy get SPACE_NAME`](#ably-spaces-occupancy-get-space_name)
+* [`ably spaces occupancy subscribe SPACE_NAME`](#ably-spaces-occupancy-subscribe-space_name)
 * [`ably stats`](#ably-stats)
 * [`ably stats account`](#ably-stats-account)
 * [`ably stats app [ID]`](#ably-stats-app-id)
@@ -4402,6 +4405,7 @@ COMMANDS
   ably spaces locations  Commands for location management in Ably Spaces
   ably spaces locks      Commands for component locking in Ably Spaces
   ably spaces members    Commands for managing members in Ably Spaces
+  ably spaces occupancy  Commands for working with occupancy in Ably Spaces
 ```
 
 _See code: [src/commands/spaces/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/index.ts)_
@@ -4427,16 +4431,16 @@ EXAMPLES
 
 _See code: [src/commands/spaces/cursors/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/cursors/index.ts)_
 
-## `ably spaces cursors get-all SPACE`
+## `ably spaces cursors get-all SPACE_NAME`
 
 Get all current cursors in a space
 
 ```
 USAGE
-  $ ably spaces cursors get-all SPACE [-v] [--json | --pretty-json] [--client-id <value>]
+  $ ably spaces cursors get-all SPACE_NAME [-v] [--json | --pretty-json] [--client-id <value>]
 
 ARGUMENTS
-  SPACE  Space to get cursors from
+  SPACE_NAME  Name of the space to get cursors from
 
 FLAGS
   -v, --verbose            Output verbose logs
@@ -4458,17 +4462,17 @@ EXAMPLES
 
 _See code: [src/commands/spaces/cursors/get-all.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/cursors/get-all.ts)_
 
-## `ably spaces cursors set SPACE`
+## `ably spaces cursors set SPACE_NAME`
 
 Set a cursor with position data in a space
 
 ```
 USAGE
-  $ ably spaces cursors set SPACE [-v] [--json | --pretty-json] [--client-id <value>] [--data <value>] [--x <value>]
-    [--y <value>] [--simulate] [-D <value>]
+  $ ably spaces cursors set SPACE_NAME [-v] [--json | --pretty-json] [--client-id <value>] [--data <value>] [--x
+    <value>] [--y <value>] [--simulate] [-D <value>]
 
 ARGUMENTS
-  SPACE  The space to set cursor in
+  SPACE_NAME  Name of the space to set cursor in
 
 FLAGS
   -D, --duration=<value>   Automatically exit after N seconds
@@ -4507,16 +4511,16 @@ EXAMPLES
 
 _See code: [src/commands/spaces/cursors/set.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/cursors/set.ts)_
 
-## `ably spaces cursors subscribe SPACE`
+## `ably spaces cursors subscribe SPACE_NAME`
 
 Subscribe to cursor movements in a space
 
 ```
 USAGE
-  $ ably spaces cursors subscribe SPACE [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
+  $ ably spaces cursors subscribe SPACE_NAME [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
-  SPACE  Space to subscribe to cursors for
+  SPACE_NAME  Name of the space to subscribe to cursors for
 
 FLAGS
   -D, --duration=<value>   Automatically exit after N seconds
@@ -4594,16 +4598,16 @@ EXAMPLES
 
 _See code: [src/commands/spaces/locations/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locations/index.ts)_
 
-## `ably spaces locations get-all SPACE`
+## `ably spaces locations get-all SPACE_NAME`
 
 Get all current locations in a space
 
 ```
 USAGE
-  $ ably spaces locations get-all SPACE [-v] [--json | --pretty-json] [--client-id <value>]
+  $ ably spaces locations get-all SPACE_NAME [-v] [--json | --pretty-json] [--client-id <value>]
 
 ARGUMENTS
-  SPACE  Space to get locations from
+  SPACE_NAME  Name of the space to get locations from
 
 FLAGS
   -v, --verbose            Output verbose logs
@@ -4625,16 +4629,17 @@ EXAMPLES
 
 _See code: [src/commands/spaces/locations/get-all.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locations/get-all.ts)_
 
-## `ably spaces locations set SPACE`
+## `ably spaces locations set SPACE_NAME`
 
-Set your location in a space
+Set location in a space
 
 ```
 USAGE
-  $ ably spaces locations set SPACE --location <value> [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
+  $ ably spaces locations set SPACE_NAME --location <value> [-v] [--json | --pretty-json] [--client-id <value>] [-D
+    <value>]
 
 ARGUMENTS
-  SPACE  Space to set location in
+  SPACE_NAME  Name of the space to set location in
 
 FLAGS
   -D, --duration=<value>   Automatically exit after N seconds
@@ -4646,7 +4651,7 @@ FLAGS
       --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
-  Set your location in a space
+  Set location in a space
 
 EXAMPLES
   $ ably spaces locations set my-space --location '{"x":10,"y":20}'
@@ -4658,16 +4663,16 @@ EXAMPLES
 
 _See code: [src/commands/spaces/locations/set.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locations/set.ts)_
 
-## `ably spaces locations subscribe SPACE`
+## `ably spaces locations subscribe SPACE_NAME`
 
 Subscribe to location updates for members in a space
 
 ```
 USAGE
-  $ ably spaces locations subscribe SPACE [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
+  $ ably spaces locations subscribe SPACE_NAME [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
-  SPACE  Space to subscribe to locations for
+  SPACE_NAME  Name of the space to subscribe to locations for
 
 FLAGS
   -D, --duration=<value>   Automatically exit after N seconds
@@ -4715,18 +4720,18 @@ EXAMPLES
 
 _See code: [src/commands/spaces/locks/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locks/index.ts)_
 
-## `ably spaces locks acquire SPACE LOCKID`
+## `ably spaces locks acquire SPACE_NAME LOCKID`
 
 Acquire a lock in a space
 
 ```
 USAGE
-  $ ably spaces locks acquire SPACE LOCKID [-v] [--json | --pretty-json] [--client-id <value>] [--data <value>] [-D
+  $ ably spaces locks acquire SPACE_NAME LOCKID [-v] [--json | --pretty-json] [--client-id <value>] [--data <value>] [-D
     <value>]
 
 ARGUMENTS
-  SPACE   Space to acquire lock in
-  LOCKID  ID of the lock to acquire
+  SPACE_NAME  Name of the space to acquire lock in
+  LOCKID      ID of the lock to acquire
 
 FLAGS
   -D, --duration=<value>   Automatically exit after N seconds
@@ -4750,17 +4755,17 @@ EXAMPLES
 
 _See code: [src/commands/spaces/locks/acquire.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locks/acquire.ts)_
 
-## `ably spaces locks get SPACE LOCKID`
+## `ably spaces locks get SPACE_NAME LOCKID`
 
 Get a lock in a space
 
 ```
 USAGE
-  $ ably spaces locks get SPACE LOCKID [-v] [--json | --pretty-json] [--client-id <value>]
+  $ ably spaces locks get SPACE_NAME LOCKID [-v] [--json | --pretty-json] [--client-id <value>]
 
 ARGUMENTS
-  SPACE   Space to get lock from
-  LOCKID  Lock ID to get
+  SPACE_NAME  Name of the space to get lock from
+  LOCKID      Lock ID to get
 
 FLAGS
   -v, --verbose            Output verbose logs
@@ -4782,16 +4787,16 @@ EXAMPLES
 
 _See code: [src/commands/spaces/locks/get.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locks/get.ts)_
 
-## `ably spaces locks get-all SPACE`
+## `ably spaces locks get-all SPACE_NAME`
 
 Get all current locks in a space
 
 ```
 USAGE
-  $ ably spaces locks get-all SPACE [-v] [--json | --pretty-json] [--client-id <value>]
+  $ ably spaces locks get-all SPACE_NAME [-v] [--json | --pretty-json] [--client-id <value>]
 
 ARGUMENTS
-  SPACE  Space to get locks from
+  SPACE_NAME  Name of the space to get locks from
 
 FLAGS
   -v, --verbose            Output verbose logs
@@ -4813,16 +4818,16 @@ EXAMPLES
 
 _See code: [src/commands/spaces/locks/get-all.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locks/get-all.ts)_
 
-## `ably spaces locks subscribe SPACE`
+## `ably spaces locks subscribe SPACE_NAME`
 
 Subscribe to lock events in a space
 
 ```
 USAGE
-  $ ably spaces locks subscribe SPACE [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
+  $ ably spaces locks subscribe SPACE_NAME [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
-  SPACE  Space to subscribe to locks for
+  SPACE_NAME  Name of the space to subscribe to locks for
 
 FLAGS
   -D, --duration=<value>   Automatically exit after N seconds
@@ -4868,16 +4873,17 @@ EXAMPLES
 
 _See code: [src/commands/spaces/members/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/members/index.ts)_
 
-## `ably spaces members enter SPACE`
+## `ably spaces members enter SPACE_NAME`
 
 Enter a space and remain present until terminated
 
 ```
 USAGE
-  $ ably spaces members enter SPACE [-v] [--json | --pretty-json] [--client-id <value>] [--profile <value>] [-D <value>]
+  $ ably spaces members enter SPACE_NAME [-v] [--json | --pretty-json] [--client-id <value>] [--profile <value>] [-D
+    <value>]
 
 ARGUMENTS
-  SPACE  Space to enter
+  SPACE_NAME  Name of the space to enter
 
 FLAGS
   -D, --duration=<value>   Automatically exit after N seconds
@@ -4903,16 +4909,16 @@ EXAMPLES
 
 _See code: [src/commands/spaces/members/enter.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/members/enter.ts)_
 
-## `ably spaces members subscribe SPACE`
+## `ably spaces members subscribe SPACE_NAME`
 
 Subscribe to member presence events in a space
 
 ```
 USAGE
-  $ ably spaces members subscribe SPACE [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
+  $ ably spaces members subscribe SPACE_NAME [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
-  SPACE  Space to subscribe to members for
+  SPACE_NAME  Name of the space to subscribe to members for
 
 FLAGS
   -D, --duration=<value>   Automatically exit after N seconds
@@ -4936,6 +4942,86 @@ EXAMPLES
 ```
 
 _See code: [src/commands/spaces/members/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/members/subscribe.ts)_
+
+## `ably spaces occupancy`
+
+Commands for working with occupancy in Ably Spaces
+
+```
+USAGE
+  $ ably spaces occupancy
+
+DESCRIPTION
+  Commands for working with occupancy in Ably Spaces
+
+EXAMPLES
+  $ ably spaces occupancy get my-space
+
+  $ ably spaces occupancy subscribe my-space
+```
+
+_See code: [src/commands/spaces/occupancy/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/occupancy/index.ts)_
+
+## `ably spaces occupancy get SPACE_NAME`
+
+Get current occupancy metrics for a space
+
+```
+USAGE
+  $ ably spaces occupancy get SPACE_NAME [-v] [--json | --pretty-json]
+
+ARGUMENTS
+  SPACE_NAME  Space name to get occupancy for
+
+FLAGS
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
+
+DESCRIPTION
+  Get current occupancy metrics for a space
+
+EXAMPLES
+  $ ably spaces occupancy get my-space
+
+  $ ably spaces occupancy get my-space --json
+
+  $ ably spaces occupancy get my-space --pretty-json
+```
+
+_See code: [src/commands/spaces/occupancy/get.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/occupancy/get.ts)_
+
+## `ably spaces occupancy subscribe SPACE_NAME`
+
+Subscribe to occupancy events on a space
+
+```
+USAGE
+  $ ably spaces occupancy subscribe SPACE_NAME [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
+
+ARGUMENTS
+  SPACE_NAME  Space name to subscribe to occupancy events
+
+FLAGS
+  -D, --duration=<value>   Automatically exit after N seconds
+  -v, --verbose            Output verbose logs
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+
+DESCRIPTION
+  Subscribe to occupancy events on a space
+
+EXAMPLES
+  $ ably spaces occupancy subscribe my-space
+
+  $ ably spaces occupancy subscribe my-space --json
+
+  $ ably spaces occupancy subscribe my-space --duration 30
+```
+
+_See code: [src/commands/spaces/occupancy/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/occupancy/subscribe.ts)_
 
 ## `ably stats`
 

@@ -26,21 +26,19 @@ describe("spaces:locks:subscribe command", () => {
     it("should subscribe to lock events in a space", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locks.getAll.mockResolvedValue([]);
 
       await runCommand(
         ["spaces:locks:subscribe", "test-space"],
         import.meta.url,
       );
 
-      expect(space.enter).toHaveBeenCalled();
+      expect(space.enter).not.toHaveBeenCalled();
       expect(space.locks.subscribe).toHaveBeenCalledWith(expect.any(Function));
     });
 
-    it("should display initial subscription message", async () => {
+    it("should display listening message without fetching initial locks", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locks.getAll.mockResolvedValue([]);
 
       const { stdout } = await runCommand(
         ["spaces:locks:subscribe", "test-space"],
@@ -48,60 +46,75 @@ describe("spaces:locks:subscribe command", () => {
       );
 
       expect(stdout).toContain("Subscribing to lock events");
-      expect(stdout).toContain("test-space");
+      expect(space.locks.getAll).not.toHaveBeenCalled();
     });
 
-    it("should fetch and display current locks", async () => {
+    it("should output lock events using block format", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locks.getAll.mockResolvedValue([
-        {
-          id: "lock-1",
-          status: "locked",
-          member: { clientId: "user-1", connectionId: "conn-1" },
+
+      // Capture the subscribe callback and invoke it with a lock event
+      space.locks.subscribe.mockImplementation(
+        (callback: (lock: unknown) => void) => {
+          callback({
+            id: "lock-1",
+            status: "locked",
+            member: {
+              clientId: "user-1",
+              connectionId: "conn-1",
+              isConnected: true,
+              profileData: null,
+              location: null,
+              lastEvent: { name: "enter", timestamp: Date.now() },
+            },
+            timestamp: Date.now(),
+            attributes: undefined,
+            reason: undefined,
+          });
+          return Promise.resolve();
         },
-        {
-          id: "lock-2",
-          status: "pending",
-          member: { clientId: "user-2", connectionId: "conn-2" },
-        },
-      ]);
+      );
 
       const { stdout } = await runCommand(
         ["spaces:locks:subscribe", "test-space"],
         import.meta.url,
       );
 
-      expect(space.locks.getAll).toHaveBeenCalled();
-      expect(stdout).toContain("Current locks");
+      expect(stdout).toContain("Lock ID:");
       expect(stdout).toContain("lock-1");
-    });
-
-    it("should show message when no locks exist", async () => {
-      const spacesMock = getMockAblySpaces();
-      const space = spacesMock._getSpace("test-space");
-      space.locks.getAll.mockResolvedValue([]);
-
-      const { stdout } = await runCommand(
-        ["spaces:locks:subscribe", "test-space"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("No locks");
+      expect(stdout).toContain("Status:");
+      expect(stdout).toContain("locked");
+      expect(stdout).toContain("Member:");
+      expect(stdout).toContain("user-1");
     });
   });
 
   describe("JSON output", () => {
-    it("should output JSON envelope with initial locks snapshot", async () => {
+    it("should output JSON event envelope for lock events", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locks.getAll.mockResolvedValue([
-        {
-          id: "lock-1",
-          status: "locked",
-          member: { clientId: "user-1", connectionId: "conn-1" },
+
+      // Capture the subscribe callback and invoke it with a lock event
+      space.locks.subscribe.mockImplementation(
+        (callback: (lock: unknown) => void) => {
+          callback({
+            id: "lock-1",
+            status: "locked",
+            member: {
+              clientId: "user-1",
+              connectionId: "conn-1",
+              isConnected: true,
+              profileData: null,
+              location: null,
+              lastEvent: { name: "enter", timestamp: Date.now() },
+            },
+            timestamp: Date.now(),
+            attributes: undefined,
+            reason: undefined,
+          });
+          return Promise.resolve();
         },
-      ]);
+      );
 
       const { stdout } = await runCommand(
         ["spaces:locks:subscribe", "test-space", "--json"],
@@ -109,26 +122,20 @@ describe("spaces:locks:subscribe command", () => {
       );
 
       const records = parseNdjsonLines(stdout);
-      const resultRecord = records.find(
-        (r) => r.type === "result" && Array.isArray(r.locks),
-      );
-      expect(resultRecord).toBeDefined();
-      expect(resultRecord).toHaveProperty("type", "result");
-      expect(resultRecord).toHaveProperty("command");
-      expect(resultRecord).toHaveProperty("success", true);
-      expect(resultRecord).toHaveProperty("spaceName", "test-space");
-      expect(resultRecord!.locks).toBeInstanceOf(Array);
+      const eventRecord = records.find((r) => r.type === "event" && r.lock);
+      expect(eventRecord).toBeDefined();
+      expect(eventRecord).toHaveProperty("type", "event");
+      expect(eventRecord).toHaveProperty("command");
+      expect(eventRecord!.lock).toHaveProperty("id", "lock-1");
+      expect(eventRecord!.lock).toHaveProperty("status", "locked");
+      expect(eventRecord!.lock).toHaveProperty("member");
     });
   });
 
   describe("cleanup behavior", () => {
     it("should close client on completion", async () => {
       const realtimeMock = getMockAblyRealtime();
-      const spacesMock = getMockAblySpaces();
-      const space = spacesMock._getSpace("test-space");
-      space.locks.getAll.mockResolvedValue([]);
-
-      // Use SIGINT to exit
+      getMockAblySpaces();
 
       await runCommand(
         ["spaces:locks:subscribe", "test-space"],
@@ -141,19 +148,21 @@ describe("spaces:locks:subscribe command", () => {
   });
 
   describe("error handling", () => {
-    it("should handle getAll rejection gracefully", async () => {
+    it("should handle subscribe rejection gracefully", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locks.getAll.mockRejectedValue(new Error("Failed to get locks"));
+      space.locks.subscribe.mockRejectedValue(
+        new Error("Failed to subscribe to locks"),
+      );
 
-      // The command catches errors and continues
-      const { stdout } = await runCommand(
+      const { error } = await runCommand(
         ["spaces:locks:subscribe", "test-space"],
         import.meta.url,
       );
 
-      // Command should have run (output should be present)
-      expect(stdout).toBeDefined();
+      // Command should have attempted to run and reported the error
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Failed to subscribe");
     });
   });
 });

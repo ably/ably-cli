@@ -31,69 +31,124 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
   protected spaces: Spaces | null = null;
   protected realtimeClient: Ably.Realtime | null = null;
   protected parsedFlags: BaseFlags = {};
+  protected hasEnteredSpace = false;
+
+  protected markAsEntered(): void {
+    this.hasEnteredSpace = true;
+  }
+
+  /**
+   * Enter the space and mark as entered in one call.
+   * Always use this instead of calling space.enter() + markAsEntered() separately
+   * to ensure cleanup (space.leave()) is never accidentally skipped.
+   */
+  protected async enterCurrentSpace(
+    flags: BaseFlags,
+    profileData?: Record<string, unknown>,
+  ): Promise<void> {
+    this.logCliEvent(flags, "spaces", "entering", "Entering space...");
+    await this.space!.enter(profileData);
+    this.markAsEntered();
+    this.logCliEvent(flags, "spaces", "entered", "Entered space", {
+      clientId: this.realtimeClient!.auth.clientId,
+    });
+  }
 
   async finally(error: Error | undefined): Promise<void> {
-    // Always clean up connections
+    // The Spaces SDK subscribes to channel.presence internally (in the Space
+    // constructor) but provides no dispose/cleanup method. When the connection
+    // closes, the SDK's internal handlers receive errors that surface as
+    // unhandled rejections crashing the process. We suppress these during
+    // cleanup, matching the ChatBaseCommand pattern of tolerating SDK errors
+    // during teardown.
+    const suppressedErrors: unknown[] = [];
+    const onUnhandledRejection = (reason: unknown) => {
+      suppressedErrors.push(reason);
+      this.debug(`Suppressed unhandled rejection during cleanup: ${reason}`);
+    };
+
+    process.on("unhandledRejection", onUnhandledRejection);
+
     try {
-      // Unsubscribe from all namespace listeners
       if (this.space !== null) {
+        // Unsubscribe from all namespace listeners
         try {
           await this.space.members.unsubscribe();
           await this.space.locks.unsubscribe();
           this.space.locations.unsubscribe();
           this.space.cursors.unsubscribe();
         } catch (error) {
-          // Log but don't throw unsubscribe errors
-          if (!this.shouldOutputJson(this.parsedFlags)) {
-            this.debug(`Namespace unsubscribe error: ${error}`);
-          }
+          this.debug(`Namespace unsubscribe error: ${error}`);
         }
 
-        await this.space!.leave();
-        // Wait a bit after leaving space
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        // Unsubscribe the SDK's internal presence handler on the space channel.
+        // This removes the Spaces SDK's listener but cannot fully prevent
+        // errors from the Ably SDK's own channel state transitions during close.
+        // NOTE: Accesses @ably/spaces internal `Space.channel` property (verified
+        // against @ably/spaces v0.4.0). The SDK has no public dispose() method.
+        // If this breaks after a Spaces SDK upgrade, check the Space class for
+        // a renamed/removed `channel` property or a new cleanup API.
+        try {
+          const spaceChannel = (
+            this.space as unknown as { channel: Ably.RealtimeChannel }
+          ).channel;
+          if (spaceChannel) {
+            spaceChannel.presence.unsubscribe();
+          }
+        } catch (error) {
+          this.debug(`Space channel presence unsubscribe error: ${error}`);
+        }
 
-        // Spaces maintains an internal map of members which have timeouts. This keeps node alive.
-        // This is a workaround to hold off until those timeouts are cleared by the client, as otherwise
-        // we'll get unhandled presence rejections as the connection closes.
-        await new Promise<void>((resolve) => {
-          let intervalId: ReturnType<typeof setInterval>;
-          const maxWaitMs = 10000; // 10 second timeout
-          const startTime = Date.now();
-          const getAll = async () => {
-            // Avoid waiting forever
-            if (Date.now() - startTime > maxWaitMs) {
-              clearInterval(intervalId);
-              this.debug("Timed out waiting for space members to clear");
-              resolve();
-              return;
-            }
+        // Only leave and wait for member cleanup if we actually entered the space
+        if (this.hasEnteredSpace) {
+          await this.space!.leave();
+          await new Promise((resolve) => setTimeout(resolve, 200));
 
-            const members = await this.space!.members.getAll();
-            if (members.filter((member) => !member.isConnected).length === 0) {
-              clearInterval(intervalId);
-              this.debug("space members cleared");
-              resolve();
-            } else {
-              this.debug(
-                `waiting for spaces members to clear, ${members.length} remaining`,
-              );
-            }
-          };
+          // Spaces maintains an internal map of members which have timeouts. This keeps node alive.
+          // This is a workaround to hold off until those timeouts are cleared by the client, as otherwise
+          // we'll get unhandled presence rejections as the connection closes.
+          await new Promise<void>((resolve) => {
+            let intervalId: ReturnType<typeof setInterval>;
+            const maxWaitMs = 10000;
+            const startTime = Date.now();
+            const getAll = async () => {
+              if (Date.now() - startTime > maxWaitMs) {
+                clearInterval(intervalId);
+                this.debug("Timed out waiting for space members to clear");
+                resolve();
+                return;
+              }
 
-          intervalId = setInterval(() => {
-            getAll();
-          }, 1000);
-        });
+              const members = await this.space!.members.getAll();
+              if (
+                members.filter((member) => !member.isConnected).length === 0
+              ) {
+                clearInterval(intervalId);
+                this.debug("space members cleared");
+                resolve();
+              } else {
+                this.debug(
+                  `waiting for spaces members to clear, ${members.length} remaining`,
+                );
+              }
+            };
+
+            intervalId = setInterval(() => {
+              getAll();
+            }, 1000);
+          });
+        }
       }
     } catch (error) {
-      // Log but don't throw cleanup errors
-      if (!this.shouldOutputJson(this.parsedFlags)) {
-        this.debug(`Space leave error: ${error}`);
-      }
+      this.debug(`Space cleanup error: ${error}`);
     }
 
     await super.finally(error);
+
+    // Allow a tick for any remaining SDK-internal rejections to fire
+    // before removing the suppression handler.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    process.removeListener("unhandledRejection", onUnhandledRejection);
   }
 
   // Ensure we have the spaces client and its related authentication resources
@@ -245,11 +300,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     this.parsedFlags = flags;
 
     if (enterSpace) {
-      this.logCliEvent(flags, "spaces", "entering", "Entering space...");
-      await this.space!.enter();
-      this.logCliEvent(flags, "spaces", "entered", "Entered space", {
-        clientId: this.realtimeClient!.auth.clientId,
-      });
+      await this.enterCurrentSpace(flags);
     }
   }
 

@@ -154,6 +154,7 @@ Launch these agents **in parallel**. Each agent gets a focused mandate and uses 
 4. Cross-reference: every leaf command should appear in both the `logJsonResult`/`logJsonEvent` list and the `shouldOutputJson` list
 5. **Read** streaming commands to verify they use `logJsonEvent`, one-shot commands use `logJsonResult`
 6. **Read** each `logJsonResult`/`logJsonEvent` call and verify data is nested under a domain key — singular for events/single items (e.g., `{message: ...}`, `{cursor: ...}`), plural for collections (e.g., `{cursors: [...]}`, `{rules: [...]}`). Top-level envelope fields are `type`, `command`, `success` only. Metadata like `total`, `timestamp`, `appId` may sit alongside the domain key.
+7. **Check** hold commands (set, enter, acquire) emit `logJsonStatus("holding", ...)` after `logJsonResult` — this signals to JSON consumers that the command is alive and waiting for Ctrl+C / `--duration`
 
 **Reasoning guidance:**
 - Commands that ONLY have human output (no JSON path) are deviations
@@ -161,6 +162,7 @@ Launch these agents **in parallel**. Each agent gets a focused mandate and uses 
 - Topic index commands (showing help) don't need JSON output
 - Data spread at the top level without a domain key is a deviation — nest under a singular or plural domain noun
 - Metadata fields (`total`, `timestamp`, `hasMore`, `appId`) alongside the domain key are acceptable — they describe the result, not the domain objects
+- Hold commands missing `logJsonStatus` after `logJsonResult` are deviations — JSON consumers need the hold signal
 
 ### Agent 6: Test Pattern Sweep
 

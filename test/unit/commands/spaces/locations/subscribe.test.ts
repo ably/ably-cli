@@ -26,24 +26,22 @@ describe("spaces:locations:subscribe command", () => {
     it("should subscribe to location updates in a space", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locations.getAll.mockResolvedValue({});
 
       await runCommand(
         ["spaces:locations:subscribe", "test-space"],
         import.meta.url,
       );
 
-      expect(space.enter).toHaveBeenCalled();
+      expect(space.enter).not.toHaveBeenCalled();
       expect(space.locations.subscribe).toHaveBeenCalledWith(
         "update",
         expect.any(Function),
       );
     });
 
-    it("should display initial subscription message", async () => {
+    it("should display initial subscription message without fetching current locations", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locations.getAll.mockResolvedValue({});
 
       const { stdout } = await runCommand(
         ["spaces:locations:subscribe", "test-space"],
@@ -51,61 +49,96 @@ describe("spaces:locations:subscribe command", () => {
       );
 
       expect(stdout).toContain("Subscribing to location updates");
-      expect(stdout).toContain("test-space");
+      expect(space.locations.getAll).not.toHaveBeenCalled();
     });
 
-    it("should fetch and display current locations", async () => {
+    it("should output location updates in block format", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locations.getAll.mockResolvedValue({
-        "conn-1": { room: "lobby", x: 100 },
-        "conn-2": { room: "chat", x: 200 },
-      });
 
-      const { stdout } = await runCommand(
+      // Capture the subscribe handler and invoke it with a mock update
+      let locationHandler: ((update: unknown) => void) | undefined;
+      space.locations.subscribe.mockImplementation(
+        (_event: string, handler: (update: unknown) => void) => {
+          locationHandler = handler;
+        },
+      );
+
+      const runPromise = runCommand(
         ["spaces:locations:subscribe", "test-space"],
         import.meta.url,
       );
 
-      expect(space.locations.getAll).toHaveBeenCalled();
-      expect(stdout).toContain("Current locations");
+      // Wait a tick for the subscribe to be set up
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      if (locationHandler) {
+        locationHandler({
+          member: {
+            clientId: "user-1",
+            connectionId: "conn-1",
+          },
+          currentLocation: { room: "lobby" },
+          previousLocation: { room: "entrance" },
+        });
+      }
+
+      const { stdout } = await runPromise;
+
+      expect(stdout).toContain("Client ID:");
+      expect(stdout).toContain("Connection ID:");
+      expect(stdout).toContain("Current Location:");
+      expect(stdout).toContain("Previous Location:");
     });
   });
 
   describe("JSON output", () => {
-    it("should output JSON envelope with initial locations snapshot", async () => {
+    it("should output JSON event envelope for location updates", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locations.getAll.mockResolvedValue({
-        "conn-1": { room: "lobby", x: 100 },
-      });
 
-      const { stdout } = await runCommand(
+      let locationHandler: ((update: unknown) => void) | undefined;
+      space.locations.subscribe.mockImplementation(
+        (_event: string, handler: (update: unknown) => void) => {
+          locationHandler = handler;
+        },
+      );
+
+      const runPromise = runCommand(
         ["spaces:locations:subscribe", "test-space", "--json"],
         import.meta.url,
       );
 
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      if (locationHandler) {
+        locationHandler({
+          member: {
+            clientId: "user-1",
+            connectionId: "conn-1",
+          },
+          currentLocation: { room: "lobby" },
+          previousLocation: null,
+        });
+      }
+
+      const { stdout } = await runPromise;
+
       const records = parseNdjsonLines(stdout);
-      const resultRecord = records.find(
-        (r) =>
-          r.type === "result" &&
-          r.eventType === "locations_snapshot" &&
-          Array.isArray(r.locations),
-      );
-      expect(resultRecord).toBeDefined();
-      expect(resultRecord).toHaveProperty("command");
-      expect(resultRecord).toHaveProperty("success", true);
-      expect(resultRecord).toHaveProperty("spaceName", "test-space");
-      expect(resultRecord!.locations).toBeInstanceOf(Array);
+      const eventRecord = records.find((r) => r.type === "event" && r.location);
+      expect(eventRecord).toBeDefined();
+      expect(eventRecord).toHaveProperty("command");
+      expect(eventRecord!.location).toHaveProperty("member");
+      expect(eventRecord!.location.member).toHaveProperty("clientId", "user-1");
+      expect(eventRecord!.location).toHaveProperty("currentLocation");
+      expect(eventRecord!.location).toHaveProperty("previousLocation");
     });
   });
 
   describe("cleanup behavior", () => {
     it("should close client on completion", async () => {
       const realtimeMock = getMockAblyRealtime();
-      const spacesMock = getMockAblySpaces();
-      const space = spacesMock._getSpace("test-space");
-      space.locations.getAll.mockResolvedValue({});
+      getMockAblySpaces();
 
       // Use SIGINT to exit
 
@@ -120,24 +153,20 @@ describe("spaces:locations:subscribe command", () => {
   });
 
   describe("error handling", () => {
-    it("should handle getAll rejection gracefully", async () => {
+    it("should handle subscribe error gracefully", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locations.getAll.mockRejectedValue(
-        new Error("Failed to get locations"),
-      );
+      space.locations.subscribe.mockImplementation(() => {
+        throw new Error("Failed to subscribe to locations");
+      });
 
-      // The command handles the error via fail and exits
       const { error } = await runCommand(
         ["spaces:locations:subscribe", "test-space"],
         import.meta.url,
       );
 
-      // Command should report the error
       expect(error).toBeDefined();
-      expect(error?.message).toContain("Failed to get locations");
-      // Command should NOT continue to subscribe after getAll fails
-      expect(space.locations.subscribe).not.toHaveBeenCalled();
+      expect(error?.message).toContain("Failed to subscribe to locations");
     });
   });
 });

@@ -1,32 +1,25 @@
+import { type CursorUpdate } from "@ably/spaces";
 import { Args } from "@oclif/core";
-import chalk from "chalk";
 
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import isTestMode from "../../../utils/test-mode.js";
 import {
+  formatCountLabel,
+  formatHeading,
+  formatIndex,
   formatProgress,
-  formatSuccess,
   formatResource,
-  formatClientId,
+  formatWarning,
 } from "../../../utils/output.js";
-
-interface CursorPosition {
-  x: number;
-  y: number;
-}
-
-interface CursorUpdate {
-  clientId?: string;
-  connectionId?: string;
-  data?: Record<string, unknown>;
-  position: CursorPosition;
-}
+import {
+  formatCursorBlock,
+  formatCursorOutput,
+} from "../../../utils/spaces-output.js";
 
 export default class SpacesCursorsGetAll extends SpacesBaseCommand {
   static override args = {
-    space: Args.string({
-      description: "Space to get cursors from",
+    space_name: Args.string({
+      description: "Name of the space to get cursors from",
       required: true,
     }),
   };
@@ -46,7 +39,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsGetAll);
-    const { space: spaceName } = args;
+    const { space_name: spaceName } = args;
 
     try {
       await this.initializeSpace(flags, spaceName, {
@@ -54,310 +47,39 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
         setupConnectionLogging: false,
       });
 
-      // Get the space
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          formatProgress(`Connecting to space: ${formatResource(spaceName)}`),
+          formatProgress(
+            `Fetching cursors for space ${formatResource(spaceName)}`,
+          ),
         );
       }
 
-      // Enter the space
-      await this.space!.enter();
+      const allCursors = await this.space!.cursors.getAll();
 
-      // Wait for space to be properly entered before fetching cursors
-      await new Promise<void>((resolve, reject) => {
-        // Set a reasonable timeout to avoid hanging indefinitely
-        const timeout = setTimeout(() => {
-          reject(new Error("Timed out waiting for space connection"));
-        }, 5000);
-
-        const checkSpaceStatus = () => {
-          try {
-            // Check realtime client state
-            if (this.realtimeClient!.connection.state === "connected") {
-              clearTimeout(timeout);
-              if (this.shouldOutputJson(flags)) {
-                this.logJsonResult(
-                  {
-                    connectionId: this.realtimeClient!.connection.id,
-                    spaceName,
-                    status: "connected",
-                  },
-                  flags,
-                );
-              } else {
-                this.log(
-                  formatSuccess(`Entered space: ${formatResource(spaceName)}.`),
-                );
-              }
-
-              resolve();
-            } else if (
-              this.realtimeClient!.connection.state === "failed" ||
-              this.realtimeClient!.connection.state === "closed" ||
-              this.realtimeClient!.connection.state === "suspended"
-            ) {
-              clearTimeout(timeout);
-              reject(
-                new Error(
-                  `Space connection failed with state: ${this.realtimeClient!.connection.state}`,
-                ),
-              );
-            } else {
-              // Still connecting, check again shortly
-              setTimeout(checkSpaceStatus, 100);
-            }
-          } catch (error) {
-            clearTimeout(timeout);
-            reject(error);
-          }
-        };
-
-        checkSpaceStatus();
-      });
-
-      // Subscribe to cursor updates to ensure we receive remote cursors
-      let cursorUpdateReceived = false;
-      const cursorMap = new Map<string, CursorUpdate>();
-
-      // Show initial message
-      if (!this.shouldOutputJson(flags)) {
-        const waitSeconds = isTestMode() ? "0.5" : "5";
-        this.log(`Collecting cursor positions for ${waitSeconds} seconds...`);
-        this.log(chalk.dim("─".repeat(60)));
-      }
-
-      const cursorUpdateHandler = (cursor: CursorUpdate) => {
-        cursorUpdateReceived = true;
-
-        // Update the cursor map
-        if (cursor.connectionId) {
-          cursorMap.set(cursor.connectionId, cursor);
-
-          // Show live cursor position updates
-          if (
-            !this.shouldOutputJson(flags) &&
-            this.shouldUseTerminalUpdates()
-          ) {
-            const clientDisplay = cursor.clientId || "Unknown";
-            const x = cursor.position.x;
-            const y = cursor.position.y;
-
-            this.log(
-              `${chalk.gray("►")} ${formatClientId(clientDisplay)}: (${chalk.yellow(x)}, ${chalk.yellow(y)})`,
-            );
-          }
-        }
-      };
-
-      try {
-        await this.space!.cursors.subscribe("update", cursorUpdateHandler);
-      } catch (error) {
-        // If subscription fails, continue anyway
-        if (!this.shouldOutputJson(flags)) {
-          this.debug(`Cursor subscription error: ${error}`);
-        }
-      }
-
-      // Wait for 5 seconds (or shorter in test mode)
-      const waitTime = isTestMode() ? 500 : 5000;
-      await new Promise<void>((resolve) => {
-        setTimeout(() => {
-          resolve();
-        }, waitTime);
-      });
-
-      // Unsubscribe from cursor updates
-      this.space!.cursors.unsubscribe("update", cursorUpdateHandler);
-
-      // Ensure connection is stable before calling getAll()
-      if (this.realtimeClient!.connection.state !== "connected") {
-        await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            reject(new Error("Timed out waiting for connection to stabilize"));
-          }, 5000);
-
-          this.realtimeClient!.connection.once("connected", () => {
-            clearTimeout(timeout);
-            resolve();
-          });
-
-          if (this.realtimeClient!.connection.state === "connected") {
-            clearTimeout(timeout);
-            resolve();
-          }
-        });
-      }
-
-      // Now get all cursors (including locally cached ones) and merge with live updates
-      try {
-        const allCursors = await this.space!.cursors.getAll();
-
-        // Add any cached cursors that we didn't see in live updates
-        if (Array.isArray(allCursors)) {
-          allCursors.forEach((cursor) => {
-            if (
-              cursor &&
-              cursor.connectionId &&
-              !cursorMap.has(cursor.connectionId)
-            ) {
-              cursorMap.set(cursor.connectionId, cursor as CursorUpdate);
-            }
-          });
-        } else if (allCursors && typeof allCursors === "object") {
-          // Handle object return type
-          Object.values(allCursors).forEach((cursor) => {
-            if (
-              cursor &&
-              cursor.connectionId &&
-              !cursorMap.has(cursor.connectionId)
-            ) {
-              cursorMap.set(cursor.connectionId, cursor as CursorUpdate);
-            }
-          });
-        }
-      } catch {
-        // If getAll fails due to connection issues, use only the live updates we collected
-        if (!this.shouldOutputJson(flags)) {
-          this.log(
-            chalk.yellow(
-              "Warning: Could not fetch all cursors, showing only live updates",
-            ),
-          );
-        }
-      }
-
-      const cursors = [...cursorMap.values()];
+      const cursors: CursorUpdate[] = Object.values(allCursors).filter(
+        (cursor): cursor is CursorUpdate => cursor != null,
+      );
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            cursors: cursors.map((cursor: CursorUpdate) => ({
-              clientId: cursor.clientId,
-              connectionId: cursor.connectionId,
-              data: cursor.data,
-              position: cursor.position,
-            })),
-            spaceName,
-            cursorUpdateReceived,
+            cursors: cursors.map((cursor) => formatCursorOutput(cursor)),
           },
           flags,
         );
+      } else if (cursors.length === 0) {
+        this.logToStderr(formatWarning("No active cursors found in space."));
       } else {
-        if (!cursorUpdateReceived && cursors.length === 0) {
-          this.log(chalk.dim("─".repeat(60)));
-          this.log(
-            chalk.yellow(
-              "No cursor updates are being sent in this space. Make sure other clients are actively setting cursor positions.",
-            ),
-          );
-          return;
-        }
-
-        if (cursors.length === 0) {
-          this.log(chalk.dim("─".repeat(60)));
-          this.log(chalk.yellow("No active cursors found in space."));
-          return;
-        }
-
-        // Show summary table
-        this.log(chalk.dim("─".repeat(60)));
         this.log(
-          chalk.bold(
-            `\nCursor Summary - ${cursors.length} cursor${cursors.length === 1 ? "" : "s"} found:\n`,
-          ),
+          `\n${formatHeading("Current cursors")} (${formatCountLabel(cursors.length, "cursor")}):\n`,
         );
 
-        // Table header
-        const colWidths = { client: 20, x: 8, y: 8, connection: 20 };
-        this.log(
-          chalk.gray(
-            "┌" +
-              "─".repeat(colWidths.client + 2) +
-              "┬" +
-              "─".repeat(colWidths.x + 2) +
-              "┬" +
-              "─".repeat(colWidths.y + 2) +
-              "┬" +
-              "─".repeat(colWidths.connection + 2) +
-              "┐",
-          ),
-        );
-        this.log(
-          chalk.gray("│ ") +
-            chalk.bold("Client ID".padEnd(colWidths.client)) +
-            chalk.gray(" │ ") +
-            chalk.bold("X".padEnd(colWidths.x)) +
-            chalk.gray(" │ ") +
-            chalk.bold("Y".padEnd(colWidths.y)) +
-            chalk.gray(" │ ") +
-            chalk.bold("connection".padEnd(colWidths.connection)) +
-            chalk.gray(" │"),
-        );
-        this.log(
-          chalk.gray(
-            "├" +
-              "─".repeat(colWidths.client + 2) +
-              "┼" +
-              "─".repeat(colWidths.x + 2) +
-              "┼" +
-              "─".repeat(colWidths.y + 2) +
-              "┼" +
-              "─".repeat(colWidths.connection + 2) +
-              "┤",
-          ),
-        );
-
-        // Table rows
-        cursors.forEach((cursor: CursorUpdate) => {
-          const clientId = (cursor.clientId || "Unknown").slice(
-            0,
-            colWidths.client,
-          );
-          const x = cursor.position.x.toString().slice(0, colWidths.x);
-          const y = cursor.position.y.toString().slice(0, colWidths.y);
-          const connectionId = (cursor.connectionId || "Unknown").slice(
-            0,
-            colWidths.connection,
-          );
-
-          this.log(
-            chalk.gray("│ ") +
-              formatClientId(clientId.padEnd(colWidths.client)) +
-              chalk.gray(" │ ") +
-              chalk.yellow(x.padEnd(colWidths.x)) +
-              chalk.gray(" │ ") +
-              chalk.yellow(y.padEnd(colWidths.y)) +
-              chalk.gray(" │ ") +
-              chalk.dim(connectionId.padEnd(colWidths.connection)) +
-              chalk.gray(" │"),
-          );
+        cursors.forEach((cursor: CursorUpdate, index: number) => {
+          this.log(`${formatIndex(index + 1)}`);
+          this.log(formatCursorBlock(cursor, { indent: "  " }));
+          this.log("");
         });
-
-        this.log(
-          chalk.gray(
-            "└" +
-              "─".repeat(colWidths.client + 2) +
-              "┴" +
-              "─".repeat(colWidths.x + 2) +
-              "┴" +
-              "─".repeat(colWidths.y + 2) +
-              "┴" +
-              "─".repeat(colWidths.connection + 2) +
-              "┘",
-          ),
-        );
-
-        // Show additional data if any cursor has it
-        const cursorsWithData = cursors.filter((c) => c.data);
-        if (cursorsWithData.length > 0) {
-          this.log(`\n${chalk.bold("Additional Data:")}`);
-          cursorsWithData.forEach((cursor: CursorUpdate) => {
-            this.log(
-              `  ${formatClientId(cursor.clientId || "Unknown")}: ${JSON.stringify(cursor.data)}`,
-            );
-          });
-        }
       }
     } catch (error) {
       this.fail(error, flags, "cursorGetAll", { spaceName });

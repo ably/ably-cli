@@ -191,7 +191,7 @@ describe("Spaces E2E Tests", () => {
             `bin/run.js spaces locations subscribe ${testSpaceId} --client-id ${client1Id} --duration 20`,
             outputPath,
             {
-              readySignal: "Fetching current locations for space",
+              readySignal: "Subscribing to location updates",
               timeoutMs: process.env.CI ? 40000 : 30000, // Increased timeout
               retryCount: 2,
             },
@@ -212,7 +212,7 @@ describe("Spaces E2E Tests", () => {
           };
 
           const setLocationResult = await runBackgroundProcessAndGetOutput(
-            `bin/run.js spaces locations set ${testSpaceId} --location '${JSON.stringify(locationData)}' --client-id ${client2Id} --duration 0`,
+            `bin/run.js spaces locations set ${testSpaceId} --location '${JSON.stringify(locationData)}' --client-id ${client2Id} --duration 5`,
             process.env.CI ? 15000 : 15000, // Timeout for the command
           );
 
@@ -252,7 +252,7 @@ describe("Spaces E2E Tests", () => {
           };
 
           const updateLocationResult = await runBackgroundProcessAndGetOutput(
-            `bin/run.js spaces locations set ${testSpaceId} --location '${JSON.stringify(newLocationData)}' --client-id ${client2Id} --duration 0`,
+            `bin/run.js spaces locations set ${testSpaceId} --location '${JSON.stringify(newLocationData)}' --client-id ${client2Id} --duration 5`,
             process.env.CI ? 15000 : 15000, // Increased local timeout
           );
 
@@ -349,7 +349,7 @@ describe("Spaces E2E Tests", () => {
             `bin/run.js spaces cursors subscribe ${testSpaceId} --client-id ${client1Id} --duration 20`,
             outputPath,
             {
-              readySignal: "Subscribing to cursor movements",
+              readySignal: "Subscribing to cursor updates",
               timeoutMs: 60000, // Increased timeout significantly
               retryCount: 3,
             },
@@ -370,7 +370,7 @@ describe("Spaces E2E Tests", () => {
           let currentOutput = await readProcessOutput(outputPath);
           if (
             !currentOutput.includes("Entered space:") &&
-            !currentOutput.includes("Subscribing to cursor movements")
+            !currentOutput.includes("Subscribing to cursor updates")
           ) {
             // The cursor subscribe process might have failed, let's skip this test
             shouldSkipCursorTest = true;
@@ -400,7 +400,7 @@ describe("Spaces E2E Tests", () => {
 
             if (
               output.includes(client2Id) &&
-              output.includes("position:") &&
+              output.includes("Position X:") &&
               output.includes("TestUser2") &&
               output.includes("#ff0000")
             ) {

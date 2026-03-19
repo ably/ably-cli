@@ -26,42 +26,38 @@ describe("spaces:cursors:get-all command", () => {
     it("should get all cursors from a space", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([
-        {
+      space.cursors.getAll.mockResolvedValue({
+        "conn-1": {
           clientId: "user-1",
           connectionId: "conn-1",
           position: { x: 100, y: 200 },
           data: { color: "red" },
         },
-        {
+        "conn-2": {
           clientId: "user-2",
           connectionId: "conn-2",
           position: { x: 300, y: 400 },
           data: { color: "blue" },
         },
-      ]);
+      });
 
       const { stdout } = await runCommand(
         ["spaces:cursors:get-all", "test-space", "--json"],
         import.meta.url,
       );
 
-      expect(space.enter).toHaveBeenCalled();
-      expect(space.cursors.subscribe).toHaveBeenCalledWith(
-        "update",
-        expect.any(Function),
-      );
+      expect(space.enter).not.toHaveBeenCalled();
       expect(space.cursors.getAll).toHaveBeenCalled();
 
-      // The command outputs multiple JSON lines - check the content contains expected data
-      expect(stdout).toContain("test-space");
+      // The command outputs JSON with cursors array
+      expect(stdout).toContain("cursors");
       expect(stdout).toContain("success");
     });
 
     it("should handle no cursors found", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([]);
+      space.cursors.getAll.mockResolvedValue({});
 
       const { stdout } = await runCommand(
         ["spaces:cursors:get-all", "test-space", "--json"],
@@ -98,14 +94,14 @@ describe("spaces:cursors:get-all command", () => {
     it("should output JSON envelope with type and command for cursor results", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([
-        {
+      space.cursors.getAll.mockResolvedValue({
+        "conn-1": {
           clientId: "user-1",
           connectionId: "conn-1",
           position: { x: 10, y: 20 },
           data: null,
         },
-      ]);
+      });
 
       const { stdout } = await runCommand(
         ["spaces:cursors:get-all", "test-space", "--json"],
@@ -120,7 +116,6 @@ describe("spaces:cursors:get-all command", () => {
       expect(resultRecord).toHaveProperty("type", "result");
       expect(resultRecord).toHaveProperty("command");
       expect(resultRecord).toHaveProperty("success", true);
-      expect(resultRecord).toHaveProperty("spaceName", "test-space");
       expect(resultRecord!.cursors).toBeInstanceOf(Array);
     });
   });
@@ -130,7 +125,7 @@ describe("spaces:cursors:get-all command", () => {
       const realtimeMock = getMockAblyRealtime();
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([]);
+      space.cursors.getAll.mockResolvedValue({});
 
       await runCommand(
         ["spaces:cursors:get-all", "test-space", "--json"],
@@ -138,7 +133,6 @@ describe("spaces:cursors:get-all command", () => {
       );
 
       // Verify cleanup was performed
-      expect(space.leave).toHaveBeenCalled();
       expect(realtimeMock.close).toHaveBeenCalled();
     });
   });

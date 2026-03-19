@@ -91,6 +91,10 @@ describe("spaces:cursors:set command", () => {
       );
       expect(stdout).toContain("Set cursor");
       expect(stdout).toContain("test-space");
+      expect(stdout).toContain("Position X:");
+      expect(stdout).toContain("100");
+      expect(stdout).toContain("Position Y:");
+      expect(stdout).toContain("200");
     });
 
     it("should set cursor from --data with position object", async () => {
@@ -112,6 +116,19 @@ describe("spaces:cursors:set command", () => {
           position: { x: 50, y: 75 },
         }),
       );
+    });
+
+    it("should display hold message in non-simulate mode", async () => {
+      const spacesMock = getMockAblySpaces();
+      spacesMock._getSpace("test-space");
+
+      const { stdout } = await runCommand(
+        ["spaces:cursors:set", "test-space", "--x", "100", "--y", "200"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Holding cursor.");
+      expect(stdout).toContain("Press Ctrl+C to exit.");
     });
 
     it("should merge --data with --x/--y as additional cursor data", async () => {
@@ -142,7 +159,7 @@ describe("spaces:cursors:set command", () => {
   });
 
   describe("JSON output", () => {
-    it("should output JSON on success", async () => {
+    it("should output JSON result and hold status", async () => {
       const spacesMock = getMockAblySpaces();
       spacesMock._getSpace("test-space");
 
@@ -165,8 +182,17 @@ describe("spaces:cursors:set command", () => {
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "spaces:cursors:set");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("spaceName", "test-space");
-      expect(result!.cursor.position).toEqual({ x: 100, y: 200 });
+      expect(result).toHaveProperty("cursor");
+      const cursor = result!.cursor as Record<string, unknown>;
+      expect(cursor).toHaveProperty("position");
+      expect(cursor.position).toEqual({ x: 100, y: 200 });
+      expect(cursor).toHaveProperty("clientId");
+      expect(cursor).toHaveProperty("connectionId");
+
+      const status = records.find((r) => r.type === "status");
+      expect(status).toBeDefined();
+      expect(status).toHaveProperty("status", "holding");
+      expect(status!.message).toContain("Holding cursor");
     });
   });
 

@@ -7,14 +7,18 @@ import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
   formatSuccess,
   formatListening,
+  formatProgress,
   formatResource,
-  formatLabel,
 } from "../../../utils/output.js";
+import {
+  formatLockBlock,
+  formatLockOutput,
+} from "../../../utils/spaces-output.js";
 
 export default class SpacesLocksAcquire extends SpacesBaseCommand {
   static override args = {
-    space: Args.string({
-      description: "Space to acquire lock in",
+    space_name: Args.string({
+      description: "Name of the space to acquire lock in",
       required: true,
     }),
     lockId: Args.string({
@@ -68,11 +72,15 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksAcquire);
-    const { space: spaceName } = args;
+    const { space_name: spaceName } = args;
     this.lockId = args.lockId;
     const { lockId } = this;
 
     try {
+      if (!this.shouldOutputJson(flags)) {
+        this.log(formatProgress("Entering space"));
+      }
+
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
       // Parse lock data if provided
@@ -90,11 +98,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
       }
 
       // Enter the space first
-      this.logCliEvent(flags, "spaces", "entering", "Entering space...");
-      await this.space!.enter();
-      this.logCliEvent(flags, "spaces", "entered", "Entered space", {
-        clientId: this.realtimeClient!.auth.clientId,
-      });
+      await this.enterCurrentSpace(flags);
 
       // Try to acquire the lock
       try {
@@ -109,40 +113,32 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
           lockId,
           lockData as LockOptions,
         );
-        const lockDetails = {
-          lockId: lock.id,
-          member: lock.member
-            ? {
-                clientId: lock.member.clientId,
-                connectionId: lock.member.connectionId,
-              }
-            : null,
-          reason: lock.reason,
-          status: lock.status,
-          timestamp: lock.timestamp,
-        };
         this.logCliEvent(
           flags,
           "lock",
           "acquired",
           `Lock acquired: ${lockId}`,
-          lockDetails,
+          { lockId: lock.id, status: lock.status },
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonResult({ lock: lockDetails }, flags);
+          this.logJsonResult({ lock: formatLockOutput(lock) }, flags);
         } else {
           this.log(formatSuccess(`Lock acquired: ${formatResource(lockId)}.`));
-          this.log(
-            `${formatLabel("Lock details")} ${this.formatJsonOutput(lockDetails, { ...flags, "pretty-json": true })}`,
-          );
-          this.log(`\n${formatListening("Holding lock.")}`);
+          this.log(formatLockBlock(lock));
+          this.log(formatListening("Holding lock."));
         }
       } catch (error) {
         this.fail(error, flags, "lockAcquire", {
           lockId,
         });
       }
+
+      this.logJsonStatus(
+        "holding",
+        "Holding lock. Press Ctrl+C to exit.",
+        flags,
+      );
 
       this.logCliEvent(
         flags,

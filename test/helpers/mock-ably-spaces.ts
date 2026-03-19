@@ -158,6 +158,8 @@ function createMockSpaceMembers(): MockSpaceMembers {
       connectionId: "mock-connection-id",
       isConnected: true,
       profileData: {},
+      location: null,
+      lastEvent: { name: "enter", timestamp: Date.now() },
     }),
     _emitter: emitter,
     _emit: (member: SpaceMember) => {
@@ -174,7 +176,7 @@ function createMockSpaceLocations(): MockSpaceLocations {
 
   return {
     set: vi.fn().mockImplementation(async () => {}),
-    getAll: vi.fn().mockResolvedValue([]),
+    getAll: vi.fn().mockResolvedValue({}),
     getSelf: vi.fn().mockResolvedValue(null),
     subscribe: vi.fn((eventOrCallback, callback?) => {
       const cb = callback ?? eventOrCallback;
@@ -204,7 +206,21 @@ function createMockSpaceLocks(): MockSpaceLocks {
   const emitter = new EventEmitter();
 
   return {
-    acquire: vi.fn().mockResolvedValue({ id: "mock-lock-id" }),
+    acquire: vi.fn().mockResolvedValue({
+      id: "mock-lock-id",
+      status: "locked",
+      member: {
+        clientId: "mock-client-id",
+        connectionId: "mock-connection-id",
+        isConnected: true,
+        profileData: null,
+        location: null,
+        lastEvent: { name: "enter", timestamp: Date.now() },
+      },
+      timestamp: Date.now(),
+      attributes: undefined,
+      reason: undefined,
+    }),
     release: vi.fn().mockImplementation(async () => {}),
     get: vi.fn().mockResolvedValue(null),
     getAll: vi.fn().mockResolvedValue([]),
@@ -237,7 +253,7 @@ function createMockSpaceCursors(): MockSpaceCursors {
 
   return {
     set: vi.fn().mockImplementation(async () => {}),
-    getAll: vi.fn().mockResolvedValue([]),
+    getAll: vi.fn().mockResolvedValue({}),
     subscribe: vi.fn((eventOrCallback, callback?) => {
       const cb = callback ?? eventOrCallback;
       const event = callback ? eventOrCallback : null;

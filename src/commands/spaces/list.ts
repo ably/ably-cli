@@ -2,7 +2,6 @@ import { Flags } from "@oclif/core";
 
 import { productApiFlags } from "../../flags.js";
 import {
-  formatLabel,
   formatCountLabel,
   formatLimitWarning,
   formatResource,
@@ -14,23 +13,8 @@ import {
 } from "../../utils/pagination.js";
 import { SpacesBaseCommand } from "../../spaces-base-command.js";
 
-interface SpaceMetrics {
-  connections?: number;
-  presenceConnections?: number;
-  presenceMembers?: number;
-  publishers?: number;
-  subscribers?: number;
-}
-
-interface SpaceStatus {
-  occupancy?: {
-    metrics?: SpaceMetrics;
-  };
-}
-
 interface SpaceItem {
   spaceName: string;
-  status?: SpaceStatus;
   channelId?: string;
   [key: string]: unknown;
 }
@@ -80,7 +64,6 @@ export default class SpacesList extends SpacesBaseCommand {
         params.prefix = flags.prefix;
       }
 
-      // Fetch channels
       const channelsResponse = await rest.request(
         "get",
         "/channels",
@@ -136,7 +119,6 @@ export default class SpacesList extends SpacesBaseCommand {
         this.logJsonResult(
           {
             spaces: spaces.map((space) => ({
-              metrics: space.status?.occupancy?.metrics || {},
               spaceName: space.spaceName,
             })),
             hasMore,
@@ -152,38 +134,10 @@ export default class SpacesList extends SpacesBaseCommand {
           return;
         }
 
-        this.log(`Found ${formatCountLabel(spaces.length, "active space")}:`);
+        this.log(`Found ${formatCountLabel(spaces.length, "active space")}:\n`);
 
         spaces.forEach((space) => {
           this.log(`${formatResource(space.spaceName)}`);
-
-          // Show occupancy if available
-          if (space.status?.occupancy?.metrics) {
-            const { metrics } = space.status.occupancy;
-            this.log(
-              `  ${formatLabel("Connections")} ${metrics.connections || 0}`,
-            );
-            this.log(
-              `  ${formatLabel("Publishers")} ${metrics.publishers || 0}`,
-            );
-            this.log(
-              `  ${formatLabel("Subscribers")} ${metrics.subscribers || 0}`,
-            );
-
-            if (metrics.presenceConnections !== undefined) {
-              this.log(
-                `  ${formatLabel("Presence Connections")} ${metrics.presenceConnections}`,
-              );
-            }
-
-            if (metrics.presenceMembers !== undefined) {
-              this.log(
-                `  ${formatLabel("Presence Members")} ${metrics.presenceMembers}`,
-              );
-            }
-          }
-
-          this.log(""); // Add a line break between spaces
         });
 
         if (hasMore) {
@@ -192,7 +146,7 @@ export default class SpacesList extends SpacesBaseCommand {
             flags.limit,
             "spaces",
           );
-          if (warning) this.log(warning);
+          if (warning) this.log(`\n${warning}`);
         }
       }
     } catch (error) {

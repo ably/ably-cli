@@ -1,18 +1,17 @@
 import { Args } from "@oclif/core";
-import chalk from "chalk";
 
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
+import { formatResource, formatWarning } from "../../../utils/output.js";
 import {
-  formatLabel,
-  formatResource,
-  formatSuccess,
-} from "../../../utils/output.js";
+  formatLockBlock,
+  formatLockOutput,
+} from "../../../utils/spaces-output.js";
 
 export default class SpacesLocksGet extends SpacesBaseCommand {
   static override args = {
-    space: Args.string({
-      description: "Space to get lock from",
+    space_name: Args.string({
+      description: "Name of the space to get lock from",
       required: true,
     }),
     lockId: Args.string({
@@ -36,7 +35,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksGet);
-    const { space: spaceName } = args;
+    const { space_name: spaceName } = args;
     const { lockId } = args;
 
     try {
@@ -45,21 +44,16 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
         setupConnectionLogging: false,
       });
 
-      await this.space!.enter();
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatSuccess(`Entered space: ${formatResource(spaceName)}.`));
-      }
-
       try {
         const lock = await this.space!.locks.get(lockId);
 
         if (!lock) {
           if (this.shouldOutputJson(flags)) {
-            this.logJsonResult({ found: false, lockId }, flags);
+            this.logJsonResult({ lock: null }, flags);
           } else {
             this.log(
-              chalk.yellow(
-                `Lock ${formatResource(lockId)} not found in space ${formatResource(spaceName)}`,
+              formatWarning(
+                `Lock ${formatResource(lockId)} not found in space ${formatResource(spaceName)}.`,
               ),
             );
           }
@@ -68,14 +62,9 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
         }
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonResult(
-            structuredClone(lock) as Record<string, unknown>,
-            flags,
-          );
+          this.logJsonResult({ lock: formatLockOutput(lock) }, flags);
         } else {
-          this.log(
-            `${formatLabel("Lock details")} ${this.formatJsonOutput(structuredClone(lock), flags)}`,
-          );
+          this.log(formatLockBlock(lock));
         }
       } catch (error) {
         this.fail(error, flags, "lockGet");

@@ -26,34 +26,26 @@ describe("spaces:locations:get-all command", () => {
     it("should get all locations from a space", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locations.getAll.mockResolvedValue([
-        {
-          member: { clientId: "user-1", connectionId: "conn-1" },
-          currentLocation: { x: 100, y: 200 },
-          previousLocation: null,
-        },
-      ]);
+      space.locations.getAll.mockResolvedValue({
+        "conn-1": { x: 100, y: 200 },
+      });
 
       const { stdout } = await runCommand(
         ["spaces:locations:get-all", "test-space", "--json"],
         import.meta.url,
       );
 
-      expect(space.enter).toHaveBeenCalled();
+      expect(space.enter).not.toHaveBeenCalled();
       expect(space.locations.getAll).toHaveBeenCalled();
-      expect(stdout).toContain("test-space");
+      expect(stdout).toContain("locations");
     });
 
     it("should output JSON envelope with type and command for location results", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locations.getAll.mockResolvedValue([
-        {
-          member: { clientId: "user-1", connectionId: "conn-1" },
-          currentLocation: { x: 100, y: 200 },
-          previousLocation: null,
-        },
-      ]);
+      space.locations.getAll.mockResolvedValue({
+        "conn-1": { x: 100, y: 200 },
+      });
 
       const { stdout } = await runCommand(
         ["spaces:locations:get-all", "test-space", "--json"],
@@ -68,14 +60,22 @@ describe("spaces:locations:get-all command", () => {
       expect(resultRecord).toHaveProperty("type", "result");
       expect(resultRecord).toHaveProperty("command");
       expect(resultRecord).toHaveProperty("success", true);
-      expect(resultRecord).toHaveProperty("spaceName", "test-space");
       expect(resultRecord!.locations).toBeInstanceOf(Array);
+      expect(resultRecord!.locations.length).toBe(1);
+      expect(resultRecord!.locations[0]).toHaveProperty(
+        "connectionId",
+        "conn-1",
+      );
+      expect(resultRecord!.locations[0]).toHaveProperty("location", {
+        x: 100,
+        y: 200,
+      });
     });
 
     it("should handle no locations found", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locations.getAll.mockResolvedValue([]);
+      space.locations.getAll.mockResolvedValue({});
 
       const { stdout } = await runCommand(
         ["spaces:locations:get-all", "test-space", "--json"],

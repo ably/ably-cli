@@ -26,14 +26,14 @@ describe("spaces:cursors:subscribe command", () => {
     it("should subscribe to cursor updates in a space", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([]);
+      space.cursors.getAll.mockResolvedValue({});
 
       await runCommand(
         ["spaces:cursors:subscribe", "test-space"],
         import.meta.url,
       );
 
-      expect(space.enter).toHaveBeenCalled();
+      expect(space.enter).not.toHaveBeenCalled();
       expect(space.cursors.subscribe).toHaveBeenCalledWith(
         "update",
         expect.any(Function),
@@ -43,15 +43,15 @@ describe("spaces:cursors:subscribe command", () => {
     it("should display initial subscription message", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([]);
+      space.cursors.getAll.mockResolvedValue({});
 
       const { stdout } = await runCommand(
         ["spaces:cursors:subscribe", "test-space"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Subscribing");
-      expect(stdout).toContain("test-space");
+      expect(stdout).toContain("Subscribing to cursor updates");
+      expect(stdout).toContain("Listening for cursor movements");
     });
   });
 
@@ -60,7 +60,7 @@ describe("spaces:cursors:subscribe command", () => {
       const realtimeMock = getMockAblyRealtime();
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([]);
+      space.cursors.getAll.mockResolvedValue({});
 
       // Use SIGINT to exit
 
@@ -78,7 +78,7 @@ describe("spaces:cursors:subscribe command", () => {
     it("should output JSON event with envelope when cursor update is received", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([]);
+      space.cursors.getAll.mockResolvedValue({});
 
       // Fire a cursor event synchronously when subscribe is called
       space.cursors.subscribe.mockImplementation(
@@ -100,13 +100,16 @@ describe("spaces:cursors:subscribe command", () => {
 
       const records = parseNdjsonLines(stdout);
       const eventRecords = records.filter(
-        (r) => r.type === "event" && r.eventType === "cursor_update",
+        (r) => r.type === "event" && r.cursor,
       );
       expect(eventRecords.length).toBeGreaterThan(0);
       const event = eventRecords[0];
       expect(event).toHaveProperty("command");
-      expect(event).toHaveProperty("spaceName", "test-space");
-      expect(event).toHaveProperty("position");
+      expect(event).toHaveProperty("cursor");
+      expect(event.cursor).toHaveProperty("clientId", "user-1");
+      expect(event.cursor).toHaveProperty("connectionId", "conn-1");
+      expect(event.cursor).toHaveProperty("position");
+      expect(event.cursor.position).toEqual({ x: 50, y: 75 });
     });
   });
 
@@ -114,7 +117,7 @@ describe("spaces:cursors:subscribe command", () => {
     it("should wait for cursors channel to attach if not already attached", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockResolvedValue([]);
+      space.cursors.getAll.mockResolvedValue({});
 
       // Mock channel as attaching
       space.cursors.channel.state = "attaching";
@@ -141,10 +144,10 @@ describe("spaces:cursors:subscribe command", () => {
   });
 
   describe("error handling", () => {
-    it("should handle space entry failure", async () => {
+    it("should handle subscribe failure", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.enter.mockRejectedValue(new Error("Connection failed"));
+      space.cursors.subscribe.mockRejectedValue(new Error("Connection failed"));
 
       const { error } = await runCommand(
         ["spaces:cursors:subscribe", "test-space"],

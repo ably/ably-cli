@@ -21,67 +21,40 @@ describe("spaces:members:subscribe command", () => {
   standardFlagTests("spaces:members:subscribe", import.meta.url, ["--json"]);
 
   describe("functionality", () => {
-    it("should display current members from getAll()", async () => {
+    it("should subscribe to member events and output in block format", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.members.getAll.mockResolvedValue([
-        {
-          clientId: "user-1",
-          connectionId: "conn-1",
-          isConnected: true,
-          profileData: {},
+
+      // Emit a member event after subscription is set up
+      space.members.subscribe.mockImplementation(
+        (event: string, cb: (member: unknown) => void) => {
+          // Fire the callback asynchronously to simulate an incoming event
+          setTimeout(() => {
+            cb({
+              clientId: "user-1",
+              connectionId: "other-conn-1",
+              isConnected: true,
+              profileData: { name: "Alice" },
+              location: null,
+              lastEvent: { name: "update", timestamp: Date.now() },
+            });
+          }, 10);
+          return Promise.resolve();
         },
-        {
-          clientId: "user-2",
-          connectionId: "conn-2",
-          isConnected: true,
-          profileData: {},
-        },
-      ]);
+      );
 
       const { stdout } = await runCommand(
         ["spaces:members:subscribe", "test-space"],
         import.meta.url,
       );
 
-      expect(space.members.getAll).toHaveBeenCalled();
-      expect(stdout).toContain("Current members");
+      expect(stdout).toContain("Action:");
+      expect(stdout).toContain("update");
+      expect(stdout).toContain("Client ID:");
       expect(stdout).toContain("user-1");
-      expect(stdout).toContain("user-2");
-    });
-
-    it("should show profile data for members", async () => {
-      const spacesMock = getMockAblySpaces();
-      const space = spacesMock._getSpace("test-space");
-      space.members.getAll.mockResolvedValue([
-        {
-          clientId: "user-1",
-          connectionId: "conn-1",
-          isConnected: true,
-          profileData: { name: "Alice", role: "admin" },
-        },
-      ]);
-
-      const { stdout } = await runCommand(
-        ["spaces:members:subscribe", "test-space"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("Alice");
-      expect(stdout).toContain("admin");
-    });
-
-    it("should show message when no members are present", async () => {
-      const spacesMock = getMockAblySpaces();
-      const space = spacesMock._getSpace("test-space");
-      space.members.getAll.mockResolvedValue([]);
-
-      const { stdout } = await runCommand(
-        ["spaces:members:subscribe", "test-space"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain("No members are currently present");
+      expect(stdout).toContain("Connection ID:");
+      expect(stdout).toContain("other-conn-1");
+      expect(stdout).toContain("Connected:");
     });
   });
 
@@ -89,14 +62,13 @@ describe("spaces:members:subscribe command", () => {
     it("should subscribe to member update events", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.members.getAll.mockResolvedValue([]);
 
       await runCommand(
         ["spaces:members:subscribe", "test-space"],
         import.meta.url,
       );
 
-      expect(space.enter).toHaveBeenCalled();
+      expect(space.enter).not.toHaveBeenCalled();
       expect(space.members.subscribe).toHaveBeenCalledWith(
         "update",
         expect.any(Function),
@@ -105,17 +77,25 @@ describe("spaces:members:subscribe command", () => {
   });
 
   describe("JSON output", () => {
-    it("should output JSON for initial members", async () => {
+    it("should output JSON event for member updates", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.members.getAll.mockResolvedValue([
-        {
-          clientId: "user-1",
-          connectionId: "conn-1",
-          isConnected: true,
-          profileData: { name: "Alice" },
+
+      space.members.subscribe.mockImplementation(
+        (event: string, cb: (member: unknown) => void) => {
+          setTimeout(() => {
+            cb({
+              clientId: "user-1",
+              connectionId: "other-conn-1",
+              isConnected: true,
+              profileData: { name: "Alice" },
+              location: null,
+              lastEvent: { name: "update", timestamp: Date.now() },
+            });
+          }, 10);
+          return Promise.resolve();
         },
-      ]);
+      );
 
       const { stdout } = await runCommand(
         ["spaces:members:subscribe", "test-space", "--json"],
@@ -123,9 +103,9 @@ describe("spaces:members:subscribe command", () => {
       );
 
       const result = JSON.parse(stdout);
-      expect(result.success).toBe(true);
-      expect(result.members).toHaveLength(1);
-      expect(result.members[0].clientId).toBe("user-1");
+      expect(result.type).toBe("event");
+      expect(result.member).toBeDefined();
+      expect(result.member.clientId).toBe("user-1");
     });
   });
 
@@ -133,7 +113,7 @@ describe("spaces:members:subscribe command", () => {
     it("should handle errors gracefully", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.enter.mockRejectedValue(new Error("Connection failed"));
+      space.members.subscribe.mockRejectedValue(new Error("Connection failed"));
 
       const { error } = await runCommand(
         ["spaces:members:subscribe", "test-space"],

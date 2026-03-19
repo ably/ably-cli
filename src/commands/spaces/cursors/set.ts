@@ -1,6 +1,5 @@
+import type { CursorData, CursorPosition } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
-import chalk from "chalk";
-
 import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
@@ -12,22 +11,10 @@ import {
   formatLabel,
 } from "../../../utils/output.js";
 
-// Define cursor types based on Ably documentation
-interface CursorPosition {
-  x: number;
-  y: number;
-}
-
-interface CursorData {
-  [key: string]: unknown;
-}
-
-// CursorUpdate interface no longer required in this file
-
 export default class SpacesCursorsSet extends SpacesBaseCommand {
   static override args = {
-    space: Args.string({
-      description: "The space to set cursor in",
+    space_name: Args.string({
+      description: "Name of the space to set cursor in",
       required: true,
     }),
   };
@@ -70,7 +57,6 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
   private simulationIntervalId: NodeJS.Timeout | null = null;
 
-  // Override finally to ensure resources are cleaned up
   async finally(err: Error | undefined): Promise<void> {
     if (this.simulationIntervalId) {
       clearInterval(this.simulationIntervalId);
@@ -82,21 +68,19 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsSet);
-    const { space: spaceName } = args;
+    const { space_name: spaceName } = args;
 
     try {
       // Validate and parse cursor data - either x/y flags or --data JSON
       let cursorData: Record<string, unknown>;
 
       if (flags.simulate) {
-        // For simulate mode, use provided x/y or generate random starting position
         const startX = flags.x ?? Math.floor(Math.random() * 1000);
         const startY = flags.y ?? Math.floor(Math.random() * 1000);
         cursorData = {
           position: { x: startX, y: startY },
         };
 
-        // If --data is also provided with simulate, treat it as additional cursor data
         if (flags.data) {
           try {
             const additionalData = JSON.parse(flags.data);
@@ -111,12 +95,10 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           }
         }
       } else if (flags.x !== undefined && flags.y !== undefined) {
-        // Use x & y flags
         cursorData = {
           position: { x: flags.x, y: flags.y },
         };
 
-        // If --data is also provided with x/y flags, treat it as additional cursor data
         if (flags.data) {
           try {
             const additionalData = JSON.parse(flags.data);
@@ -131,7 +113,6 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           }
         }
       } else if (flags.data) {
-        // Use --data JSON format
         try {
           cursorData = JSON.parse(flags.data);
         } catch {
@@ -143,7 +124,6 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           );
         }
 
-        // Validate position when using --data
         if (
           !cursorData.position ||
           typeof (cursorData.position as Record<string, unknown>).x !==
@@ -166,7 +146,13 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         );
       }
 
-      await this.initializeSpace(flags, spaceName, { enterSpace: true });
+      if (!this.shouldOutputJson(flags)) {
+        this.log(formatProgress("Entering space"));
+      }
+
+      await this.initializeSpace(flags, spaceName, { enterSpace: false });
+
+      await this.enterCurrentSpace(flags);
 
       const { position, data } = cursorData as {
         position: CursorPosition;
@@ -191,30 +177,30 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            cursor: cursorForOutput,
-            spaceName,
+            cursor: {
+              clientId: this.realtimeClient!.auth.clientId,
+              connectionId: this.realtimeClient!.connection.id,
+              position,
+              data: data ?? null,
+            },
           },
           flags,
         );
       } else {
         this.log(
-          formatSuccess(
-            `Set cursor in space ${formatResource(spaceName)} with data: ${chalk.blue(JSON.stringify(cursorForOutput))}.`,
-          ),
+          formatSuccess(`Set cursor in space ${formatResource(spaceName)}.`),
         );
+        const lines: string[] = [
+          `${formatLabel("Position X")} ${position.x}`,
+          `${formatLabel("Position Y")} ${position.y}`,
+        ];
+        if (data) {
+          lines.push(`${formatLabel("Data")} ${JSON.stringify(data)}`);
+        }
+        this.log(lines.join("\n"));
       }
 
-      // Decide how long to remain connected
-      if (flags.duration === 0) {
-        // Give Ably a moment to propagate the cursor update before exiting so that
-        // subscribers in automated tests have a chance to receive the event.
-        await new Promise((resolve) => setTimeout(resolve, 600));
-
-        // In immediate exit mode, we don't keep the process alive beyond this.
-        this.exit(0);
-      }
-
-      // Start simulation if requested
+      // In simulate mode, keep running with periodic cursor updates
       if (flags.simulate) {
         this.logCliEvent(
           flags,
@@ -231,7 +217,6 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
         this.simulationIntervalId = setInterval(async () => {
           try {
-            // Generate random position within reasonable bounds
             const simulatedX = Math.floor(Math.random() * 1000);
             const simulatedY = Math.floor(Math.random() * 800);
 
@@ -268,27 +253,22 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         }, 250);
       }
 
-      // Inform the user and wait until interrupted or timeout (if provided)
-      this.logCliEvent(
-        flags,
-        "cursor",
-        "waiting",
-        "Cursor set – waiting for further instructions",
-        { duration: flags.duration ?? "indefinite" },
-      );
-
+      // Hold in both simulate and non-simulate modes
       if (!this.shouldOutputJson(flags)) {
         this.log(
-          flags.duration
-            ? `Waiting ${flags.duration}s before exiting… Press Ctrl+C to exit sooner.`
-            : formatListening("Cursor set."),
+          formatListening(
+            flags.simulate ? "Simulating cursor movement." : "Holding cursor.",
+          ),
         );
       }
 
-      await this.waitAndTrackCleanup(flags, "cursor", flags.duration);
+      this.logJsonStatus(
+        "holding",
+        "Holding cursor. Press Ctrl+C to exit.",
+        flags,
+      );
 
-      // After cleanup (handled in finally), ensure the process exits so user doesn't need multiple Ctrl-C
-      this.exit(0);
+      await this.waitAndTrackCleanup(flags, "cursor", flags.duration);
     } catch (error) {
       this.fail(error, flags, "cursorSet", { spaceName });
     }

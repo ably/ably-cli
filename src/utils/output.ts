@@ -360,7 +360,13 @@ export function formatAnnotationsOutput(
   return blocks.join("\n\n");
 }
 
-export type JsonRecordType = "error" | "event" | "log" | "result";
+export enum JsonRecordType {
+  Error = "error",
+  Event = "event",
+  Log = "log",
+  Result = "result",
+  Status = "status",
+}
 
 /**
  * Build a typed JSON envelope record.
@@ -378,7 +384,7 @@ export function buildJsonRecord(
   // Strip reserved envelope keys from data to prevent payload collisions.
   // Also strip `success` from error records — errors are always success: false.
   const reservedKeys = new Set(["type", "command"]);
-  if (type === "error") {
+  if (type === JsonRecordType.Error) {
     reservedKeys.add("success");
   }
   const safeData = Object.fromEntries(
@@ -387,8 +393,8 @@ export function buildJsonRecord(
   return {
     type,
     command,
-    ...(type === "result" || type === "error"
-      ? { success: type !== "error" }
+    ...(type === JsonRecordType.Result || type === JsonRecordType.Error
+      ? { success: type !== JsonRecordType.Error }
       : {}),
     ...safeData,
   };

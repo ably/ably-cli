@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
 import {
   standardHelpTests,
   standardFlagTests,
@@ -87,10 +88,23 @@ describe("spaces:locations:set command", () => {
       expect(stdout).toContain("Location set");
       expect(stdout).toContain("test-space");
     });
+
+    it("should display hold message", async () => {
+      const spacesMock = getMockAblySpaces();
+      spacesMock._getSpace("test-space");
+
+      const { stdout } = await runCommand(
+        ["spaces:locations:set", "test-space", "--location", '{"x":1}'],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Holding location.");
+      expect(stdout).toContain("Press Ctrl+C to exit.");
+    });
   });
 
   describe("JSON output", () => {
-    it("should output JSON on success with --duration 0", async () => {
+    it("should output JSON result and hold status", async () => {
       const spacesMock = getMockAblySpaces();
       spacesMock._getSpace("test-space");
 
@@ -103,16 +117,20 @@ describe("spaces:locations:set command", () => {
           "--location",
           JSON.stringify(location),
           "--json",
-          "--duration",
-          "0",
         ],
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result.success).toBe(true);
-      expect(result.location).toEqual(location);
-      expect(result.spaceName).toBe("test-space");
+      const records = parseNdjsonLines(stdout);
+      const result = records.find((r) => r.type === "result");
+      expect(result).toBeDefined();
+      expect(result!.success).toBe(true);
+      expect(result!.location).toEqual(location);
+
+      const status = records.find((r) => r.type === "status");
+      expect(status).toBeDefined();
+      expect(status).toHaveProperty("status", "holding");
+      expect(status!.message).toContain("Holding location");
     });
 
     it("should output JSON error on invalid location", async () => {
@@ -130,9 +148,11 @@ describe("spaces:locations:set command", () => {
       // fail calls exit(1) which throws in test mode
       expect(error).toBeDefined();
 
-      const result = JSON.parse(stdout);
-      expect(result.success).toBe(false);
-      expect(result.error).toContain("Invalid location JSON");
+      const records = parseNdjsonLines(stdout);
+      const errorRecord = records.find((r) => r.type === "error");
+      expect(errorRecord).toBeDefined();
+      expect(errorRecord!.success).toBe(false);
+      expect(errorRecord!.error).toContain("Invalid location JSON");
     });
   });
 

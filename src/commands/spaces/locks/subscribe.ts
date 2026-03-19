@@ -1,22 +1,23 @@
 import { type Lock } from "@ably/spaces";
 import { Args } from "@oclif/core";
-import chalk from "chalk";
 
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
-  formatHeading,
-  formatLabel,
   formatListening,
+  formatMessageTimestamp,
   formatProgress,
-  formatResource,
   formatTimestamp,
 } from "../../../utils/output.js";
+import {
+  formatLockBlock,
+  formatLockOutput,
+} from "../../../utils/spaces-output.js";
 
 export default class SpacesLocksSubscribe extends SpacesBaseCommand {
   static override args = {
-    space: Args.string({
-      description: "Space to subscribe to locks for",
+    space_name: Args.string({
+      description: "Name of the space to subscribe to locks for",
       required: true,
     }),
   };
@@ -38,177 +39,39 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
 
   private listener: ((lock: Lock) => void) | null = null;
 
-  private displayLockDetails(lock: Lock): void {
-    this.log(`  ${formatLabel("Status")} ${lock.status}`);
-    this.log(
-      `  ${formatLabel("Member")} ${lock.member?.clientId || "Unknown"}`,
-    );
-
-    if (lock.member?.connectionId) {
-      this.log(`  ${formatLabel("Connection ID")} ${lock.member.connectionId}`);
-    }
-
-    if (lock.timestamp) {
-      this.log(
-        `  ${formatLabel("Timestamp")} ${new Date(lock.timestamp).toISOString()}`,
-      );
-    }
-
-    if (lock.attributes) {
-      this.log(
-        `  ${formatLabel("Attributes")} ${JSON.stringify(lock.attributes)}`,
-      );
-    }
-
-    if (lock.reason) {
-      this.log(
-        `  ${formatLabel("Reason")} ${lock.reason.message || lock.reason.toString()}`,
-      );
-    }
-  }
-
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksSubscribe);
-    const { space: spaceName } = args;
-    this.logCliEvent(
-      flags,
-      "subscribe.run",
-      "start",
-      `Starting spaces locks subscribe for space: ${spaceName}`,
-    );
+    const { space_name: spaceName } = args;
 
     try {
-      // Always show the readiness signal first, before attempting auth
       if (!this.shouldOutputJson(flags)) {
-        this.log("Subscribing to lock events");
-      }
-      this.logCliEvent(
-        flags,
-        "subscribe.run",
-        "initialSignalLogged",
-        "Initial readiness signal logged.",
-      );
-
-      await this.initializeSpace(flags, spaceName, { enterSpace: true });
-
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(`Connecting to space: ${formatResource(spaceName)}`),
-        );
+        this.log(formatProgress("Subscribing to lock events"));
       }
 
-      // Get current locks
-      this.logCliEvent(
-        flags,
-        "lock",
-        "gettingInitial",
-        "Fetching initial locks",
-      );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Fetching current locks for space ${formatResource(spaceName)}`,
-          ),
-        );
-      }
+      await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
-      const locks = await this.space!.locks.getAll();
-      this.logCliEvent(
-        flags,
-        "lock",
-        "gotInitial",
-        `Fetched ${locks.length} initial locks`,
-        { count: locks.length, locks },
-      );
-
-      // Output current locks
-      if (locks.length === 0) {
-        if (!this.shouldOutputJson(flags)) {
-          this.log(
-            chalk.yellow("No locks are currently active in this space."),
-          );
-        }
-      } else if (this.shouldOutputJson(flags)) {
-        this.logJsonResult(
-          {
-            locks: locks.map((lock) => ({
-              id: lock.id,
-              member: lock.member,
-              status: lock.status,
-              timestamp: lock.timestamp,
-              ...(lock.attributes && { attributes: lock.attributes }),
-              ...(lock.reason && { reason: lock.reason }),
-            })),
-            spaceName,
-            status: "connected",
-          },
-          flags,
-        );
-      } else {
-        this.log(
-          `\n${formatHeading("Current locks")} (${chalk.bold(locks.length.toString())}):\n`,
-        );
-
-        for (const lock of locks) {
-          this.log(`- Lock ID: ${formatResource(lock.id)}`);
-          this.displayLockDetails(lock);
-        }
-      }
-
-      // Subscribe to lock events
       this.logCliEvent(
         flags,
         "lock",
         "subscribing",
         "Subscribing to lock events",
       );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatListening("Subscribing to lock events."));
-      }
-      this.logCliEvent(
-        flags,
-        "lock.subscribe",
-        "readySignalLogged",
-        "Final readiness signal 'Subscribing to lock events' logged.",
-      );
 
-      // Define the listener function
       this.listener = (lock: Lock) => {
-        const timestamp = new Date().toISOString();
-
-        const eventData = {
-          lock: {
-            id: lock.id,
-            member: lock.member,
-            status: lock.status,
-            timestamp: lock.timestamp,
-            ...(lock.attributes && { attributes: lock.attributes }),
-            ...(lock.reason && { reason: lock.reason }),
-          },
-          spaceName,
-          timestamp,
-          eventType: "lock_event",
-        };
-
-        this.logCliEvent(
-          flags,
-          "lock",
-          "event-update",
-          "Lock event received",
-          eventData,
-        );
+        this.logCliEvent(flags, "lock", "event-update", "Lock event received", {
+          lockId: lock.id,
+          status: lock.status,
+        });
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonEvent(eventData, flags);
+          this.logJsonEvent({ lock: formatLockOutput(lock) }, flags);
         } else {
-          this.log(
-            `${formatTimestamp(timestamp)} Lock ${formatResource(lock.id)} updated`,
-          );
-          this.displayLockDetails(lock);
+          this.log(formatTimestamp(formatMessageTimestamp(lock.timestamp)));
+          this.log(formatLockBlock(lock));
+          this.log("");
         }
       };
 
-      // Subscribe using the stored listener
       await this.space!.locks.subscribe(this.listener);
 
       this.logCliEvent(
@@ -218,19 +81,13 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
         "Successfully subscribed to lock events",
       );
 
-      this.logCliEvent(
-        flags,
-        "lock",
-        "listening",
-        "Listening for lock events...",
-      );
+      if (!this.shouldOutputJson(flags)) {
+        this.log(formatListening("Listening for lock events."));
+      }
 
-      // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "lock", flags.duration);
     } catch (error) {
       this.fail(error, flags, "lockSubscribe");
-    } finally {
-      // Cleanup is now handled by base class finally() method
     }
   }
 }

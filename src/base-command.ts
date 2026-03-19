@@ -14,7 +14,11 @@ import { getFriendlyAblyErrorHint } from "./utils/errors.js";
 import { coreGlobalFlags } from "./flags.js";
 import { InteractiveHelper } from "./services/interactive-helper.js";
 import { BaseFlags, CommandConfig } from "./types/cli.js";
-import { buildJsonRecord, formatWarning } from "./utils/output.js";
+import {
+  JsonRecordType,
+  buildJsonRecord,
+  formatWarning,
+} from "./utils/output.js";
 import { getCliVersion } from "./utils/version.js";
 import Spaces from "@ably/spaces";
 import { ChatClient } from "@ably/chat";
@@ -828,7 +832,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * or pretty-printed for --pretty-json.
    */
   protected formatJsonRecord(
-    type: "error" | "event" | "log" | "result",
+    type: JsonRecordType,
     data: Record<string, unknown>,
     flags: BaseFlags,
   ): string {
@@ -840,14 +844,30 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     data: Record<string, unknown>,
     flags: BaseFlags,
   ): void {
-    this.log(this.formatJsonRecord("result", data, flags));
+    this.log(this.formatJsonRecord(JsonRecordType.Result, data, flags));
   }
 
   protected logJsonEvent(
     data: Record<string, unknown>,
     flags: BaseFlags,
   ): void {
-    this.log(this.formatJsonRecord("event", data, flags));
+    this.log(this.formatJsonRecord(JsonRecordType.Event, data, flags));
+  }
+
+  protected logJsonStatus(
+    status: string,
+    message: string,
+    flags: BaseFlags,
+  ): void {
+    if (this.shouldOutputJson(flags)) {
+      this.log(
+        this.formatJsonRecord(
+          JsonRecordType.Status,
+          { status, message },
+          flags,
+        ),
+      );
+    }
   }
 
   protected getClientOptions(flags: BaseFlags): Ably.ClientOptions {
@@ -923,7 +943,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             timestamp: new Date().toISOString(),
           };
           // Log to stderr with standard JSON envelope for consistency
-          this.logToStderr(this.formatJsonRecord("log", errorData, flags));
+          this.logToStderr(
+            this.formatJsonRecord(JsonRecordType.Log, errorData, flags),
+          );
         }
         // If not verbose JSON and level > 1, suppress non-error SDK logs
       } else {
@@ -1031,7 +1053,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
         timestamp: new Date().toISOString(),
         ...data,
       };
-      this.log(this.formatJsonRecord("log", logEntry, flags));
+      this.log(this.formatJsonRecord(JsonRecordType.Log, logEntry, flags));
     } else {
       // Output human-readable log in normal (verbose) mode
       this.log(`${chalk.dim(`[${component}]`)} ${message}`);
@@ -1529,7 +1551,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       if (friendlyHint) {
         jsonData.hint = friendlyHint;
       }
-      this.log(this.formatJsonRecord("error", jsonData, flags));
+      this.log(this.formatJsonRecord(JsonRecordType.Error, jsonData, flags));
       this.exit(1);
     }
 

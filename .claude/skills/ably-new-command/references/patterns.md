@@ -667,18 +667,15 @@ Commands must behave strictly according to their documented purpose — no unint
 - **NOT enter presence/space** — `getAll()`, `get()` do NOT require `space.enter()`
 - **NOT subscribe** to events or poll — fetch once, output, exit
 
-**Set commands** — one-shot mutations:
-- Enter space (required by SDK), set value, output, **exit**
-- **NOT subscribe** after setting — that is what subscribe commands are for
-
-**Enter / acquire commands** — hold state until Ctrl+C / `--duration`:
-- Enter space, output confirmation with all relevant fields, then `waitAndTrackCleanup`
-- **NOT subscribe** to other events
+**Set / enter / acquire commands** — hold state until Ctrl+C / `--duration`:
+- Enter space (manual: `enterSpace: false` + `space.enter()` + `markAsEntered()`), perform operation, output confirmation, then hold with `waitAndTrackCleanup`
+- Emit `formatListening("Holding <thing>.")` (human) and `logJsonStatus("holding", ...)` (JSON)
+- **NOT subscribe** to other events — that is what subscribe commands are for
 
 **Side-effect rules:**
 - `space.enter()` only when SDK requires it (set, enter, acquire)
 - Call `this.markAsEntered()` after every `space.enter()` (enables cleanup)
-- `initializeSpace(enterSpace: true)` calls `markAsEntered()` automatically
+- For hold commands, always use manual entry (`enterSpace: false` + `space.enter()` + `markAsEntered()`) for consistency
 
 ```typescript
 // WRONG — subscribe enters the space
@@ -696,14 +693,15 @@ const data = await this.space!.locations.getAll();
 // CORRECT — get-all just fetches
 const data = await this.space!.locations.getAll();
 
-// WRONG — set command subscribes after setting
+// CORRECT — set command holds after setting
+await this.initializeSpace(flags, spaceName, { enterSpace: false });
+await this.space!.enter();
+this.markAsEntered();
 await this.space!.locations.set(location);
-this.space!.locations.subscribe("update", handler);  // NO
-await this.waitAndTrackCleanup(flags, "location");    // NO
-
-// CORRECT — set command exits after setting
-await this.space!.locations.set(location);
-// run() completes, finally() handles cleanup
+// output result...
+this.log(formatListening("Holding location."));
+this.logJsonStatus("holding", "Holding location. Press Ctrl+C to exit.", flags);
+await this.waitAndTrackCleanup(flags, "location", flags.duration);
 ```
 
 ---
@@ -746,6 +744,32 @@ this.logJsonResult({ channels: items, total, hasMore }, flags);       // channel
 ```
 
 Metadata fields (`total`, `timestamp`, `hasMore`, `appId`) may sit alongside the collection key since they describe the result, not the domain objects.
+
+### Hold status for long-running commands (logJsonStatus)
+
+Long-running commands that hold state (e.g. `spaces members enter`, `spaces locations set`, `spaces locks acquire`, `spaces cursors set`) must emit a status line after the result so JSON consumers know the command is alive and waiting:
+
+```typescript
+// After the result output:
+if (this.shouldOutputJson(flags)) {
+  this.logJsonResult({ member: formatMemberOutput(self!) }, flags);
+} else {
+  this.log(formatSuccess(`Entered space: ${formatResource(spaceName)}.`));
+  // ... labels ...
+  this.log(formatListening("Holding presence."));
+}
+
+// logJsonStatus has built-in shouldOutputJson guard — no outer if needed
+this.logJsonStatus("holding", "Holding presence. Press Ctrl+C to exit.", flags);
+
+await this.waitAndTrackCleanup(flags, "member", flags.duration);
+```
+
+This emits two NDJSON lines in `--json` mode:
+```jsonl
+{"type":"result","command":"spaces:members:enter","success":true,"member":{...}}
+{"type":"status","command":"spaces:members:enter","status":"holding","message":"Holding presence. Press Ctrl+C to exit."}
+```
 
 ### Choosing the domain key name
 
