@@ -54,7 +54,7 @@ This document outlines the directory structure of the Ably CLI project.
 │   │   │   └── channels/      # Channel subscriptions (list, list-channels, save, remove, remove-where)
 │   │   ├── queues/             # Queue management
 │   │   ├── rooms/              # Ably Chat rooms (send, subscribe, presence, reactions, typing, etc.)
-│   │   ├── spaces/             # Ably Spaces (members, cursors, locations, locks)
+│   │   ├── spaces/             # Ably Spaces (members, cursors, locations, locks, occupancy)
 │   │   ├── stats/              # Usage statistics
 │   │   ├── support/            # Support contact info
 │   │   ├── test/               # Diagnostic test commands
