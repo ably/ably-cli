@@ -68,19 +68,10 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
       }
 
       // Enter the space with optional profile
-      this.logCliEvent(
+      await this.enterCurrentSpace(
         flags,
-        "member",
-        "enteringSpace",
-        "Attempting to enter space",
-        { profileData },
+        profileData as Record<string, unknown>,
       );
-      await this.space!.enter(profileData);
-      this.markAsEntered();
-      this.logCliEvent(flags, "member", "enteredSpace", "Entered space", {
-        connectionId: this.realtimeClient!.connection.id,
-        profileData,
-      });
 
       if (this.shouldOutputJson(flags)) {
         const self = await this.space!.members.getSelf();

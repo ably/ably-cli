@@ -1,6 +1,10 @@
 import chalk from "chalk";
 import isTestMode from "../utils/test-mode.js";
-import { buildJsonRecord, formatJsonString } from "../utils/output.js";
+import {
+  JsonRecordType,
+  buildJsonRecord,
+  formatJsonString,
+} from "../utils/output.js";
 
 export interface StatsDisplayOptions {
   command?: string;
@@ -94,7 +98,7 @@ export class StatsDisplay {
   public display(stats: StatsDisplayData): void {
     if (this.options.json) {
       const record = buildJsonRecord(
-        this.options.live ? "event" : "result",
+        this.options.live ? JsonRecordType.Event : JsonRecordType.Result,
         this.options.command || "unknown",
         stats as Record<string, unknown>,
       );

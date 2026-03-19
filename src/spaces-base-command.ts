@@ -37,6 +37,23 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     this.hasEnteredSpace = true;
   }
 
+  /**
+   * Enter the space and mark as entered in one call.
+   * Always use this instead of calling space.enter() + markAsEntered() separately
+   * to ensure cleanup (space.leave()) is never accidentally skipped.
+   */
+  protected async enterCurrentSpace(
+    flags: BaseFlags,
+    profileData?: Record<string, unknown>,
+  ): Promise<void> {
+    this.logCliEvent(flags, "spaces", "entering", "Entering space...");
+    await this.space!.enter(profileData);
+    this.markAsEntered();
+    this.logCliEvent(flags, "spaces", "entered", "Entered space", {
+      clientId: this.realtimeClient!.auth.clientId,
+    });
+  }
+
   async finally(error: Error | undefined): Promise<void> {
     // The Spaces SDK subscribes to channel.presence internally (in the Space
     // constructor) but provides no dispose/cleanup method. When the connection
@@ -67,6 +84,10 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
         // Unsubscribe the SDK's internal presence handler on the space channel.
         // This removes the Spaces SDK's listener but cannot fully prevent
         // errors from the Ably SDK's own channel state transitions during close.
+        // NOTE: Accesses @ably/spaces internal `Space.channel` property (verified
+        // against @ably/spaces v0.4.0). The SDK has no public dispose() method.
+        // If this breaks after a Spaces SDK upgrade, check the Space class for
+        // a renamed/removed `channel` property or a new cleanup API.
         try {
           const spaceChannel = (
             this.space as unknown as { channel: Ably.RealtimeChannel }
@@ -279,12 +300,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     this.parsedFlags = flags;
 
     if (enterSpace) {
-      this.logCliEvent(flags, "spaces", "entering", "Entering space...");
-      await this.space!.enter();
-      this.markAsEntered();
-      this.logCliEvent(flags, "spaces", "entered", "Entered space", {
-        clientId: this.realtimeClient!.auth.clientId,
-      });
+      await this.enterCurrentSpace(flags);
     }
   }
 

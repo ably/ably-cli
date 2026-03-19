@@ -50,12 +50,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
-      this.logCliEvent(flags, "spaces", "entering", "Entering space...");
-      await this.space!.enter();
-      this.markAsEntered();
-      this.logCliEvent(flags, "spaces", "entered", "Entered space", {
-        clientId: this.realtimeClient!.auth.clientId,
-      });
+      await this.enterCurrentSpace(flags);
 
       this.logCliEvent(flags, "location", "setting", "Setting location", {
         location,

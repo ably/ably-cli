@@ -67,8 +67,10 @@ export default class SpacesOccupancyGet extends AblyBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            spaceName,
-            metrics: occupancyMetrics,
+            occupancy: {
+              spaceName,
+              metrics: occupancyMetrics,
+            },
           },
           flags,
         );

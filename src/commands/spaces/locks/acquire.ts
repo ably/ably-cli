@@ -98,12 +98,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
       }
 
       // Enter the space first
-      this.logCliEvent(flags, "spaces", "entering", "Entering space...");
-      await this.space!.enter();
-      this.markAsEntered();
-      this.logCliEvent(flags, "spaces", "entered", "Entered space", {
-        clientId: this.realtimeClient!.auth.clientId,
-      });
+      await this.enterCurrentSpace(flags);
 
       // Try to acquire the lock
       try {

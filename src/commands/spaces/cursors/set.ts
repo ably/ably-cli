@@ -152,12 +152,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
-      this.logCliEvent(flags, "spaces", "entering", "Entering space...");
-      await this.space!.enter();
-      this.markAsEntered();
-      this.logCliEvent(flags, "spaces", "entered", "Entered space", {
-        clientId: this.realtimeClient!.auth.clientId,
-      });
+      await this.enterCurrentSpace(flags);
 
       const { position, data } = cursorData as {
         position: CursorPosition;

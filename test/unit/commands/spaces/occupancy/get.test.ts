@@ -79,9 +79,14 @@ describe("spaces:occupancy:get command", () => {
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "spaces:occupancy:get");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("spaceName", "test-space");
-      expect(result).toHaveProperty("metrics");
-      expect((result as Record<string, unknown>).metrics).toMatchObject({
+      const occupancy = (result as Record<string, unknown>).occupancy as Record<
+        string,
+        unknown
+      >;
+      expect(occupancy).toBeDefined();
+      expect(occupancy).toHaveProperty("spaceName", "test-space");
+      expect(occupancy).toHaveProperty("metrics");
+      expect(occupancy.metrics).toMatchObject({
         connections: 10,
         presenceConnections: 5,
         presenceMembers: 8,

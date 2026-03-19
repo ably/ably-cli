@@ -99,7 +99,7 @@ export default class SpacesOccupancySubscribe extends AblyBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonEvent(event, flags);
+          this.logJsonEvent({ occupancy: event }, flags);
         } else {
           this.log(formatTimestamp(timestamp));
           this.log(`${formatLabel("Space")} ${formatResource(spaceName)}`);
