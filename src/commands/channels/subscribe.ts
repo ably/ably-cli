@@ -1,5 +1,6 @@
 import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
+import chalk from "chalk";
 import { AblyBaseCommand } from "../../base-command.js";
 import {
   clientIdFlag,
@@ -8,6 +9,7 @@ import {
   rewindFlag,
 } from "../../flags.js";
 import {
+  formatEventType,
   formatListening,
   formatProgress,
   formatResource,
@@ -39,6 +41,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
     "$ ably channels subscribe my-channel --json",
     "$ ably channels subscribe my-channel --pretty-json",
     "$ ably channels subscribe my-channel --duration 30",
+    "$ ably channels subscribe --token-streaming my-channel",
     '$ ABLY_API_KEY="YOUR_API_KEY" ably channels subscribe my-channel',
   ];
 
@@ -70,12 +73,20 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       default: false,
       description: "Include sequence numbers in output",
     }),
+    "token-streaming": Flags.boolean({
+      default: false,
+      description:
+        "Enable token streaming mode: accumulates message.append data for the same serial, displaying the growing response in-place (requires message interactions enabled on the channel)",
+    }),
   };
 
   static override strict = false;
 
   private client: Ably.Realtime | null = null;
   private sequenceCounter = 0;
+  private tokenStreamAccumulatedData = "";
+  private tokenStreamAppendCount = 0;
+  private tokenStreamSerial: string | null = null;
 
   async run(): Promise<void> {
     const parseResult = await this.parse(ChannelsSubscribe);
@@ -180,65 +191,14 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
         // Subscribe and collect promise (rejects on capability/auth errors)
         const subscribePromise = channel.subscribe((message: Ably.Message) => {
           this.sequenceCounter++;
-          const timestamp = formatMessageTimestamp(message.timestamp);
-          const messageData = {
-            id: message.id,
-            timestamp,
-            channel: channel.name,
-            event: message.name || "(none)",
-            clientId: message.clientId,
-            connectionId: message.connectionId,
-            data: message.data,
-            encoding: message.encoding,
-            action:
-              message.action === undefined ? undefined : String(message.action),
-            serial: message.serial,
-            version: message.version,
-            annotations: message.annotations,
-            ...(flags["sequence-numbers"]
-              ? { sequence: this.sequenceCounter }
-              : {}),
-          };
-          this.logCliEvent(
-            flags,
-            "subscribe",
-            "messageReceived",
-            `Received message on channel ${channel.name}`,
-            messageData,
-          );
 
-          if (this.shouldOutputJson(flags)) {
-            this.logJsonEvent(
-              {
-                message: messageData,
-                ...(flags["sequence-numbers"]
-                  ? { sequence: this.sequenceCounter }
-                  : {}),
-              },
-              flags,
-            );
-          } else {
-            const msgFields: MessageDisplayFields = {
-              action:
-                message.action === undefined
-                  ? undefined
-                  : String(message.action),
-              channel: channel.name,
-              clientId: message.clientId,
-              data: message.data,
-              event: message.name || "(none)",
-              id: message.id,
-              serial: message.serial,
-              timestamp: message.timestamp ?? Date.now(),
-              version: message.version,
-              annotations: message.annotations,
-              ...(flags["sequence-numbers"]
-                ? { sequencePrefix: `${formatIndex(this.sequenceCounter)} ` }
-                : {}),
-            };
-            this.log(formatMessagesOutput([msgFields]));
-            this.log(""); // Empty line for readability between messages
+          // Stream mode: handle message.create/append accumulation
+          if (flags["token-streaming"] && message.serial) {
+            this.handleTokenStreamMessage(message, channel.name, flags);
+            return;
           }
+
+          this.displayNormalMessage(message, channel.name, flags);
         });
         subscribePromises.push(subscribePromise);
       }
@@ -278,10 +238,215 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "subscribe", flags.duration);
+
+      // Finalize any in-progress stream before exit
+      if (flags["token-streaming"]) {
+        this.finalizeTokenStream(flags);
+      }
     } catch (error) {
       this.fail(error, flags, "channelSubscribe", {
         channels: channelNames,
       });
+    }
+  }
+
+  private finalizeTokenStream(flags: Record<string, unknown>): void {
+    if (this.tokenStreamSerial === null) return;
+
+    if (!this.shouldOutputJson(flags)) {
+      if (this.shouldUseTerminalUpdates()) {
+        // Using process.stdout.write to end the in-place line update started in handleTokenStreamMessage
+        process.stdout.write("\n");
+      }
+      if (this.tokenStreamAppendCount > 0) {
+        this.log(
+          chalk.dim(
+            `  (${this.tokenStreamAppendCount} append${this.tokenStreamAppendCount === 1 ? "" : "s"})`,
+          ),
+        );
+      }
+      this.log("");
+    }
+
+    this.tokenStreamSerial = null;
+    this.tokenStreamAccumulatedData = "";
+    this.tokenStreamAppendCount = 0;
+  }
+
+  private handleTokenStreamMessage(
+    message: Ably.Message,
+    channelName: string,
+    flags: Record<string, unknown>,
+  ): void {
+    const action =
+      message.action === undefined ? undefined : String(message.action);
+
+    // Only handle create/append in stream mode; everything else falls through
+    if (action !== "message.create" && action !== "message.append") {
+      // Non-streaming action: finalize any in-progress stream, then display normally
+      this.finalizeTokenStream(flags);
+      this.displayNormalMessage(message, channelName, flags);
+      return;
+    }
+
+    const serial = message.serial!;
+
+    // If serial changed, finalize the previous stream
+    if (this.tokenStreamSerial !== null && this.tokenStreamSerial !== serial) {
+      this.finalizeTokenStream(flags);
+    }
+
+    const dataStr = message.data == null ? "" : String(message.data);
+
+    const streamLabel = `${formatResource(channelName)} ${chalk.dim("[")}${formatEventType("token-stream")}${chalk.dim("]")}`;
+
+    if (action === "message.create") {
+      this.tokenStreamSerial = serial;
+      this.tokenStreamAccumulatedData = dataStr;
+      this.tokenStreamAppendCount = 0;
+
+      this.logCliEvent(
+        flags,
+        "subscribe",
+        "streamCreateReceived",
+        `Received stream create on channel ${channelName}`,
+        { action, serial, channel: channelName, data: dataStr },
+      );
+
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonEvent(
+          {
+            message: {
+              id: message.id,
+              action,
+              serial,
+              channel: channelName,
+              data: dataStr,
+              encoding: message.encoding,
+              ...(message.name ? { name: message.name } : {}),
+              clientId: message.clientId,
+              connectionId: message.connectionId,
+              timestamp: formatMessageTimestamp(message.timestamp),
+            },
+          },
+          flags,
+        );
+      } else if (this.shouldUseTerminalUpdates()) {
+        // Using process.stdout.write instead of this.log() to avoid trailing newline,
+        // enabling in-place line updates via \r for streaming token display
+        process.stdout.write(`${streamLabel} ${dataStr}`);
+      } else {
+        this.log(`${streamLabel} ${dataStr}`);
+      }
+    } else {
+      // message.append
+      this.tokenStreamAccumulatedData += dataStr;
+      this.tokenStreamAppendCount++;
+
+      this.logCliEvent(
+        flags,
+        "subscribe",
+        "streamAppendReceived",
+        `Received stream append on channel ${channelName}`,
+        {
+          action,
+          serial,
+          channel: channelName,
+          data: dataStr,
+          appendCount: this.tokenStreamAppendCount,
+        },
+      );
+
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonEvent(
+          {
+            message: {
+              id: message.id,
+              action,
+              serial,
+              channel: channelName,
+              data: dataStr,
+              encoding: message.encoding,
+              accumulatedData: this.tokenStreamAccumulatedData,
+              appendCount: this.tokenStreamAppendCount,
+              ...(message.name ? { name: message.name } : {}),
+              clientId: message.clientId,
+              connectionId: message.connectionId,
+              timestamp: formatMessageTimestamp(message.timestamp),
+            },
+          },
+          flags,
+        );
+      } else if (this.shouldUseTerminalUpdates()) {
+        // Using process.stdout.write with \r to overwrite the current line in-place,
+        // showing accumulated token data without scrolling — this.log() can't do \r rewriting
+        process.stdout.write(
+          `\r${streamLabel} ${this.tokenStreamAccumulatedData}`,
+        );
+      } else {
+        this.log(`${chalk.dim("+")} ${dataStr}`);
+      }
+    }
+  }
+
+  private displayNormalMessage(
+    message: Ably.Message,
+    channelName: string,
+    flags: Record<string, unknown>,
+  ): void {
+    const timestamp = formatMessageTimestamp(message.timestamp);
+    const messageData = {
+      id: message.id,
+      timestamp,
+      channel: channelName,
+      ...(message.name ? { name: message.name } : {}),
+      clientId: message.clientId,
+      connectionId: message.connectionId,
+      data: message.data,
+      encoding: message.encoding,
+      action: message.action === undefined ? undefined : String(message.action),
+      serial: message.serial,
+      version: message.version,
+      annotations: message.annotations,
+      ...(flags["sequence-numbers"] ? { sequence: this.sequenceCounter } : {}),
+    };
+    this.logCliEvent(
+      flags,
+      "subscribe",
+      "messageReceived",
+      `Received message on channel ${channelName}`,
+      messageData,
+    );
+
+    if (this.shouldOutputJson(flags)) {
+      this.logJsonEvent(
+        {
+          message: messageData,
+          ...(flags["sequence-numbers"]
+            ? { sequence: this.sequenceCounter }
+            : {}),
+        },
+        flags,
+      );
+    } else {
+      const msgFields: MessageDisplayFields = {
+        action:
+          message.action === undefined ? undefined : String(message.action),
+        channel: channelName,
+        clientId: message.clientId,
+        data: message.data,
+        ...(message.name ? { name: message.name } : {}),
+        id: message.id,
+        serial: message.serial,
+        timestamp: message.timestamp ?? Date.now(),
+        version: message.version,
+        annotations: message.annotations,
+        ...(flags["sequence-numbers"]
+          ? { sequencePrefix: `${formatIndex(this.sequenceCounter)} ` }
+          : {}),
+      };
+      this.log(formatMessagesOutput([msgFields]));
+      this.log("");
     }
   }
 }

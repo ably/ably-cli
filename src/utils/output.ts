@@ -118,7 +118,7 @@ export interface MessageDisplayFields {
   channel: string;
   clientId?: string;
   data: unknown;
-  event: string;
+  name?: string;
   id?: string;
   indexPrefix?: string;
   sequencePrefix?: string;
@@ -160,8 +160,11 @@ export function formatMessagesOutput(messages: MessageDisplayFields[]): string {
     lines.push(
       `${formatLabel("Timestamp")} ${formatMessageTimestamp(msg.timestamp)}`,
       `${formatLabel("Channel")} ${formatResource(msg.channel)}`,
-      `${formatLabel("Event")} ${formatEventType(msg.event)}`,
     );
+
+    if (msg.name) {
+      lines.push(`${formatLabel("Name")} ${formatEventType(msg.name)}`);
+    }
 
     if (msg.action) {
       lines.push(`${formatLabel("Action")} ${formatEventType(msg.action)}`);

@@ -92,7 +92,7 @@ describe("channels:history command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Event: test-event");
+      expect(stdout).toContain("Name: test-event");
       expect(stdout).toContain("Hello world");
       expect(stdout).toContain("Client ID:");
       expect(stdout).toContain("client-1");
