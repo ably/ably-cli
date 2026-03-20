@@ -46,20 +46,23 @@ export function buildPaginationNext(
 }
 
 /**
- * Returns a formatted warning when multiple pages were fetched, or empty string if only one page.
+ * Returns a pagination message when multiple pages were fetched, or empty string if only one page.
+ * When isBillable is true, returns a warning with billing note; otherwise returns a plain info line.
  */
-export function formatPaginationWarning(
+export function formatPaginationLog(
   pagesConsumed: number,
   itemCount: number,
   isBillable = false,
 ): string {
   if (pagesConsumed <= 1) return "";
-  const billing = isBillable
-    ? " Each page request counts as a billable message."
-    : "";
-  return formatWarning(
-    `Fetched ${pagesConsumed} pages to retrieve ${itemCount} results.${billing}`,
-  );
+  const message = `Fetched ${pagesConsumed} pages to retrieve ${itemCount} results.`;
+  if (isBillable) {
+    return formatWarning(
+      `${message} Each page request counts as a billable message.`,
+    );
+  }
+
+  return message;
 }
 
 interface PaginatedPage<T> {

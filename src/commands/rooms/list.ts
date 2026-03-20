@@ -10,7 +10,7 @@ import {
 import {
   buildPaginationNext,
   collectFilteredPaginatedResults,
-  formatPaginationWarning,
+  formatPaginationLog,
 } from "../../utils/pagination.js";
 
 // Add interface definitions at the beginning of the file
@@ -129,7 +129,7 @@ export default class RoomsList extends ChatBaseCommand {
         return { ...r, channelId: match[1], room: match[1] };
       });
 
-      const paginationWarning = formatPaginationWarning(
+      const paginationWarning = formatPaginationLog(
         pagesConsumed,
         rooms.length,
       );

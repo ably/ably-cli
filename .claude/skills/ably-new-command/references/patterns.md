@@ -205,7 +205,7 @@ See `src/commands/rooms/messages/update.ts` and `src/commands/rooms/messages/del
 ## History Pattern
 
 ```typescript
-import { collectPaginatedResults, formatPaginationWarning } from "../../utils/pagination.js";
+import { collectPaginatedResults, formatPaginationLog } from "../../utils/pagination.js";
 
 async run(): Promise<void> {
   const { args, flags } = await this.parse(MyHistoryCommand);
@@ -226,7 +226,7 @@ async run(): Promise<void> {
     const history = await channel.history(historyParams);
     const { items: messages, hasMore, pagesConsumed } = await collectPaginatedResults(history, flags.limit);
 
-    const paginationWarning = formatPaginationWarning(pagesConsumed, messages.length);
+    const paginationWarning = formatPaginationLog(pagesConsumed, messages.length);
     if (paginationWarning && !this.shouldOutputJson(flags)) {
       this.log(paginationWarning);
     }
@@ -421,7 +421,7 @@ async run(): Promise<void> {
 
 **Product API list with pagination** (e.g., `push devices list`, `channels list`) — use `collectPaginatedResults`:
 ```typescript
-import { buildPaginationNext, collectPaginatedResults, formatPaginationWarning } from "../../utils/pagination.js";
+import { buildPaginationNext, collectPaginatedResults, formatPaginationLog } from "../../utils/pagination.js";
 
 async run(): Promise<void> {
   const { flags } = await this.parse(MyListCommand);
@@ -433,7 +433,7 @@ async run(): Promise<void> {
     const firstPage = await rest.someResource.list({ limit: flags.limit });
     const { items, hasMore, pagesConsumed } = await collectPaginatedResults(firstPage, flags.limit);
 
-    const paginationWarning = formatPaginationWarning(pagesConsumed, items.length);
+    const paginationWarning = formatPaginationLog(pagesConsumed, items.length);
     if (paginationWarning && !this.shouldOutputJson(flags)) {
       this.log(paginationWarning);
     }

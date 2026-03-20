@@ -9,7 +9,7 @@ import {
 import {
   buildPaginationNext,
   collectFilteredPaginatedResults,
-  formatPaginationWarning,
+  formatPaginationLog,
 } from "../../utils/pagination.js";
 import { SpacesBaseCommand } from "../../spaces-base-command.js";
 
@@ -106,7 +106,7 @@ export default class SpacesList extends SpacesBaseCommand {
         return { ...s, channelId: match[1], spaceName: match[1] };
       });
 
-      const paginationWarning = formatPaginationWarning(
+      const paginationWarning = formatPaginationLog(
         pagesConsumed,
         spaces.length,
       );

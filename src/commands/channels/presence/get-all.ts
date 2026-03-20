@@ -17,7 +17,7 @@ import {
 import {
   buildPaginationNext,
   collectPaginatedResults,
-  formatPaginationWarning,
+  formatPaginationLog,
 } from "../../../utils/pagination.js";
 
 export default class ChannelsPresenceGetAll extends AblyBaseCommand {
@@ -89,7 +89,7 @@ export default class ChannelsPresenceGetAll extends AblyBaseCommand {
       );
 
       // Show pagination warning early (before main output)
-      const paginationWarning = formatPaginationWarning(
+      const paginationWarning = formatPaginationLog(
         pagesConsumed,
         items.length,
       );

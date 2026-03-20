@@ -17,7 +17,7 @@ import {
 import {
   buildPaginationNext,
   collectPaginatedResults,
-  formatPaginationWarning,
+  formatPaginationLog,
 } from "../../../utils/pagination.js";
 
 export default class LogsPushHistory extends AblyBaseCommand {
@@ -71,7 +71,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
         pagesConsumed,
       } = await collectPaginatedResults(historyPage, flags.limit);
 
-      const paginationWarning = formatPaginationWarning(
+      const paginationWarning = formatPaginationLog(
         pagesConsumed,
         messages.length,
         true,

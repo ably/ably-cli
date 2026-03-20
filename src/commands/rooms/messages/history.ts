@@ -19,7 +19,7 @@ import {
 import {
   buildPaginationNext,
   collectPaginatedResults,
-  formatPaginationWarning,
+  formatPaginationLog,
 } from "../../../utils/pagination.js";
 import { parseTimestamp } from "../../../utils/time.js";
 
@@ -147,7 +147,7 @@ export default class MessagesHistory extends ChatBaseCommand {
         flags.limit,
       );
 
-      const paginationWarning = formatPaginationWarning(
+      const paginationWarning = formatPaginationLog(
         pagesConsumed,
         items.length,
         true,

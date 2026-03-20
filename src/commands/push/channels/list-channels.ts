@@ -13,7 +13,7 @@ import {
 import {
   buildPaginationNext,
   collectPaginatedResults,
-  formatPaginationWarning,
+  formatPaginationLog,
 } from "../../../utils/pagination.js";
 
 export default class PushChannelsListChannels extends AblyBaseCommand {
@@ -54,7 +54,7 @@ export default class PushChannelsListChannels extends AblyBaseCommand {
         pagesConsumed,
       } = await collectPaginatedResults(result, flags.limit);
 
-      const paginationWarning = formatPaginationWarning(
+      const paginationWarning = formatPaginationLog(
         pagesConsumed,
         channels.length,
       );
