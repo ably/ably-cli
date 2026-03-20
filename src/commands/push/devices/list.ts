@@ -15,7 +15,7 @@ import {
 import {
   buildPaginationNext,
   collectPaginatedResults,
-  formatPaginationWarning,
+  formatPaginationLog,
 } from "../../../utils/pagination.js";
 
 export default class PushDevicesList extends AblyBaseCommand {
@@ -72,7 +72,7 @@ export default class PushDevicesList extends AblyBaseCommand {
         pagesConsumed,
       } = await collectPaginatedResults(result, flags.limit);
 
-      const paginationWarning = formatPaginationWarning(
+      const paginationWarning = formatPaginationLog(
         pagesConsumed,
         devices.length,
       );

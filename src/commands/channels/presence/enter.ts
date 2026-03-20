@@ -2,18 +2,18 @@ import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
-import { errorMessage } from "../../../utils/errors.js";
 import { isJsonData } from "../../../utils/json-formatter.js";
 import {
+  formatClientId,
+  formatEventType,
+  formatIndex,
+  formatLabel,
   formatListening,
+  formatMessageTimestamp,
+  formatProgress,
   formatResource,
   formatSuccess,
   formatTimestamp,
-  formatMessageTimestamp,
-  formatIndex,
-  formatLabel,
-  formatClientId,
-  formatEventType,
 } from "../../../utils/output.js";
 
 export default class ChannelsPresenceEnter extends AblyBaseCommand {
@@ -71,23 +71,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
       // Parse data if provided
       let data: unknown = undefined;
       if (flags.data) {
-        try {
-          let trimmed = (flags.data as string).trim();
-          if (
-            (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
-            (trimmed.startsWith('"') && trimmed.endsWith('"'))
-          ) {
-            trimmed = trimmed.slice(1, -1);
-          }
-          data = JSON.parse(trimmed);
-        } catch (error) {
-          this.fail(
-            `Invalid data JSON: ${errorMessage(error)}`,
-            flags,
-            "presenceEnter",
-            { data: flags.data },
-          );
-        }
+        data = this.parseJsonFlag(flags.data, "data", flags);
       }
 
       this.channel = client.channels.get(channelName);
@@ -133,7 +117,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
           );
 
           if (this.shouldOutputJson(flags)) {
-            this.logJsonEvent(event, flags);
+            this.logJsonEvent({ presenceMessage: event }, flags);
           } else {
             const sequencePrefix = flags["sequence-numbers"]
               ? `${formatIndex(this.sequenceCounter)}`
@@ -159,53 +143,73 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
         });
       }
 
+      if (!this.shouldOutputJson(flags)) {
+        this.log(
+          formatProgress(
+            `Entering presence on channel: ${formatResource(channelName)}`,
+          ),
+        );
+      }
+
       // Enter presence
       this.logCliEvent(
         flags,
         "presence",
         "entering",
         `Entering presence on channel ${channelName}`,
-        { channel: channelName, clientId: client.auth.clientId, data: data },
+        { channel: channelName, clientId: client.auth.clientId, data },
       );
 
       await this.channel.presence.enter(data);
 
-      const enterEvent = {
-        action: "enter",
-        channel: channelName,
-        clientId: client.auth.clientId,
-        data: data,
-        timestamp: new Date().toISOString(),
-      };
       this.logCliEvent(
         flags,
         "presence",
         "entered",
         `Entered presence on channel ${channelName}`,
-        enterEvent,
+        { channel: channelName, clientId: client.auth.clientId },
       );
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult(enterEvent, flags);
+        this.logJsonResult(
+          {
+            presenceMessage: {
+              action: "enter",
+              channel: channelName,
+              clientId: client.auth.clientId,
+              connectionId: client.connection.id,
+              data: data ?? null,
+              timestamp: new Date().toISOString(),
+            },
+          },
+          flags,
+        );
       } else {
         this.log(
           formatSuccess(
             `Entered presence on channel: ${formatResource(channelName)}.`,
           ),
         );
-
-        if (flags["show-others"]) {
-          this.log(formatListening("Listening for presence events."));
-        } else {
-          this.log(formatListening("Staying present."));
+        this.log(
+          `${formatLabel("Client ID")} ${formatClientId(client.auth.clientId)}`,
+        );
+        this.log(`${formatLabel("Connection ID")} ${client.connection.id}`);
+        if (data !== undefined) {
+          this.log(`${formatLabel("Data")} ${JSON.stringify(data)}`);
         }
+        this.log(
+          formatListening(
+            flags["show-others"]
+              ? "Listening for presence events."
+              : "Holding presence.",
+          ),
+        );
       }
 
-      this.logCliEvent(
+      this.logJsonStatus(
+        "holding",
+        "Holding presence. Press Ctrl+C to exit.",
         flags,
-        "presence",
-        "listening",
-        "Listening for presence events. Press Ctrl+C to exit.",
       );
 
       // Wait until the user interrupts or the optional duration elapses

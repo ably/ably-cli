@@ -10,7 +10,7 @@ import {
 import {
   buildPaginationNext,
   collectPaginatedResults,
-  formatPaginationWarning,
+  formatPaginationLog,
 } from "../../utils/pagination.js";
 
 interface ChannelMetrics {
@@ -108,7 +108,7 @@ export default class ChannelsList extends AblyBaseCommand {
         flags.limit,
       );
 
-      const paginationWarning = formatPaginationWarning(
+      const paginationWarning = formatPaginationLog(
         pagesConsumed,
         channels.length,
       );

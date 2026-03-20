@@ -156,12 +156,12 @@ For history and list commands, use pagination utilities:
 import {
   buildPaginationNext,
   collectPaginatedResults,
-  formatPaginationWarning,
+  formatPaginationLog,
 } from "../../utils/pagination.js";
 
 // In run():
 const { items, hasMore, pagesConsumed } = await collectPaginatedResults(firstPage, flags.limit);
-const paginationWarning = formatPaginationWarning(pagesConsumed, items.length, true); // true for history (billable)
+const paginationWarning = formatPaginationLog(pagesConsumed, items.length, true); // true for history (billable)
 if (paginationWarning && !this.shouldOutputJson(flags)) {
   this.log(paginationWarning);
 }

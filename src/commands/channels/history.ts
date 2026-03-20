@@ -17,7 +17,7 @@ import type { MessageDisplayFields } from "../../utils/output.js";
 import {
   buildPaginationNext,
   collectPaginatedResults,
-  formatPaginationWarning,
+  formatPaginationLog,
 } from "../../utils/pagination.js";
 
 export default class ChannelsHistory extends AblyBaseCommand {
@@ -95,7 +95,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
         pagesConsumed,
       } = await collectPaginatedResults(history, flags.limit);
 
-      const paginationWarning = formatPaginationWarning(
+      const paginationWarning = formatPaginationLog(
         pagesConsumed,
         messages.length,
         true,

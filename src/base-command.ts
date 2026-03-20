@@ -1481,9 +1481,27 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     flagName: string,
     flags: BaseFlags = {},
   ): Record<string, unknown> {
+    const trimmed = value.trim();
     try {
-      return JSON.parse(value.trim());
+      return JSON.parse(trimmed);
     } catch (error) {
+      // If parsing fails and the value is wrapped in a single pair of quotes
+      // (common when shells pass through values like '{"a":1}'), strip them and retry.
+      if (
+        trimmed.length >= 2 &&
+        ((trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+          (trimmed.startsWith('"') && trimmed.endsWith('"')))
+      ) {
+        try {
+          return JSON.parse(trimmed.slice(1, -1));
+        } catch (innerError) {
+          this.fail(
+            `Invalid ${flagName} JSON: ${innerError instanceof Error ? innerError.message : String(innerError)}`,
+            flags,
+            "parse",
+          );
+        }
+      }
       this.fail(
         `Invalid ${flagName} JSON: ${error instanceof Error ? error.message : String(error)}`,
         flags,
@@ -1585,6 +1603,22 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       exitReason,
     });
     this.cleanupInProgress = exitReason === "signal";
+
+    // For timeout cases in CLI commands, exit immediately to prevent hanging.
+    // This is especially important for E2E tests and automated scenarios.
+    if (exitReason === "timeout" && !isTestMode()) {
+      const message = "Duration elapsed – command finished cleanly.";
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonStatus("complete", message, flags);
+      } else {
+        this.log(message);
+      }
+      // Small delay to ensure output is flushed, then force-exit to prevent
+      // hanging and avoid spurious cleanup messages (e.g. "Detached from channel").
+      await new Promise<void>((resolve) => setTimeout(resolve, 200));
+      process.exit(0);
+    }
+
     return exitReason;
   }
 
