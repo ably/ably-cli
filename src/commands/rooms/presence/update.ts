@@ -1,5 +1,5 @@
 import { ChatClient, PresenceData, Room } from "@ably/chat";
-import { Args, Flags, Interfaces } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
@@ -41,13 +41,9 @@ export default class RoomsPresenceUpdate extends ChatBaseCommand {
 
   private chatClient: ChatClient | null = null;
   private room: Room | null = null;
-  private commandFlags: Interfaces.InferredFlags<
-    typeof RoomsPresenceUpdate.flags
-  > | null = null;
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsPresenceUpdate);
-    this.commandFlags = flags;
 
     try {
       this.chatClient = await this.createChatClient(flags);
@@ -127,6 +123,7 @@ export default class RoomsPresenceUpdate extends ChatBaseCommand {
               action: "update",
               room: roomName,
               clientId: this.chatClient.clientId,
+              connectionId: this.chatClient.realtime.connection.id,
               data,
               timestamp: new Date().toISOString(),
             },
@@ -141,6 +138,9 @@ export default class RoomsPresenceUpdate extends ChatBaseCommand {
         );
         this.log(
           `${formatLabel("Client ID")} ${formatClientId(this.chatClient.clientId ?? "unknown")}`,
+        );
+        this.log(
+          `${formatLabel("Connection ID")} ${this.chatClient.realtime.connection.id}`,
         );
         this.log(`${formatLabel("Data")} ${JSON.stringify(data)}`);
         this.log(formatListening("Holding presence."));

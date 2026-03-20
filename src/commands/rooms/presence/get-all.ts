@@ -5,6 +5,7 @@ import { productApiFlags } from "../../../flags.js";
 import {
   formatClientId,
   formatCountLabel,
+  formatEventType,
   formatHeading,
   formatIndex,
   formatLabel,
@@ -106,9 +107,10 @@ export default class RoomsPresenceGetAll extends AblyBaseCommand {
         const presenceMembers = items.map((member) => ({
           clientId: member.clientId,
           connectionId: member.connectionId,
+          action: member.action,
           data: member.data ?? null,
-          extras: member.extras ?? null,
-          updatedAt: formatMessageTimestamp(member.timestamp),
+          timestamp: formatMessageTimestamp(member.timestamp),
+          id: member.id,
         }));
         const next = buildPaginationNext(hasMore);
         this.logJsonResult(
@@ -136,21 +138,14 @@ export default class RoomsPresenceGetAll extends AblyBaseCommand {
             `  ${formatLabel("Client ID")} ${formatClientId(member.clientId)}`,
           );
           this.log(`  ${formatLabel("Connection ID")} ${member.connectionId}`);
+          this.log(
+            `  ${formatLabel("Action")} ${formatEventType(String(member.action))}`,
+          );
           if (member.data !== null && member.data !== undefined) {
             this.log(`  ${formatLabel("Data")} ${JSON.stringify(member.data)}`);
           }
-          if (
-            member.extras !== null &&
-            member.extras !== undefined &&
-            typeof member.extras === "object" &&
-            Object.keys(member.extras).length > 0
-          ) {
-            this.log(
-              `  ${formatLabel("Extras")} ${JSON.stringify(member.extras)}`,
-            );
-          }
           this.log(
-            `  ${formatLabel("Updated At")} ${formatMessageTimestamp(member.timestamp)}`,
+            `  ${formatLabel("Timestamp")} ${formatMessageTimestamp(member.timestamp)}`,
           );
           this.log("");
         }

@@ -1,17 +1,19 @@
 import { ChatClient, Room, PresenceEvent, PresenceData } from "@ably/chat";
-import { Args, Flags, Interfaces } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { isJsonData } from "../../../utils/json-formatter.js";
 import {
   formatSuccess,
   formatListening,
   formatProgress,
   formatResource,
   formatTimestamp,
-  formatPresenceAction,
+  formatEventType,
   formatIndex,
   formatClientId,
   formatLabel,
+  formatMessageTimestamp,
 } from "../../../utils/output.js";
 
 export default class RoomsPresenceEnter extends ChatBaseCommand {
@@ -55,14 +57,10 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
   private roomName: string | null = null;
   private data: PresenceData | null = null;
 
-  private commandFlags: Interfaces.InferredFlags<
-    typeof RoomsPresenceEnter.flags
-  > | null = null;
   private sequenceCounter = 0;
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsPresenceEnter);
-    this.commandFlags = flags;
     this.roomName = args.room;
 
     const rawData = flags.data;
@@ -102,11 +100,15 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
           const member = event.member;
           if (member.clientId !== this.chatClient?.clientId) {
             this.sequenceCounter++;
-            const timestamp = new Date().toISOString();
-            const eventData = {
-              eventType: event.type,
-              member: { clientId: member.clientId, data: member.data },
+            const timestamp = formatMessageTimestamp(
+              member.updatedAt?.getTime(),
+            );
+            const presenceEvent = {
+              action: event.type,
               room: this.roomName,
+              clientId: member.clientId,
+              connectionId: member.connectionId,
+              data: member.data ?? null,
               timestamp,
               ...(flags["sequence-numbers"]
                 ? { sequence: this.sequenceCounter }
@@ -116,33 +118,29 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
               flags,
               "presence",
               event.type,
-              `Presence event '${event.type}' received`,
-              eventData,
+              `Presence event: ${event.type} by ${member.clientId}`,
+              presenceEvent,
             );
             if (this.shouldOutputJson(flags)) {
-              this.logJsonEvent(eventData, flags);
+              this.logJsonEvent({ presenceMessage: presenceEvent }, flags);
             } else {
-              const { symbol: actionSymbol, color: actionColor } =
-                formatPresenceAction(event.type);
               const sequencePrefix = flags["sequence-numbers"]
                 ? `${formatIndex(this.sequenceCounter)}`
                 : "";
               this.log(
-                `${formatTimestamp(timestamp)}${sequencePrefix} ${actionColor(actionSymbol)} ${formatClientId(member.clientId || "Unknown")} ${actionColor(event.type)}`,
+                `${formatTimestamp(timestamp)}${sequencePrefix} ${formatResource(`Room: ${this.roomName!}`)} | Action: ${formatEventType(event.type)} | Client: ${formatClientId(member.clientId || "N/A")}`,
               );
-              if (
-                member.data &&
-                typeof member.data === "object" &&
-                Object.keys(member.data).length > 0
-              ) {
-                const profile = member.data as { name?: string };
-                if (profile.name) {
-                  this.log(`  ${formatLabel("Name")} ${profile.name}`);
+
+              if (member.data !== null && member.data !== undefined) {
+                if (isJsonData(member.data)) {
+                  this.log(formatLabel("Data"));
+                  this.log(JSON.stringify(member.data, null, 2));
+                } else {
+                  this.log(`${formatLabel("Data")} ${member.data}`);
                 }
-                this.log(
-                  `  ${formatLabel("Full Data")} ${this.formatJsonOutput({ data: member.data }, flags)}`,
-                );
               }
+
+              this.log(""); // Empty line for better readability
             }
           }
         });
@@ -171,6 +169,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
               action: "enter",
               room: this.roomName,
               clientId: this.chatClient!.clientId,
+              connectionId: this.chatClient!.realtime.connection.id,
               data: this.data ?? null,
               timestamp: new Date().toISOString(),
             },
@@ -183,11 +182,22 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
             `Entered presence in room: ${formatResource(this.roomName!)}.`,
           ),
         );
-        if (flags["show-others"]) {
-          this.log(formatListening("Listening for presence events."));
-        } else {
-          this.log(formatListening("Staying present."));
+        this.log(
+          `${formatLabel("Client ID")} ${formatClientId(this.chatClient!.clientId ?? "unknown")}`,
+        );
+        this.log(
+          `${formatLabel("Connection ID")} ${this.chatClient!.realtime.connection.id}`,
+        );
+        if (this.data !== undefined && this.data !== null) {
+          this.log(`${formatLabel("Data")} ${JSON.stringify(this.data)}`);
         }
+        this.log(
+          formatListening(
+            flags["show-others"]
+              ? "Listening for presence events."
+              : "Holding presence.",
+          ),
+        );
       }
 
       this.logJsonStatus(

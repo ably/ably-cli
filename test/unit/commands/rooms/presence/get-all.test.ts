@@ -107,16 +107,17 @@ describe("rooms:presence:get-all command", () => {
       expect(result.presenceMembers).toHaveLength(2);
       expect(result.presenceMembers[0].clientId).toBe("user-1");
       expect(result.presenceMembers[0].connectionId).toBe("conn-1");
+      expect(result.presenceMembers[0].action).toBe("present");
       expect(result.presenceMembers[0].data).toEqual({ status: "online" });
-      expect(result.presenceMembers[0].extras).toEqual({ role: "admin" });
-      expect(result.presenceMembers[0].updatedAt).toBeDefined();
+      expect(result.presenceMembers[0].timestamp).toBeDefined();
+      expect(result.presenceMembers[0].id).toBe("msg-1");
       expect(result.presenceMembers[1].clientId).toBe("user-2");
       expect(result.presenceMembers[1].data).toBeNull();
       expect(result.hasMore).toBe(false);
       expect(result.total).toBe(2);
     });
 
-    it("should display member data and extras when present", async () => {
+    it("should display member data and action when present", async () => {
       const { stdout } = await runCommand(
         ["rooms:presence:get-all", "test-room"],
         import.meta.url,
@@ -124,7 +125,7 @@ describe("rooms:presence:get-all command", () => {
 
       expect(stdout).toContain("conn-1");
       expect(stdout).toContain('{"status":"online"}');
-      expect(stdout).toContain('{"role":"admin"}');
+      expect(stdout).toContain("present");
     });
 
     it("should pass limit to presence.get", async () => {

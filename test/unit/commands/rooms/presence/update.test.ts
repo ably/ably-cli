@@ -49,6 +49,7 @@ describe("rooms:presence:update command", () => {
       );
 
       expect(stdout).toContain("Client ID");
+      expect(stdout).toContain("Connection ID");
       expect(stdout).toContain("Data");
       expect(stdout).toContain("Holding presence");
     });

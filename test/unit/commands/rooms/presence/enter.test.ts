@@ -129,7 +129,9 @@ describe("rooms:presence:enter command", () => {
           type: "enter",
           member: {
             clientId: mock.clientId,
+            connectionId: "conn-self",
             data: {},
+            updatedAt: new Date(),
           },
         });
 
@@ -138,7 +140,9 @@ describe("rooms:presence:enter command", () => {
           type: "enter",
           member: {
             clientId: "other-user",
+            connectionId: "conn-other",
             data: {},
+            updatedAt: new Date(),
           },
         });
       }
@@ -148,7 +152,14 @@ describe("rooms:presence:enter command", () => {
 
       const output = capturedLogs.join("\n");
       expect(output).toContain("other-user");
-      expect(output).not.toContain(mock.clientId);
+      // Self events should be filtered from the event stream (Room: ... | Action: ... lines)
+      // but the client ID will appear in the "Client ID: mock-client-id" success label
+      const eventLines = capturedLogs.filter((line) =>
+        String(line).includes("| Action:"),
+      );
+      for (const line of eventLines) {
+        expect(String(line)).not.toContain(mock.clientId);
+      }
     });
 
     it("should output JSON result on enter success", async () => {
@@ -216,7 +227,9 @@ describe("rooms:presence:enter command", () => {
             type: "enter",
             member: {
               clientId: "other-user",
+              connectionId: "conn-other",
               data: { status: "online" },
+              updatedAt: new Date(),
             },
           });
         }
@@ -225,14 +238,18 @@ describe("rooms:presence:enter command", () => {
       });
 
       // Find the JSON output with presence event data
-      const records = allRecords.filter((r) => r.type === "event" && r.member);
+      const records = allRecords.filter(
+        (r) => r.type === "event" && r.presenceMessage,
+      );
 
       expect(records.length).toBeGreaterThan(0);
       const parsed = records[0];
       expect(parsed).toHaveProperty("command");
       expect(parsed).toHaveProperty("type", "event");
-      expect(parsed).toHaveProperty("eventType", "enter");
-      expect(parsed.member).toHaveProperty("clientId", "other-user");
+      const msg = parsed.presenceMessage as Record<string, unknown>;
+      expect(msg.action).toBe("enter");
+      expect(msg.clientId).toBe("other-user");
+      expect(msg.connectionId).toBe("conn-other");
     });
   });
 
