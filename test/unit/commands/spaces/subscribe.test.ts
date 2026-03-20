@@ -54,9 +54,7 @@ describe("spaces:subscribe command", () => {
       expect(stdout).toContain("Connection ID:");
       expect(stdout).toContain("other-conn-1");
     });
-  });
 
-  describe("subscription behavior", () => {
     it("should subscribe to space 'update' event and not enter", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
@@ -69,9 +67,7 @@ describe("spaces:subscribe command", () => {
         expect.any(Function),
       );
     });
-  });
 
-  describe("JSON output", () => {
     it("should output JSON event with members array", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");

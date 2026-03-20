@@ -87,11 +87,10 @@ export default class SpacesSubscribe extends SpacesBaseCommand {
           );
         } else {
           this.log(
-            `Found ${formatCountLabel(members.length, "member")} on space: ${formatResource(spaceName)}`,
+            `${formatTimestamp(new Date().toISOString())} Found ${formatCountLabel(members.length, "member")} on space: ${formatResource(spaceName)}`,
           );
 
           for (const member of members) {
-            this.log(formatTimestamp(new Date().toISOString()));
             this.log(formatMemberBlock(member));
             this.log("");
           }

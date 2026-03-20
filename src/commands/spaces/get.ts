@@ -13,27 +13,35 @@ import {
   formatProgress,
   formatResource,
 } from "../../utils/output.js";
+import type { MemberOutput } from "../../utils/spaces-output.js";
 
 const SPACE_CHANNEL_TAG = "::$space";
+
+const PRESENCE_ACTION_MAP: Record<number, string> = {
+  0: "absent",
+  1: "present",
+  2: "enter",
+  3: "leave",
+  4: "update",
+};
+
+function resolvePresenceAction(action: number | string): string {
+  if (typeof action === "string") {
+    return action;
+  }
+
+  return PRESENCE_ACTION_MAP[action] ?? String(action);
+}
 
 interface PresenceItem {
   clientId: string;
   connectionId: string;
-  action: string;
+  action: number | string;
   timestamp: number;
   data?: {
     profileUpdate?: { current?: Record<string, unknown> };
     locationUpdate?: { current?: unknown };
   };
-}
-
-interface MemberInfo {
-  clientId: string;
-  connectionId: string;
-  isConnected: boolean;
-  profileData: Record<string, unknown> | null;
-  location: unknown | null;
-  lastEvent: { name: string; timestamp: number };
 }
 
 export default class SpacesGet extends SpacesBaseCommand {
@@ -100,14 +108,17 @@ export default class SpacesGet extends SpacesBaseCommand {
         );
       }
 
-      const members: MemberInfo[] = items.map((item) => ({
-        clientId: item.clientId,
-        connectionId: item.connectionId,
-        isConnected: item.action !== "leave" && item.action !== "absent",
-        profileData: item.data?.profileUpdate?.current ?? null,
-        location: item.data?.locationUpdate?.current ?? null,
-        lastEvent: { name: item.action, timestamp: item.timestamp },
-      }));
+      const members: MemberOutput[] = items.map((item) => {
+        const action = resolvePresenceAction(item.action);
+        return {
+          clientId: item.clientId,
+          connectionId: item.connectionId,
+          isConnected: action !== "leave" && action !== "absent",
+          profileData: item.data?.profileUpdate?.current ?? null,
+          location: item.data?.locationUpdate?.current ?? null,
+          lastEvent: { name: action, timestamp: item.timestamp },
+        };
+      });
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(

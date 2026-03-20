@@ -4478,7 +4478,7 @@ EXAMPLES
   $ ably spaces locations set my-space
 
 COMMANDS
-  ably spaces create     Initialize a space
+  ably spaces create     Initialize a space without entering it
   ably spaces cursors    Commands for interacting with Cursors in Ably Spaces
   ably spaces get        Get the current state of a space
   ably spaces list       List active spaces
@@ -4486,14 +4486,14 @@ COMMANDS
   ably spaces locks      Commands for component locking in Ably Spaces
   ably spaces members    Commands for managing members in Ably Spaces
   ably spaces occupancy  Commands for working with occupancy in Ably Spaces
-  ably spaces subscribe  Subscribe to space update events
+  ably spaces subscribe  Subscribe to both spaces members and location update events
 ```
 
 _See code: [src/commands/spaces/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/index.ts)_
 
 ## `ably spaces create SPACE_NAME`
 
-Initialize a space
+Initialize a space without entering it
 
 ```
 USAGE
@@ -4510,9 +4510,7 @@ FLAGS
       --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
-  Initializes a space. Spaces are backed by Ably channel '{spaceName}::$space' and are ephemeral —
-  they become active when members enter. This command initializes the space without entering it.
-  Use 'ably spaces members enter SPACE_NAME' to add a member to the space.
+  Initialize a space without entering it
 
 EXAMPLES
   $ ably spaces create my-space
@@ -5197,7 +5195,7 @@ _See code: [src/commands/spaces/occupancy/subscribe.ts](https://github.com/ably/
 
 ## `ably spaces subscribe SPACE_NAME`
 
-Subscribe to space update events
+Subscribe to both spaces members and location update events
 
 ```
 USAGE

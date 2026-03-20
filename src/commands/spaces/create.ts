@@ -16,7 +16,7 @@ export default class SpacesCreate extends SpacesBaseCommand {
     }),
   };
 
-  static override description = `Initializes a space. Spaces are backed by Ably channel '{spaceName}::$space' and are ephemeral — they become active when members enter. This command initializes the space without entering it. Use 'ably spaces members enter SPACE_NAME' to add a member to the space.`;
+  static override description = "Initialize a space without entering it";
 
   static override examples = [
     "$ ably spaces create my-space",
@@ -50,7 +50,7 @@ export default class SpacesCreate extends SpacesBaseCommand {
       } else {
         this.log(
           formatSuccess(
-            `Space ${formatResource(spaceName)} initialized. Use ${formatResource("ably spaces members enter")} to activate it.`,
+            `Space ${formatResource(spaceName)} initialized. Use "ably spaces members enter" to activate it.`,
           ),
         );
       }
