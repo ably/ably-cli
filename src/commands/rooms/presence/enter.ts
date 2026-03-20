@@ -76,7 +76,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
 
       if (!this.chatClient || !this.roomName) {
         this.fail(
-          new Error("Failed to initialize chat client or room"),
+          "Failed to initialize chat client or room",
           flags,
           "roomPresenceEnter",
         );
