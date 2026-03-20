@@ -24,7 +24,8 @@ export default class SpacesSubscribe extends SpacesBaseCommand {
     }),
   };
 
-  static override description = "Subscribe to space update events";
+  static override description =
+    "Subscribe to both spaces members and location update events";
 
   static override examples = [
     "$ ably spaces subscribe my-space",
@@ -42,6 +43,18 @@ export default class SpacesSubscribe extends SpacesBaseCommand {
   private listener: ((spaceState: { members: SpaceMember[] }) => void) | null =
     null;
 
+  async finally(error: Error | undefined): Promise<void> {
+    if (this.space && this.listener) {
+      try {
+        this.space.unsubscribe("update", this.listener);
+      } catch (error_) {
+        this.debug(`Failed to unsubscribe from space update: ${error_}`);
+      }
+    }
+
+    await super.finally(error);
+  }
+
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesSubscribe);
     const { space_name: spaceName } = args;
@@ -52,13 +65,6 @@ export default class SpacesSubscribe extends SpacesBaseCommand {
       }
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
-
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(`Subscribed to space: ${formatResource(spaceName)}.`),
-        );
-        this.log(formatListening("Listening for space updates."));
-      }
 
       this.logCliEvent(
         flags,
@@ -94,6 +100,13 @@ export default class SpacesSubscribe extends SpacesBaseCommand {
 
       // space.subscribe() is synchronous (calls super.on()), no await needed
       this.space!.subscribe("update", this.listener);
+
+      if (!this.shouldOutputJson(flags)) {
+        this.log(
+          formatSuccess(`Subscribed to space: ${formatResource(spaceName)}.`),
+        );
+        this.log(formatListening("Listening for space updates."));
+      }
 
       this.logCliEvent(
         flags,

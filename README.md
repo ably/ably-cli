@@ -4478,7 +4478,7 @@ EXAMPLES
   $ ably spaces locations set my-space
 
 COMMANDS
-  ably spaces create     Create a new space
+  ably spaces create     Initialize a space
   ably spaces cursors    Commands for interacting with Cursors in Ably Spaces
   ably spaces get        Get the current state of a space
   ably spaces list       List active spaces
@@ -4493,14 +4493,14 @@ _See code: [src/commands/spaces/index.ts](https://github.com/ably/ably-cli/blob/
 
 ## `ably spaces create SPACE_NAME`
 
-Create a new space
+Initialize a space
 
 ```
 USAGE
   $ ably spaces create SPACE_NAME [-v] [--json | --pretty-json] [--client-id <value>]
 
 ARGUMENTS
-  SPACE_NAME  Name of the space to create
+  SPACE_NAME  Name of the space to initialize
 
 FLAGS
   -v, --verbose            Output verbose logs
@@ -4510,7 +4510,9 @@ FLAGS
       --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
-  Create a new space
+  Initializes a space. Spaces are backed by Ably channel '{spaceName}::$space' and are ephemeral —
+  they become active when members enter. This command initializes the space without entering it.
+  Use 'ably spaces members enter SPACE_NAME' to add a member to the space.
 
 EXAMPLES
   $ ably spaces create my-space
@@ -5056,17 +5058,15 @@ Get all members in a space
 
 ```
 USAGE
-  $ ably spaces members get-all SPACE_NAME [-v] [--json | --pretty-json] [--client-id <value>]
+  $ ably spaces members get-all SPACE_NAME [-v] [--json | --pretty-json]
 
 ARGUMENTS
   SPACE_NAME  Name of the space to get members from
 
 FLAGS
-  -v, --verbose            Output verbose logs
-      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
-                           no client ID. Not applicable when using token authentication.
-      --json               Output in JSON format
-      --pretty-json        Output in colorized JSON format
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Get all members in a space
@@ -5215,7 +5215,7 @@ FLAGS
       --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
-  Subscribe to space update events
+  Subscribe to both spaces members and location update events
 
 EXAMPLES
   $ ably spaces subscribe my-space

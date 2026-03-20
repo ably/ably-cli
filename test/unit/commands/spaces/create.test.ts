@@ -32,7 +32,7 @@ describe("spaces:create command", () => {
       );
 
       expect(space.enter).not.toHaveBeenCalled();
-      expect(stdout).toContain("created");
+      expect(stdout).toContain("initialized");
       expect(stdout).toContain("test-space");
     });
 

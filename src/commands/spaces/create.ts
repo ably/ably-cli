@@ -11,12 +11,12 @@ import {
 export default class SpacesCreate extends SpacesBaseCommand {
   static override args = {
     space_name: Args.string({
-      description: "Name of the space to create",
+      description: "Name of the space to initialize",
       required: true,
     }),
   };
 
-  static override description = "Create a new space";
+  static override description = `Initializes a space. Spaces are backed by Ably channel '{spaceName}::$space' and are ephemeral — they become active when members enter. This command initializes the space without entering it. Use 'ably spaces members enter SPACE_NAME' to add a member to the space.`;
 
   static override examples = [
     "$ ably spaces create my-space",
@@ -35,7 +35,9 @@ export default class SpacesCreate extends SpacesBaseCommand {
 
     try {
       if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress(`Creating space ${formatResource(spaceName)}`));
+        this.log(
+          formatProgress(`Initializing space ${formatResource(spaceName)}`),
+        );
       }
 
       await this.initializeSpace(flags, spaceName, {
@@ -46,7 +48,11 @@ export default class SpacesCreate extends SpacesBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult({ space: { name: spaceName } }, flags);
       } else {
-        this.log(formatSuccess(`Space ${formatResource(spaceName)} created.`));
+        this.log(
+          formatSuccess(
+            `Space ${formatResource(spaceName)} initialized. Use ${formatResource("ably spaces members enter")} to activate it.`,
+          ),
+        );
       }
     } catch (error) {
       this.fail(error, flags, "spaceCreate");
