@@ -57,7 +57,7 @@ describe("channels:presence:update command", () => {
       );
 
       // Should show progress and successful update
-      expect(stdout).toContain("Entering presence on channel");
+      expect(stdout).toContain("Entering and updating presence on channel");
       expect(stdout).toContain("Updated");
       expect(stdout).toContain("test-channel");
       // Verify enter then update were called

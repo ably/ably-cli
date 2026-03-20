@@ -24,6 +24,7 @@ export default class ChannelsPresenceUpdate extends AblyBaseCommand {
   static override examples = [
     '$ ably channels presence update my-channel --data \'{"status":"away"}\'',
     '$ ably channels presence update my-channel --data \'{"status":"busy"}\' --json',
+    '$ ably channels presence update my-channel --data \'{"status":"busy"}\' --pretty-json',
     '$ ably channels presence update my-channel --data \'{"status":"online"}\' --duration 60',
   ];
 
@@ -64,7 +65,7 @@ export default class ChannelsPresenceUpdate extends AblyBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(
           formatProgress(
-            `Entering presence on channel: ${formatResource(channelName)}`,
+            `Entering and updating presence on channel: ${formatResource(channelName)}`,
           ),
         );
       }
