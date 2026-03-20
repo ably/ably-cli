@@ -8,6 +8,9 @@ export default class SpacesIndex extends BaseTopicCommand {
 
   static override examples = [
     "<%= config.bin %> <%= command.id %> list",
+    "<%= config.bin %> <%= command.id %> get my-space",
+    "<%= config.bin %> <%= command.id %> create my-space",
+    "<%= config.bin %> <%= command.id %> subscribe my-space",
     "<%= config.bin %> <%= command.id %> members enter my-space",
     "<%= config.bin %> <%= command.id %> locations set my-space",
   ];
