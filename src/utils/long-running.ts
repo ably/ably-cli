@@ -39,15 +39,6 @@ export async function waitUntilInterruptedOrTimeout(
       if (sigintHandler) process.removeListener("SIGINT", sigintHandler);
       if (sigtermHandler) process.removeListener("SIGTERM", sigtermHandler);
 
-      // For timeout cases in CLI commands, exit immediately to prevent hanging
-      // This is especially important for E2E tests and automated scenarios
-      if (reason === "timeout" && !isTestMode()) {
-        console.log("Duration elapsed – command finished cleanly.");
-        // Small delay to ensure output is written to files/streams
-        setTimeout(() => process.exit(0), 200);
-        return;
-      }
-
       resolve(reason);
     };
 
@@ -76,15 +67,4 @@ export async function waitUntilInterruptedOrTimeout(
     process.once("SIGINT", sigintHandler);
     process.once("SIGTERM", sigtermHandler);
   });
-}
-
-// Helper function to ensure process exits cleanly after cleanup (now unused for timeout cases)
-export function ensureProcessExit(
-  exitReason: ExitReason,
-  delayMs: number = 100,
-): void {
-  // Give a small delay for any final cleanup/logging, then force exit
-  setTimeout(() => {
-    process.exit(0);
-  }, delayMs);
 }

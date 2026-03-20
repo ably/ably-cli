@@ -1603,6 +1603,22 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       exitReason,
     });
     this.cleanupInProgress = exitReason === "signal";
+
+    // For timeout cases in CLI commands, exit immediately to prevent hanging.
+    // This is especially important for E2E tests and automated scenarios.
+    if (exitReason === "timeout" && !isTestMode()) {
+      const message = "Duration elapsed – command finished cleanly.";
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonStatus("complete", message, flags);
+      } else {
+        this.log(message);
+      }
+      // Small delay to ensure output is flushed, then force-exit to prevent
+      // hanging and avoid spurious cleanup messages (e.g. "Detached from channel").
+      await new Promise<void>((resolve) => setTimeout(resolve, 200));
+      process.exit(0);
+    }
+
     return exitReason;
   }
 
