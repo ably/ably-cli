@@ -32,6 +32,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
     "$ ably rooms presence enter my-room --show-others",
     "$ ably rooms presence enter my-room --duration 30",
     "$ ably rooms presence enter my-room --json",
+    "$ ably rooms presence enter my-room --pretty-json",
   ];
   static override flags = {
     ...productApiFlags,
@@ -63,9 +64,8 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
     const { args, flags } = await this.parse(RoomsPresenceEnter);
     this.roomName = args.room;
 
-    const rawData = flags.data;
-    if (rawData && rawData !== "{}") {
-      const parsed = this.parseJsonFlag(rawData, "data", flags);
+    if (flags.data) {
+      const parsed = this.parseJsonFlag(flags.data, "data", flags);
       this.data = parsed as PresenceData;
     }
 
@@ -157,10 +157,15 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       }
 
       this.logCliEvent(flags, "presence", "entering", "Entering presence", {
+        room: this.roomName,
+        clientId: this.chatClient!.clientId,
         data: this.data,
       });
-      await currentRoom.presence.enter(this.data || {});
-      this.logCliEvent(flags, "presence", "entered", "Entered presence");
+      await currentRoom.presence.enter(this.data ?? undefined);
+      this.logCliEvent(flags, "presence", "entered", "Entered presence", {
+        room: this.roomName,
+        clientId: this.chatClient!.clientId,
+      });
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(

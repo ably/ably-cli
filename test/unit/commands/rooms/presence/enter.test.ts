@@ -99,11 +99,6 @@ describe("rooms:presence:enter command", () => {
     it("should filter out self events by clientId with --show-others", async () => {
       const mock = getMockAblyChat();
       const room = mock.rooms._getRoom("test-room");
-      const capturedLogs: string[] = [];
-
-      const logSpy = vi.spyOn(console, "log").mockImplementation((msg) => {
-        capturedLogs.push(String(msg));
-      });
 
       let presenceCallback: ((event: unknown) => void) | null = null;
       room.presence.subscribe.mockImplementation((callback) => {
@@ -147,18 +142,15 @@ describe("rooms:presence:enter command", () => {
         });
       }
 
-      await commandPromise;
-      logSpy.mockRestore();
-
-      const output = capturedLogs.join("\n");
-      expect(output).toContain("other-user");
+      const { stdout } = await commandPromise;
+      expect(stdout).toContain("other-user");
       // Self events should be filtered from the event stream (Room: ... | Action: ... lines)
       // but the client ID will appear in the "Client ID: mock-client-id" success label
-      const eventLines = capturedLogs.filter((line) =>
-        String(line).includes("| Action:"),
-      );
+      const eventLines = stdout
+        .split("\n")
+        .filter((line) => line.includes("| Action:"));
       for (const line of eventLines) {
-        expect(String(line)).not.toContain(mock.clientId);
+        expect(line).not.toContain(mock.clientId);
       }
     });
 

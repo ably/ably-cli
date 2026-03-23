@@ -4241,6 +4241,8 @@ EXAMPLES
   $ ably rooms presence enter my-room --duration 30
 
   $ ably rooms presence enter my-room --json
+
+  $ ably rooms presence enter my-room --pretty-json
 ```
 
 _See code: [src/commands/rooms/presence/enter.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/presence/enter.ts)_

@@ -50,7 +50,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(
           formatProgress(
-            `Subscribing to presence events on room: ${formatResource(this.roomName!)}`,
+            `Subscribing to presence events in room: ${formatResource(this.roomName!)}`,
           ),
         );
       }
@@ -86,7 +86,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         flags,
         "presence",
         "subscribing",
-        `Subscribing to presence events on room: ${this.roomName}`,
+        `Subscribing to presence events in room: ${this.roomName}`,
         { room: this.roomName },
       );
 
@@ -153,7 +153,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(
           formatSuccess(
-            `Subscribed to presence on room: ${formatResource(this.roomName!)}.`,
+            `Subscribed to presence in room: ${formatResource(this.roomName!)}.`,
           ),
         );
         this.log(formatListening("Listening for presence events."));

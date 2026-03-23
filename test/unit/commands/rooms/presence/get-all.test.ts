@@ -87,12 +87,12 @@ describe("rooms:presence:get-all command", () => {
       const channel = mock.channels._getChannel("test-room::$chat");
       channel.presence.get.mockResolvedValue(createMockPaginatedResult([]));
 
-      const { stderr } = await runCommand(
+      const { stdout } = await runCommand(
         ["rooms:presence:get-all", "test-room"],
         import.meta.url,
       );
 
-      expect(stderr).toContain("No members currently present");
+      expect(stdout).toContain("No members currently present");
     });
 
     it("should output JSON with presenceMembers array", async () => {

@@ -73,7 +73,7 @@ export default class RoomsPresenceGetAll extends AblyBaseCommand {
         flags,
         "presence",
         "fetching",
-        `Fetching presence members for room ${roomName}`,
+        `Fetching presence members for room ${formatResource(roomName)}`,
         { room: roomName },
       );
 
@@ -123,12 +123,10 @@ export default class RoomsPresenceGetAll extends AblyBaseCommand {
           flags,
         );
       } else if (items.length === 0) {
-        this.logToStderr(
-          formatWarning("No members currently present in this room."),
-        );
+        this.log(formatWarning("No members currently present in this room."));
       } else {
         this.log(
-          `\n${formatHeading(`Presence members in room: ${roomName}`)} (${formatCountLabel(items.length, "member")}):\n`,
+          `\n${formatHeading(`Presence members in room: ${formatResource(roomName)}`)} (${formatCountLabel(items.length, "member")}):\n`,
         );
 
         for (let i = 0; i < items.length; i++) {
