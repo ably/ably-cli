@@ -400,5 +400,44 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
       expect(parsed.type).toBe("error");
       expect(parsed.error).toBe("pre-parse error");
     });
+
+    it("should append friendly hint to human-readable output for known Ably error codes", function () {
+      const ablyError = Object.assign(new Error("Invalid credentials"), {
+        code: 40101,
+        statusCode: 401,
+      });
+
+      expect(() => command.testFail(ablyError, {}, "auth")).toThrow(
+        /ably login/,
+      );
+    });
+
+    it("should include hint in JSON error envelope for known Ably error codes", function () {
+      const mockConfig = { root: "" } as unknown as Config;
+      const cmd = new TestCommand(["--json"], mockConfig);
+      const ablyError = Object.assign(new Error("Invalid credentials"), {
+        code: 40101,
+        statusCode: 401,
+      });
+
+      expect(() => cmd.testFail(ablyError, { json: true }, "auth")).toThrow();
+
+      const parsed = JSON.parse(cmd.capturedOutput[0]);
+      expect(parsed.hint).toContain("ably login");
+    });
+
+    it("should not include hint for unknown Ably error codes", function () {
+      const mockConfig = { root: "" } as unknown as Config;
+      const cmd = new TestCommand(["--json"], mockConfig);
+      const ablyError = Object.assign(new Error("Something weird"), {
+        code: 99999,
+        statusCode: 500,
+      });
+
+      expect(() => cmd.testFail(ablyError, { json: true }, "test")).toThrow();
+
+      const parsed = JSON.parse(cmd.capturedOutput[0]);
+      expect(parsed.hint).toBeUndefined();
+    });
   });
 });
