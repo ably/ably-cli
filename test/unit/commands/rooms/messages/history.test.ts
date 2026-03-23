@@ -213,5 +213,17 @@ describe("rooms:messages:history command", () => {
       );
       expect(errors.length).toBeGreaterThan(0);
     });
+
+    it("should reject empty room name", async () => {
+      const { error } = await runCommand(
+        ["rooms:messages:history", ""],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(
+        /Missing 1 required arg|Room name cannot be empty/,
+      );
+    });
   });
 });

@@ -1,4 +1,5 @@
-import { ChatClient, Room, RoomStatus } from "@ably/chat";
+import type * as Ably from "ably";
+import { ChatClient, LogLevel, Room, RoomStatus } from "@ably/chat";
 
 import { AblyBaseCommand } from "./base-command.js";
 import { productApiFlags } from "./flags.js";
@@ -96,8 +97,13 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
       );
     }
 
-    // Use the Ably client to create the Chat client
-    return (this._chatClient = new ChatClient(realtimeClient));
+    // Use the Ably client to create the Chat client.
+    // Suppress Chat SDK's console logger by default; enable it when --verbose is active
+    // so that additional diagnostic output is available on demand.
+    const chatOptions = flags.verbose
+      ? { logLevel: LogLevel.Info }
+      : { logLevel: LogLevel.Silent };
+    return (this._chatClient = new ChatClient(realtimeClient, chatOptions));
   }
 
   protected setupRoomStatusHandler(

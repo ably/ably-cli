@@ -68,6 +68,7 @@ export default class MessagesSend extends ChatBaseCommand {
       char: "c",
       default: 1,
       description: "Number of messages to send",
+      min: 1,
     }),
     delay: Flags.integer({
       char: "d",
@@ -136,8 +137,7 @@ export default class MessagesSend extends ChatBaseCommand {
 
       const room = await this.chatClient.rooms.get(args.room);
 
-      // Validate count and delay
-      const count = Math.max(1, flags.count);
+      const count = flags.count;
       let { delay } = flags;
 
       // Enforce minimum delay when sending multiple messages

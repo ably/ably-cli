@@ -1,4 +1,5 @@
 import { InteractiveBaseCommand } from "./interactive-base-command.js";
+import { Interfaces } from "@oclif/core";
 import * as Ably from "ably";
 import chalk from "chalk";
 import colorJson from "color-json";
@@ -126,6 +127,65 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     this.interactiveHelper = new InteractiveHelper(this.configManager);
     // Check if we're running in web CLI mode
     this.isWebCliMode = isWebCliMode();
+  }
+
+  /**
+   * Mapping of common arg names to their human-readable labels.
+   * The parse() override validates these are non-empty automatically.
+   */
+  private static readonly RESOURCE_ARG_LABELS: Record<string, string> = {
+    channel: "Channel",
+    channels: "Channel", // channels:subscribe uses plural arg name (strict: false, variadic via argv)
+    room: "Room",
+    rooms: "Room", // rooms:messages:subscribe uses plural arg name (strict: false, variadic via argv)
+    space_name: "Space",
+  };
+
+  /**
+   * Override parse() to automatically validate that common resource name
+   * args (channel, room, space_name) are non-empty after oclif parsing.
+   */
+  protected override async parse<
+    F extends Record<string, unknown>,
+    B extends Record<string, unknown>,
+    A extends Record<string, unknown>,
+  >(
+    options?: Interfaces.Input<F, B, A>,
+    argv?: string[],
+  ): Promise<Interfaces.ParserOutput<F, B, A>> {
+    const result = await super.parse(options, argv);
+
+    const parsedArgs = result.args as Record<string, unknown>;
+    const flags = result.flags as BaseFlags;
+    for (const [argName, label] of Object.entries(
+      AblyBaseCommand.RESOURCE_ARG_LABELS,
+    )) {
+      if (
+        argName in parsedArgs &&
+        typeof parsedArgs[argName] === "string" &&
+        !(parsedArgs[argName] as string).trim()
+      ) {
+        this.fail(`${label} name cannot be empty`, flags, "parse");
+      }
+    }
+
+    // Also validate argv entries for variadic commands (strict: false)
+    // where extra values bypass the named arg
+    const hasResourceArg = Object.keys(
+      AblyBaseCommand.RESOURCE_ARG_LABELS,
+    ).some((name) => name in parsedArgs);
+    if (hasResourceArg && Array.isArray(result.argv)) {
+      const label = Object.entries(AblyBaseCommand.RESOURCE_ARG_LABELS).find(
+        ([name]) => name in parsedArgs,
+      )?.[1];
+      for (const value of result.argv as string[]) {
+        if (typeof value === "string" && !value.trim()) {
+          this.fail(`${label} name cannot be empty`, flags, "parse");
+        }
+      }
+    }
+
+    return result;
   }
 
   protected isAnonymousWebMode(): boolean {

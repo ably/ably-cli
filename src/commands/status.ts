@@ -87,7 +87,7 @@ export default class StatusCommand extends AblyBaseCommand {
       }
 
       if (flags.open) {
-        await openUrl("https://status.ably.com", this);
+        await openUrl("https://status.ably.com", this, isJson);
       }
     } catch (error) {
       if (spinner) {

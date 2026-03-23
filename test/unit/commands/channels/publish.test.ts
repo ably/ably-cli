@@ -543,5 +543,27 @@ describe("ChannelsPublish", function () {
       expect(stdout).toContain("1");
       expect(stdout).toMatch(/error/i);
     });
+
+    it("should reject --count 0", async function () {
+      const { error } = await runCommand(
+        ["channels:publish", "test-channel", "msg", "--count", "0"],
+        import.meta.url,
+      );
+
+      expect(error?.message).toMatch(
+        /Expected an integer greater than or equal to 1 but received: 0/,
+      );
+    });
+
+    it("should reject --count -1", async function () {
+      const { error } = await runCommand(
+        ["channels:publish", "test-channel", "msg", "--count", "-1"],
+        import.meta.url,
+      );
+
+      expect(error?.message).toMatch(
+        /Expected an integer greater than or equal to 1 but received: -1/,
+      );
+    });
   });
 });

@@ -9,6 +9,7 @@ import {
   formatMessageTimestamp,
   formatIndex,
   formatCountLabel,
+  formatProgress,
   formatResource,
   formatLimitWarning,
   formatMessagesOutput,
@@ -43,7 +44,8 @@ export default class ChannelsHistory extends AblyBaseCommand {
   static override flags = {
     ...productApiFlags,
     cipher: Flags.string({
-      description: "Decryption key for encrypted messages (AES-128)",
+      description:
+        "Decryption key for encrypted messages, uses AES-256 by default",
     }),
     direction: Flags.string({
       default: "backwards",
@@ -83,6 +85,24 @@ export default class ChannelsHistory extends AblyBaseCommand {
 
       // Get the channel with options
       const channel = client.channels.get(channelName, channelOptions);
+
+      // Show fetching status
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonEvent(
+          {
+            channel: channelName,
+            limit: flags.limit,
+            status: "fetching",
+          },
+          flags,
+        );
+      } else {
+        this.log(
+          formatProgress(
+            `Fetching ${flags.limit} most recent messages from channel ${formatResource(channelName)}`,
+          ),
+        );
+      }
 
       // Build history query parameters
       const historyParams = buildHistoryParams(flags);

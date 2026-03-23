@@ -34,7 +34,7 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
     }),
     region: Flags.string({
       default: "us-east-1-a",
-      description: "Region for the queue",
+      description: "Region for the queue (e.g., us-east-1-a, eu-west-1-a)",
       required: false,
     }),
     ttl: Flags.integer({
@@ -48,6 +48,14 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
     const { flags } = await this.parse(QueuesCreateCommand);
 
     const appId = await this.requireAppId(flags);
+
+    if (flags["max-length"] > 10_000) {
+      this.fail("max-length must not exceed 10000.", flags, "queueCreate");
+    }
+
+    if (flags.ttl > 3600) {
+      this.fail("ttl must not exceed 3600 seconds.", flags, "queueCreate");
+    }
 
     try {
       const controlApi = this.createControlApi(flags);

@@ -1706,7 +1706,7 @@ ARGUMENTS
 
 FLAGS
   -v, --verbose             Output verbose logs
-      --cipher=<value>      Decryption key for encrypted messages (AES-128)
+      --cipher=<value>      Decryption key for encrypted messages, uses AES-256 by default
       --direction=<option>  [default: backwards] Direction of message retrieval
                             <options: backwards|forwards>
       --end=<value>         End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
@@ -3565,7 +3565,7 @@ FLAGS
       --max-length=<value>  [default: 10000] Maximum number of messages in the queue (max: 10000)
       --name=<value>        (required) Name of the queue
       --pretty-json         Output in colorized JSON format
-      --region=<value>      [default: us-east-1-a] Region for the queue
+      --region=<value>      [default: us-east-1-a] Region for the queue (e.g., us-east-1-a, eu-west-1-a)
       --ttl=<value>         [default: 60] Time to live for messages in seconds (max: 3600)
 
 DESCRIPTION

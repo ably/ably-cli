@@ -4,6 +4,7 @@ import {
   getMockAblyRest,
   createMockPaginatedResult,
 } from "../../../helpers/mock-ably-rest.js";
+import { captureJsonLogs } from "../../../helpers/ndjson.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -161,21 +162,26 @@ describe("channels:history command", () => {
     });
 
     it("should output JSON format when --json flag is used", async () => {
-      const { stdout } = await runCommand(
-        ["channels:history", "test-channel", "--json"],
-        import.meta.url,
-      );
+      const records = await captureJsonLogs(async () => {
+        await runCommand(
+          ["channels:history", "test-channel", "--json"],
+          import.meta.url,
+        );
+      });
 
-      const result = JSON.parse(stdout);
+      const results = records.filter((r) => r.type === "result");
+      expect(results.length).toBeGreaterThan(0);
+      const result = results[0];
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "channels:history");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("messages");
-      expect(result.messages).toHaveLength(2);
-      expect(result.messages[0]).toHaveProperty("id", "msg-1");
-      expect(result.messages[0]).toHaveProperty("name", "test-event");
-      expect(result.messages[0]).toHaveProperty("data");
-      expect(result.messages[0].data).toEqual({ text: "Hello world" });
+      const messages = result.messages as Array<Record<string, unknown>>;
+      expect(messages).toHaveLength(2);
+      expect(messages[0]).toHaveProperty("id", "msg-1");
+      expect(messages[0]).toHaveProperty("name", "test-event");
+      expect(messages[0]).toHaveProperty("data");
+      expect(messages[0].data).toEqual({ text: "Hello world" });
     });
   });
 
@@ -306,6 +312,18 @@ describe("channels:history command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toContain("API error");
+    });
+
+    it("should reject empty channel name", async () => {
+      const { error } = await runCommand(
+        ["channels:history", ""],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(
+        /Missing 1 required arg|Channel name cannot be empty/,
+      );
     });
   });
 });
