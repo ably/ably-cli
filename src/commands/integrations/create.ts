@@ -40,7 +40,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
     }),
     "request-mode": Flags.string({
       default: "single",
-      description: "Request mode for the integration (default: single)",
+      description: "Request mode for the integration",
       options: ["single", "batch"],
       required: false,
     }),
@@ -72,7 +72,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
     }),
     status: Flags.string({
       default: "enabled",
-      description: "Initial status of the integration (default: enabled)",
+      description: "Initial status of the integration",
       options: ["enabled", "disabled"],
       required: false,
     }),

@@ -58,8 +58,7 @@ export default class MessagesHistory extends ChatBaseCommand {
     }),
     order: Flags.string({
       default: "newestFirst",
-      description:
-        "Query direction: oldestFirst or newestFirst (default: newestFirst)",
+      description: "Order of results: oldestFirst or newestFirst",
       options: ["oldestFirst", "newestFirst"],
     }),
     "show-metadata": Flags.boolean({

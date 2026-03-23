@@ -31,9 +31,9 @@ export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
   static override examples = [
     "$ ably channels annotations subscribe my-channel",
     '$ ably channels annotations subscribe my-channel --type "reactions:flag.v1"',
-    "$ ably channels annotations subscribe my-channel --json",
-    "$ ably channels annotations subscribe my-channel --pretty-json",
+    '$ ably channels annotations subscribe my-channel --type "metrics:total.v1"',
     "$ ably channels annotations subscribe my-channel --duration 30",
+    "$ ably channels annotations subscribe my-channel --json",
   ];
 
   static override flags = {

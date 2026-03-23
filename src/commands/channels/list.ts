@@ -15,8 +15,11 @@ import {
 
 interface ChannelMetrics {
   connections?: number;
+  objectPublishers?: number;
+  objectSubscribers?: number;
   presenceConnections?: number;
   presenceMembers?: number;
+  presenceSubscribers?: number;
   publishers?: number;
   subscribers?: number;
 }
@@ -158,6 +161,18 @@ export default class ChannelsList extends AblyBaseCommand {
               `  ${formatLabel("Subscribers")} ${metrics.subscribers || 0}`,
             );
 
+            if (metrics.objectPublishers !== undefined) {
+              this.log(
+                `  ${formatLabel("Object Publishers")} ${metrics.objectPublishers}`,
+              );
+            }
+
+            if (metrics.objectSubscribers !== undefined) {
+              this.log(
+                `  ${formatLabel("Object Subscribers")} ${metrics.objectSubscribers}`,
+              );
+            }
+
             if (metrics.presenceConnections !== undefined) {
               this.log(
                 `  ${formatLabel("Presence Connections")} ${metrics.presenceConnections}`,
@@ -167,6 +182,12 @@ export default class ChannelsList extends AblyBaseCommand {
             if (metrics.presenceMembers !== undefined) {
               this.log(
                 `  ${formatLabel("Presence Members")} ${metrics.presenceMembers}`,
+              );
+            }
+
+            if (metrics.presenceSubscribers !== undefined) {
+              this.log(
+                `  ${formatLabel("Presence Subscribers")} ${metrics.presenceSubscribers}`,
               );
             }
           }

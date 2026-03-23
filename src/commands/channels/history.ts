@@ -37,7 +37,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
     '$ ably channels history my-channel --start "2023-01-01T00:00:00Z" --end "2023-01-02T00:00:00Z"',
     "$ ably channels history my-channel --start 1h",
     "$ ably channels history my-channel --limit 100",
-    "$ ably channels history my-channel --direction forward",
+    "$ ably channels history my-channel --direction forwards",
   ];
 
   static override flags = {
@@ -47,7 +47,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
     }),
     direction: Flags.string({
       default: "backwards",
-      description: "Direction of message retrieval (default: backwards)",
+      description: "Direction of message retrieval",
       options: ["backwards", "forwards"],
     }),
 

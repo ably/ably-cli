@@ -67,13 +67,12 @@ export default class MessagesSend extends ChatBaseCommand {
     count: Flags.integer({
       char: "c",
       default: 1,
-      description: "Number of messages to send (default: 1)",
+      description: "Number of messages to send",
     }),
     delay: Flags.integer({
       char: "d",
       default: 40,
-      description:
-        "Delay between messages in milliseconds (default: 40ms, max 25 msgs/sec)",
+      description: "Delay between messages in milliseconds (max 25 msgs/sec)",
     }),
     metadata: Flags.string({
       description: "Additional metadata for the message (JSON format)",

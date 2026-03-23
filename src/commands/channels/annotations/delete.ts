@@ -33,10 +33,11 @@ export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
   static override description = "Delete an annotation from a channel message";
 
   static override examples = [
-    '$ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --name thumbsup',
-    '$ ably channels annotations delete my-channel "01234567890:0" "reactions:multiple.v1" --name thumbsup',
-    '$ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --json',
-    '$ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --pretty-json',
+    '$ ably channels annotations delete my-channel "01234567890:0" "receipts:flag.v1"',
+    '$ ably channels annotations delete my-channel "01234567890:0" "categories:distinct.v1" --name important',
+    '$ ably channels annotations delete my-channel "01234567890:0" "reactions:unique.v1" --name thumbsup',
+    '$ ably channels annotations delete my-channel "01234567890:0" "rating:multiple.v1" --name stars',
+    '$ ably channels annotations delete my-channel "01234567890:0" "receipts:flag.v1" --json',
   ];
 
   static override flags = {

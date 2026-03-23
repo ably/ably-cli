@@ -49,22 +49,24 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
     ...rewindFlag,
     "cipher-algorithm": Flags.string({
       default: "aes",
-      description: "Encryption algorithm to use (default: aes)",
+      description: "Encryption algorithm to use",
     }),
     "cipher-key": Flags.string({
-      description: "Encryption key for decrypting messages (hex-encoded)",
+      description:
+        "Encryption key for decrypting messages (base64-encoded or hex-encoded)",
     }),
     "cipher-key-length": Flags.integer({
       default: 256,
-      description: "Length of encryption key in bits (default: 256)",
+      description: "Length of encryption key in bits",
     }),
     "cipher-mode": Flags.string({
       default: "cbc",
-      description: "Cipher mode to use (default: cbc)",
+      description: "Cipher mode to use",
     }),
     delta: Flags.boolean({
       default: false,
-      description: "Enable delta compression for messages",
+      description:
+        "Enable delta compression (VCDIFF) to reduce message payload sizes",
     }),
     "sequence-numbers": Flags.boolean({
       default: false,
