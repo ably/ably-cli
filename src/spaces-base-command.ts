@@ -33,6 +33,16 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
   protected parsedFlags: BaseFlags = {};
   protected hasEnteredSpace = false;
 
+  protected validateSpaceName(
+    args: Record<string, unknown>,
+    flags: BaseFlags,
+  ): void {
+    const name = (args.space_name ?? "") as string;
+    if (!name.trim()) {
+      this.fail("Space name cannot be empty", flags, "parse");
+    }
+  }
+
   protected markAsEntered(): void {
     this.hasEnteredSpace = true;
   }

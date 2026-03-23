@@ -66,6 +66,7 @@ export default class SpacesGet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesGet);
+    this.validateSpaceName(args, flags);
     const spaceName = args.space_name;
 
     try {

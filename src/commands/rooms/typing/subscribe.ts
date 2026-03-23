@@ -35,6 +35,8 @@ export default class TypingSubscribe extends ChatBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(TypingSubscribe);
 
+    this.validateRoomName(args, flags);
+
     try {
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);

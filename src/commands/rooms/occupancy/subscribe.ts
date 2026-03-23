@@ -44,6 +44,9 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsOccupancySubscribe);
+
+    this.validateRoomName(args, flags);
+
     this.roomName = args.room; // Store for cleanup
 
     try {

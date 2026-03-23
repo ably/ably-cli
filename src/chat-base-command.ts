@@ -17,6 +17,33 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
   private _chatClient: ChatClient | null = null;
   private _cleanupTimeout: NodeJS.Timeout | undefined;
 
+  protected validateRoomName(
+    args: Record<string, unknown>,
+    flags: BaseFlags,
+    argv?: string[],
+  ): void {
+    const name = (args.room ?? args.rooms ?? "") as string;
+    if (!name.trim()) {
+      this.fail("Room name cannot be empty", flags, "parse");
+    }
+
+    if (argv) {
+      if (argv.length === 0) {
+        this.fail(
+          "At least one room name is required",
+          flags,
+          "roomMessageSubscribe",
+        );
+      }
+
+      for (const n of argv) {
+        if (!n.trim()) {
+          this.fail("Room name cannot be empty", flags, "parse");
+        }
+      }
+    }
+  }
+
   /**
    * finally disposes of the chat client, if there is one, which includes cleaning up any subscriptions.
    *

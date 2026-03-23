@@ -70,6 +70,8 @@ export default class MessagesHistory extends ChatBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesHistory);
 
+    this.validateRoomName(args, flags);
+
     try {
       // Create Chat client
       const chatClient = await this.createChatClient(flags, { restOnly: true });

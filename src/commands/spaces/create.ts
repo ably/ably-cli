@@ -31,6 +31,7 @@ export default class SpacesCreate extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCreate);
+    this.validateSpaceName(args, flags);
     const spaceName = args.space_name;
 
     try {

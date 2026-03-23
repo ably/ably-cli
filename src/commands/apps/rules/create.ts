@@ -100,6 +100,9 @@ export default class RulesCreateCommand extends ControlBaseCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(RulesCreateCommand);
+    if (!flags.name?.trim()) {
+      this.fail("Rule name cannot be empty", flags, "parse");
+    }
 
     const appId = await this.requireAppId(flags);
 

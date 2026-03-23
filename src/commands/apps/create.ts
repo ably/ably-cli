@@ -32,6 +32,9 @@ export default class AppsCreateCommand extends ControlBaseCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(AppsCreateCommand);
+    if (!flags.name?.trim()) {
+      this.fail("App name cannot be empty", flags, "parse");
+    }
 
     try {
       const controlApi = this.createControlApi(flags);

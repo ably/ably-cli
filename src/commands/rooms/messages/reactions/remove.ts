@@ -43,6 +43,9 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesReactionsRemove);
+
+    this.validateRoomName(args, flags);
+
     const { room, messageSerial, reaction } = args;
 
     try {

@@ -45,6 +45,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksGet);
+    this.validateSpaceName(args, flags);
     const { space_name: spaceName, lockId } = args;
 
     try {

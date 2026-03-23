@@ -56,6 +56,7 @@ export default class ChannelsUpdate extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsUpdate);
+    this.validateChannelName(args, flags);
     const channelName = args.channel;
     const serial = args.serial;
 

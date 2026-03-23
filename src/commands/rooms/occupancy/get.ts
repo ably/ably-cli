@@ -31,6 +31,8 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsOccupancyGet);
 
+    this.validateRoomName(args, flags);
+
     try {
       // Create Chat client
       this.chatClient = await this.createChatClient(flags, { restOnly: true });

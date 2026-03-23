@@ -193,14 +193,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
 
     // Get all room names from argv
     this.roomNames = parseResult.argv as string[];
-
-    if (this.roomNames.length === 0) {
-      this.fail(
-        new Error("At least one room name is required"),
-        flags,
-        "roomMessageSubscribe",
-      );
-    }
+    this.validateRoomName(parseResult.args, flags, this.roomNames);
 
     this.logCliEvent(
       flags,

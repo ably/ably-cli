@@ -87,6 +87,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsPublish);
+    this.validateChannelName(args, flags);
 
     // Use Realtime transport by default when publishing multiple messages to ensure ordering
     // If transport is not explicitly set and count > 1, use realtime

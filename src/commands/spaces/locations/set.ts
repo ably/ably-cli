@@ -39,6 +39,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsSet);
+    this.validateSpaceName(args, flags);
     const { space_name: spaceName } = args;
 
     const location = this.parseJsonFlag(flags.location, "location", flags);

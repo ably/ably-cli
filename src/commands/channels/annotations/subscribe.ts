@@ -50,6 +50,7 @@ export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsAnnotationsSubscribe);
+    this.validateChannelName(args, flags);
     const channelName = args.channel;
 
     try {

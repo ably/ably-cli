@@ -44,6 +44,10 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsPresenceSubscribe);
+
+    this.validateRoomName(args, flags);
+
+    this.commandFlags = flags;
     this.roomName = args.room;
 
     try {
