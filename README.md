@@ -24,7 +24,7 @@ $ npm install -g @ably/cli
 $ ably COMMAND
 running command...
 $ ably (--version)
-@ably/cli/0.17.0 darwin-arm64 node-v25.3.0
+@ably/cli/0.17.0 linux-x64 node-v24.14.0
 $ ably --help [COMMAND]
 USAGE
   $ ably COMMAND
@@ -2913,7 +2913,7 @@ COMMANDS
   ably push channels       Manage push notification channel subscriptions
   ably push config         Manage push notification configuration (APNs, FCM)
   ably push devices        Manage push notification device registrations
-  ably push publish        Publish a push notification to a device or client
+  ably push publish        Publish a push notification to a device, client, or channel
 ```
 
 _See code: [src/commands/push/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/index.ts)_
@@ -3476,19 +3476,23 @@ _See code: [src/commands/push/devices/save.ts](https://github.com/ably/ably-cli/
 
 ## `ably push publish`
 
-Publish a push notification to a device or client
+Publish a push notification to a device, client, or channel
 
 ```
 USAGE
   $ ably push publish [-v] [--json | --pretty-json] [--device-id <value> | --client-id <value> | --recipient
-    <value>] [--title <value>] [--body <value>] [--sound <value>] [--icon <value>] [--badge <value>] [--data <value>]
-    [--collapse-key <value>] [--ttl <value>] [--payload <value>] [--apns <value>] [--fcm <value>] [--web <value>]
+    <value>] [--channel <value>] [--title <value>] [--body <value>] [--sound <value>] [--icon <value>] [--badge <value>]
+    [--data <value>] [--collapse-key <value>] [--ttl <value>] [--payload <value>] [--apns <value>] [--fcm <value>]
+    [--web <value>] [-f]
 
 FLAGS
+  -f, --force                 Skip confirmation prompt when publishing to a channel
   -v, --verbose               Output verbose logs
       --apns=<value>          APNs-specific override as JSON
       --badge=<value>         Notification badge count
       --body=<value>          Notification body
+      --channel=<value>       Target channel name (publishes push notification via the channel using extras.push;
+                              ignored if --device-id, --client-id, or --recipient is also provided)
       --client-id=<value>     Target client ID
       --collapse-key=<value>  Collapse key for notification grouping
       --data=<value>          Custom data payload as JSON
@@ -3505,12 +3509,14 @@ FLAGS
       --web=<value>           Web push-specific override as JSON
 
 DESCRIPTION
-  Publish a push notification to a device or client
+  Publish a push notification to a device, client, or channel
 
 EXAMPLES
   $ ably push publish --device-id device-123 --title Hello --body World
 
   $ ably push publish --client-id client-1 --title Hello --body World
+
+  $ ably push publish --channel my-channel --title Hello --body World
 
   $ ably push publish --device-id device-123 --payload '{"notification":{"title":"Hello","body":"World"}}'
 
