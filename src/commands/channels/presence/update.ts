@@ -30,10 +30,12 @@ export default class ChannelsPresenceUpdate extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
-    ...clientIdFlag,
+    "client-id": Flags.string({
+      description: 'ClientId of a channels presence member.',
+      required: true,
+    }),
     data: Flags.string({
       description: "JSON data to associate with the presence update",
-      required: true,
     }),
     ...durationFlag,
   };
@@ -51,7 +53,7 @@ export default class ChannelsPresenceUpdate extends AblyBaseCommand {
       const client = this.client;
       const { channel: channelName } = args;
 
-      const data = this.parseJsonFlag(flags.data, "data", flags);
+      const data = this.parseJsonFlag(flags.data ?? "{}", "data", flags);
 
       this.channel = client.channels.get(channelName);
 

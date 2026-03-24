@@ -121,7 +121,7 @@ $ ably-interactive
 * [`ably channels occupancy subscribe CHANNEL`](#ably-channels-occupancy-subscribe-channel)
 * [`ably channels presence`](#ably-channels-presence)
 * [`ably channels presence enter CHANNEL`](#ably-channels-presence-enter-channel)
-* [`ably channels presence get-all CHANNEL`](#ably-channels-presence-get-all-channel)
+* [`ably channels presence get CHANNEL`](#ably-channels-presence-get-channel)
 * [`ably channels presence subscribe CHANNEL`](#ably-channels-presence-subscribe-channel)
 * [`ably channels presence update CHANNEL`](#ably-channels-presence-update-channel)
 * [`ably channels publish CHANNEL MESSAGE`](#ably-channels-publish-channel-message)
@@ -1940,13 +1940,13 @@ EXAMPLES
 
 _See code: [src/commands/channels/presence/enter.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/presence/enter.ts)_
 
-## `ably channels presence get-all CHANNEL`
+## `ably channels presence get CHANNEL`
 
 Get all current presence members on a channel
 
 ```
 USAGE
-  $ ably channels presence get-all CHANNEL [-v] [--json | --pretty-json] [--limit <value>]
+  $ ably channels presence get CHANNEL [-v] [--json | --pretty-json] [--limit <value>]
 
 ARGUMENTS
   CHANNEL  Channel name to get presence members for
@@ -1961,16 +1961,16 @@ DESCRIPTION
   Get all current presence members on a channel
 
 EXAMPLES
-  $ ably channels presence get-all my-channel
+  $ ably channels presence get my-channel
 
-  $ ably channels presence get-all my-channel --limit 50
+  $ ably channels presence get my-channel --limit 50
 
-  $ ably channels presence get-all my-channel --json
+  $ ably channels presence get my-channel --json
 
-  $ ably channels presence get-all my-channel --pretty-json
+  $ ably channels presence get my-channel --pretty-json
 ```
 
-_See code: [src/commands/channels/presence/get-all.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/presence/get-all.ts)_
+_See code: [src/commands/channels/presence/get.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/presence/get.ts)_
 
 ## `ably channels presence subscribe CHANNEL`
 

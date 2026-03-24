@@ -50,6 +50,8 @@ describe("channels:presence:update command", () => {
         [
           "channels:presence:update",
           "test-channel",
+          "--client-id",
+          "test-client",
           "--data",
           '{"status":"away"}',
         ],
@@ -72,6 +74,8 @@ describe("channels:presence:update command", () => {
         [
           "channels:presence:update",
           "test-channel",
+          "--client-id",
+          "test-client",
           "--data",
           '{"status":"away"}',
         ],
@@ -89,6 +93,8 @@ describe("channels:presence:update command", () => {
         [
           "channels:presence:update",
           "test-channel",
+          "--client-id",
+          "test-client",
           "--data",
           '{"status":"away"}',
           "--json",
@@ -114,6 +120,8 @@ describe("channels:presence:update command", () => {
         [
           "channels:presence:update",
           "test-channel",
+          "--client-id",
+          "test-client",
           "--data",
           '{"status":"away"}',
           "--json",
@@ -135,6 +143,8 @@ describe("channels:presence:update command", () => {
         [
           "channels:presence:update",
           "test-channel",
+          "--client-id",
+          "test-client",
           "--data",
           "not-valid-json",
         ],
@@ -158,6 +168,8 @@ describe("channels:presence:update command", () => {
         [
           "channels:presence:update",
           "test-channel",
+          "--client-id",
+          "test-client",
           "--data",
           '{"status":"away"}',
         ],
@@ -178,6 +190,8 @@ describe("channels:presence:update command", () => {
         [
           "channels:presence:update",
           "test-channel",
+          "--client-id",
+          "test-client",
           "--data",
           '{"status":"away"}',
         ],

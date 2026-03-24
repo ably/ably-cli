@@ -20,7 +20,7 @@ import {
   formatPaginationLog,
 } from "../../../utils/pagination.js";
 
-export default class ChannelsPresenceGetAll extends AblyBaseCommand {
+export default class ChannelsPresenceGet extends AblyBaseCommand {
   static override args = {
     channel: Args.string({
       description: "Channel name to get presence members for",
@@ -31,10 +31,10 @@ export default class ChannelsPresenceGetAll extends AblyBaseCommand {
   static override description = "Get all current presence members on a channel";
 
   static override examples = [
-    "$ ably channels presence get-all my-channel",
-    "$ ably channels presence get-all my-channel --limit 50",
-    "$ ably channels presence get-all my-channel --json",
-    "$ ably channels presence get-all my-channel --pretty-json",
+    "$ ably channels presence get my-channel",
+    "$ ably channels presence get my-channel --limit 50",
+    "$ ably channels presence get my-channel --json",
+    "$ ably channels presence get my-channel --pretty-json",
   ];
 
   static override flags = {
@@ -47,7 +47,7 @@ export default class ChannelsPresenceGetAll extends AblyBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(ChannelsPresenceGetAll);
+    const { args, flags } = await this.parse(ChannelsPresenceGet);
 
     try {
       const client = await this.createAblyRestClient(flags);
@@ -154,7 +154,7 @@ export default class ChannelsPresenceGetAll extends AblyBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "presenceGetAll", {
+      this.fail(error, flags, "presenceGet", {
         channel: args.channel,
       });
     }
