@@ -25,7 +25,8 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
   };
 
   static override description =
-    "Enter presence in a chat room and remain present until terminated";
+    "Enter presence in a chat room and remain present until terminated. Provide clientId and data to update existing presence member.";
+
   static override examples = [
     "$ ably rooms presence enter my-room",
     `$ ably rooms presence enter my-room --data '{"name":"User","status":"active"}'`,
@@ -34,6 +35,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
     "$ ably rooms presence enter my-room --json",
     "$ ably rooms presence enter my-room --pretty-json",
   ];
+
   static override flags = {
     ...productApiFlags,
     ...clientIdFlag,

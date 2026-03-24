@@ -193,9 +193,8 @@ $ ably-interactive
 * [`ably rooms occupancy subscribe ROOM`](#ably-rooms-occupancy-subscribe-room)
 * [`ably rooms presence`](#ably-rooms-presence)
 * [`ably rooms presence enter ROOM`](#ably-rooms-presence-enter-room)
-* [`ably rooms presence get-all ROOM`](#ably-rooms-presence-get-all-room)
+* [`ably rooms presence get ROOM`](#ably-rooms-presence-get-room)
 * [`ably rooms presence subscribe ROOM`](#ably-rooms-presence-subscribe-room)
-* [`ably rooms presence update ROOM`](#ably-rooms-presence-update-room)
 * [`ably rooms reactions`](#ably-rooms-reactions)
 * [`ably rooms reactions send ROOM EMOJI`](#ably-rooms-reactions-send-room-emoji)
 * [`ably rooms reactions subscribe ROOM`](#ably-rooms-reactions-subscribe-room)
@@ -2038,8 +2037,6 @@ EXAMPLES
   $ ably channels presence update my-channel --data '{"status":"away"}'
 
   $ ably channels presence update my-channel --data '{"status":"busy"}' --json
-
-  $ ably channels presence update my-channel --data '{"status":"busy"}' --pretty-json
 
   $ ably channels presence update my-channel --data '{"status":"online"}' --duration 60
 ```
@@ -4211,7 +4208,7 @@ _See code: [src/commands/rooms/presence/index.ts](https://github.com/ably/ably-c
 
 ## `ably rooms presence enter ROOM`
 
-Enter presence in a chat room and remain present until terminated
+Enter presence in a chat room and remain present until terminated. Provide clientId and data to update existing presence member.
 
 ```
 USAGE
@@ -4233,7 +4230,7 @@ FLAGS
       --show-others        Show other presence events while present (default: false)
 
 DESCRIPTION
-  Enter presence in a chat room and remain present until terminated
+  Enter presence in a chat room and remain present until terminated. Provide clientId and data to update existing presence member.
 
 EXAMPLES
   $ ably rooms presence enter my-room
@@ -4251,13 +4248,13 @@ EXAMPLES
 
 _See code: [src/commands/rooms/presence/enter.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/presence/enter.ts)_
 
-## `ably rooms presence get-all ROOM`
+## `ably rooms presence get ROOM`
 
 Get all current presence members in a chat room
 
 ```
 USAGE
-  $ ably rooms presence get-all ROOM [-v] [--json | --pretty-json] [--limit <value>]
+  $ ably rooms presence get ROOM [-v] [--json | --pretty-json] [--limit <value>]
 
 ARGUMENTS
   ROOM  Room to get presence members for
@@ -4272,16 +4269,16 @@ DESCRIPTION
   Get all current presence members in a chat room
 
 EXAMPLES
-  $ ably rooms presence get-all my-room
+  $ ably rooms presence get my-room
 
-  $ ably rooms presence get-all my-room --limit 50
+  $ ably rooms presence get my-room --limit 50
 
-  $ ably rooms presence get-all my-room --json
+  $ ably rooms presence get my-room --json
 
-  $ ably rooms presence get-all my-room --pretty-json
+  $ ably rooms presence get my-room --pretty-json
 ```
 
-_See code: [src/commands/rooms/presence/get-all.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/presence/get-all.ts)_
+_See code: [src/commands/rooms/presence/get.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/presence/get.ts)_
 
 ## `ably rooms presence subscribe ROOM`
 
@@ -4314,41 +4311,6 @@ EXAMPLES
 ```
 
 _See code: [src/commands/rooms/presence/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/presence/subscribe.ts)_
-
-## `ably rooms presence update ROOM`
-
-Update presence data in a chat room
-
-```
-USAGE
-  $ ably rooms presence update ROOM --data <value> [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
-
-ARGUMENTS
-  ROOM  Room to update presence in
-
-FLAGS
-  -D, --duration=<value>   Automatically exit after N seconds
-  -v, --verbose            Output verbose logs
-      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
-                           no client ID. Not applicable when using token authentication.
-      --data=<value>       (required) JSON data to associate with the presence update
-      --json               Output in JSON format
-      --pretty-json        Output in colorized JSON format
-
-DESCRIPTION
-  Update presence data in a chat room
-
-EXAMPLES
-  $ ably rooms presence update my-room --data '{"status":"away"}'
-
-  $ ably rooms presence update my-room --data '{"status":"busy"}' --json
-
-  $ ably rooms presence update my-room --data '{"status":"busy"}' --pretty-json
-
-  $ ably rooms presence update my-room --data '{"status":"online"}' --duration 60
-```
-
-_See code: [src/commands/rooms/presence/update.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/presence/update.ts)_
 
 ## `ably rooms reactions`
 
