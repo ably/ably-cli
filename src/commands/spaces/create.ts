@@ -6,6 +6,7 @@ import {
   formatProgress,
   formatResource,
   formatSuccess,
+  formatWarning,
 } from "../../utils/output.js";
 
 export default class SpacesCreate extends SpacesBaseCommand {
@@ -53,6 +54,14 @@ export default class SpacesCreate extends SpacesBaseCommand {
             `Space ${formatResource(spaceName)} initialized. Use "ably spaces members enter" to activate it.`,
           ),
         );
+      }
+
+      const ephemeralSpaceWarning = `Space: ${spaceName} is backed by ably channel '${spaceName}::$space' and is ephemeral — it will become active when at least one member enters. This command initializes the space without entering it. To add a member to the space, use 'ably spaces members enter ${spaceName}'`;
+
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonStatus("warning", ephemeralSpaceWarning, flags);
+      } else {
+        this.log(formatWarning(ephemeralSpaceWarning));
       }
     } catch (error) {
       this.fail(error, flags, "spaceCreate");
