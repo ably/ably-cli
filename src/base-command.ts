@@ -338,6 +338,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     flags: BaseFlags,
     options?: {
       skipAuthInfo?: boolean;
+      autoConnect?: boolean;
     },
   ): Promise<Ably.Realtime | null> {
     // Return cached client if it exists
@@ -348,6 +349,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     const client = await this.createAblyClientInternal(flags, {
       type: "realtime",
       skipAuthInfo: options?.skipAuthInfo,
+      autoConnect: options?.autoConnect,
     });
 
     // Cache the client for reuse
@@ -367,6 +369,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     options?: {
       type?: "rest" | "realtime";
       skipAuthInfo?: boolean;
+      autoConnect?: boolean;
     },
   ): Promise<Ably.Rest | Ably.Realtime | null> {
     const clientType = options?.type || "realtime";
@@ -438,7 +441,16 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       }
 
       // Create Realtime client
-      const client = new Ably.Realtime(clientOptions);
+      const autoConnect = options?.autoConnect !== false;
+      const client = new Ably.Realtime({
+        ...clientOptions,
+        autoConnect,
+      });
+
+      // If autoConnect is disabled, return the client immediately without waiting for connection
+      if (!autoConnect) {
+        return client;
+      }
 
       // Wait for the connection to be established or fail
       return await new Promise((resolve, reject) => {

@@ -80,9 +80,6 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
         );
       }
 
-      // Set up connection state logging
-      this.setupConnectionStateLogging(this.chatClient.realtime, flags);
-
       // Get the room
       this.logCliEvent(
         flags,

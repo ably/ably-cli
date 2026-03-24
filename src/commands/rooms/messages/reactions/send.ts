@@ -68,7 +68,7 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
       }
 
       // Create Chat client
-      this.chatClient = await this.createChatClient(flags);
+      this.chatClient = await this.createChatClient(flags, { restOnly: true });
 
       if (!this.chatClient) {
         return this.fail(
@@ -79,9 +79,6 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
         );
       }
 
-      // Set up connection state logging
-      this.setupConnectionStateLogging(this.chatClient.realtime, flags);
-
       // Get the room
       this.logCliEvent(
         flags,
@@ -91,19 +88,6 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
       );
       const chatRoom = await this.chatClient.rooms.get(room);
       this.logCliEvent(flags, "room", "gotRoom", `Got room handle for ${room}`);
-
-      // Subscribe to room status changes
-      this.setupRoomStatusHandler(chatRoom, flags, { roomName: room });
-
-      // Attach to the room
-      this.logCliEvent(flags, "room", "attaching", `Attaching to room ${room}`);
-      await chatRoom.attach();
-      this.logCliEvent(
-        flags,
-        "room",
-        "attached",
-        `Successfully attached to room ${room}`,
-      );
 
       // Prepare the reaction parameters
       const reactionParams: {

@@ -47,7 +47,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
 
     try {
       // Create Chat client
-      const chatClient = await this.createChatClient(flags);
+      const chatClient = await this.createChatClient(flags, { restOnly: true });
 
       if (!chatClient) {
         return this.fail(
@@ -58,9 +58,6 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
         );
       }
 
-      // Set up connection state logging
-      this.setupConnectionStateLogging(chatClient.realtime, flags);
-
       // Get the room
       this.logCliEvent(
         flags,
@@ -70,19 +67,6 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
       );
       const chatRoom = await chatClient.rooms.get(room);
       this.logCliEvent(flags, "room", "gotRoom", `Got room handle for ${room}`);
-
-      // Subscribe to room status changes
-      this.setupRoomStatusHandler(chatRoom, flags, { roomName: room });
-
-      // Attach to the room
-      this.logCliEvent(flags, "room", "attaching", `Attaching to room ${room}`);
-      await chatRoom.attach();
-      this.logCliEvent(
-        flags,
-        "room",
-        "attached",
-        `Successfully attached to room ${room}`,
-      );
 
       // Remove the reaction
       this.logCliEvent(

@@ -41,7 +41,7 @@ export default class MessagesDelete extends ChatBaseCommand {
     const { args, flags } = await this.parse(MessagesDelete);
 
     try {
-      const chatClient = await this.createChatClient(flags);
+      const chatClient = await this.createChatClient(flags, { restOnly: true });
 
       if (!chatClient) {
         return this.fail(
@@ -50,8 +50,6 @@ export default class MessagesDelete extends ChatBaseCommand {
           "roomMessageDelete",
         );
       }
-
-      this.setupConnectionStateLogging(chatClient.realtime, flags);
 
       const room = await chatClient.rooms.get(args.room);
 
