@@ -25,7 +25,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
   };
 
   static override description =
-    "Enter presence on a channel and listen for presence events";
+    "Enter presence on a channel and remains present until terminated. Provide clientId and data to update existing presence member.";
 
   static override examples = [
     '$ ably channels presence enter my-channel --client-id "client123"',
