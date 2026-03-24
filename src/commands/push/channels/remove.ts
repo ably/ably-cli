@@ -1,5 +1,4 @@
 import { Flags } from "@oclif/core";
-import inquirer from "inquirer";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { forceFlag, productApiFlags } from "../../../flags.js";
@@ -9,6 +8,7 @@ import {
   formatResource,
   formatSuccess,
 } from "../../../utils/output.js";
+import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class PushChannelsRemove extends AblyBaseCommand {
   static override description = "Remove a push channel subscription";
@@ -56,14 +56,9 @@ export default class PushChannelsRemove extends AblyBaseCommand {
         : `client ${flags["client-id"]}`;
 
       if (!flags.force && !this.shouldOutputJson(flags)) {
-        const { confirmed } = await inquirer.prompt([
-          {
-            type: "confirm",
-            name: "confirmed",
-            message: `Are you sure you want to unsubscribe ${target} from channel ${flags.channel}?`,
-            default: false,
-          },
-        ]);
+        const confirmed = await promptForConfirmation(
+          `Are you sure you want to unsubscribe ${target} from channel ${flags.channel}?`,
+        );
 
         if (!confirmed) {
           this.log("Operation cancelled.");

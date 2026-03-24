@@ -1,5 +1,4 @@
 import { Args } from "@oclif/core";
-import inquirer from "inquirer";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { forceFlag, productApiFlags } from "../../../flags.js";
@@ -9,6 +8,7 @@ import {
   formatResource,
   formatSuccess,
 } from "../../../utils/output.js";
+import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class PushDevicesRemove extends AblyBaseCommand {
   static override args = {
@@ -40,14 +40,9 @@ export default class PushDevicesRemove extends AblyBaseCommand {
       if (!rest) return;
 
       if (!flags.force && !this.shouldOutputJson(flags)) {
-        const { confirmed } = await inquirer.prompt([
-          {
-            type: "confirm",
-            name: "confirmed",
-            message: `Are you sure you want to remove device ${deviceId}?`,
-            default: false,
-          },
-        ]);
+        const confirmed = await promptForConfirmation(
+          `Are you sure you want to remove device ${deviceId}?`,
+        );
 
         if (!confirmed) {
           this.log("Operation cancelled.");

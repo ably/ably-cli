@@ -1,5 +1,4 @@
 import { Flags } from "@oclif/core";
-import inquirer from "inquirer";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { forceFlag } from "../../../flags.js";
@@ -9,6 +8,7 @@ import {
   formatSuccess,
   formatWarning,
 } from "../../../utils/output.js";
+import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class PushConfigClearFcm extends ControlBaseCommand {
   static override description =
@@ -37,14 +37,9 @@ export default class PushConfigClearFcm extends ControlBaseCommand {
         const appId = await this.requireAppId(flags);
 
         if (!flags.force && !this.shouldOutputJson(flags)) {
-          const { confirmed } = await inquirer.prompt([
-            {
-              default: false,
-              message: `Are you sure you want to clear FCM configuration for app ${formatResource(appId)}?`,
-              name: "confirmed",
-              type: "confirm",
-            },
-          ]);
+          const confirmed = await promptForConfirmation(
+            `Are you sure you want to clear FCM configuration for app ${formatResource(appId)}?`,
+          );
 
           if (!confirmed) {
             this.log("Operation cancelled.");
@@ -88,6 +83,7 @@ export default class PushConfigClearFcm extends ControlBaseCommand {
         }
 
         await controlApi.updateApp(appId, {
+          fcmProjectId: null,
           fcmServiceAccount: null,
         });
 

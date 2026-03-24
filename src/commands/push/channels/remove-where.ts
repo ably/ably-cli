@@ -1,5 +1,4 @@
 import { Flags } from "@oclif/core";
-import inquirer from "inquirer";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { forceFlag, productApiFlags } from "../../../flags.js";
@@ -9,6 +8,7 @@ import {
   formatResource,
   formatSuccess,
 } from "../../../utils/output.js";
+import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class PushChannelsRemoveWhere extends AblyBaseCommand {
   static override description =
@@ -53,14 +53,9 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
           .map(([k, v]) => `${k}=${v}`)
           .join(", ");
 
-        const { confirmed } = await inquirer.prompt([
-          {
-            type: "confirm",
-            name: "confirmed",
-            message: `Are you sure you want to remove all subscriptions matching: ${filterDesc}?`,
-            default: false,
-          },
-        ]);
+        const confirmed = await promptForConfirmation(
+          `Are you sure you want to remove all subscriptions matching: ${filterDesc}?`,
+        );
 
         if (!confirmed) {
           this.log("Operation cancelled.");
