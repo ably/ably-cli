@@ -120,7 +120,7 @@ export default class MessagesUpdate extends ChatBaseCommand {
         );
       }
 
-      const chatClient = await this.createChatClient(flags);
+      const chatClient = await this.createChatClient(flags, { restOnly: true });
 
       if (!chatClient) {
         return this.fail(
@@ -129,8 +129,6 @@ export default class MessagesUpdate extends ChatBaseCommand {
           "roomMessageUpdate",
         );
       }
-
-      this.setupConnectionStateLogging(chatClient.realtime, flags);
 
       const room = await chatClient.rooms.get(args.room);
 

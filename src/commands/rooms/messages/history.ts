@@ -73,7 +73,7 @@ export default class MessagesHistory extends ChatBaseCommand {
 
     try {
       // Create Chat client
-      const chatClient = await this.createChatClient(flags);
+      const chatClient = await this.createChatClient(flags, { restOnly: true });
 
       if (!chatClient) {
         return this.fail(

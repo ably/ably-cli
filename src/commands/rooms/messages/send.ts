@@ -98,7 +98,7 @@ export default class MessagesSend extends ChatBaseCommand {
 
     try {
       // Create Chat client
-      this.chatClient = await this.createChatClient(flags);
+      this.chatClient = await this.createChatClient(flags, { restOnly: true });
 
       if (!this.chatClient) {
         return this.fail(
@@ -107,9 +107,6 @@ export default class MessagesSend extends ChatBaseCommand {
           "roomMessageSend",
         );
       }
-
-      // Set up connection state logging
-      this.setupConnectionStateLogging(this.chatClient.realtime, flags);
 
       // Parse metadata if provided
       let metadata: JsonObject | undefined;
