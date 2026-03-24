@@ -32,7 +32,7 @@ const mockPresenceMembers = [
   },
 ];
 
-describe("rooms:presence:get-all command", () => {
+describe("rooms:presence:get command", () => {
   beforeEach(() => {
     const mock = getMockAblyRest();
     // Chat SDK maps room presence to roomName::$chat channel
@@ -42,11 +42,11 @@ describe("rooms:presence:get-all command", () => {
     );
   });
 
-  standardHelpTests("rooms:presence:get-all", import.meta.url);
-  standardArgValidationTests("rooms:presence:get-all", import.meta.url, {
+  standardHelpTests("rooms:presence:get", import.meta.url);
+  standardArgValidationTests("rooms:presence:get", import.meta.url, {
     requiredArgs: ["test-room"],
   });
-  standardFlagTests("rooms:presence:get-all", import.meta.url, [
+  standardFlagTests("rooms:presence:get", import.meta.url, [
     "--limit",
     "--json",
     "--pretty-json",
@@ -58,7 +58,7 @@ describe("rooms:presence:get-all command", () => {
       const channel = mock.channels._getChannel("test-room::$chat");
 
       const { stdout } = await runCommand(
-        ["rooms:presence:get-all", "test-room"],
+        ["rooms:presence:get", "test-room"],
         import.meta.url,
       );
 
@@ -77,7 +77,7 @@ describe("rooms:presence:get-all command", () => {
         createMockPaginatedResult(mockPresenceMembers),
       );
 
-      await runCommand(["rooms:presence:get-all", "my-room"], import.meta.url);
+      await runCommand(["rooms:presence:get", "my-room"], import.meta.url);
 
       expect(channel.presence.get).toHaveBeenCalled();
     });
@@ -88,7 +88,7 @@ describe("rooms:presence:get-all command", () => {
       channel.presence.get.mockResolvedValue(createMockPaginatedResult([]));
 
       const { stdout } = await runCommand(
-        ["rooms:presence:get-all", "test-room"],
+        ["rooms:presence:get", "test-room"],
         import.meta.url,
       );
 
@@ -97,7 +97,7 @@ describe("rooms:presence:get-all command", () => {
 
     it("should output JSON with presenceMembers array", async () => {
       const { stdout } = await runCommand(
-        ["rooms:presence:get-all", "test-room", "--json"],
+        ["rooms:presence:get", "test-room", "--json"],
         import.meta.url,
       );
 
@@ -119,7 +119,7 @@ describe("rooms:presence:get-all command", () => {
 
     it("should display member data and action when present", async () => {
       const { stdout } = await runCommand(
-        ["rooms:presence:get-all", "test-room"],
+        ["rooms:presence:get", "test-room"],
         import.meta.url,
       );
 
@@ -133,7 +133,7 @@ describe("rooms:presence:get-all command", () => {
       const channel = mock.channels._getChannel("test-room::$chat");
 
       await runCommand(
-        ["rooms:presence:get-all", "test-room", "--limit", "50"],
+        ["rooms:presence:get", "test-room", "--limit", "50"],
         import.meta.url,
       );
 
@@ -158,7 +158,7 @@ describe("rooms:presence:get-all command", () => {
       );
 
       const { stdout } = await runCommand(
-        ["rooms:presence:get-all", "test-room", "--limit", "1", "--json"],
+        ["rooms:presence:get", "test-room", "--limit", "1", "--json"],
         import.meta.url,
       );
 
@@ -176,7 +176,7 @@ describe("rooms:presence:get-all command", () => {
       channel.presence.get.mockRejectedValue(new Error("API error"));
 
       const { error } = await runCommand(
-        ["rooms:presence:get-all", "test-room"],
+        ["rooms:presence:get", "test-room"],
         import.meta.url,
       );
 
@@ -194,7 +194,7 @@ describe("rooms:presence:get-all command", () => {
       );
 
       const { error } = await runCommand(
-        ["rooms:presence:get-all", "nonexistent"],
+        ["rooms:presence:get", "nonexistent"],
         import.meta.url,
       );
 

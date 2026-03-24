@@ -10,6 +10,7 @@ import {
   formatProgress,
   formatResource,
   formatSuccess,
+  formatWarning,
 } from "../../../utils/output.js";
 
 export default class RoomsPresenceUpdate extends ChatBaseCommand {
@@ -31,10 +32,12 @@ export default class RoomsPresenceUpdate extends ChatBaseCommand {
 
   static override flags = {
     ...productApiFlags,
-    ...clientIdFlag,
+    "client-id": Flags.string({
+      description: "ClientId of a rooms presence member.",
+      required: true,
+    }),
     data: Flags.string({
       description: "JSON data to associate with the presence update",
-      required: true,
     }),
     ...durationFlag,
   };
@@ -58,10 +61,18 @@ export default class RoomsPresenceUpdate extends ChatBaseCommand {
 
       const { room: roomName } = args;
       const data = this.parseJsonFlag(
-        flags.data,
+        flags.data ?? "{}",
         "data",
         flags,
       ) as PresenceData;
+
+      const wildcardWarning = `Updating a clientId on behalf of another user using a wildcard (*) is not supported, since chat rooms only recognize explicitly identified clients. So, a member with provided clientId but a new connectionId will be entered and updated.`;
+
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonStatus("warning", wildcardWarning, flags);
+      } else {
+        this.log(formatWarning(wildcardWarning));
+      }
 
       this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
         includeUserFriendlyMessages: true,
@@ -91,7 +102,7 @@ export default class RoomsPresenceUpdate extends ChatBaseCommand {
         `Entering presence in room ${roomName}`,
         { room: roomName, clientId: this.chatClient.clientId },
       );
-      await this.room.presence.enter(data);
+      await this.room.presence.enter();
       this.logCliEvent(
         flags,
         "presence",

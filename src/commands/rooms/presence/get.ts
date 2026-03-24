@@ -24,7 +24,7 @@ import {
 // Chat SDK maps room presence to the underlying channel: roomName::$chat
 const chatChannelName = (roomName: string) => `${roomName}::$chat`;
 
-export default class RoomsPresenceGetAll extends AblyBaseCommand {
+export default class RoomsPresenceGet extends AblyBaseCommand {
   static override args = {
     room: Args.string({
       description: "Room to get presence members for",
@@ -36,10 +36,10 @@ export default class RoomsPresenceGetAll extends AblyBaseCommand {
     "Get all current presence members in a chat room";
 
   static override examples = [
-    "$ ably rooms presence get-all my-room",
-    "$ ably rooms presence get-all my-room --limit 50",
-    "$ ably rooms presence get-all my-room --json",
-    "$ ably rooms presence get-all my-room --pretty-json",
+    "$ ably rooms presence get my-room",
+    "$ ably rooms presence get my-room --limit 50",
+    "$ ably rooms presence get my-room --json",
+    "$ ably rooms presence get my-room --pretty-json",
   ];
 
   static override flags = {
@@ -52,7 +52,7 @@ export default class RoomsPresenceGetAll extends AblyBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(RoomsPresenceGetAll);
+    const { args, flags } = await this.parse(RoomsPresenceGet);
 
     try {
       const client = await this.createAblyRestClient(flags);
@@ -158,7 +158,7 @@ export default class RoomsPresenceGetAll extends AblyBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "roomPresenceGetAll", {
+      this.fail(error, flags, "roomPresenceGet", {
         room: args.room,
       });
     }

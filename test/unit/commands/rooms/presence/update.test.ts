@@ -30,7 +30,14 @@ describe("rooms:presence:update command", () => {
       const room = mock.rooms._getRoom("test-room");
 
       const { stdout } = await runCommand(
-        ["rooms:presence:update", "test-room", "--data", '{"status":"away"}'],
+        [
+          "rooms:presence:update",
+          "test-room",
+          "--client-id",
+          "test-client",
+          "--data",
+          '{"status":"away"}',
+        ],
         import.meta.url,
       );
 
@@ -38,13 +45,20 @@ describe("rooms:presence:update command", () => {
       expect(stdout).toContain("Updated");
       expect(stdout).toContain("test-room");
       expect(room.attach).toHaveBeenCalled();
-      expect(room.presence.enter).toHaveBeenCalledWith({ status: "away" });
+      expect(room.presence.enter).toHaveBeenCalled();
       expect(room.presence.update).toHaveBeenCalledWith({ status: "away" });
     });
 
     it("should show labeled output in human mode", async () => {
       const { stdout } = await runCommand(
-        ["rooms:presence:update", "test-room", "--data", '{"status":"away"}'],
+        [
+          "rooms:presence:update",
+          "test-room",
+          "--client-id",
+          "test-client",
+          "--data",
+          '{"status":"away"}',
+        ],
         import.meta.url,
       );
 
@@ -60,6 +74,8 @@ describe("rooms:presence:update command", () => {
           [
             "rooms:presence:update",
             "test-room",
+            "--client-id",
+            "test-client",
             "--data",
             '{"status":"away"}',
             "--json",
@@ -86,6 +102,8 @@ describe("rooms:presence:update command", () => {
           [
             "rooms:presence:update",
             "test-room",
+            "--client-id",
+            "test-client",
             "--data",
             '{"status":"away"}',
             "--json",
@@ -94,17 +112,26 @@ describe("rooms:presence:update command", () => {
         );
       });
 
-      const statusRecords = allRecords.filter((r) => r.type === "status");
-      expect(statusRecords.length).toBeGreaterThanOrEqual(1);
+      const holdRecords = allRecords.filter(
+        (r) => r.type === "status" && r.status === "holding",
+      );
+      expect(holdRecords.length).toBeGreaterThanOrEqual(1);
 
-      const status = statusRecords[0];
+      const status = holdRecords[0];
       expect(status.status).toBe("holding");
       expect(status.message).toContain("Holding presence");
     });
 
     it("should handle invalid JSON data gracefully", async () => {
       const { error } = await runCommand(
-        ["rooms:presence:update", "test-room", "--data", "not-valid-json"],
+        [
+          "rooms:presence:update",
+          "test-room",
+          "--client-id",
+          "test-client",
+          "--data",
+          "not-valid-json",
+        ],
         import.meta.url,
       );
 
@@ -117,7 +144,14 @@ describe("rooms:presence:update command", () => {
       const room = mock.rooms._getRoom("test-room");
 
       await runCommand(
-        ["rooms:presence:update", "test-room", "--data", '{"status":"away"}'],
+        [
+          "rooms:presence:update",
+          "test-room",
+          "--client-id",
+          "test-client",
+          "--data",
+          '{"status":"away"}',
+        ],
         import.meta.url,
       );
 
@@ -134,7 +168,14 @@ describe("rooms:presence:update command", () => {
       room.presence.enter.mockRejectedValue(new Error("Presence enter failed"));
 
       const { error } = await runCommand(
-        ["rooms:presence:update", "test-room", "--data", '{"status":"away"}'],
+        [
+          "rooms:presence:update",
+          "test-room",
+          "--client-id",
+          "test-client",
+          "--data",
+          '{"status":"away"}',
+        ],
         import.meta.url,
       );
 
@@ -149,7 +190,14 @@ describe("rooms:presence:update command", () => {
       );
 
       const { error } = await runCommand(
-        ["rooms:presence:update", "test-room", "--data", '{"status":"away"}'],
+        [
+          "rooms:presence:update",
+          "test-room",
+          "--client-id",
+          "test-client",
+          "--data",
+          '{"status":"away"}',
+        ],
         import.meta.url,
       );
 
