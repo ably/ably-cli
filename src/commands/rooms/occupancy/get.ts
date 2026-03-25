@@ -13,6 +13,8 @@ interface OccupancyMetrics {
   presenceSubscribers: number;
   publishers: number;
   subscribers: number;
+  objectPublishers: number;
+  objectSubscribers: number;
 }
 
 export default class RoomsOccupancyGet extends AblyBaseCommand {
@@ -62,6 +64,8 @@ export default class RoomsOccupancyGet extends AblyBaseCommand {
         presenceSubscribers: 0,
         publishers: 0,
         subscribers: 0,
+        objectPublishers: 0,
+        objectSubscribers: 0,
       };
 
       if (this.shouldOutputJson(flags)) {
@@ -91,6 +95,12 @@ export default class RoomsOccupancyGet extends AblyBaseCommand {
         );
         this.log(
           `${formatLabel("Presence Subscribers")} ${occupancyMetrics.presenceSubscribers}`,
+        );
+        this.log(
+          `${formatLabel("Object Publishers")} ${occupancyMetrics.objectPublishers}`,
+        );
+        this.log(
+          `${formatLabel("Object Subscribers")} ${occupancyMetrics.objectSubscribers}`,
         );
       }
     } catch (error) {

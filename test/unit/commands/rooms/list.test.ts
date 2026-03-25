@@ -131,8 +131,8 @@ describe("rooms:list command", () => {
     expect(json).toHaveProperty("rooms");
     expect(json.rooms).toBeInstanceOf(Array);
     expect(json.rooms.length).toBe(2);
-    expect(json.rooms[0]).toEqual({ roomName: "room1" });
-    expect(json.rooms[1]).toEqual({ roomName: "room2" });
+    expect(json.rooms[0]).toEqual("room1");
+    expect(json.rooms[1]).toEqual("room2");
     expect(json).toHaveProperty("total", 2);
     expect(json).toHaveProperty("timestamp");
     expect(json).toHaveProperty("hasMore", false);

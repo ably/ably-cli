@@ -129,9 +129,7 @@ export default class RoomsList extends ChatBaseCommand {
         const next = buildPaginationNext(hasMore);
         this.logJsonResult(
           {
-            rooms: rooms.map((room) => ({
-              roomName: room.room,
-            })),
+            rooms: rooms.map((room) => room.room),
             hasMore,
             ...(next && { next }),
             timestamp: new Date().toISOString(),
