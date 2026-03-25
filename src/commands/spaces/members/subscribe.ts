@@ -38,8 +38,6 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
     ...durationFlag,
   };
 
-  private listener: ((member: SpaceMember) => void) | null = null;
-
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesMembersSubscribe);
     const { space_name: spaceName } = args;
@@ -69,82 +67,75 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
         "subscribing",
         "Subscribing to member updates",
       );
-      // Define the listener function
-      this.listener = (member: SpaceMember) => {
-        const now = Date.now();
 
-        // Determine the action from the member's lastEvent
-        const action = member.lastEvent?.name || "unknown";
-        const clientId = member.clientId || "Unknown";
-        const connectionId = member.connectionId || "Unknown";
+      const memberListener = (member: SpaceMember) => {
+        try {
+          const now = Date.now();
 
-        // Skip self events - check connection ID
-        const selfConnectionId = this.realtimeClient!.connection.id;
-        if (member.connectionId === selfConnectionId) {
-          return;
-        }
+          // Determine the action from the member's lastEvent
+          const action = member.lastEvent?.name || "unknown";
+          const clientId = member.clientId || "Unknown";
+          const connectionId = member.connectionId || "Unknown";
 
-        // Create a unique key for this client+connection combination
-        const clientKey = `${clientId}:${connectionId}`;
+          // Create a unique key for this client+connection combination
+          const clientKey = `${clientId}:${connectionId}`;
 
-        // Check if we've seen this exact event recently (within 500ms)
-        const lastEvent = lastSeenEvents.get(clientKey);
+          // Check if we've seen this exact event recently (within 500ms)
+          const lastEvent = lastSeenEvents.get(clientKey);
 
-        if (
-          lastEvent &&
-          lastEvent.action === action &&
-          now - lastEvent.timestamp < 500
-        ) {
+          if (
+            lastEvent &&
+            lastEvent.action === action &&
+            now - lastEvent.timestamp < 500
+          ) {
+            this.logCliEvent(
+              flags,
+              "member",
+              "duplicateEventSkipped",
+              `Skipping duplicate event '${action}' for ${clientId}`,
+              { action, clientId },
+            );
+            return; // Skip duplicate events within 500ms window
+          }
+
+          // Update the last seen event for this client+connection
+          lastSeenEvents.set(clientKey, {
+            action,
+            timestamp: now,
+          });
+
           this.logCliEvent(
             flags,
             "member",
-            "duplicateEventSkipped",
-            `Skipping duplicate event '${action}' for ${clientId}`,
-            { action, clientId },
+            `update-${action}`,
+            `Member event '${action}' received`,
+            { action, clientId, connectionId },
           );
-          return; // Skip duplicate events within 500ms window
-        }
 
-        // Update the last seen event for this client+connection
-        lastSeenEvents.set(clientKey, {
-          action,
-          timestamp: now,
-        });
-
-        this.logCliEvent(
-          flags,
-          "member",
-          `update-${action}`,
-          `Member event '${action}' received`,
-          { action, clientId, connectionId },
-        );
-
-        if (this.shouldOutputJson(flags)) {
-          this.logJsonEvent({ member: formatMemberOutput(member) }, flags);
-        } else {
-          this.log(
-            formatTimestamp(formatMessageTimestamp(member.lastEvent.timestamp)),
-          );
-          this.log(formatMemberEventBlock(member, action));
-          this.log("");
+          if (this.shouldOutputJson(flags)) {
+            this.logJsonEvent({ member: formatMemberOutput(member) }, flags);
+          } else {
+            this.log(
+              formatTimestamp(
+                formatMessageTimestamp(member.lastEvent.timestamp),
+              ),
+            );
+            this.log(formatMemberEventBlock(member, action));
+            this.log("");
+          }
+        } catch (error) {
+          this.fail(error, flags, "memberSubscribe", { spaceName });
         }
       };
 
-      // Subscribe using the stored listener
-      await this.space!.members.subscribe("update", this.listener);
+      // Subscribe using the listener
+      await this.space!.members.subscribe("update", memberListener);
 
       this.logCliEvent(
         flags,
         "member",
         "subscribed",
         "Subscribed to member updates",
-      );
-
-      this.logCliEvent(
-        flags,
-        "member",
-        "listening",
-        "Listening for member updates...",
       );
 
       // Wait until the user interrupts or the optional duration elapses
