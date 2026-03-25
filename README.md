@@ -1893,7 +1893,7 @@ _See code: [src/commands/channels/presence.ts](https://github.com/ably/ably-cli/
 
 ## `ably channels presence enter CHANNEL`
 
-Enter presence on a channel and remains present until terminated. Provide clientId and data to update existing presence member.
+Enter presence on a channel and remains present until terminated.
 
 ```
 USAGE
@@ -1915,9 +1915,11 @@ FLAGS
       --show-others        Show other presence events while present (default: false)
 
 DESCRIPTION
-  Enter presence on a channel and remains present until terminated. Provide clientId and data to update existing presence member.
+  Enter presence on a channel and remains present until terminated.
 
 EXAMPLES
+  $ ably channels presence enter my-channel
+
   $ ably channels presence enter my-channel --client-id "client123"
 
   $ ably channels presence enter my-channel --client-id "client123" --data '{"name":"John","status":"online"}'
