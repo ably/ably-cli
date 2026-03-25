@@ -14,6 +14,8 @@ const mockOccupancyMetrics = {
   presenceSubscribers: 4,
   publishers: 2,
   subscribers: 6,
+  objectPublishers: 3,
+  objectSubscribers: 7,
 };
 
 describe("rooms:occupancy:get command", () => {
@@ -39,7 +41,7 @@ describe("rooms:occupancy:get command", () => {
   standardFlagTests("rooms:occupancy:get", import.meta.url, ["--json"]);
 
   describe("functionality", () => {
-    it("should display all 6 occupancy metrics", async () => {
+    it("should display all 8 occupancy metrics", async () => {
       const mock = getMockAblyRest();
 
       const { stdout } = await runCommand(
@@ -61,6 +63,8 @@ describe("rooms:occupancy:get command", () => {
       expect(stdout).toContain("Presence Connections: 5");
       expect(stdout).toContain("Presence Members: 8");
       expect(stdout).toContain("Presence Subscribers: 4");
+      expect(stdout).toContain("Object Publishers: 3");
+      expect(stdout).toContain("Object Subscribers: 7");
     });
 
     it("should handle zero metrics", async () => {
@@ -80,6 +84,8 @@ describe("rooms:occupancy:get command", () => {
       expect(stdout).toContain("Presence Connections: 0");
       expect(stdout).toContain("Presence Members: 0");
       expect(stdout).toContain("Presence Subscribers: 0");
+      expect(stdout).toContain("Object Publishers: 0");
+      expect(stdout).toContain("Object Subscribers: 0");
     });
 
     it("should output JSON nested under occupancy key", async () => {

@@ -11,6 +11,8 @@ interface OccupancyMetrics {
   presenceSubscribers: number;
   publishers: number;
   subscribers: number;
+  objectPublishers: number;
+  objectSubscribers: number;
 }
 
 export default class ChannelsOccupancyGet extends AblyBaseCommand {
@@ -64,6 +66,8 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
         presenceSubscribers: 0,
         publishers: 0,
         subscribers: 0,
+        objectPublishers: 0,
+        objectSubscribers: 0,
       };
 
       // Output the occupancy metrics based on format
@@ -96,6 +100,12 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
         );
         this.log(
           `${formatLabel("Presence Subscribers")} ${occupancyMetrics.presenceSubscribers}`,
+        );
+        this.log(
+          `${formatLabel("Object Publishers")} ${occupancyMetrics.objectPublishers}`,
+        );
+        this.log(
+          `${formatLabel("Object Subscribers")} ${occupancyMetrics.objectSubscribers}`,
         );
       }
     } catch (error) {

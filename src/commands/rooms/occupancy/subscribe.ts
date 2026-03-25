@@ -109,21 +109,23 @@ export default class RoomsOccupancySubscribe extends AblyBaseCommand {
 
           if (message.data?.metrics) {
             const metrics = message.data.metrics;
+            this.log(`${formatLabel("Connections")} ${metrics.connections}`);
+            this.log(`${formatLabel("Publishers")} ${metrics.publishers}`);
+            this.log(`${formatLabel("Subscribers")} ${metrics.subscribers}`);
             this.log(
-              `${formatLabel("Connections")} ${metrics.connections ?? 0}`,
-            );
-            this.log(`${formatLabel("Publishers")} ${metrics.publishers ?? 0}`);
-            this.log(
-              `${formatLabel("Subscribers")} ${metrics.subscribers ?? 0}`,
-            );
-            this.log(
-              `${formatLabel("Presence Connections")} ${metrics.presenceConnections ?? 0}`,
+              `${formatLabel("Presence Connections")} ${metrics.presenceConnections}`,
             );
             this.log(
-              `${formatLabel("Presence Members")} ${metrics.presenceMembers ?? 0}`,
+              `${formatLabel("Presence Members")} ${metrics.presenceMembers}`,
             );
             this.log(
-              `${formatLabel("Presence Subscribers")} ${metrics.presenceSubscribers ?? 0}`,
+              `${formatLabel("Presence Subscribers")} ${metrics.presenceSubscribers}`,
+            );
+            this.log(
+              `${formatLabel("Object Publishers")} ${metrics.objectPublishers}`,
+            );
+            this.log(
+              `${formatLabel("Object Subscribers")} ${metrics.objectSubscribers}`,
             );
           }
 

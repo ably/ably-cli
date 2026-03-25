@@ -23,6 +23,8 @@ describe("ChannelsOccupancyGet", function () {
                 presenceSubscribers: 4,
                 publishers: 2,
                 subscribers: 6,
+                objectPublishers: 0,
+                objectSubscribers: 0,
               },
             },
           },
@@ -56,6 +58,8 @@ describe("ChannelsOccupancyGet", function () {
     expect(stdout).toContain("Presence Subscribers: 4");
     expect(stdout).toContain("Publishers: 2");
     expect(stdout).toContain("Subscribers: 6");
+    expect(stdout).toContain("Object Publishers: 0");
+    expect(stdout).toContain("Object Subscribers: 0");
   });
 
   it("should output occupancy in JSON format when requested", async function () {
@@ -108,6 +112,8 @@ describe("ChannelsOccupancyGet", function () {
     expect(stdout).toContain("Presence Connections: 0");
     expect(stdout).toContain("Presence Members: 0");
     expect(stdout).toContain("Presence Subscribers: 0");
+    expect(stdout).toContain("Object Publishers: 0");
+    expect(stdout).toContain("Object Subscribers: 0");
   });
 
   describe("functionality", () => {

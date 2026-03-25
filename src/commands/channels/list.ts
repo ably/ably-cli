@@ -106,9 +106,7 @@ export default class ChannelsList extends AblyBaseCommand {
         const next = buildPaginationNext(hasMore);
         this.logJsonResult(
           {
-            channels: channels.map((channel: ChannelItem) => ({
-              channelId: channel.channelId,
-            })),
+            channels: channels.map((channel: ChannelItem) => channel.channelId),
             hasMore,
             ...(next && { next }),
             timestamp: new Date().toISOString(),

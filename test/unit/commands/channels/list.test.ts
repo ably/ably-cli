@@ -108,12 +108,8 @@ describe("channels:list command", () => {
       expect(jsonOutput).toHaveProperty("channels");
       expect(jsonOutput.channels).toBeInstanceOf(Array);
       expect(jsonOutput.channels).toHaveLength(2);
-      expect(jsonOutput.channels[0]).toEqual({
-        channelId: "test-channel-1",
-      });
-      expect(jsonOutput.channels[1]).toEqual({
-        channelId: "test-channel-2",
-      });
+      expect(jsonOutput.channels[0]).toEqual("test-channel-1");
+      expect(jsonOutput.channels[1]).toEqual("test-channel-2");
       expect(jsonOutput).toHaveProperty("success", true);
       expect(jsonOutput).toHaveProperty("total", 2);
       expect(jsonOutput).toHaveProperty("hasMore", false);
