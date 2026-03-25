@@ -82,32 +82,21 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
           `Occupancy metrics for channel ${formatResource(channelName)}:\n`,
         );
         this.log(
-          `${formatLabel("Connections")} ${occupancyMetrics.connections ?? 0}`,
+          `${formatLabel("Connections")} ${occupancyMetrics.connections}`,
+        );
+        this.log(`${formatLabel("Publishers")} ${occupancyMetrics.publishers}`);
+        this.log(
+          `${formatLabel("Subscribers")} ${occupancyMetrics.subscribers}`,
         );
         this.log(
-          `${formatLabel("Publishers")} ${occupancyMetrics.publishers ?? 0}`,
+          `${formatLabel("Presence Connections")} ${occupancyMetrics.presenceConnections}`,
         );
         this.log(
-          `${formatLabel("Subscribers")} ${occupancyMetrics.subscribers ?? 0}`,
+          `${formatLabel("Presence Members")} ${occupancyMetrics.presenceMembers}`,
         );
-
-        if (occupancyMetrics.presenceConnections !== undefined) {
-          this.log(
-            `${formatLabel("Presence Connections")} ${occupancyMetrics.presenceConnections}`,
-          );
-        }
-
-        if (occupancyMetrics.presenceMembers !== undefined) {
-          this.log(
-            `${formatLabel("Presence Members")} ${occupancyMetrics.presenceMembers}`,
-          );
-        }
-
-        if (occupancyMetrics.presenceSubscribers !== undefined) {
-          this.log(
-            `${formatLabel("Presence Subscribers")} ${occupancyMetrics.presenceSubscribers}`,
-          );
-        }
+        this.log(
+          `${formatLabel("Presence Subscribers")} ${occupancyMetrics.presenceSubscribers}`,
+        );
       }
     } catch (error) {
       this.fail(error, flags, "occupancyGet", {

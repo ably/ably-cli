@@ -1,6 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../helpers/mock-ably-chat.js";
+import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
 
 describe("rooms feature commands", function () {
   beforeEach(function () {
@@ -9,12 +11,24 @@ describe("rooms feature commands", function () {
 
   describe("functionality", function () {
     it("should get room occupancy metrics", async function () {
-      const chatMock = getMockAblyChat();
-      const room = chatMock.rooms._getRoom("test-room");
-
-      room.occupancy.get.mockResolvedValue({
-        connections: 5,
-        presenceMembers: 4,
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({
+        items: [
+          {
+            status: {
+              occupancy: {
+                metrics: {
+                  connections: 5,
+                  presenceConnections: 2,
+                  presenceMembers: 4,
+                  presenceSubscribers: 1,
+                  publishers: 3,
+                  subscribers: 6,
+                },
+              },
+            },
+          },
+        ],
       });
 
       const { stdout } = await runCommand(
@@ -22,56 +36,62 @@ describe("rooms feature commands", function () {
         import.meta.url,
       );
 
-      expect(room.occupancy.get).toHaveBeenCalled();
+      expect(mock.request).toHaveBeenCalled();
       expect(stdout).toContain("5");
     });
   });
 
   describe("rooms occupancy subscribe", function () {
     it("should subscribe to room occupancy updates", async function () {
-      const chatMock = getMockAblyChat();
-      const room = chatMock.rooms._getRoom("test-room");
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("test-room::$chat");
 
-      room.occupancy.subscribe.mockImplementation(
-        (_callback: (event: unknown) => void) => {
-          return { unsubscribe: vi.fn() };
+      mock.connection.once.mockImplementation(
+        (event: string, callback: () => void) => {
+          if (event === "connected") callback();
         },
       );
+      channel.once.mockImplementation((event: string, callback: () => void) => {
+        if (event === "attached") {
+          channel.state = "attached";
+          callback();
+        }
+      });
 
       const { stdout } = await runCommand(
         ["rooms:occupancy:subscribe", "test-room"],
         import.meta.url,
       );
 
-      expect(room.attach).toHaveBeenCalled();
-      expect(room.occupancy.subscribe).toHaveBeenCalled();
+      expect(channel.subscribe).toHaveBeenCalledWith(
+        "[meta]occupancy",
+        expect.any(Function),
+      );
       expect(stdout).toContain("Subscribed to occupancy");
     });
 
-    it("should display occupancy updates when received", async function () {
-      const chatMock = getMockAblyChat();
-      const room = chatMock.rooms._getRoom("test-room");
+    it("should display subscribing message", async function () {
+      const mock = getMockAblyRealtime();
+      const channel = mock.channels._getChannel("test-room::$chat");
 
-      room.occupancy.subscribe.mockImplementation(
-        (callback: (event: unknown) => void) => {
-          // Simulate receiving an occupancy update after room is attached
-          setTimeout(() => {
-            callback({
-              connections: 6,
-              presenceMembers: 4,
-            });
-          }, 100);
-          return { unsubscribe: vi.fn() };
+      mock.connection.once.mockImplementation(
+        (event: string, callback: () => void) => {
+          if (event === "connected") callback();
         },
       );
+      channel.once.mockImplementation((event: string, callback: () => void) => {
+        if (event === "attached") {
+          channel.state = "attached";
+          callback();
+        }
+      });
 
       const { stdout } = await runCommand(
         ["rooms:occupancy:subscribe", "test-room"],
         import.meta.url,
       );
 
-      // Check for either the number or part of the occupancy output
-      expect(stdout).toMatch(/6|connections/i);
+      expect(stdout).toContain("Subscribing to occupancy events on room");
     });
   });
 
@@ -183,10 +203,8 @@ describe("rooms feature commands", function () {
 
   describe("error handling", () => {
     it("should handle occupancy get failure", async () => {
-      const chatMock = getMockAblyChat();
-      const room = chatMock.rooms._getRoom("test-room");
-
-      room.occupancy.get.mockRejectedValue(new Error("Connection failed"));
+      const mock = getMockAblyRest();
+      mock.request.mockRejectedValue(new Error("Connection failed"));
 
       const { error } = await runCommand(
         ["rooms:occupancy:get", "test-room"],

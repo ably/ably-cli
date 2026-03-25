@@ -173,7 +173,7 @@ describe("Channel Occupancy E2E Tests", () => {
       const fs = await import("node:fs");
       const output = fs.readFileSync(outputPath, "utf8");
       expect(output).toContain("Occupancy Update");
-      expect(output).toContain("metrics");
+      expect(output).toContain("Connections:");
 
       console.log(`Occupancy subscription test completed successfully`);
     } finally {

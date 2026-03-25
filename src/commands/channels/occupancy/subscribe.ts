@@ -89,7 +89,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
       await channel.subscribe(occupancyEventName, (message: Ably.Message) => {
         const timestamp = formatMessageTimestamp(message.timestamp);
         const event = {
-          channel: channelName,
+          channelName,
           event: occupancyEventName,
           data: message.data,
           timestamp,
@@ -105,17 +105,33 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
         if (this.shouldOutputJson(flags)) {
           this.logJsonEvent({ occupancy: event }, flags);
         } else {
+          this.log(formatTimestamp(timestamp));
+          this.log(`${formatLabel("Channel")} ${formatResource(channelName)}`);
           this.log(
-            `${formatTimestamp(timestamp)} ${formatResource(`Channel: ${channelName}`)} | ${formatEventType("Occupancy Update")}`,
+            `${formatLabel("Event")} ${formatEventType("Occupancy Update")}`,
           );
 
-          if (message.data !== null && message.data !== undefined) {
+          if (message.data?.metrics) {
+            const metrics = message.data.metrics;
             this.log(
-              `${formatLabel("Occupancy Data")} ${JSON.stringify(message.data, null, 2)}`,
+              `${formatLabel("Connections")} ${metrics.connections ?? 0}`,
+            );
+            this.log(`${formatLabel("Publishers")} ${metrics.publishers ?? 0}`);
+            this.log(
+              `${formatLabel("Subscribers")} ${metrics.subscribers ?? 0}`,
+            );
+            this.log(
+              `${formatLabel("Presence Connections")} ${metrics.presenceConnections ?? 0}`,
+            );
+            this.log(
+              `${formatLabel("Presence Members")} ${metrics.presenceMembers ?? 0}`,
+            );
+            this.log(
+              `${formatLabel("Presence Subscribers")} ${metrics.presenceSubscribers ?? 0}`,
             );
           }
 
-          this.log(""); // Empty line for better readability
+          this.log("");
         }
       });
 

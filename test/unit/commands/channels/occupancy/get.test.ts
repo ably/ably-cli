@@ -101,11 +101,14 @@ describe("ChannelsOccupancyGet", function () {
       import.meta.url,
     );
 
-    // Check for expected output with zeros
+    // Check for expected output with zeros — all 6 fields shown unconditionally
     expect(stdout).toContain("test-empty-channel");
     expect(stdout).toContain("Connections: 0");
     expect(stdout).toContain("Publishers: 0");
     expect(stdout).toContain("Subscribers: 0");
+    expect(stdout).toContain("Presence Connections: 0");
+    expect(stdout).toContain("Presence Members: 0");
+    expect(stdout).toContain("Presence Subscribers: 0");
   });
 
   describe("functionality", () => {

@@ -5,7 +5,6 @@ import {
   formatCountLabel,
   formatLimitWarning,
   formatResource,
-  formatLabel,
 } from "../../utils/output.js";
 import {
   buildPaginationNext,
@@ -13,25 +12,9 @@ import {
   formatPaginationLog,
 } from "../../utils/pagination.js";
 
-// Add interface definitions at the beginning of the file
-interface RoomMetrics {
-  connections?: number;
-  presenceConnections?: number;
-  presenceMembers?: number;
-  publishers?: number;
-  subscribers?: number;
-}
-
-interface RoomStatus {
-  occupancy?: {
-    metrics?: RoomMetrics;
-  };
-}
-
 interface RoomItem {
   channelId: string;
   room: string;
-  status?: RoomStatus;
   [key: string]: unknown;
 }
 
@@ -144,7 +127,18 @@ export default class RoomsList extends ChatBaseCommand {
       // Output rooms based on format
       if (this.shouldOutputJson(flags)) {
         const next = buildPaginationNext(hasMore);
-        this.logJsonResult({ rooms, hasMore, ...(next && { next }) }, flags);
+        this.logJsonResult(
+          {
+            rooms: rooms.map((room) => ({
+              roomName: room.room,
+            })),
+            hasMore,
+            ...(next && { next }),
+            timestamp: new Date().toISOString(),
+            total: rooms.length,
+          },
+          flags,
+        );
       } else {
         if (rooms.length === 0) {
           this.log("No active chat rooms found.");
@@ -152,39 +146,11 @@ export default class RoomsList extends ChatBaseCommand {
         }
 
         this.log(
-          `Found ${formatCountLabel(rooms.length, "active chat room")}:`,
+          `Found ${formatCountLabel(rooms.length, "active chat room")}:\n`,
         );
 
         for (const room of rooms) {
           this.log(`${formatResource(room.room)}`);
-
-          // Show occupancy if available
-          if (room.status?.occupancy?.metrics) {
-            const { metrics } = room.status.occupancy;
-            this.log(
-              `  ${formatLabel("Connections")} ${metrics.connections || 0}`,
-            );
-            this.log(
-              `  ${formatLabel("Publishers")} ${metrics.publishers || 0}`,
-            );
-            this.log(
-              `  ${formatLabel("Subscribers")} ${metrics.subscribers || 0}`,
-            );
-
-            if (metrics.presenceConnections !== undefined) {
-              this.log(
-                `  ${formatLabel("Presence Connections")} ${metrics.presenceConnections}`,
-              );
-            }
-
-            if (metrics.presenceMembers !== undefined) {
-              this.log(
-                `  ${formatLabel("Presence Members")} ${metrics.presenceMembers}`,
-              );
-            }
-          }
-
-          this.log(""); // Add a line break between rooms
         }
 
         if (hasMore) {
@@ -193,7 +159,7 @@ export default class RoomsList extends ChatBaseCommand {
             flags.limit,
             "rooms",
           );
-          if (warning) this.log(warning);
+          if (warning) this.log(`\n${warning}`);
         }
       }
     } catch (error) {
