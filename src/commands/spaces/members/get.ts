@@ -1,4 +1,4 @@
-import type { Lock } from "@ably/spaces";
+import type { SpaceMember } from "@ably/spaces";
 import { Args } from "@oclif/core";
 
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
@@ -12,24 +12,24 @@ import {
   formatWarning,
 } from "../../../utils/output.js";
 import {
-  formatLockBlock,
-  formatLockOutput,
+  formatMemberBlock,
+  formatMemberOutput,
 } from "../../../utils/spaces-output.js";
 
-export default class SpacesLocksGetAll extends SpacesBaseCommand {
+export default class SpacesMembersGet extends SpacesBaseCommand {
   static override args = {
     space_name: Args.string({
-      description: "Name of the space to get locks from",
+      description: "Name of the space to get members from",
       required: true,
     }),
   };
 
-  static override description = "Get all current locks in a space";
+  static override description = "Get all members in a space";
 
   static override examples = [
-    "$ ably spaces locks get-all my-space",
-    "$ ably spaces locks get-all my-space --json",
-    "$ ably spaces locks get-all my-space --pretty-json",
+    "$ ably spaces members get my-space",
+    "$ ably spaces members get my-space --json",
+    "$ ably spaces members get my-space --pretty-json",
   ];
 
   static override flags = {
@@ -38,7 +38,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(SpacesLocksGetAll);
+    const { args, flags } = await this.parse(SpacesMembersGet);
     const { space_name: spaceName } = args;
 
     try {
@@ -50,37 +50,35 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(
           formatProgress(
-            `Fetching locks for space ${formatResource(spaceName)}`,
+            `Fetching members for space ${formatResource(spaceName)}`,
           ),
         );
       }
 
-      const locks: Lock[] = await this.space!.locks.getAll();
+      const members: SpaceMember[] = await this.space!.members.getAll();
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            locks: locks.map((lock) => formatLockOutput(lock)),
+            members: members.map((member) => formatMemberOutput(member)),
           },
           flags,
         );
-      } else if (locks.length === 0) {
-        this.logToStderr(
-          formatWarning("No locks are currently active in this space."),
-        );
+      } else if (members.length === 0) {
+        this.logToStderr(formatWarning("No members currently in this space."));
       } else {
         this.log(
-          `\n${formatHeading("Current locks")} (${formatCountLabel(locks.length, "lock")}):\n`,
+          `\n${formatHeading("Current members")} (${formatCountLabel(members.length, "member")}):\n`,
         );
 
-        for (let i = 0; i < locks.length; i++) {
+        for (let i = 0; i < members.length; i++) {
           this.log(`${formatIndex(i + 1)}`);
-          this.log(formatLockBlock(locks[i]));
+          this.log(formatMemberBlock(members[i], { indent: "  " }));
           this.log("");
         }
       }
     } catch (error) {
-      this.fail(error, flags, "lockGetAll", { spaceName });
+      this.fail(error, flags, "memberGet", { spaceName });
     }
   }
 }

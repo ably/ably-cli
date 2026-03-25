@@ -1,8 +1,16 @@
+import type { Lock } from "@ably/spaces";
 import { Args } from "@oclif/core";
 
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import { formatResource, formatWarning } from "../../../utils/output.js";
+import {
+  formatCountLabel,
+  formatHeading,
+  formatIndex,
+  formatProgress,
+  formatResource,
+  formatWarning,
+} from "../../../utils/output.js";
 import {
   formatLockBlock,
   formatLockOutput,
@@ -11,21 +19,22 @@ import {
 export default class SpacesLocksGet extends SpacesBaseCommand {
   static override args = {
     space_name: Args.string({
-      description: "Name of the space to get lock from",
+      description: "Name of the space to get locks from",
       required: true,
     }),
     lockId: Args.string({
-      description: "Lock ID to get",
-      required: true,
+      description: "Lock ID to get (omit to get all locks)",
+      required: false,
     }),
   };
 
-  static override description = "Get a lock in a space";
+  static override description = "Get a lock or all locks in a space";
 
   static override examples = [
+    "$ ably spaces locks get my-space",
+    "$ ably spaces locks get my-space --json",
     "$ ably spaces locks get my-space my-lock",
     "$ ably spaces locks get my-space my-lock --json",
-    "$ ably spaces locks get my-space my-lock --pretty-json",
   ];
 
   static override flags = {
@@ -35,8 +44,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksGet);
-    const { space_name: spaceName } = args;
-    const { lockId } = args;
+    const { space_name: spaceName, lockId } = args;
 
     try {
       await this.initializeSpace(flags, spaceName, {
@@ -44,33 +52,77 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
         setupConnectionLogging: false,
       });
 
-      try {
-        const lock = await this.space!.locks.get(lockId);
-
-        if (!lock) {
-          if (this.shouldOutputJson(flags)) {
-            this.logJsonResult({ lock: null }, flags);
-          } else {
-            this.log(
-              formatWarning(
-                `Lock ${formatResource(lockId)} not found in space ${formatResource(spaceName)}.`,
-              ),
-            );
-          }
-
-          return;
-        }
-
-        if (this.shouldOutputJson(flags)) {
-          this.logJsonResult({ lock: formatLockOutput(lock) }, flags);
-        } else {
-          this.log(formatLockBlock(lock));
-        }
-      } catch (error) {
-        this.fail(error, flags, "lockGet");
+      if (lockId) {
+        await this.getSingleLock(flags, spaceName, lockId);
+      } else {
+        await this.getAllLocks(flags, spaceName);
       }
     } catch (error) {
-      this.fail(error, flags, "lockGet");
+      this.fail(error, flags, "lockGet", { spaceName });
+    }
+  }
+
+  private async getSingleLock(
+    flags: Record<string, unknown>,
+    spaceName: string,
+    lockId: string,
+  ): Promise<void> {
+    const lock = await this.space!.locks.get(lockId);
+
+    if (!lock) {
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonResult({ lock: null }, flags);
+      } else {
+        this.logToStderr(
+          formatWarning(
+            `Lock ${formatResource(lockId)} not found in space ${formatResource(spaceName)}.`,
+          ),
+        );
+      }
+
+      return;
+    }
+
+    if (this.shouldOutputJson(flags)) {
+      this.logJsonResult({ lock: formatLockOutput(lock) }, flags);
+    } else {
+      this.log(formatLockBlock(lock));
+    }
+  }
+
+  private async getAllLocks(
+    flags: Record<string, unknown>,
+    spaceName: string,
+  ): Promise<void> {
+    if (!this.shouldOutputJson(flags)) {
+      this.log(
+        formatProgress(`Fetching locks for space ${formatResource(spaceName)}`),
+      );
+    }
+
+    const locks: Lock[] = await this.space!.locks.getAll();
+
+    if (this.shouldOutputJson(flags)) {
+      this.logJsonResult(
+        {
+          locks: locks.map((lock) => formatLockOutput(lock)),
+        },
+        flags,
+      );
+    } else if (locks.length === 0) {
+      this.logToStderr(
+        formatWarning("No locks are currently active in this space."),
+      );
+    } else {
+      this.log(
+        `\n${formatHeading("Current locks")} (${formatCountLabel(locks.length, "lock")}):\n`,
+      );
+
+      for (let i = 0; i < locks.length; i++) {
+        this.log(`${formatIndex(i + 1)}`);
+        this.log(formatLockBlock(locks[i], { indent: "  " }));
+        this.log("");
+      }
     }
   }
 }

@@ -9,17 +9,17 @@ import {
   standardFlagTests,
 } from "../../../../helpers/standard-tests.js";
 
-describe("spaces:members:get-all command", () => {
+describe("spaces:members:get command", () => {
   beforeEach(() => {
     getMockAblyRealtime();
     getMockAblySpaces();
   });
 
-  standardHelpTests("spaces:members:get-all", import.meta.url);
-  standardArgValidationTests("spaces:members:get-all", import.meta.url, {
+  standardHelpTests("spaces:members:get", import.meta.url);
+  standardArgValidationTests("spaces:members:get", import.meta.url, {
     requiredArgs: ["test-space"],
   });
-  standardFlagTests("spaces:members:get-all", import.meta.url, ["--json"]);
+  standardFlagTests("spaces:members:get", import.meta.url, ["--json"]);
 
   describe("functionality", () => {
     it("should get all members from a space", async () => {
@@ -37,7 +37,7 @@ describe("spaces:members:get-all command", () => {
       ]);
 
       const { stdout } = await runCommand(
-        ["spaces:members:get-all", "test-space", "--json"],
+        ["spaces:members:get", "test-space", "--json"],
         import.meta.url,
       );
 
@@ -61,7 +61,7 @@ describe("spaces:members:get-all command", () => {
       ]);
 
       const { stdout } = await runCommand(
-        ["spaces:members:get-all", "test-space", "--json"],
+        ["spaces:members:get", "test-space", "--json"],
         import.meta.url,
       );
 
@@ -84,7 +84,7 @@ describe("spaces:members:get-all command", () => {
       space.members.getAll.mockResolvedValue([]);
 
       const { stdout } = await runCommand(
-        ["spaces:members:get-all", "test-space", "--json"],
+        ["spaces:members:get", "test-space", "--json"],
         import.meta.url,
       );
 
@@ -106,7 +106,7 @@ describe("spaces:members:get-all command", () => {
       ]);
 
       const { stdout } = await runCommand(
-        ["spaces:members:get-all", "test-space"],
+        ["spaces:members:get", "test-space"],
         import.meta.url,
       );
 
@@ -127,7 +127,7 @@ describe("spaces:members:get-all command", () => {
       );
 
       const { error } = await runCommand(
-        ["spaces:members:get-all", "test-space"],
+        ["spaces:members:get", "test-space"],
         import.meta.url,
       );
       expect(error).toBeDefined();

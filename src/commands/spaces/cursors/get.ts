@@ -16,7 +16,7 @@ import {
   formatCursorOutput,
 } from "../../../utils/spaces-output.js";
 
-export default class SpacesCursorsGetAll extends SpacesBaseCommand {
+export default class SpacesCursorsGet extends SpacesBaseCommand {
   static override args = {
     space_name: Args.string({
       description: "Name of the space to get cursors from",
@@ -27,9 +27,9 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
   static override description = "Get all current cursors in a space";
 
   static override examples = [
-    "$ ably spaces cursors get-all my-space",
-    "$ ably spaces cursors get-all my-space --json",
-    "$ ably spaces cursors get-all my-space --pretty-json",
+    "$ ably spaces cursors get my-space",
+    "$ ably spaces cursors get my-space --json",
+    "$ ably spaces cursors get my-space --pretty-json",
   ];
 
   static override flags = {
@@ -38,7 +38,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(SpacesCursorsGetAll);
+    const { args, flags } = await this.parse(SpacesCursorsGet);
     const { space_name: spaceName } = args;
 
     try {
@@ -82,7 +82,7 @@ export default class SpacesCursorsGetAll extends SpacesBaseCommand {
         });
       }
     } catch (error) {
-      this.fail(error, flags, "cursorGetAll", { spaceName });
+      this.fail(error, flags, "cursorGet", { spaceName });
     }
   }
 }

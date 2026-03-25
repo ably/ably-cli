@@ -10,6 +10,6 @@ export default class SpacesLocks extends BaseTopicCommand {
     "<%= config.bin %> <%= command.id %> acquire my-space my-lock-id",
     "<%= config.bin %> <%= command.id %> subscribe my-space",
     "<%= config.bin %> <%= command.id %> get my-space my-lock-id",
-    "<%= config.bin %> <%= command.id %> get-all my-space",
+    "<%= config.bin %> <%= command.id %> get my-space",
   ];
 }

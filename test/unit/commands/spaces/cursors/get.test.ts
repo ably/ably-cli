@@ -9,18 +9,18 @@ import {
   standardFlagTests,
 } from "../../../../helpers/standard-tests.js";
 
-describe("spaces:cursors:get-all command", () => {
+describe("spaces:cursors:get command", () => {
   beforeEach(() => {
     // Initialize the mocks
     getMockAblyRealtime();
     getMockAblySpaces();
   });
 
-  standardHelpTests("spaces:cursors:get-all", import.meta.url);
-  standardArgValidationTests("spaces:cursors:get-all", import.meta.url, {
+  standardHelpTests("spaces:cursors:get", import.meta.url);
+  standardArgValidationTests("spaces:cursors:get", import.meta.url, {
     requiredArgs: ["test-space"],
   });
-  standardFlagTests("spaces:cursors:get-all", import.meta.url, ["--json"]);
+  standardFlagTests("spaces:cursors:get", import.meta.url, ["--json"]);
 
   describe("functionality", () => {
     it("should get all cursors from a space", async () => {
@@ -42,7 +42,7 @@ describe("spaces:cursors:get-all command", () => {
       });
 
       const { stdout } = await runCommand(
-        ["spaces:cursors:get-all", "test-space", "--json"],
+        ["spaces:cursors:get", "test-space", "--json"],
         import.meta.url,
       );
 
@@ -60,7 +60,7 @@ describe("spaces:cursors:get-all command", () => {
       space.cursors.getAll.mockResolvedValue({});
 
       const { stdout } = await runCommand(
-        ["spaces:cursors:get-all", "test-space", "--json"],
+        ["spaces:cursors:get", "test-space", "--json"],
         import.meta.url,
       );
 
@@ -77,15 +77,12 @@ describe("spaces:cursors:get-all command", () => {
         new Error("Failed to get cursors"),
       );
 
-      // The command catches getAll errors and continues with live updates only
-      // So this should complete without throwing
-      const { stdout } = await runCommand(
-        ["spaces:cursors:get-all", "test-space", "--json"],
+      const { error } = await runCommand(
+        ["spaces:cursors:get", "test-space"],
         import.meta.url,
       );
 
-      // Command should still output JSON even if getAll fails
-      expect(stdout).toBeDefined();
+      expect(error).toBeDefined();
       expect(space.cursors.getAll).toHaveBeenCalled();
     });
   });
@@ -104,7 +101,7 @@ describe("spaces:cursors:get-all command", () => {
       });
 
       const { stdout } = await runCommand(
-        ["spaces:cursors:get-all", "test-space", "--json"],
+        ["spaces:cursors:get", "test-space", "--json"],
         import.meta.url,
       );
 
@@ -128,7 +125,7 @@ describe("spaces:cursors:get-all command", () => {
       space.cursors.getAll.mockResolvedValue({});
 
       await runCommand(
-        ["spaces:cursors:get-all", "test-space", "--json"],
+        ["spaces:cursors:get", "test-space", "--json"],
         import.meta.url,
       );
 
