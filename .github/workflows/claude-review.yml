@@ -1,0 +1,94 @@
+name: Claude PR Review
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  actions: read
+
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: >
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.draft == false) ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request &&
+       contains(github.event.comment.body, '@claude') &&
+       contains(fromJSON('["MEMBER", "OWNER", "COLLABORATOR"]'), github.event.comment.author_association)) ||
+      (github.event_name == 'pull_request_review_comment' &&
+       contains(github.event.comment.body, '@claude') &&
+       contains(fromJSON('["MEMBER", "OWNER", "COLLABORATOR"]'), github.event.comment.author_association))
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Generate GitHub App Token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CLAUDE_APP_ID }}
+          private-key: ${{ secrets.CLAUDE_APP_PRIVATE_KEY }}
+
+      - name: Run Claude review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ steps.generate-token.outputs.token }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+            You are reviewing a pull request for the Ably CLI (@ably/cli), an oclif-based TypeScript CLI.
+
+            ## Philosophy
+
+            You are a helpful second pair of eyes, NOT a gatekeeper. Focus on things that
+            actually matter — bugs, security issues, architectural problems, and correctness.
+            Do NOT nitpick style, formatting, naming, or minor convention deviations that don't
+            affect correctness. Developers read every comment you post, so make each one count.
+
+            ## Setup
+
+            1. Read .claude/CLAUDE.md for project standards.
+            2. Read .claude/skills/ably-review/SKILL.md for the review checklist (use as a reference, not a line-by-line audit).
+            3. Read .claude/skills/ably-new-command/SKILL.md for command conventions (only if command files changed).
+            4. Check which files were changed in this PR.
+
+            ## What to flag (significant concerns only)
+
+            - **Bugs**: Logic errors, race conditions, missing error handling that would crash
+            - **Security**: Secrets in code, injection vulnerabilities, unsafe input handling
+            - **Architectural mistakes**: Wrong base class, missing cleanup/teardown, broken JSON output contract
+            - **Correctness**: this.error() instead of this.fail() (breaks JSON mode), unguarded human output in JSON path, missing test coverage for new commands
+            - **Breaking changes**: Behavioral changes the PR author may not have intended
+
+            ## What NOT to flag
+
+            - Style issues (eslint handles this)
+            - Minor naming preferences
+            - Missing optional improvements (extra tests, additional error messages, docs)
+            - Convention deviations that don't affect correctness (e.g., describe block naming)
+            - Anything in unchanged code
+            - Suggestions beyond the PR's scope
+
+            ## Tone
+
+            Be direct and constructive. When flagging an issue, explain WHY it matters — what
+            breaks, what's the risk, what's the user impact. Don't just cite a rule.
+
+            Always post a summary comment when the review is complete, even if you have no issues to raise.
+          claude_args: |
+            --max-turns 50
+            --model claude-sonnet-4-6
+            --allowedTools "Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Glob,Grep"
