@@ -4208,7 +4208,7 @@ _See code: [src/commands/rooms/presence/index.ts](https://github.com/ably/ably-c
 
 ## `ably rooms presence enter ROOM`
 
-Enter presence in a chat room and remain present until terminated. Provide clientId and data to update existing presence member.
+Enter presence in a chat room and remain present until terminated.
 
 ```
 USAGE
@@ -4230,7 +4230,7 @@ FLAGS
       --show-others        Show other presence events while present (default: false)
 
 DESCRIPTION
-  Enter presence in a chat room and remain present until terminated. Provide clientId and data to update existing presence member.
+  Enter presence in a chat room and remain present until terminated.
 
 EXAMPLES
   $ ably rooms presence enter my-room
