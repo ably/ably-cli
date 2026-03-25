@@ -1,0 +1,67 @@
+name: PR Overview Generator
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  generate-overview:
+    name: Generate PR Overview
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Generate GitHub App Token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CLAUDE_APP_ID }}
+          private-key: ${{ secrets.CLAUDE_APP_PRIVATE_KEY }}
+
+      - name: Generate PR Overview
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ steps.generate-token.outputs.token }}
+          bot_name: "Claude"
+          track_progress: false
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Generate a structured PR overview for this Ably CLI pull request.
+
+            Analyze all changes and create a comment with:
+
+            ## Walkthrough
+            A brief 2-3 sentence summary of what this PR does and why.
+
+            ## Changes
+            | Area | Files | Summary |
+            |------|-------|---------|
+            Group files by area: Commands, Tests, Services, Utils, Config, Docs, Other.
+            Each row should have a one-line summary of what changed in those files.
+
+            ## Review Notes
+            Flag anything that reviewers should pay special attention to:
+            - Breaking changes or behavioral changes
+            - New dependencies
+            - Files that need test coverage
+            - Migration or deployment considerations
+
+            Keep it concise — this is a summary, not a review.
+
+            Post this as a comment on the PR.
+          claude_args: |
+            --max-turns 20
+            --model claude-sonnet-4-6
+            --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Read,Glob,Grep"
