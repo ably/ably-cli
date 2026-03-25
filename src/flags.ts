@@ -61,7 +61,8 @@ export const hiddenControlApiFlags = {
 };
 
 /**
- * client-id flag for commands that support it (e.g., presence).
+ * client-id flag for commands where client identity matters (e.g., subscribe, publish, enter, update, delete).
+ * Not needed for read-only queries (get, get-all, occupancy get) — Ably capabilities are operation-based, not clientId-based.
  */
 export const clientIdFlag = {
   "client-id": Flags.string({

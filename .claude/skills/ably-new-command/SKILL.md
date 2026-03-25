@@ -137,7 +137,7 @@ static flags = {
 - `await this.requireAppId(flags)` — resolves and validates the app ID, returns `Promise<string>` (non-nullable). Calls `this.fail()` internally if no app found — no manual null check needed.
 - `await this.runControlCommand(flags, api => api.method(appId))` — creates the Control API client, executes the call, and handles errors in one step. Returns `Promise<T>` (non-nullable). Useful for single API calls; for multi-step flows, use `this.createControlApi(flags)` directly.
 
-**When to include `clientIdFlag`:** Add `...clientIdFlag` whenever the user might want to control which client identity performs the operation. This includes: presence enter/subscribe, spaces members, typing, cursors, publish, and any mutation where permissions may depend on the client (update, delete, annotate). The reason is that users may want to test auth scenarios — e.g., "can client B update client A's message?" — so they need the ability to set their client ID.
+**When to include `clientIdFlag`:** Add `...clientIdFlag` to commands where client identity affects the operation: subscribe, publish, enter, set, acquire, update, delete, append, annotate. The reason is that users may want to test auth scenarios — e.g., "can client B update client A's message?" — so they need the ability to set their client ID. Do NOT add to read-only queries (get, get-all, history, occupancy get) — Ably capabilities are operation-based, not clientId-based, so client identity is irrelevant for pure reads.
 
 For history commands, also use `timeRangeFlags`:
 ```typescript

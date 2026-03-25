@@ -1,7 +1,7 @@
 import type { Lock } from "@ably/spaces";
 import { Args } from "@oclif/core";
 
-import { productApiFlags, clientIdFlag } from "../../../flags.js";
+import { productApiFlags } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
   formatCountLabel,
@@ -39,7 +39,6 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
 
   static override flags = {
     ...productApiFlags,
-    ...clientIdFlag,
   };
 
   async run(): Promise<void> {

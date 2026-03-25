@@ -417,7 +417,7 @@ describe("Spaces E2E Tests", () => {
 
           // Test getAll functionality
           const getAllResult = await runBackgroundProcessAndGetOutput(
-            `bin/run.js spaces cursors get ${testSpaceId} --client-id ${client1Id}`,
+            `bin/run.js spaces cursors get ${testSpaceId}`,
             15000,
           );
 
