@@ -41,7 +41,7 @@ describe("rooms:messages:reactions:remove command", () => {
         import.meta.url,
       );
 
-      expect(room.attach).toHaveBeenCalled();
+      expect(room.attach).not.toHaveBeenCalled();
       expect(room.messages.reactions.delete).toHaveBeenCalledWith(
         "msg-serial-123",
         {

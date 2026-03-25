@@ -34,7 +34,7 @@ describe("rooms:messages:reactions:send command", () => {
         import.meta.url,
       );
 
-      expect(room.attach).toHaveBeenCalled();
+      expect(room.attach).not.toHaveBeenCalled();
       expect(room.messages.reactions.send).toHaveBeenCalledWith(
         "msg-serial-123",
         {

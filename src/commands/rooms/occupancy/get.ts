@@ -34,7 +34,7 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
 
     try {
       // Create Chat client
-      this.chatClient = await this.createChatClient(flags);
+      this.chatClient = await this.createChatClient(flags, { restOnly: true });
 
       if (!this.chatClient) {
         return this.fail(

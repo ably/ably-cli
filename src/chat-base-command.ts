@@ -69,6 +69,7 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
    */
   protected async createChatClient(
     flags: BaseFlags,
+    options?: { restOnly?: boolean },
   ): Promise<ChatClient | null> {
     // We already have a client, return it
     if (this._chatClient) {
@@ -76,7 +77,11 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
     }
 
     // Create Ably Realtime client first
-    const realtimeClient = await this.createAblyRealtimeClient(flags);
+    // When restOnly is true, skip auto-connect to avoid opening a WebSocket
+    // for commands that only use REST API methods (send, delete, update, history, etc.)
+    const realtimeClient = await this.createAblyRealtimeClient(flags, {
+      autoConnect: options?.restOnly ? false : undefined,
+    });
 
     // Mark auth info as shown after creating the client
     // to prevent duplicate "Using..." output on subsequent calls
