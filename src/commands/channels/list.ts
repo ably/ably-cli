@@ -3,7 +3,6 @@ import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
 import {
   formatCountLabel,
-  formatLabel,
   formatLimitWarning,
   formatResource,
 } from "../../utils/output.js";
@@ -13,23 +12,9 @@ import {
   formatPaginationLog,
 } from "../../utils/pagination.js";
 
-interface ChannelMetrics {
-  connections?: number;
-  presenceConnections?: number;
-  presenceMembers?: number;
-  publishers?: number;
-  subscribers?: number;
-}
-
-interface ChannelStatus {
-  occupancy?: {
-    metrics?: ChannelMetrics;
-  };
-}
-
 interface ChannelItem {
   channelId: string;
-  status?: ChannelStatus;
+  [key: string]: unknown;
 }
 
 // Type for channel listing request parameters
@@ -121,10 +106,7 @@ export default class ChannelsList extends AblyBaseCommand {
         const next = buildPaginationNext(hasMore);
         this.logJsonResult(
           {
-            channels: channels.map((channel: ChannelItem) => ({
-              channelId: channel.channelId,
-              metrics: channel.status?.occupancy?.metrics || {},
-            })),
+            channels: channels.map((channel: ChannelItem) => channel.channelId),
             hasMore,
             ...(next && { next }),
             timestamp: new Date().toISOString(),
@@ -139,39 +121,11 @@ export default class ChannelsList extends AblyBaseCommand {
         }
 
         this.log(
-          `Found ${formatCountLabel(channels.length, "active channel")}:`,
+          `Found ${formatCountLabel(channels.length, "active channel")}:\n`,
         );
 
         for (const channel of channels) {
           this.log(`${formatResource(channel.channelId)}`);
-
-          // Show occupancy if available
-          if (channel.status?.occupancy?.metrics) {
-            const { metrics } = channel.status.occupancy;
-            this.log(
-              `  ${formatLabel("Connections")} ${metrics.connections || 0}`,
-            );
-            this.log(
-              `  ${formatLabel("Publishers")} ${metrics.publishers || 0}`,
-            );
-            this.log(
-              `  ${formatLabel("Subscribers")} ${metrics.subscribers || 0}`,
-            );
-
-            if (metrics.presenceConnections !== undefined) {
-              this.log(
-                `  ${formatLabel("Presence Connections")} ${metrics.presenceConnections}`,
-              );
-            }
-
-            if (metrics.presenceMembers !== undefined) {
-              this.log(
-                `  ${formatLabel("Presence Members")} ${metrics.presenceMembers}`,
-              );
-            }
-          }
-
-          this.log(""); // Add a line break between channels
         }
 
         if (hasMore) {
@@ -180,7 +134,7 @@ export default class ChannelsList extends AblyBaseCommand {
             flags.limit,
             "channels",
           );
-          if (warning) this.log(warning);
+          if (warning) this.log(`\n${warning}`);
         }
       }
     } catch (error) {

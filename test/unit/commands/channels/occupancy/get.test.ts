@@ -23,6 +23,8 @@ describe("ChannelsOccupancyGet", function () {
                 presenceSubscribers: 4,
                 publishers: 2,
                 subscribers: 6,
+                objectPublishers: 0,
+                objectSubscribers: 0,
               },
             },
           },
@@ -56,6 +58,8 @@ describe("ChannelsOccupancyGet", function () {
     expect(stdout).toContain("Presence Subscribers: 4");
     expect(stdout).toContain("Publishers: 2");
     expect(stdout).toContain("Subscribers: 6");
+    expect(stdout).toContain("Object Publishers: 0");
+    expect(stdout).toContain("Object Subscribers: 0");
   });
 
   it("should output occupancy in JSON format when requested", async function () {
@@ -70,9 +74,12 @@ describe("ChannelsOccupancyGet", function () {
 
     // Parse and verify the JSON output
     const parsedOutput = JSON.parse(stdout.trim());
-    expect(parsedOutput).toHaveProperty("channel", "test-occupancy-channel");
-    expect(parsedOutput).toHaveProperty("metrics");
-    expect(parsedOutput.metrics).toMatchObject({
+    expect(parsedOutput).toHaveProperty("occupancy");
+    expect(parsedOutput.occupancy).toHaveProperty(
+      "channelName",
+      "test-occupancy-channel",
+    );
+    expect(parsedOutput.occupancy.metrics).toMatchObject({
       connections: 10,
       presenceConnections: 5,
       presenceMembers: 8,
@@ -97,11 +104,16 @@ describe("ChannelsOccupancyGet", function () {
       import.meta.url,
     );
 
-    // Check for expected output with zeros
+    // Check for expected output with zeros — all 6 fields shown unconditionally
     expect(stdout).toContain("test-empty-channel");
     expect(stdout).toContain("Connections: 0");
     expect(stdout).toContain("Publishers: 0");
     expect(stdout).toContain("Subscribers: 0");
+    expect(stdout).toContain("Presence Connections: 0");
+    expect(stdout).toContain("Presence Members: 0");
+    expect(stdout).toContain("Presence Subscribers: 0");
+    expect(stdout).toContain("Object Publishers: 0");
+    expect(stdout).toContain("Object Subscribers: 0");
   });
 
   describe("functionality", () => {
