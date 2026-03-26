@@ -10,6 +10,6 @@ export default class SpacesCursors extends BaseTopicCommand {
   static override examples = [
     "<%= config.bin %> <%= command.id %> set my-space --x 100 --y 200",
     "<%= config.bin %> <%= command.id %> subscribe my-space",
-    "<%= config.bin %> <%= command.id %> get-all my-space",
+    "<%= config.bin %> <%= command.id %> get my-space",
   ];
 }

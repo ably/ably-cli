@@ -132,14 +132,14 @@ Launch these agents **in parallel**. Each agent gets a focused mandate and uses 
    - Subscribe/stream commands must have `durationFlag`
    - Subscribe commands with replay must have `rewindFlag`
    - History/stats commands must have `timeRangeFlags`
-   - Commands creating realtime connections or performing mutations (publish, update, delete, append) must have `clientIdFlag`
+   - Commands that perform writes (subscribe, publish, enter, set, acquire, update, delete, append) must have `clientIdFlag`; read-only queries (get, get-all, history, occupancy get) must NOT have `clientIdFlag`
    - Control API commands must use `ControlBaseCommand.globalFlags`
 
 **Method (LSP — for ambiguous cases):**
 3. Use `LSP goToDefinition` on flag spread references to confirm they resolve to `src/flags.ts` (not a local redefinition)
 
 **Reasoning guidance:**
-- A command that creates a realtime client or performs a mutation (publish, update, delete, append) but doesn't have `clientIdFlag` is a deviation
+- A write command (subscribe, publish, enter, set, acquire, update, delete, append) without `clientIdFlag` is a deviation; a read-only query (get, get-all, history, occupancy get) WITH `clientIdFlag` is also a deviation
 - A non-subscribe command having `durationFlag` is suspicious but might be valid (e.g., presence enter)
 - Control API commands should NOT have `productApiFlags`
 

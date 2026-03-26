@@ -253,7 +253,7 @@ async run(): Promise<void> {
 
 ## Get Pattern
 
-Get commands perform one-shot queries for current state. They use REST clients and don't need `clientIdFlag`, `durationFlag`, or `rewindFlag`.
+Get commands perform one-shot read-only queries for current state. They don't need `clientIdFlag` (Ably capabilities are operation-based, not clientId-based — client identity is irrelevant for reads), `durationFlag`, or `rewindFlag`.
 
 ```typescript
 static override flags = {

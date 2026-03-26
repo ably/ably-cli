@@ -177,13 +177,18 @@ export function formatCursorBlock(
 /**
  * Format a Lock as a multi-line labeled block.
  */
-export function formatLockBlock(lock: Lock): string {
+export function formatLockBlock(
+  lock: Lock,
+  options?: { indent?: string },
+): string {
+  const indent = options?.indent ?? "";
+  const memberIndent = indent ? indent + "  " : "  ";
   const lines: string[] = [
-    `${formatLabel("Lock ID")} ${formatResource(lock.id)}`,
-    `${formatLabel("Status")} ${formatEventType(lock.status)}`,
-    `${formatLabel("Timestamp")} ${formatMessageTimestamp(lock.timestamp)}`,
-    `${formatLabel("Member")}`,
-    formatMemberBlock(lock.member, { indent: "  " }),
+    `${indent}${formatLabel("Lock ID")} ${formatResource(lock.id)}`,
+    `${indent}${formatLabel("Status")} ${formatEventType(lock.status)}`,
+    `${indent}${formatLabel("Timestamp")} ${formatMessageTimestamp(lock.timestamp)}`,
+    `${indent}${formatLabel("Member")}`,
+    formatMemberBlock(lock.member, { indent: memberIndent }),
   ];
 
   if (
@@ -191,13 +196,13 @@ export function formatLockBlock(lock: Lock): string {
     Object.keys(lock.attributes as Record<string, unknown>).length > 0
   ) {
     lines.push(
-      `${formatLabel("Attributes")} ${JSON.stringify(lock.attributes)}`,
+      `${indent}${formatLabel("Attributes")} ${JSON.stringify(lock.attributes)}`,
     );
   }
 
   if (lock.reason) {
     lines.push(
-      `${formatLabel("Reason")} ${lock.reason.message || lock.reason.toString()}`,
+      `${indent}${formatLabel("Reason")} ${lock.reason.message || lock.reason.toString()}`,
     );
   }
 

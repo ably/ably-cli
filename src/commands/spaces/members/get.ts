@@ -16,7 +16,7 @@ import {
   formatMemberOutput,
 } from "../../../utils/spaces-output.js";
 
-export default class SpacesMembersGetAll extends SpacesBaseCommand {
+export default class SpacesMembersGet extends SpacesBaseCommand {
   static override args = {
     space_name: Args.string({
       description: "Name of the space to get members from",
@@ -27,9 +27,9 @@ export default class SpacesMembersGetAll extends SpacesBaseCommand {
   static override description = "Get all members in a space";
 
   static override examples = [
-    "$ ably spaces members get-all my-space",
-    "$ ably spaces members get-all my-space --json",
-    "$ ably spaces members get-all my-space --pretty-json",
+    "$ ably spaces members get my-space",
+    "$ ably spaces members get my-space --json",
+    "$ ably spaces members get my-space --pretty-json",
   ];
 
   static override flags = {
@@ -37,7 +37,7 @@ export default class SpacesMembersGetAll extends SpacesBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(SpacesMembersGetAll);
+    const { args, flags } = await this.parse(SpacesMembersGet);
     const { space_name: spaceName } = args;
 
     try {
@@ -77,7 +77,7 @@ export default class SpacesMembersGetAll extends SpacesBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "memberGetAll", { spaceName });
+      this.fail(error, flags, "memberGet", { spaceName });
     }
   }
 }

@@ -55,6 +55,19 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
   }
 
   async finally(error: Error | undefined): Promise<void> {
+    // Suppress SDK error logs during teardown. The Spaces SDK's cursors
+    // module lazily enters presence when getAll()/getChannel() is called,
+    // and the queued presence enter fails with error 80017 when the
+    // connection closes. This only happens because the CLI uses one-shot
+    // commands that tear down the connection immediately after fetching
+    // data — in a long-lived app the presence enter would complete normally.
+    //
+    // This is safe because finally() runs AFTER run() has returned, so any
+    // real SDK errors during command execution are already handled by the
+    // catch block in run(). The only errors suppressed here are teardown
+    // artifacts from the SDK's internal state being interrupted mid-flight.
+    this._suppressSdkErrorLogs = true;
+
     // The Spaces SDK subscribes to channel.presence internally (in the Space
     // constructor) but provides no dispose/cleanup method. When the connection
     // closes, the SDK's internal handlers receive errors that surface as

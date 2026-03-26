@@ -5,47 +5,21 @@ import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
 import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
 import {
   standardHelpTests,
+  standardArgValidationTests,
   standardFlagTests,
 } from "../../../../helpers/standard-tests.js";
 
 describe("spaces:locks:get command", () => {
   beforeEach(() => {
-    // Initialize the mocks
     getMockAblyRealtime();
     getMockAblySpaces();
   });
 
   standardHelpTests("spaces:locks:get", import.meta.url);
-  standardFlagTests("spaces:locks:get", import.meta.url, ["--json"]);
-
-  describe("argument validation", () => {
-    it("should reject unknown flags", async () => {
-      const { error } = await runCommand(
-        ["spaces:locks:get", "test-space", "my-lock", "--unknown-flag-xyz"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
-    });
-
-    it("should require space argument", async () => {
-      const { error } = await runCommand(["spaces:locks:get"], import.meta.url);
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Missing .* required arg/);
-    });
-
-    it("should require lockId argument", async () => {
-      const { error } = await runCommand(
-        ["spaces:locks:get", "test-space"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Missing .* required arg/);
-    });
+  standardArgValidationTests("spaces:locks:get", import.meta.url, {
+    requiredArgs: ["test-space"],
   });
+  standardFlagTests("spaces:locks:get", import.meta.url, ["--json"]);
 
   describe("functionality", () => {
     it("should get a specific lock by ID", async () => {
@@ -72,12 +46,12 @@ describe("spaces:locks:get command", () => {
         import.meta.url,
       );
 
-      expect(space.enter).not.toHaveBeenCalled();
+      expect(space.enter).toHaveBeenCalled();
       expect(space.locks.get).toHaveBeenCalledWith("my-lock");
       expect(stdout).toContain("my-lock");
     });
 
-    it("should output JSON envelope with type and command for lock result", async () => {
+    it("should output JSON envelope with type and command for single lock result", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
       space.locks.get.mockResolvedValue({
@@ -130,16 +104,115 @@ describe("spaces:locks:get command", () => {
       expect(resultRecord).toBeDefined();
       expect(resultRecord!.lock).toBeNull();
     });
+
+    it("should get all locks when no lockId is provided", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.locks.getAll.mockResolvedValue([
+        {
+          id: "lock-1",
+          member: {
+            clientId: "user-1",
+            connectionId: "conn-1",
+            isConnected: true,
+            profileData: null,
+            location: null,
+            lastEvent: { name: "enter", timestamp: Date.now() },
+          },
+          status: "locked",
+          timestamp: Date.now(),
+          attributes: undefined,
+          reason: undefined,
+        },
+      ]);
+
+      const { stdout } = await runCommand(
+        ["spaces:locks:get", "test-space", "--json"],
+        import.meta.url,
+      );
+
+      expect(space.enter).toHaveBeenCalled();
+      expect(space.locks.getAll).toHaveBeenCalled();
+      expect(stdout).toContain("locks");
+    });
+
+    it("should output JSON envelope with type and command for all locks result", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.locks.getAll.mockResolvedValue([
+        {
+          id: "lock-1",
+          member: {
+            clientId: "user-1",
+            connectionId: "conn-1",
+            isConnected: true,
+            profileData: null,
+            location: null,
+            lastEvent: { name: "enter", timestamp: Date.now() },
+          },
+          status: "locked",
+          timestamp: Date.now(),
+          attributes: undefined,
+          reason: undefined,
+        },
+      ]);
+
+      const { stdout } = await runCommand(
+        ["spaces:locks:get", "test-space", "--json"],
+        import.meta.url,
+      );
+
+      const records = parseNdjsonLines(stdout);
+      const resultRecord = records.find(
+        (r) => r.type === "result" && Array.isArray(r.locks),
+      );
+      expect(resultRecord).toBeDefined();
+      expect(resultRecord).toHaveProperty("type", "result");
+      expect(resultRecord).toHaveProperty("command");
+      expect(resultRecord).toHaveProperty("success", true);
+      expect(resultRecord!.locks).toBeInstanceOf(Array);
+      expect(resultRecord!.locks[0]).toHaveProperty("id", "lock-1");
+      expect(resultRecord!.locks[0]).toHaveProperty("member");
+      expect(resultRecord!.locks[0].member).toHaveProperty(
+        "clientId",
+        "user-1",
+      );
+    });
+
+    it("should handle no locks found when getting all", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.locks.getAll.mockResolvedValue([]);
+
+      const { stdout } = await runCommand(
+        ["spaces:locks:get", "test-space", "--json"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("locks");
+    });
   });
 
   describe("error handling", () => {
-    it("should handle errors gracefully", async () => {
+    it("should handle single lock get errors gracefully", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
       space.locks.get.mockRejectedValue(new Error("Failed to get lock"));
 
       const { error } = await runCommand(
         ["spaces:locks:get", "test-space", "my-lock"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+    });
+
+    it("should handle get all locks errors gracefully", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.locks.getAll.mockRejectedValue(new Error("Failed to get locks"));
+
+      const { error } = await runCommand(
+        ["spaces:locks:get", "test-space"],
         import.meta.url,
       );
       expect(error).toBeDefined();

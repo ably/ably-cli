@@ -9,6 +9,6 @@ export default class SpacesMembers extends BaseTopicCommand {
   static override examples = [
     "<%= config.bin %> <%= command.id %> enter my-space",
     "<%= config.bin %> <%= command.id %> subscribe my-space",
-    "<%= config.bin %> <%= command.id %> get-all my-space",
+    "<%= config.bin %> <%= command.id %> get my-space",
   ];
 }

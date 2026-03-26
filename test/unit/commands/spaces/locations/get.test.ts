@@ -9,18 +9,18 @@ import {
   standardFlagTests,
 } from "../../../../helpers/standard-tests.js";
 
-describe("spaces:locations:get-all command", () => {
+describe("spaces:locations:get command", () => {
   beforeEach(() => {
     // Initialize the mocks
     getMockAblyRealtime();
     getMockAblySpaces();
   });
 
-  standardHelpTests("spaces:locations:get-all", import.meta.url);
-  standardArgValidationTests("spaces:locations:get-all", import.meta.url, {
+  standardHelpTests("spaces:locations:get", import.meta.url);
+  standardArgValidationTests("spaces:locations:get", import.meta.url, {
     requiredArgs: ["test-space"],
   });
-  standardFlagTests("spaces:locations:get-all", import.meta.url, ["--json"]);
+  standardFlagTests("spaces:locations:get", import.meta.url, ["--json"]);
 
   describe("functionality", () => {
     it("should get all locations from a space", async () => {
@@ -31,7 +31,7 @@ describe("spaces:locations:get-all command", () => {
       });
 
       const { stdout } = await runCommand(
-        ["spaces:locations:get-all", "test-space", "--json"],
+        ["spaces:locations:get", "test-space", "--json"],
         import.meta.url,
       );
 
@@ -48,7 +48,7 @@ describe("spaces:locations:get-all command", () => {
       });
 
       const { stdout } = await runCommand(
-        ["spaces:locations:get-all", "test-space", "--json"],
+        ["spaces:locations:get", "test-space", "--json"],
         import.meta.url,
       );
 
@@ -78,7 +78,7 @@ describe("spaces:locations:get-all command", () => {
       space.locations.getAll.mockResolvedValue({});
 
       const { stdout } = await runCommand(
-        ["spaces:locations:get-all", "test-space", "--json"],
+        ["spaces:locations:get", "test-space", "--json"],
         import.meta.url,
       );
 
@@ -95,7 +95,7 @@ describe("spaces:locations:get-all command", () => {
       );
 
       const { error } = await runCommand(
-        ["spaces:locations:get-all", "test-space"],
+        ["spaces:locations:get", "test-space"],
         import.meta.url,
       );
       expect(error).toBeDefined();

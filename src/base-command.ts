@@ -108,6 +108,7 @@ const SKIP_AUTH_INFO_COMMANDS = [
 export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   protected _authInfoShown = false;
   protected cleanupInProgress = false;
+  protected _suppressSdkErrorLogs = false;
   private _cachedRestClient: Ably.Rest | null = null;
   private _cachedRealtimeClient: Ably.Realtime | null = null;
 
@@ -934,6 +935,14 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
 
     // Always add a log handler to control SDK output formatting and destination
     options.logHandler = (message: string, level: number) => {
+      // Allow commands to suppress SDK error logs during cleanup. Set by
+      // SpacesBaseCommand.finally() to silence teardown noise (e.g. the
+      // Spaces SDK's cursors module queues a presence enter that fails with
+      // 80017 when the connection closes). Only suppresses error-level logs
+      // (level <= 1); only active after run() completes — see the comment
+      // in SpacesBaseCommand.finally() for the full safety rationale.
+      if (this._suppressSdkErrorLogs && level <= 1) return;
+
       if (isJsonMode) {
         // JSON Mode Handling
         if (flags.verbose && level <= 2) {
