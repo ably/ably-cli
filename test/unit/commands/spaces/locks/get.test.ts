@@ -46,7 +46,7 @@ describe("spaces:locks:get command", () => {
         import.meta.url,
       );
 
-      expect(space.enter).not.toHaveBeenCalled();
+      expect(space.enter).toHaveBeenCalled();
       expect(space.locks.get).toHaveBeenCalledWith("my-lock");
       expect(stdout).toContain("my-lock");
     });
@@ -131,7 +131,7 @@ describe("spaces:locks:get command", () => {
         import.meta.url,
       );
 
-      expect(space.enter).not.toHaveBeenCalled();
+      expect(space.enter).toHaveBeenCalled();
       expect(space.locks.getAll).toHaveBeenCalled();
       expect(stdout).toContain("locks");
     });

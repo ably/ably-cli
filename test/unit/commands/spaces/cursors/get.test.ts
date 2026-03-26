@@ -67,27 +67,7 @@ describe("spaces:cursors:get command", () => {
       // The command outputs multiple JSON lines, last one has cursors array
       expect(stdout).toContain("cursors");
     });
-  });
 
-  describe("error handling", () => {
-    it("should handle getAll rejection gracefully", async () => {
-      const spacesMock = getMockAblySpaces();
-      const space = spacesMock._getSpace("test-space");
-      space.cursors.getAll.mockRejectedValue(
-        new Error("Failed to get cursors"),
-      );
-
-      const { error } = await runCommand(
-        ["spaces:cursors:get", "test-space"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(space.cursors.getAll).toHaveBeenCalled();
-    });
-  });
-
-  describe("JSON output", () => {
     it("should output JSON envelope with type and command for cursor results", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
@@ -115,9 +95,7 @@ describe("spaces:cursors:get command", () => {
       expect(resultRecord).toHaveProperty("success", true);
       expect(resultRecord!.cursors).toBeInstanceOf(Array);
     });
-  });
 
-  describe("cleanup behavior", () => {
     it("should leave space and close client on completion", async () => {
       const realtimeMock = getMockAblyRealtime();
       const spacesMock = getMockAblySpaces();
@@ -131,6 +109,24 @@ describe("spaces:cursors:get command", () => {
 
       // Verify cleanup was performed
       expect(realtimeMock.close).toHaveBeenCalled();
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle getAll rejection gracefully", async () => {
+      const spacesMock = getMockAblySpaces();
+      const space = spacesMock._getSpace("test-space");
+      space.cursors.getAll.mockRejectedValue(
+        new Error("Failed to get cursors"),
+      );
+
+      const { error } = await runCommand(
+        ["spaces:cursors:get", "test-space"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(space.cursors.getAll).toHaveBeenCalled();
     });
   });
 });

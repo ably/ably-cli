@@ -33,8 +33,10 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
   static override examples = [
     "$ ably spaces locks get my-space",
     "$ ably spaces locks get my-space --json",
-    "$ ably spaces locks get my-space my-lock",
-    "$ ably spaces locks get my-space my-lock --json",
+    "$ ably spaces locks get my-space --pretty-json",
+    "$ ably spaces locks get my-space lock-id",
+    "$ ably spaces locks get my-space lock-id --json",
+    "$ ably spaces locks get my-space lock-id --pretty-json",
   ];
 
   static override flags = {
@@ -47,7 +49,9 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
 
     try {
       await this.initializeSpace(flags, spaceName, {
-        enterSpace: false,
+        // The SDK's Locks class stores locks in a Map that starts empty.
+        // Entering the space triggers syncing so locks.get()/getAll() return data.
+        enterSpace: true,
         setupConnectionLogging: false,
       });
 
@@ -66,6 +70,14 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
     spaceName: string,
     lockId: string,
   ): Promise<void> {
+    if (!this.shouldOutputJson(flags)) {
+      this.log(
+        formatProgress(
+          `Fetching lock ${formatResource(lockId)} from space ${formatResource(spaceName)}`,
+        ),
+      );
+    }
+
     const lock = await this.space!.locks.get(lockId);
 
     if (!lock) {
