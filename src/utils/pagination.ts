@@ -58,7 +58,7 @@ export function formatPaginationLog(
   const message = `Fetched ${pagesConsumed} pages to retrieve ${itemCount} results.`;
   if (isBillable) {
     return formatWarning(
-      `${message} Each page request counts as a billable message.`,
+      `${message} Each message retrieved counts as a billable message.`,
     );
   }
 
