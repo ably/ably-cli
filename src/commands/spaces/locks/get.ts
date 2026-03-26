@@ -40,7 +40,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
 
     try {
       await this.initializeSpace(flags, spaceName, {
-        enterSpace: true,
+        enterSpace: false,
         setupConnectionLogging: false,
       });
 
