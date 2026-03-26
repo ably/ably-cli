@@ -1,4 +1,3 @@
-import type * as Ably from "ably";
 import { ChatClient, Room, RoomStatus } from "@ably/chat";
 
 import { AblyBaseCommand } from "./base-command.js";
@@ -16,17 +15,6 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
   static globalFlags = { ...productApiFlags };
   private _chatClient: ChatClient | null = null;
   private _cleanupTimeout: NodeJS.Timeout | undefined;
-
-  /**
-   * Override getClientOptions to disable binary protocol for Chat commands.
-   * The Chat API uses realtime.request() for REST calls, and binary (MsgPack)
-   * encoding is not supported by the Chat API endpoints.
-   */
-  protected override getClientOptions(flags: BaseFlags): Ably.ClientOptions {
-    const options = super.getClientOptions(flags);
-    options.useBinaryProtocol = false;
-    return options;
-  }
 
   /**
    * finally disposes of the chat client, if there is one, which includes cleaning up any subscriptions.
