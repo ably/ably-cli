@@ -2038,6 +2038,8 @@ EXAMPLES
 
   $ ably channels presence update my-channel --data '{"status":"busy"}' --json
 
+  $ ably channels presence update my-channel --data '{"status":"busy"}' --pretty-json
+
   $ ably channels presence update my-channel --data '{"status":"online"}' --duration 60
 ```
 
