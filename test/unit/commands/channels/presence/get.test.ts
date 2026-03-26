@@ -31,7 +31,7 @@ const mockPresenceMembers = [
   },
 ];
 
-describe("channels:presence:get-all command", () => {
+describe("channels:presence:get command", () => {
   beforeEach(() => {
     const mock = getMockAblyRest();
     const channel = mock.channels._getChannel("test-channel");
@@ -41,11 +41,11 @@ describe("channels:presence:get-all command", () => {
     );
   });
 
-  standardHelpTests("channels:presence:get-all", import.meta.url);
-  standardArgValidationTests("channels:presence:get-all", import.meta.url, {
+  standardHelpTests("channels:presence:get", import.meta.url);
+  standardArgValidationTests("channels:presence:get", import.meta.url, {
     requiredArgs: ["test-channel"],
   });
-  standardFlagTests("channels:presence:get-all", import.meta.url, [
+  standardFlagTests("channels:presence:get", import.meta.url, [
     "--limit",
     "--json",
     "--pretty-json",
@@ -57,7 +57,7 @@ describe("channels:presence:get-all command", () => {
       const channel = mock.channels._getChannel("test-channel");
 
       const { stdout } = await runCommand(
-        ["channels:presence:get-all", "test-channel"],
+        ["channels:presence:get", "test-channel"],
         import.meta.url,
       );
 
@@ -75,7 +75,7 @@ describe("channels:presence:get-all command", () => {
       channel.presence.get.mockResolvedValue(createMockPaginatedResult([]));
 
       const { stderr } = await runCommand(
-        ["channels:presence:get-all", "test-channel"],
+        ["channels:presence:get", "test-channel"],
         import.meta.url,
       );
 
@@ -84,7 +84,7 @@ describe("channels:presence:get-all command", () => {
 
     it("should output JSON with presenceMembers array", async () => {
       const { stdout } = await runCommand(
-        ["channels:presence:get-all", "test-channel", "--json"],
+        ["channels:presence:get", "test-channel", "--json"],
         import.meta.url,
       );
 
@@ -104,7 +104,7 @@ describe("channels:presence:get-all command", () => {
 
     it("should display member data when present", async () => {
       const { stdout } = await runCommand(
-        ["channels:presence:get-all", "test-channel"],
+        ["channels:presence:get", "test-channel"],
         import.meta.url,
       );
 
@@ -118,7 +118,7 @@ describe("channels:presence:get-all command", () => {
       const channel = mock.channels._getChannel("test-channel");
 
       await runCommand(
-        ["channels:presence:get-all", "test-channel", "--limit", "50"],
+        ["channels:presence:get", "test-channel", "--limit", "50"],
         import.meta.url,
       );
 
@@ -144,7 +144,7 @@ describe("channels:presence:get-all command", () => {
       );
 
       const { stdout } = await runCommand(
-        ["channels:presence:get-all", "test-channel", "--limit", "1", "--json"],
+        ["channels:presence:get", "test-channel", "--limit", "1", "--json"],
         import.meta.url,
       );
 
@@ -162,7 +162,7 @@ describe("channels:presence:get-all command", () => {
       channel.presence.get.mockRejectedValue(new Error("API error"));
 
       const { error } = await runCommand(
-        ["channels:presence:get-all", "test-channel"],
+        ["channels:presence:get", "test-channel"],
         import.meta.url,
       );
 
@@ -180,7 +180,7 @@ describe("channels:presence:get-all command", () => {
       );
 
       const { error } = await runCommand(
-        ["channels:presence:get-all", "nonexistent-channel"],
+        ["channels:presence:get", "nonexistent-channel"],
         import.meta.url,
       );
 

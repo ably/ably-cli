@@ -121,9 +121,8 @@ $ ably-interactive
 * [`ably channels occupancy subscribe CHANNEL`](#ably-channels-occupancy-subscribe-channel)
 * [`ably channels presence`](#ably-channels-presence)
 * [`ably channels presence enter CHANNEL`](#ably-channels-presence-enter-channel)
-* [`ably channels presence get-all CHANNEL`](#ably-channels-presence-get-all-channel)
+* [`ably channels presence get CHANNEL`](#ably-channels-presence-get-channel)
 * [`ably channels presence subscribe CHANNEL`](#ably-channels-presence-subscribe-channel)
-* [`ably channels presence update CHANNEL`](#ably-channels-presence-update-channel)
 * [`ably channels publish CHANNEL MESSAGE`](#ably-channels-publish-channel-message)
 * [`ably channels subscribe CHANNELS`](#ably-channels-subscribe-channels)
 * [`ably channels update CHANNEL SERIAL MESSAGE`](#ably-channels-update-channel-serial-message)
@@ -1894,7 +1893,7 @@ _See code: [src/commands/channels/presence.ts](https://github.com/ably/ably-cli/
 
 ## `ably channels presence enter CHANNEL`
 
-Enter presence on a channel and listen for presence events
+Enter presence on a channel and remains present until terminated.
 
 ```
 USAGE
@@ -1916,9 +1915,11 @@ FLAGS
       --show-others        Show other presence events while present (default: false)
 
 DESCRIPTION
-  Enter presence on a channel and listen for presence events
+  Enter presence on a channel and remains present until terminated.
 
 EXAMPLES
+  $ ably channels presence enter my-channel
+
   $ ably channels presence enter my-channel --client-id "client123"
 
   $ ably channels presence enter my-channel --client-id "client123" --data '{"name":"John","status":"online"}'
@@ -1936,13 +1937,13 @@ EXAMPLES
 
 _See code: [src/commands/channels/presence/enter.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/presence/enter.ts)_
 
-## `ably channels presence get-all CHANNEL`
+## `ably channels presence get CHANNEL`
 
 Get all current presence members on a channel
 
-```
+```text
 USAGE
-  $ ably channels presence get-all CHANNEL [-v] [--json | --pretty-json] [--limit <value>]
+  $ ably channels presence get CHANNEL [-v] [--json | --pretty-json] [--limit <value>]
 
 ARGUMENTS
   CHANNEL  Channel name to get presence members for
@@ -1957,16 +1958,16 @@ DESCRIPTION
   Get all current presence members on a channel
 
 EXAMPLES
-  $ ably channels presence get-all my-channel
+  $ ably channels presence get my-channel
 
-  $ ably channels presence get-all my-channel --limit 50
+  $ ably channels presence get my-channel --limit 50
 
-  $ ably channels presence get-all my-channel --json
+  $ ably channels presence get my-channel --json
 
-  $ ably channels presence get-all my-channel --pretty-json
+  $ ably channels presence get my-channel --pretty-json
 ```
 
-_See code: [src/commands/channels/presence/get-all.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/presence/get-all.ts)_
+_See code: [src/commands/channels/presence/get.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/presence/get.ts)_
 
 ## `ably channels presence subscribe CHANNEL`
 
@@ -2005,42 +2006,6 @@ EXAMPLES
 ```
 
 _See code: [src/commands/channels/presence/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/presence/subscribe.ts)_
-
-## `ably channels presence update CHANNEL`
-
-Update presence data on a channel
-
-```
-USAGE
-  $ ably channels presence update CHANNEL --data <value> [-v] [--json | --pretty-json] [--client-id <value>] [-D
-  <value>]
-
-ARGUMENTS
-  CHANNEL  Channel to update presence on
-
-FLAGS
-  -D, --duration=<value>   Automatically exit after N seconds
-  -v, --verbose            Output verbose logs
-      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
-                           no client ID. Not applicable when using token authentication.
-      --data=<value>       (required) JSON data to associate with the presence update
-      --json               Output in JSON format
-      --pretty-json        Output in colorized JSON format
-
-DESCRIPTION
-  Update presence data on a channel
-
-EXAMPLES
-  $ ably channels presence update my-channel --data '{"status":"away"}'
-
-  $ ably channels presence update my-channel --data '{"status":"busy"}' --json
-
-  $ ably channels presence update my-channel --data '{"status":"busy"}' --pretty-json
-
-  $ ably channels presence update my-channel --data '{"status":"online"}' --duration 60
-```
-
-_See code: [src/commands/channels/presence/update.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/presence/update.ts)_
 
 ## `ably channels publish CHANNEL MESSAGE`
 
