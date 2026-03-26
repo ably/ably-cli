@@ -56,7 +56,6 @@ export default class ChannelsAppend extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsAppend);
-    this.validateChannelName(args, flags);
     const channelName = args.channel;
     const serial = args.serial;
 

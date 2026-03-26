@@ -61,7 +61,6 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsPresenceEnter);
-    this.validateChannelName(args, flags);
 
     try {
       this.client = await this.createAblyRealtimeClient(flags);

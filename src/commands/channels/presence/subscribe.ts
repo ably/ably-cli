@@ -41,7 +41,6 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsPresenceSubscribe);
-    this.validateChannelName(args, flags);
     let channel: Ably.RealtimeChannel | null = null;
 
     try {

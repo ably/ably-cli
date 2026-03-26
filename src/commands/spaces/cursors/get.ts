@@ -38,7 +38,6 @@ export default class SpacesCursorsGet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsGet);
-    this.validateSpaceName(args, flags);
     const { space_name: spaceName } = args;
 
     try {

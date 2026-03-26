@@ -57,8 +57,6 @@ export default class MessagesUpdate extends ChatBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesUpdate);
 
-    this.validateRoomName(args, flags);
-
     try {
       // Parse and validate metadata before any client setup
       let metadata: JsonObject | undefined;

@@ -50,9 +50,6 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesReactionsSend);
-
-    this.validateRoomName(args, flags);
-
     const { room, messageSerial, reaction } = args;
 
     try {

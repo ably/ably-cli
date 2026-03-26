@@ -313,17 +313,5 @@ describe("channels:history command", () => {
       expect(error).toBeDefined();
       expect(error?.message).toContain("API error");
     });
-
-    it("should reject empty channel name", async () => {
-      const { error } = await runCommand(
-        ["channels:history", ""],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toMatch(
-        /Missing 1 required arg|Channel name cannot be empty/,
-      );
-    });
   });
 });

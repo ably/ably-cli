@@ -128,33 +128,6 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     this.isWebCliMode = isWebCliMode();
   }
 
-  protected validateChannelName(
-    args: Record<string, unknown>,
-    flags: BaseFlags,
-    argv?: string[],
-  ): void {
-    const name = (args.channel ?? args.channels ?? "") as string;
-    if (!name.trim()) {
-      this.fail("Channel name cannot be empty", flags, "parse");
-    }
-
-    if (argv) {
-      if (argv.length === 0) {
-        this.fail(
-          "At least one channel name is required",
-          flags,
-          "channelSubscribe",
-        );
-      }
-
-      for (const n of argv) {
-        if (!n.trim()) {
-          this.fail("Channel name cannot be empty", flags, "parse");
-        }
-      }
-    }
-  }
-
   protected isAnonymousWebMode(): boolean {
     // In web CLI mode, the server sets ABLY_ANONYMOUS_USER_MODE when no access token is available
     return this.isWebCliMode && process.env.ABLY_ANONYMOUS_USER_MODE === "true";

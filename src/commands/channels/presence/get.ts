@@ -48,7 +48,6 @@ export default class ChannelsPresenceGet extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsPresenceGet);
-    this.validateChannelName(args, flags);
 
     try {
       const client = await this.createAblyRestClient(flags);

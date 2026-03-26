@@ -42,9 +42,6 @@ export default class KeysCreateCommand extends ControlBaseCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(KeysCreateCommand);
-    if (!flags.name?.trim()) {
-      this.fail("Key name cannot be empty", flags, "parse");
-    }
 
     const appId = await this.requireAppId(flags);
 

@@ -37,7 +37,6 @@ export default class SpacesOccupancyGet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesOccupancyGet);
-    this.validateSpaceName(args, flags);
 
     try {
       const client = await this.createAblyRestClient(flags);

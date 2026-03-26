@@ -40,8 +40,6 @@ export default class MessagesDelete extends ChatBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesDelete);
 
-    this.validateRoomName(args, flags);
-
     try {
       const chatClient = await this.createChatClient(flags, { restOnly: true });
 

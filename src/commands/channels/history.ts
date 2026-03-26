@@ -63,7 +63,6 @@ export default class ChannelsHistory extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsHistory);
-    this.validateChannelName(args, flags);
     const channelName = args.channel;
     let client: Ably.Rest | null;
 

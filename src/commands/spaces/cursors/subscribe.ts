@@ -39,7 +39,6 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsSubscribe);
-    this.validateSpaceName(args, flags);
     const { space_name: spaceName } = args;
 
     try {

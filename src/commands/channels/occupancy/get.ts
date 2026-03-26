@@ -36,7 +36,6 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsOccupancyGet);
-    this.validateChannelName(args, flags);
 
     try {
       // Create the Ably REST client

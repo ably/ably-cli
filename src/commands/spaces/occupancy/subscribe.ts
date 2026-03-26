@@ -42,7 +42,6 @@ export default class SpacesOccupancySubscribe extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesOccupancySubscribe);
-    this.validateSpaceName(args, flags);
     let channel: Ably.RealtimeChannel | null = null;
 
     try {

@@ -63,8 +63,6 @@ export default class TypingKeystroke extends ChatBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(TypingKeystroke);
 
-    this.validateRoomName(args, flags);
-
     try {
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);

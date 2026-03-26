@@ -85,8 +85,6 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
     // Get all channel names from argv
     const channelNames = parseResult.argv as string[];
-    this.validateChannelName(parseResult.args, flags, channelNames);
-
     let channels: Ably.RealtimeChannel[] = [];
 
     try {
@@ -95,6 +93,14 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       if (!this.client) return;
 
       const client = this.client;
+
+      if (channelNames.length === 0) {
+        this.fail(
+          "At least one channel name is required",
+          flags,
+          "channelSubscribe",
+        );
+      }
 
       // Setup channels with appropriate options
       channels = channelNames.map((channelName: string) => {

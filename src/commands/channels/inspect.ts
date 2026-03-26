@@ -28,7 +28,6 @@ export default class ChannelsInspect extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsInspect);
-    this.validateChannelName(args, flags);
 
     const currentAccount = this.configManager.getCurrentAccount();
     const accountId = currentAccount?.accountId;
