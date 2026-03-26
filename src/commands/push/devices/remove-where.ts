@@ -1,10 +1,10 @@
 import { Flags } from "@oclif/core";
-import inquirer from "inquirer";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { forceFlag, productApiFlags } from "../../../flags.js";
 import { BaseFlags } from "../../../types/cli.js";
 import { formatProgress, formatSuccess } from "../../../utils/output.js";
+import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class PushDevicesRemoveWhere extends AblyBaseCommand {
   static override description =
@@ -51,14 +51,9 @@ export default class PushDevicesRemoveWhere extends AblyBaseCommand {
           .map(([k, v]) => `${k}=${v}`)
           .join(", ");
 
-        const { confirmed } = await inquirer.prompt([
-          {
-            type: "confirm",
-            name: "confirmed",
-            message: `Are you sure you want to remove all devices matching: ${filterDesc}?`,
-            default: false,
-          },
-        ]);
+        const confirmed = await promptForConfirmation(
+          `Are you sure you want to remove all devices matching: ${filterDesc}?`,
+        );
 
         if (!confirmed) {
           this.log("Operation cancelled.");

@@ -434,8 +434,6 @@ EXAMPLES
 
   $ ably apps delete
 
-  $ ably apps set-apns-p12
-
   $ ably apps rules list
 
   $ ably apps switch my-app
