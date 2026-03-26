@@ -2,6 +2,7 @@ import type { CursorData, CursorPosition } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
 import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
+import { JsonStatusType } from "../../../utils/json-status.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
   formatListening,
@@ -263,7 +264,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       }
 
       this.logJsonStatus(
-        "holding",
+        JsonStatusType.Holding,
         "Holding cursor. Press Ctrl+C to exit.",
         flags,
       );

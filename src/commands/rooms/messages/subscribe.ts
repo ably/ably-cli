@@ -169,6 +169,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       roomName,
       successMessage: `Subscribed to room: ${formatResource(roomName)}.`,
       listeningMessage: "Listening for messages.",
+      subscribingMessage: `Subscribing to room: ${roomName}.`,
     });
 
     // Attach to the room

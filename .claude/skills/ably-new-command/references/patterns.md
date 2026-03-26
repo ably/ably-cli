@@ -28,6 +28,8 @@ static override flags = {
 ```
 
 ```typescript
+import { JsonStatusType } from "../../utils/json-status.js";
+
 async run(): Promise<void> {
   const { args, flags } = await this.parse(MySubscribeCommand);
 
@@ -47,13 +49,8 @@ async run(): Promise<void> {
   if (!this.shouldOutputJson(flags)) {
     this.log(formatProgress("Attaching to channel: " + formatResource(args.channel)));
   }
-
-  channel.once("attached", () => {
-    if (!this.shouldOutputJson(flags)) {
-      this.log(formatSuccess("Attached to channel: " + formatResource(args.channel) + "."));
-      this.log(formatListening("Listening for events."));
-    }
-  });
+  // JSON subscribe status — logJsonStatus has built-in shouldOutputJson guard
+  this.logJsonStatus(JsonStatusType.Subscribing, `Subscribing to channel: ${args.channel}.`, flags);
 
   let sequenceCounter = 0;
   await channel.subscribe((message) => {
@@ -89,8 +86,33 @@ async run(): Promise<void> {
     }
   });
 
+  if (!this.shouldOutputJson(flags)) {
+    this.log(formatSuccess("Subscribed to channel: " + formatResource(args.channel) + "."));
+    this.log(formatListening("Listening for events."));
+  }
+  // JSON listening status — emitted after successful attach
+  this.logJsonStatus(JsonStatusType.Listening, "Listening for events.", flags);
+
   await this.waitAndTrackCleanup(flags, "subscribe", flags.duration);
 }
+```
+
+**JSON status lifecycle for subscribe commands:**
+All subscribe commands must emit two JSON status messages so consumers can distinguish "connecting" from "ready":
+```jsonl
+{"type":"status","command":"channels:subscribe","status":"subscribing","message":"Subscribing to channel: my-channel."}
+{"type":"status","command":"channels:subscribe","status":"listening","message":"Listening for events."}
+{"type":"event","command":"channels:subscribe","message":{...}}
+```
+
+For **room commands** (extending `ChatBaseCommand`), pass `subscribingMessage` and `listeningMessage` to `setupRoomStatusHandler` — the handler emits both statuses automatically:
+```typescript
+this.setupRoomStatusHandler(room, flags, {
+  roomName,
+  successMessage: `Subscribed to room: ${formatResource(roomName)}.`,
+  listeningMessage: "Listening for messages.",
+  subscribingMessage: `Subscribing to room: ${roomName}.`,
+});
 ```
 
 ---
@@ -669,7 +691,7 @@ Commands must behave strictly according to their documented purpose — no unint
 
 **Set / enter / acquire commands** — hold state until Ctrl+C / `--duration`:
 - Enter space (manual: `enterSpace: false` + `space.enter()` + `markAsEntered()`), perform operation, output confirmation, then hold with `waitAndTrackCleanup`
-- Emit `formatListening("Holding <thing>.")` (human) and `logJsonStatus("holding", ...)` (JSON)
+- Emit `formatListening("Holding <thing>.")` (human) and `logJsonStatus(JsonStatusType.Holding, ...)` (JSON)
 - **NOT subscribe** to other events — that is what subscribe commands are for
 
 **Side-effect rules:**
@@ -700,7 +722,7 @@ this.markAsEntered();
 await this.space!.locations.set(location);
 // output result...
 this.log(formatListening("Holding location."));
-this.logJsonStatus("holding", "Holding location. Press Ctrl+C to exit.", flags);
+this.logJsonStatus(JsonStatusType.Holding, "Holding location. Press Ctrl+C to exit.", flags);
 await this.waitAndTrackCleanup(flags, "location", flags.duration);
 ```
 
@@ -747,9 +769,11 @@ Metadata fields (`total`, `timestamp`, `hasMore`, `appId`) may sit alongside the
 
 ### Hold status for long-running commands (logJsonStatus)
 
-Long-running commands that hold state (e.g. `spaces members enter`, `spaces locations set`, `spaces locks acquire`, `spaces cursors set`) must emit a status line after the result so JSON consumers know the command is alive and waiting:
+Long-running commands that hold state (e.g. `spaces members enter`, `spaces locations set`, `spaces locks acquire`, `spaces cursors set`) must emit a status line after the result so JSON consumers know the command is alive and waiting. Always use the `JsonStatusType` enum from `src/utils/json-status.ts` — never pass raw strings:
 
 ```typescript
+import { JsonStatusType } from "../../../utils/json-status.js";
+
 // After the result output:
 if (this.shouldOutputJson(flags)) {
   this.logJsonResult({ member: formatMemberOutput(self!) }, flags);
@@ -760,7 +784,7 @@ if (this.shouldOutputJson(flags)) {
 }
 
 // logJsonStatus has built-in shouldOutputJson guard — no outer if needed
-this.logJsonStatus("holding", "Holding presence. Press Ctrl+C to exit.", flags);
+this.logJsonStatus(JsonStatusType.Holding, "Holding presence. Press Ctrl+C to exit.", flags);
 
 await this.waitAndTrackCleanup(flags, "member", flags.duration);
 ```

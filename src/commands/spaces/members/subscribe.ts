@@ -3,6 +3,7 @@ import { Args } from "@oclif/core";
 
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
+import { JsonStatusType } from "../../../utils/json-status.js";
 import {
   formatListening,
   formatMessageTimestamp,
@@ -55,12 +56,22 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(formatProgress("Subscribing to member updates"));
       }
+      this.logJsonStatus(
+        JsonStatusType.Subscribing,
+        `Subscribing to member updates in space: ${spaceName}.`,
+        flags,
+      );
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
       if (!this.shouldOutputJson(flags)) {
         this.log(formatListening("Listening for member events."));
       }
+      this.logJsonStatus(
+        JsonStatusType.Listening,
+        "Listening for member events.",
+        flags,
+      );
 
       // Subscribe to member presence events
       this.logCliEvent(

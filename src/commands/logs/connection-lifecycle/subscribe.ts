@@ -7,6 +7,7 @@ import {
   productApiFlags,
   rewindFlag,
 } from "../../../flags.js";
+import { JsonStatusType } from "../../../utils/json-status.js";
 import {
   formatEventType,
   formatListening,
@@ -79,6 +80,11 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
         `Subscribing to connection lifecycle logs`,
         { channel: logsChannelName },
       );
+      this.logJsonStatus(
+        JsonStatusType.Subscribing,
+        "Subscribing to connection lifecycle logs.",
+        flags,
+      );
 
       // Subscribe to connection lifecycle logs
       await channel.subscribe((message: Ably.Message) => {
@@ -129,6 +135,11 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
           formatListening("Listening for connection lifecycle log events."),
         );
       }
+      this.logJsonStatus(
+        JsonStatusType.Listening,
+        "Listening for connection lifecycle log events.",
+        flags,
+      );
 
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "logs", flags.duration);

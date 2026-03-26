@@ -9,6 +9,7 @@ import {
   rewindFlag,
 } from "../../../flags.js";
 import { formatMessageData } from "../../../utils/json-formatter.js";
+import { JsonStatusType } from "../../../utils/json-status.js";
 import {
   formatLabel,
   formatListening,
@@ -79,6 +80,11 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
         "subscribing",
         `Subscribing to ${channelName}...`,
       );
+      this.logJsonStatus(
+        JsonStatusType.Subscribing,
+        "Subscribing to channel lifecycle logs.",
+        flags,
+      );
       // Subscribe to the channel
       await channel.subscribe((message) => {
         const timestamp = formatMessageTimestamp(message.timestamp);
@@ -136,6 +142,11 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
         this.log(formatListening("Listening for channel lifecycle logs."));
         this.log("");
       }
+      this.logJsonStatus(
+        JsonStatusType.Listening,
+        "Listening for channel lifecycle logs.",
+        flags,
+      );
 
       this.logCliEvent(
         flags,

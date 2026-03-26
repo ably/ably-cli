@@ -114,6 +114,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
         roomName: room,
         successMessage: "Connected to Ably.",
         listeningMessage: `Listening for message reactions in room ${formatResource(room)}.`,
+        subscribingMessage: `Subscribing to message reactions in room: ${room}.`,
       });
 
       // Attach to the room

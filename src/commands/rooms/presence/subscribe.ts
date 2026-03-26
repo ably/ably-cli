@@ -8,11 +8,9 @@ import {
   formatClientId,
   formatEventType,
   formatLabel,
-  formatListening,
   formatMessageTimestamp,
   formatProgress,
   formatResource,
-  formatSuccess,
   formatTimestamp,
 } from "../../../utils/output.js";
 
@@ -75,8 +73,9 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
 
       this.setupRoomStatusHandler(currentRoom, flags, {
         roomName: this.roomName!,
-        successMessage: `Connected to room: ${formatResource(this.roomName!)}.`,
-        listeningMessage: undefined,
+        successMessage: `Subscribed to presence in room: ${formatResource(this.roomName!)}.`,
+        listeningMessage: "Listening for presence events.",
+        subscribingMessage: `Subscribing to presence in room: ${this.roomName!}.`,
       });
 
       await currentRoom.attach();
@@ -149,16 +148,6 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         "listening",
         "Listening for presence events. Press Ctrl+C to exit.",
       );
-
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(
-            `Subscribed to presence in room: ${formatResource(this.roomName!)}.`,
-          ),
-        );
-        this.log(formatListening("Listening for presence events."));
-        this.log("");
-      }
 
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "presence", flags.duration);

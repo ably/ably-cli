@@ -119,7 +119,9 @@ For each changed command file, run the relevant checks. Spawn agents for paralle
 3. **Grep** for `shouldOutputJson` — verify human output is guarded
 4. **Read** the file to verify streaming commands use `logJsonEvent` and one-shot commands use `logJsonResult`
 5. **Read** `logJsonResult`/`logJsonEvent` call sites and check data is nested under a domain key (singular for events/single items, plural for collections) — not spread at top level. Top-level envelope fields are `type`, `command`, `success` only. Metadata like `total`, `timestamp`, `appId` may sit alongside the domain key.
-6. **Check** hold commands (set, enter, acquire) emit `logJsonStatus("holding", ...)` after `logJsonResult` — this signals to JSON consumers that the command is alive and waiting for Ctrl+C / `--duration`
+6. **Check** hold commands (set, enter, acquire) emit `logJsonStatus(JsonStatusType.Holding, ...)` after `logJsonResult`
+7. **Check** subscribe commands emit `logJsonStatus(JsonStatusType.Subscribing, ...)` when connecting and `logJsonStatus(JsonStatusType.Listening, ...)` when attached. Room subscribe commands should pass `subscribingMessage` and `listeningMessage` to `setupRoomStatusHandler`.
+8. **Grep** for `logJsonStatus("` — all calls must use `JsonStatusType` enum, not raw strings
 
 **Control API helper check (grep — for Control API commands only):**
 1. **Grep** for `resolveAppId` — should use `requireAppId` instead (encapsulates null check and `fail()`)

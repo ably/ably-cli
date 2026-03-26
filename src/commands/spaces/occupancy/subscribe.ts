@@ -3,6 +3,7 @@ import * as Ably from "ably";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
+import { JsonStatusType } from "../../../utils/json-status.js";
 import {
   formatEventType,
   formatLabel,
@@ -80,6 +81,11 @@ export default class SpacesOccupancySubscribe extends AblyBaseCommand {
           ),
         );
       }
+      this.logJsonStatus(
+        JsonStatusType.Subscribing,
+        `Subscribing to occupancy events on space: ${spaceName}.`,
+        flags,
+      );
 
       await channel.subscribe(occupancyEventName, (message: Ably.Message) => {
         const timestamp = formatMessageTimestamp(message.timestamp);
@@ -139,6 +145,11 @@ export default class SpacesOccupancySubscribe extends AblyBaseCommand {
         );
         this.log(formatListening("Listening for occupancy events."));
       }
+      this.logJsonStatus(
+        JsonStatusType.Listening,
+        "Listening for occupancy events.",
+        flags,
+      );
 
       this.logCliEvent(
         flags,

@@ -1,6 +1,7 @@
 import { type CursorUpdate } from "@ably/spaces";
 import { Args } from "@oclif/core";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
+import { JsonStatusType } from "../../../utils/json-status.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
   formatListening,
@@ -45,6 +46,11 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(formatProgress("Subscribing to cursor updates"));
       }
+      this.logJsonStatus(
+        JsonStatusType.Subscribing,
+        `Subscribing to cursor updates in space: ${spaceName}.`,
+        flags,
+      );
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
@@ -106,6 +112,11 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(formatListening("Listening for cursor movements."));
       }
+      this.logJsonStatus(
+        JsonStatusType.Listening,
+        "Listening for cursor movements.",
+        flags,
+      );
 
       await this.waitAndTrackCleanup(flags, "cursor", flags.duration);
     } catch (error) {

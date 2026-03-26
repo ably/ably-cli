@@ -3,6 +3,7 @@ import * as Ably from "ably";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import { isJsonData } from "../../../utils/json-formatter.js";
+import { JsonStatusType } from "../../../utils/json-status.js";
 import {
   formatClientId,
   formatEventType,
@@ -207,7 +208,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
       }
 
       this.logJsonStatus(
-        "holding",
+        JsonStatusType.Holding,
         "Holding presence. Press Ctrl+C to exit.",
         flags,
       );

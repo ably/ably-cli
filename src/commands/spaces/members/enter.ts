@@ -2,6 +2,7 @@ import type { ProfileData } from "@ably/spaces";
 import { Args, Flags } from "@oclif/core";
 
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
+import { JsonStatusType } from "../../../utils/json-status.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
   formatSuccess,
@@ -91,7 +92,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
       }
 
       this.logJsonStatus(
-        "holding",
+        JsonStatusType.Holding,
         "Holding presence. Press Ctrl+C to exit.",
         flags,
       );

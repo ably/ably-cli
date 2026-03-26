@@ -73,6 +73,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
         roomName,
         successMessage: `Subscribed to typing in room: ${formatResource(roomName)}.`,
         listeningMessage: "Listening for typing indicators.",
+        subscribingMessage: `Subscribing to typing in room: ${roomName}.`,
       });
 
       // Set up typing indicators

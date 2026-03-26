@@ -9,6 +9,7 @@ import {
   rewindFlag,
 } from "../../../flags.js";
 import { formatMessageData } from "../../../utils/json-formatter.js";
+import { JsonStatusType } from "../../../utils/json-status.js";
 import {
   formatListening,
   formatResource,
@@ -76,6 +77,11 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
         "logs",
         "subscribing",
         `Subscribing to ${channelName}...`,
+      );
+      this.logJsonStatus(
+        JsonStatusType.Subscribing,
+        "Subscribing to push logs.",
+        flags,
       );
 
       // Subscribe to the channel
@@ -158,6 +164,11 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
         this.log(formatListening("Listening for push logs."));
         this.log("");
       }
+      this.logJsonStatus(
+        JsonStatusType.Listening,
+        "Listening for push logs.",
+        flags,
+      );
 
       this.logCliEvent(
         flags,

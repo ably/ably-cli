@@ -3,6 +3,7 @@ import { Args, Flags } from "@oclif/core";
 
 import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
+import { JsonStatusType } from "../../../utils/json-status.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
   formatSuccess,
@@ -135,7 +136,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
       }
 
       this.logJsonStatus(
-        "holding",
+        JsonStatusType.Holding,
         "Holding lock. Press Ctrl+C to exit.",
         flags,
       );
