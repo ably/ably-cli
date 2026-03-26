@@ -279,6 +279,7 @@ this.error()         ← oclif exit (ONLY inside fail, nowhere else)
 - **Never use `this.error()` directly** — it is an internal implementation detail of `this.fail()`.
 - **`requireAppId`** returns `Promise<string>` (not nullable) — calls `this.fail()` internally if no app found.
 - **`runControlCommand<T>`** returns `Promise<T>` (not nullable) — calls `this.fail()` internally on error.
+- **Error hints**: `fail()` appends a CLI-specific hint from `src/utils/errors.ts` if one exists for the Ably error code. Hints must only contain actionable CLI advice (e.g., "run `ably login`"), not restate the upstream error message (which is already shown). When adding new error codes, **fetch** https://ably.com/docs/platform/errors/codes using WebFetch to get the official description — do NOT rely on memory or assumptions about what an error code means.
 
 ### Additional output patterns (direct chalk, not helpers)
 - **No app error**: `'No app specified. Use --app flag or select an app with "ably apps switch"'`
