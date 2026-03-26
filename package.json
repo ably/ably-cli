@@ -125,7 +125,7 @@
     "color-json": "^3.0.5",
     "fast-levenshtein": "^3.0.0",
     "inquirer": "^9.2.16",
-    "jsonwebtoken": "^9.0.2",
+    "jsonwebtoken": "^9.0.3",
     "node-fetch": "^3.3.2",
     "open": "^10.1.0",
     "ora": "^8.2.0",
