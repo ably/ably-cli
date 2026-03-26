@@ -95,6 +95,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         roomName: this.roomName!,
         successMessage: `Subscribed to occupancy in room: ${formatResource(this.roomName!)}.`,
         listeningMessage: "Listening for occupancy updates.",
+        subscribingMessage: `Subscribing to occupancy in room: ${this.roomName!}.`,
       });
 
       // Attach to the room

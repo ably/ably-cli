@@ -2,6 +2,7 @@ import { Args } from "@oclif/core";
 import * as Ably from "ably";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
+import { JsonStatusType } from "../../../utils/json-status.js";
 import {
   formatListening,
   formatProgress,
@@ -78,6 +79,11 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
           ),
         );
       }
+      this.logJsonStatus(
+        JsonStatusType.Subscribing,
+        `Subscribing to presence events on channel: ${channelName}.`,
+        flags,
+      );
 
       await channel.presence.subscribe(
         (presenceMessage: Ably.PresenceMessage) => {
@@ -126,6 +132,11 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
         this.log(formatListening("Listening for presence events."));
         this.log("");
       }
+      this.logJsonStatus(
+        JsonStatusType.Listening,
+        "Listening for presence events.",
+        flags,
+      );
 
       this.logCliEvent(
         flags,

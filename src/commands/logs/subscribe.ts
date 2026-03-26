@@ -8,6 +8,7 @@ import {
   productApiFlags,
   rewindFlag,
 } from "../../flags.js";
+import { JsonStatusType } from "../../utils/json-status.js";
 import {
   formatEventType,
   formatListening,
@@ -110,6 +111,11 @@ export default class LogsSubscribe extends AblyBaseCommand {
         `Subscribing to log events: ${logTypes.join(", ")}`,
         { logTypes, channel: logsChannelName },
       );
+      this.logJsonStatus(
+        JsonStatusType.Subscribing,
+        "Subscribing to app logs.",
+        flags,
+      );
 
       // Subscribe to specified log types
       const subscribePromises: Promise<unknown>[] = [];
@@ -169,6 +175,11 @@ export default class LogsSubscribe extends AblyBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(formatListening("Listening for log events."));
       }
+      this.logJsonStatus(
+        JsonStatusType.Listening,
+        "Listening for log events.",
+        flags,
+      );
 
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "logs", flags.duration);

@@ -5,6 +5,7 @@ import { AblyBaseCommand } from "./base-command.js";
 import { productApiFlags } from "./flags.js";
 import { BaseFlags } from "./types/cli.js";
 
+import { JsonStatusType } from "./utils/json-status.js";
 import {
   formatSuccess,
   formatListening,
@@ -119,8 +120,17 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
       roomName: string;
       successMessage?: string;
       listeningMessage?: string;
+      subscribingMessage?: string;
     },
   ): void {
+    if (options.subscribingMessage) {
+      this.logJsonStatus(
+        JsonStatusType.Subscribing,
+        options.subscribingMessage,
+        flags as BaseFlags,
+      );
+    }
+
     room.onStatusChange((statusChange) => {
       let reason: Error | null | string | undefined;
       if (statusChange.current === RoomStatus.Failed) {
@@ -144,12 +154,24 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
               this.log(formatListening(options.listeningMessage));
             }
           }
+          if (options.listeningMessage) {
+            this.logJsonStatus(
+              JsonStatusType.Listening,
+              options.listeningMessage,
+              flags as BaseFlags,
+            );
+          }
           break;
         }
         case RoomStatus.Detached: {
           if (!this.shouldOutputJson(flags)) {
             this.log(formatWarning("Disconnected from Ably"));
           }
+          this.logJsonStatus(
+            JsonStatusType.Disconnected,
+            "Disconnected from Ably.",
+            flags as BaseFlags,
+          );
           break;
         }
         case RoomStatus.Failed: {

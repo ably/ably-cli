@@ -8,6 +8,7 @@ import {
   productApiFlags,
   rewindFlag,
 } from "../../../flags.js";
+import { JsonStatusType } from "../../../utils/json-status.js";
 import {
   formatAnnotationsOutput,
   formatListening,
@@ -91,6 +92,11 @@ export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
           ),
         );
       }
+      this.logJsonStatus(
+        JsonStatusType.Subscribing,
+        `Subscribing to annotations on channel: ${channelName}.`,
+        flags,
+      );
 
       this.setupChannelStateLogging(channel, flags, {
         includeUserFriendlyMessages: true,
@@ -172,6 +178,11 @@ export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
         this.log(formatListening("Listening for annotations."));
         this.log("");
       }
+      this.logJsonStatus(
+        JsonStatusType.Listening,
+        "Listening for annotations.",
+        flags,
+      );
 
       this.logCliEvent(
         flags,

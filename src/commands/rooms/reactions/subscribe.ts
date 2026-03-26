@@ -92,6 +92,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         roomName,
         successMessage: `Subscribed to reactions in room: ${formatResource(roomName)}.`,
         listeningMessage: "Listening for reactions.",
+        subscribingMessage: `Subscribing to reactions in room: ${roomName}.`,
       });
 
       // Attach to the room

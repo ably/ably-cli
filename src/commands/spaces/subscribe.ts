@@ -3,6 +3,7 @@ import { Args } from "@oclif/core";
 
 import { productApiFlags, clientIdFlag, durationFlag } from "../../flags.js";
 import { SpacesBaseCommand } from "../../spaces-base-command.js";
+import { JsonStatusType } from "../../utils/json-status.js";
 import {
   formatCountLabel,
   formatListening,
@@ -63,6 +64,11 @@ export default class SpacesSubscribe extends SpacesBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(formatProgress("Subscribing to space updates"));
       }
+      this.logJsonStatus(
+        JsonStatusType.Subscribing,
+        `Subscribing to space updates in space: ${spaceName}.`,
+        flags,
+      );
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
@@ -106,6 +112,11 @@ export default class SpacesSubscribe extends SpacesBaseCommand {
         );
         this.log(formatListening("Listening for space updates."));
       }
+      this.logJsonStatus(
+        JsonStatusType.Listening,
+        "Listening for space updates.",
+        flags,
+      );
 
       this.logCliEvent(
         flags,

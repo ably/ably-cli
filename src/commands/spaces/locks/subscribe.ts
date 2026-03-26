@@ -3,6 +3,7 @@ import { Args } from "@oclif/core";
 
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
+import { JsonStatusType } from "../../../utils/json-status.js";
 import {
   formatListening,
   formatMessageTimestamp,
@@ -47,6 +48,11 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(formatProgress("Subscribing to lock events"));
       }
+      this.logJsonStatus(
+        JsonStatusType.Subscribing,
+        `Subscribing to lock events in space: ${spaceName}.`,
+        flags,
+      );
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
@@ -84,6 +90,11 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(formatListening("Listening for lock events."));
       }
+      this.logJsonStatus(
+        JsonStatusType.Listening,
+        "Listening for lock events.",
+        flags,
+      );
 
       await this.waitAndTrackCleanup(flags, "lock", flags.duration);
     } catch (error) {

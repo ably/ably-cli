@@ -102,7 +102,13 @@ describe("spaces:members:subscribe command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const lines = stdout.trim().split("\n").filter(Boolean);
+      const eventLine = lines.find((l) => {
+        const parsed = JSON.parse(l);
+        return parsed.type === "event";
+      });
+      expect(eventLine).toBeDefined();
+      const result = JSON.parse(eventLine!);
       expect(result.type).toBe("event");
       expect(result.member).toBeDefined();
       expect(result.member.clientId).toBe("user-1");

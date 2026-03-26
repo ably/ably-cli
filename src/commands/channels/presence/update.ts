@@ -2,6 +2,7 @@ import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
+import { JsonStatusType } from "../../../utils/json-status.js";
 import {
   formatClientId,
   formatLabel,
@@ -133,7 +134,7 @@ export default class ChannelsPresenceUpdate extends AblyBaseCommand {
       }
 
       this.logJsonStatus(
-        "holding",
+        JsonStatusType.Holding,
         "Holding presence. Press Ctrl+C to exit.",
         flags,
       );

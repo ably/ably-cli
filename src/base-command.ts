@@ -19,6 +19,7 @@ import {
   buildJsonRecord,
   formatWarning,
 } from "./utils/output.js";
+import { JsonStatusType } from "./utils/json-status.js";
 import { getCliVersion } from "./utils/version.js";
 import Spaces from "@ably/spaces";
 import { ChatClient } from "@ably/chat";
@@ -1621,7 +1622,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     if (exitReason === "timeout" && !isTestMode()) {
       const message = "Duration elapsed – command finished cleanly.";
       if (this.shouldOutputJson(flags)) {
-        this.logJsonStatus("complete", message, flags);
+        this.logJsonStatus(JsonStatusType.Complete, message, flags);
       } else {
         this.log(message);
       }

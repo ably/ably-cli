@@ -43,7 +43,7 @@ export default class SpacesLocksGetAll extends SpacesBaseCommand {
 
     try {
       await this.initializeSpace(flags, spaceName, {
-        enterSpace: false,
+        enterSpace: true,
         setupConnectionLogging: false,
       });
 
