@@ -91,4 +91,4 @@ jobs:
           claude_args: |
             --max-turns 50
             --model claude-sonnet-4-6
-            --allowedTools "Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Glob,Grep"
+            --allowedTools "Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr review:*),Bash(gh api:*),Read,Glob,Grep"
