@@ -54,7 +54,9 @@ describe("rooms:presence:subscribe command", () => {
           type: "enter",
           member: {
             clientId: "user-123",
+            connectionId: "conn-123",
             data: { name: "Test User" },
+            updatedAt: new Date(),
           },
         });
       }
@@ -104,7 +106,9 @@ describe("rooms:presence:subscribe command", () => {
             type: "leave",
             member: {
               clientId: "user-456",
+              connectionId: "conn-456",
               data: {},
+              updatedAt: new Date(),
             },
           });
         }
@@ -118,10 +122,7 @@ describe("rooms:presence:subscribe command", () => {
 
       // Find the JSON output with presence data
       const records = allRecords.filter(
-        (r) =>
-          r.type === "event" &&
-          r.member &&
-          (r.member as Record<string, unknown>).clientId,
+        (r) => r.type === "event" && r.presenceMessage,
       );
 
       // Verify that presence event was actually output in JSON format
@@ -129,8 +130,10 @@ describe("rooms:presence:subscribe command", () => {
       const parsed = records[0];
       expect(parsed).toHaveProperty("command");
       expect(parsed).toHaveProperty("type", "event");
-      expect(parsed).toHaveProperty("eventType", "leave");
-      expect(parsed.member).toHaveProperty("clientId", "user-456");
+      const msg = parsed.presenceMessage as Record<string, unknown>;
+      expect(msg.action).toBe("leave");
+      expect(msg.clientId).toBe("user-456");
+      expect(msg.connectionId).toBe("conn-456");
     });
   });
 

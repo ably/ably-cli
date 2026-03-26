@@ -193,6 +193,7 @@ $ ably-interactive
 * [`ably rooms occupancy subscribe ROOM`](#ably-rooms-occupancy-subscribe-room)
 * [`ably rooms presence`](#ably-rooms-presence)
 * [`ably rooms presence enter ROOM`](#ably-rooms-presence-enter-room)
+* [`ably rooms presence get ROOM`](#ably-rooms-presence-get-room)
 * [`ably rooms presence subscribe ROOM`](#ably-rooms-presence-subscribe-room)
 * [`ably rooms reactions`](#ably-rooms-reactions)
 * [`ably rooms reactions send ROOM EMOJI`](#ably-rooms-reactions-send-room-emoji)
@@ -4207,7 +4208,7 @@ _See code: [src/commands/rooms/presence/index.ts](https://github.com/ably/ably-c
 
 ## `ably rooms presence enter ROOM`
 
-Enter presence in a chat room and remain present until terminated
+Enter presence in a chat room and remain present until terminated.
 
 ```
 USAGE
@@ -4229,7 +4230,7 @@ FLAGS
       --show-others        Show other presence events while present (default: false)
 
 DESCRIPTION
-  Enter presence in a chat room and remain present until terminated
+  Enter presence in a chat room and remain present until terminated.
 
 EXAMPLES
   $ ably rooms presence enter my-room
@@ -4241,9 +4242,43 @@ EXAMPLES
   $ ably rooms presence enter my-room --duration 30
 
   $ ably rooms presence enter my-room --json
+
+  $ ably rooms presence enter my-room --pretty-json
 ```
 
 _See code: [src/commands/rooms/presence/enter.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/presence/enter.ts)_
+
+## `ably rooms presence get ROOM`
+
+Get all current presence members in a chat room
+
+```
+USAGE
+  $ ably rooms presence get ROOM [-v] [--json | --pretty-json] [--limit <value>]
+
+ARGUMENTS
+  ROOM  Room to get presence members for
+
+FLAGS
+  -v, --verbose        Output verbose logs
+      --json           Output in JSON format
+      --limit=<value>  [default: 100] Maximum number of results to return
+      --pretty-json    Output in colorized JSON format
+
+DESCRIPTION
+  Get all current presence members in a chat room
+
+EXAMPLES
+  $ ably rooms presence get my-room
+
+  $ ably rooms presence get my-room --limit 50
+
+  $ ably rooms presence get my-room --json
+
+  $ ably rooms presence get my-room --pretty-json
+```
+
+_See code: [src/commands/rooms/presence/get.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/presence/get.ts)_
 
 ## `ably rooms presence subscribe ROOM`
 

@@ -200,24 +200,25 @@ describe("Rooms E2E Tests", () => {
           // Wait for all presence event components using the improved detection
 
           try {
-            // Wait for action enter pattern - look for the actual format: "clientId enter"
+            // Wait for client2's presence event in subscribe output
+            // Subscribe command uses multi-line format with "Client ID:" label
             await waitForOutput(
               subscribeRunner,
-              ` ${client2Id} enter`,
+              client2Id,
               process.env.CI ? 20000 : 15000,
             );
 
-            // Wait for profile data in human-readable output
+            // Wait for action type in the event
             await waitForOutput(
               subscribeRunner,
-              `Name: TestUser2`,
+              `enter`,
               process.env.CI ? 10000 : 5000,
             );
 
-            // Wait for status in compact JSON Full Data output
+            // Wait for data containing the status field (pretty-printed JSON has spaces)
             await waitForOutput(
               subscribeRunner,
-              `"status":"active"`,
+              `"status": "active"`,
               process.env.CI ? 5000 : 3000,
             );
           } catch (error) {

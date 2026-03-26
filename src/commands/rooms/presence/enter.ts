@@ -1,16 +1,19 @@
 import { ChatClient, Room, PresenceEvent, PresenceData } from "@ably/chat";
-import { Args, Flags, Interfaces } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
+import { isJsonData } from "../../../utils/json-formatter.js";
 import {
   formatSuccess,
   formatListening,
+  formatProgress,
   formatResource,
   formatTimestamp,
-  formatPresenceAction,
+  formatEventType,
   formatIndex,
   formatClientId,
   formatLabel,
+  formatMessageTimestamp,
 } from "../../../utils/output.js";
 
 export default class RoomsPresenceEnter extends ChatBaseCommand {
@@ -22,14 +25,17 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
   };
 
   static override description =
-    "Enter presence in a chat room and remain present until terminated";
+    "Enter presence in a chat room and remain present until terminated.";
+
   static override examples = [
     "$ ably rooms presence enter my-room",
     `$ ably rooms presence enter my-room --data '{"name":"User","status":"active"}'`,
     "$ ably rooms presence enter my-room --show-others",
     "$ ably rooms presence enter my-room --duration 30",
     "$ ably rooms presence enter my-room --json",
+    "$ ably rooms presence enter my-room --pretty-json",
   ];
+
   static override flags = {
     ...productApiFlags,
     ...clientIdFlag,
@@ -54,19 +60,14 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
   private roomName: string | null = null;
   private data: PresenceData | null = null;
 
-  private commandFlags: Interfaces.InferredFlags<
-    typeof RoomsPresenceEnter.flags
-  > | null = null;
   private sequenceCounter = 0;
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsPresenceEnter);
-    this.commandFlags = flags;
     this.roomName = args.room;
 
-    const rawData = flags.data;
-    if (rawData && rawData !== "{}") {
-      const parsed = this.parseJsonFlag(rawData, "data", flags);
+    if (flags.data) {
+      const parsed = this.parseJsonFlag(flags.data, "data", flags);
       this.data = parsed as PresenceData;
     }
 
@@ -101,11 +102,15 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
           const member = event.member;
           if (member.clientId !== this.chatClient?.clientId) {
             this.sequenceCounter++;
-            const timestamp = new Date().toISOString();
-            const eventData = {
-              eventType: event.type,
-              member: { clientId: member.clientId, data: member.data },
+            const timestamp = formatMessageTimestamp(
+              member.updatedAt?.getTime(),
+            );
+            const presenceEvent = {
+              action: event.type,
               room: this.roomName,
+              clientId: member.clientId,
+              connectionId: member.connectionId,
+              data: member.data ?? null,
               timestamp,
               ...(flags["sequence-numbers"]
                 ? { sequence: this.sequenceCounter }
@@ -115,57 +120,98 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
               flags,
               "presence",
               event.type,
-              `Presence event '${event.type}' received`,
-              eventData,
+              `Presence event: ${event.type} by ${member.clientId}`,
+              presenceEvent,
             );
             if (this.shouldOutputJson(flags)) {
-              this.logJsonEvent(eventData, flags);
+              this.logJsonEvent({ presenceMessage: presenceEvent }, flags);
             } else {
-              const { symbol: actionSymbol, color: actionColor } =
-                formatPresenceAction(event.type);
               const sequencePrefix = flags["sequence-numbers"]
                 ? `${formatIndex(this.sequenceCounter)}`
                 : "";
               this.log(
-                `${formatTimestamp(timestamp)}${sequencePrefix} ${actionColor(actionSymbol)} ${formatClientId(member.clientId || "Unknown")} ${actionColor(event.type)}`,
+                `${formatTimestamp(timestamp)}${sequencePrefix} ${formatResource(`Room: ${this.roomName!}`)} | Action: ${formatEventType(event.type)} | Client: ${formatClientId(member.clientId || "N/A")}`,
               );
-              if (
-                member.data &&
-                typeof member.data === "object" &&
-                Object.keys(member.data).length > 0
-              ) {
-                const profile = member.data as { name?: string };
-                if (profile.name) {
-                  this.log(`  ${formatLabel("Name")} ${profile.name}`);
+
+              if (member.data !== null && member.data !== undefined) {
+                if (isJsonData(member.data)) {
+                  this.log(formatLabel("Data"));
+                  this.log(JSON.stringify(member.data, null, 2));
+                } else {
+                  this.log(`${formatLabel("Data")} ${member.data}`);
                 }
-                this.log(
-                  `  ${formatLabel("Full Data")} ${this.formatJsonOutput({ data: member.data }, flags)}`,
-                );
               }
+
+              this.log(""); // Empty line for better readability
             }
           }
         });
       }
 
       await currentRoom.attach();
-      this.logCliEvent(flags, "presence", "entering", "Entering presence", {
-        data: this.data,
-      });
-      await currentRoom.presence.enter(this.data || {});
-      this.logCliEvent(flags, "presence", "entered", "Entered presence");
 
-      if (!this.shouldOutputJson(flags) && this.roomName) {
+      if (!this.shouldOutputJson(flags)) {
         this.log(
-          formatSuccess(
-            `Entered presence in room: ${formatResource(this.roomName)}.`,
+          formatProgress(
+            `Entering presence in room: ${formatResource(this.roomName)}`,
           ),
         );
-        if (flags["show-others"]) {
-          this.log(`\n${formatListening("Listening for presence events.")}`);
-        } else {
-          this.log(`\n${formatListening("Staying present.")}`);
-        }
       }
+
+      this.logCliEvent(flags, "presence", "entering", "Entering presence", {
+        room: this.roomName,
+        clientId: this.chatClient!.clientId,
+        data: this.data,
+      });
+      await currentRoom.presence.enter(this.data ?? undefined);
+      this.logCliEvent(flags, "presence", "entered", "Entered presence", {
+        room: this.roomName,
+        clientId: this.chatClient!.clientId,
+      });
+
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonResult(
+          {
+            presenceMessage: {
+              action: "enter",
+              room: this.roomName,
+              clientId: this.chatClient!.clientId,
+              connectionId: this.chatClient!.realtime.connection.id,
+              data: this.data ?? null,
+              timestamp: new Date().toISOString(),
+            },
+          },
+          flags,
+        );
+      } else {
+        this.log(
+          formatSuccess(
+            `Entered presence in room: ${formatResource(this.roomName!)}.`,
+          ),
+        );
+        this.log(
+          `${formatLabel("Client ID")} ${formatClientId(this.chatClient!.clientId ?? "unknown")}`,
+        );
+        this.log(
+          `${formatLabel("Connection ID")} ${this.chatClient!.realtime.connection.id}`,
+        );
+        if (this.data !== undefined && this.data !== null) {
+          this.log(`${formatLabel("Data")} ${JSON.stringify(this.data)}`);
+        }
+        this.log(
+          formatListening(
+            flags["show-others"]
+              ? "Listening for presence events."
+              : "Holding presence.",
+          ),
+        );
+      }
+
+      this.logJsonStatus(
+        "holding",
+        "Holding presence. Press Ctrl+C to exit.",
+        flags,
+      );
 
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "presence", flags.duration);
@@ -173,45 +219,6 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       this.fail(error, flags, "roomPresenceEnter", {
         room: this.roomName,
       });
-    } finally {
-      const currentFlags = this.commandFlags || flags || {};
-      this.logCliEvent(
-        currentFlags,
-        "presence",
-        "finallyBlockReached",
-        "Reached finally block for cleanup.",
-      );
-
-      if (!this.cleanupInProgress && !this.shouldOutputJson(currentFlags)) {
-        this.logCliEvent(
-          currentFlags,
-          "presence",
-          "implicitCleanupInFinally",
-          "Performing cleanup in finally (no prior signal or natural end).",
-        );
-      } else {
-        // Either cleanup is in progress or we're in JSON mode
-        this.logCliEvent(
-          currentFlags,
-          "presence",
-          "explicitCleanupOrJsonMode",
-          "Cleanup already in progress or JSON output mode",
-        );
-      }
-
-      if (!this.shouldOutputJson(currentFlags)) {
-        if (this.cleanupInProgress) {
-          this.log(formatSuccess("Graceful shutdown complete."));
-        } else {
-          // Normal completion without user interrupt
-          this.logCliEvent(
-            currentFlags,
-            "presence",
-            "completedNormally",
-            "Command completed normally",
-          );
-        }
-      }
     }
   }
 }
