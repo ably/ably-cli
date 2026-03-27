@@ -47,13 +47,13 @@ export default class ChannelsPublish extends AblyBaseCommand {
     count: Flags.integer({
       char: "c",
       default: 1,
-      description: "Number of messages to publish (default: 1)",
+      description: "Number of messages to publish",
+      min: 1,
     }),
     delay: Flags.integer({
       char: "d",
       default: 40,
-      description:
-        "Delay between messages in milliseconds (default: 40ms, max 25 msgs/sec)",
+      description: "Delay between messages in milliseconds (max 25 msgs/sec)",
     }),
     encoding: Flags.string({
       char: "e",
@@ -163,8 +163,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
     flags: Record<string, unknown>,
     publisher: (msg: Ably.Message) => Promise<Ably.PublishResult | void>,
   ): Promise<void> {
-    // Validate count and delay
-    const count = Math.max(1, flags.count as number);
+    const count = flags.count as number;
     let delay = flags.delay as number;
 
     this.logCliEvent(

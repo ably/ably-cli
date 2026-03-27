@@ -12,7 +12,7 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
 
   static examples = [
     '$ ably queues create --name "my-queue"',
-    '$ ably queues create --name "my-queue" --ttl 3600 --max-length 100000',
+    '$ ably queues create --name "my-queue" --ttl 300 --max-length 5000',
     '$ ably queues create --name "my-queue" --region "eu-west-1-a" --app "My App"',
     '$ ably queues create --name "my-queue" --json',
   ];
@@ -25,7 +25,7 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
     }),
     "max-length": Flags.integer({
       default: 10_000,
-      description: "Maximum number of messages in the queue (default: 10000)",
+      description: "Maximum number of messages in the queue (max: 10000)",
       required: false,
     }),
     name: Flags.string({
@@ -34,20 +34,31 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
     }),
     region: Flags.string({
       default: "us-east-1-a",
-      description: "Region for the queue (default: us-east-1-a)",
+      description: "Region for the queue (e.g., us-east-1-a, eu-west-1-a)",
       required: false,
     }),
     ttl: Flags.integer({
       default: 60,
-      description: "Time to live for messages in seconds (default: 60)",
+      description: "Time to live for messages in seconds (max: 3600)",
       required: false,
     }),
   };
 
   async run(): Promise<void> {
     const { flags } = await this.parse(QueuesCreateCommand);
+    if (!flags.name?.trim()) {
+      this.fail("Queue name cannot be empty", flags, "parse");
+    }
 
     const appId = await this.requireAppId(flags);
+
+    if (flags["max-length"] > 10_000) {
+      this.fail("max-length must not exceed 10000.", flags, "queueCreate");
+    }
+
+    if (flags.ttl > 3600) {
+      this.fail("ttl must not exceed 3600 seconds.", flags, "queueCreate");
+    }
 
     try {
       const controlApi = this.createControlApi(flags);

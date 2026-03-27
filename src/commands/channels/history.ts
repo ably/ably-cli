@@ -9,6 +9,7 @@ import {
   formatMessageTimestamp,
   formatIndex,
   formatCountLabel,
+  formatProgress,
   formatResource,
   formatLimitWarning,
   formatMessagesOutput,
@@ -37,17 +38,18 @@ export default class ChannelsHistory extends AblyBaseCommand {
     '$ ably channels history my-channel --start "2023-01-01T00:00:00Z" --end "2023-01-02T00:00:00Z"',
     "$ ably channels history my-channel --start 1h",
     "$ ably channels history my-channel --limit 100",
-    "$ ably channels history my-channel --direction forward",
+    "$ ably channels history my-channel --direction forwards",
   ];
 
   static override flags = {
     ...productApiFlags,
     cipher: Flags.string({
-      description: "Decryption key for encrypted messages (AES-128)",
+      description:
+        "Decryption key for encrypted messages (base64-encoded or hex-encoded, supports AES-128-CBC and AES-256-CBC)",
     }),
     direction: Flags.string({
       default: "backwards",
-      description: "Direction of message retrieval (default: backwards)",
+      description: "Direction of message retrieval",
       options: ["backwards", "forwards"],
     }),
 
@@ -86,6 +88,24 @@ export default class ChannelsHistory extends AblyBaseCommand {
 
       // Build history query parameters
       const historyParams = buildHistoryParams(flags);
+
+      // Show fetching status
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonEvent(
+          {
+            channel: channelName,
+            limit: flags.limit,
+            status: "fetching",
+          },
+          flags,
+        );
+      } else {
+        this.log(
+          formatProgress(
+            `Fetching ${flags.limit} most recent messages from channel ${formatResource(channelName)}`,
+          ),
+        );
+      }
 
       // Get history
       const history = await channel.history(historyParams);

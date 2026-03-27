@@ -33,11 +33,12 @@ export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
   static override description = "Publish an annotation on a channel message";
 
   static override examples = [
-    '$ ably channels annotations publish my-channel "01234567890:0" "reactions:flag.v1" --name thumbsup',
-    '$ ably channels annotations publish my-channel "01234567890:0" "reactions:multiple.v1" --name thumbsup --count 3',
-    '$ ably channels annotations publish my-channel "01234567890:0" "reactions:flag.v1" --data \'{"key":"value"}\'',
-    '$ ably channels annotations publish my-channel "01234567890:0" "reactions:flag.v1" --json',
-    '$ ably channels annotations publish my-channel "01234567890:0" "reactions:flag.v1" --pretty-json',
+    '$ ably channels annotations publish my-channel "01234567890:0" "metrics:total.v1"',
+    '$ ably channels annotations publish my-channel "01234567890:0" "receipts:flag.v1"',
+    '$ ably channels annotations publish my-channel "01234567890:0" "categories:distinct.v1" --name important',
+    '$ ably channels annotations publish my-channel "01234567890:0" "reactions:unique.v1" --name thumbsup',
+    '$ ably channels annotations publish my-channel "01234567890:0" "rating:multiple.v1" --name stars --count 4',
+    '$ ably channels annotations publish my-channel "01234567890:0" "metrics:total.v1" --json',
   ];
 
   static override flags = {

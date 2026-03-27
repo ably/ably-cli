@@ -24,7 +24,7 @@ $ npm install -g @ably/cli
 $ ably COMMAND
 running command...
 $ ably (--version)
-@ably/cli/0.17.0 darwin-arm64 node-v24.4.1
+@ably/cli/0.17.0 darwin-arm64 node-v25.3.0
 $ ably --help [COMMAND]
 USAGE
   $ ably COMMAND
@@ -865,7 +865,7 @@ FLAGS
       --json                Output in JSON format
       --pretty-json         Output in colorized JSON format
       --token-only          Output only the token string without any formatting or additional information
-      --ttl=<value>         [default: 3600] Time to live in seconds (default: 3600, 1 hour)
+      --ttl=<value>         [default: 3600] Time to live in seconds
 
 DESCRIPTION
   Create an Ably Token with capabilities
@@ -910,7 +910,7 @@ FLAGS
       --json                Output in JSON format
       --pretty-json         Output in colorized JSON format
       --token-only          Output only the token string without any formatting or additional information
-      --ttl=<value>         [default: 3600] Time to live in seconds (default: 3600, 1 hour)
+      --ttl=<value>         [default: 3600] Time to live in seconds
 
 DESCRIPTION
   Create an Ably JWT token with capabilities
@@ -1401,11 +1401,15 @@ DESCRIPTION
   Manage annotations on Ably Pub/Sub channel messages
 
 EXAMPLES
-  $ ably channels annotations publish my-channel "01234567890:0" "reactions:flag.v1" --name thumbsup
+  $ ably channels annotations publish my-channel "01234567890:0" "metrics:total.v1"
+
+  $ ably channels annotations publish my-channel "01234567890:0" "reactions:unique.v1" --name thumbsup
 
   $ ably channels annotations subscribe my-channel
 
   $ ably channels annotations get my-channel "01234567890:0"
+
+  $ ably channels annotations delete my-channel "01234567890:0" "receipts:flag.v1"
 ```
 
 _See code: [src/commands/channels/annotations/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/annotations/index.ts)_
@@ -1436,13 +1440,15 @@ DESCRIPTION
   Delete an annotation from a channel message
 
 EXAMPLES
-  $ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --name thumbsup
+  $ ably channels annotations delete my-channel "01234567890:0" "receipts:flag.v1"
 
-  $ ably channels annotations delete my-channel "01234567890:0" "reactions:multiple.v1" --name thumbsup
+  $ ably channels annotations delete my-channel "01234567890:0" "categories:distinct.v1" --name important
 
-  $ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --json
+  $ ably channels annotations delete my-channel "01234567890:0" "reactions:unique.v1" --name thumbsup
 
-  $ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --pretty-json
+  $ ably channels annotations delete my-channel "01234567890:0" "rating:multiple.v1" --name stars
+
+  $ ably channels annotations delete my-channel "01234567890:0" "receipts:flag.v1" --json
 ```
 
 _See code: [src/commands/channels/annotations/delete.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/annotations/delete.ts)_
@@ -1509,15 +1515,17 @@ DESCRIPTION
   Publish an annotation on a channel message
 
 EXAMPLES
-  $ ably channels annotations publish my-channel "01234567890:0" "reactions:flag.v1" --name thumbsup
+  $ ably channels annotations publish my-channel "01234567890:0" "metrics:total.v1"
 
-  $ ably channels annotations publish my-channel "01234567890:0" "reactions:multiple.v1" --name thumbsup --count 3
+  $ ably channels annotations publish my-channel "01234567890:0" "receipts:flag.v1"
 
-  $ ably channels annotations publish my-channel "01234567890:0" "reactions:flag.v1" --data '{"key":"value"}'
+  $ ably channels annotations publish my-channel "01234567890:0" "categories:distinct.v1" --name important
 
-  $ ably channels annotations publish my-channel "01234567890:0" "reactions:flag.v1" --json
+  $ ably channels annotations publish my-channel "01234567890:0" "reactions:unique.v1" --name thumbsup
 
-  $ ably channels annotations publish my-channel "01234567890:0" "reactions:flag.v1" --pretty-json
+  $ ably channels annotations publish my-channel "01234567890:0" "rating:multiple.v1" --name stars --count 4
+
+  $ ably channels annotations publish my-channel "01234567890:0" "metrics:total.v1" --json
 ```
 
 _See code: [src/commands/channels/annotations/publish.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/annotations/publish.ts)_
@@ -1552,11 +1560,11 @@ EXAMPLES
 
   $ ably channels annotations subscribe my-channel --type "reactions:flag.v1"
 
-  $ ably channels annotations subscribe my-channel --json
-
-  $ ably channels annotations subscribe my-channel --pretty-json
+  $ ably channels annotations subscribe my-channel --type "metrics:total.v1"
 
   $ ably channels annotations subscribe my-channel --duration 30
+
+  $ ably channels annotations subscribe my-channel --json
 ```
 
 _See code: [src/commands/channels/annotations/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/annotations/subscribe.ts)_
@@ -1698,8 +1706,9 @@ ARGUMENTS
 
 FLAGS
   -v, --verbose             Output verbose logs
-      --cipher=<value>      Decryption key for encrypted messages (AES-128)
-      --direction=<option>  [default: backwards] Direction of message retrieval (default: backwards)
+      --cipher=<value>      Decryption key for encrypted messages (base64-encoded or hex-encoded, supports AES-128-CBC
+                            and AES-256-CBC)
+      --direction=<option>  [default: backwards] Direction of message retrieval
                             <options: backwards|forwards>
       --end=<value>         End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --json                Output in JSON format
@@ -1723,7 +1732,7 @@ EXAMPLES
 
   $ ably channels history my-channel --limit 100
 
-  $ ably channels history my-channel --direction forward
+  $ ably channels history my-channel --direction forwards
 ```
 
 _See code: [src/commands/channels/history.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/history.ts)_
@@ -1941,7 +1950,7 @@ _See code: [src/commands/channels/presence/enter.ts](https://github.com/ably/abl
 
 Get all current presence members on a channel
 
-```text
+```
 USAGE
   $ ably channels presence get CHANNEL [-v] [--json | --pretty-json] [--limit <value>]
 
@@ -2021,8 +2030,8 @@ ARGUMENTS
   MESSAGE  The message to publish (JSON format or plain text)
 
 FLAGS
-  -c, --count=<value>       [default: 1] Number of messages to publish (default: 1)
-  -d, --delay=<value>       [default: 40] Delay between messages in milliseconds (default: 40ms, max 25 msgs/sec)
+  -c, --count=<value>       [default: 1] Number of messages to publish
+  -d, --delay=<value>       [default: 40] Delay between messages in milliseconds (max 25 msgs/sec)
   -e, --encoding=<value>    The encoding for the message
   -n, --name=<value>        The event name (if not specified in the message JSON)
   -v, --verbose             Output verbose logs
@@ -2069,26 +2078,23 @@ Subscribe to messages published on one or more Ably channels
 ```
 USAGE
   $ ably channels subscribe CHANNELS... [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>] [--rewind
-    <value>] [--cipher-algorithm <value>] [--cipher-key <value>] [--cipher-key-length <value>] [--cipher-mode <value>]
-    [--delta] [--sequence-numbers]
+    <value>] [--cipher <value>] [--delta] [--sequence-numbers]
 
 ARGUMENTS
   CHANNELS...  Channel name(s) to subscribe to
 
 FLAGS
-  -D, --duration=<value>           Automatically exit after N seconds
-  -v, --verbose                    Output verbose logs
-      --cipher-algorithm=<value>   [default: aes] Encryption algorithm to use (default: aes)
-      --cipher-key=<value>         Encryption key for decrypting messages (hex-encoded)
-      --cipher-key-length=<value>  [default: 256] Length of encryption key in bits (default: 256)
-      --cipher-mode=<value>        [default: cbc] Cipher mode to use (default: cbc)
-      --client-id=<value>          Overrides any default client ID when using API authentication. Use "none" to
-                                   explicitly set no client ID. Not applicable when using token authentication.
-      --delta                      Enable delta compression for messages
-      --json                       Output in JSON format
-      --pretty-json                Output in colorized JSON format
-      --rewind=<value>             Number of messages to rewind when subscribing (default: 0)
-      --sequence-numbers           Include sequence numbers in output
+  -D, --duration=<value>   Automatically exit after N seconds
+  -v, --verbose            Output verbose logs
+      --cipher=<value>     Decryption key for encrypted messages (base64-encoded or hex-encoded, supports AES-128-CBC
+                           and AES-256-CBC)
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --delta              Enable delta compression (VCDIFF) to reduce message payload sizes
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+      --rewind=<value>     Number of messages to rewind when subscribing (default: 0)
+      --sequence-numbers   Include sequence numbers in output
 
 DESCRIPTION
   Subscribe to messages published on one or more Ably channels
@@ -2102,7 +2108,7 @@ EXAMPLES
 
   $ ably channels subscribe --delta my-channel
 
-  $ ably channels subscribe --cipher-key YOUR_CIPHER_KEY my-channel
+  $ ably channels subscribe --cipher YOUR_CIPHER_KEY my-channel
 
   $ ably channels subscribe my-channel --json
 
@@ -2358,13 +2364,13 @@ FLAGS
       --channel-filter=<value>  Channel filter pattern
       --json                    Output in JSON format
       --pretty-json             Output in colorized JSON format
-      --request-mode=<option>   [default: single] Request mode for the integration (default: single)
+      --request-mode=<option>   [default: single] Request mode for the integration
                                 <options: single|batch>
       --rule-type=<option>      (required) Type of integration (http, amqp, etc.)
                                 <options: http|amqp|kinesis|firehose|pulsar|kafka|azure|azure-functions|mqtt|cloudmqtt>
       --source-type=<option>    (required) The event source type
                                 <options: channel.message|channel.presence|channel.lifecycle|presence.message>
-      --status=<option>         [default: enabled] Initial status of the integration (default: enabled)
+      --status=<option>         [default: enabled] Initial status of the integration
                                 <options: enabled|disabled>
       --target-url=<value>      Target URL for HTTP integrations
 
@@ -3554,11 +3560,11 @@ FLAGS
   -v, --verbose             Output verbose logs
       --app=<value>         The app ID or name (defaults to current app)
       --json                Output in JSON format
-      --max-length=<value>  [default: 10000] Maximum number of messages in the queue (default: 10000)
+      --max-length=<value>  [default: 10000] Maximum number of messages in the queue (max: 10000)
       --name=<value>        (required) Name of the queue
       --pretty-json         Output in colorized JSON format
-      --region=<value>      [default: us-east-1-a] Region for the queue (default: us-east-1-a)
-      --ttl=<value>         [default: 60] Time to live for messages in seconds (default: 60)
+      --region=<value>      [default: us-east-1-a] Region for the queue (e.g., us-east-1-a, eu-west-1-a)
+      --ttl=<value>         [default: 60] Time to live for messages in seconds (max: 3600)
 
 DESCRIPTION
   Create a queue
@@ -3566,7 +3572,7 @@ DESCRIPTION
 EXAMPLES
   $ ably queues create --name "my-queue"
 
-  $ ably queues create --name "my-queue" --ttl 3600 --max-length 100000
+  $ ably queues create --name "my-queue" --ttl 300 --max-length 5000
 
   $ ably queues create --name "my-queue" --region "eu-west-1-a" --app "My App"
 
@@ -3772,7 +3778,7 @@ FLAGS
   -v, --verbose         Output verbose logs
       --end=<value>     End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
       --json            Output in JSON format
-      --order=<option>  [default: newestFirst] Query direction: oldestFirst or newestFirst (default: newestFirst)
+      --order=<option>  [default: newestFirst] Order of results: oldestFirst or newestFirst
                         <options: oldestFirst|newestFirst>
       --pretty-json     Output in colorized JSON format
       --show-metadata   Display message metadata if available
@@ -3953,8 +3959,8 @@ ARGUMENTS
   TEXT  The message text to send
 
 FLAGS
-  -c, --count=<value>      [default: 1] Number of messages to send (default: 1)
-  -d, --delay=<value>      [default: 40] Delay between messages in milliseconds (default: 40ms, max 25 msgs/sec)
+  -c, --count=<value>      [default: 1] Number of messages to send
+  -d, --delay=<value>      [default: 40] Delay between messages in milliseconds (max 25 msgs/sec)
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.

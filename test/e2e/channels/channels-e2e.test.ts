@@ -338,7 +338,10 @@ describe("Channel E2E Tests", () => {
 
     let result;
     try {
-      result = JSON.parse(historyResult.stdout);
+      // The --json output is NDJSON (one event line + one result line).
+      // Parse the last non-empty line which contains the result.
+      const lines = historyResult.stdout.trim().split("\n").filter(Boolean);
+      result = JSON.parse(lines.at(-1));
     } catch (parseError) {
       throw new Error(
         `Failed to parse JSON history output. Parse error: ${parseError}. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}, Stdout: ${historyResult.stdout}`,

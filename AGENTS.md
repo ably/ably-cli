@@ -299,12 +299,13 @@ When adding COMMANDS sections in `src/help.ts`, use `chalk.bold()` for headers, 
 
 ### Flag conventions
 - All flags kebab-case: `--my-flag` (never camelCase)
+- **No duplicate defaults in descriptions**: oclif appends `[default: N]` to `--help` automatically. Don't repeat it in `description`. Exceptions: falsy defaults (`0`, `false`) — oclif suppresses these, so keep them in the description. Behavioral phrases like `"defaults to current app"` are fine too.
 - `--app`: `"The app ID or name (defaults to current app)"` (for commands with `resolveAppId`), `"The app ID (defaults to current app)"` (for commands without)
-- `--limit`: `"Maximum number of results to return"` with `min: 1` (oclif shows `[default: N]` automatically, don't duplicate in description)
+- `--limit`: `"Maximum number of results to return"` with `min: 1`
 - `--duration`: Use `durationFlag` from `src/flags.ts`. `"Automatically exit after N seconds"`, alias `-D`.
 - `--rewind`: Use `rewindFlag` from `src/flags.ts`. `"Number of messages to rewind when subscribing (default: 0)"`. Apply with `this.configureRewind(channelOptions, flags.rewind, flags, component, channelName)`.
 - `--start`/`--end`: Use `timeRangeFlags` from `src/flags.ts` and parse with `parseTimestamp()` from `src/utils/time.ts`. Accepts ISO 8601, Unix ms, or relative (e.g., `"1h"`, `"30m"`, `"2d"`).
-- `--direction`: `"Direction of message retrieval (default: backwards)"` or `"Direction of log retrieval"`, options `["backwards", "forwards"]`.
+- `--direction`: `"Direction of message retrieval"` or `"Direction of log retrieval"`, options `["backwards", "forwards"]`.
 - Channels use "publish", Rooms use "send" (matches SDK terminology)
 - Command descriptions: imperative mood, sentence case, no trailing period (e.g., `"Subscribe to presence events on a channel"`)
 

@@ -84,14 +84,14 @@ describe("queues:create command", () => {
       nockControl()
         .post(`/v1/apps/${appId}/queues`, {
           name: mockQueueName,
-          maxLength: 50000,
+          maxLength: 5000,
           region: "eu-west-1-a",
           ttl: 3600,
         })
         .reply(201, {
           ...createMockQueueResponse(appId),
           region: "eu-west-1-a",
-          maxLength: 50000,
+          maxLength: 5000,
           ttl: 3600,
         });
 
@@ -101,7 +101,7 @@ describe("queues:create command", () => {
           "--name",
           mockQueueName,
           "--max-length",
-          "50000",
+          "5000",
           "--region",
           "eu-west-1-a",
           "--ttl",
@@ -113,7 +113,7 @@ describe("queues:create command", () => {
       expect(stdout).toContain("Queue created:");
       expect(stdout).toContain("Region: eu-west-1-a");
       expect(stdout).toContain("TTL: 3600 seconds");
-      expect(stdout).toContain("Max Length: 50000 messages");
+      expect(stdout).toContain("Max Length: 5000 messages");
     });
 
     it("should output JSON format when --json flag is used", async () => {
@@ -411,7 +411,7 @@ describe("queues:create command", () => {
       expect(stdout).toContain("Max Length: 1 messages");
     });
 
-    it("should accept large parameter values and different regions", async () => {
+    it("should accept max parameter values and different regions", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
       const accountId = mockConfig.getCurrentAccount()!.accountId!;
@@ -426,15 +426,15 @@ describe("queues:create command", () => {
       nockControl()
         .post(`/v1/apps/${appId}/queues`, {
           name: mockQueueName,
-          maxLength: 1000000,
+          maxLength: 10000,
           region: "ap-southeast-2-a",
-          ttl: 86400,
+          ttl: 3600,
         })
         .reply(201, {
           ...createMockQueueResponse(appId),
           region: "ap-southeast-2-a",
-          maxLength: 1000000,
-          ttl: 86400,
+          maxLength: 10000,
+          ttl: 3600,
         });
 
       const { stdout } = await runCommand(
@@ -443,19 +443,39 @@ describe("queues:create command", () => {
           "--name",
           mockQueueName,
           "--max-length",
-          "1000000",
+          "10000",
           "--region",
           "ap-southeast-2-a",
           "--ttl",
-          "86400",
+          "3600",
         ],
         import.meta.url,
       );
 
       expect(stdout).toContain("Queue created:");
       expect(stdout).toContain("Region: ap-southeast-2-a");
-      expect(stdout).toContain("TTL: 86400 seconds");
-      expect(stdout).toContain("Max Length: 1000000 messages");
+      expect(stdout).toContain("TTL: 3600 seconds");
+      expect(stdout).toContain("Max Length: 10000 messages");
+    });
+
+    it("should reject max-length exceeding 10000", async () => {
+      const { error } = await runCommand(
+        ["queues:create", "--name", mockQueueName, "--max-length", "10001"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("max-length must not exceed 10000.");
+    });
+
+    it("should reject ttl exceeding 3600", async () => {
+      const { error } = await runCommand(
+        ["queues:create", "--name", mockQueueName, "--ttl", "3601"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("ttl must not exceed 3600 seconds.");
     });
   });
 

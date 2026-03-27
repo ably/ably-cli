@@ -117,6 +117,10 @@ export default class RoomsList extends ChatBaseCommand {
           const roomNameMatch = channelId.match(/^(.+?)::\$chat.*$/);
           if (!roomNameMatch || !roomNameMatch[1]) return false;
           const roomName = roomNameMatch[1];
+          // Apply prefix filter at the room name level, not just the channel level.
+          // The server-side prefix filter operates on channel IDs (e.g., "prefix::$chat::messages"),
+          // but we need to verify the extracted room name itself starts with the user's prefix.
+          if (flags.prefix && !roomName.startsWith(flags.prefix)) return false;
           if (seenRooms.has(roomName)) return false;
           seenRooms.add(roomName);
           return true;

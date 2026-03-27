@@ -1,6 +1,6 @@
 import { Args } from "@oclif/core";
 
-import { AblyBaseCommand } from "../../../base-command.js";
+import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { productApiFlags } from "../../../flags.js";
 import { formatLabel, formatResource } from "../../../utils/output.js";
 
@@ -15,7 +15,7 @@ interface OccupancyMetrics {
   subscribers: number;
 }
 
-export default class SpacesOccupancyGet extends AblyBaseCommand {
+export default class SpacesOccupancyGet extends SpacesBaseCommand {
   static override args = {
     space_name: Args.string({
       description: "Space name to get occupancy for",

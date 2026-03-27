@@ -1,7 +1,7 @@
 import { Args } from "@oclif/core";
 import * as Ably from "ably";
 
-import { AblyBaseCommand } from "../../../base-command.js";
+import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import {
   formatEventType,
@@ -16,7 +16,7 @@ import {
 
 const SPACE_CHANNEL_TAG = "::$space";
 
-export default class SpacesOccupancySubscribe extends AblyBaseCommand {
+export default class SpacesOccupancySubscribe extends SpacesBaseCommand {
   static override args = {
     space_name: Args.string({
       description: "Space name to subscribe to occupancy events",
