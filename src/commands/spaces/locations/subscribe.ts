@@ -56,62 +56,56 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
         "Subscribing to location updates",
       );
 
-      try {
-        const locationHandler = (update: LocationsEvents.UpdateEvent) => {
-          try {
-            const timestamp = new Date().toISOString();
-            this.logCliEvent(
-              flags,
-              "location",
-              "updateReceived",
-              "Location update received",
+      const locationHandler = (update: LocationsEvents.UpdateEvent) => {
+        try {
+          const timestamp = new Date().toISOString();
+          this.logCliEvent(
+            flags,
+            "location",
+            "updateReceived",
+            "Location update received",
+            {
+              clientId: update.member.clientId,
+              connectionId: update.member.connectionId,
+              timestamp,
+            },
+          );
+
+          if (this.shouldOutputJson(flags)) {
+            this.logJsonEvent(
               {
-                clientId: update.member.clientId,
-                connectionId: update.member.connectionId,
-                timestamp,
-              },
-            );
-
-            if (this.shouldOutputJson(flags)) {
-              this.logJsonEvent(
-                {
-                  location: {
-                    member: {
-                      clientId: update.member.clientId,
-                      connectionId: update.member.connectionId,
-                    },
-                    currentLocation: update.currentLocation,
-                    previousLocation: update.previousLocation,
-                    timestamp,
+                location: {
+                  member: {
+                    clientId: update.member.clientId,
+                    connectionId: update.member.connectionId,
                   },
+                  currentLocation: update.currentLocation,
+                  previousLocation: update.previousLocation,
+                  timestamp,
                 },
-                flags,
-              );
-            } else {
-              this.log(formatTimestamp(timestamp));
-              this.log(formatLocationUpdateBlock(update));
-              this.log("");
-            }
-          } catch (error) {
-            this.fail(error, flags, "locationSubscribe", {
-              spaceName,
-            });
+              },
+              flags,
+            );
+          } else {
+            this.log(formatTimestamp(timestamp));
+            this.log(formatLocationUpdateBlock(update));
+            this.log("");
           }
-        };
+        } catch (error) {
+          this.fail(error, flags, "locationSubscribe", {
+            spaceName,
+          });
+        }
+      };
 
-        this.space!.locations.subscribe("update", locationHandler);
+      this.space!.locations.subscribe("update", locationHandler);
 
-        this.logCliEvent(
-          flags,
-          "location",
-          "subscribed",
-          "Successfully subscribed to location updates",
-        );
-      } catch (error) {
-        this.fail(error, flags, "locationSubscribe", {
-          spaceName,
-        });
-      }
+      this.logCliEvent(
+        flags,
+        "location",
+        "subscribed",
+        "Successfully subscribed to location updates",
+      );
 
       await this.waitAndTrackCleanup(flags, "location", flags.duration);
     } catch (error) {

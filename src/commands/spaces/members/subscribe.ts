@@ -38,8 +38,6 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
     ...durationFlag,
   };
 
-  private listener: ((member: SpaceMember) => void) | null = null;
-
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesMembersSubscribe);
     const { space_name: spaceName } = args;
@@ -69,20 +67,14 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
         "subscribing",
         "Subscribing to member updates",
       );
-      // Define the listener function
-      this.listener = (member: SpaceMember) => {
+
+      const memberListener = (member: SpaceMember) => {
         const now = Date.now();
 
         // Determine the action from the member's lastEvent
-        const action = member.lastEvent?.name || "unknown";
+        const action = member.lastEvent.name || "unknown";
         const clientId = member.clientId || "Unknown";
         const connectionId = member.connectionId || "Unknown";
-
-        // Skip self events - check connection ID
-        const selfConnectionId = this.realtimeClient!.connection.id;
-        if (member.connectionId === selfConnectionId) {
-          return;
-        }
 
         // Create a unique key for this client+connection combination
         const clientKey = `${clientId}:${connectionId}`;
@@ -130,21 +122,14 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
         }
       };
 
-      // Subscribe using the stored listener
-      await this.space!.members.subscribe("update", this.listener);
+      // Subscribe using the listener
+      await this.space!.members.subscribe("update", memberListener);
 
       this.logCliEvent(
         flags,
         "member",
         "subscribed",
         "Subscribed to member updates",
-      );
-
-      this.logCliEvent(
-        flags,
-        "member",
-        "listening",
-        "Listening for member updates...",
       );
 
       // Wait until the user interrupts or the optional duration elapses
