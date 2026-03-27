@@ -24,7 +24,7 @@ $ npm install -g @ably/cli
 $ ably COMMAND
 running command...
 $ ably (--version)
-@ably/cli/0.17.0 darwin-arm64 node-v24.4.1
+@ably/cli/0.17.0 darwin-arm64 node-v25.3.0
 $ ably --help [COMMAND]
 USAGE
   $ ably COMMAND
@@ -1706,7 +1706,8 @@ ARGUMENTS
 
 FLAGS
   -v, --verbose             Output verbose logs
-      --cipher=<value>      Decryption key for encrypted messages, uses AES-256 by default
+      --cipher=<value>      Decryption key for encrypted messages (base64-encoded or hex-encoded, supports AES-128-CBC
+                            and AES-256-CBC)
       --direction=<option>  [default: backwards] Direction of message retrieval
                             <options: backwards|forwards>
       --end=<value>         End time as ISO 8601, Unix ms, or relative (e.g., "1h", "30m", "2d")
@@ -1949,7 +1950,7 @@ _See code: [src/commands/channels/presence/enter.ts](https://github.com/ably/abl
 
 Get all current presence members on a channel
 
-```text
+```
 USAGE
   $ ably channels presence get CHANNEL [-v] [--json | --pretty-json] [--limit <value>]
 
@@ -2077,26 +2078,23 @@ Subscribe to messages published on one or more Ably channels
 ```
 USAGE
   $ ably channels subscribe CHANNELS... [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>] [--rewind
-    <value>] [--cipher-algorithm <value>] [--cipher-key <value>] [--cipher-key-length <value>] [--cipher-mode <value>]
-    [--delta] [--sequence-numbers]
+    <value>] [--cipher <value>] [--delta] [--sequence-numbers]
 
 ARGUMENTS
   CHANNELS...  Channel name(s) to subscribe to
 
 FLAGS
-  -D, --duration=<value>           Automatically exit after N seconds
-  -v, --verbose                    Output verbose logs
-      --cipher-algorithm=<value>   [default: aes] Encryption algorithm to use
-      --cipher-key=<value>         Encryption key for decrypting messages (base64-encoded or hex-encoded)
-      --cipher-key-length=<value>  [default: 256] Length of encryption key in bits
-      --cipher-mode=<value>        [default: cbc] Cipher mode to use
-      --client-id=<value>          Overrides any default client ID when using API authentication. Use "none" to
-                                   explicitly set no client ID. Not applicable when using token authentication.
-      --delta                      Enable delta compression (VCDIFF) to reduce message payload sizes
-      --json                       Output in JSON format
-      --pretty-json                Output in colorized JSON format
-      --rewind=<value>             Number of messages to rewind when subscribing (default: 0)
-      --sequence-numbers           Include sequence numbers in output
+  -D, --duration=<value>   Automatically exit after N seconds
+  -v, --verbose            Output verbose logs
+      --cipher=<value>     Decryption key for encrypted messages (base64-encoded or hex-encoded, supports AES-128-CBC
+                           and AES-256-CBC)
+      --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
+                           no client ID. Not applicable when using token authentication.
+      --delta              Enable delta compression (VCDIFF) to reduce message payload sizes
+      --json               Output in JSON format
+      --pretty-json        Output in colorized JSON format
+      --rewind=<value>     Number of messages to rewind when subscribing (default: 0)
+      --sequence-numbers   Include sequence numbers in output
 
 DESCRIPTION
   Subscribe to messages published on one or more Ably channels
@@ -2110,7 +2108,7 @@ EXAMPLES
 
   $ ably channels subscribe --delta my-channel
 
-  $ ably channels subscribe --cipher-key YOUR_CIPHER_KEY my-channel
+  $ ably channels subscribe --cipher YOUR_CIPHER_KEY my-channel
 
   $ ably channels subscribe my-channel --json
 

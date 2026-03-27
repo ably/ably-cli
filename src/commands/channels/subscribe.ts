@@ -35,7 +35,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
     "$ ably channels subscribe my-channel another-channel",
     "$ ably channels subscribe --rewind 10 my-channel",
     "$ ably channels subscribe --delta my-channel",
-    "$ ably channels subscribe --cipher-key YOUR_CIPHER_KEY my-channel",
+    "$ ably channels subscribe --cipher YOUR_CIPHER_KEY my-channel",
     "$ ably channels subscribe my-channel --json",
     "$ ably channels subscribe my-channel --pretty-json",
     "$ ably channels subscribe my-channel --duration 30",
@@ -47,21 +47,9 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
     ...clientIdFlag,
     ...durationFlag,
     ...rewindFlag,
-    "cipher-algorithm": Flags.string({
-      default: "aes",
-      description: "Encryption algorithm to use",
-    }),
-    "cipher-key": Flags.string({
+    cipher: Flags.string({
       description:
-        "Encryption key for decrypting messages (base64-encoded or hex-encoded)",
-    }),
-    "cipher-key-length": Flags.integer({
-      default: 256,
-      description: "Length of encryption key in bits",
-    }),
-    "cipher-mode": Flags.string({
-      default: "cbc",
-      description: "Cipher mode to use",
+        "Decryption key for encrypted messages (base64-encoded or hex-encoded, supports AES-128-CBC and AES-256-CBC)",
     }),
     delta: Flags.boolean({
       default: false,
@@ -107,19 +95,16 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
         const channelOptions: Ably.ChannelOptions = {};
 
         // Configure encryption if cipher key is provided
-        if (flags["cipher-key"]) {
+        if (flags.cipher) {
           channelOptions.cipher = {
-            algorithm: flags["cipher-algorithm"],
-            key: flags["cipher-key"],
-            keyLength: flags["cipher-key-length"],
-            mode: flags["cipher-mode"],
+            key: flags.cipher,
           };
           this.logCliEvent(
             flags,
             "subscribe",
             "encryptionEnabled",
             `Encryption enabled for channel ${channelName}`,
-            { algorithm: flags["cipher-algorithm"], channel: channelName },
+            { channel: channelName },
           );
         }
 

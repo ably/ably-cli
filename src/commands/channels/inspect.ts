@@ -54,11 +54,10 @@ export default class ChannelsInspect extends AblyBaseCommand {
     }
     const url = `${dashboardHost}/accounts/${accountId}/apps/${appId}/channels/${encodeURIComponent(args.channel)}`;
 
-    const isJson = this.shouldOutputJson(flags);
-    if (isJson) {
-      this.logJsonResult({ message: `Opening ${url} in your browser` }, flags);
+    if (this.shouldOutputJson(flags)) {
+      this.logJsonResult({ message: `Open ${url} in your browser` }, flags);
+    } else {
+      await openUrl(url, this);
     }
-
-    await openUrl(url, this, isJson);
   }
 }

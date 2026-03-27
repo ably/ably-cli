@@ -50,7 +50,7 @@ describe("channels:subscribe command", () => {
   standardFlagTests("channels:subscribe", import.meta.url, [
     "--rewind",
     "--delta",
-    "--cipher-key",
+    "--cipher",
     "--json",
   ]);
 

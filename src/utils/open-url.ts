@@ -11,28 +11,16 @@ interface Logger {
 // In web CLI mode it prints "Visit <url>" instead of trying to open a browser.
 // We don't want to open browsers in unit tests, and we can't use mocking to catch the calls because of how
 // oclif loads the commands.
-// When isJsonOutput is true, human-readable messages are suppressed — callers are responsible for emitting
-// proper JSON envelope output via logJsonResult/logJsonEvent before calling openUrl.
-const openUrl = async (
-  url: string,
-  logger: Logger,
-  isJsonOutput = false,
-): Promise<void> => {
+const openUrl = async (url: string, logger: Logger): Promise<void> => {
   if (isWebCliMode()) {
-    if (!isJsonOutput) {
-      logger.log(`${chalk.cyan("Visit")} ${url}`);
-    }
+    logger.log(`${chalk.cyan("Visit")} ${url}`);
     return;
   }
-  if (!isJsonOutput) {
-    logger.log(
-      `${chalk.cyan("Opening")} ${url} ${chalk.cyan("in your browser")}...`,
-    );
-  }
+  logger.log(
+    `${chalk.cyan("Opening")} ${url} ${chalk.cyan("in your browser")}...`,
+  );
   if (isTestMode()) {
-    if (!isJsonOutput) {
-      logger.log(`would open URL in browser: ${url}`);
-    }
+    logger.log(`would open URL in browser: ${url}`);
     return;
   }
   await open(url);

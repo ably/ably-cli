@@ -45,7 +45,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
     ...productApiFlags,
     cipher: Flags.string({
       description:
-        "Decryption key for encrypted messages, uses AES-256 by default",
+        "Decryption key for encrypted messages (base64-encoded or hex-encoded, supports AES-128-CBC and AES-256-CBC)",
     }),
     direction: Flags.string({
       default: "backwards",
