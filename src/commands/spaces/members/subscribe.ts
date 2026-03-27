@@ -69,62 +69,56 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
       );
 
       const memberListener = (member: SpaceMember) => {
-        try {
-          const now = Date.now();
+        const now = Date.now();
 
-          // Determine the action from the member's lastEvent
-          const action = member.lastEvent?.name || "unknown";
-          const clientId = member.clientId || "Unknown";
-          const connectionId = member.connectionId || "Unknown";
+        // Determine the action from the member's lastEvent
+        const action = member.lastEvent.name || "unknown";
+        const clientId = member.clientId || "Unknown";
+        const connectionId = member.connectionId || "Unknown";
 
-          // Create a unique key for this client+connection combination
-          const clientKey = `${clientId}:${connectionId}`;
+        // Create a unique key for this client+connection combination
+        const clientKey = `${clientId}:${connectionId}`;
 
-          // Check if we've seen this exact event recently (within 500ms)
-          const lastEvent = lastSeenEvents.get(clientKey);
+        // Check if we've seen this exact event recently (within 500ms)
+        const lastEvent = lastSeenEvents.get(clientKey);
 
-          if (
-            lastEvent &&
-            lastEvent.action === action &&
-            now - lastEvent.timestamp < 500
-          ) {
-            this.logCliEvent(
-              flags,
-              "member",
-              "duplicateEventSkipped",
-              `Skipping duplicate event '${action}' for ${clientId}`,
-              { action, clientId },
-            );
-            return; // Skip duplicate events within 500ms window
-          }
-
-          // Update the last seen event for this client+connection
-          lastSeenEvents.set(clientKey, {
-            action,
-            timestamp: now,
-          });
-
+        if (
+          lastEvent &&
+          lastEvent.action === action &&
+          now - lastEvent.timestamp < 500
+        ) {
           this.logCliEvent(
             flags,
             "member",
-            `update-${action}`,
-            `Member event '${action}' received`,
-            { action, clientId, connectionId },
+            "duplicateEventSkipped",
+            `Skipping duplicate event '${action}' for ${clientId}`,
+            { action, clientId },
           );
+          return; // Skip duplicate events within 500ms window
+        }
 
-          if (this.shouldOutputJson(flags)) {
-            this.logJsonEvent({ member: formatMemberOutput(member) }, flags);
-          } else {
-            this.log(
-              formatTimestamp(
-                formatMessageTimestamp(member.lastEvent.timestamp),
-              ),
-            );
-            this.log(formatMemberEventBlock(member, action));
-            this.log("");
-          }
-        } catch (error) {
-          this.fail(error, flags, "memberSubscribe", { spaceName });
+        // Update the last seen event for this client+connection
+        lastSeenEvents.set(clientKey, {
+          action,
+          timestamp: now,
+        });
+
+        this.logCliEvent(
+          flags,
+          "member",
+          `update-${action}`,
+          `Member event '${action}' received`,
+          { action, clientId, connectionId },
+        );
+
+        if (this.shouldOutputJson(flags)) {
+          this.logJsonEvent({ member: formatMemberOutput(member) }, flags);
+        } else {
+          this.log(
+            formatTimestamp(formatMessageTimestamp(member.lastEvent.timestamp)),
+          );
+          this.log(formatMemberEventBlock(member, action));
+          this.log("");
         }
       };
 
