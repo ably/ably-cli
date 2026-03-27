@@ -67,103 +67,93 @@ export default class SpacesSubscribe extends SpacesBaseCommand {
 
       // --- Member listener (from members/subscribe pattern) ---
       const memberListener = (member: SpaceMember) => {
-        try {
-          const now = Date.now();
+        const now = Date.now();
 
-          const action = member.lastEvent?.name || "unknown";
-          const clientId = member.clientId || "Unknown";
-          const connectionId = member.connectionId || "Unknown";
+        const action = member.lastEvent.name || "unknown";
+        const clientId = member.clientId || "Unknown";
+        const connectionId = member.connectionId || "Unknown";
 
-          // Dedup within 500ms window
-          const clientKey = `${clientId}:${connectionId}`;
-          const lastEvent = lastSeenEvents.get(clientKey);
+        // Dedup within 500ms window
+        const clientKey = `${clientId}:${connectionId}`;
+        const lastEvent = lastSeenEvents.get(clientKey);
 
-          if (
-            lastEvent &&
-            lastEvent.action === action &&
-            now - lastEvent.timestamp < 500
-          ) {
-            this.logCliEvent(
-              flags,
-              "spaceSubscribe",
-              "duplicateEventSkipped",
-              `Skipping duplicate event '${action}' for ${clientId}`,
-              { action, clientId },
-            );
-            return;
-          }
-
-          lastSeenEvents.set(clientKey, { action, timestamp: now });
-
+        if (
+          lastEvent &&
+          lastEvent.action === action &&
+          now - lastEvent.timestamp < 500
+        ) {
           this.logCliEvent(
             flags,
             "spaceSubscribe",
-            `memberUpdate-${action}`,
-            `Member event '${action}' received`,
-            { action, clientId, connectionId },
+            "duplicateEventSkipped",
+            `Skipping duplicate event '${action}' for ${clientId}`,
+            { action, clientId },
           );
+          return;
+        }
 
-          if (this.shouldOutputJson(flags)) {
-            this.logJsonEvent(
-              { eventType: "member", member: formatMemberOutput(member) },
-              flags,
-            );
-          } else {
-            this.log(
-              formatTimestamp(
-                formatMessageTimestamp(member.lastEvent.timestamp),
-              ),
-            );
-            this.log(`${formatLabel("Type")} ${formatEventType("member")}`);
-            this.log(formatMemberEventBlock(member, action));
-            this.log("");
-          }
-        } catch (error) {
-          this.fail(error, flags, "spaceSubscribe", { spaceName });
+        lastSeenEvents.set(clientKey, { action, timestamp: now });
+
+        this.logCliEvent(
+          flags,
+          "spaceSubscribe",
+          `memberUpdate-${action}`,
+          `Member event '${action}' received`,
+          { action, clientId, connectionId },
+        );
+
+        if (this.shouldOutputJson(flags)) {
+          this.logJsonEvent(
+            { eventType: "member", member: formatMemberOutput(member) },
+            flags,
+          );
+        } else {
+          this.log(
+            formatTimestamp(formatMessageTimestamp(member.lastEvent.timestamp)),
+          );
+          this.log(`${formatLabel("Type")} ${formatEventType("member")}`);
+          this.log(formatMemberEventBlock(member, action));
+          this.log("");
         }
       };
 
       // --- Location listener (from locations/subscribe pattern) ---
       const locationListener = (update: LocationsEvents.UpdateEvent) => {
-        try {
-          const timestamp = new Date().toISOString();
+        const timestamp = new Date().toISOString();
 
-          this.logCliEvent(
-            flags,
-            "spaceSubscribe",
-            "locationUpdateReceived",
-            "Location update received",
+        this.logCliEvent(
+          flags,
+          "spaceSubscribe",
+          "locationUpdateReceived",
+          "Location update received",
+          {
+            clientId: update.member.clientId,
+            connectionId: update.member.connectionId,
+            timestamp,
+          },
+        );
+
+        if (this.shouldOutputJson(flags)) {
+          this.logJsonEvent(
             {
-              clientId: update.member.clientId,
-              connectionId: update.member.connectionId,
-              timestamp,
-            },
-          );
-
-          if (this.shouldOutputJson(flags)) {
-            this.logJsonEvent(
-              {
-                eventType: "location",
-                location: {
-                  member: {
-                    clientId: update.member.clientId,
-                    connectionId: update.member.connectionId,
-                  },
-                  currentLocation: update.currentLocation,
-                  previousLocation: update.previousLocation,
-                  timestamp,
+              eventType: "location",
+              location: {
+                member: {
+                  clientId: update.member.clientId,
+                  connectionId: update.member.connectionId,
                 },
+                currentLocation: update.currentLocation,
+                previousLocation: update.previousLocation,
+                timestamp,
               },
-              flags,
-            );
-          } else {
-            this.log(formatTimestamp(timestamp));
-            this.log(`${formatLabel("Type")} ${formatEventType("location")}`);
-            this.log(formatLocationUpdateBlock(update));
-            this.log("");
-          }
-        } catch (error) {
-          this.fail(error, flags, "spaceSubscribe", { spaceName });
+            },
+            flags,
+          );
+        } else {
+          this.log(formatTimestamp(timestamp));
+          this.log(`${formatLabel("Type")} ${formatEventType("location")}`);
+          this.log(formatLocationUpdateBlock(update));
+          this.log("");
         }
       };
 

@@ -79,9 +79,14 @@ describe("spaces:subscribe command", () => {
       const space = spacesMock._getSpace("test-space");
 
       let locationHandler: ((update: unknown) => void) | undefined;
+      let resolveSubscribed: () => void;
+      const subscribed = new Promise<void>((resolve) => {
+        resolveSubscribed = resolve;
+      });
       space.locations.subscribe.mockImplementation(
         (_event: string, handler: (update: unknown) => void) => {
           locationHandler = handler;
+          resolveSubscribed();
         },
       );
 
@@ -90,7 +95,7 @@ describe("spaces:subscribe command", () => {
         import.meta.url,
       );
 
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await subscribed;
 
       if (locationHandler) {
         locationHandler({
@@ -152,9 +157,14 @@ describe("spaces:subscribe command", () => {
       const space = spacesMock._getSpace("test-space");
 
       let locationHandler: ((update: unknown) => void) | undefined;
+      let resolveSubscribed: () => void;
+      const subscribed = new Promise<void>((resolve) => {
+        resolveSubscribed = resolve;
+      });
       space.locations.subscribe.mockImplementation(
         (_event: string, handler: (update: unknown) => void) => {
           locationHandler = handler;
+          resolveSubscribed();
         },
       );
 
@@ -163,7 +173,7 @@ describe("spaces:subscribe command", () => {
         import.meta.url,
       );
 
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await subscribed;
 
       if (locationHandler) {
         locationHandler({
