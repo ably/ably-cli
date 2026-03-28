@@ -196,7 +196,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
       );
 
       expect(result.exitCode).not.toBe(0);
-      expect(result.stderr).toContain("A recipient is required");
+      expect(result.stderr).toContain("A target is required");
     });
 
     it("should error when both device-id and client-id provided", async () => {
