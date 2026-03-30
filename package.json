@@ -155,7 +155,6 @@
     "@vitest/ui": "^4.1.2",
     "dotenv": "^16.5.0",
     "eslint": "^9.39.4",
-    "eslint-config-oclif": "^6.0.153",
     "eslint-config-prettier": "^10.1.2",
     "eslint-plugin-n": "^17.17.0",
     "eslint-plugin-prettier": "^5.2.6",
