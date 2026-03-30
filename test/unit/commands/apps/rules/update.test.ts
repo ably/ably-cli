@@ -33,7 +33,7 @@ describe("apps:rules:update command", () => {
   ]);
 
   describe("functionality", () => {
-    it("should update a channel rule with persisted flag", async () => {
+    it("should update a rule with persisted flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
@@ -52,7 +52,7 @@ describe("apps:rules:update command", () => {
       expect(stdout).toContain("Persisted: Yes");
     });
 
-    it("should update a channel rule with mutable-messages flag and auto-enable persistence", async () => {
+    it("should update a rule with mutable-messages flag and auto-enable persistence", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
@@ -141,7 +141,7 @@ describe("apps:rules:update command", () => {
       expect(stdout).toContain("Persisted: No");
     });
 
-    it("should update a channel rule with push-enabled flag", async () => {
+    it("should update a rule with push-enabled flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
@@ -217,7 +217,7 @@ describe("apps:rules:update command", () => {
       },
     });
 
-    it("should handle channel rule not found", async () => {
+    it("should handle rule not found", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl().get(`/v1/apps/${appId}/namespaces`).reply(200, []);
 

@@ -10,7 +10,7 @@ import {
 } from "../../../utils/output.js";
 
 export default class RulesCreateCommand extends ControlBaseCommand {
-  static description = "Create a channel rule";
+  static description = "Create a rule";
 
   static examples = [
     '$ ably apps rules create --name "chat" --persisted',
@@ -56,18 +56,13 @@ export default class RulesCreateCommand extends ControlBaseCommand {
         "The conflation key for messages on channels matching this rule",
       required: false,
     }),
-    "expose-time-serial": Flags.boolean({
-      description:
-        "Whether to expose the time serial for messages on channels matching this rule",
-      required: false,
-    }),
     "mutable-messages": Flags.boolean({
       description:
         "Whether messages on channels matching this rule can be updated or deleted after publishing. Automatically enables message persistence.",
       required: false,
     }),
     name: Flags.string({
-      description: "Name of the channel rule",
+      description: "Name of the rule",
       required: true,
     }),
     "persist-last": Flags.boolean({
@@ -129,7 +124,6 @@ export default class RulesCreateCommand extends ControlBaseCommand {
         conflationEnabled: flags["conflation-enabled"],
         conflationInterval: flags["conflation-interval"],
         conflationKey: flags["conflation-key"],
-        exposeTimeSerial: flags["expose-time-serial"],
         mutableMessages,
         persistLast: flags["persist-last"],
         persisted,
@@ -155,7 +149,6 @@ export default class RulesCreateCommand extends ControlBaseCommand {
               conflationInterval: createdNamespace.conflationInterval,
               conflationKey: createdNamespace.conflationKey,
               created: new Date(createdNamespace.created).toISOString(),
-              exposeTimeSerial: createdNamespace.exposeTimeSerial,
               id: createdNamespace.id,
               mutableMessages: createdNamespace.mutableMessages,
               name: flags.name,
@@ -172,7 +165,7 @@ export default class RulesCreateCommand extends ControlBaseCommand {
       } else {
         this.log(
           formatSuccess(
-            "Channel rule " + formatResource(createdNamespace.id) + " created.",
+            "Rule " + formatResource(createdNamespace.id) + " created.",
           ),
         );
         this.log(`${formatLabel("ID")} ${formatResource(createdNamespace.id)}`);

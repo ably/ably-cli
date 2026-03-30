@@ -23,7 +23,7 @@ describe("apps:rules:list command", () => {
   standardFlagTests("apps:rules:list", import.meta.url, ["--json", "--app"]);
 
   describe("functionality", () => {
-    it("should list channel rules successfully", async () => {
+    it("should list rules successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
@@ -34,7 +34,7 @@ describe("apps:rules:list command", () => {
 
       const { stdout } = await runCommand(["apps:rules:list"], import.meta.url);
 
-      expect(stdout).toContain("Found 2 channel rules");
+      expect(stdout).toContain("Found 2 rules");
       expect(stdout).toContain("chat");
       expect(stdout).toContain("events");
     });
@@ -45,7 +45,7 @@ describe("apps:rules:list command", () => {
 
       const { stdout } = await runCommand(["apps:rules:list"], import.meta.url);
 
-      expect(stdout).toContain("No channel rules found");
+      expect(stdout).toContain("No rules found");
     });
 
     it("should display rule details correctly", async () => {
@@ -62,7 +62,7 @@ describe("apps:rules:list command", () => {
 
       const { stdout } = await runCommand(["apps:rules:list"], import.meta.url);
 
-      expect(stdout).toContain("Found 1 channel rule");
+      expect(stdout).toContain("Found 1 rule");
       expect(stdout).toContain("chat");
       expect(stdout).toContain("Persisted: ✓ Yes");
       expect(stdout).toContain("Push Enabled: ✓ Yes");

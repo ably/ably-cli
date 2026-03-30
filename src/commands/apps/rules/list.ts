@@ -7,6 +7,7 @@ import {
   formatCountLabel,
   formatHeading,
   formatLimitWarning,
+  formatResource,
 } from "../../../utils/output.js";
 
 interface ChannelRuleOutput {
@@ -17,7 +18,6 @@ interface ChannelRuleOutput {
   conflationInterval: null | number;
   conflationKey: null | string;
   created: string;
-  exposeTimeSerial: boolean;
   id: string;
   modified: string;
   mutableMessages: boolean;
@@ -29,7 +29,7 @@ interface ChannelRuleOutput {
 }
 
 export default class RulesListCommand extends ControlBaseCommand {
-  static description = "List channel rules for an app";
+  static description = "List rules for an app";
 
   static examples = [
     "$ ably apps rules list",
@@ -75,7 +75,6 @@ export default class RulesListCommand extends ControlBaseCommand {
                 conflationInterval: rule.conflationInterval ?? null,
                 conflationKey: rule.conflationKey ?? null,
                 created: new Date(rule.created).toISOString(),
-                exposeTimeSerial: rule.exposeTimeSerial || false,
                 id: rule.id,
                 modified: new Date(rule.modified).toISOString(),
                 mutableMessages: rule.mutableMessages || false,
@@ -93,16 +92,14 @@ export default class RulesListCommand extends ControlBaseCommand {
         );
       } else {
         if (namespaces.length === 0) {
-          this.log("No channel rules found");
+          this.log("No rules found");
           return;
         }
 
-        this.log(
-          `Found ${formatCountLabel(namespaces.length, "channel rule")}:\n`,
-        );
+        this.log(`Found ${formatCountLabel(namespaces.length, "rule")}:\n`);
 
         namespaces.forEach((namespace: Namespace) => {
-          this.log(formatHeading(`Channel Rule ID: ${namespace.id}`));
+          this.log(`${formatHeading("ID")} ${formatResource(namespace.id)}`);
           for (const line of formatChannelRuleDetails(namespace, {
             bold: true,
             formatDate: (t) => this.formatDate(t),
@@ -119,7 +116,7 @@ export default class RulesListCommand extends ControlBaseCommand {
           const warning = formatLimitWarning(
             namespaces.length,
             flags.limit,
-            "channel rules",
+            "rules",
           );
           if (warning) this.log(warning);
         }
