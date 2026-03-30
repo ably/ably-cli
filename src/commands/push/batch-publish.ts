@@ -264,7 +264,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
           );
         }
 
-        const items = response.items as Record<string, unknown>[];
+        const items = (response.items ?? []) as Record<string, unknown>[];
         const failedWithIndex = items
           .map((item, i) => ({
             item,
@@ -349,7 +349,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
           );
         }
 
-        const responseItems = response.items as BatchResponseItem[];
+        const responseItems = (response.items ?? []) as BatchResponseItem[];
         const failedWithIndex = responseItems
           .map((item, i) => ({
             item,
