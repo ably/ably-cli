@@ -1,19 +1,20 @@
-import type { SpaceMember } from "@ably/spaces";
+import type { SpaceMember, LocationsEvents } from "@ably/spaces";
 import { Args } from "@oclif/core";
 
 import { productApiFlags, clientIdFlag, durationFlag } from "../../flags.js";
 import { SpacesBaseCommand } from "../../spaces-base-command.js";
 import {
-  formatCountLabel,
+  formatEventType,
+  formatLabel,
   formatListening,
+  formatMessageTimestamp,
   formatProgress,
-  formatResource,
-  formatSuccess,
   formatTimestamp,
 } from "../../utils/output.js";
 import {
-  formatMemberBlock,
+  formatMemberEventBlock,
   formatMemberOutput,
+  formatLocationUpdateBlock,
 } from "../../utils/spaces-output.js";
 
 export default class SpacesSubscribe extends SpacesBaseCommand {
@@ -40,24 +41,15 @@ export default class SpacesSubscribe extends SpacesBaseCommand {
     ...durationFlag,
   };
 
-  private listener: ((spaceState: { members: SpaceMember[] }) => void) | null =
-    null;
-
-  async finally(error: Error | undefined): Promise<void> {
-    if (this.space && this.listener) {
-      try {
-        this.space.unsubscribe("update", this.listener);
-      } catch (error_) {
-        this.debug(`Failed to unsubscribe from space update: ${error_}`);
-      }
-    }
-
-    await super.finally(error);
-  }
-
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesSubscribe);
     const { space_name: spaceName } = args;
+
+    // Keep track of the last event we've seen for each client to avoid duplicates
+    const lastSeenEvents = new Map<
+      string,
+      { action: string; timestamp: number }
+    >();
 
     try {
       if (!this.shouldOutputJson(flags)) {
@@ -68,53 +60,119 @@ export default class SpacesSubscribe extends SpacesBaseCommand {
 
       this.logCliEvent(
         flags,
-        "space",
+        "spaceSubscribe",
         "subscribing",
         "Subscribing to space updates",
       );
 
-      this.listener = (spaceState: { members: SpaceMember[] }) => {
-        const { members } = spaceState;
+      // --- Member listener (from members/subscribe pattern) ---
+      const memberListener = (member: SpaceMember) => {
+        const now = Date.now();
+
+        const action = member.lastEvent.name || "unknown";
+        const clientId = member.clientId || "Unknown";
+        const connectionId = member.connectionId || "Unknown";
+
+        // Dedup within 500ms window
+        const clientKey = `${clientId}:${connectionId}`;
+        const lastEvent = lastSeenEvents.get(clientKey);
+
+        if (
+          lastEvent &&
+          lastEvent.action === action &&
+          now - lastEvent.timestamp < 500
+        ) {
+          this.logCliEvent(
+            flags,
+            "spaceSubscribe",
+            "duplicateEventSkipped",
+            `Skipping duplicate event '${action}' for ${clientId}`,
+            { action, clientId },
+          );
+          return;
+        }
+
+        lastSeenEvents.set(clientKey, { action, timestamp: now });
+
+        this.logCliEvent(
+          flags,
+          "spaceSubscribe",
+          `memberUpdate-${action}`,
+          `Member event '${action}' received`,
+          { action, clientId, connectionId },
+        );
+
+        if (this.shouldOutputJson(flags)) {
+          this.logJsonEvent(
+            { eventType: "member", member: formatMemberOutput(member) },
+            flags,
+          );
+        } else {
+          this.log(
+            formatTimestamp(formatMessageTimestamp(member.lastEvent.timestamp)),
+          );
+          this.log(`${formatLabel("Type")} ${formatEventType("member")}`);
+          this.log(formatMemberEventBlock(member, action));
+          this.log("");
+        }
+      };
+
+      // --- Location listener (from locations/subscribe pattern) ---
+      const locationListener = (update: LocationsEvents.UpdateEvent) => {
+        const timestamp = new Date().toISOString();
+
+        this.logCliEvent(
+          flags,
+          "spaceSubscribe",
+          "locationUpdateReceived",
+          "Location update received",
+          {
+            clientId: update.member.clientId,
+            connectionId: update.member.connectionId,
+            timestamp,
+          },
+        );
 
         if (this.shouldOutputJson(flags)) {
           this.logJsonEvent(
             {
-              space: {
-                members: members.map((m) => formatMemberOutput(m)),
+              eventType: "location",
+              location: {
+                member: {
+                  clientId: update.member.clientId,
+                  connectionId: update.member.connectionId,
+                },
+                currentLocation: update.currentLocation,
+                previousLocation: update.previousLocation,
+                timestamp,
               },
             },
             flags,
           );
         } else {
-          this.log(
-            `${formatTimestamp(new Date().toISOString())} Found ${formatCountLabel(members.length, "member")} on space: ${formatResource(spaceName)}`,
-          );
-
-          for (const member of members) {
-            this.log(formatMemberBlock(member));
-            this.log("");
-          }
+          this.log(formatTimestamp(timestamp));
+          this.log(`${formatLabel("Type")} ${formatEventType("location")}`);
+          this.log(formatLocationUpdateBlock(update));
+          this.log("");
         }
       };
 
-      // space.subscribe() is synchronous (calls super.on()), no await needed
-      this.space!.subscribe("update", this.listener);
+      // Subscribe to both member and location events
+      await this.space!.members.subscribe("update", memberListener);
+      this.space!.locations.subscribe("update", locationListener);
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(`Subscribed to space: ${formatResource(spaceName)}.`),
-        );
         this.log(formatListening("Listening for space updates."));
       }
 
       this.logCliEvent(
         flags,
-        "space",
+        "spaceSubscribe",
         "subscribed",
         "Subscribed to space updates",
       );
 
-      await this.waitAndTrackCleanup(flags, "space", flags.duration);
+      await this.waitAndTrackCleanup(flags, "spaceSubscribe", flags.duration);
     } catch (error) {
       this.fail(error, flags, "spaceSubscribe");
     }

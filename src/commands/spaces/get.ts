@@ -101,7 +101,7 @@ export default class SpacesGet extends SpacesBaseCommand {
 
       if (items.length === 0) {
         this.fail(
-          `Space ${spaceName} doesn't have any members currently present. Spaces only exist while members are present. Please enter at least one member using "ably spaces members enter".`,
+          `Space ${spaceName} doesn't have any members currently present. Spaces only exist while members are present. Please enter at least one member using 'ably spaces members enter ${spaceName}'.`,
           flags,
           "spaceGet",
           { spaceName },

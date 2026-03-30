@@ -131,6 +131,26 @@ describe("spaces:cursors:set command", () => {
       expect(stdout).toContain("Press Ctrl+C to exit.");
     });
 
+    it("should include data in simulated cursor output", async () => {
+      const spacesMock = getMockAblySpaces();
+      spacesMock._getSpace("test-space");
+
+      const { stdout } = await runCommand(
+        [
+          "spaces:cursors:set",
+          "test-space",
+          "--simulate",
+          "--data",
+          '{"team":"red"}',
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Simulated");
+      expect(stdout).toContain("team");
+      expect(stdout).toContain("red");
+    });
+
     it("should merge --data with --x/--y as additional cursor data", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
@@ -193,6 +213,41 @@ describe("spaces:cursors:set command", () => {
       expect(status).toBeDefined();
       expect(status).toHaveProperty("status", "holding");
       expect(status!.message).toContain("Holding cursor");
+    });
+
+    it("should emit JSON events for simulated cursor updates", async () => {
+      const spacesMock = getMockAblySpaces();
+      spacesMock._getSpace("test-space");
+
+      const { stdout } = await runCommand(
+        ["spaces:cursors:set", "test-space", "--simulate", "--json"],
+        import.meta.url,
+      );
+
+      const records = parseNdjsonLines(stdout);
+      const result = records.find((r) => r.type === "result");
+      expect(result).toBeDefined();
+      expect(result).toHaveProperty("command", "spaces:cursors:set");
+      expect(result).toHaveProperty("success", true);
+      expect(result).toHaveProperty("cursor");
+
+      const events = records.filter((r) => r.type === "event");
+      expect(events.length).toBeGreaterThan(0);
+
+      const event = events[0];
+      expect(event).toHaveProperty("command", "spaces:cursors:set");
+      expect(event).toHaveProperty("cursor");
+      const cursor = event!.cursor as Record<string, unknown>;
+      expect(cursor).toHaveProperty("position");
+      expect(cursor).toHaveProperty("clientId");
+      expect(cursor).toHaveProperty("connectionId");
+      expect(cursor).toHaveProperty("data");
+
+      // A single holding status is emitted after the simulation starts
+      const holdingStatuses = records.filter(
+        (r) => r.type === "status" && r.status === "holding",
+      );
+      expect(holdingStatuses.length).toBe(1);
     });
   });
 

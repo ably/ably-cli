@@ -237,10 +237,28 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
               { position: { x: simulatedX, y: simulatedY } },
             );
 
-            if (!this.shouldOutputJson(flags)) {
-              this.log(
-                `${formatLabel("Simulated")} cursor at (${simulatedX}, ${simulatedY})`,
+            if (this.shouldOutputJson(flags)) {
+              this.logJsonEvent(
+                {
+                  cursor: {
+                    clientId: this.realtimeClient!.auth.clientId,
+                    connectionId: this.realtimeClient!.connection.id,
+                    position: { x: simulatedX, y: simulatedY },
+                    data: (cursorData.data as CursorData) ?? null,
+                  },
+                },
+                flags,
               );
+            } else {
+              const simLines = [
+                `${formatLabel("Simulated")} cursor at (${simulatedX}, ${simulatedY})`,
+              ];
+              if (cursorData.data) {
+                simLines.push(
+                  `  ${formatLabel("Data")} ${JSON.stringify(cursorData.data)}`,
+                );
+              }
+              this.log(simLines.join("\n"));
             }
           } catch (error) {
             this.logCliEvent(
