@@ -190,7 +190,8 @@ describe("auth:issue-ably-token command", () => {
       );
 
       const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("capability");
+      expect(result).toHaveProperty("token");
+      expect(result.token).toHaveProperty("capability");
     });
   });
 

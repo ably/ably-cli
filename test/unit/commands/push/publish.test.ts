@@ -110,7 +110,8 @@ describe("push:publish command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("published", true);
+      expect(result).toHaveProperty("notification");
+      expect(result.notification).toHaveProperty("published", true);
     });
   });
 

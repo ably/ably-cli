@@ -28,15 +28,6 @@ interface MessageResult {
   [key: string]: unknown;
 }
 
-interface FinalResult {
-  allSucceeded: boolean;
-  errors: number;
-  results: MessageResult[];
-  sent: number;
-  total: number;
-  [key: string]: unknown;
-}
-
 export default class MessagesSend extends ChatBaseCommand {
   static override args = {
     room: Args.string({
@@ -285,12 +276,14 @@ export default class MessagesSend extends ChatBaseCommand {
           }, 100);
         });
 
-        const finalResult: FinalResult = {
-          errors: errorCount,
-          results,
-          sent: sentCount,
-          allSucceeded: errorCount === 0,
-          total: count,
+        const finalResult = {
+          send: {
+            errors: errorCount,
+            results,
+            sent: sentCount,
+            allSucceeded: errorCount === 0,
+            total: count,
+          },
         };
         this.logCliEvent(
           flags,
@@ -356,9 +349,11 @@ export default class MessagesSend extends ChatBaseCommand {
             if (this.shouldOutputJson(flags)) {
               this.logJsonResult(
                 {
-                  message: messageToSend,
-                  room: args.room,
-                  serial: sentMessage.serial,
+                  message: {
+                    ...messageToSend,
+                    room: args.room,
+                    serial: sentMessage.serial,
+                  },
                 },
                 flags,
               );

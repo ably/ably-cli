@@ -132,9 +132,11 @@ export default class TypingKeystroke extends ChatBaseCommand {
               if (this.shouldOutputJson(flags)) {
                 this.logJsonResult(
                   {
-                    room: roomName,
-                    typing: true,
-                    autoType: Boolean(flags["auto-type"]),
+                    typing: {
+                      room: roomName,
+                      isTyping: true,
+                      autoType: Boolean(flags["auto-type"]),
+                    },
                   },
                   flags,
                 );

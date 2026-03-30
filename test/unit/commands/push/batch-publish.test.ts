@@ -53,10 +53,10 @@ describe("push:batch-publish command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("published", true);
-      expect(result).toHaveProperty("total", 1);
-      expect(result).toHaveProperty("succeeded");
-      expect(result).toHaveProperty("failed", 0);
+      expect(result).toHaveProperty("publish");
+      expect(result.publish).toHaveProperty("total", 1);
+      expect(result.publish).toHaveProperty("succeeded");
+      expect(result.publish).toHaveProperty("failed", 0);
     });
   });
 

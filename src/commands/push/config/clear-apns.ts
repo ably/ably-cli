@@ -63,7 +63,7 @@ export default class PushConfigClearApns extends ControlBaseCommand {
         if (!apnsConfigured) {
           if (this.shouldOutputJson(flags)) {
             this.logJsonResult(
-              { appId, cleared: "apns", wasConfigured: false },
+              { config: { appId, cleared: "apns", wasConfigured: false } },
               flags,
             );
           } else {
@@ -96,7 +96,7 @@ export default class PushConfigClearApns extends ControlBaseCommand {
         });
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonResult({ appId, cleared: "apns" }, flags);
+          this.logJsonResult({ config: { appId, cleared: "apns" } }, flags);
         } else {
           this.log(
             formatSuccess(

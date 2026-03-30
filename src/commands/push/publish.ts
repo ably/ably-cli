@@ -205,7 +205,10 @@ export default class PushPublish extends AblyBaseCommand {
       await rest.push.admin.publish(recipient!, payload);
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ published: true, recipient: recipient! }, flags);
+        this.logJsonResult(
+          { notification: { published: true, recipient: recipient! } },
+          flags,
+        );
       } else {
         this.log(formatSuccess("Push notification published."));
       }

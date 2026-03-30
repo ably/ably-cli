@@ -46,14 +46,15 @@ describe("rooms messages commands", function () {
         );
       });
       const results = records.filter(
-        (r) => r.type === "result" && r.room === "test-room",
+        (r) => r.type === "result" && r.message?.room === "test-room",
       );
       expect(results.length).toBeGreaterThan(0);
       const record = results[0];
       expect(record).toHaveProperty("type", "result");
       expect(record).toHaveProperty("command", "rooms:messages:send");
       expect(record).toHaveProperty("success", true);
-      expect(record).toHaveProperty("room", "test-room");
+      expect(record).toHaveProperty("message");
+      expect(record.message).toHaveProperty("room", "test-room");
     });
 
     it("should send multiple messages with interpolation", async function () {

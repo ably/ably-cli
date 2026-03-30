@@ -57,7 +57,7 @@ export default class PushDevicesRemove extends AblyBaseCommand {
       await rest.push.admin.deviceRegistrations.remove(deviceId);
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ deviceId, removed: true }, flags);
+        this.logJsonResult({ device: { id: deviceId, removed: true } }, flags);
       } else {
         this.log(formatSuccess(`Device ${formatResource(deviceId)} removed.`));
       }

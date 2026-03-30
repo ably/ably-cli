@@ -68,7 +68,10 @@ export default class PushDevicesRemoveWhere extends AblyBaseCommand {
       await rest.push.admin.deviceRegistrations.removeWhere(params);
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ removed: true, filters: params }, flags);
+        this.logJsonResult(
+          { devices: { removed: true, filters: params } },
+          flags,
+        );
       } else {
         this.log(formatSuccess("Matching device registrations removed."));
       }

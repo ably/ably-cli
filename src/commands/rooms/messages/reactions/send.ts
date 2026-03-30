@@ -130,11 +130,13 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            messageSerial,
-            reaction,
-            room,
-            ...(flags.type && { reactionType: flags.type }),
-            ...(flags.count && { count: flags.count }),
+            reaction: {
+              messageSerial,
+              name: reaction,
+              room,
+              ...(flags.type && { reactionType: flags.type }),
+              ...(flags.count && { count: flags.count }),
+            },
           },
           flags,
         );

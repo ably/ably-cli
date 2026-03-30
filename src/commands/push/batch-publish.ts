@@ -146,11 +146,12 @@ export default class PushBatchPublish extends AblyBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            published: true,
-            total: batchPayload.length,
-            succeeded,
-            failed: failed.length,
-            ...(failed.length > 0 ? { failedItems: failed } : {}),
+            publish: {
+              total: batchPayload.length,
+              succeeded,
+              failed: failed.length,
+              ...(failed.length > 0 ? { failedItems: failed } : {}),
+            },
           },
           flags,
         );

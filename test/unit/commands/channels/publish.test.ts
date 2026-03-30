@@ -136,7 +136,8 @@ describe("ChannelsPublish", function () {
       expect(jsonOutput).toHaveProperty("type", "result");
       expect(jsonOutput).toHaveProperty("command", "channels:publish");
       expect(jsonOutput).toHaveProperty("success", true);
-      expect(jsonOutput).toHaveProperty("channel", "test-channel");
+      expect(jsonOutput).toHaveProperty("publish");
+      expect(jsonOutput.publish).toHaveProperty("channel", "test-channel");
     });
 
     it("should handle plain text messages", async function () {

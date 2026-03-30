@@ -90,8 +90,9 @@ describe("rooms:reactions:send command", () => {
       expect(room.reactions.send).toHaveBeenCalled();
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("emoji", "fire");
-      expect(result).toHaveProperty("room", "test-room");
+      expect(result).toHaveProperty("reaction");
+      expect(result.reaction).toHaveProperty("emoji", "fire");
+      expect(result.reaction).toHaveProperty("room", "test-room");
     });
 
     it("should output JSON error on send failure", async () => {

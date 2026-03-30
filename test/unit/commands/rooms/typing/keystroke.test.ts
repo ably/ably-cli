@@ -67,6 +67,22 @@ describe("rooms:typing:keystroke command", () => {
       expect(error?.message).toContain("Connection failed");
     });
 
+    it("should output JSON with typing domain key on success", async () => {
+      const chatMock = getMockAblyChat();
+      chatMock.rooms._getRoom("test-room");
+
+      const { stdout } = await runCommand(
+        ["rooms:typing:keystroke", "test-room", "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", true);
+      expect(result).toHaveProperty("typing");
+      expect(result.typing).toHaveProperty("room", "test-room");
+      expect(result.typing).toHaveProperty("isTyping", true);
+    });
+
     it("should output JSON error on failure", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");

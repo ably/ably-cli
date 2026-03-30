@@ -171,13 +171,14 @@ describe("logs:subscribe command", () => {
         await commandPromise;
       });
       const events = records.filter(
-        (r) => r.type === "event" && r.logType === "channel.lifecycle",
+        (r) => r.type === "event" && r.log?.logType === "channel.lifecycle",
       );
       expect(events.length).toBeGreaterThan(0);
       const record = events[0];
       expect(record).toHaveProperty("type", "event");
       expect(record).toHaveProperty("command", "logs:subscribe");
-      expect(record).toHaveProperty("logType", "channel.lifecycle");
+      expect(record).toHaveProperty("log");
+      expect(record.log).toHaveProperty("logType", "channel.lifecycle");
     });
   });
 

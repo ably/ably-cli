@@ -90,9 +90,11 @@ export default class MessagesDelete extends ChatBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            room: args.room,
-            serial: args.serial,
-            versionSerial: result.version.serial,
+            message: {
+              room: args.room,
+              serial: args.serial,
+              versionSerial: result.version.serial,
+            },
           },
           flags,
         );

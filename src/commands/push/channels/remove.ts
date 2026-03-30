@@ -84,7 +84,13 @@ export default class PushChannelsRemove extends AblyBaseCommand {
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
-          { removed: true, channel: flags.channel, ...subscription },
+          {
+            subscription: {
+              removed: true,
+              channel: flags.channel,
+              ...subscription,
+            },
+          },
           flags,
         );
       } else {

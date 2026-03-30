@@ -53,8 +53,10 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            metrics: occupancyMetrics,
-            room: roomName,
+            occupancy: {
+              metrics: occupancyMetrics,
+              room: roomName,
+            },
           },
           flags,
         );

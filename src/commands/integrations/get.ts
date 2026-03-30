@@ -42,7 +42,9 @@ export default class IntegrationsGetCommand extends ControlBaseCommand {
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
-          structuredClone(rule) as unknown as Record<string, unknown>,
+          {
+            rule: structuredClone(rule) as unknown as Record<string, unknown>,
+          },
           flags,
         );
       } else {

@@ -69,10 +69,11 @@ describe("rooms:occupancy:get command", () => {
 
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("room", "test-room");
-      expect(result).toHaveProperty("metrics");
-      expect(result.metrics.connections).toBe(10);
-      expect(result.metrics.presenceMembers).toBe(7);
+      expect(result).toHaveProperty("occupancy");
+      expect(result.occupancy).toHaveProperty("room", "test-room");
+      expect(result.occupancy).toHaveProperty("metrics");
+      expect(result.occupancy.metrics.connections).toBe(10);
+      expect(result.occupancy.metrics.presenceMembers).toBe(7);
     });
 
     it("should output JSON error on failure", async () => {

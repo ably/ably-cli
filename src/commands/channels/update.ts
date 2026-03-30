@@ -92,7 +92,7 @@ export default class ChannelsUpdate extends AblyBaseCommand {
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
-          { channel: channelName, serial, versionSerial },
+          { message: { channel: channelName, serial, versionSerial } },
           flags,
         );
       } else {

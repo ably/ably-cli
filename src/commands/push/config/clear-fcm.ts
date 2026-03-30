@@ -61,7 +61,7 @@ export default class PushConfigClearFcm extends ControlBaseCommand {
         if (!fcmConfigured) {
           if (this.shouldOutputJson(flags)) {
             this.logJsonResult(
-              { appId, cleared: "fcm", wasConfigured: false },
+              { config: { appId, cleared: "fcm", wasConfigured: false } },
               flags,
             );
           } else {
@@ -88,7 +88,7 @@ export default class PushConfigClearFcm extends ControlBaseCommand {
         });
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonResult({ appId, cleared: "fcm" }, flags);
+          this.logJsonResult({ config: { appId, cleared: "fcm" } }, flags);
         } else {
           this.log(
             formatSuccess(

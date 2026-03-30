@@ -73,7 +73,12 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
-          structuredClone(createdQueue) as unknown as Record<string, unknown>,
+          {
+            queue: structuredClone(createdQueue) as unknown as Record<
+              string,
+              unknown
+            >,
+          },
           flags,
         );
       } else {

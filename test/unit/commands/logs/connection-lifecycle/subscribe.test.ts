@@ -313,7 +313,7 @@ describe("LogsConnectionLifecycleSubscribe", function () {
       await commandPromise;
     });
     const events = records.filter(
-      (r) => r.type === "event" && r.event === "connection.opened",
+      (r) => r.type === "event" && r.log?.event === "connection.opened",
     );
     expect(events.length).toBeGreaterThan(0);
     const record = events[0];
@@ -322,7 +322,8 @@ describe("LogsConnectionLifecycleSubscribe", function () {
       "command",
       "logs:connection-lifecycle:subscribe",
     );
-    expect(record).toHaveProperty("event", "connection.opened");
+    expect(record).toHaveProperty("log");
+    expect(record.log).toHaveProperty("event", "connection.opened");
   });
 
   it("should handle missing mock client in test mode", async function () {

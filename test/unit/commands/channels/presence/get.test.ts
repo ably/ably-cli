@@ -90,14 +90,14 @@ describe("channels:presence:get command", () => {
 
       const result = JSON.parse(stdout.trim());
       expect(result.type).toBe("result");
-      expect(result.presenceMembers).toBeDefined();
-      expect(result.presenceMembers).toHaveLength(2);
-      expect(result.presenceMembers[0].clientId).toBe("client-1");
-      expect(result.presenceMembers[0].connectionId).toBe("conn-1");
-      expect(result.presenceMembers[0].action).toBe("present");
-      expect(result.presenceMembers[0].data).toEqual({ status: "online" });
-      expect(result.presenceMembers[1].clientId).toBe("client-2");
-      expect(result.presenceMembers[1].data).toBeNull();
+      expect(result.members).toBeDefined();
+      expect(result.members).toHaveLength(2);
+      expect(result.members[0].clientId).toBe("client-1");
+      expect(result.members[0].connectionId).toBe("conn-1");
+      expect(result.members[0].action).toBe("present");
+      expect(result.members[0].data).toEqual({ status: "online" });
+      expect(result.members[1].clientId).toBe("client-2");
+      expect(result.members[1].data).toBeNull();
       expect(result.hasMore).toBe(false);
       expect(result.total).toBe(2);
     });

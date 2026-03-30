@@ -87,7 +87,7 @@ export default class PushConfigSetFcm extends ControlBaseCommand {
         });
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonResult({ appId }, flags);
+          this.logJsonResult({ config: { appId, provider: "fcm" } }, flags);
         } else {
           this.log(
             formatSuccess(

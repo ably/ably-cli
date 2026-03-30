@@ -95,7 +95,8 @@ describe("push:config:set-apns command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("method", "p8");
+      expect(result).toHaveProperty("config");
+      expect(result.config).toHaveProperty("method", "p8");
     });
 
     it("should output JSON for P12 certificate when requested", async () => {
@@ -111,7 +112,8 @@ describe("push:config:set-apns command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("method", "p12");
+      expect(result).toHaveProperty("config");
+      expect(result.config).toHaveProperty("method", "p12");
     });
 
     it("should require either certificate or key-file", async () => {

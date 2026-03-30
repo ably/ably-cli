@@ -130,15 +130,17 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            appId,
-            capability: capabilities,
-            clientId,
-            expires: new Date(jwtPayload.exp * 1000).toISOString(),
-            issued: new Date(jwtPayload.iat * 1000).toISOString(),
-            keyId,
-            token,
-            tokenType: "jwt",
-            ttl: flags.ttl,
+            token: {
+              appId,
+              capability: capabilities,
+              clientId,
+              expires: new Date(jwtPayload.exp * 1000).toISOString(),
+              issued: new Date(jwtPayload.iat * 1000).toISOString(),
+              keyId,
+              tokenType: "jwt",
+              ttl: flags.ttl,
+              value: token,
+            },
           },
           flags,
         );

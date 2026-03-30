@@ -150,9 +150,10 @@ describe("channels:update command", () => {
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "channels:update");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("channel", "test-channel");
-      expect(result).toHaveProperty("serial", "serial-001");
-      expect(result).toHaveProperty(
+      expect(result).toHaveProperty("message");
+      expect(result.message).toHaveProperty("channel", "test-channel");
+      expect(result.message).toHaveProperty("serial", "serial-001");
+      expect(result.message).toHaveProperty(
         "versionSerial",
         "mock-version-serial-update",
       );

@@ -220,7 +220,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
 
         if (!this.shouldSuppressOutput(flags)) {
           if (this.shouldOutputJson(flags)) {
-            const jsonData = Array.isArray(batchContent)
+            const publishData = Array.isArray(batchContent)
               ? { request: batchContent, response: responseItems }
               : {
                   channels: Array.isArray(batchContentObj.channels)
@@ -229,7 +229,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
                   message: batchContentObj.messages,
                   response: responseItems,
                 };
-            this.logJsonResult(jsonData, flags);
+            this.logJsonResult({ publish: publishData }, flags);
           } else {
             this.log(formatSuccess("Batch publish successful."));
             this.log(

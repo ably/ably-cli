@@ -198,7 +198,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
     );
 
     if (this.shouldOutputJson(flags)) {
-      this.logJsonEvent(logData, flags);
+      this.logJsonEvent({ occupancy: logData }, flags);
     } else {
       const prefix = isInitial ? "Initial occupancy" : "Occupancy update";
       this.log(

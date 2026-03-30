@@ -141,9 +141,10 @@ describe("queues:create command", () => {
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "queues:create");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("id", mockQueueId);
-      expect(result).toHaveProperty("name", mockQueueName);
-      expect(result).toHaveProperty("region", "us-east-1-a");
+      expect(result).toHaveProperty("queue");
+      expect(result.queue).toHaveProperty("id", mockQueueId);
+      expect(result.queue).toHaveProperty("name", mockQueueName);
+      expect(result.queue).toHaveProperty("region", "us-east-1-a");
     });
 
     it("should use custom app ID when provided", async () => {

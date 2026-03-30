@@ -134,7 +134,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
-          { emoji, metadata: this.metadataObj, room: roomName },
+          { reaction: { emoji, metadata: this.metadataObj, room: roomName } },
           flags,
         );
       } else {

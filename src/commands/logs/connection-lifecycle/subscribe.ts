@@ -98,7 +98,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonEvent(event, flags);
+          this.logJsonEvent({ log: event }, flags);
         } else {
           this.log(
             `${formatTimestamp(timestamp)} Event: ${formatEventType(event.event)}`,

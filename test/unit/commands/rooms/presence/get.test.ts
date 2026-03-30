@@ -95,7 +95,7 @@ describe("rooms:presence:get command", () => {
       expect(stdout).toContain("No members currently present");
     });
 
-    it("should output JSON with presenceMembers array", async () => {
+    it("should output JSON with members array", async () => {
       const { stdout } = await runCommand(
         ["rooms:presence:get", "test-room", "--json"],
         import.meta.url,
@@ -103,16 +103,16 @@ describe("rooms:presence:get command", () => {
 
       const result = JSON.parse(stdout.trim());
       expect(result.type).toBe("result");
-      expect(result.presenceMembers).toBeDefined();
-      expect(result.presenceMembers).toHaveLength(2);
-      expect(result.presenceMembers[0].clientId).toBe("user-1");
-      expect(result.presenceMembers[0].connectionId).toBe("conn-1");
-      expect(result.presenceMembers[0].action).toBe("present");
-      expect(result.presenceMembers[0].data).toEqual({ status: "online" });
-      expect(result.presenceMembers[0].timestamp).toBeDefined();
-      expect(result.presenceMembers[0].id).toBe("msg-1");
-      expect(result.presenceMembers[1].clientId).toBe("user-2");
-      expect(result.presenceMembers[1].data).toBeNull();
+      expect(result.members).toBeDefined();
+      expect(result.members).toHaveLength(2);
+      expect(result.members[0].clientId).toBe("user-1");
+      expect(result.members[0].connectionId).toBe("conn-1");
+      expect(result.members[0].action).toBe("present");
+      expect(result.members[0].data).toEqual({ status: "online" });
+      expect(result.members[0].timestamp).toBeDefined();
+      expect(result.members[0].id).toBe("msg-1");
+      expect(result.members[1].clientId).toBe("user-2");
+      expect(result.members[1].data).toBeNull();
       expect(result.hasMore).toBe(false);
       expect(result.total).toBe(2);
     });

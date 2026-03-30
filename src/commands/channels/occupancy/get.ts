@@ -70,8 +70,10 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            channel: channelName,
-            metrics: occupancyMetrics,
+            occupancy: {
+              channel: channelName,
+              metrics: occupancyMetrics,
+            },
           },
           flags,
         );

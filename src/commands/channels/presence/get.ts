@@ -109,7 +109,7 @@ export default class ChannelsPresenceGet extends AblyBaseCommand {
         const next = buildPaginationNext(hasMore);
         this.logJsonResult(
           {
-            presenceMembers,
+            members: presenceMembers,
             hasMore,
             ...(next && { next }),
             total: items.length,

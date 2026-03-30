@@ -74,7 +74,10 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
       await rest.push.admin.channelSubscriptions.removeWhere(params);
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ removed: true, filters: params }, flags);
+        this.logJsonResult(
+          { subscriptions: { removed: true, filters: params } },
+          flags,
+        );
       } else {
         this.log(formatSuccess("Matching subscriptions removed."));
       }

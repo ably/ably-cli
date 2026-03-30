@@ -117,12 +117,14 @@ export default class ChannelsPublish extends AblyBaseCommand {
     args: Record<string, unknown>,
   ): void {
     const finalResult = {
-      errors,
-      published,
-      results,
-      allSucceeded: errors === 0 && published === total,
-      total,
-      channel: args.channel,
+      publish: {
+        errors,
+        published,
+        results,
+        allSucceeded: errors === 0 && published === total,
+        total,
+        channel: args.channel,
+      },
     };
     const eventType =
       total > 1 ? "multiPublishComplete" : "singlePublishComplete";

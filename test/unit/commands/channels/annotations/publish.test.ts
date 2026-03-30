@@ -268,8 +268,9 @@ describe("channels:annotations:publish command", () => {
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "channels:annotations:publish");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("channel", "test-channel");
-      expect(result).toHaveProperty("serial", "serial-001");
+      expect(result).toHaveProperty("annotation");
+      expect(result.annotation).toHaveProperty("channel", "test-channel");
+      expect(result.annotation).toHaveProperty("serial", "serial-001");
     });
   });
 

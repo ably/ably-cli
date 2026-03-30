@@ -129,7 +129,8 @@ describe("push:config:clear-apns command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("cleared", "apns");
+      expect(result).toHaveProperty("config");
+      expect(result.config).toHaveProperty("cleared", "apns");
     });
   });
 
