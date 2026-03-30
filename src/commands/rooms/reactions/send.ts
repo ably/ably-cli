@@ -96,7 +96,10 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
       );
 
       // Subscribe to room status changes
-      this.setupRoomStatusHandler(room, flags, { roomName });
+      const { failurePromise } = this.setupRoomStatusHandler(room, flags, {
+        roomName,
+      });
+      failurePromise.catch(() => {}); // one-shot command; attach() handles failure
 
       // Attach to the room
       this.logCliEvent(
