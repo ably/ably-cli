@@ -271,8 +271,8 @@ export default class PushBatchPublish extends AblyBaseCommand {
         for (const { item, originalIndex } of failedWithIndex) {
           const error = item.error as Record<string, unknown> | undefined;
           const message = error?.message ?? "Unknown error";
-          const code = error?.code ? ` (code: ${error.code})` : "";
-          failedDetails.push(`  Failed: ${message}${code}`);
+          const code = error?.code ? ` (code: ${String(error.code)})` : "";
+          failedDetails.push(`  Failed: ${String(message)}${code}`);
           failedItems.push({ ...item, originalIndex });
         }
       }
@@ -385,7 +385,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
       let data = "";
       process.stdin.setEncoding("utf8");
       process.stdin.on("data", (chunk) => {
-        data += chunk;
+        data += String(chunk);
       });
       process.stdin.on("end", () => {
         resolve(data);

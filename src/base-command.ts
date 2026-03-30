@@ -484,7 +484,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             // Unauthorized
             if (clientOptions.key) {
               // Check the original options object
-              this.handleInvalidKey(flags);
+              void this.handleInvalidKey(flags);
               reject(
                 Object.assign(
                   new Error(
@@ -809,7 +809,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       }
     } catch (error) {
       // Log but don't throw cleanup errors
-      this.debug(`Realtime client cleanup error: ${error}`);
+      this.debug(`Realtime client cleanup error: ${String(error)}`);
     }
 
     // Call super to maintain the parent class functionality
@@ -1319,7 +1319,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       }, effectiveTimeout);
 
       // Execute the cleanup function
-      (async () => {
+      void (async () => {
         try {
           await cleanupFunction();
         } catch (error) {
@@ -1543,7 +1543,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       this.fail(`${flagName} must be a JSON object`, flags, "parse");
     }
-    return parsed as Record<string, unknown>;
+    return parsed;
   }
 
   /**
@@ -1600,8 +1600,8 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     if (code !== undefined) {
       const helpUrl = cmdError.context.helpUrl;
       humanMessage += helpUrl
-        ? `\nAbly error code: ${code} (${helpUrl})`
-        : `\nAbly error code: ${code}`;
+        ? `\nAbly error code: ${String(code)} (${String(helpUrl)})`
+        : `\nAbly error code: ${String(code)}`;
     }
 
     this.error(humanMessage);

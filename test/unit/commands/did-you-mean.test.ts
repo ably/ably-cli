@@ -30,11 +30,11 @@ function spawnInteractive(
     const onData = (data: Buffer) => {
       buf += data.toString();
       if (buf.includes("ably>")) {
-        child.stdout!.removeListener("data", onData);
+        child.stdout.removeListener("data", onData);
         resolve();
       }
     };
-    child.stdout!.on("data", onData);
+    child.stdout.on("data", onData);
     // Fallback in case prompt text differs
     setTimeout(resolve, 3000);
   });
@@ -80,7 +80,7 @@ function collectOutput(child: ChildProcess): {
             assertions(stdout, stderr);
             resolve();
           } catch (error) {
-            reject(error);
+            reject(error instanceof Error ? error : new Error(String(error)));
           }
         });
       }),

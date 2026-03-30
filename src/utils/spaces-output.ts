@@ -15,7 +15,7 @@ export interface MemberOutput {
   connectionId: string;
   isConnected: boolean;
   profileData: Record<string, unknown> | null;
-  location: unknown | null;
+  location: unknown;
   lastEvent: { name: string; timestamp: string };
 }
 

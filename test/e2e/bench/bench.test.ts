@@ -190,7 +190,9 @@ describe("E2E: ably bench publisher and subscriber", () => {
                           resolveSubscriber();
                         }
                       } catch (err) {
-                        console.error(`[TEST] Failed to parse JSON: ${err}`);
+                        console.error(
+                          `[TEST] Failed to parse JSON: ${String(err)}`,
+                        );
                       }
                     }
                   }
@@ -220,7 +222,7 @@ describe("E2E: ably bench publisher and subscriber", () => {
                 } else {
                   rejectSubscriber(
                     new Error(
-                      `Subscriber process exited with code ${code}. Full Output:\n${subscriberOutput}\nStderr:\n${subscriberProcess?.stderr?.toString() || "N/A"}`,
+                      `Subscriber process exited with code ${code}. Full Output:\n${subscriberOutput}\nStderr:\n${String(subscriberProcess?.stderr) || "N/A"}`,
                     ),
                   );
                 }

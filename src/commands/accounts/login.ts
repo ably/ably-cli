@@ -191,7 +191,7 @@ export default class AccountsLogin extends ControlBaseCommand {
 
       // Store custom endpoint if provided
       if (flags.endpoint) {
-        this.configManager.storeEndpoint(flags.endpoint as string);
+        this.configManager.storeEndpoint(flags.endpoint);
       }
 
       // Handle app selection based on available apps
@@ -390,7 +390,7 @@ export default class AccountsLogin extends ControlBaseCommand {
       // This handles platform differences safely and avoids shell injection
       await open(url);
     } catch (error) {
-      this.warn(`Failed to open browser: ${error}`);
+      this.warn(`Failed to open browser: ${String(error)}`);
       this.log(`Please visit ${url} manually to create an access token`);
     }
   }

@@ -123,7 +123,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
       };
 
       // Subscribe using the listener
-      await this.space!.members.subscribe("update", memberListener);
+      this.space!.members.subscribe("update", memberListener);
 
       this.logCliEvent(
         flags,

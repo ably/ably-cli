@@ -112,6 +112,7 @@ export default class CustomHelp extends Help {
   }
 
   // Override the display method to clean up trailing whitespace and exit cleanly
+  // eslint-disable-next-line @typescript-eslint/require-await -- oclif Help base class requires async
   async showCommandHelp(command: Command.Loadable): Promise<void> {
     // For topic commands, we need to add the COMMANDS section manually
     const output = this.formatCommand(command);
@@ -155,6 +156,7 @@ export default class CustomHelp extends Help {
   }
 
   // Override for root help as well
+  // eslint-disable-next-line @typescript-eslint/require-await -- oclif Help base class requires async
   async showRootHelp(): Promise<void> {
     // Get formatted output
     const output = this.formatRoot();

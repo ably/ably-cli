@@ -57,9 +57,7 @@ export default class SpacesLocationsGet extends SpacesBaseCommand {
         .filter(
           ([, loc]) =>
             loc != null &&
-            !(
-              typeof loc === "object" && Object.keys(loc as object).length === 0
-            ),
+            !(typeof loc === "object" && Object.keys(loc).length === 0),
         )
         .map(([connectionId, loc]) => ({ connectionId, location: loc }));
 

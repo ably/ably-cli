@@ -185,7 +185,7 @@ describe("Channel E2E Tests", () => {
       result = JSON.parse(listResult.stdout);
     } catch (parseError) {
       throw new Error(
-        `Failed to parse JSON output. Parse error: ${parseError}. Exit code: ${listResult.exitCode}, Stderr: ${listResult.stderr}, Stdout: ${listResult.stdout}`,
+        `Failed to parse JSON output. Parse error: ${String(parseError)}. Exit code: ${listResult.exitCode}, Stderr: ${listResult.stderr}, Stdout: ${listResult.stdout}`,
       );
     }
     expect(result).toHaveProperty("success", true);
@@ -346,7 +346,7 @@ describe("Channel E2E Tests", () => {
       result = JSON.parse(lines.at(-1));
     } catch (parseError) {
       throw new Error(
-        `Failed to parse JSON history output. Parse error: ${parseError}. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}, Stdout: ${historyResult.stdout}`,
+        `Failed to parse JSON history output. Parse error: ${String(parseError)}. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}, Stdout: ${historyResult.stdout}`,
       );
     }
     expect(result).toHaveProperty("messages");

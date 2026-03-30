@@ -32,7 +32,7 @@ export default class IntegrationsGetCommand extends ControlBaseCommand {
     const { args, flags } = await this.parse(IntegrationsGetCommand);
 
     // Display authentication information
-    this.showAuthInfoIfNeeded(flags);
+    await this.showAuthInfoIfNeeded(flags);
 
     const appId = await this.requireAppId(flags);
 
@@ -61,7 +61,7 @@ export default class IntegrationsGetCommand extends ControlBaseCommand {
         }
         this.log(`${formatLabel("Source Type")} ${rule.source.type}`);
         this.log(
-          `${formatLabel("Target")} ${this.formatJsonOutput(structuredClone(rule.target) as unknown as Record<string, unknown>, flags).replaceAll("\n", "\n  ")}`,
+          `${formatLabel("Target")} ${this.formatJsonOutput(structuredClone(rule.target) as Record<string, unknown>, flags).replaceAll("\n", "\n  ")}`,
         );
         this.log(`${formatLabel("Version")} ${rule.version}`);
         this.log(`${formatLabel("Created")} ${this.formatDate(rule.created)}`);

@@ -130,8 +130,8 @@ export default class ChannelsPublish extends AblyBaseCommand {
       total > 1 ? "multiPublishComplete" : "singlePublishComplete";
     const eventMessage =
       total > 1
-        ? `Published ${total} messages to channel ${args.channel}`
-        : `Published message to channel ${args.channel}`;
+        ? `Published ${total} messages to channel ${String(args.channel)}`
+        : `Published message to channel ${String(args.channel)}`;
     this.logCliEvent(flags, "publish", eventType, eventMessage, finalResult);
 
     if (!this.shouldSuppressOutput(flags)) {
@@ -145,7 +145,11 @@ export default class ChannelsPublish extends AblyBaseCommand {
         );
       } else if (errors === 0) {
         const serial =
-          results[0]?.serial == null ? undefined : String(results[0].serial);
+          results[0]?.serial == null
+            ? undefined
+            : typeof results[0].serial === "string"
+              ? results[0].serial
+              : JSON.stringify(results[0].serial);
         this.log(
           formatSuccess(
             `Message published to channel: ${formatResource(args.channel as string)}.`,
@@ -228,7 +232,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
           flags,
           "publish",
           "messagePublished",
-          `Message ${messageIndex} published to channel ${args.channel}`,
+          `Message ${messageIndex} published to channel ${String(args.channel)}`,
           {
             index: messageIndex,
             message,
@@ -327,7 +331,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
           flags,
           "channel",
           stateChange.current,
-          `Channel '${args.channel}' state changed to ${stateChange.current}`,
+          `Channel '${String(args.channel)}' state changed to ${stateChange.current}`,
           { reason: stateChange.reason },
         );
       });

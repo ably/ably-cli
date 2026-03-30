@@ -110,14 +110,11 @@ describe("spaces:occupancy:subscribe command", () => {
         await commandPromise;
       });
 
-      const events = records.filter(
-        (r) => r.type === "event" && (r as Record<string, unknown>).occupancy,
-      );
+      const events = records.filter((r) => r.type === "event" && r.occupancy);
       expect(events.length).toBeGreaterThan(0);
       expect(events[0]).toHaveProperty("type", "event");
       expect(events[0]).toHaveProperty("command", "spaces:occupancy:subscribe");
-      const occupancy = (events[0] as Record<string, unknown>)
-        .occupancy as Record<string, unknown>;
+      const occupancy = events[0].occupancy as Record<string, unknown>;
       expect(occupancy).toHaveProperty("spaceName", "test-space");
     });
   });

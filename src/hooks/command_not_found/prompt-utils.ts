@@ -22,7 +22,7 @@ export class PromptHelper {
     });
 
     // Timeout the prompt after 10 seconds
-    setTimeout(10_000, "timeout", { signal })
+    void setTimeout(10_000, "timeout", { signal })
       .catch(() => false) // Ignore timeout errors, treat as 'No'
       .then(() => confirmation.cancel());
 

@@ -117,7 +117,7 @@ class GlobalRateLimiter {
 
     // Schedule next queue processing if there are still items
     if (this.waitQueue.length > 0) {
-      setTimeout(() => this.processQueue(), this.config.retryDelayMs);
+      setTimeout(() => void this.processQueue(), this.config.retryDelayMs);
     }
   }
 
@@ -142,7 +142,7 @@ class GlobalRateLimiter {
 
     return new Promise<void>((resolve) => {
       this.waitQueue.push(resolve);
-      this.processQueue();
+      void this.processQueue();
     });
   }
 

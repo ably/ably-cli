@@ -112,7 +112,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
           this.logCliEvent(
             flags,
             "presence",
-            presenceMessage.action!,
+            presenceMessage.action,
             `Presence event: ${presenceMessage.action} by ${presenceMessage.clientId}`,
             event,
           );

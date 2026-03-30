@@ -28,6 +28,7 @@ function handleVersionExit(): void {
 /**
  * Hook to intercept the --version flag and support JSON output
  */
+// eslint-disable-next-line @typescript-eslint/require-await -- oclif Hook type requires async
 const hook: Hook<"init"> = async function (opts) {
   const { config } = opts;
 

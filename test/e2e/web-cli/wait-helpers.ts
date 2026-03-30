@@ -553,7 +553,7 @@ export async function executeCommandWithRetry(
     } catch (error) {
       if (!process.env.CI || process.env.VERBOSE_TESTS) {
         console.log(
-          `Command execution failed (attempt ${attempt}/${retries}): ${error}`,
+          `Command execution failed (attempt ${attempt}/${retries}): ${String(error)}`,
         );
       }
 

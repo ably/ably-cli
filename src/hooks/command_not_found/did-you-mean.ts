@@ -163,7 +163,9 @@ const hook: Hook<"command_not_found"> = async function (opts) {
                 const formattedUsage =
                   typeof usage === "string"
                     ? usage.replaceAll(":", " ")
-                    : usage;
+                    : Array.isArray(usage)
+                      ? usage.join(" ")
+                      : String(usage);
 
                 // Extract error details for later display
                 const errorMsg = err.message || "";

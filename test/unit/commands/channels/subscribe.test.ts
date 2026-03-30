@@ -174,9 +174,8 @@ describe("channels:subscribe command", () => {
       const events = records.filter(
         (r) =>
           r.type === "event" &&
-          (r as Record<string, unknown>).message &&
-          ((r as Record<string, unknown>).message as Record<string, unknown>)
-            .channel === "test-channel",
+          r.message &&
+          (r.message as Record<string, unknown>).channel === "test-channel",
       );
       expect(events.length).toBeGreaterThan(0);
       const record = events[0];

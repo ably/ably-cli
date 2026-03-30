@@ -212,7 +212,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
             this.log(`Active test ID: ${metrics.testId}`);
             if (metrics.testDetails) {
               this.log(
-                `Test will send ${metrics.testDetails.messageCount} messages at ${metrics.testDetails.messageRate} msg/sec using ${metrics.testDetails.transport} transport`,
+                `Test will send ${String(metrics.testDetails.messageCount)} messages at ${String(metrics.testDetails.messageRate)} msg/sec using ${String(metrics.testDetails.transport)} transport`,
               );
             }
           }
@@ -440,7 +440,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
           if (!this.shouldOutputJson(flags)) {
             this.log(`\nPublisher detected with test ID: ${testId}`);
             this.log(
-              `Test will send ${testDetails.messageCount} messages at ${testDetails.messageRate} msg/sec using ${testDetails.transport} transport`,
+              `Test will send ${String(testDetails.messageCount)} messages at ${String(testDetails.messageRate)} msg/sec using ${String(testDetails.transport)} transport`,
             );
           }
         }

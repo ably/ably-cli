@@ -184,7 +184,7 @@ export default class PushDevicesSave extends AblyBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(
           formatProgress(
-            `Saving device registration ${formatResource(String(deviceData.id || ""))}`,
+            `Saving device registration ${formatResource(typeof deviceData.id === "string" ? deviceData.id : "")}`,
           ),
         );
       }
@@ -198,7 +198,7 @@ export default class PushDevicesSave extends AblyBaseCommand {
       } else {
         this.log(
           formatSuccess(
-            `Device registration saved for ${formatResource(String(deviceData.id || ""))}.`,
+            `Device registration saved for ${formatResource(typeof deviceData.id === "string" ? deviceData.id : "")}.`,
           ),
         );
       }

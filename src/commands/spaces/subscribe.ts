@@ -158,7 +158,7 @@ export default class SpacesSubscribe extends SpacesBaseCommand {
       };
 
       // Subscribe to both member and location events
-      await this.space!.members.subscribe("update", memberListener);
+      this.space!.members.subscribe("update", memberListener);
       this.space!.locations.subscribe("update", locationListener);
 
       if (!this.shouldOutputJson(flags)) {

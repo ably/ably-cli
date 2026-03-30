@@ -91,8 +91,8 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
       const controlApi = this.createControlApi(flags);
       // Prepare integration data
       const integrationData: IntegrationData = {
-        requestMode: flags["request-mode"] as string,
-        ruleType: flags["rule-type"] as string, // API property name
+        requestMode: flags["request-mode"],
+        ruleType: flags["rule-type"], // API property name
         source: {
           channelFilter: flags["channel-filter"] || "",
           type: flags["source-type"],

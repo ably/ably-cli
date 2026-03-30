@@ -50,7 +50,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(
           formatProgress(
-            `Subscribing to presence events in room: ${formatResource(this.roomName!)}`,
+            `Subscribing to presence events in room: ${formatResource(this.roomName)}`,
           ),
         );
       }
@@ -70,12 +70,12 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         includeUserFriendlyMessages: true,
       });
 
-      this.room = await this.chatClient.rooms.get(this.roomName!);
-      const currentRoom = this.room!;
+      this.room = await this.chatClient.rooms.get(this.roomName);
+      const currentRoom = this.room;
 
       this.setupRoomStatusHandler(currentRoom, flags, {
-        roomName: this.roomName!,
-        successMessage: `Connected to room: ${formatResource(this.roomName!)}.`,
+        roomName: this.roomName,
+        successMessage: `Connected to room: ${formatResource(this.roomName)}.`,
         listeningMessage: undefined,
       });
 
@@ -153,7 +153,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(
           formatSuccess(
-            `Subscribed to presence in room: ${formatResource(this.roomName!)}.`,
+            `Subscribed to presence in room: ${formatResource(this.roomName)}.`,
           ),
         );
         this.log(formatListening("Listening for presence events."));

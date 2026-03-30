@@ -216,7 +216,7 @@ export default class Interactive extends Command {
       }
 
       this.historyManager = new HistoryManager();
-      await this.setupReadline();
+      this.setupReadline();
       await this.historyManager.loadHistory(this.rl);
 
       // Don't install SIGINT handler - sigint-exit.ts handles this with proper feedback
@@ -260,7 +260,7 @@ export default class Interactive extends Command {
     }
   }
 
-  private async setupReadline() {
+  private setupReadline() {
     this.rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
@@ -289,12 +289,12 @@ export default class Interactive extends Command {
 
     // Don't install any SIGINT handler initially
 
-    this.rl.on("line", async (input) => {
+    this.rl.on("line", (input) => {
       // Exit history search mode when a command is executed
       if (this.historySearch.active) {
         this.exitHistorySearch();
       }
-      await this.handleCommand(input.trim());
+      void this.handleCommand(input.trim());
     });
 
     // SIGINT handling is done through readline's built-in mechanism

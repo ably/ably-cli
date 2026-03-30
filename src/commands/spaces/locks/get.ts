@@ -56,7 +56,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
       });
 
       if (lockId) {
-        await this.getSingleLock(flags, spaceName, lockId);
+        this.getSingleLock(flags, spaceName, lockId);
       } else {
         await this.getAllLocks(flags, spaceName);
       }
@@ -65,11 +65,11 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
     }
   }
 
-  private async getSingleLock(
+  private getSingleLock(
     flags: Record<string, unknown>,
     spaceName: string,
     lockId: string,
-  ): Promise<void> {
+  ): void {
     if (!this.shouldOutputJson(flags)) {
       this.log(
         formatProgress(
@@ -78,7 +78,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
       );
     }
 
-    const lock = await this.space!.locks.get(lockId);
+    const lock = this.space!.locks.get(lockId);
 
     if (!lock) {
       if (this.shouldOutputJson(flags)) {

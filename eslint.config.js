@@ -90,8 +90,8 @@ export default [
       },
     },
     rules: {
-      // Use rules from the imported plugin object
-      ...tsPlugin.configs.recommended.rules,
+      // Use type-checked rules — requires parserOptions.project above
+      ...tsPlugin.configs["recommended-type-checked"].rules,
       // Your custom rules from .eslintrc.json
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-vars": [
@@ -102,6 +102,15 @@ export default [
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+      // Disable no-unsafe-* family — too noisy given current `any` usage.
+      // These can be enabled incrementally as the codebase reduces `any`.
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      // Too many false positives on intentional String() conversions
+      "@typescript-eslint/no-base-to-string": "off",
       // Add other TS specific rules or overrides here
       "unicorn/prefer-module": "off",
       "unicorn/prevent-abbreviations": "off",
@@ -171,6 +180,14 @@ export default [
       ...vitest.configs.recommended.rules,
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-expressions": "off",
+      // Tests legitimately use `any` for mocking — disable no-unsafe-* family
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/require-await": "off",
+      "@typescript-eslint/unbound-method": "off",
       "vitest/no-focused-tests": "error", // Equivalent to mocha/no-exclusive-tests
       "vitest/no-disabled-tests": "warn", // Equivalent to mocha/no-skipped-tests
     },
@@ -220,6 +237,19 @@ export default [
   },
   // Prettier config must be last
   eslintConfigPrettier,
+  {
+    // All test and test-helper files: disable no-unsafe-* rules (tests legitimately use `any` for mocking)
+    files: ["test/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/require-await": "off",
+      "@typescript-eslint/unbound-method": "off",
+    },
+  },
   {
     // Playwright browser E2E tests – allow browser globals and silence node-specific rules
     files: ["test/e2e/**/*.ts"],

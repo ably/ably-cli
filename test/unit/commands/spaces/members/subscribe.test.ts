@@ -113,7 +113,9 @@ describe("spaces:members:subscribe command", () => {
     it("should handle errors gracefully", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.members.subscribe.mockRejectedValue(new Error("Connection failed"));
+      space.members.subscribe.mockImplementation(() => {
+        throw new Error("Connection failed");
+      });
 
       const { error } = await runCommand(
         ["spaces:members:subscribe", "test-space"],

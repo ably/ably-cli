@@ -215,59 +215,61 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           );
         }
 
-        this.simulationIntervalId = setInterval(async () => {
-          try {
-            const simulatedX = Math.floor(Math.random() * 1000);
-            const simulatedY = Math.floor(Math.random() * 800);
+        this.simulationIntervalId = setInterval(() => {
+          void (async () => {
+            try {
+              const simulatedX = Math.floor(Math.random() * 1000);
+              const simulatedY = Math.floor(Math.random() * 800);
 
-            const simulatedCursor = {
-              position: { x: simulatedX, y: simulatedY },
-              ...(cursorData.data
-                ? { data: cursorData.data as CursorData }
-                : {}),
-            };
+              const simulatedCursor = {
+                position: { x: simulatedX, y: simulatedY },
+                ...(cursorData.data
+                  ? { data: cursorData.data as CursorData }
+                  : {}),
+              };
 
-            await this.space!.cursors.set(simulatedCursor);
+              await this.space!.cursors.set(simulatedCursor);
 
-            this.logCliEvent(
-              flags,
-              "cursor",
-              "simulationUpdate",
-              "Simulated cursor position update",
-              { position: { x: simulatedX, y: simulatedY } },
-            );
-
-            if (this.shouldOutputJson(flags)) {
-              this.logJsonEvent(
-                {
-                  cursor: {
-                    clientId: this.realtimeClient!.auth.clientId,
-                    connectionId: this.realtimeClient!.connection.id,
-                    position: { x: simulatedX, y: simulatedY },
-                    data: (cursorData.data as CursorData) ?? null,
-                  },
-                },
+              this.logCliEvent(
                 flags,
+                "cursor",
+                "simulationUpdate",
+                "Simulated cursor position update",
+                { position: { x: simulatedX, y: simulatedY } },
               );
-            } else {
-              const simLines = [
-                `${formatLabel("Simulated")} cursor at (${simulatedX}, ${simulatedY})`,
-              ];
-              if (cursorData.data) {
-                simLines.push(
-                  `  ${formatLabel("Data")} ${JSON.stringify(cursorData.data)}`,
+
+              if (this.shouldOutputJson(flags)) {
+                this.logJsonEvent(
+                  {
+                    cursor: {
+                      clientId: this.realtimeClient!.auth.clientId,
+                      connectionId: this.realtimeClient!.connection.id,
+                      position: { x: simulatedX, y: simulatedY },
+                      data: (cursorData.data as CursorData) ?? null,
+                    },
+                  },
+                  flags,
                 );
+              } else {
+                const simLines = [
+                  `${formatLabel("Simulated")} cursor at (${simulatedX}, ${simulatedY})`,
+                ];
+                if (cursorData.data) {
+                  simLines.push(
+                    `  ${formatLabel("Data")} ${JSON.stringify(cursorData.data)}`,
+                  );
+                }
+                this.log(simLines.join("\n"));
               }
-              this.log(simLines.join("\n"));
+            } catch (error) {
+              this.logCliEvent(
+                flags,
+                "cursor",
+                "simulationError",
+                `Simulation error: ${errorMessage(error)}`,
+              );
             }
-          } catch (error) {
-            this.logCliEvent(
-              flags,
-              "cursor",
-              "simulationError",
-              `Simulation error: ${errorMessage(error)}`,
-            );
-          }
+          })();
         }, 250);
       }
 

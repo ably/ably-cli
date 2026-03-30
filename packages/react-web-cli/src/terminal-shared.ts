@@ -248,7 +248,7 @@ export function createAuthPayload(
 /**
  * Parses control messages from WebSocket data
  */
-export function parseControlMessage(data: Uint8Array): any | null {
+export function parseControlMessage(data: Uint8Array): any {
   const prefixBytes = new TextEncoder().encode(CONTROL_MESSAGE_PREFIX);
 
   // Check if this is a control message

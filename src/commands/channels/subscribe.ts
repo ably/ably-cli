@@ -132,7 +132,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           channelName,
         );
 
-        return client!.channels.get(channelName, channelOptions);
+        return client.channels.get(channelName, channelOptions);
       });
 
       // Set up connection state logging

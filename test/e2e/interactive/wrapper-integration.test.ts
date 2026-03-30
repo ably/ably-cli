@@ -295,7 +295,7 @@ describe("Interactive Mode - Wrapper Integration", () => {
         });
 
         // Send test:wait command
-        proc.stdin!.write("test:wait --duration 10\n");
+        proc.stdin.write("test:wait --duration 10\n");
 
         // Wait for command to start
         await new Promise<void>((resolve) => {
@@ -328,14 +328,14 @@ describe("Interactive Mode - Wrapper Integration", () => {
         expect(promptCount).toBeGreaterThan(beforeSigintPromptCount);
 
         // Verify the CLI is functional after restart
-        proc.stdin!.write("version\n");
+        proc.stdin.write("version\n");
 
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         expect(output).toMatch(/\d+\.\d+\.\d+/); // Version number
 
         // Clean exit
-        proc.stdin!.write("exit\n");
+        proc.stdin.write("exit\n");
 
         await new Promise<void>((resolve) => {
           proc.on("exit", resolve);
@@ -403,7 +403,7 @@ describe("Interactive Mode - Wrapper Integration", () => {
         });
 
         // Send test:wait command
-        proc.stdin!.write("test:wait --duration 10\n");
+        proc.stdin.write("test:wait --duration 10\n");
 
         // Wait for command to start
         await new Promise<void>((resolve) => {
@@ -433,7 +433,7 @@ describe("Interactive Mode - Wrapper Integration", () => {
         expect(promptCount).toBeGreaterThan(1);
 
         // Clean exit
-        proc.stdin!.write("exit\n");
+        proc.stdin.write("exit\n");
 
         await new Promise<void>((resolve) => {
           proc.on("exit", resolve);

@@ -208,7 +208,7 @@ export function scheduleReconnect(
     reconnectCallback();
   }, delay);
   console.log(
-    `[GlobalReconnect] scheduleReconnect: NEW reconnectTimer scheduled with ID: ${reconnectTimer} for attempt #${attempts + 1}`,
+    `[GlobalReconnect] scheduleReconnect: NEW reconnectTimer scheduled with ID: ${String(reconnectTimer)} for attempt #${attempts + 1}`,
   );
 }
 

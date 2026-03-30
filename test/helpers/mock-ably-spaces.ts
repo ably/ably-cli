@@ -227,7 +227,7 @@ function createMockSpaceLocks(): MockSpaceLocks {
       reason: undefined,
     }),
     release: vi.fn().mockImplementation(async () => {}),
-    get: vi.fn().mockResolvedValue(null),
+    get: vi.fn().mockReturnValue(null),
     getAll: vi.fn().mockResolvedValue([]),
     subscribe: vi.fn((eventOrCallback, callback?) => {
       const cb = callback ?? eventOrCallback;
