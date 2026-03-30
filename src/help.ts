@@ -130,14 +130,14 @@ export default class CustomHelp extends Help {
       return super.showHelp(argv); // No command provided, show general help
     }
 
-    let subject: string = "";
-    for (let arg of argv) {
+    const nonFlagArgs: string[] = [];
+    for (const arg of argv) {
       if (arg.startsWith("-")) {
-        // If it's a flag, skip it
         continue;
       }
-      subject = arg; // The last non-flag argument is the subject
+      nonFlagArgs.push(arg);
     }
+    const subject = nonFlagArgs.join(":");
 
     const command = this.config.findCommand(subject);
     if (!command) return super.showHelp(argv);
@@ -381,6 +381,9 @@ export default class CustomHelp extends Help {
     let output: string;
     // Reset root help flag when showing individual command help
     this.isShowingRootHelp = false;
+    // Capture the original colon-separated command ID before super.formatCommand
+    // mutates it (oclif replaces ":" with the topicSeparator, which is " ")
+    const originalCommandId = command.id;
     // Use super's formatCommand
     output = super.formatCommand(command);
 
@@ -394,7 +397,7 @@ export default class CustomHelp extends Help {
     output = this.formatCommandsSection(output);
 
     // For topic commands, add COMMANDS section if it's missing
-    const topicPrefix = `${command.id}:`;
+    const topicPrefix = `${originalCommandId}:`;
     const subcommands = this.config.commands.filter(
       (cmd) =>
         cmd.id.startsWith(topicPrefix) &&

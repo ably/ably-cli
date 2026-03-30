@@ -589,6 +589,12 @@ EXAMPLES
   $ ably apps rules update chat --push-enabled
 
   $ ably apps rules delete chat
+
+COMMANDS
+  ably apps rules create  Create a channel rule
+  ably apps rules delete  Delete a channel rule
+  ably apps rules list    List channel rules for an app
+  ably apps rules update  Update a channel rule
 ```
 
 _See code: [src/commands/apps/rules/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/rules/index.ts)_
@@ -958,6 +964,15 @@ EXAMPLES
   $ ably auth keys update KEY_ID
 
   $ ably auth keys switch KEY_ID
+
+COMMANDS
+  ably auth keys create   Create a new API key for an app
+  ably auth keys current  Show the current API key for the selected app
+  ably auth keys get      Get details for a specific key
+  ably auth keys list     List all keys in the app
+  ably auth keys revoke   Revoke an API key (permanently disables the key)
+  ably auth keys switch   Switch to a different API key for the current app
+  ably auth keys update   Update a key's properties
 ```
 
 _See code: [src/commands/auth/keys/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/auth/keys/index.ts)_
@@ -1410,6 +1425,12 @@ EXAMPLES
   $ ably channels annotations get my-channel "01234567890:0"
 
   $ ably channels annotations delete my-channel "01234567890:0" "receipts:flag.v1"
+
+COMMANDS
+  ably channels annotations delete     Delete an annotation from a channel message
+  ably channels annotations get        Get annotations for a channel message
+  ably channels annotations publish    Publish an annotation on a channel message
+  ably channels annotations subscribe  Subscribe to annotations on an Ably channel
 ```
 
 _See code: [src/commands/channels/annotations/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/annotations/index.ts)_
@@ -1810,6 +1831,10 @@ EXAMPLES
   $ ably channels occupancy get my-channel
 
   $ ably channels occupancy subscribe my-channel
+
+COMMANDS
+  ably channels occupancy get        Get current occupancy metrics for a channel
+  ably channels occupancy subscribe  Subscribe to occupancy events on a channel
 ```
 
 _See code: [src/commands/channels/occupancy.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/occupancy.ts)_
@@ -1896,6 +1921,11 @@ EXAMPLES
   $ ably channels presence enter my-channel
 
   $ ably channels presence subscribe my-channel
+
+COMMANDS
+  ably channels presence enter      Enter presence on a channel and remains present until terminated.
+  ably channels presence get        Get all current presence members on a channel
+  ably channels presence subscribe  Subscribe to presence events on a channel
 ```
 
 _See code: [src/commands/channels/presence.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/channels/presence.ts)_
@@ -2590,6 +2620,9 @@ EXAMPLES
   $ ably logs channel-lifecycle subscribe
 
   $ ably logs channel-lifecycle subscribe --rewind 10
+
+COMMANDS
+  ably logs channel-lifecycle subscribe  Stream logs from [meta]channel.lifecycle meta channel
 ```
 
 _See code: [src/commands/logs/channel-lifecycle/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/logs/channel-lifecycle/index.ts)_
@@ -2640,6 +2673,10 @@ EXAMPLES
   $ ably logs connection-lifecycle subscribe
 
   $ ably logs connection-lifecycle subscribe --rewind 10
+
+COMMANDS
+  ably logs connection-lifecycle history    Retrieve connection lifecycle log history
+  ably logs connection-lifecycle subscribe  Subscribe to live connection lifecycle logs
 ```
 
 _See code: [src/commands/logs/connection-lifecycle/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/logs/connection-lifecycle/index.ts)_
@@ -2774,6 +2811,10 @@ EXAMPLES
   $ ably logs push subscribe --rewind 10
 
   $ ably logs push history
+
+COMMANDS
+  ably logs push history    Retrieve push notification log history
+  ably logs push subscribe  Stream logs from the push notifications meta channel [meta]log:push
 ```
 
 _See code: [src/commands/logs/push/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/logs/push/index.ts)_
@@ -2964,6 +3005,13 @@ EXAMPLES
   $ ably push channels save --channel my-channel --device-id device-123
 
   $ ably push channels list-channels
+
+COMMANDS
+  ably push channels list           List push channel subscriptions
+  ably push channels list-channels  List channels with push subscriptions
+  ably push channels remove         Remove a push channel subscription
+  ably push channels remove-where   Remove push channel subscriptions matching filter criteria
+  ably push channels save           Subscribe a device or client to push notifications on a channel
 ```
 
 _See code: [src/commands/push/channels/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/channels/index.ts)_
@@ -3134,6 +3182,13 @@ EXAMPLES
   $ ably push config set-apns --certificate /path/to/cert.p12
 
   $ ably push config set-fcm --service-account /path/to/service-account.json
+
+COMMANDS
+  ably push config clear-apns  Clear APNs push notification configuration for an app
+  ably push config clear-fcm   Clear FCM push notification configuration for an app
+  ably push config set-apns    Configure APNs push notifications for an app
+  ably push config set-fcm     Configure FCM push notifications for an app
+  ably push config show        Show push notification configuration for an app
 ```
 
 _See code: [src/commands/push/config/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/config/index.ts)_
@@ -3303,6 +3358,13 @@ EXAMPLES
   $ ably push devices get device-123
 
   $ ably push devices save --id device-123 --platform ios --form-factor phone --transport-type apns --device-token token123
+
+COMMANDS
+  ably push devices get           Get details of a push device registration
+  ably push devices list          List push device registrations
+  ably push devices remove        Remove a push device registration
+  ably push devices remove-where  Remove push device registrations matching filter criteria
+  ably push devices save          Register or update a push device
 ```
 
 _See code: [src/commands/push/devices/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/devices/index.ts)_
@@ -3724,6 +3786,14 @@ EXAMPLES
   $ ably rooms messages update my-room "serial" "Updated text"
 
   $ ably rooms messages delete my-room "serial"
+
+COMMANDS
+  ably rooms messages delete     Delete a message in an Ably Chat room
+  ably rooms messages history    Get historical messages from an Ably Chat room
+  ably rooms messages reactions  Commands for working with message reactions in chat rooms
+  ably rooms messages send       Send a message to an Ably Chat room
+  ably rooms messages subscribe  Subscribe to messages in one or more Ably Chat rooms
+  ably rooms messages update     Update a message in an Ably Chat room
 ```
 
 _See code: [src/commands/rooms/messages/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/messages/index.ts)_
@@ -3826,6 +3896,11 @@ EXAMPLES
   $ ably rooms messages reactions send my-room "message-id" "👍"
 
   $ ably rooms messages reactions subscribe my-room
+
+COMMANDS
+  ably rooms messages reactions remove     Remove a reaction from a message in a chat room
+  ably rooms messages reactions send       Send a reaction to a message in a chat room
+  ably rooms messages reactions subscribe  Subscribe to message reactions in a chat room
 ```
 
 _See code: [src/commands/rooms/messages/reactions/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/messages/reactions/index.ts)_
@@ -4088,6 +4163,10 @@ EXAMPLES
   $ ably rooms occupancy get my-room
 
   $ ably rooms occupancy subscribe my-room
+
+COMMANDS
+  ably rooms occupancy get        Get current occupancy metrics for a room
+  ably rooms occupancy subscribe  Subscribe to real-time occupancy metrics for a room
 ```
 
 _See code: [src/commands/rooms/occupancy/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/occupancy/index.ts)_
@@ -4170,6 +4249,11 @@ EXAMPLES
   $ ably rooms presence enter my-room
 
   $ ably rooms presence subscribe my-room
+
+COMMANDS
+  ably rooms presence enter      Enter presence in a chat room and remain present until terminated.
+  ably rooms presence get        Get all current presence members in a chat room
+  ably rooms presence subscribe  Subscribe to presence events in a chat room
 ```
 
 _See code: [src/commands/rooms/presence/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/presence/index.ts)_
@@ -4295,6 +4379,10 @@ EXAMPLES
   $ ably rooms reactions send my-room thumbs_up
 
   $ ably rooms reactions subscribe my-room
+
+COMMANDS
+  ably rooms reactions send       Send a reaction in a chat room
+  ably rooms reactions subscribe  Subscribe to reactions in a chat room
 ```
 
 _See code: [src/commands/rooms/reactions/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/reactions/index.ts)_
@@ -4381,6 +4469,10 @@ EXAMPLES
   $ ably rooms typing subscribe my-room
 
   $ ably rooms typing keystroke my-room
+
+COMMANDS
+  ably rooms typing keystroke  Send a typing indicator in an Ably Chat room (use --auto-type to keep typing automatically until terminated)
+  ably rooms typing subscribe  Subscribe to typing indicators in an Ably Chat room
 ```
 
 _See code: [src/commands/rooms/typing/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/typing/index.ts)_
@@ -4542,6 +4634,11 @@ EXAMPLES
   $ ably spaces cursors subscribe my-space
 
   $ ably spaces cursors get my-space
+
+COMMANDS
+  ably spaces cursors get        Get all current cursors in a space
+  ably spaces cursors set        Set a cursor with position data in a space
+  ably spaces cursors subscribe  Subscribe to cursor movements in a space
 ```
 
 _See code: [src/commands/spaces/cursors/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/cursors/index.ts)_
@@ -4736,6 +4833,11 @@ EXAMPLES
   $ ably spaces locations subscribe my-space
 
   $ ably spaces locations get my-space
+
+COMMANDS
+  ably spaces locations get        Get all current locations in a space
+  ably spaces locations set        Set location in a space
+  ably spaces locations subscribe  Subscribe to location updates for members in a space
 ```
 
 _See code: [src/commands/spaces/locations/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locations/index.ts)_
@@ -4856,6 +4958,11 @@ EXAMPLES
   $ ably spaces locks get my-space my-lock-id
 
   $ ably spaces locks get my-space
+
+COMMANDS
+  ably spaces locks acquire    Acquire a lock in a space
+  ably spaces locks get        Get a lock or all locks in a space
+  ably spaces locks subscribe  Subscribe to lock events in a space
 ```
 
 _See code: [src/commands/spaces/locks/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/locks/index.ts)_
@@ -4982,6 +5089,11 @@ EXAMPLES
   $ ably spaces members subscribe my-space
 
   $ ably spaces members get my-space
+
+COMMANDS
+  ably spaces members enter      Enter a space and remain present until terminated
+  ably spaces members get        Get all members in a space
+  ably spaces members subscribe  Subscribe to member presence events in a space
 ```
 
 _See code: [src/commands/spaces/members/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/members/index.ts)_
@@ -5100,6 +5212,10 @@ EXAMPLES
   $ ably spaces occupancy get my-space
 
   $ ably spaces occupancy subscribe my-space
+
+COMMANDS
+  ably spaces occupancy get        Get current occupancy metrics for a space
+  ably spaces occupancy subscribe  Subscribe to occupancy events on a space
 ```
 
 _See code: [src/commands/spaces/occupancy/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/spaces/occupancy/index.ts)_
