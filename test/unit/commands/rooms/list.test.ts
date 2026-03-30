@@ -148,6 +148,21 @@ describe("rooms:list command", () => {
     expect(error?.message).toContain("Failed to list rooms");
   });
 
+  it("should surface errorCode and errorMessage from HTTP response", async () => {
+    const mock = getMockAblyRest();
+    mock.request.mockResolvedValue({
+      statusCode: 403,
+      errorCode: 40160,
+      errorMessage: "Action not permitted",
+    });
+
+    const { error } = await runCommand(["rooms:list"], import.meta.url);
+
+    expect(error).toBeDefined();
+    expect(error?.message).toContain("Action not permitted");
+    expect(error?.message).toContain("40160");
+  });
+
   describe("functionality", () => {
     it("should list active chat rooms", async () => {
       const { stdout } = await runCommand(["rooms:list"], import.meta.url);

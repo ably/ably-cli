@@ -192,5 +192,20 @@ describe("spaces:list command", () => {
       const { error } = await runCommand(["spaces:list"], import.meta.url);
       expect(error).toBeDefined();
     });
+
+    it("should surface errorCode and errorMessage from HTTP response", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({
+        statusCode: 401,
+        errorCode: 40101,
+        errorMessage: "Invalid credentials",
+      });
+
+      const { error } = await runCommand(["spaces:list"], import.meta.url);
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Invalid credentials");
+      expect(error?.message).toContain("40101");
+    });
   });
 });

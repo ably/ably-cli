@@ -1,5 +1,6 @@
 import { Args } from "@oclif/core";
 
+import { CommandError } from "../../errors/command-error.js";
 import { productApiFlags } from "../../flags.js";
 import { SpacesBaseCommand } from "../../spaces-base-command.js";
 import {
@@ -90,7 +91,7 @@ export default class SpacesGet extends SpacesBaseCommand {
 
       if (response.statusCode !== 200) {
         this.fail(
-          `Failed to fetch space: ${response.statusCode}`,
+          CommandError.fromHttpResponse(response, "Failed to fetch space"),
           flags,
           "spaceGet",
         );

@@ -72,6 +72,21 @@ describe("channels:list command", () => {
       expect(error?.message).toContain("Failed to list channels");
     });
 
+    it("should surface errorCode and errorMessage from HTTP response", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({
+        statusCode: 401,
+        errorCode: 40101,
+        errorMessage: "Invalid credentials",
+      });
+
+      const { error } = await runCommand(["channels:list"], import.meta.url);
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Invalid credentials");
+      expect(error?.message).toContain("40101");
+    });
+
     it("should respect limit flag", async () => {
       const mock = getMockAblyRest();
 

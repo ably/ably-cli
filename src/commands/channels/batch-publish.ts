@@ -2,6 +2,7 @@ import { Args, Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { CommandError } from "../../errors/command-error.js";
 import { productApiFlags } from "../../flags.js";
 import {
   formatProgress,
@@ -255,7 +256,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
             // This is a partial success with batchResponse field
             if (!this.shouldSuppressOutput(flags)) {
               if (this.shouldOutputJson(flags)) {
-                this.fail(errorInfo.error.message, flags, "batchPublish", {
+                this.fail(errorInfo.error, flags, "batchPublish", {
                   channels: Array.isArray(batchContentObj.channels)
                     ? batchContentObj.channels
                     : [batchContentObj.channels],
@@ -286,21 +287,16 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
             }
           } else {
             // Complete failure
-            const errMsg = errorInfo.error
-              ? errorInfo.error.message
-              : "Unknown error";
-            const errorCode = errorInfo.error
-              ? errorInfo.error.code
-              : response.statusCode;
             this.fail(
-              `Batch publish failed: ${errMsg} (${errorCode})`,
+              errorInfo.error ||
+                CommandError.fromHttpResponse(response, "Batch publish failed"),
               flags,
               "batchPublish",
             );
           }
         } else {
           this.fail(
-            `Batch publish failed with status code ${response.statusCode}`,
+            CommandError.fromHttpResponse(response, "Batch publish failed"),
             flags,
             "batchPublish",
           );
@@ -308,22 +304,19 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
       } else {
         // Other error response
         const responseData = response.items;
-        let errMsg = "Unknown error";
-        let errorCode = response.statusCode;
+        let errorSource: unknown = CommandError.fromHttpResponse(
+          response,
+          "Batch publish failed",
+        );
 
         if (typeof responseData === "object" && !Array.isArray(responseData)) {
           const errorInfo = responseData as ErrorInfo;
           if (errorInfo.error) {
-            errMsg = errorInfo.error.message || errMsg;
-            errorCode = errorInfo.error.code || errorCode;
+            errorSource = errorInfo.error;
           }
         }
 
-        this.fail(
-          `Batch publish failed: ${errMsg} (${errorCode})`,
-          flags,
-          "batchPublish",
-        );
+        this.fail(errorSource, flags, "batchPublish");
       }
     } catch (error) {
       this.fail(error, flags, "batchPublish");
