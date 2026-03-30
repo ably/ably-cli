@@ -19,13 +19,13 @@ import {
 } from "../../helpers/e2e-test-helper.js";
 
 // Helper function to extract JSON from potentially noisy stdout
-// Looks for the last occurrence of { or [ to handle potential prefixes
+// Looks for the first occurrence of { or [ to find the start of JSON output
 const _parseJsonFromOutput = (output: string): unknown => {
   // Strip ANSI color codes first
   const strippedOutput = stripAnsi(output);
 
-  const jsonStart = strippedOutput.lastIndexOf("{");
-  const arrayStart = strippedOutput.lastIndexOf("[");
+  const jsonStart = strippedOutput.indexOf("{");
+  const arrayStart = strippedOutput.indexOf("[");
   let startIndex = -1;
 
   if (jsonStart === -1 && arrayStart === -1) {
@@ -34,7 +34,7 @@ const _parseJsonFromOutput = (output: string): unknown => {
   }
 
   if (jsonStart !== -1 && arrayStart !== -1) {
-    startIndex = Math.max(jsonStart, arrayStart); // Use the later starting character
+    startIndex = Math.min(jsonStart, arrayStart); // Use the earlier starting character
   } else if (jsonStart === -1) {
     startIndex = arrayStart;
   } else {
