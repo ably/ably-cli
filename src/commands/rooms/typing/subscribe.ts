@@ -69,7 +69,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
       );
 
       // Subscribe to room status changes
-      this.setupRoomStatusHandler(room, flags, {
+      const { failurePromise } = this.setupRoomStatusHandler(room, flags, {
         roomName,
         successMessage: `Subscribed to typing in room: ${formatResource(roomName)}.`,
         listeningMessage: "Listening for typing indicators.",
@@ -157,7 +157,10 @@ export default class TypingSubscribe extends ChatBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      await this.waitAndTrackCleanup(flags, "typing", flags.duration);
+      await Promise.race([
+        this.waitAndTrackCleanup(flags, "typing", flags.duration),
+        failurePromise,
+      ]);
     } catch (error) {
       this.fail(error, flags, "roomTypingSubscribe", { room: args.room });
     }

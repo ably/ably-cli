@@ -71,7 +71,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
   private async subscribeToRoom(
     roomName: string,
     flags: Record<string, unknown>,
-  ): Promise<void> {
+  ): Promise<{ failurePromise: Promise<never> }> {
     // Get the room
     this.logCliEvent(
       flags,
@@ -167,7 +167,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       `Subscribed to messages in room ${roomName}`,
     );
 
-    this.setupRoomStatusHandler(room, flags, {
+    const { failurePromise } = this.setupRoomStatusHandler(room, flags, {
       roomName,
       successMessage: `Subscribed to room: ${formatResource(roomName)}.`,
       listeningMessage: "Listening for messages.",
@@ -187,6 +187,8 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       "attachCallComplete",
       `room.attach() call complete for ${roomName}. Waiting for status change to 'attached'.`,
     );
+
+    return { failurePromise };
   }
 
   async run(): Promise<void> {
@@ -252,8 +254,10 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       });
 
       // Subscribe to all rooms
+      const failurePromises: Promise<never>[] = [];
       for (const roomName of this.roomNames) {
-        await this.subscribeToRoom(roomName, flags);
+        const { failurePromise } = await this.subscribeToRoom(roomName, flags);
+        failurePromises.push(failurePromise);
       }
 
       this.logCliEvent(
@@ -264,7 +268,10 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      await this.waitAndTrackCleanup(flags, "subscribe", flags.duration);
+      await Promise.race([
+        this.waitAndTrackCleanup(flags, "subscribe", flags.duration),
+        ...failurePromises,
+      ]);
     } catch (error) {
       this.fail(error, flags, "roomMessageSubscribe", {
         rooms: this.roomNames,

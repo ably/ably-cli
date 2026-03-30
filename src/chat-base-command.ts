@@ -1,4 +1,3 @@
-import type * as Ably from "ably";
 import { ChatClient, LogLevel, Room, RoomStatus } from "@ably/chat";
 
 import { AblyBaseCommand } from "./base-command.js";
@@ -114,13 +113,18 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
       successMessage?: string;
       listeningMessage?: string;
     },
-  ): void {
+  ): { failurePromise: Promise<never> } {
+    let rejectOnFailed!: (error: Error) => void;
+    const failurePromise = new Promise<never>((_, reject) => {
+      rejectOnFailed = reject;
+    });
+
     room.onStatusChange((statusChange) => {
-      let reason: Error | null | string | undefined;
+      let reason: Error | undefined;
       if (statusChange.current === RoomStatus.Failed) {
-        reason = room.error;
+        reason = room.error ?? undefined;
       }
-      const reasonMsg = reason instanceof Error ? reason.message : reason;
+      const reasonMsg = reason?.message;
       this.logCliEvent(
         flags,
         "room",
@@ -147,14 +151,15 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
           break;
         }
         case RoomStatus.Failed: {
-          this.fail(
-            `Failed to attach to room ${options.roomName}: ${reasonMsg || "Unknown error"}`,
-            flags as BaseFlags,
-            "room",
+          rejectOnFailed(
+            reason || new Error(`Room ${options.roomName} failed`),
           );
+          break;
         }
         // No default
       }
     });
+
+    return { failurePromise };
   }
 }

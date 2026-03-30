@@ -73,11 +73,14 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       this.room = await this.chatClient.rooms.get(this.roomName!);
       const currentRoom = this.room!;
 
-      this.setupRoomStatusHandler(currentRoom, flags, {
-        roomName: this.roomName!,
-        successMessage: `Connected to room: ${formatResource(this.roomName!)}.`,
-        listeningMessage: undefined,
-      });
+      const { failurePromise } = this.setupRoomStatusHandler(
+        currentRoom,
+        flags,
+        {
+          roomName: this.roomName!,
+          listeningMessage: undefined,
+        },
+      );
 
       await currentRoom.attach();
 
@@ -161,7 +164,10 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       }
 
       // Wait until the user interrupts or the optional duration elapses
-      await this.waitAndTrackCleanup(flags, "presence", flags.duration);
+      await Promise.race([
+        this.waitAndTrackCleanup(flags, "presence", flags.duration),
+        failurePromise,
+      ]);
     } catch (error) {
       this.fail(error, flags, "roomPresenceSubscribe", {
         room: this.roomName,
