@@ -1,6 +1,7 @@
 import { Args } from "@oclif/core";
 
 import { AblyBaseCommand } from "../../../base-command.js";
+import { CommandError } from "../../../errors/command-error.js";
 import { productApiFlags } from "../../../flags.js";
 import { formatLabel, formatResource } from "../../../utils/output.js";
 
@@ -56,6 +57,18 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
         { occupancy: "metrics" }, // params
         null, // body
       );
+
+      if (channelDetails.statusCode !== 200) {
+        this.fail(
+          CommandError.fromHttpResponse(
+            channelDetails,
+            "Failed to get channel occupancy",
+          ),
+          flags,
+          "occupancyGet",
+          { channel: channelName },
+        );
+      }
 
       const occupancyData = channelDetails.items?.[0] || {};
       const occupancyMetrics: OccupancyMetrics = occupancyData.status?.occupancy

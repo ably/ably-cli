@@ -237,5 +237,48 @@ describe("push:batch-publish command", () => {
       expect(result.publish.failedItems).toHaveLength(1);
       expect(result.publish.failedItems[0].originalIndex).toBe(1);
     });
+
+    it("should handle HTTP error responses from API", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({
+        success: false,
+        statusCode: 401,
+        errorCode: 40101,
+        errorMessage: "Invalid credentials",
+      });
+
+      const payload =
+        '[{"recipient":{"deviceId":"dev-1"},"payload":{"notification":{"title":"Hello"}}}]';
+
+      const { error } = await runCommand(
+        ["push:batch-publish", payload, "--force"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Invalid credentials");
+    });
+
+    it("should surface errorCode and errorMessage from HTTP response", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({
+        success: false,
+        statusCode: 403,
+        errorCode: 40300,
+        errorMessage: "Push not enabled",
+      });
+
+      const payload =
+        '[{"recipient":{"deviceId":"dev-1"},"payload":{"notification":{"title":"Hello"}}}]';
+
+      const { error } = await runCommand(
+        ["push:batch-publish", payload, "--force"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Push not enabled");
+      expect(error?.message).toContain("40300");
+    });
   });
 });

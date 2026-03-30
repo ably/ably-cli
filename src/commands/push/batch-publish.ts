@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { CommandError } from "../../errors/command-error.js";
 import { productApiFlags } from "../../flags.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 import { BaseFlags } from "../../types/cli.js";
@@ -252,6 +253,17 @@ export default class PushBatchPublish extends AblyBaseCommand {
           recipientItems.map(({ entry }) => entry),
         );
 
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          this.fail(
+            CommandError.fromHttpResponse(
+              response,
+              "Batch push publish failed",
+            ),
+            flags as BaseFlags,
+            "pushBatchPublish",
+          );
+        }
+
         const items = (response.items ?? []) as Record<string, unknown>[];
         const failedWithIndex = items
           .map((item, i) => ({
@@ -320,6 +332,17 @@ export default class PushBatchPublish extends AblyBaseCommand {
           null,
           channelBatchSpecs,
         );
+
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          this.fail(
+            CommandError.fromHttpResponse(
+              response,
+              "Batch channel publish failed",
+            ),
+            flags as BaseFlags,
+            "pushBatchPublish",
+          );
+        }
 
         const responseItems = (response.items ?? []) as BatchResponseItem[];
         const failedWithIndex = responseItems
