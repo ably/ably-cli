@@ -107,9 +107,11 @@ describe("Basic CLI E2E", () => {
 
       // Validate the JSON structure
       expect(jsonOutput).toHaveProperty("version");
-      expect(typeof jsonOutput.version).toBe("string");
-      expect(jsonOutput).toHaveProperty("name", "@ably/cli");
-      expect(jsonOutput).toHaveProperty("platform", process.platform);
+      expect(typeof jsonOutput.version).toBe("object");
+      expect(jsonOutput.version).toHaveProperty("version");
+      expect(typeof jsonOutput.version.version).toBe("string");
+      expect(jsonOutput.version).toHaveProperty("name", "@ably/cli");
+      expect(jsonOutput.version).toHaveProperty("platform", process.platform);
     });
 
     it("should accept --pretty-json flag without error", async () => {
@@ -135,9 +137,11 @@ describe("Basic CLI E2E", () => {
 
       // Validate the JSON structure
       expect(jsonOutput).toHaveProperty("version");
-      expect(typeof jsonOutput.version).toBe("string");
-      expect(jsonOutput).toHaveProperty("name", "@ably/cli");
-      expect(jsonOutput).toHaveProperty("platform", process.platform);
+      expect(typeof jsonOutput.version).toBe("object");
+      expect(jsonOutput.version).toHaveProperty("version");
+      expect(typeof jsonOutput.version.version).toBe("string");
+      expect(jsonOutput.version).toHaveProperty("name", "@ably/cli");
+      expect(jsonOutput.version).toHaveProperty("platform", process.platform);
     });
 
     it("should error when both --json and --pretty-json are used", async () => {

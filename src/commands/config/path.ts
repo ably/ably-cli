@@ -29,7 +29,7 @@ export default class ConfigPath extends AblyBaseCommand {
     }
 
     if (this.shouldOutputJson(flags)) {
-      this.logJsonResult({ path: configPath }, flags);
+      this.logJsonResult({ config: { path: configPath } }, flags);
     } else {
       this.log(configPath);
     }

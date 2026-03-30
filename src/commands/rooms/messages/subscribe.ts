@@ -113,9 +113,11 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonEvent(
           {
-            eventType: messageEvent.type,
-            message: messageLog,
-            room: roomName,
+            message: {
+              eventType: messageEvent.type,
+              ...messageLog,
+              room: roomName,
+            },
             ...(flags["sequence-numbers"]
               ? { sequence: this.sequenceCounter }
               : {}),

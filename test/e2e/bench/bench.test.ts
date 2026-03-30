@@ -393,13 +393,13 @@ describe("E2E: ably bench publisher and subscriber", () => {
       }
 
       expect(publisherSummary).toBeDefined();
-      // With JSON envelope format, data fields are at top level (not nested under .data)
-      expect(publisherSummary?.messagesSent).toBeDefined();
-      expect(publisherSummary!.messagesSent).toBe(messageCount);
-      expect(publisherSummary!.messagesEchoed).toBeGreaterThanOrEqual(
+      // With JSON envelope format, data fields are nested under benchmark domain key
+      expect(publisherSummary?.benchmark).toBeDefined();
+      expect(publisherSummary!.benchmark.messagesSent).toBe(messageCount);
+      expect(publisherSummary!.benchmark.messagesEchoed).toBeGreaterThanOrEqual(
         messageCount * 0.9,
       );
-      expect(publisherSummary!.errors).toBe(0);
+      expect(publisherSummary!.benchmark.errors).toBe(0);
 
       const subscriberLogEntries = subscriberOutput
         .trim()
@@ -418,9 +418,9 @@ describe("E2E: ably bench publisher and subscriber", () => {
             entry.type === "result" && entry.command === "bench:subscriber",
         ) ?? subscriberSummaryEntry;
       expect(subscriberSummary).toBeDefined();
-      // With JSON envelope format, data fields are at top level (not nested under .data)
-      expect(subscriberSummary?.messagesReceived).toBeDefined();
-      expect(subscriberSummary!.messagesReceived).toBe(messageCount);
+      // With JSON envelope format, data fields are nested under benchmark domain key
+      expect(subscriberSummary?.benchmark).toBeDefined();
+      expect(subscriberSummary!.benchmark.messagesReceived).toBe(messageCount);
     },
   );
 });

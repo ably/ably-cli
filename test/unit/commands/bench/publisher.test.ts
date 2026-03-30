@@ -85,9 +85,10 @@ describe("bench:publisher command", () => {
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "bench:publisher");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("messagesSent");
-      expect(result).toHaveProperty("testId");
-      expect(result).toHaveProperty("transport");
+      expect(result).toHaveProperty("benchmark");
+      expect(result.benchmark).toHaveProperty("messagesSent");
+      expect(result.benchmark).toHaveProperty("testId");
+      expect(result.benchmark).toHaveProperty("transport");
     }, 15_000);
 
     it("should publish messages to the specified channel", async () => {

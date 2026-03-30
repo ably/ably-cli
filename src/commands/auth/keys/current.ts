@@ -57,14 +57,11 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
     if (this.shouldOutputJson(flags)) {
       this.logJsonResult(
         {
-          app: {
-            id: appId,
-            name: appName,
-          },
           key: {
             id: keyName,
             label: keyLabel,
             value: apiKey,
+            app: { id: appId, name: appName },
           },
         },
         flags,
@@ -110,13 +107,11 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
     if (this.shouldOutputJson(flags)) {
       this.logJsonResult(
         {
-          app: {
-            id: appId,
-          },
           key: {
             id: keyName,
             label: "Web CLI Key",
             value: apiKey,
+            app: { id: appId },
           },
           mode: "web-cli",
         },

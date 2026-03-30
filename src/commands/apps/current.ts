@@ -72,15 +72,12 @@ export default class AppsCurrent extends ControlBaseCommand {
 
         this.logJsonResult(
           {
-            account: {
-              alias: currentAccountAlias,
-              ...currentAccount,
-            },
             app: {
               id: currentAppId,
               name: appName,
+              account: { alias: currentAccountAlias, ...currentAccount },
+              key: keyInfo,
             },
-            key: keyInfo,
           },
           flags,
         );
@@ -157,10 +154,7 @@ export default class AppsCurrent extends ControlBaseCommand {
             app: {
               id: appId,
               name: appDetails.name,
-            },
-            key: {
-              keyName: keyId,
-              label: "Web CLI Key",
+              key: { keyName: keyId, label: "Web CLI Key" },
             },
             mode: "web-cli",
           },
@@ -198,10 +192,7 @@ export default class AppsCurrent extends ControlBaseCommand {
             app: {
               id: appId,
               name: "Unknown",
-            },
-            key: {
-              keyName: keyId,
-              label: "Web CLI Key",
+              key: { keyName: keyId, label: "Web CLI Key" },
             },
             mode: "web-cli",
           },

@@ -22,8 +22,9 @@ describe("config:path command", () => {
       );
 
       const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("path");
-      expect(result.path).toBe("/mock/config/path");
+      expect(result).toHaveProperty("config");
+      expect(result.config).toHaveProperty("path");
+      expect(result.config.path).toBe("/mock/config/path");
     });
 
     it("should output pretty JSON format when --pretty-json flag is used", async () => {
@@ -33,8 +34,9 @@ describe("config:path command", () => {
       );
 
       const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("path");
-      expect(result.path).toBe("/mock/config/path");
+      expect(result).toHaveProperty("config");
+      expect(result.config).toHaveProperty("path");
+      expect(result.config.path).toBe("/mock/config/path");
     });
   });
 

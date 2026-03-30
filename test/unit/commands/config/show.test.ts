@@ -99,12 +99,16 @@ apiKey = "${mockApiKey}"
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "config:show");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("exists", true);
-      expect(result).toHaveProperty("path");
-      expect(result.path).toContain(testConfigDir);
       expect(result).toHaveProperty("config");
-      expect(result.config).toHaveProperty("current");
-      expect(result.config.current).toHaveProperty("account", "default");
+      expect(result.config).toHaveProperty("exists", true);
+      expect(result.config).toHaveProperty("path");
+      expect(result.config.path).toContain(testConfigDir);
+      expect(result.config).toHaveProperty("contents");
+      expect(result.config.contents).toHaveProperty("current");
+      expect(result.config.contents.current).toHaveProperty(
+        "account",
+        "default",
+      );
     });
 
     it("should output pretty JSON when --pretty-json flag is used", async () => {
@@ -119,8 +123,8 @@ apiKey = "${mockApiKey}"
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "config:show");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("exists", true);
       expect(result).toHaveProperty("config");
+      expect(result.config).toHaveProperty("exists", true);
     });
 
     it("should include accounts in JSON output", async () => {
@@ -133,13 +137,14 @@ apiKey = "${mockApiKey}"
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "config:show");
       expect(result).toHaveProperty("success", true);
-      expect(result.config).toHaveProperty("accounts");
-      expect(result.config.accounts).toHaveProperty("default");
-      expect(result.config.accounts.default).toHaveProperty(
+      expect(result.config).toHaveProperty("contents");
+      expect(result.config.contents).toHaveProperty("accounts");
+      expect(result.config.contents.accounts).toHaveProperty("default");
+      expect(result.config.contents.accounts.default).toHaveProperty(
         "accessToken",
         mockAccessToken,
       );
-      expect(result.config.accounts.default).toHaveProperty(
+      expect(result.config.contents.accounts.default).toHaveProperty(
         "accountId",
         mockAccountId,
       );
@@ -155,12 +160,13 @@ apiKey = "${mockApiKey}"
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "config:show");
       expect(result).toHaveProperty("success", true);
-      expect(result.config.accounts.default).toHaveProperty("apps");
-      expect(result.config.accounts.default.apps).toHaveProperty(mockAppId);
-      expect(result.config.accounts.default.apps[mockAppId]).toHaveProperty(
-        "appName",
-        "Test App",
+      expect(result.config.contents.accounts.default).toHaveProperty("apps");
+      expect(result.config.contents.accounts.default.apps).toHaveProperty(
+        mockAppId,
       );
+      expect(
+        result.config.contents.accounts.default.apps[mockAppId],
+      ).toHaveProperty("appName", "Test App");
     });
   });
 

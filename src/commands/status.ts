@@ -66,8 +66,10 @@ export default class StatusCommand extends AblyBaseCommand {
       if (isJson) {
         this.logJsonResult(
           {
-            operational: data.status,
-            statusUrl: "https://status.ably.com",
+            status: {
+              operational: data.status,
+              statusUrl: "https://status.ably.com",
+            },
           },
           flags as BaseFlags,
         );

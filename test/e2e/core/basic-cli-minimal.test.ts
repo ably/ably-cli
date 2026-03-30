@@ -63,6 +63,7 @@ describe("Minimal CLI E2E Tests", () => {
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout);
     expect(parsed).toHaveProperty("version");
+    expect(typeof parsed.version).toBe("object");
   });
 
   it("should show help text", async () => {

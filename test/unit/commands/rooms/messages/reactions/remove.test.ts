@@ -102,9 +102,10 @@ describe("rooms:messages:reactions:remove command", () => {
 
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("room", "test-room");
-      expect(result).toHaveProperty("messageSerial", "msg-serial-123");
-      expect(result).toHaveProperty("reaction", "👍");
+      expect(result).toHaveProperty("reaction");
+      expect(result.reaction).toHaveProperty("room", "test-room");
+      expect(result.reaction).toHaveProperty("messageSerial", "msg-serial-123");
+      expect(result.reaction).toHaveProperty("type", "👍");
     });
 
     it("should handle reaction removal failure", async () => {

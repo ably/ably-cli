@@ -123,8 +123,9 @@ describe("Connections E2E Tests", () => {
 
         // Check for expected test result structure
         expect(jsonOutput).toHaveProperty("success");
-        expect(jsonOutput).toHaveProperty("transport");
-        expect(jsonOutput.transport).toBe("ws");
+        expect(jsonOutput).toHaveProperty("connection");
+        expect(jsonOutput.connection).toHaveProperty("transport");
+        expect(jsonOutput.connection.transport).toBe("ws");
       },
     );
   });

@@ -345,13 +345,16 @@ describe("rooms messages commands", function () {
           await commandPromise;
         });
         const events = records.filter(
-          (r) => r.type === "event" && r.room === "test-room",
+          (r) =>
+            r.type === "event" &&
+            (r.message as Record<string, unknown>)?.room === "test-room",
         );
         expect(events.length).toBeGreaterThan(0);
         const record = events[0];
         expect(record).toHaveProperty("type", "event");
         expect(record).toHaveProperty("command", "rooms:messages:subscribe");
-        expect(record).toHaveProperty("room", "test-room");
+        const msg = record.message as Record<string, unknown>;
+        expect(msg).toHaveProperty("room", "test-room");
       });
     });
 

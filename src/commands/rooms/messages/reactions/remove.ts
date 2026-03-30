@@ -97,10 +97,12 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            messageSerial,
-            reaction,
-            room,
-            ...(flags.type && { reactionType: flags.type }),
+            reaction: {
+              messageSerial,
+              type: reaction,
+              room,
+              ...(flags.type && { reactionType: flags.type }),
+            },
           },
           flags,
         );

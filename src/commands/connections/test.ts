@@ -156,7 +156,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
         }
       }
 
-      this.logJsonResult(jsonOutput, flags);
+      this.logJsonResult({ connection: jsonOutput }, flags);
     } else {
       this.log("");
       this.log("Connection Test Summary:");

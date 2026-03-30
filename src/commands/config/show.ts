@@ -37,11 +37,14 @@ export default class ConfigShow extends AblyBaseCommand {
       // Parse the TOML and output as JSON
       try {
         const config = parse(contents);
-        this.logJsonResult({ exists: true, path: configPath, config }, flags);
+        this.logJsonResult(
+          { config: { exists: true, path: configPath, contents: config } },
+          flags,
+        );
       } catch {
         // If parsing fails, just show raw contents
         this.logJsonResult(
-          { exists: true, path: configPath, raw: contents },
+          { config: { exists: true, path: configPath, raw: contents } },
           flags,
         );
       }

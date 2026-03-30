@@ -210,8 +210,8 @@ describe("auth:keys:get command", () => {
       );
 
       const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("envKeyOverride");
-      expect(result.envKeyOverride).toHaveProperty(
+      expect(result.key).toHaveProperty("envKeyOverride");
+      expect(result.key.envKeyOverride).toHaveProperty(
         "keyName",
         `${appId}.differentkey`,
       );
