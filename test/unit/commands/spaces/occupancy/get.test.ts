@@ -12,6 +12,7 @@ describe("spaces:occupancy:get command", () => {
   beforeEach(() => {
     const mock = getMockAblyRest();
     mock.request.mockResolvedValue({
+      statusCode: 200,
       items: [
         {
           status: {
@@ -95,6 +96,7 @@ describe("spaces:occupancy:get command", () => {
     it("should handle empty occupancy metrics", async () => {
       const mock = getMockAblyRest();
       mock.request.mockResolvedValue({
+        statusCode: 200,
         items: [{}],
       });
 
@@ -123,6 +125,43 @@ describe("spaces:occupancy:get command", () => {
       );
 
       expect(error).toBeDefined();
+    });
+
+    it("should handle HTTP error responses from API", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({
+        success: false,
+        statusCode: 401,
+        errorCode: 40101,
+        errorMessage: "Invalid credentials",
+      });
+
+      const { error } = await runCommand(
+        ["spaces:occupancy:get", "test-space"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Invalid credentials");
+    });
+
+    it("should surface errorCode and errorMessage from HTTP response", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({
+        success: false,
+        statusCode: 404,
+        errorCode: 40400,
+        errorMessage: "Not found",
+      });
+
+      const { error } = await runCommand(
+        ["spaces:occupancy:get", "test-space"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Not found");
+      expect(error?.message).toContain("40400");
     });
   });
 });

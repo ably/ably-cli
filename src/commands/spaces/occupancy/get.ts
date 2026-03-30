@@ -1,6 +1,7 @@
 import { Args } from "@oclif/core";
 
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
+import { CommandError } from "../../../errors/command-error.js";
 import { productApiFlags } from "../../../flags.js";
 import { formatLabel, formatResource } from "../../../utils/output.js";
 
@@ -48,6 +49,18 @@ export default class SpacesOccupancyGet extends SpacesBaseCommand {
         { occupancy: "metrics" },
         null,
       );
+
+      if (channelDetails.statusCode !== 200) {
+        this.fail(
+          CommandError.fromHttpResponse(
+            channelDetails,
+            "Failed to get space occupancy",
+          ),
+          flags,
+          "spacesOccupancyGet",
+          { spaceName },
+        );
+      }
 
       const occupancyData = (channelDetails.items[0] ?? {}) as Record<
         string,
