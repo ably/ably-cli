@@ -113,8 +113,8 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
 
       const json = JSON.parse(result.stdout);
       expect(json.success).toBe(true);
-      expect(json.published).toBe(true);
-      expect(json.recipient.deviceId).toBe(testDeviceId);
+      expect(json.notification.published).toBe(true);
+      expect(json.notification.recipient.deviceId).toBe(testDeviceId);
     });
 
     it("should publish with custom data payload", async () => {
@@ -279,8 +279,8 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
       expect(result.exitCode).toBe(0);
 
       const json = JSON.parse(result.stdout);
-      expect(json.total).toBe(1);
-      expect(json.succeeded).toBeDefined();
+      expect(json.publish.total).toBe(1);
+      expect(json.publish.succeeded).toBeDefined();
     });
 
     it("should error with invalid batch payload format", async () => {
