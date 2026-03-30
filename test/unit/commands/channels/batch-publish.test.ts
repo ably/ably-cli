@@ -262,6 +262,48 @@ describe("channels:batch-publish command", () => {
       expect(stdout).toContain("Invalid channel name (40000)");
     });
 
+    it("should surface error code and message from complete failure response", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({
+        statusCode: 400,
+        errorCode: 40000,
+        errorMessage: "Bad request",
+        items: {
+          error: { code: 40000, message: "Invalid message format" },
+        },
+      });
+
+      const { error } = await runCommand(
+        ["channels:batch-publish", "--channels", "channel1", '{"data":"test"}'],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Invalid message format");
+      expect(error?.message).not.toContain("[object Object]");
+    });
+
+    it("should surface error from non-400 error response", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({
+        statusCode: 500,
+        errorCode: 50000,
+        errorMessage: "Internal error",
+        items: {
+          error: { code: 50000, message: "Server error occurred" },
+        },
+      });
+
+      const { error } = await runCommand(
+        ["channels:batch-publish", "--channels", "channel1", '{"data":"test"}'],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Server error occurred");
+      expect(error?.message).not.toContain("[object Object]");
+    });
+
     it("should handle API errors in JSON mode", async () => {
       const mock = getMockAblyRest();
       mock.request.mockRejectedValue(new Error("Network error"));

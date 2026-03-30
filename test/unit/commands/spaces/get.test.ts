@@ -178,5 +178,24 @@ describe("spaces:get command", () => {
       expect(error).toBeDefined();
       expect(error?.message).toContain("500");
     });
+
+    it("should surface errorCode and errorMessage from HTTP response", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({
+        items: [],
+        statusCode: 404,
+        errorCode: 40400,
+        errorMessage: "No application found with id test",
+      });
+
+      const { error } = await runCommand(
+        ["spaces:get", "test-space"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("No application found with id test");
+      expect(error?.message).toContain("40400");
+    });
   });
 });

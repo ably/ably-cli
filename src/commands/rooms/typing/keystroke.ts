@@ -185,7 +185,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
             });
         } else if (statusChange.current === RoomStatus.Failed) {
           this.fail(
-            `Failed to attach to room ${roomName}: ${reasonMsg || "Unknown error"}`,
+            reason || `Failed to attach to room ${roomName}`,
             flags,
             "roomTypingKeystroke",
             { room: roomName },
