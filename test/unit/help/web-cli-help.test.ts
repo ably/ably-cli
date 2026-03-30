@@ -7,13 +7,16 @@ import {
   vi,
   MockInstance,
 } from "vitest";
-import { Config } from "@oclif/core";
+import { Command, Config, Interfaces } from "@oclif/core";
 import stripAnsi from "strip-ansi";
 
 import CustomHelp from "../../../src/help.js";
 import { ConfigManager } from "../../../src/services/config-manager.js";
 
-function createMockConfig(commands: any[] = [], topics: any[] = []): Config {
+function createMockConfig(
+  commands: Command.Loadable[] = [],
+  topics: Interfaces.Topic[] = [],
+): Config {
   return {
     bin: "ably",
     root: "",
@@ -22,7 +25,7 @@ function createMockConfig(commands: any[] = [], topics: any[] = []): Config {
     cacheDir: "",
     name: "@ably/cli",
     version: "0.8.1",
-    pjson: {} as any,
+    pjson: {} as unknown as Config["pjson"],
     channel: "stable",
     commands: commands,
     topics: topics,
@@ -84,7 +87,9 @@ describe("CLI Help", function () {
         const help = new CustomHelp(mockConfig);
 
         // Stub the configManager property
-        (help as any).configManager = configManagerStub;
+        (
+          help as unknown as { configManager: Partial<ConfigManager> }
+        ).configManager = configManagerStub;
 
         // Simulate no --help flag in argv
         process.argv = ["node", "ably"];
@@ -114,7 +119,7 @@ describe("CLI Help", function () {
       });
 
       it("should show full command list when --help flag is provided", async function () {
-        const mockCommands: any[] = [];
+        const mockCommands: Command.Loadable[] = [];
         const mockTopics = [
           {
             name: "channels",
@@ -136,7 +141,9 @@ describe("CLI Help", function () {
         const help = new CustomHelp(mockConfig);
 
         // Stub the configManager property
-        (help as any).configManager = configManagerStub;
+        (
+          help as unknown as { configManager: Partial<ConfigManager> }
+        ).configManager = configManagerStub;
 
         // Simulate --help flag in argv
         process.argv = ["node", "ably", "--help"];
@@ -183,7 +190,9 @@ describe("CLI Help", function () {
         const help = new CustomHelp(mockConfig);
 
         // Stub the configManager property
-        (help as any).configManager = configManagerStub;
+        (
+          help as unknown as { configManager: Partial<ConfigManager> }
+        ).configManager = configManagerStub;
 
         // Simulate -h flag in argv
         process.argv = ["node", "ably", "-h"];
@@ -200,7 +209,7 @@ describe("CLI Help", function () {
       });
 
       it("should filter out wildcard restricted commands", async function () {
-        const mockCommands: any[] = [];
+        const mockCommands: Command.Loadable[] = [];
         const mockTopics = [
           {
             name: "channels",
@@ -214,7 +223,9 @@ describe("CLI Help", function () {
         const help = new CustomHelp(mockConfig);
 
         // Stub the configManager property
-        (help as any).configManager = configManagerStub;
+        (
+          help as unknown as { configManager: Partial<ConfigManager> }
+        ).configManager = configManagerStub;
 
         // Simulate --help flag
         process.argv = ["node", "ably", "--help"];
@@ -236,7 +247,9 @@ describe("CLI Help", function () {
         const help = new CustomHelp(mockConfig);
 
         // Stub the configManager property
-        (help as any).configManager = configManagerStub;
+        (
+          help as unknown as { configManager: Partial<ConfigManager> }
+        ).configManager = configManagerStub;
 
         // Enable anonymous/restricted mode
         process.env.ABLY_ANONYMOUS_USER_MODE = "true";
@@ -270,7 +283,9 @@ describe("CLI Help", function () {
         const help = new CustomHelp(mockConfig);
 
         // Stub the configManager property
-        (help as any).configManager = configManagerStub;
+        (
+          help as unknown as { configManager: Partial<ConfigManager> }
+        ).configManager = configManagerStub;
 
         // Stub super.formatCommand to return a dummy help text
         vi.spyOn(
@@ -286,7 +301,9 @@ describe("CLI Help", function () {
           hidden: false,
         };
 
-        const output = stripAnsi(help.formatCommand(restrictedCommand as any));
+        const output = stripAnsi(
+          help.formatCommand(restrictedCommand as unknown as Command.Loadable),
+        );
 
         expect(output).toContain(
           "This command is not available in the web CLI mode",
@@ -301,7 +318,9 @@ describe("CLI Help", function () {
         const help = new CustomHelp(mockConfig);
 
         // Stub the configManager property
-        (help as any).configManager = configManagerStub;
+        (
+          help as unknown as { configManager: Partial<ConfigManager> }
+        ).configManager = configManagerStub;
 
         const allowedCommand = {
           id: "channels:publish",
@@ -315,7 +334,9 @@ describe("CLI Help", function () {
           "formatCommand",
         ).mockReturnValue("Normal command help");
 
-        const output = help.formatCommand(allowedCommand as any);
+        const output = help.formatCommand(
+          allowedCommand as unknown as Command.Loadable,
+        );
 
         expect(output).toBe("Normal command help");
         expect(output).not.toContain("not available in the web CLI mode");
@@ -328,24 +349,44 @@ describe("CLI Help", function () {
         const help = new CustomHelp(mockConfig);
 
         // Stub the configManager property
-        (help as any).configManager = configManagerStub;
+        (
+          help as unknown as { configManager: Partial<ConfigManager> }
+        ).configManager = configManagerStub;
 
         // Test restricted commands
-        expect(help.shouldDisplay({ id: "accounts:login" } as any)).toBe(false);
-        expect(help.shouldDisplay({ id: "config" } as any)).toBe(false);
+        expect(
+          help.shouldDisplay({
+            id: "accounts:login",
+          } as unknown as Command.Loadable),
+        ).toBe(false);
+        expect(
+          help.shouldDisplay({ id: "config" } as unknown as Command.Loadable),
+        ).toBe(false);
 
         // Test allowed commands
-        expect(help.shouldDisplay({ id: "channels:publish" } as any)).toBe(
-          true,
-        );
-        expect(help.shouldDisplay({ id: "channels:subscribe" } as any)).toBe(
-          true,
-        );
-        expect(help.shouldDisplay({ id: "channels:history" } as any)).toBe(
-          true,
-        ); // Allowed for authenticated users
-        expect(help.shouldDisplay({ id: "rooms:get" } as any)).toBe(true);
-        expect(help.shouldDisplay({ id: "help" } as any)).toBe(true);
+        expect(
+          help.shouldDisplay({
+            id: "channels:publish",
+          } as unknown as Command.Loadable),
+        ).toBe(true);
+        expect(
+          help.shouldDisplay({
+            id: "channels:subscribe",
+          } as unknown as Command.Loadable),
+        ).toBe(true);
+        expect(
+          help.shouldDisplay({
+            id: "channels:history",
+          } as unknown as Command.Loadable),
+        ).toBe(true); // Allowed for authenticated users
+        expect(
+          help.shouldDisplay({
+            id: "rooms:get",
+          } as unknown as Command.Loadable),
+        ).toBe(true);
+        expect(
+          help.shouldDisplay({ id: "help" } as unknown as Command.Loadable),
+        ).toBe(true);
       });
     });
   });
@@ -394,7 +435,9 @@ describe("CLI Help", function () {
       const standardConfigManagerStub = {
         getAccessToken: vi.fn(),
       } as Partial<ConfigManager>;
-      (help as any).configManager = standardConfigManagerStub;
+      (
+        help as unknown as { configManager: Partial<ConfigManager> }
+      ).configManager = standardConfigManagerStub;
 
       await help.showRootHelp();
 

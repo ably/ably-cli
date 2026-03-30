@@ -20,7 +20,7 @@ import {
 
 // Helper function to extract JSON from potentially noisy stdout
 // Looks for the last occurrence of { or [ to handle potential prefixes
-const _parseJsonFromOutput = (output: string): any => {
+const _parseJsonFromOutput = (output: string): unknown => {
   // Strip ANSI color codes first
   const strippedOutput = stripAnsi(output);
 

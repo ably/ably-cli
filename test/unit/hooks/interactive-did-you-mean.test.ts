@@ -13,7 +13,7 @@ import inquirer from "inquirer";
 // import chalk from 'chalk'; // Unused
 
 describe("Did You Mean Hook - Interactive Mode", function () {
-  let config: any;
+  let config: Record<string, unknown>;
   let warnStub: ReturnType<typeof vi.fn>;
   let errorStub: ReturnType<typeof vi.fn>;
   let logStub: ReturnType<typeof vi.fn>;
@@ -116,7 +116,9 @@ describe("Did You Mean Hook - Interactive Mode", function () {
         removeAllListeners: vi.fn(),
         on: vi.fn(),
       };
-      (globalThis as any).__ablyInteractiveReadline = mockReadline;
+      (
+        globalThis as unknown as Record<string, unknown>
+      ).__ablyInteractiveReadline = mockReadline;
 
       await hook.call(context, {
         id: "channels:pubish",
@@ -138,7 +140,8 @@ describe("Did You Mean Hook - Interactive Mode", function () {
       expect(mockReadline.pause).toHaveBeenCalled();
 
       // Clean up
-      delete (globalThis as any).__ablyInteractiveReadline;
+      delete (globalThis as unknown as Record<string, unknown>)
+        .__ablyInteractiveReadline;
     });
 
     it("should throw error instead of calling this.error when command fails", async function () {
@@ -160,7 +163,9 @@ describe("Did You Mean Hook - Interactive Mode", function () {
         removeAllListeners: vi.fn(),
         on: vi.fn(),
       };
-      (globalThis as any).__ablyInteractiveReadline = mockReadline;
+      (
+        globalThis as unknown as Record<string, unknown>
+      ).__ablyInteractiveReadline = mockReadline;
 
       // Make runCommand fail
       runCommandStub.mockImplementation(() => {
@@ -182,11 +187,14 @@ describe("Did You Mean Hook - Interactive Mode", function () {
       // Should throw error with oclif exit code
       expect(thrownError).toBeDefined();
       expect(thrownError?.message).toContain("Missing required arg: channel");
-      expect((thrownError as any)?.oclif?.exit).toBeDefined();
+      expect(
+        (thrownError as unknown as { oclif?: { exit?: number } })?.oclif?.exit,
+      ).toBeDefined();
       expect(errorStub).not.toHaveBeenCalled();
 
       // Clean up
-      delete (globalThis as any).__ablyInteractiveReadline;
+      delete (globalThis as unknown as Record<string, unknown>)
+        .__ablyInteractiveReadline;
     });
 
     it("should use console.log for help output in interactive mode", async function () {
@@ -208,7 +216,9 @@ describe("Did You Mean Hook - Interactive Mode", function () {
         removeAllListeners: vi.fn(),
         on: vi.fn(),
       };
-      (globalThis as any).__ablyInteractiveReadline = mockReadline;
+      (
+        globalThis as unknown as Record<string, unknown>
+      ).__ablyInteractiveReadline = mockReadline;
 
       // Make runCommand fail with missing args
       const error = new Error(
@@ -245,7 +255,8 @@ describe("Did You Mean Hook - Interactive Mode", function () {
       expect(helpOutput).not.toContain("ably channels publish --help");
 
       // Clean up
-      delete (globalThis as any).__ablyInteractiveReadline;
+      delete (globalThis as unknown as Record<string, unknown>)
+        .__ablyInteractiveReadline;
     });
 
     it("should provide interactive-friendly error for unknown commands", async function () {
@@ -302,7 +313,9 @@ describe("Did You Mean Hook - Interactive Mode", function () {
         on: vi.fn(),
         _refreshLine: vi.fn(),
       };
-      (globalThis as any).__ablyInteractiveReadline = mockReadline;
+      (
+        globalThis as unknown as Record<string, unknown>
+      ).__ablyInteractiveReadline = mockReadline;
 
       // Mock process.stdin for terminal state
       const originalIsRaw = process.stdin.isRaw;
@@ -341,7 +354,8 @@ describe("Did You Mean Hook - Interactive Mode", function () {
         expect(process.stdin.setRawMode).toHaveBeenCalledWith(false);
       } finally {
         // Clean up
-        delete (globalThis as any).__ablyInteractiveReadline;
+        delete (globalThis as unknown as Record<string, unknown>)
+          .__ablyInteractiveReadline;
         process.stdin.isRaw = originalIsRaw;
         process.stdin.isTTY = originalIsTTY;
         process.stdin.setRawMode = originalSetRawMode;

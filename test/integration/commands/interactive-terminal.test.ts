@@ -10,12 +10,18 @@ const __dirname = path.dirname(__filename);
 const binPath = path.join(__dirname, "../../../bin/development.js");
 
 // Helper to send key sequences
-const sendKeys = (child: any, keys: string) => {
+const sendKeys = (
+  child: import("node:child_process").ChildProcess,
+  keys: string,
+) => {
   child.stdin.write(keys);
 };
 
 // Helper to send special keys
-const sendSpecialKey = (child: any, key: string) => {
+const sendSpecialKey = (
+  child: import("node:child_process").ChildProcess,
+  key: string,
+) => {
   const keyMap: Record<string, string> = {
     tab: "\t",
     up: "\u001B[A",

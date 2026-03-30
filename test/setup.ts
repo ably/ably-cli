@@ -4,6 +4,8 @@ import { resolve } from "node:path";
 import { existsSync } from "node:fs";
 import { exec } from "node:child_process";
 import * as Ably from "ably";
+import type Spaces from "@ably/spaces";
+import type { ChatClient } from "@ably/chat";
 
 // Import types for test mocks
 import type { MockConfigManager } from "./helpers/mock-config-manager.js";
@@ -12,17 +14,12 @@ import type { MockConfigManager } from "./helpers/mock-config-manager.js";
 declare global {
   var __TEST_MOCKS__:
     | {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ablyRestMock: any; // Keep simple 'any' type to match base-command.ts expectations
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ablyChatMock?: any;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ablySpacesMock?: any;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ablyRealtimeMock?: any;
+        ablyRestMock: Ably.Rest;
+        ablyChatMock?: ChatClient;
+        ablySpacesMock?: Spaces;
+        ablyRealtimeMock?: Ably.Realtime;
         configManager?: MockConfigManager;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        [key: string]: any;
+        [key: string]: unknown;
       }
     | undefined;
 }

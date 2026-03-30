@@ -2,14 +2,31 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import Interactive from "../../../src/commands/interactive.js";
 import { Readable, Writable } from "node:stream";
 import * as readline from "node:readline";
+import { type Config } from "@oclif/core";
+
+type InteractiveInternals = {
+  rl: readline.Interface & {
+    line: string;
+    cursor: number;
+    history: string[];
+  };
+  historySearch: {
+    active: boolean;
+    searchTerm: string;
+    matches: unknown[];
+    currentIndex: number;
+    originalCursorPos: number;
+  };
+  completer: (line: string) => [string[], string];
+};
 
 describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
   let mockInput: Readable;
   let mockOutput: Writable;
   let _outputData: string;
-  let originalStdin: any;
-  let originalStdout: any;
-  let exitStub: any;
+  let originalStdin: typeof process.stdin;
+  let originalStdout: typeof process.stdout;
+  let exitStub: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     _outputData = "";
@@ -20,14 +37,16 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     });
 
     // Add properties needed by the interactive command
-    (mockInput as any).isTTY = true;
-    (mockInput as any).setRawMode = vi.fn().mockReturnValue(mockInput);
+    (mockInput as unknown as { isTTY: boolean }).isTTY = true;
+    (
+      mockInput as unknown as { setRawMode: ReturnType<typeof vi.fn> }
+    ).setRawMode = vi.fn().mockReturnValue(mockInput);
 
     // Enable keypress events on our mock input
     readline.emitKeypressEvents(mockInput);
 
     mockOutput = new Writable({
-      write(chunk: any, encoding: any, callback: any) {
+      write(chunk: Buffer | string, _encoding: string, callback: () => void) {
         _outputData += chunk.toString();
         if (callback) callback();
         return true;
@@ -35,7 +54,7 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     });
 
     // Add properties needed by output
-    (mockOutput as any).isTTY = true;
+    (mockOutput as unknown as { isTTY: boolean }).isTTY = true;
 
     // Store originals
     originalStdin = process.stdin;
@@ -81,12 +100,15 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     vi.restoreAllMocks();
   });
 
-  const simulateKeypress = (str: string | null, key: any) => {
+  const simulateKeypress = (
+    str: string | null,
+    key: { ctrl?: boolean; name?: string; meta?: boolean; shift?: boolean },
+  ) => {
     mockInput.emit("keypress", str || "", key);
   };
 
   it("should handle autocomplete during history search correctly", async () => {
-    const cmd = new Interactive([], {} as any);
+    const cmd = new Interactive([], {} as unknown as Config);
     cmd.config = {
       version: "1.0.0",
       commands: [
@@ -101,17 +123,19 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
       runCommand: vi.fn(),
       findCommand: vi.fn(),
       root: "/test",
-    } as any;
+    } as unknown as Config;
 
     await cmd.run();
 
-    const _rl = (cmd as any).rl;
+    const _rl = (cmd as unknown as InteractiveInternals).rl;
 
     // Enter history search mode
     simulateKeypress(null, { ctrl: true, name: "r" });
 
     // Verify autocomplete is disabled during search
-    const completer = (cmd as any).completer.bind(cmd);
+    const completer = (cmd as unknown as InteractiveInternals).completer.bind(
+      cmd,
+    );
     const result = completer("ch");
 
     expect(result).toEqual([[], "ch"]);
@@ -125,73 +149,75 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
   });
 
   it("should maintain cursor position across operations", async () => {
-    const cmd = new Interactive([], {} as any);
+    const cmd = new Interactive([], {} as unknown as Config);
     cmd.config = {
       version: "1.0.0",
       commands: [],
       runCommand: vi.fn(),
       findCommand: vi.fn(),
       root: "/test",
-    } as any;
+    } as unknown as Config;
 
     await cmd.run();
 
-    const rl = (cmd as any).rl;
+    const rl = (cmd as unknown as InteractiveInternals).rl;
 
     // Set initial state
-    (rl as any).line = "test command";
-    (rl as any).cursor = 5; // cursor at 'test |command'
+    rl.line = "test command";
+    rl.cursor = 5; // cursor at 'test |command'
 
     // Enter and exit history search
     simulateKeypress(null, { ctrl: true, name: "r" });
 
-    const historySearch = (cmd as any).historySearch;
+    const historySearch = (cmd as unknown as InteractiveInternals)
+      .historySearch;
     expect(historySearch.originalCursorPos).toBe(5);
 
     // Cancel search
     simulateKeypress(null, { name: "escape" });
 
     // Cursor should be restored
-    expect((rl as any).cursor).toBe(5);
+    expect(rl.cursor).toBe(5);
   });
 
   it("should handle empty history gracefully", async () => {
-    const cmd = new Interactive([], {} as any);
+    const cmd = new Interactive([], {} as unknown as Config);
     cmd.config = {
       version: "1.0.0",
       commands: [],
       runCommand: vi.fn(),
       findCommand: vi.fn(),
       root: "/test",
-    } as any;
+    } as unknown as Config;
 
     await cmd.run();
 
-    const rl = (cmd as any).rl;
+    const rl = (cmd as unknown as InteractiveInternals).rl;
 
     // Ensure history is empty
-    (rl as any).history = [];
+    rl.history = [];
 
     // Try history navigation
     const originalLine = "current input";
-    (rl as any).line = originalLine;
+    rl.line = originalLine;
 
     // Simulate up arrow - should do nothing
     rl.emit("history", 1);
 
     // Line should remain unchanged
-    expect((rl as any).line).toBe(originalLine);
+    expect(rl.line).toBe(originalLine);
 
     // Try history search
     simulateKeypress(null, { ctrl: true, name: "r" });
     simulateKeypress("t", { name: "t" });
 
-    const historySearch = (cmd as any).historySearch;
+    const historySearch = (cmd as unknown as InteractiveInternals)
+      .historySearch;
     expect(historySearch.matches.length).toBe(0);
   });
 
   it("should handle rapid key sequences", async () => {
-    const cmd = new Interactive([], {} as any);
+    const cmd = new Interactive([], {} as unknown as Config);
     cmd.config = {
       version: "1.0.0",
       commands: [
@@ -206,12 +232,12 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
       runCommand: vi.fn(),
       findCommand: vi.fn(),
       root: "/test",
-    } as any;
+    } as unknown as Config;
 
     await cmd.run();
 
-    const rl = (cmd as any).rl;
-    (rl as any).history = ["test one", "test two", "test three"];
+    const rl = (cmd as unknown as InteractiveInternals).rl;
+    rl.history = ["test one", "test two", "test three"];
 
     // Rapid sequence: Ctrl+R, type, Ctrl+R again, escape
     simulateKeypress(null, { ctrl: true, name: "r" });
@@ -224,23 +250,24 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     simulateKeypress(null, { name: "escape" });
 
     // Should handle all keys without errors
-    const historySearch = (cmd as any).historySearch;
+    const historySearch = (cmd as unknown as InteractiveInternals)
+      .historySearch;
     expect(historySearch.active).toBe(false);
   });
 
   it("should preserve prompt state after errors", async () => {
-    const cmd = new Interactive([], {} as any);
+    const cmd = new Interactive([], {} as unknown as Config);
     cmd.config = {
       version: "1.0.0",
       commands: [],
       runCommand: vi.fn().mockRejectedValue(new Error("Command failed")),
       findCommand: vi.fn(),
       root: "/test",
-    } as any;
+    } as unknown as Config;
 
     await cmd.run();
 
-    const rl = (cmd as any).rl;
+    const rl = (cmd as unknown as InteractiveInternals).rl;
     const promptStub = vi.spyOn(rl, "prompt");
 
     // Simulate command execution
@@ -254,7 +281,7 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
   });
 
   it("should handle special characters in autocomplete", async () => {
-    const cmd = new Interactive([], {} as any);
+    const cmd = new Interactive([], {} as unknown as Config);
     cmd.config = {
       version: "1.0.0",
       commands: [
@@ -269,11 +296,13 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
       runCommand: vi.fn(),
       findCommand: vi.fn(),
       root: "/test",
-    } as any;
+    } as unknown as Config;
 
     await cmd.run();
 
-    const completer = (cmd as any).completer.bind(cmd);
+    const completer = (cmd as unknown as InteractiveInternals).completer.bind(
+      cmd,
+    );
 
     // Test autocomplete with special characters
     const result = completer("test-");
@@ -281,19 +310,19 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
   });
 
   it("should handle concurrent operations correctly", async () => {
-    const cmd = new Interactive([], {} as any);
+    const cmd = new Interactive([], {} as unknown as Config);
     cmd.config = {
       version: "1.0.0",
       commands: [],
       runCommand: vi.fn(),
       findCommand: vi.fn(),
       root: "/test",
-    } as any;
+    } as unknown as Config;
 
     await cmd.run();
 
-    const rl = (cmd as any).rl;
-    (rl as any).history = ["command one", "command two"];
+    const rl = (cmd as unknown as InteractiveInternals).rl;
+    rl.history = ["command one", "command two"];
 
     // Start history search
     simulateKeypress(null, { ctrl: true, name: "r" });
@@ -303,25 +332,26 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     rl.emit("history", -1); // This should be ignored during search
     simulateKeypress("o", { name: "o" });
 
-    const historySearch = (cmd as any).historySearch;
+    const historySearch = (cmd as unknown as InteractiveInternals)
+      .historySearch;
     expect(historySearch.searchTerm).toBe("co");
     expect(historySearch.active).toBe(true);
   });
 
   it("should handle edge cases in history cycling", async () => {
-    const cmd = new Interactive([], {} as any);
+    const cmd = new Interactive([], {} as unknown as Config);
     cmd.config = {
       version: "1.0.0",
       commands: [],
       runCommand: vi.fn(),
       findCommand: vi.fn(),
       root: "/test",
-    } as any;
+    } as unknown as Config;
 
     await cmd.run();
 
-    const rl = (cmd as any).rl;
-    (rl as any).history = ["match1", "no", "match2"];
+    const rl = (cmd as unknown as InteractiveInternals).rl;
+    rl.history = ["match1", "no", "match2"];
 
     // Enter history search
     simulateKeypress(null, { ctrl: true, name: "r" });
@@ -331,7 +361,8 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     simulateKeypress("c", { name: "c" });
     simulateKeypress("h", { name: "h" });
 
-    const historySearch = (cmd as any).historySearch;
+    const historySearch = (cmd as unknown as InteractiveInternals)
+      .historySearch;
 
     // Should find 2 matches
     expect(historySearch.matches.length).toBe(2);
@@ -345,18 +376,18 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
   });
 
   it("should clean up resources on exit", async () => {
-    const cmd = new Interactive([], {} as any);
+    const cmd = new Interactive([], {} as unknown as Config);
     cmd.config = {
       version: "1.0.0",
       commands: [],
       runCommand: vi.fn(),
       findCommand: vi.fn(),
       root: "/test",
-    } as any;
+    } as unknown as Config;
 
     await cmd.run();
 
-    const rl = (cmd as any).rl;
+    const rl = (cmd as unknown as InteractiveInternals).rl;
     const closeStub = vi.spyOn(rl, "close");
 
     // Simulate exit command

@@ -449,14 +449,16 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
 
       it("should handle malformed requests", async () => {
         await expect(
-          controlApi.createApp({ name: "" } as any),
+          controlApi.createApp({ name: "" } as unknown as Parameters<
+            typeof controlApi.createApp
+          >[0]),
         ).rejects.toThrow();
       });
     });
 
     describe("Rate Limiting and Performance", () => {
       it("should handle multiple concurrent requests", async function () {
-        const promises: Promise<any>[] = [];
+        const promises: Promise<unknown>[] = [];
         for (let i = 0; i < 5; i++) {
           promises.push(controlApi.listApps());
         }

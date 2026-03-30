@@ -191,7 +191,9 @@ describe("Control API E2E Workflow Tests", () => {
         expect(listOutput).toHaveProperty("apps");
         expect(Array.isArray(listOutput.apps)).toBe(true);
 
-        const foundApp = listOutput.apps.find((app: any) => app.id === appId);
+        const foundApp = listOutput.apps.find(
+          (app: { id: string }) => app.id === appId,
+        );
         expect(foundApp).toBeDefined();
 
         // 3. Update app
@@ -587,7 +589,7 @@ describe("Control API E2E Workflow Tests", () => {
         expect(Array.isArray(listOutput.rules)).toBe(true);
 
         const foundRule = listOutput.rules.find(
-          (ns: any) => ns.id === namespaceId,
+          (ns: { id: string }) => ns.id === namespaceId,
         );
         expect(foundRule).toBeDefined();
         expect(foundRule).toHaveProperty("persisted", true);
@@ -722,7 +724,7 @@ describe("Control API E2E Workflow Tests", () => {
 
         const listOutput = JSON.parse(listResult.stdout);
         const deletedRule = listOutput.rules.find(
-          (ns: any) => ns.id === namespaceId,
+          (ns: { id: string }) => ns.id === namespaceId,
         );
         expect(deletedRule).toBeUndefined();
       },
@@ -872,7 +874,7 @@ describe("Control API E2E Workflow Tests", () => {
 
         const appsOutput = JSON.parse(listAppsResult.stdout);
         expect(
-          appsOutput.apps.find((app: any) => app.id === appId),
+          appsOutput.apps.find((app: { id: string }) => app.id === appId),
         ).toBeDefined();
 
         const listKeysResult = await runCommand(
@@ -884,7 +886,7 @@ describe("Control API E2E Workflow Tests", () => {
 
         const keysOutput = JSON.parse(listKeysResult.stdout);
         expect(
-          keysOutput.keys.find((key: any) => key.id === keyId),
+          keysOutput.keys.find((key: { id: string }) => key.id === keyId),
         ).toBeDefined();
 
         const listQueuesResult = await runCommand(
@@ -896,7 +898,9 @@ describe("Control API E2E Workflow Tests", () => {
 
         const queuesOutput = JSON.parse(listQueuesResult.stdout);
         expect(
-          queuesOutput.queues.find((queue: any) => queue.name === queueName),
+          queuesOutput.queues.find(
+            (queue: { name: string }) => queue.name === queueName,
+          ),
         ).toBeDefined();
 
         const listIntegrationsResult = await runCommand(
@@ -908,7 +912,9 @@ describe("Control API E2E Workflow Tests", () => {
 
         const integrationsOutput = JSON.parse(listIntegrationsResult.stdout);
         expect(
-          integrationsOutput.rules.find((rule: any) => rule.id === ruleId),
+          integrationsOutput.rules.find(
+            (rule: { id: string }) => rule.id === ruleId,
+          ),
         ).toBeDefined();
       },
     );

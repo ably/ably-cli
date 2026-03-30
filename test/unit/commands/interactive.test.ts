@@ -42,10 +42,11 @@ describe("Interactive Command", () => {
 
       // The run method sets the env var early, before any setup that might fail
       // We'll stub the setupReadline method to prevent actual readline setup
-      (cmd as any).setupReadline = async () => {
-        // Don't actually set up readline
-        throw new Error("Test complete");
-      };
+      (cmd as unknown as { setupReadline: () => Promise<void> }).setupReadline =
+        async () => {
+          // Don't actually set up readline
+          throw new Error("Test complete");
+        };
 
       // Suppress console.error and stub process.exit using spies
       const consoleErrorSpy = vi
@@ -87,7 +88,9 @@ describe("Interactive Command", () => {
       const cmd = new Interactive([], config);
 
       // Access private method through any type
-      const parseCommand = (cmd as any).parseCommand.bind(cmd);
+      const parseCommand = (
+        cmd as unknown as { parseCommand: (input: string) => string[] }
+      ).parseCommand.bind(cmd);
 
       // Test simple command
       expect(parseCommand("help")).toEqual(["help"]);
@@ -128,7 +131,9 @@ describe("Interactive Command", () => {
         root: __dirname,
       } as unknown as Config;
       const cmd = new Interactive([], config);
-      expect((cmd as any).isWrapperMode).toBe(true);
+      expect((cmd as unknown as { isWrapperMode: boolean }).isWrapperMode).toBe(
+        true,
+      );
       delete process.env.ABLY_WRAPPER_MODE;
     });
 
@@ -139,7 +144,9 @@ describe("Interactive Command", () => {
         root: __dirname,
       } as unknown as Config;
       const cmd = new Interactive([], config);
-      expect((cmd as any).isWrapperMode).toBe(false);
+      expect((cmd as unknown as { isWrapperMode: boolean }).isWrapperMode).toBe(
+        false,
+      );
     });
   });
 

@@ -14,6 +14,7 @@ import {
 } from "./wait-helpers.js";
 import { waitForRateLimitLock } from "./rate-limit-lock";
 import { getTerminalServerUrl } from "./helpers/ci-auth.js";
+import type { AblyCliWindow } from "./types";
 
 const TERMINAL_SERVER_URL = getTerminalServerUrl();
 
@@ -66,7 +67,7 @@ test.describe("Session Resume E2E Tests", () => {
 
     // Store the original sessionId before disconnection
     const originalSessionId = await page.evaluate(
-      () => (window as any)._sessionId,
+      () => (window as unknown as AblyCliWindow)._sessionId,
     );
     expect(originalSessionId).toBeTruthy();
     log(`Original sessionId: ${originalSessionId}`);
@@ -82,7 +83,7 @@ test.describe("Session Resume E2E Tests", () => {
 
     // Store the original socket reference to verify it changes
     const originalSocketInfo = await page.evaluate(() => {
-      const socket = (window as any).ablyCliSocket;
+      const socket = (window as unknown as AblyCliWindow).ablyCliSocket;
       return {
         exists: !!socket,
         readyState: socket?.readyState,
@@ -93,9 +94,9 @@ test.describe("Session Resume E2E Tests", () => {
 
     // Simulate a WebSocket disconnection by closing it programmatically
     await page.evaluate(() => {
-      if ((window as any).ablyCliSocket) {
+      if ((window as unknown as AblyCliWindow).ablyCliSocket) {
         console.log("[Test] Closing WebSocket connection");
-        (window as any).ablyCliSocket.close();
+        (window as unknown as AblyCliWindow).ablyCliSocket.close();
       }
     });
 
@@ -116,8 +117,10 @@ test.describe("Session Resume E2E Tests", () => {
       Date.now() - reconnectStartTime < reconnectionTimeout
     ) {
       const currentState = await page.evaluate(() => {
-        const state = (window as any).getAblyCliTerminalReactState?.();
-        const socket = (window as any).ablyCliSocket;
+        const state = (
+          window as unknown as AblyCliWindow
+        ).getAblyCliTerminalReactState?.();
+        const socket = (window as unknown as AblyCliWindow).ablyCliSocket;
         return {
           componentStatus: state?.componentConnectionStatus,
           isSessionActive: state?.isSessionActive,
@@ -156,7 +159,9 @@ test.describe("Session Resume E2E Tests", () => {
 
     if (!reconnectionComplete) {
       const finalState = await page.evaluate(() => {
-        const state = (window as any).getAblyCliTerminalReactState?.();
+        const state = (
+          window as unknown as AblyCliWindow
+        ).getAblyCliTerminalReactState?.();
         return state;
       });
       throw new Error(
@@ -169,7 +174,9 @@ test.describe("Session Resume E2E Tests", () => {
     // Check if it requires manual reconnection (which would indicate a bug)
     await page.waitForTimeout(2000); // Give it time to decide
     const requiresManualReconnect = await page.evaluate(() => {
-      const state = (window as any).getAblyCliTerminalReactState?.();
+      const state = (
+        window as unknown as AblyCliWindow
+      ).getAblyCliTerminalReactState?.();
       return state?.showManualReconnectPrompt === true;
     });
 
@@ -181,7 +188,9 @@ test.describe("Session Resume E2E Tests", () => {
 
     // Wait for automatic reconnection to complete (or verify it's already connected)
     const isAlreadyConnected = await page.evaluate(() => {
-      const state = (window as any).getAblyCliTerminalReactState?.();
+      const state = (
+        window as unknown as AblyCliWindow
+      ).getAblyCliTerminalReactState?.();
       return state?.componentConnectionStatus === "connected";
     });
 
@@ -192,7 +201,9 @@ test.describe("Session Resume E2E Tests", () => {
       // Wait for reconnection to complete
       await page.waitForFunction(
         () => {
-          const state = (window as any).getAblyCliTerminalReactState?.();
+          const state = (
+            window as unknown as AblyCliWindow
+          ).getAblyCliTerminalReactState?.();
           return state?.componentConnectionStatus === "connected";
         },
         { timeout: reconnectionTimeout },
@@ -205,14 +216,14 @@ test.describe("Session Resume E2E Tests", () => {
 
     // Verify the session was resumed (same sessionId)
     const resumedSessionId = await page.evaluate(
-      () => (window as any)._sessionId,
+      () => (window as unknown as AblyCliWindow)._sessionId,
     );
     log(`Resumed sessionId: ${resumedSessionId}`);
     expect(resumedSessionId).toBe(originalSessionId);
 
     // Verify the socket reference changed (indicating a new connection was established)
     const newSocketInfo = await page.evaluate(() => {
-      const socket = (window as any).ablyCliSocket;
+      const socket = (window as unknown as AblyCliWindow).ablyCliSocket;
       return {
         exists: !!socket,
         readyState: socket?.readyState,
@@ -268,7 +279,7 @@ test.describe("Session Resume E2E Tests", () => {
 
     // Capture the sessionId exposed by the example app
     const originalSessionId = await page.evaluate(
-      () => (window as any)._sessionId,
+      () => (window as unknown as AblyCliWindow)._sessionId,
     );
     expect(originalSessionId).toBeTruthy();
 
@@ -277,7 +288,7 @@ test.describe("Session Resume E2E Tests", () => {
     for (let i = 0; i < 1; i++) {
       log(`\n=== RELOAD ${i + 1} STARTING ===`);
       const preReloadState = await page.evaluate(() => {
-        const win = window as any;
+        const win = window as unknown as AblyCliWindow;
         // Extract server URL from location params
         const params = new URLSearchParams(win.location.search);
         const serverUrlParam = params.get("serverUrl");
@@ -313,7 +324,7 @@ test.describe("Session Resume E2E Tests", () => {
 
       // Log immediate post-reload state
       const postReloadState = await page.evaluate(() => {
-        const win = window as any;
+        const win = window as unknown as AblyCliWindow;
         // Extract server URL from location params
         const params = new URLSearchParams(win.location.search);
         const serverUrlParam = params.get("serverUrl");
@@ -358,7 +369,7 @@ test.describe("Session Resume E2E Tests", () => {
 
       // Log final state after stabilization
       const finalState = await page.evaluate(() => {
-        const win = window as any;
+        const win = window as unknown as AblyCliWindow;
         const state = win.getAblyCliTerminalReactState?.();
         return {
           sessionId: win._sessionId,
@@ -380,7 +391,7 @@ test.describe("Session Resume E2E Tests", () => {
     // After multiple reloads, run another command and ensure it succeeds
     log("\n=== EXECUTING COMMAND AFTER RELOADS ===");
     const preCommandState = await page.evaluate(() => {
-      const win = window as any;
+      const win = window as unknown as AblyCliWindow;
       const state = win.getAblyCliTerminalReactState?.();
       return {
         sessionId: win._sessionId,
@@ -402,7 +413,7 @@ test.describe("Session Resume E2E Tests", () => {
       log("Command executed successfully!");
     } catch (error) {
       const errorState = await page.evaluate(() => {
-        const win = window as any;
+        const win = window as unknown as AblyCliWindow;
         const state = win.getAblyCliTerminalReactState?.();
         return {
           sessionId: win._sessionId,
@@ -422,11 +433,14 @@ test.describe("Session Resume E2E Tests", () => {
       throw error;
     }
 
-    await page.waitForFunction(() => Boolean((window as any)._sessionId), {
-      timeout: 15000,
-    });
+    await page.waitForFunction(
+      () => Boolean((window as unknown as AblyCliWindow)._sessionId),
+      {
+        timeout: 15000,
+      },
+    );
     const resumedSessionId = await page.evaluate(
-      () => (window as any)._sessionId,
+      () => (window as unknown as AblyCliWindow)._sessionId,
     );
     expect(resumedSessionId).toBe(originalSessionId);
 
@@ -467,8 +481,8 @@ test.describe("Session Resume E2E Tests", () => {
     // Simulate session timeout by disconnecting for an extended period
     await page.evaluate(() => {
       // Use the same approach as reconnection test for consistency
-      if ((window as any).ablyCliSocket) {
-        (window as any).ablyCliSocket.close();
+      if ((window as unknown as AblyCliWindow).ablyCliSocket) {
+        (window as unknown as AblyCliWindow).ablyCliSocket.close();
       }
     });
 
@@ -478,7 +492,9 @@ test.describe("Session Resume E2E Tests", () => {
     // Terminal should eventually reconnect or show reconnection prompt
     const finalState = await page.waitForFunction(
       () => {
-        const state = (window as any).getAblyCliTerminalReactState?.();
+        const state = (
+          window as unknown as AblyCliWindow
+        ).getAblyCliTerminalReactState?.();
         return state &&
           (state.componentConnectionStatus === "connected" ||
             state.showManualReconnectPrompt)
@@ -518,4 +534,4 @@ test.describe("Session Resume E2E Tests", () => {
 });
 
 // Re-export window declaration to ensure TypeScript compatibility
-declare const window: any;
+declare const window: Window & typeof globalThis;

@@ -37,7 +37,9 @@ describe("HistoryManager", function () {
     it("should not throw on loadHistory errors", async function () {
       // Create manager with non-existent path that might cause errors
       const manager = new HistoryManager("/definitely/does/not/exist/history");
-      const mockRl = { history: [] } as any;
+      const mockRl = {
+        history: [],
+      } as unknown as import("node:readline").Interface;
 
       // Should not throw
       await expect(manager.loadHistory(mockRl)).resolves.toBeUndefined();
