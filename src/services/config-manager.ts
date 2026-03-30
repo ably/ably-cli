@@ -504,17 +504,18 @@ export class TomlConfigManager implements ConfigManager {
         }
 
         // Migrate old config format if needed - move app from current to account.currentAppId
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const oldConfig = this.config as any; // Use 'any' to safely access potential pre-migration properties
-        if (oldConfig.current?.app) {
+        const legacyCurrent = this.config.current as
+          | (typeof this.config.current & { app?: string })
+          | undefined;
+        if (legacyCurrent?.app) {
           const currentAccountAlias = this.config.current?.account;
           if (
             currentAccountAlias &&
             this.config.accounts[currentAccountAlias]
           ) {
             this.config.accounts[currentAccountAlias].currentAppId =
-              oldConfig.current.app;
-            delete oldConfig.current.app; // Remove from current section
+              legacyCurrent.app;
+            delete legacyCurrent.app; // Remove from current section
             this.saveConfig(); // Save the migrated config
           }
         }
