@@ -243,11 +243,11 @@ describe("spaces:cursors:set command", () => {
       expect(cursor).toHaveProperty("connectionId");
       expect(cursor).toHaveProperty("data");
 
-      // Each simulation event should be followed by a holding status
+      // A single holding status is emitted after the simulation starts
       const holdingStatuses = records.filter(
         (r) => r.type === "status" && r.status === "holding",
       );
-      expect(holdingStatuses.length).toBeGreaterThan(1);
+      expect(holdingStatuses.length).toBe(1);
     });
   });
 

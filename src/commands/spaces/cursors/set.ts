@@ -249,11 +249,6 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
                 },
                 flags,
               );
-              this.logJsonStatus(
-                "holding",
-                "Holding cursor. Press Ctrl+C to exit.",
-                flags,
-              );
             } else {
               const simLines = [
                 `${formatLabel("Simulated")} cursor at (${simulatedX}, ${simulatedY})`,

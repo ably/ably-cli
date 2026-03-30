@@ -46,13 +46,13 @@ export default class SpacesCreate extends SpacesBaseCommand {
         setupConnectionLogging: false,
       });
 
-      const ephemeralSpaceWarning = `Space ${spaceName} is backed by Ably channel '${spaceName}::$space' and is ephemeral — it becomes active when at least one member enters. This command initializes the space without entering it. To add a member to the space, use 'ably spaces members enter ${spaceName}'.`;
+      const ephemeralSpaceWarning = `Spaces are ephemeral, they become active when members enter. Use 'ably spaces members enter ${spaceName}'`;
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
             space: { name: spaceName },
-            warning: ephemeralSpaceWarning,
+            hint: ephemeralSpaceWarning,
           },
           flags,
         );
