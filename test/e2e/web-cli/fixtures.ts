@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-empty-pattern */
 import { test as base } from "playwright/test";
 export { expect } from "playwright/test";
@@ -9,6 +8,18 @@ import { startWebServer, stopWebServer } from "./reconnection-utils";
 // with user-run instances of the terminal server on common dev ports.
 const PORT_BLOCK_SIZE = 100;
 const PORT_BLOCK_START = 48000;
+
+// Playwright fixture tuples need to be cast to satisfy the extend() overload.
+// Using `as const` preserves the tuple literal, and `as unknown as void` bypasses
+// the structural mismatch between readonly tuples and Playwright's mutable fixture type.
+type FixtureTuple<T> = readonly [
+  (
+    args: Record<string, unknown>,
+    use: (value: T) => Promise<void>,
+    workerInfo?: { parallelIndex: number },
+  ) => Promise<void>,
+  { scope: "worker" },
+];
 
 export const test = base.extend<{
   webPort: number;
@@ -24,7 +35,7 @@ export const test = base.extend<{
       await use(port);
     },
     { scope: "worker" },
-  ] as const as any,
+  ] as unknown as FixtureTuple<number>,
 
   // Unique web-server port for this worker (just +1)
   webPort: [
@@ -32,7 +43,7 @@ export const test = base.extend<{
       await use(termPort + 1);
     },
     { scope: "worker" },
-  ] as const as any,
+  ] as unknown as FixtureTuple<number>,
 
   // Terminal server lifecycle (started lazily – some specs want to begin with the server down)
   terminalServerProcess: [
@@ -41,7 +52,7 @@ export const test = base.extend<{
       await use(null);
     },
     { scope: "worker" },
-  ] as const as any,
+  ] as unknown as FixtureTuple<ChildProcess | null>,
 
   // Vite preview web-server lifecycle (eagerly started – every spec needs the example app)
   webServerProcess: [
@@ -51,5 +62,5 @@ export const test = base.extend<{
       await stopWebServer(proc);
     },
     { scope: "worker" },
-  ] as const as any,
+  ] as unknown as FixtureTuple<ChildProcess | null>,
 });

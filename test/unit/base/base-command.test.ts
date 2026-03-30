@@ -82,7 +82,7 @@ class TestCommand extends AblyBaseCommand {
     return this.isRestrictedInAnonymousMode(commandId);
   }
 
-  public testGetClientOptions(flags: BaseFlags): any {
+  public testGetClientOptions(flags: BaseFlags): Record<string, unknown> {
     return this.getClientOptions(flags);
   }
 
@@ -144,11 +144,11 @@ describe("AblyBaseCommand", function () {
 
     // Instead of stubbing loadConfig which is private, we'll stub methods that might access the file system
     vi.spyOn(
-      TomlConfigManager.prototype as any,
+      TomlConfigManager.prototype as unknown as Record<string, unknown>,
       "ensureConfigDirExists",
     ).mockImplementation(() => {});
     vi.spyOn(
-      TomlConfigManager.prototype as any,
+      TomlConfigManager.prototype as unknown as Record<string, unknown>,
       "saveConfig",
     ).mockImplementation(() => {});
 
@@ -591,18 +591,18 @@ describe("AblyBaseCommand", function () {
       const flags: BaseFlags = {};
 
       // Reset relevant stubs
-      configManagerStub.getCurrentAppId.mockReturnValue(undefined as any);
-      configManagerStub.getApiKey.mockReturnValue(undefined as any);
+      configManagerStub.getCurrentAppId.mockReturnValue();
+      configManagerStub.getApiKey.mockReturnValue();
       // Set access token to ensure the control API path is followed
       configManagerStub.getAccessToken.mockReturnValue("test-token");
 
       // Set up interactive helper to simulate user selecting an app and key
-      const mockApp = { id: "envApp", name: "Test App" } as any;
+      const mockApp = { id: "envApp", name: "Test App" };
       const mockKey = {
         id: "keyId",
         name: "Test Key",
         key: "envApp.keyId:keySecret",
-      } as any;
+      };
 
       interactiveHelperStub.selectApp.mockResolvedValue(mockApp);
       interactiveHelperStub.selectKey.mockResolvedValue(mockKey);
@@ -637,9 +637,9 @@ describe("AblyBaseCommand", function () {
       const flags: BaseFlags = {};
 
       // Reset all required stubs to return empty values
-      configManagerStub.getCurrentAppId.mockReturnValue("" as any);
-      configManagerStub.getApiKey.mockReturnValue("" as any);
-      configManagerStub.getAccessToken.mockReturnValue("" as any);
+      configManagerStub.getCurrentAppId.mockReturnValue("");
+      configManagerStub.getApiKey.mockReturnValue("");
+      configManagerStub.getAccessToken.mockReturnValue("");
 
       // Make sure environment variable is not set
       delete process.env.ABLY_API_KEY;

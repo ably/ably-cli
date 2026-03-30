@@ -63,7 +63,7 @@ async function createTestConfig(): Promise<Config> {
       flags: {},
       hidden: false,
       hiddenAliases: [],
-      load: async () => ({ async run() {} }) as any,
+      load: async () => ({ async run() {} }) as unknown as Command.Class,
     } as Command.Loadable,
     {
       id: "channels:list",
@@ -73,7 +73,7 @@ async function createTestConfig(): Promise<Config> {
       hidden: false,
       hiddenAliases: [],
       args: {},
-      load: async () => ({ async run() {} }) as any,
+      load: async () => ({ async run() {} }) as unknown as Command.Class,
     } as Command.Loadable,
     {
       id: "help",
@@ -83,7 +83,7 @@ async function createTestConfig(): Promise<Config> {
       hidden: false,
       hiddenAliases: [],
       args: {},
-      load: async () => ({ async run() {} }) as any,
+      load: async () => ({ async run() {} }) as unknown as Command.Class,
     } as Command.Loadable,
   );
   config.commandIDs.push(
@@ -95,14 +95,14 @@ async function createTestConfig(): Promise<Config> {
   config.topics.push({
     description: "Channel commands",
     name: "channels",
-  } as any);
+  } as unknown as (typeof config.topics)[number]);
   return config;
 }
 
 // Define custom context interface
 interface TestContext {
   config: Config;
-  mockContext: any;
+  mockContext: Record<string, unknown>;
   stubs: {
     log: ReturnType<typeof vi.fn>;
     warn: ReturnType<typeof vi.fn>;
@@ -140,17 +140,19 @@ async function setupTestContext(): Promise<TestContext> {
       const exitCode =
         options?.exit ??
         (input instanceof Errors.CLIError
-          ? (input as any).oclif?.exit
+          ? (input as unknown as { oclif?: { exit?: number } }).oclif?.exit
           : undefined) ??
         1;
       if (exitCode !== false) {
-        (errorToThrow as any).oclif = { exit: exitCode };
+        (
+          errorToThrow as unknown as { oclif?: { exit: number | false } }
+        ).oclif = { exit: exitCode };
       }
       throw errorToThrow;
     },
     exit: (code?: number) => stubs.exit(code ?? 0),
-    log: (...args: any[]) => stubs.log(...args),
-    warn: (...args: any[]) => stubs.warn(...args),
+    log: (...args: unknown[]) => stubs.log(...args),
+    warn: (...args: unknown[]) => stubs.warn(...args),
   };
 
   return { config, mockContext, stubs };
@@ -182,17 +184,19 @@ async function setupRejectingTestContext(): Promise<TestContext> {
       const exitCode =
         options?.exit ??
         (input instanceof Errors.CLIError
-          ? (input as any).oclif?.exit
+          ? (input as unknown as { oclif?: { exit?: number } }).oclif?.exit
           : undefined) ??
         1;
       if (exitCode !== false) {
-        (errorToThrow as any).oclif = { exit: exitCode };
+        (
+          errorToThrow as unknown as { oclif?: { exit: number | false } }
+        ).oclif = { exit: exitCode };
       }
       throw errorToThrow;
     },
     exit: (code?: number) => stubs.exit(code ?? 0),
-    log: (...args: any[]) => stubs.log(...args),
-    warn: (...args: any[]) => stubs.warn(...args),
+    log: (...args: unknown[]) => stubs.log(...args),
+    warn: (...args: unknown[]) => stubs.warn(...args),
   };
 
   return { config, mockContext, stubs };

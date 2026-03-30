@@ -10,7 +10,7 @@ class TestTopicCommand extends BaseTopicCommand {
 
 describe("BaseTopicCommand", () => {
   let logStub: ReturnType<typeof vi.fn>;
-  let config: any;
+  let config: Record<string, unknown>;
   let command: TestTopicCommand;
   let originalEnv: NodeJS.ProcessEnv;
 

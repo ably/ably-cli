@@ -10,7 +10,9 @@ class TestCommand extends AblyBaseCommand {
   }
 
   // Expose protected methods for testing
-  public testGetClientOptions(flags: any): any {
+  public testGetClientOptions(
+    flags: Record<string, unknown>,
+  ): Record<string, unknown> {
     return this.getClientOptions(flags);
   }
 }

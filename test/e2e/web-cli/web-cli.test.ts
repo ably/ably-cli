@@ -9,6 +9,7 @@ import { authenticateWebCli } from "./auth-helper.js";
 import { waitForRateLimitLock } from "./rate-limit-lock";
 import { waitForTerminalReady, waitForTerminalStable } from "./wait-helpers.js";
 import { getTerminalServerUrl } from "./helpers/ci-auth.js";
+import type { AblyCliWindow } from "./types";
 
 // Type for browser context in evaluate() calls
 type _BrowserContext = {
@@ -118,7 +119,10 @@ test.describe("Web CLI E2E Tests", () => {
 
     // Check if the React state function is available
     const hasStateFunction = await page.evaluate(() => {
-      return typeof (window as any).getAblyCliTerminalReactState === "function";
+      return (
+        typeof (window as unknown as AblyCliWindow)
+          .getAblyCliTerminalReactState === "function"
+      );
     });
     log("React state function available:", hasStateFunction);
 
@@ -235,7 +239,9 @@ test.describe("Web CLI E2E Tests", () => {
     // Just wait for the component to be mounted
     await page.waitForFunction(
       () => {
-        const state = (window as any).getAblyCliTerminalReactState?.();
+        const state = (
+          window as unknown as AblyCliWindow
+        ).getAblyCliTerminalReactState?.();
         return state && state.componentConnectionStatus !== "initial";
       },
       { timeout: 10000 },
@@ -387,6 +393,3 @@ test.describe("Web CLI E2E Tests", () => {
     await expect(drawerTab).toBeVisible({ timeout: 5000 });
   });
 });
-
-// Re-export window declaration to ensure TypeScript compatibility
-declare const window: any;

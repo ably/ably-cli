@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { Config } from "@oclif/core";
+import { Command, Config } from "@oclif/core";
 import CustomHelp from "../../../src/help.js";
 
 describe("Interactive Mode Help Formatting", function () {
@@ -12,7 +12,7 @@ describe("Interactive Mode Help Formatting", function () {
       bin: "ably",
       commands: [],
       topics: [],
-    } as any;
+    } as unknown as Config;
   });
 
   afterEach(function () {
@@ -160,17 +160,31 @@ ably> channels publish test "msg2"
         ],
         topics: [],
         findCommand: (id: string) => config.commands.find((c) => c.id === id),
-      } as any;
+      } as unknown as Config;
     });
 
     it("should display all commands when not in web CLI mode", function () {
       help = new CustomHelp(config);
 
       // Test shouldDisplay for various commands
-      expect(help.shouldDisplay({ id: "channels:list" } as any)).toBe(true);
-      expect(help.shouldDisplay({ id: "accounts:list" } as any)).toBe(true);
-      expect(help.shouldDisplay({ id: "apps:list" } as any)).toBe(true);
-      expect(help.shouldDisplay({ id: "bench:publisher" } as any)).toBe(true);
+      expect(
+        help.shouldDisplay({
+          id: "channels:list",
+        } as unknown as Command.Loadable),
+      ).toBe(true);
+      expect(
+        help.shouldDisplay({
+          id: "accounts:list",
+        } as unknown as Command.Loadable),
+      ).toBe(true);
+      expect(
+        help.shouldDisplay({ id: "apps:list" } as unknown as Command.Loadable),
+      ).toBe(true);
+      expect(
+        help.shouldDisplay({
+          id: "bench:publisher",
+        } as unknown as Command.Loadable),
+      ).toBe(true);
     });
 
     it("should filter web CLI restricted commands in web mode", function () {
@@ -178,13 +192,31 @@ ably> channels publish test "msg2"
       help = new CustomHelp(config);
 
       // These should be hidden in web CLI mode
-      expect(help.shouldDisplay({ id: "accounts:list" } as any)).toBe(false);
-      expect(help.shouldDisplay({ id: "apps:create" } as any)).toBe(false);
-      expect(help.shouldDisplay({ id: "config" } as any)).toBe(false);
+      expect(
+        help.shouldDisplay({
+          id: "accounts:list",
+        } as unknown as Command.Loadable),
+      ).toBe(false);
+      expect(
+        help.shouldDisplay({
+          id: "apps:create",
+        } as unknown as Command.Loadable),
+      ).toBe(false);
+      expect(
+        help.shouldDisplay({ id: "config" } as unknown as Command.Loadable),
+      ).toBe(false);
 
       // These should still be visible
-      expect(help.shouldDisplay({ id: "channels:publish" } as any)).toBe(true);
-      expect(help.shouldDisplay({ id: "channels:list" } as any)).toBe(true);
+      expect(
+        help.shouldDisplay({
+          id: "channels:publish",
+        } as unknown as Command.Loadable),
+      ).toBe(true);
+      expect(
+        help.shouldDisplay({
+          id: "channels:list",
+        } as unknown as Command.Loadable),
+      ).toBe(true);
     });
 
     it("should filter anonymous restricted commands in anonymous mode", function () {
@@ -193,25 +225,69 @@ ably> channels publish test "msg2"
       help = new CustomHelp(config);
 
       // These should be hidden in anonymous mode
-      expect(help.shouldDisplay({ id: "channels:list" } as any)).toBe(false);
-      expect(help.shouldDisplay({ id: "channels:logs" } as any)).toBe(false);
-      expect(help.shouldDisplay({ id: "accounts:list" } as any)).toBe(false);
-      expect(help.shouldDisplay({ id: "apps:list" } as any)).toBe(false);
-      expect(help.shouldDisplay({ id: "bench:publisher" } as any)).toBe(false);
-      expect(help.shouldDisplay({ id: "auth:keys:list" } as any)).toBe(false);
-      expect(help.shouldDisplay({ id: "logs:history" } as any)).toBe(false);
-      expect(help.shouldDisplay({ id: "spaces:list" } as any)).toBe(false);
-      expect(help.shouldDisplay({ id: "rooms:list" } as any)).toBe(false);
-      expect(help.shouldDisplay({ id: "integrations:create" } as any)).toBe(
-        false,
-      );
-      expect(help.shouldDisplay({ id: "queues:create" } as any)).toBe(false);
+      expect(
+        help.shouldDisplay({
+          id: "channels:list",
+        } as unknown as Command.Loadable),
+      ).toBe(false);
+      expect(
+        help.shouldDisplay({
+          id: "channels:logs",
+        } as unknown as Command.Loadable),
+      ).toBe(false);
+      expect(
+        help.shouldDisplay({
+          id: "accounts:list",
+        } as unknown as Command.Loadable),
+      ).toBe(false);
+      expect(
+        help.shouldDisplay({ id: "apps:list" } as unknown as Command.Loadable),
+      ).toBe(false);
+      expect(
+        help.shouldDisplay({
+          id: "bench:publisher",
+        } as unknown as Command.Loadable),
+      ).toBe(false);
+      expect(
+        help.shouldDisplay({
+          id: "auth:keys:list",
+        } as unknown as Command.Loadable),
+      ).toBe(false);
+      expect(
+        help.shouldDisplay({
+          id: "logs:history",
+        } as unknown as Command.Loadable),
+      ).toBe(false);
+      expect(
+        help.shouldDisplay({
+          id: "spaces:list",
+        } as unknown as Command.Loadable),
+      ).toBe(false);
+      expect(
+        help.shouldDisplay({ id: "rooms:list" } as unknown as Command.Loadable),
+      ).toBe(false);
+      expect(
+        help.shouldDisplay({
+          id: "integrations:create",
+        } as unknown as Command.Loadable),
+      ).toBe(false);
+      expect(
+        help.shouldDisplay({
+          id: "queues:create",
+        } as unknown as Command.Loadable),
+      ).toBe(false);
 
       // These should still be visible
-      expect(help.shouldDisplay({ id: "channels:publish" } as any)).toBe(true);
-      expect(help.shouldDisplay({ id: "channels:subscribe" } as any)).toBe(
-        true,
-      );
+      expect(
+        help.shouldDisplay({
+          id: "channels:publish",
+        } as unknown as Command.Loadable),
+      ).toBe(true);
+      expect(
+        help.shouldDisplay({
+          id: "channels:subscribe",
+        } as unknown as Command.Loadable),
+      ).toBe(true);
     });
 
     it("should handle wildcard patterns correctly", function () {
@@ -220,16 +296,38 @@ ably> channels publish test "msg2"
       help = new CustomHelp(config);
 
       // Test wildcard patterns
-      expect(help.shouldDisplay({ id: "accounts" } as any)).toBe(false); // matches accounts*
-      expect(help.shouldDisplay({ id: "accounts:current" } as any)).toBe(false); // matches accounts*
-      expect(help.shouldDisplay({ id: "apps" } as any)).toBe(false); // matches apps*
-      expect(help.shouldDisplay({ id: "apps:current" } as any)).toBe(false); // matches apps*
-      expect(help.shouldDisplay({ id: "bench" } as any)).toBe(false); // matches bench*
-      expect(help.shouldDisplay({ id: "bench:subscriber" } as any)).toBe(false); // matches bench*
-      expect(help.shouldDisplay({ id: "logs" } as any)).toBe(false); // matches logs*
-      expect(help.shouldDisplay({ id: "logs:push:subscribe" } as any)).toBe(
-        false,
-      );
+      expect(
+        help.shouldDisplay({ id: "accounts" } as unknown as Command.Loadable),
+      ).toBe(false); // matches accounts*
+      expect(
+        help.shouldDisplay({
+          id: "accounts:current",
+        } as unknown as Command.Loadable),
+      ).toBe(false); // matches accounts*
+      expect(
+        help.shouldDisplay({ id: "apps" } as unknown as Command.Loadable),
+      ).toBe(false); // matches apps*
+      expect(
+        help.shouldDisplay({
+          id: "apps:current",
+        } as unknown as Command.Loadable),
+      ).toBe(false); // matches apps*
+      expect(
+        help.shouldDisplay({ id: "bench" } as unknown as Command.Loadable),
+      ).toBe(false); // matches bench*
+      expect(
+        help.shouldDisplay({
+          id: "bench:subscriber",
+        } as unknown as Command.Loadable),
+      ).toBe(false); // matches bench*
+      expect(
+        help.shouldDisplay({ id: "logs" } as unknown as Command.Loadable),
+      ).toBe(false); // matches logs*
+      expect(
+        help.shouldDisplay({
+          id: "logs:push:subscribe",
+        } as unknown as Command.Loadable),
+      ).toBe(false);
     });
 
     it("should show appropriate message for anonymous restricted commands", function () {
@@ -238,7 +336,7 @@ ably> channels publish test "msg2"
       help = new CustomHelp(config);
 
       const command = { id: "channels:list", description: "List channels" };
-      const output = help.formatCommand(command as any);
+      const output = help.formatCommand(command as unknown as Command.Loadable);
 
       expect(output).toContain(
         "This command is not available in anonymous mode",
@@ -253,7 +351,7 @@ ably> channels publish test "msg2"
       help = new CustomHelp(config);
 
       const command = { id: "accounts:login", description: "Login to account" };
-      const output = help.formatCommand(command as any);
+      const output = help.formatCommand(command as unknown as Command.Loadable);
 
       expect(output).toContain(
         "This command is not available in the web CLI mode",

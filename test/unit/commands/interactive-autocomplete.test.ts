@@ -1,10 +1,25 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { spawn } from "node:child_process";
+import { ChildProcess, spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import InteractiveCommand from "../../../src/commands/interactive.js";
 import { Config } from "@oclif/core";
 import * as fs from "node:fs";
+
+type InteractiveInternals = {
+  _commandCache: string[] | undefined;
+  _manifestCache: unknown;
+  _flagsCache: Record<string, string[]> | undefined;
+  getTopLevelCommands: () => string[];
+  getSubcommandsForPath: (commandPath: string[]) => string[];
+  isCommandRestricted: (commandId: string) => boolean;
+  getFlagsForCommandSync: (commandPath: string[]) => string[];
+  displayCompletions: (
+    matches: string[],
+    type: string,
+    commandPath?: string[],
+  ) => void;
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,9 +28,9 @@ const timeout = 10000;
 const binPath = path.join(__dirname, "../../../bin/development.js");
 
 // Helper to send tab completion request
-const sendTab = (child: any) => {
+const sendTab = (child: ChildProcess) => {
   // Send TAB character (ASCII 9)
-  child.stdin.write("\t");
+  child.stdin!.write("\t");
 };
 
 describe("Interactive Mode - Autocomplete & Command Filtering", () => {
@@ -290,11 +305,14 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
         delete process.env.ABLY_WEB_CLI_MODE;
         delete process.env.ABLY_ANONYMOUS_USER_MODE;
         // Clear command cache to ensure fresh filtering
-        (interactiveCommand as any)._commandCache = undefined;
+        (interactiveCommand as unknown as InteractiveInternals)._commandCache =
+          undefined;
       });
 
       it("should filter out unsuitable commands for interactive mode", () => {
-        const commands = (interactiveCommand as any).getTopLevelCommands();
+        const commands = (
+          interactiveCommand as unknown as InteractiveInternals
+        ).getTopLevelCommands();
 
         // Should NOT include these commands
         expect(commands).not.toContain("autocomplete");
@@ -311,9 +329,9 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
       });
 
       it("should not filter subcommands in normal mode", () => {
-        const subcommands = (interactiveCommand as any).getSubcommandsForPath([
-          "apps",
-        ]);
+        const subcommands = (
+          interactiveCommand as unknown as InteractiveInternals
+        ).getSubcommandsForPath(["apps"]);
 
         expect(subcommands).toContain("list");
         expect(subcommands).toContain("create");
@@ -327,11 +345,14 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
         process.env.ABLY_WEB_CLI_MODE = "true";
         delete process.env.ABLY_ANONYMOUS_USER_MODE;
         // Clear command cache to ensure fresh filtering
-        (interactiveCommand as any)._commandCache = undefined;
+        (interactiveCommand as unknown as InteractiveInternals)._commandCache =
+          undefined;
       });
 
       it("should filter out web CLI restricted commands", () => {
-        const commands = (interactiveCommand as any).getTopLevelCommands();
+        const commands = (
+          interactiveCommand as unknown as InteractiveInternals
+        ).getTopLevelCommands();
 
         // Should NOT include web CLI restricted commands
         expect(commands).not.toContain("config"); // config* restricted
@@ -352,7 +373,7 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
       it("should filter out restricted subcommands", () => {
         // Apps subcommands - create, switch, delete should be filtered
         const appsSubcommands = (
-          interactiveCommand as any
+          interactiveCommand as unknown as InteractiveInternals
         ).getSubcommandsForPath(["apps"]);
         expect(appsSubcommands).toContain("list"); // list is allowed
         expect(appsSubcommands).not.toContain("create");
@@ -361,7 +382,7 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
 
         // Auth:keys subcommands
         const authKeysSubcommands = (
-          interactiveCommand as any
+          interactiveCommand as unknown as InteractiveInternals
         ).getSubcommandsForPath(["auth", "keys"]);
         expect(authKeysSubcommands).not.toContain("switch"); // auth:keys:switch is restricted
       });
@@ -372,11 +393,14 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
         process.env.ABLY_WEB_CLI_MODE = "true";
         process.env.ABLY_ANONYMOUS_USER_MODE = "true";
         // Clear command cache to ensure fresh filtering
-        (interactiveCommand as any)._commandCache = undefined;
+        (interactiveCommand as unknown as InteractiveInternals)._commandCache =
+          undefined;
       });
 
       it("should filter out both web CLI and anonymous restricted commands", () => {
-        const commands = (interactiveCommand as any).getTopLevelCommands();
+        const commands = (
+          interactiveCommand as unknown as InteractiveInternals
+        ).getTopLevelCommands();
 
         // Should NOT include any of these
         expect(commands).not.toContain("accounts"); // accounts* restricted in anonymous mode
@@ -396,7 +420,7 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
       it("should filter out anonymous-restricted subcommands", () => {
         // Channels subcommands - list and logs should be filtered in anonymous mode
         const channelsSubcommands = (
-          interactiveCommand as any
+          interactiveCommand as unknown as InteractiveInternals
         ).getSubcommandsForPath(["channels"]);
         expect(channelsSubcommands).toContain("publish"); // allowed
         expect(channelsSubcommands).toContain("subscribe"); // allowed
@@ -404,26 +428,26 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
 
         // Auth subcommands
         const authSubcommands = (
-          interactiveCommand as any
+          interactiveCommand as unknown as InteractiveInternals
         ).getSubcommandsForPath(["auth"]);
         expect(authSubcommands).not.toContain("keys"); // auth:keys* restricted in anonymous
         expect(authSubcommands).not.toContain("revoke-token"); // auth:revoke-token restricted
 
         // Connections subcommands
         const connectionsSubcommands = (
-          interactiveCommand as any
+          interactiveCommand as unknown as InteractiveInternals
         ).getSubcommandsForPath(["connections"]);
         expect(connectionsSubcommands).not.toContain("logs"); // connections:logs restricted
 
         // Rooms subcommands
         const roomsSubcommands = (
-          interactiveCommand as any
+          interactiveCommand as unknown as InteractiveInternals
         ).getSubcommandsForPath(["rooms"]);
         expect(roomsSubcommands).not.toContain("list"); // rooms:list restricted
 
         // Spaces subcommands
         const spacesSubcommands = (
-          interactiveCommand as any
+          interactiveCommand as unknown as InteractiveInternals
         ).getSubcommandsForPath(["spaces"]);
         expect(spacesSubcommands).not.toContain("list"); // spaces:list restricted
       });
@@ -432,13 +456,14 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
     describe("Command pattern matching", () => {
       it("should correctly match wildcard patterns", () => {
         const isRestricted = (
-          interactiveCommand as any
+          interactiveCommand as unknown as InteractiveInternals
         ).isCommandRestricted.bind(interactiveCommand);
 
         // Set up web CLI mode for testing
         process.env.ABLY_WEB_CLI_MODE = "true";
         // Clear command cache to ensure fresh filtering
-        (interactiveCommand as any)._commandCache = undefined;
+        (interactiveCommand as unknown as InteractiveInternals)._commandCache =
+          undefined;
 
         // Test wildcard patterns from WEB_CLI_RESTRICTED_COMMANDS
         expect(isRestricted("config")).toBe(true); // config* matches config
@@ -460,17 +485,18 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
         // Get commands in normal mode
         delete process.env.ABLY_WEB_CLI_MODE;
         const normalCommands = (
-          interactiveCommand as any
+          interactiveCommand as unknown as InteractiveInternals
         ).getTopLevelCommands();
         expect(normalCommands).toContain("accounts"); // accounts is available in normal mode
 
         // Clear cache
-        (interactiveCommand as any)._commandCache = undefined;
+        (interactiveCommand as unknown as InteractiveInternals)._commandCache =
+          undefined;
 
         // Get commands in web CLI mode
         process.env.ABLY_WEB_CLI_MODE = "true";
         const webCliCommands = (
-          interactiveCommand as any
+          interactiveCommand as unknown as InteractiveInternals
         ).getTopLevelCommands();
         // accounts:login, logout, switch are restricted but accounts itself is visible
         expect(webCliCommands).toContain("accounts");
@@ -479,8 +505,24 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
   });
 
   describe("Flag Completion", () => {
-    let interactive: any;
-    let mockManifest: any;
+    let interactive: InteractiveCommand & InteractiveInternals;
+    let mockManifest: {
+      commands: Record<
+        string,
+        {
+          flags: Record<
+            string,
+            {
+              name: string;
+              description: string;
+              type: string;
+              char?: string;
+              hidden?: boolean;
+            }
+          >;
+        }
+      >;
+    };
 
     beforeEach(() => {
       // Create a mock manifest with flag data
@@ -558,9 +600,10 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
         root: process.cwd(),
         commands: [],
         findCommand: () => null,
-      } as any;
+      } as unknown as Config;
 
-      interactive = new InteractiveCommand([], config);
+      interactive = new InteractiveCommand([], config) as InteractiveCommand &
+        InteractiveInternals;
       interactive._manifestCache = mockManifest;
 
       // Test getting flags for channels:batch-publish
@@ -591,15 +634,16 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
         root: process.cwd(),
         commands: [],
         findCommand: () => null,
-      } as any;
+      } as unknown as Config;
 
-      interactive = new InteractiveCommand([], config);
+      interactive = new InteractiveCommand([], config) as InteractiveCommand &
+        InteractiveInternals;
       interactive._manifestCache = mockManifest;
 
       // Capture console output
       const originalLog = console.log;
       let output = "";
-      console.log = (...args: any[]) => {
+      console.log = (...args: unknown[]) => {
         output += args.join(" ") + "\n";
       };
 
@@ -650,9 +694,10 @@ describe("Interactive Mode - Autocomplete & Command Filtering", () => {
         root: process.cwd(),
         commands: [],
         findCommand: () => null,
-      } as any;
+      } as unknown as Config;
 
-      interactive = new InteractiveCommand([], config);
+      interactive = new InteractiveCommand([], config) as InteractiveCommand &
+        InteractiveInternals;
       interactive._manifestCache = hiddenFlagManifest;
 
       // Test without dev flags

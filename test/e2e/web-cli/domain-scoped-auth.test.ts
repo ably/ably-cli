@@ -4,6 +4,7 @@ import {
   waitForRateLimitIfNeeded,
 } from "./test-rate-limiter";
 import { waitForRateLimitLock } from "./rate-limit-lock";
+import type { AblyCliWindow } from "./types";
 
 test.describe("Domain-Scoped Authentication E2E Tests", () => {
   test.setTimeout(120_000); // Overall test timeout
@@ -137,7 +138,7 @@ test.describe("Domain-Scoped Authentication E2E Tests", () => {
 
     // Verify that credentials are isolated
     const credentialData = await page.evaluate(() => {
-      const data: Record<string, any> = {};
+      const data: Record<string, unknown> = {};
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.includes("ably.web-cli.signedConfig.")) {
@@ -238,7 +239,7 @@ test.describe("Domain-Scoped Authentication E2E Tests", () => {
 
     // Check remaining credentials
     const remainingCredentials = await page.evaluate(() => {
-      const creds: Record<string, any> = {};
+      const creds: Record<string, unknown> = {};
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.includes("ably.web-cli.")) {
@@ -306,7 +307,7 @@ test.describe("Domain-Scoped Authentication E2E Tests", () => {
       const url = new URL(window.location.href);
       const wsUrl =
         url.searchParams.get("serverUrl") ||
-        (window as any).__ABLY_CLI_WEBSOCKET_URL__ ||
+        (window as unknown as AblyCliWindow).__ABLY_CLI_WEBSOCKET_URL__ ||
         "wss://web-cli-terminal.ably-dev.com";
       return new URL(wsUrl).host;
     });
@@ -332,7 +333,7 @@ test.describe("Domain-Scoped Authentication E2E Tests", () => {
     const accessibleCredentials = await page.evaluate(() => {
       const wsUrl = new URL(
         new URLSearchParams(window.location.search).get("serverUrl") ||
-          (window as any).__ABLY_CLI_WEBSOCKET_URL__ ||
+          (window as unknown as AblyCliWindow).__ABLY_CLI_WEBSOCKET_URL__ ||
           "wss://web-cli-terminal.ably-dev.com",
       );
       const domain = wsUrl.host;

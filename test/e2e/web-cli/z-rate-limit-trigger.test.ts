@@ -3,6 +3,7 @@ import { authenticateWebCli } from "./auth-helper";
 import { getRateLimiterState } from "./test-rate-limiter";
 import { waitForRateLimitLock } from "./rate-limit-lock";
 import { disableCIAuth } from "./helpers/setup-ci-auth";
+import type { AblyCliWindow } from "./types";
 
 const log = console.log.bind(console);
 
@@ -80,7 +81,9 @@ test.describe("Z-Rate Limit Config Test - MUST RUN LAST", () => {
 
     // Also check for rate limit indicators in browser console or connection status
     const connectionState = await page.evaluate(() => {
-      const state = (window as any).getAblyCliTerminalReactState?.();
+      const state = (
+        window as unknown as AblyCliWindow
+      ).getAblyCliTerminalReactState?.();
       return {
         status: state?.componentConnectionStatus,
         attempts: state?.grCurrentAttempts,
@@ -139,7 +142,9 @@ test.describe("Z-Rate Limit Config Test - MUST RUN LAST", () => {
       const maxReached = await page
         .waitForFunction(
           () => {
-            const state = (window as any).getAblyCliTerminalReactState?.();
+            const state = (
+              window as unknown as AblyCliWindow
+            ).getAblyCliTerminalReactState?.();
             return (
               state?.grIsMaxReached === true ||
               state?.componentConnectionStatus === "connected"
@@ -151,7 +156,7 @@ test.describe("Z-Rate Limit Config Test - MUST RUN LAST", () => {
 
       if (maxReached) {
         const state = await page.evaluate(() =>
-          (window as any).getAblyCliTerminalReactState?.(),
+          (window as unknown as AblyCliWindow).getAblyCliTerminalReactState?.(),
         );
         log(
           `Final state: maxReached=${state?.grIsMaxReached}, status=${state?.componentConnectionStatus}`,
@@ -163,7 +168,7 @@ test.describe("Z-Rate Limit Config Test - MUST RUN LAST", () => {
       } else {
         // If timeout occurred, check final state and accept rate limiting
         const finalState = await page.evaluate(() =>
-          (window as any).getAblyCliTerminalReactState?.(),
+          (window as unknown as AblyCliWindow).getAblyCliTerminalReactState?.(),
         );
         log(
           `Timeout occurred. Final state: status=${finalState?.componentConnectionStatus}, attempts=${finalState?.grCurrentAttempts}`,
@@ -187,7 +192,9 @@ test.describe("Z-Rate Limit Config Test - MUST RUN LAST", () => {
 
     // Normal connection scenario - verify configuration
     const state = await page.evaluate(() => {
-      const s = (window as any).getAblyCliTerminalReactState?.();
+      const s = (
+        window as unknown as AblyCliWindow
+      ).getAblyCliTerminalReactState?.();
       return {
         status: s?.componentConnectionStatus,
         attempts: s?.grCurrentAttempts,

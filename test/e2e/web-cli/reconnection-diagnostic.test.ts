@@ -5,13 +5,14 @@
  * runner receives the file path but execution is later excluded). This avoids
  * TS2304: Cannot find name 'window'.
  */
-declare const window: any;
+declare const window: Window & typeof globalThis;
 
 import { test, expect, getTestUrl } from "./helpers/base-test";
 const log = console.log.bind(console);
 import { authenticateWebCli } from "./auth-helper.js";
 import { waitForRateLimitLock } from "./rate-limit-lock";
 import { getTerminalServerUrl } from "./helpers/ci-auth.js";
+import type { AblyCliWindow } from "./types";
 
 const TERMINAL_SERVER_URL = getTerminalServerUrl();
 
@@ -64,9 +65,10 @@ test.describe("Web CLI Reconnection Diagnostic E2E Tests", () => {
     await page.waitForFunction(
       () => {
         return (
-          (window as any).ablyCliSocket &&
-          (window as any).getAblyCliTerminalReactState &&
-          typeof (window as any).getAblyCliTerminalReactState === "function"
+          (window as unknown as AblyCliWindow).ablyCliSocket &&
+          (window as unknown as AblyCliWindow).getAblyCliTerminalReactState &&
+          typeof (window as unknown as AblyCliWindow)
+            .getAblyCliTerminalReactState === "function"
         );
       },
       { timeout: 30000 },
@@ -74,9 +76,10 @@ test.describe("Web CLI Reconnection Diagnostic E2E Tests", () => {
 
     // 5. Verify exposed debugging functions
     const debugInfo = await page.evaluate(() => {
-      const socket = (window as any).ablyCliSocket;
-      const getReactState = (window as any).getAblyCliTerminalReactState;
-      const sessionId = (window as any)._sessionId;
+      const socket = (window as unknown as AblyCliWindow).ablyCliSocket;
+      const getReactState = (window as unknown as AblyCliWindow)
+        .getAblyCliTerminalReactState;
+      const sessionId = (window as unknown as AblyCliWindow)._sessionId;
 
       return {
         hasSocket: !!socket,
@@ -106,13 +109,13 @@ test.describe("Web CLI Reconnection Diagnostic E2E Tests", () => {
 
     // Set up console log capture before navigation
     await page.addInitScript(() => {
-      (window as any).__consoleLogs = [];
+      (window as unknown as AblyCliWindow).__consoleLogs = [];
       const originalLog = console.log;
       const originalError = console.error;
       const originalWarn = console.warn;
 
       console.log = (...args) => {
-        (window as any).__consoleLogs.push({
+        (window as unknown as AblyCliWindow).__consoleLogs.push({
           type: "log",
           message: args.join(" "),
           timestamp: new Date().toISOString(),
@@ -121,7 +124,7 @@ test.describe("Web CLI Reconnection Diagnostic E2E Tests", () => {
       };
 
       console.error = (...args) => {
-        (window as any).__consoleLogs.push({
+        (window as unknown as AblyCliWindow).__consoleLogs.push({
           type: "error",
           message: args.join(" "),
           timestamp: new Date().toISOString(),
@@ -130,7 +133,7 @@ test.describe("Web CLI Reconnection Diagnostic E2E Tests", () => {
       };
 
       console.warn = (...args) => {
-        (window as any).__consoleLogs.push({
+        (window as unknown as AblyCliWindow).__consoleLogs.push({
           type: "warn",
           message: args.join(" "),
           timestamp: new Date().toISOString(),
@@ -165,7 +168,7 @@ test.describe("Web CLI Reconnection Diagnostic E2E Tests", () => {
 
     // Verify console logs are being captured
     const consoleLogs = await page.evaluate(
-      () => (window as any).__consoleLogs,
+      () => (window as unknown as AblyCliWindow).__consoleLogs,
     );
     expect(Array.isArray(consoleLogs)).toBe(true);
     expect(consoleLogs.length).toBeGreaterThan(0);
@@ -217,9 +220,10 @@ test.describe("Web CLI Reconnection Diagnostic E2E Tests", () => {
     await page.waitForFunction(
       () => {
         return (
-          (window as any).ablyCliSocket &&
-          (window as any).getAblyCliTerminalReactState &&
-          typeof (window as any).getAblyCliTerminalReactState === "function"
+          (window as unknown as AblyCliWindow).ablyCliSocket &&
+          (window as unknown as AblyCliWindow).getAblyCliTerminalReactState &&
+          typeof (window as unknown as AblyCliWindow)
+            .getAblyCliTerminalReactState === "function"
         );
       },
       { timeout: 30000 },
@@ -227,8 +231,8 @@ test.describe("Web CLI Reconnection Diagnostic E2E Tests", () => {
 
     // Simulate disconnection
     await page.evaluate(() => {
-      if ((window as any).ablyCliSocket) {
-        (window as any).ablyCliSocket.close();
+      if ((window as unknown as AblyCliWindow).ablyCliSocket) {
+        (window as unknown as AblyCliWindow).ablyCliSocket.close();
       }
     });
 
@@ -238,7 +242,9 @@ test.describe("Web CLI Reconnection Diagnostic E2E Tests", () => {
     // Wait for reconnection
     await page.waitForFunction(
       () => {
-        const state = (window as any).getAblyCliTerminalReactState?.();
+        const state = (
+          window as unknown as AblyCliWindow
+        ).getAblyCliTerminalReactState?.();
         return state?.componentConnectionStatus === "connected";
       },
       null,
@@ -247,9 +253,10 @@ test.describe("Web CLI Reconnection Diagnostic E2E Tests", () => {
 
     // Verify debugging functions still work after reconnection
     const postReconnectDebugInfo = await page.evaluate(() => {
-      const socket = (window as any).ablyCliSocket;
-      const getReactState = (window as any).getAblyCliTerminalReactState;
-      const sessionId = (window as any)._sessionId;
+      const socket = (window as unknown as AblyCliWindow).ablyCliSocket;
+      const getReactState = (window as unknown as AblyCliWindow)
+        .getAblyCliTerminalReactState;
+      const sessionId = (window as unknown as AblyCliWindow)._sessionId;
 
       return {
         hasSocket: !!socket,

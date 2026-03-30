@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { Config } from "@oclif/core";
 
 import { AblyBaseCommand } from "../../../src/base-command.js";
+import { BaseFlags } from "../../../src/types/cli.js";
+import { ConfigManager } from "../../../src/services/config-manager.js";
 
 // Test implementation of AblyBaseCommand for testing protected methods
 class TestCommand extends AblyBaseCommand {
@@ -15,13 +18,13 @@ class TestCommand extends AblyBaseCommand {
   }
 
   // For direct testing of showAuthInfoIfNeeded
-  public async testShowAuthInfoIfNeeded(flags: any = {}): Promise<void> {
+  public async testShowAuthInfoIfNeeded(flags: BaseFlags = {}): Promise<void> {
     return this.showAuthInfoIfNeeded(flags);
   }
 
   // For direct testing of displayAuthInfo
   public async testDisplayAuthInfo(
-    flags: any = {},
+    flags: BaseFlags = {},
     showAppInfo: boolean = true,
   ): Promise<void> {
     return this.displayAuthInfo(flags, showAppInfo);
@@ -32,19 +35,21 @@ class TestCommand extends AblyBaseCommand {
     return this.shouldShowAuthInfo();
   }
 
-  public testShouldOutputJson(flags: any = {}): boolean {
+  public testShouldOutputJson(flags: BaseFlags = {}): boolean {
     return this.shouldOutputJson(flags);
   }
 
-  public testShouldSuppressOutput(flags: any = {}): boolean {
+  public testShouldSuppressOutput(flags: BaseFlags = {}): boolean {
     return this.shouldSuppressOutput(flags);
   }
 
-  public async testDisplayDataPlaneInfo(flags: any = {}): Promise<void> {
+  public async testDisplayDataPlaneInfo(flags: BaseFlags = {}): Promise<void> {
     return this.displayDataPlaneInfo(flags);
   }
 
-  public async testDisplayControlPlaneInfo(flags: any = {}): Promise<void> {
+  public async testDisplayControlPlaneInfo(
+    flags: BaseFlags = {},
+  ): Promise<void> {
     return this.displayControlPlaneInfo(flags);
   }
 }
@@ -74,10 +79,12 @@ describe("Auth Info Display", function () {
     };
 
     // Initialize command with stubs
-    command = new TestCommand([], {} as any);
+    command = new TestCommand([], {} as unknown as Config);
 
     // Replace the command's configManager with our stub
-    (command as any).configManager = configManagerStub;
+    (
+      command as unknown as { configManager: Partial<ConfigManager> }
+    ).configManager = configManagerStub;
 
     // Set up common stub behaviors - will be overridden in specific tests
     configManagerStub.getCurrentAccount.mockReturnValue({
@@ -87,8 +94,14 @@ describe("Auth Info Display", function () {
     });
 
     // Stub log and debug methods
-    logStub = vi.spyOn(command as any, "log");
-    debugStub = vi.spyOn(command as any, "debug");
+    logStub = vi.spyOn(
+      command as unknown as { log: (...args: unknown[]) => void },
+      "log",
+    );
+    debugStub = vi.spyOn(
+      command as unknown as { debug: (...args: unknown[]) => void },
+      "debug",
+    );
 
     // Make sure environment variables are clean
     delete process.env.ABLY_API_KEY;
@@ -102,7 +115,7 @@ describe("Auth Info Display", function () {
 
   describe("shouldHideAccountInfo", function () {
     it("should return true when no account is configured", function () {
-      configManagerStub.getCurrentAccount.mockReturnValue(undefined as any);
+      configManagerStub.getCurrentAccount.mockReturnValue();
       expect(command.testShouldHideAccountInfo()).toBe(true);
     });
 
@@ -133,7 +146,7 @@ describe("Auth Info Display", function () {
     beforeEach(function () {
       // Stub shouldHideAccountInfo
       shouldHideAccountInfoStub = vi.spyOn(
-        command as any,
+        command as unknown as { shouldHideAccountInfo: () => boolean },
         "shouldHideAccountInfo",
       );
 
@@ -242,17 +255,31 @@ describe("Auth Info Display", function () {
     beforeEach(function () {
       // Create stubs
       displayDataPlaneInfoStub = vi.spyOn(
-        command as any,
+        command as unknown as {
+          displayDataPlaneInfo: (flags: BaseFlags) => Promise<void>;
+        },
         "displayDataPlaneInfo",
       );
       displayControlPlaneInfoStub = vi.spyOn(
-        command as any,
+        command as unknown as {
+          displayControlPlaneInfo: (flags: BaseFlags) => Promise<void>;
+        },
         "displayControlPlaneInfo",
       );
-      shouldShowAuthInfoStub = vi.spyOn(command as any, "shouldShowAuthInfo");
-      shouldOutputJsonStub = vi.spyOn(command as any, "shouldOutputJson");
+      shouldShowAuthInfoStub = vi.spyOn(
+        command as unknown as { shouldShowAuthInfo: () => boolean },
+        "shouldShowAuthInfo",
+      );
+      shouldOutputJsonStub = vi.spyOn(
+        command as unknown as {
+          shouldOutputJson: (flags: BaseFlags) => boolean;
+        },
+        "shouldOutputJson",
+      );
       shouldSuppressOutputStub = vi.spyOn(
-        command as any,
+        command as unknown as {
+          shouldSuppressOutput: (flags: BaseFlags) => boolean;
+        },
         "shouldSuppressOutput",
       );
 
@@ -262,7 +289,7 @@ describe("Auth Info Display", function () {
       shouldSuppressOutputStub.mockReturnValue(false);
 
       // Default to non-web CLI mode
-      (command as any).isWebCliMode = false;
+      (command as unknown as { isWebCliMode: boolean }).isWebCliMode = false;
     });
 
     it("should skip display when shouldShowAuthInfo returns false", async function () {
@@ -313,7 +340,7 @@ describe("Auth Info Display", function () {
     // showAuthInfoIfNeeded itself doesn't filter based on these flags.
 
     it("should skip display in Web CLI mode", async function () {
-      (command as any).isWebCliMode = true;
+      (command as unknown as { isWebCliMode: boolean }).isWebCliMode = true;
 
       await command.testShowAuthInfoIfNeeded({});
 

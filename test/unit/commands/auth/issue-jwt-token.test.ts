@@ -67,7 +67,7 @@ describe("auth:issue-jwt-token command", () => {
       const token = stdout.trim();
       const decoded = jwt.verify(token, mockKeySecret, {
         algorithms: ["HS256"],
-      }) as any;
+      }) as jwt.JwtPayload;
 
       expect(decoded["x-ably-capability"]).toHaveProperty("chat:*");
       expect(decoded["x-ably-capability"]["chat:*"]).toContain("publish");
@@ -87,7 +87,7 @@ describe("auth:issue-jwt-token command", () => {
       const token = stdout.trim();
       const decoded = jwt.verify(token, mockKeySecret, {
         algorithms: ["HS256"],
-      }) as any;
+      }) as jwt.JwtPayload;
 
       // Check that exp - iat equals TTL
       expect(decoded.exp - decoded.iat).toBe(ttl);
@@ -106,7 +106,7 @@ describe("auth:issue-jwt-token command", () => {
       const token = stdout.trim();
       const decoded = jwt.verify(token, mockKeySecret, {
         algorithms: ["HS256"],
-      }) as any;
+      }) as jwt.JwtPayload;
 
       expect(decoded["x-ably-clientId"]).toBe(customClientId);
     });
@@ -122,7 +122,7 @@ describe("auth:issue-jwt-token command", () => {
       const token = stdout.trim();
       const decoded = jwt.verify(token, mockKeySecret, {
         algorithms: ["HS256"],
-      }) as any;
+      }) as jwt.JwtPayload;
 
       expect(decoded["x-ably-clientId"]).toBeUndefined();
     });
@@ -170,7 +170,7 @@ describe("auth:issue-jwt-token command", () => {
       const token = stdout.trim();
       const decoded = jwt.verify(token, mockKeySecret, {
         algorithms: ["HS256"],
-      }) as any;
+      }) as jwt.JwtPayload;
 
       expect(decoded["x-ably-capability"]).toHaveProperty("*");
       expect(decoded["x-ably-capability"]["*"]).toContain("*");
@@ -187,7 +187,7 @@ describe("auth:issue-jwt-token command", () => {
       const token = stdout.trim();
       const decoded = jwt.verify(token, mockKeySecret, {
         algorithms: ["HS256"],
-      }) as any;
+      }) as jwt.JwtPayload;
 
       // Default TTL is 3600 seconds (1 hour)
       expect(decoded.exp - decoded.iat).toBe(3600);

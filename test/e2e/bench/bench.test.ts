@@ -82,7 +82,7 @@ describe("E2E: ably bench publisher and subscriber", () => {
       let publisherOutput = "";
       let subscriberReady = false;
       let testError: Error | null = null; // To store any error that occurs
-      let subscriberSummaryEntry: any = null; // Capture testFinished entry
+      let subscriberSummaryEntry: Record<string, unknown> | null = null; // Capture testFinished entry
 
       console.log(`[TEST] Test channel: ${testChannel}`);
       console.log(`[TEST] API key exists: ${!!apiKey}`);
@@ -316,7 +316,7 @@ describe("E2E: ably bench publisher and subscriber", () => {
 
         await publisherPromise;
         await subscriberPromise;
-      } catch (error: any) {
+      } catch (error) {
         testError = error;
       } finally {
         if (subscriberProcess) {
@@ -333,7 +333,7 @@ describe("E2E: ably bench publisher and subscriber", () => {
       if (testError) throw testError;
 
       // Parse multi-line JSON from publisher output using regex
-      const publisherLogEntries: any[] = [];
+      const publisherLogEntries: Record<string, unknown>[] = [];
       const jsonRegex = /\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g;
       const matches = publisherOutput.match(jsonRegex);
 

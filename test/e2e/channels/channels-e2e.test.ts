@@ -36,7 +36,9 @@ async function listAllChannels(): Promise<string[]> {
   const client = createAblyClient();
   const result = await client.request("get", "/channels", 2, {}, null);
   if (!result.items) return [];
-  return result.items.map((channel: any) => channel.channelId);
+  return result.items.map(
+    (channel: { channelId: string }) => channel.channelId,
+  );
 }
 
 // Helper to retry for up to N seconds with a check function
@@ -352,7 +354,7 @@ describe("Channel E2E Tests", () => {
     expect(result.messages.length).toBeGreaterThanOrEqual(1);
 
     const testMsg = result.messages.find(
-      (msg: any) =>
+      (msg: { data?: { text?: string } }) =>
         msg.data &&
         typeof msg.data === "object" &&
         msg.data.text === "JSON History Test",

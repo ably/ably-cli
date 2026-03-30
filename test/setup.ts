@@ -12,17 +12,12 @@ import type { MockConfigManager } from "./helpers/mock-config-manager.js";
 declare global {
   var __TEST_MOCKS__:
     | {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ablyRestMock: any; // Keep simple 'any' type to match base-command.ts expectations
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ablyChatMock?: any;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ablySpacesMock?: any;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ablyRealtimeMock?: any;
+        ablyRestMock: Ably.Rest;
+        ablyChatMock?: unknown;
+        ablySpacesMock?: unknown;
+        ablyRealtimeMock?: Ably.Realtime;
         configManager?: MockConfigManager;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        [key: string]: any;
+        [key: string]: unknown;
       }
     | undefined;
 }

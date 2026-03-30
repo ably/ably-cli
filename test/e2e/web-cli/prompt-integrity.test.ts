@@ -19,6 +19,7 @@ import {
 } from "./wait-helpers";
 import { createSignedConfig } from "./helpers/signing-helper";
 import { getTerminalServerUrl } from "./helpers/ci-auth.js";
+import type { AblyCliWindow } from "./types";
 
 const TERMINAL_SERVER_URL = getTerminalServerUrl();
 
@@ -83,7 +84,11 @@ test.describe("Web CLI Prompt Integrity E2E Tests", () => {
 
     // Log buffer info during resume
     const bufferInfoDuringResume = await page.evaluate(() => {
-      return (window as any).getTerminalBufferInfo?.() || { exists: false };
+      return (
+        (window as unknown as AblyCliWindow).getTerminalBufferInfo?.() || {
+          exists: false,
+        }
+      );
     });
     log(
       "Terminal buffer info during resume:",
@@ -98,7 +103,11 @@ test.describe("Web CLI Prompt Integrity E2E Tests", () => {
 
     // Log buffer info after stabilization
     const bufferInfoAfterStable = await page.evaluate(() => {
-      return (window as any).getTerminalBufferInfo?.() || { exists: false };
+      return (
+        (window as unknown as AblyCliWindow).getTerminalBufferInfo?.() || {
+          exists: false,
+        }
+      );
     });
     log(
       "Terminal buffer info after stabilization:",
@@ -205,6 +214,3 @@ test.describe("Web CLI Prompt Integrity E2E Tests", () => {
     await waitForTerminalStable(page);
   });
 });
-
-// Re-export window declaration to ensure TypeScript compatibility
-declare const window: any;

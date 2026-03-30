@@ -3,7 +3,7 @@
  * is parsed in a non-DOM environment (e.g. if Mocha accidentally attempts to
  * compile it). This addresses TS2304: Cannot find name 'window'.
  */
-declare const window: any;
+declare const window: Window & typeof globalThis;
 
 import { test, expect, getTestUrl, log } from "./helpers/base-test";
 // import { authenticateWebCli } from './auth-helper.js'; // No longer needed - using API key in URL
@@ -21,11 +21,12 @@ import {
 import { waitForRateLimitLock } from "./rate-limit-lock";
 import { createSignedConfig } from "./helpers/signing-helper";
 import { getTerminalServerUrl } from "./helpers/ci-auth.js";
+import type { AblyCliWindow } from "./types";
 
 const TERMINAL_SERVER_URL = getTerminalServerUrl();
 
 async function _waitForPrompt(
-  page: any,
+  page: import("playwright/test").Page,
   terminalSelector: string,
   timeout = 60000,
 ): Promise<void> {
@@ -41,7 +42,9 @@ async function _waitForPrompt(
       // Option 2: Wait for React component to report connected status
       page.waitForFunction(
         () => {
-          const state = (window as any).getAblyCliTerminalReactState?.();
+          const state = (
+            window as unknown as AblyCliWindow
+          ).getAblyCliTerminalReactState?.();
           return (
             state?.componentConnectionStatus === "connected" &&
             state?.isSessionActive === true
@@ -61,18 +64,22 @@ async function _waitForPrompt(
 
     // Get debug information
     const debugInfo = await page.evaluate(() => {
-      const state = (window as any).getAblyCliTerminalReactState?.();
+      const state = (
+        window as unknown as AblyCliWindow
+      ).getAblyCliTerminalReactState?.();
       const socketStates = ["CONNECTING", "OPEN", "CLOSING", "CLOSED"];
-      const socketState = (window as any).ablyCliSocket?.readyState;
-      const logs = (window as any).__consoleLogs || [];
+      const socketState = (window as unknown as AblyCliWindow).ablyCliSocket
+        ?.readyState;
+      const logs = (window as unknown as AblyCliWindow).__consoleLogs || [];
 
       return {
         reactState: state,
         socketReadyState: socketState,
         socketStateText: socketStates[socketState] || "UNKNOWN",
-        sessionId: (window as any)._sessionId,
+        sessionId: (window as unknown as AblyCliWindow)._sessionId,
         hasStateFunction:
-          typeof (window as any).getAblyCliTerminalReactState === "function",
+          typeof (window as unknown as AblyCliWindow)
+            .getAblyCliTerminalReactState === "function",
         recentConsoleLogs: logs.slice(-20),
       };
     });
@@ -179,10 +186,12 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
     // Capture the session ID from the page for debugging
     const sessionInfo = await page.evaluate(() => {
       return {
-        sessionId: (window as any)._sessionId,
-        connectionStatus: (window as any).getAblyCliTerminalReactState?.()
-          ?.componentConnectionStatus,
-        socketState: (window as any).ablyCliSocket?.readyState,
+        sessionId: (window as unknown as AblyCliWindow)._sessionId,
+        connectionStatus: (
+          window as unknown as AblyCliWindow
+        ).getAblyCliTerminalReactState?.()?.componentConnectionStatus,
+        socketState: (window as unknown as AblyCliWindow).ablyCliSocket
+          ?.readyState,
       };
     });
     log("Session info before disconnect:", sessionInfo);
@@ -191,11 +200,11 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
     log("Simulating network disconnection...");
     await page.evaluate(() => {
       // Force disconnect the WebSocket if available
-      if ((window as any).ablyCliSocket) {
+      if ((window as unknown as AblyCliWindow).ablyCliSocket) {
         // Calling close() without parameters simulates an unexpected disconnection
         // This will trigger a close event with code 1005 which should now
         // trigger automatic reconnection (not manual)
-        (window as any).ablyCliSocket.close();
+        (window as unknown as AblyCliWindow).ablyCliSocket.close();
       }
     });
 
@@ -203,7 +212,9 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
     log("Waiting for disconnection/reconnecting state...");
     await page.waitForFunction(
       () => {
-        const state = (window as any).getAblyCliTerminalReactState?.();
+        const state = (
+          window as unknown as AblyCliWindow
+        ).getAblyCliTerminalReactState?.();
         // Component might go directly to 'reconnecting' without stopping at 'disconnected'
         return (
           state?.componentConnectionStatus === "disconnected" ||
@@ -220,7 +231,9 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
     // First check if it shows manual reconnect prompt (which would be the bug)
     await page.waitForTimeout(2000); // Give it time to decide
     const requiresManualReconnect = await page.evaluate(() => {
-      const state = (window as any).getAblyCliTerminalReactState?.();
+      const state = (
+        window as unknown as AblyCliWindow
+      ).getAblyCliTerminalReactState?.();
       return state?.showManualReconnectPrompt === true;
     });
 
@@ -236,7 +249,9 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
     // Simply wait for the connection status to become 'connected'
     await page.waitForFunction(
       () => {
-        const state = (window as any).getAblyCliTerminalReactState?.();
+        const state = (
+          window as unknown as AblyCliWindow
+        ).getAblyCliTerminalReactState?.();
         return state?.componentConnectionStatus === "connected";
       },
       { timeout: 30000 },
@@ -249,10 +264,12 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
 
     // Get reconnection info for logging
     const reconnectionInfo = await page.evaluate(() => {
-      const state = (window as any).getAblyCliTerminalReactState?.();
+      const state = (
+        window as unknown as AblyCliWindow
+      ).getAblyCliTerminalReactState?.();
       return {
         status: "reconnected",
-        sessionId: (window as any)._sessionId,
+        sessionId: (window as unknown as AblyCliWindow)._sessionId,
         componentConnectionStatus: state?.componentConnectionStatus,
         isSessionActive: state?.isSessionActive,
       };
@@ -323,15 +340,17 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
 
     // Simulate disconnection
     await page.evaluate(() => {
-      if ((window as any).ablyCliSocket) {
-        (window as any).ablyCliSocket.close();
+      if ((window as unknown as AblyCliWindow).ablyCliSocket) {
+        (window as unknown as AblyCliWindow).ablyCliSocket.close();
       }
     });
 
     // Should see disconnection or reconnecting state
     await page.waitForFunction(
       () => {
-        const state = (window as any).getAblyCliTerminalReactState?.();
+        const state = (
+          window as unknown as AblyCliWindow
+        ).getAblyCliTerminalReactState?.();
         return (
           state?.componentConnectionStatus === "disconnected" ||
           state?.componentConnectionStatus === "reconnecting"
@@ -377,7 +396,9 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
     // Wait for reconnection to complete
     await page.waitForFunction(
       () => {
-        const state = (window as any).getAblyCliTerminalReactState?.();
+        const state = (
+          window as unknown as AblyCliWindow
+        ).getAblyCliTerminalReactState?.();
         return state?.componentConnectionStatus === "connected";
       },
       null,
@@ -442,15 +463,17 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
     log("Simulating disconnection...");
 
     await page.evaluate(() => {
-      if ((window as any).ablyCliSocket) {
-        (window as any).ablyCliSocket.close();
+      if ((window as unknown as AblyCliWindow).ablyCliSocket) {
+        (window as unknown as AblyCliWindow).ablyCliSocket.close();
       }
     });
 
     // Wait for reconnection
     await page.waitForFunction(
       () => {
-        const state = (window as any).getAblyCliTerminalReactState?.();
+        const state = (
+          window as unknown as AblyCliWindow
+        ).getAblyCliTerminalReactState?.();
         return state?.componentConnectionStatus === "connected";
       },
       null,
@@ -481,7 +504,7 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
       const NativeWebSocket = window.WebSocket;
       const active: WebSocket[] = [];
 
-      (window as any).__wsCtl = {
+      (window as unknown as AblyCliWindow).__wsCtl = {
         closeAll: () => {
           active.forEach((ws) => {
             ws.dispatchEvent(
@@ -536,7 +559,9 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
     });
 
     // Simulate connection loss
-    await page.evaluate(() => (window as any).__wsCtl.closeAll());
+    await page.evaluate(() =>
+      (window as unknown as AblyCliWindow).__wsCtl.closeAll(),
+    );
     await expect(page.locator(statusSelector)).toHaveText("reconnecting", {
       timeout: 5000,
     });
@@ -620,7 +645,7 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
       const NativeWebSocket = window.WebSocket;
       const active: WebSocket[] = [];
 
-      (window as any).__wsCtl = {
+      (window as unknown as AblyCliWindow).__wsCtl = {
         closeAll: () => {
           active.forEach((ws) => {
             ws.dispatchEvent(
@@ -682,7 +707,9 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
 
     // Cause repeated disconnects to exceed max attempts
     for (let i = 0; i < 5; i++) {
-      await page.evaluate(() => (window as any).__wsCtl.closeAll());
+      await page.evaluate(() =>
+        (window as unknown as AblyCliWindow).__wsCtl.closeAll(),
+      );
       await page.waitForTimeout(500); // Allow component to process
     }
 
