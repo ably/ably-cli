@@ -93,7 +93,7 @@ export default [
       // Use rules from the imported plugin object
       ...tsPlugin.configs.recommended.rules,
       // Your custom rules from .eslintrc.json
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-vars": [
         "warn",
         {
@@ -169,7 +169,7 @@ export default [
     rules: {
       // Apply recommended vitest rules
       ...vitest.configs.recommended.rules,
-      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-expressions": "off",
       "vitest/no-focused-tests": "error", // Equivalent to mocha/no-exclusive-tests
       "vitest/no-disabled-tests": "warn", // Equivalent to mocha/no-skipped-tests
@@ -210,7 +210,7 @@ export default [
     rules: {
       // Apply recommended vitest rules
       ...vitest.configs.recommended.rules,
-      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-expressions": "off",
       "vitest/no-focused-tests": "error", // Equivalent to mocha/no-exclusive-tests
       "vitest/no-disabled-tests": "warn", // Equivalent to mocha/no-skipped-tests

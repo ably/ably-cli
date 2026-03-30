@@ -14,7 +14,7 @@ export interface AblyCliWindow extends Window {
   /** The current terminal session ID */
   _sessionId?: string;
   /** Console log capture array, set up by tests for diagnostics */
-  __consoleLogs?: Array<{ type: string; args: string[] }>;
+  __consoleLogs?: Array<{ type: string; message: string; timestamp: string }>;
   /** WebSocket control object injected via addInitScript for reconnection tests */
   __wsCtl?: {
     closeAll: () => void;

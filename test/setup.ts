@@ -4,6 +4,8 @@ import { resolve } from "node:path";
 import { existsSync } from "node:fs";
 import { exec } from "node:child_process";
 import * as Ably from "ably";
+import type Spaces from "@ably/spaces";
+import type { ChatClient } from "@ably/chat";
 
 // Import types for test mocks
 import type { MockConfigManager } from "./helpers/mock-config-manager.js";
@@ -13,8 +15,8 @@ declare global {
   var __TEST_MOCKS__:
     | {
         ablyRestMock: Ably.Rest;
-        ablyChatMock?: unknown;
-        ablySpacesMock?: unknown;
+        ablyChatMock?: ChatClient;
+        ablySpacesMock?: Spaces;
         ablyRealtimeMock?: Ably.Realtime;
         configManager?: MockConfigManager;
         [key: string]: unknown;
