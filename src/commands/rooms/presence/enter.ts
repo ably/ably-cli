@@ -91,12 +91,13 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       this.room = await this.chatClient.rooms.get(this.roomName);
       const currentRoom = this.room;
 
+      let failurePromise: Promise<never> | undefined;
       if (flags["show-others"]) {
         // Subscribe to room status changes only when showing others
-        this.setupRoomStatusHandler(currentRoom, flags, {
+        ({ failurePromise } = this.setupRoomStatusHandler(currentRoom, flags, {
           roomName: this.roomName,
-          successMessage: `Connected to room: ${formatResource(this.roomName)}.`,
-        });
+          // Success message printed after presence.enter() completes
+        }));
 
         currentRoom.presence.subscribe((event: PresenceEvent) => {
           const member = event.member;
@@ -214,7 +215,11 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      await this.waitAndTrackCleanup(flags, "presence", flags.duration);
+      const waitPromises: Promise<unknown>[] = [
+        this.waitAndTrackCleanup(flags, "presence", flags.duration),
+      ];
+      if (failurePromise) waitPromises.push(failurePromise);
+      await Promise.race(waitPromises);
     } catch (error) {
       this.fail(error, flags, "roomPresenceEnter", {
         room: this.roomName,

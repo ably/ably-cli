@@ -955,20 +955,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             message,
             logData,
           );
-        } else if (level <= 1) {
-          // Standard JSON: Log only SDK ERRORS (level <= 1) to stderr as JSON
-          const errorData = {
-            level,
-            logType: "sdkError",
-            message,
-            timestamp: new Date().toISOString(),
-          };
-          // Log to stderr with standard JSON envelope for consistency
-          this.logToStderr(
-            this.formatJsonRecord(JsonRecordType.Log, errorData, flags),
-          );
         }
-        // If not verbose JSON and level > 1, suppress non-error SDK logs
+        // SDK errors (level <= 1) are surfaced by command-level error handling.
+        // Raw SDK error output is only shown with --verbose (above).
       } else {
         // Non-JSON Mode Handling
         if (flags.verbose && level <= 2) {
@@ -982,12 +971,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             message,
             logData,
           );
-        } else if (level <= 1) {
-          // SDK errors are handled by setupChannelStateLogging() and fail()
-          // Only show raw SDK errors in verbose mode (handled above)
-          // In non-verbose mode, log to stderr for debugging without polluting stdout
-          this.logToStderr(`${chalk.red.bold(`[AblySDK Error]`)} ${message}`);
         }
+        // SDK errors (level <= 1) are surfaced by setupConnectionStateLogging(),
+        // setupChannelStateLogging(), setupRoomStatusHandler(), and command-level
+        // catch blocks. Raw SDK error output is only shown with --verbose (above).
         // If not verbose non-JSON and level > 1, suppress non-error SDK logs
       }
     };
