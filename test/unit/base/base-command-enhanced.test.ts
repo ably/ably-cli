@@ -496,7 +496,15 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
 
     it("should strip ::$chat suffixes and rewrite to Room terminology", function () {
       const msg =
-        "Channel denied access based on given capability; channelId = abc::$chat::messages";
+        "Channel denied access based on given capability; channelId = abc::$chat::$chatMessages";
+      expect(() => command.testFail(new Error(msg), {}, "room")).toThrow(
+        "Room denied access based on given capability; room = abc",
+      );
+    });
+
+    it("should strip ::$chat::$typingindicators suffix", function () {
+      const msg =
+        "Channel denied access based on given capability; channelId = abc::$chat::$typingindicators";
       expect(() => command.testFail(new Error(msg), {}, "room")).toThrow(
         "Room denied access based on given capability; room = abc",
       );
@@ -523,7 +531,7 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
       const cmd = new TestCommand(["--json"], mockConfig);
       const ablyError = Object.assign(
         new Error(
-          "Channel denied access based on given capability; channelId = room1::$chat",
+          "Channel denied access based on given capability; channelId = room1::$chat::$typingindicators",
         ),
         { code: 40160, statusCode: 401 },
       );
@@ -531,11 +539,11 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
       expect(() => cmd.testFail(ablyError, { json: true }, "room")).toThrow();
 
       const parsed = JSON.parse(cmd.capturedOutput[0]);
-      expect(parsed.error).toBe(
+      expect(parsed.error.message).toBe(
         "Room denied access based on given capability; room = room1",
       );
-      expect(parsed.code).toBe(40160);
-      expect(parsed.statusCode).toBe(401);
+      expect(parsed.error.code).toBe(40160);
+      expect(parsed.error.statusCode).toBe(401);
     });
 
     it("should not modify errors without SDK channel suffixes", function () {
