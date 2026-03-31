@@ -41,12 +41,13 @@ export default class IntegrationsGetCommand extends ControlBaseCommand {
       const rule = await controlApi.getRule(appId, args.ruleId);
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult(
-          {
-            rule: structuredClone(rule) as unknown as Record<string, unknown>,
-          },
-          flags,
-        );
+        const ruleClone = structuredClone(rule) as unknown as Record<
+          string,
+          unknown
+        >;
+        ruleClone.created = new Date(rule.created).toISOString();
+        ruleClone.modified = new Date(rule.modified).toISOString();
+        this.logJsonResult({ rule: ruleClone }, flags);
       } else {
         this.log(formatHeading("Integration Rule Details"));
         this.log(`${formatLabel("ID")} ${rule.id}`);

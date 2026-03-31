@@ -150,7 +150,16 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
       );
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ integration: createdIntegration }, flags);
+        this.logJsonResult(
+          {
+            integration: {
+              ...createdIntegration,
+              created: new Date(createdIntegration.created).toISOString(),
+              modified: new Date(createdIntegration.modified).toISOString(),
+            },
+          },
+          flags,
+        );
       } else {
         this.log(
           formatSuccess(

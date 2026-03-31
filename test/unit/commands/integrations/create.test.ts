@@ -115,6 +115,8 @@ describe("integrations:create command", () => {
             url: "https://example.com/webhook",
           },
           status: "disabled",
+          created: 1640995200000,
+          modified: 1640995200000,
         });
 
       const { stdout } = await runCommand(
@@ -159,6 +161,8 @@ describe("integrations:create command", () => {
             url: "https://example.com/webhook",
           },
           status: "enabled",
+          created: 1640995200000,
+          modified: 1640995200000,
         });
 
       const { stdout } = await runCommand(
@@ -202,6 +206,8 @@ describe("integrations:create command", () => {
             format: "json",
           },
           status: "enabled",
+          created: 1640995200000,
+          modified: 1640995200000,
         });
 
       const { stdout } = await runCommand(
@@ -227,6 +233,12 @@ describe("integrations:create command", () => {
       expect(result).toHaveProperty("integration");
       expect(result.integration).toHaveProperty("id", mockRuleId);
       expect(result.integration).toHaveProperty("ruleType", "http");
+      expect(result.integration.created).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+      );
+      expect(result.integration.modified).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+      );
     });
   });
 
@@ -352,6 +364,8 @@ describe("integrations:create command", () => {
             url: "https://example.com/webhook",
           },
           status: "enabled",
+          created: 1640995200000,
+          modified: 1640995200000,
         });
 
       const { stdout } = await runCommand(
@@ -392,6 +406,8 @@ describe("integrations:create command", () => {
             url: "https://example.com/webhook",
           },
           status: "enabled",
+          created: 1640995200000,
+          modified: 1640995200000,
         });
 
       const { stdout } = await runCommand(

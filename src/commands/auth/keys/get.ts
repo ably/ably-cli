@@ -93,6 +93,8 @@ export default class KeysGetCommand extends ControlBaseCommand {
           {
             key: {
               ...key,
+              created: new Date(key.created).toISOString(),
+              modified: new Date(key.modified).toISOString(),
               keyName,
               ...(hasEnvOverride
                 ? {

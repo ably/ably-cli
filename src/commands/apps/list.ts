@@ -39,6 +39,8 @@ export default class AppsList extends ControlBaseCommand {
           // Mark current app in JSON output
           const appsWithCurrentFlag = apps.map((app) => ({
             ...app,
+            created: new Date(app.created).toISOString(),
+            modified: new Date(app.modified).toISOString(),
             isCurrent: app.id === currentAppId,
           }));
 

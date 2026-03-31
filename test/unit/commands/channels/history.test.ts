@@ -182,6 +182,7 @@ describe("channels:history command", () => {
       expect(messages[0]).toHaveProperty("name", "test-event");
       expect(messages[0]).toHaveProperty("data");
       expect(messages[0].data).toEqual({ text: "Hello world" });
+      expect(messages[0].timestamp).toBe("2023-11-14T22:13:20.000Z");
     });
   });
 

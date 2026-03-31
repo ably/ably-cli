@@ -64,6 +64,8 @@ export default class KeysListCommand extends ControlBaseCommand {
           const keyName = `${key.appId}.${key.id}`;
           return {
             ...key,
+            created: new Date(key.created).toISOString(),
+            modified: new Date(key.modified).toISOString(),
             current: keyName === currentKeyName,
             keyName, // Add the full key name
           };

@@ -95,6 +95,12 @@ describe("integrations:get command", () => {
       expect(result.rule).toHaveProperty("ruleType", "http");
       expect(result.rule).toHaveProperty("source");
       expect(result.rule.source).toHaveProperty("type", "channel.message");
+      expect(result.rule.created).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+      );
+      expect(result.rule.modified).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+      );
     });
 
     it("should output pretty JSON when --pretty-json flag is used", async () => {

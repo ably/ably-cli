@@ -107,7 +107,16 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
       );
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ rule: updatedRule }, flags);
+        this.logJsonResult(
+          {
+            rule: {
+              ...updatedRule,
+              created: new Date(updatedRule.created).toISOString(),
+              modified: new Date(updatedRule.modified).toISOString(),
+            },
+          },
+          flags,
+        );
       } else {
         this.log(formatSuccess("Integration rule updated."));
         this.log(`ID: ${updatedRule.id}`);
