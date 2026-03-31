@@ -102,15 +102,7 @@ export default [
           caughtErrorsIgnorePattern: "^_",
         },
       ],
-      // Disable no-unsafe-* family — too noisy given current `any` usage.
-      // These can be enabled incrementally as the codebase reduces `any`.
-      "@typescript-eslint/no-unsafe-assignment": "off",
-      "@typescript-eslint/no-unsafe-call": "off",
-      "@typescript-eslint/no-unsafe-member-access": "off",
-      "@typescript-eslint/no-unsafe-argument": "off",
-      "@typescript-eslint/no-unsafe-return": "off",
-      // Too many false positives on intentional String() conversions
-      "@typescript-eslint/no-base-to-string": "off",
+      // no-unsafe-* and no-base-to-string: enabled in src/, disabled in test/ (mock typing)
       // Cherry-picked from strict-type-checked
       "@typescript-eslint/no-unnecessary-condition": "error",
       "@typescript-eslint/no-deprecated": "warn",
@@ -163,6 +155,12 @@ export default [
       "unicorn/no-array-reduce": "off",
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/no-base-to-string": "off",
       "no-console": "off",
       "no-control-regex": "off", // Terminal escape sequences use control chars
       "n/no-missing-import": "off", // TSX imports are handled by TypeScript
@@ -192,6 +190,7 @@ export default [
       "@typescript-eslint/no-unsafe-member-access": "off",
       "@typescript-eslint/no-unsafe-argument": "off",
       "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/no-base-to-string": "off",
       "@typescript-eslint/require-await": "off",
       "@typescript-eslint/unbound-method": "off",
       "vitest/no-focused-tests": "error", // Equivalent to mocha/no-exclusive-tests
@@ -252,6 +251,7 @@ export default [
       "@typescript-eslint/no-unsafe-member-access": "off",
       "@typescript-eslint/no-unsafe-argument": "off",
       "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/no-base-to-string": "off",
       "@typescript-eslint/require-await": "off",
       "@typescript-eslint/unbound-method": "off",
     },
