@@ -129,7 +129,16 @@ export default class ChannelsHistory extends AblyBaseCommand {
         const lastTimestamp =
           messages.length > 0 ? messages.at(-1)!.timestamp : undefined;
         const next = buildPaginationNext(hasMore, lastTimestamp);
-        this.logJsonResult({ messages, hasMore, ...(next && { next }) }, flags);
+        const jsonMessages = messages.map((msg) => ({
+          ...msg,
+          timestamp: msg.timestamp
+            ? new Date(msg.timestamp).toISOString()
+            : undefined,
+        }));
+        this.logJsonResult(
+          { messages: jsonMessages, hasMore, ...(next && { next }) },
+          flags,
+        );
       } else {
         if (messages.length === 0) {
           this.log("No messages found in the channel history.");

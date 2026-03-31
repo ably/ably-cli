@@ -147,6 +147,12 @@ describe("auth:keys:create command", () => {
       expect(result.key).toHaveProperty("id", mockKeyId);
       expect(result.key).toHaveProperty("name", "TestKey");
       expect(result.key).toHaveProperty("key");
+      expect(result.key.created).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+      );
+      expect(result.key.modified).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+      );
     });
 
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {

@@ -76,6 +76,8 @@ export default class KeysCreateCommand extends ControlBaseCommand {
           {
             key: {
               ...key,
+              created: new Date(key.created).toISOString(),
+              modified: new Date(key.modified).toISOString(),
               keyName: `${key.appId}.${key.id}`,
             },
           },

@@ -67,6 +67,7 @@ describe("apps:create command", () => {
       expect(stdout).toContain(newAppId);
       expect(stdout).toContain(mockAppName);
       expect(stdout).toContain("Automatically switched to app");
+      expect(stdout).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/);
     });
 
     it("should create an app with TLS only flag", async () => {

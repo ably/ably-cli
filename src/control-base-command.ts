@@ -58,7 +58,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
   }
 
   protected formatDate(timestamp: number): string {
-    return new Date(timestamp).toLocaleString();
+    return new Date(timestamp).toISOString();
   }
 
   /**

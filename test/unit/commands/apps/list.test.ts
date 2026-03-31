@@ -106,6 +106,8 @@ describe("apps:list command", () => {
         "550e8400-e29b-41d4-a716-446655440001",
       );
       expect(result.apps[1]).toHaveProperty("name", "Test App 2");
+      expect(result.apps[0].created).toBe("2022-01-01T00:00:00.000Z");
+      expect(result.apps[0].modified).toBe("2022-01-01T00:00:00.000Z");
     });
 
     it("should handle empty apps list", async () => {

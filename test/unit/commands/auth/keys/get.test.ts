@@ -128,6 +128,12 @@ describe("auth:keys:get command", () => {
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("key");
       expect(result.key).toHaveProperty("id", mockKeyId);
+      expect(result.key.created).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+      );
+      expect(result.key.modified).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+      );
     });
 
     it("should show warning when fetched key is current and ABLY_API_KEY env var overrides it", async () => {

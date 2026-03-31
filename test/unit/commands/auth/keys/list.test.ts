@@ -158,6 +158,12 @@ describe("auth:keys:list command", () => {
       expect(result).toHaveProperty("keys");
       expect(result.keys).toHaveLength(1);
       expect(result.keys[0]).toHaveProperty("name", "Test Key");
+      expect(result.keys[0].created).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+      );
+      expect(result.keys[0].modified).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+      );
     });
   });
 
