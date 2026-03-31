@@ -124,6 +124,44 @@ describe("channels:annotations:delete command", () => {
       expect(result.annotation).toHaveProperty("channel", "test-channel");
       expect(result.annotation).toHaveProperty("serial", "serial-001");
     });
+
+    it("should not include name in JSON output when not provided", async () => {
+      const records = await captureJsonLogs(async () => {
+        await runCommand(
+          [
+            "channels:annotations:delete",
+            "test-channel",
+            "serial-001",
+            "reactions:flag.v1",
+            "--json",
+          ],
+          import.meta.url,
+        );
+      });
+
+      const result = records[0];
+      expect(result.annotation).not.toHaveProperty("name");
+    });
+
+    it("should include name in JSON output when provided", async () => {
+      const records = await captureJsonLogs(async () => {
+        await runCommand(
+          [
+            "channels:annotations:delete",
+            "test-channel",
+            "serial-001",
+            "reactions:flag.v1",
+            "--name",
+            "thumbsup",
+            "--json",
+          ],
+          import.meta.url,
+        );
+      });
+
+      const result = records[0];
+      expect(result.annotation).toHaveProperty("name", "thumbsup");
+    });
   });
 
   describe("error handling", () => {

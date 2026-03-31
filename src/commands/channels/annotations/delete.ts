@@ -95,7 +95,7 @@ export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
           channel: channelName,
           serial,
           type,
-          name: flags.name,
+          ...(flags.name === undefined ? {} : { name: flags.name }),
         },
       );
 

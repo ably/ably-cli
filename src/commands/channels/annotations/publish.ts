@@ -109,7 +109,12 @@ export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
         "annotationPublish",
         "annotationPublished",
         `Published annotation on message ${serial} in channel ${channelName}`,
-        { channel: channelName, serial, type, name: flags.name },
+        {
+          channel: channelName,
+          serial,
+          type,
+          ...(flags.name === undefined ? {} : { name: flags.name }),
+        },
       );
 
       if (this.shouldOutputJson(flags)) {
@@ -121,7 +126,9 @@ export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
               type,
               ...(flags.name === undefined ? {} : { name: flags.name }),
               ...(flags.count === undefined ? {} : { count: flags.count }),
-              ...(flags.data === undefined ? {} : { data: flags.data }),
+              ...(annotation.data === undefined
+                ? {}
+                : { data: annotation.data }),
               ...(flags.encoding === undefined
                 ? {}
                 : { encoding: flags.encoding }),
@@ -143,6 +150,16 @@ export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
         if (flags.count !== undefined) {
           this.log(
             `  ${formatLabel("Count")} ${formatResource(String(flags.count))}`,
+          );
+        }
+
+        if (flags.data !== undefined) {
+          this.log(`  ${formatLabel("Data")} ${formatResource(flags.data)}`);
+        }
+
+        if (flags.encoding !== undefined) {
+          this.log(
+            `  ${formatLabel("Encoding")} ${formatResource(flags.encoding)}`,
           );
         }
       }
