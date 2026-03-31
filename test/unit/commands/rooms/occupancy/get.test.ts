@@ -1,37 +1,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import { getMockAblyRest } from "../../../../helpers/mock-ably-rest.js";
+import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../../helpers/standard-tests.js";
 
-const mockOccupancyMetrics = {
-  connections: 10,
-  presenceConnections: 5,
-  presenceMembers: 8,
-  presenceSubscribers: 4,
-  publishers: 2,
-  subscribers: 6,
-  objectPublishers: 3,
-  objectSubscribers: 7,
-};
-
 describe("rooms:occupancy:get command", () => {
   beforeEach(() => {
-    const mock = getMockAblyRest();
-    mock.request.mockResolvedValue({
-      items: [
-        {
-          status: {
-            occupancy: {
-              metrics: mockOccupancyMetrics,
-            },
-          },
-        },
-      ],
-    });
+    getMockAblyChat();
   });
 
   standardHelpTests("rooms:occupancy:get", import.meta.url);
@@ -41,36 +19,30 @@ describe("rooms:occupancy:get command", () => {
   standardFlagTests("rooms:occupancy:get", import.meta.url, ["--json"]);
 
   describe("functionality", () => {
-    it("should display all 8 occupancy metrics", async () => {
-      const mock = getMockAblyRest();
+    it("should display occupancy metrics", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+      room.occupancy.get.mockResolvedValue({
+        connections: 5,
+        presenceMembers: 3,
+      });
 
       const { stdout } = await runCommand(
         ["rooms:occupancy:get", "test-room"],
         import.meta.url,
       );
 
-      expect(mock.request).toHaveBeenCalledOnce();
-      const [method, path, version, params] = mock.request.mock.calls[0];
-      expect(method).toBe("get");
-      expect(path).toBe("/channels/test-room%3A%3A%24chat");
-      expect(version).toBe(2);
-      expect(params).toEqual({ occupancy: "metrics" });
-
-      expect(stdout).toContain("test-room");
-      expect(stdout).toContain("Connections: 10");
-      expect(stdout).toContain("Publishers: 2");
-      expect(stdout).toContain("Subscribers: 6");
-      expect(stdout).toContain("Presence Connections: 5");
-      expect(stdout).toContain("Presence Members: 8");
-      expect(stdout).toContain("Presence Subscribers: 4");
-      expect(stdout).toContain("Object Publishers: 3");
-      expect(stdout).toContain("Object Subscribers: 7");
+      expect(room.occupancy.get).toHaveBeenCalled();
+      expect(stdout).toContain("Connections: 5");
+      expect(stdout).toContain("Presence Members: 3");
     });
 
     it("should handle zero metrics", async () => {
-      const mock = getMockAblyRest();
-      mock.request.mockResolvedValue({
-        items: [{}],
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+      room.occupancy.get.mockResolvedValue({
+        connections: 0,
+        presenceMembers: 0,
       });
 
       const { stdout } = await runCommand(
@@ -79,16 +51,17 @@ describe("rooms:occupancy:get command", () => {
       );
 
       expect(stdout).toContain("Connections: 0");
-      expect(stdout).toContain("Publishers: 0");
-      expect(stdout).toContain("Subscribers: 0");
-      expect(stdout).toContain("Presence Connections: 0");
       expect(stdout).toContain("Presence Members: 0");
-      expect(stdout).toContain("Presence Subscribers: 0");
-      expect(stdout).toContain("Object Publishers: 0");
-      expect(stdout).toContain("Object Subscribers: 0");
     });
 
-    it("should output JSON nested under occupancy key", async () => {
+    it("should output JSON with metrics", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+      room.occupancy.get.mockResolvedValue({
+        connections: 10,
+        presenceMembers: 7,
+      });
+
       const { stdout } = await runCommand(
         ["rooms:occupancy:get", "test-room", "--json"],
         import.meta.url,
@@ -97,13 +70,16 @@ describe("rooms:occupancy:get command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("occupancy");
-      expect(result.occupancy).toHaveProperty("roomName", "test-room");
-      expect(result.occupancy.metrics).toMatchObject(mockOccupancyMetrics);
+      expect(result.occupancy).toHaveProperty("room", "test-room");
+      expect(result.occupancy).toHaveProperty("metrics");
+      expect(result.occupancy.metrics.connections).toBe(10);
+      expect(result.occupancy.metrics.presenceMembers).toBe(7);
     });
 
     it("should output JSON error on failure", async () => {
-      const mock = getMockAblyRest();
-      mock.request.mockRejectedValue(new Error("Service unavailable"));
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+      room.occupancy.get.mockRejectedValue(new Error("Service unavailable"));
 
       const { stdout } = await runCommand(
         ["rooms:occupancy:get", "test-room", "--json"],
@@ -118,8 +94,9 @@ describe("rooms:occupancy:get command", () => {
 
   describe("error handling", () => {
     it("should handle occupancy fetch failure gracefully", async () => {
-      const mock = getMockAblyRest();
-      mock.request.mockRejectedValue(new Error("Service unavailable"));
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+      room.occupancy.get.mockRejectedValue(new Error("Service unavailable"));
 
       const { error } = await runCommand(
         ["rooms:occupancy:get", "test-room"],

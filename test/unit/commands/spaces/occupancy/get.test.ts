@@ -23,8 +23,6 @@ describe("spaces:occupancy:get command", () => {
                 presenceSubscribers: 4,
                 publishers: 2,
                 subscribers: 6,
-                objectPublishers: 0,
-                objectSubscribers: 0,
               },
             },
           },
@@ -67,8 +65,8 @@ describe("spaces:occupancy:get command", () => {
       expect(stdout).toContain("Presence Connections: 5");
       expect(stdout).toContain("Presence Members: 8");
       expect(stdout).toContain("Presence Subscribers: 4");
-      expect(stdout).toContain("Object Publishers: 0");
-      expect(stdout).toContain("Object Subscribers: 0");
+      expect(stdout).not.toContain("Object Publishers");
+      expect(stdout).not.toContain("Object Subscribers");
     });
 
     it("should output JSON envelope with spaceName and metrics", async () => {
@@ -98,6 +96,8 @@ describe("spaces:occupancy:get command", () => {
         publishers: 2,
         subscribers: 6,
       });
+      expect(occupancy.metrics).not.toHaveProperty("objectPublishers");
+      expect(occupancy.metrics).not.toHaveProperty("objectSubscribers");
     });
 
     it("should handle empty occupancy metrics", async () => {
@@ -114,8 +114,8 @@ describe("spaces:occupancy:get command", () => {
       expect(stdout).toContain("Connections: 0");
       expect(stdout).toContain("Publishers: 0");
       expect(stdout).toContain("Subscribers: 0");
-      expect(stdout).toContain("Object Publishers: 0");
-      expect(stdout).toContain("Object Subscribers: 0");
+      expect(stdout).not.toContain("Object Publishers");
+      expect(stdout).not.toContain("Object Subscribers");
     });
   });
 

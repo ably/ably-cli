@@ -1,23 +1,10 @@
 import { Args } from "@oclif/core";
-
-import { AblyBaseCommand } from "../../../base-command.js";
+import { ChatClient, Room } from "@ably/chat";
+import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { productApiFlags } from "../../../flags.js";
-import { formatLabel, formatResource } from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 
-const CHAT_CHANNEL_TAG = "::$chat";
-
-interface OccupancyMetrics {
-  connections: number;
-  presenceConnections: number;
-  presenceMembers: number;
-  presenceSubscribers: number;
-  publishers: number;
-  subscribers: number;
-  objectPublishers: number;
-  objectSubscribers: number;
-}
-
-export default class RoomsOccupancyGet extends AblyBaseCommand {
+export default class RoomsOccupancyGet extends ChatBaseCommand {
   static override args = {
     room: Args.string({
       description: "Room to get occupancy for",
@@ -29,6 +16,7 @@ export default class RoomsOccupancyGet extends AblyBaseCommand {
 
   static override examples = [
     "$ ably rooms occupancy get my-room",
+    '$ ABLY_API_KEY="YOUR_API_KEY" ably rooms occupancy get my-room',
     "$ ably rooms occupancy get my-room --json",
     "$ ably rooms occupancy get my-room --pretty-json",
   ];
@@ -37,37 +25,31 @@ export default class RoomsOccupancyGet extends AblyBaseCommand {
     ...productApiFlags,
   };
 
+  private chatClient: ChatClient | null = null;
+  private room: Room | null = null;
+
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsOccupancyGet);
 
     try {
-      const client = await this.createAblyRestClient(flags);
-      if (!client) return;
+      // Create Chat client
+      this.chatClient = await this.createChatClient(flags, { restOnly: true });
 
-      const roomName = args.room;
-      const channelName = `${roomName}${CHAT_CHANNEL_TAG}`;
+      if (!this.chatClient) {
+        return this.fail(
+          "Failed to create Chat client",
+          flags,
+          "roomOccupancyGet",
+        );
+      }
 
-      const channelDetails = await client.request(
-        "get",
-        `/channels/${encodeURIComponent(channelName)}`,
-        2,
-        { occupancy: "metrics" },
-        null,
-      );
+      const { room: roomName } = args;
 
-      const occupancyData = channelDetails.items?.[0] || {};
-      const occupancyMetrics: OccupancyMetrics = occupancyData.status?.occupancy
-        ?.metrics || {
-        connections: 0,
-        presenceConnections: 0,
-        presenceMembers: 0,
-        presenceSubscribers: 0,
-        publishers: 0,
-        subscribers: 0,
-        objectPublishers: 0,
-        objectSubscribers: 0,
-      };
+      this.room = await this.chatClient.rooms.get(roomName);
 
+      const occupancyMetrics = await this.room.occupancy.get();
+
+      // Output the occupancy metrics based on format
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
@@ -80,28 +62,9 @@ export default class RoomsOccupancyGet extends AblyBaseCommand {
         );
       } else {
         this.log(`Occupancy metrics for room ${formatResource(roomName)}:\n`);
-        this.log(
-          `${formatLabel("Connections")} ${occupancyMetrics.connections}`,
-        );
-        this.log(`${formatLabel("Publishers")} ${occupancyMetrics.publishers}`);
-        this.log(
-          `${formatLabel("Subscribers")} ${occupancyMetrics.subscribers}`,
-        );
-        this.log(
-          `${formatLabel("Presence Connections")} ${occupancyMetrics.presenceConnections}`,
-        );
-        this.log(
-          `${formatLabel("Presence Members")} ${occupancyMetrics.presenceMembers}`,
-        );
-        this.log(
-          `${formatLabel("Presence Subscribers")} ${occupancyMetrics.presenceSubscribers}`,
-        );
-        this.log(
-          `${formatLabel("Object Publishers")} ${occupancyMetrics.objectPublishers}`,
-        );
-        this.log(
-          `${formatLabel("Object Subscribers")} ${occupancyMetrics.objectSubscribers}`,
-        );
+        this.log(`Connections: ${occupancyMetrics.connections ?? 0}`);
+
+        this.log(`Presence Members: ${occupancyMetrics.presenceMembers ?? 0}`);
       }
     } catch (error) {
       this.fail(error, flags, "roomOccupancyGet", { room: args.room });

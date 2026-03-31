@@ -83,10 +83,20 @@ export default class SpacesOccupancySubscribe extends SpacesBaseCommand {
 
       await channel.subscribe(occupancyEventName, (message: Ably.Message) => {
         const timestamp = formatMessageTimestamp(message.timestamp);
+
+        // Strip objectPublishers/objectSubscribers from metrics
+        const rawData = message.data || {};
+        const filteredData = { ...rawData };
+        if (filteredData.metrics) {
+          filteredData.metrics = { ...filteredData.metrics };
+          delete filteredData.metrics.objectPublishers;
+          delete filteredData.metrics.objectSubscribers;
+        }
+
         const event = {
           spaceName,
           event: occupancyEventName,
-          data: message.data,
+          data: filteredData,
           timestamp,
         };
 
@@ -107,8 +117,8 @@ export default class SpacesOccupancySubscribe extends SpacesBaseCommand {
             `${formatLabel("Event")} ${formatEventType("Occupancy Update")}`,
           );
 
-          if (message.data?.metrics) {
-            const metrics = message.data.metrics;
+          if (filteredData.metrics) {
+            const metrics = filteredData.metrics;
             this.log(`${formatLabel("Connections")} ${metrics.connections}`);
             this.log(`${formatLabel("Publishers")} ${metrics.publishers}`);
             this.log(`${formatLabel("Subscribers")} ${metrics.subscribers}`);
@@ -120,12 +130,6 @@ export default class SpacesOccupancySubscribe extends SpacesBaseCommand {
             );
             this.log(
               `${formatLabel("Presence Subscribers")} ${metrics.presenceSubscribers}`,
-            );
-            this.log(
-              `${formatLabel("Object Publishers")} ${metrics.objectPublishers}`,
-            );
-            this.log(
-              `${formatLabel("Object Subscribers")} ${metrics.objectSubscribers}`,
             );
           }
 

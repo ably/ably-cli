@@ -1,35 +1,34 @@
+import { OccupancyEvent, ChatClient } from "@ably/chat";
 import { Args } from "@oclif/core";
-import * as Ably from "ably";
 
-import { AblyBaseCommand } from "../../../base-command.js";
+import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import {
-  formatEventType,
-  formatLabel,
-  formatListening,
-  formatMessageTimestamp,
   formatProgress,
   formatResource,
-  formatSuccess,
   formatTimestamp,
 } from "../../../utils/output.js";
 
-const CHAT_CHANNEL_TAG = "::$chat";
+export interface OccupancyMetrics {
+  connections?: number;
+  presenceMembers?: number;
+}
 
-export default class RoomsOccupancySubscribe extends AblyBaseCommand {
+export default class RoomsOccupancySubscribe extends ChatBaseCommand {
   static override args = {
     room: Args.string({
-      description: "Room to subscribe to occupancy events",
+      description: "Room to subscribe to occupancy for",
       required: true,
     }),
   };
 
-  static override description = "Subscribe to occupancy events on a room";
+  static override description =
+    "Subscribe to real-time occupancy metrics for a room";
 
   static override examples = [
     "$ ably rooms occupancy subscribe my-room",
     "$ ably rooms occupancy subscribe my-room --json",
-    "$ ably rooms occupancy subscribe my-room --duration 30",
+    "$ ably rooms occupancy subscribe --pretty-json my-room",
   ];
 
   static override flags = {
@@ -38,122 +37,140 @@ export default class RoomsOccupancySubscribe extends AblyBaseCommand {
     ...durationFlag,
   };
 
-  private client: Ably.Realtime | null = null;
+  private chatClient: ChatClient | null = null;
+  private roomName: string | null = null;
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsOccupancySubscribe);
-    let channel: Ably.RealtimeChannel | null = null;
+    this.roomName = args.room; // Store for cleanup
 
     try {
-      this.client = await this.createAblyRealtimeClient(flags);
-      if (!this.client) return;
+      this.logCliEvent(
+        flags,
+        "subscribe",
+        "connecting",
+        "Connecting to Ably...",
+      );
+      if (!this.shouldOutputJson(flags)) {
+        this.log(formatProgress("Connecting to Ably"));
+      }
 
-      const roomName = args.room;
-      const channelName = `${roomName}${CHAT_CHANNEL_TAG}`;
-      const occupancyEventName = "[meta]occupancy";
+      // Create Chat client
+      this.chatClient = await this.createChatClient(flags);
 
-      // Get channel with occupancy metrics enabled
-      channel = this.client.channels.get(channelName, {
-        params: { occupancy: "metrics" },
-      });
+      if (!this.chatClient) {
+        return this.fail(
+          "Failed to create Chat client",
+          flags,
+          "roomOccupancySubscribe",
+        );
+      }
 
-      // Set up connection and channel state logging
-      this.setupConnectionStateLogging(this.client, flags, {
+      // Set up connection state logging
+      this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
         includeUserFriendlyMessages: true,
       });
-      this.setupChannelStateLogging(channel, flags, {
-        includeUserFriendlyMessages: true,
+
+      // Get the room with occupancy option enabled
+      this.logCliEvent(
+        flags,
+        "room",
+        "gettingRoom",
+        `Getting room handle for ${this.roomName}`,
+      );
+
+      const room = await this.chatClient.rooms.get(this.roomName, {
+        occupancy: { enableEvents: true },
       });
 
       this.logCliEvent(
         flags,
-        "roomOccupancy",
-        "subscribing",
-        `Subscribing to occupancy events on room: ${roomName}`,
-        { roomName, channel: channelName },
+        "room",
+        "gotRoom",
+        `Got room handle for ${this.roomName}`,
       );
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Subscribing to occupancy events on room: ${formatResource(roomName)}`,
-          ),
-        );
-      }
+      // Subscribe to room status changes
+      this.setupRoomStatusHandler(room, flags, {
+        roomName: this.roomName!,
+        successMessage: `Subscribed to occupancy in room: ${formatResource(this.roomName!)}.`,
+        listeningMessage: "Listening for occupancy updates.",
+      });
 
-      await channel.subscribe(occupancyEventName, (message: Ably.Message) => {
-        const timestamp = formatMessageTimestamp(message.timestamp);
-        const event = {
-          roomName,
-          event: occupancyEventName,
-          data: message.data,
-          timestamp,
-        };
+      // Attach to the room
+      this.logCliEvent(
+        flags,
+        "room",
+        "attaching",
+        `Attaching to room ${this.roomName}`,
+      );
+      await room.attach();
+      // Successful attach logged by onStatusChange handler
 
+      // Subscribe to occupancy events
+      this.logCliEvent(
+        flags,
+        "occupancy",
+        "subscribing",
+        "Subscribing to occupancy updates",
+      );
+
+      room.occupancy.subscribe((occupancyEvent: OccupancyEvent) => {
+        const occupancyMetrics = occupancyEvent.occupancy;
         this.logCliEvent(
           flags,
-          "roomOccupancy",
-          "occupancyUpdate",
-          `Occupancy update received for room ${roomName}`,
-          event,
+          "occupancy",
+          "updateReceived",
+          "Occupancy update received",
+          { metrics: occupancyMetrics },
         );
-
-        if (this.shouldOutputJson(flags)) {
-          this.logJsonEvent({ occupancy: event }, flags);
-        } else {
-          this.log(formatTimestamp(timestamp));
-          this.log(`${formatLabel("Room")} ${formatResource(roomName)}`);
-          this.log(
-            `${formatLabel("Event")} ${formatEventType("Occupancy Update")}`,
-          );
-
-          if (message.data?.metrics) {
-            const metrics = message.data.metrics;
-            this.log(`${formatLabel("Connections")} ${metrics.connections}`);
-            this.log(`${formatLabel("Publishers")} ${metrics.publishers}`);
-            this.log(`${formatLabel("Subscribers")} ${metrics.subscribers}`);
-            this.log(
-              `${formatLabel("Presence Connections")} ${metrics.presenceConnections}`,
-            );
-            this.log(
-              `${formatLabel("Presence Members")} ${metrics.presenceMembers}`,
-            );
-            this.log(
-              `${formatLabel("Presence Subscribers")} ${metrics.presenceSubscribers}`,
-            );
-            this.log(
-              `${formatLabel("Object Publishers")} ${metrics.objectPublishers}`,
-            );
-            this.log(
-              `${formatLabel("Object Subscribers")} ${metrics.objectSubscribers}`,
-            );
-          }
-
-          this.log("");
-        }
+        this.displayOccupancyMetrics(occupancyMetrics, this.roomName, flags);
       });
-
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(
-            `Subscribed to occupancy on room: ${formatResource(roomName)}.`,
-          ),
-        );
-        this.log(formatListening("Listening for occupancy events."));
-      }
 
       this.logCliEvent(
         flags,
-        "roomOccupancy",
-        "listening",
-        "Listening for occupancy events. Press Ctrl+C to exit.",
+        "occupancy",
+        "subscribed",
+        "Subscribed to occupancy updates",
       );
 
-      await this.waitAndTrackCleanup(flags, "roomOccupancy", flags.duration);
+      // Wait until the user interrupts or the optional duration elapses
+      await this.waitAndTrackCleanup(flags, "occupancy", flags.duration);
     } catch (error) {
       this.fail(error, flags, "roomOccupancySubscribe", {
-        room: args.room,
+        room: this.roomName,
       });
+    }
+  }
+
+  private displayOccupancyMetrics(
+    occupancyMetrics: OccupancyMetrics,
+    roomName: string | null,
+    flags: Record<string, unknown>,
+  ): void {
+    if (!roomName) return; // Guard against null roomName
+    if (!occupancyMetrics) return; // Guard against undefined occupancyMetrics
+
+    const timestamp = new Date().toISOString();
+    const logData = {
+      metrics: occupancyMetrics,
+      room: roomName,
+      timestamp,
+      eventType: "update",
+    };
+
+    if (this.shouldOutputJson(flags)) {
+      this.logJsonEvent({ occupancy: logData }, flags);
+    } else {
+      this.log(`${formatTimestamp(timestamp)}`);
+      // Type guard to handle both OccupancyMetrics and OccupancyEvent
+      const connections = occupancyMetrics?.connections ?? 0;
+      const presenceMembers = occupancyMetrics?.presenceMembers ?? 0;
+
+      this.log(`Connections: ${connections}`);
+      this.log(`Presence Members: ${presenceMembers}`);
+
+      this.log(""); // Empty line for better readability
     }
   }
 }
