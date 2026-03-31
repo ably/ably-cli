@@ -117,7 +117,7 @@ export const forceFlag = {
   force: Flags.boolean({
     char: "f",
     default: false,
-    description: "Skip confirmation prompt",
+    description: "Skip confirmation prompt (required with --json)",
   }),
 };
 
