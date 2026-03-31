@@ -152,7 +152,7 @@ describe("rooms:typing:keystroke command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
-      expect(result.error).toContain("Channel denied access");
+      expect(result.error.message).toContain("Channel denied access");
       // Must not dump a raw stack trace — the error should be caught cleanly
       expect(stderr).not.toContain("at ");
       expect(stderr).not.toContain("CLIError");
