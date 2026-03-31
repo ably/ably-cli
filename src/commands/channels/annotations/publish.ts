@@ -8,6 +8,7 @@ import {
   validateAnnotationParams,
 } from "../../../utils/annotations.js";
 import {
+  formatLabel,
   formatProgress,
   formatResource,
   formatSuccess,
@@ -108,7 +109,12 @@ export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
         "annotationPublish",
         "annotationPublished",
         `Published annotation on message ${serial} in channel ${channelName}`,
-        { channel: channelName, serial, type, name: flags.name },
+        {
+          channel: channelName,
+          serial,
+          type,
+          ...(flags.name === undefined ? {} : { name: flags.name }),
+        },
       );
 
       if (this.shouldOutputJson(flags)) {
@@ -118,7 +124,14 @@ export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
               channel: channelName,
               serial,
               type,
-              name: flags.name,
+              ...(flags.name === undefined ? {} : { name: flags.name }),
+              ...(flags.count === undefined ? {} : { count: flags.count }),
+              ...(annotation.data === undefined
+                ? {}
+                : { data: annotation.data }),
+              ...(flags.encoding === undefined
+                ? {}
+                : { encoding: flags.encoding }),
             },
           },
           flags,
@@ -129,6 +142,30 @@ export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
             `Annotation published on message ${formatResource(serial)} in channel ${formatResource(channelName)}.`,
           ),
         );
+        this.log(`  ${formatLabel("Type")} ${formatResource(type)}`);
+        if (flags.name !== undefined) {
+          this.log(`  ${formatLabel("Name")} ${formatResource(flags.name)}`);
+        }
+
+        if (flags.count !== undefined) {
+          this.log(
+            `  ${formatLabel("Count")} ${formatResource(String(flags.count))}`,
+          );
+        }
+
+        if (annotation.data !== undefined) {
+          const displayData =
+            typeof annotation.data === "string"
+              ? annotation.data
+              : JSON.stringify(annotation.data, null, 2);
+          this.log(`  ${formatLabel("Data")} ${formatResource(displayData)}`);
+        }
+
+        if (flags.encoding !== undefined) {
+          this.log(
+            `  ${formatLabel("Encoding")} ${formatResource(flags.encoding)}`,
+          );
+        }
       }
     } catch (error) {
       this.fail(error, flags, "annotationPublish", {

@@ -163,6 +163,37 @@ describe("channels:annotations:get command", () => {
       expect(stdout).toContain("Data:");
       expect(stdout).toContain("extra");
     });
+
+    it("should display encoding, messageSerial, and extras when present", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+      channel.annotations.get.mockResolvedValue({
+        items: [
+          {
+            id: "ann-extras-001",
+            type: "reactions:flag.v1",
+            name: "thumbsup",
+            serial: "ann-serial-001",
+            messageSerial: "msg-serial-001",
+            timestamp: 1700000000000,
+            encoding: "utf8",
+            extras: { headers: { key: "value" } },
+          },
+        ],
+      });
+
+      const { stdout } = await runCommand(
+        ["channels:annotations:get", "test-channel", "serial-001"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Encoding:");
+      expect(stdout).toContain("utf8");
+      expect(stdout).toContain("Message Serial:");
+      expect(stdout).toContain("msg-serial-001");
+      expect(stdout).toContain("Extras:");
+      expect(stdout).toContain("headers");
+    });
   });
 
   describe("error handling", () => {

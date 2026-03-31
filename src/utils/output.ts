@@ -298,6 +298,9 @@ export interface AnnotationDisplayFields {
   count?: number;
   serial?: string;
   data?: unknown;
+  encoding?: string;
+  messageSerial?: string;
+  extras?: unknown;
   indexPrefix?: string;
 }
 
@@ -356,6 +359,22 @@ export function formatAnnotationsOutput(
         lines.push(`${formatLabel("Data")}`, formatMessageData(ann.data));
       } else {
         lines.push(`${formatLabel("Data")} ${String(ann.data)}`);
+      }
+    }
+
+    if (ann.encoding) {
+      lines.push(`${formatLabel("Encoding")} ${ann.encoding}`);
+    }
+
+    if (ann.messageSerial) {
+      lines.push(`${formatLabel("Message Serial")} ${ann.messageSerial}`);
+    }
+
+    if (ann.extras !== undefined && ann.extras !== null) {
+      if (isJsonData(ann.extras)) {
+        lines.push(`${formatLabel("Extras")}`, formatMessageData(ann.extras));
+      } else {
+        lines.push(`${formatLabel("Extras")} ${String(ann.extras)}`);
       }
     }
 

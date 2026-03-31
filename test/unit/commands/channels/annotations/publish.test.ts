@@ -272,6 +272,91 @@ describe("channels:annotations:publish command", () => {
       expect(result.annotation).toHaveProperty("channel", "test-channel");
       expect(result.annotation).toHaveProperty("serial", "serial-001");
     });
+
+    it("should not include undefined fields in JSON output", async () => {
+      const { stdout } = await runCommand(
+        [
+          "channels:annotations:publish",
+          "test-channel",
+          "serial-001",
+          "reactions:flag.v1",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result.annotation).not.toHaveProperty("name");
+      expect(result.annotation).not.toHaveProperty("count");
+      expect(result.annotation).not.toHaveProperty("data");
+      expect(result.annotation).not.toHaveProperty("encoding");
+    });
+
+    it("should include optional fields in JSON output when provided", async () => {
+      const { stdout } = await runCommand(
+        [
+          "channels:annotations:publish",
+          "test-channel",
+          "serial-001",
+          "reactions:multiple.v1",
+          "--name",
+          "thumbsup",
+          "--count",
+          "3",
+          "--data",
+          "test-data",
+          "--encoding",
+          "utf8",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result.annotation).toHaveProperty("name", "thumbsup");
+      expect(result.annotation).toHaveProperty("count", 3);
+      expect(result.annotation).toHaveProperty("data", "test-data");
+      expect(result.annotation).toHaveProperty("encoding", "utf8");
+    });
+
+    it("should output parsed JSON data in JSON output", async () => {
+      const { stdout } = await runCommand(
+        [
+          "channels:annotations:publish",
+          "test-channel",
+          "serial-001",
+          "reactions:flag.v1",
+          "--data",
+          '{"foo":"bar"}',
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result.annotation.data).toEqual({ foo: "bar" });
+    });
+
+    it("should show data and encoding in non-JSON output when provided", async () => {
+      const { stdout } = await runCommand(
+        [
+          "channels:annotations:publish",
+          "test-channel",
+          "serial-001",
+          "reactions:flag.v1",
+          "--data",
+          "test-data",
+          "--encoding",
+          "utf8",
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Data");
+      expect(stdout).toContain("test-data");
+      expect(stdout).toContain("Encoding");
+      expect(stdout).toContain("utf8");
+    });
   });
 
   describe("error handling", () => {
