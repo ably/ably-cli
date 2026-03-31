@@ -3,9 +3,6 @@ import { Args, Flags } from "@oclif/core";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
-  formatSuccess,
-  formatListening,
-  formatProgress,
   formatResource,
   formatLabel,
   formatClientId,
@@ -44,9 +41,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
     const location = this.parseJsonFlag(flags.location, "location", flags);
 
     try {
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress("Entering space"));
-      }
+      this.logProgress("Entering space", flags);
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
@@ -63,8 +58,9 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult({ location }, flags);
       } else {
-        this.log(
-          formatSuccess(`Location set in space: ${formatResource(spaceName)}.`),
+        this.logSuccessMessage(
+          `Location set in space: ${formatResource(spaceName)}.`,
+          flags,
         );
         this.log(
           `${formatLabel("Client ID")} ${formatClientId(this.realtimeClient!.auth.clientId)}`,
@@ -73,14 +69,8 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
           `${formatLabel("Connection ID")} ${this.realtimeClient!.connection.id}`,
         );
         this.log(`${formatLabel("Location")} ${JSON.stringify(location)}`);
-        this.log(formatListening("Holding location."));
       }
-
-      this.logJsonStatus(
-        "holding",
-        "Holding location. Press Ctrl+C to exit.",
-        flags,
-      );
+      this.logHolding("Holding location. Press Ctrl+C to exit.", flags);
 
       await this.waitAndTrackCleanup(flags, "location", flags.duration);
     } catch (error) {

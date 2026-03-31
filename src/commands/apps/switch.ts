@@ -54,14 +54,13 @@ export default class AppsSwitch extends ControlBaseCommand {
             flags,
           );
         } else {
-          this.log(
-            `Switched to app: ${formatResource(selectedApp.name)} (${selectedApp.id})`,
+          this.logSuccessMessage(
+            `Switched to app ${formatResource(selectedApp.name)} (${selectedApp.id}).`,
+            flags,
           );
         }
       } else {
-        if (!this.shouldOutputJson(flags)) {
-          this.log("App switch cancelled.");
-        }
+        this.logWarning("App switch cancelled.", flags);
       }
     } catch (error) {
       this.fail(error, flags, "appSwitch");
@@ -84,7 +83,10 @@ export default class AppsSwitch extends ControlBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult({ app: { id: app.id, name: app.name } }, flags);
       } else {
-        this.log(`Switched to app: ${formatResource(app.name)} (${app.id})`);
+        this.logSuccessMessage(
+          `Switched to app ${formatResource(app.name)} (${app.id}).`,
+          flags,
+        );
       }
     } catch (error) {
       this.fail(error, flags, "appSwitch", {

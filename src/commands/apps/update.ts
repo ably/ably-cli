@@ -1,11 +1,7 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import {
-  formatLabel,
-  formatProgress,
-  formatResource,
-} from "../../utils/output.js";
+import { formatLabel, formatResource } from "../../utils/output.js";
 
 export default class AppsUpdateCommand extends ControlBaseCommand {
   static args = {
@@ -54,9 +50,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
 
     try {
       const controlApi = this.createControlApi(flags);
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress(`Updating app ${formatResource(args.id)}`));
-      }
+      this.logProgress(`Updating app ${formatResource(args.id)}`, flags);
 
       const updateData: { name?: string; tlsOnly?: boolean } = {};
 
@@ -90,7 +84,6 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
           flags,
         );
       } else {
-        this.log(`\nApp updated successfully!`);
         this.log(`${formatLabel("App ID")} ${app.id}`);
         this.log(`${formatLabel("Name")} ${app.name}`);
         this.log(`${formatLabel("Status")} ${app.status}`);
@@ -104,6 +97,8 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
           );
         }
       }
+
+      this.logSuccessMessage("App updated successfully.", flags);
     } catch (error) {
       this.fail(error, flags, "appUpdate", {
         appId: args.id,

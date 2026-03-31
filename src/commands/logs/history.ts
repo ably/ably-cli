@@ -76,7 +76,7 @@ export default class LogsHistory extends AblyBaseCommand {
         true,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
-        this.log(paginationWarning);
+        this.logToStderr(paginationWarning);
       }
 
       // Output results based on format

@@ -7,7 +7,6 @@ import { AblyBaseCommand } from "../base-command.js";
 import { coreGlobalFlags } from "../flags.js";
 import { BaseFlags } from "../types/cli.js";
 import openUrl from "../utils/open-url.js";
-import { formatProgress, formatSuccess } from "../utils/output.js";
 import { getCliVersion } from "../utils/version.js";
 
 interface StatusResponse {
@@ -40,8 +39,8 @@ export default class StatusCommand extends AblyBaseCommand {
       isInteractive || isJson
         ? null
         : ora("Checking Ably service status...").start();
-    if (isInteractive && !isJson) {
-      this.log(formatProgress("Checking Ably service status"));
+    if (isInteractive) {
+      this.logProgress("Checking Ably service status", flags);
     }
 
     try {
@@ -72,11 +71,15 @@ export default class StatusCommand extends AblyBaseCommand {
           flags as BaseFlags,
         );
       } else if (data.status) {
-        this.log(formatSuccess("Ably services are operational."));
         this.log("No incidents currently reported");
+      }
+
+      if (data.status) {
+        this.logSuccessMessage("Ably services are operational.", flags);
       } else {
-        this.log(
-          `${chalk.red("⨯")} ${chalk.red("Incident detected")} - There are currently open incidents`,
+        this.logWarning(
+          "Incident detected - There are currently open incidents.",
+          flags,
         );
       }
 

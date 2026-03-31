@@ -6,9 +6,7 @@ import { BaseFlags } from "../../../types/cli.js";
 import {
   formatCountLabel,
   formatLimitWarning,
-  formatProgress,
   formatResource,
-  formatSuccess,
 } from "../../../utils/output.js";
 import {
   buildPaginationNext,
@@ -41,9 +39,7 @@ export default class PushChannelsListChannels extends AblyBaseCommand {
       const rest = await this.createAblyRestClient(flags as BaseFlags);
       if (!rest) return;
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress("Fetching channels with push subscriptions"));
-      }
+      this.logProgress("Fetching channels with push subscriptions", flags);
 
       const result = await rest.push.admin.channelSubscriptions.listChannels({
         limit: flags.limit,
@@ -59,7 +55,7 @@ export default class PushChannelsListChannels extends AblyBaseCommand {
         channels.length,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
-        this.log(paginationWarning);
+        this.logToStderr(paginationWarning);
       }
 
       if (this.shouldOutputJson(flags)) {
@@ -73,8 +69,9 @@ export default class PushChannelsListChannels extends AblyBaseCommand {
         return;
       }
 
-      this.log(
-        formatSuccess(`Found ${formatCountLabel(channels.length, "channel")}.`),
+      this.logSuccessMessage(
+        `Found ${formatCountLabel(channels.length, "channel")}.`,
+        flags,
       );
       this.log("");
 

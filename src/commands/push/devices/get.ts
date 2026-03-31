@@ -6,9 +6,7 @@ import { BaseFlags } from "../../../types/cli.js";
 import {
   formatDeviceState,
   formatLabel,
-  formatProgress,
   formatResource,
-  formatSuccess,
 } from "../../../utils/output.js";
 
 export default class PushDevicesGet extends AblyBaseCommand {
@@ -38,9 +36,7 @@ export default class PushDevicesGet extends AblyBaseCommand {
       const rest = await this.createAblyRestClient(flags as BaseFlags);
       if (!rest) return;
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress(`Fetching device ${formatResource(deviceId)}`));
-      }
+      this.logProgress(`Fetching device ${formatResource(deviceId)}`, flags);
 
       const device = await rest.push.admin.deviceRegistrations.get(deviceId);
 
@@ -49,7 +45,10 @@ export default class PushDevicesGet extends AblyBaseCommand {
         return;
       }
 
-      this.log(formatSuccess(`Device ${formatResource(deviceId)} found.`));
+      this.logSuccessMessage(
+        `Device ${formatResource(deviceId)} found.`,
+        flags,
+      );
       this.log("");
       this.log(`${formatLabel("Device ID")} ${device.id}`);
       this.log(`${formatLabel("Platform")} ${device.platform}`);

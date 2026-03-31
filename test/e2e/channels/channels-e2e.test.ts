@@ -232,7 +232,7 @@ describe("Channel E2E Tests", () => {
 
     if (!publishResult.stdout || publishResult.stdout.trim() === "") {
       throw new Error(
-        `Publish command returned empty output. Exit code: ${publishResult.exitCode}, Stderr: ${publishResult.stderr}, Stdout length: ${publishResult.stdout.length}`,
+        `Publish command returned empty stderr. Exit code: ${publishResult.exitCode}, Stderr: ${publishResult.stderr}, Stdout length: ${publishResult.stdout.length}`,
       );
     }
 
@@ -408,7 +408,7 @@ describe("Channel E2E Tests", () => {
 
     if (!batchPublishResult.stdout || batchPublishResult.stdout.trim() === "") {
       throw new Error(
-        `Batch publish command returned empty output. Exit code: ${batchPublishResult.exitCode}, Stderr: ${batchPublishResult.stderr}, Stdout length: ${batchPublishResult.stdout.length}`,
+        `Batch publish command returned empty stderr. Exit code: ${batchPublishResult.exitCode}, Stderr: ${batchPublishResult.stderr}, Stdout length: ${batchPublishResult.stdout.length}`,
       );
     }
 
@@ -477,7 +477,7 @@ describe("Channel E2E Tests", () => {
 
     if (!countPublishResult.stdout || countPublishResult.stdout.trim() === "") {
       throw new Error(
-        `Count publish command returned empty output. Exit code: ${countPublishResult.exitCode}, Stderr: ${countPublishResult.stderr}, Stdout length: ${countPublishResult.stdout.length}`,
+        `Count publish command returned empty stderr. Exit code: ${countPublishResult.exitCode}, Stderr: ${countPublishResult.stderr}, Stdout length: ${countPublishResult.stdout.length}`,
       );
     }
 

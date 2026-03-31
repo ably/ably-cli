@@ -3,11 +3,7 @@ import type { OperationDetails } from "@ably/chat";
 
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import {
-  formatProgress,
-  formatSuccess,
-  formatResource,
-} from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 
 export default class MessagesDelete extends ChatBaseCommand {
   static override args = {
@@ -53,16 +49,13 @@ export default class MessagesDelete extends ChatBaseCommand {
 
       const room = await chatClient.rooms.get(args.room);
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            "Deleting message " +
-              formatResource(args.serial) +
-              " in room " +
-              formatResource(args.room),
-          ),
-        );
-      }
+      this.logProgress(
+        "Deleting message " +
+          formatResource(args.serial) +
+          " in room " +
+          formatResource(args.room),
+        flags,
+      );
 
       // Build operation details
       const details: OperationDetails | undefined = flags.description
@@ -99,13 +92,13 @@ export default class MessagesDelete extends ChatBaseCommand {
           flags,
         );
       } else {
-        this.log(
-          formatSuccess(
-            `Message ${formatResource(args.serial)} deleted from room ${formatResource(args.room)}.`,
-          ),
-        );
         this.log(`  Version serial: ${formatResource(result.version.serial)}`);
       }
+
+      this.logSuccessMessage(
+        `Message ${formatResource(args.serial)} deleted from room ${formatResource(args.room)}.`,
+        flags,
+      );
     } catch (error) {
       this.fail(error, flags, "roomMessageDelete", {
         room: args.room,

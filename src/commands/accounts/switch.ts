@@ -43,7 +43,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
       }
 
       // In interactive mode, proxy to login
-      this.log("No accounts configured. Redirecting to login...");
+      this.logProgress("No accounts configured. Redirecting to login", flags);
       await this.config.runCommand("accounts:login");
       return;
     }
@@ -76,7 +76,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
     if (selectedAccount) {
       await this.switchToAccount(selectedAccount.alias, accounts, flags);
     } else {
-      this.log("Account switch cancelled.");
+      this.logWarning("Account switch cancelled.", flags);
     }
   }
 
@@ -147,8 +147,9 @@ export default class AccountsSwitch extends ControlBaseCommand {
           flags,
         );
       } else {
-        this.log(
-          `Switched to account: ${formatResource(account.name)} (${account.id})`,
+        this.logSuccessMessage(
+          `Switched to account ${formatResource(account.name)} (${account.id}).`,
+          flags,
         );
         this.log(`User: ${user.email}`);
       }

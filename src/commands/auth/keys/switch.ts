@@ -3,7 +3,7 @@ import { Args, Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { ControlApi } from "../../../services/control-api.js";
 import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
-import { formatResource, formatSuccess } from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 
 export default class KeysSwitchCommand extends ControlBaseCommand {
   static args = {
@@ -105,15 +105,14 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
             },
             flags,
           );
-        } else {
-          this.log(
-            formatSuccess(`Switched to key ${formatResource(keyName)}.`),
-          );
         }
+
+        this.logSuccessMessage(
+          `Switched to key ${formatResource(keyName)}.`,
+          flags,
+        );
       } else {
-        if (!this.shouldOutputJson(flags)) {
-          this.log("Key switch cancelled.");
-        }
+        this.logWarning("Key switch cancelled.", flags);
       }
     } catch (error) {
       this.fail(error, flags, "keySwitch");
@@ -165,9 +164,12 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
           },
           flags,
         );
-      } else {
-        this.log(formatSuccess(`Switched to key ${formatResource(keyName)}.`));
       }
+
+      this.logSuccessMessage(
+        `Switched to key ${formatResource(keyName)}.`,
+        flags,
+      );
     } catch {
       this.fail(
         `Key "${keyIdOrValue}" not found or access denied.`,

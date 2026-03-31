@@ -4,12 +4,7 @@ import * as Ably from "ably";
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { prepareMessageFromInput } from "../../utils/message.js";
-import {
-  formatProgress,
-  formatResource,
-  formatSuccess,
-  formatWarning,
-} from "../../utils/output.js";
+import { formatResource } from "../../utils/output.js";
 
 export default class ChannelsUpdate extends AblyBaseCommand {
   static override args = {
@@ -65,13 +60,10 @@ export default class ChannelsUpdate extends AblyBaseCommand {
 
       const channel = rest.channels.get(channelName);
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Updating message ${formatResource(serial)} on channel ${formatResource(channelName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Updating message ${formatResource(serial)} on channel ${formatResource(channelName)}`,
+        flags,
+      );
 
       const message = prepareMessageFromInput(args.message, flags, { serial });
       const operation: Ably.MessageOperation | undefined = flags.description
@@ -96,18 +88,20 @@ export default class ChannelsUpdate extends AblyBaseCommand {
           flags,
         );
       } else {
-        this.log(
-          formatSuccess(
-            `Message ${formatResource(serial)} updated on channel ${formatResource(channelName)}.`,
-          ),
-        );
         if (versionSerial) {
           this.log(`  Version serial: ${formatResource(versionSerial)}`);
-        } else if (versionSerial === null) {
-          this.log(
-            formatWarning("Message was superseded by a subsequent operation."),
-          );
         }
+      }
+
+      this.logSuccessMessage(
+        `Message ${formatResource(serial)} updated on channel ${formatResource(channelName)}.`,
+        flags,
+      );
+      if (versionSerial === null) {
+        this.logWarning(
+          "Message was superseded by a subsequent operation.",
+          flags,
+        );
       }
     } catch (error) {
       this.fail(error, flags, "channelUpdate", {

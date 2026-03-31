@@ -3,11 +3,7 @@ import { Args, Flags } from "@oclif/core";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
-import {
-  formatListening,
-  formatResource,
-  formatSuccess,
-} from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 
 // The heartbeats are throttled to one every 10 seconds. There's a 2 second
 // leeway to send a keystroke/heartbeat after the 10 second mark so the
@@ -131,23 +127,22 @@ export default class TypingKeystroke extends ChatBaseCommand {
           },
           flags,
         );
-      } else {
-        this.log(
-          formatSuccess(`Started typing in room: ${formatResource(roomName)}.`),
+      }
+
+      this.logSuccessMessage(
+        `Started typing in room: ${formatResource(roomName)}.`,
+        flags,
+      );
+      if (flags["auto-type"]) {
+        this.logListening(
+          "Will automatically remain typing until terminated.",
+          flags,
         );
-        if (flags["auto-type"]) {
-          this.log(
-            formatListening(
-              "Will automatically remain typing until terminated.",
-            ),
-          );
-        } else {
-          this.log(
-            formatListening(
-              "Sent a single typing indicator. Use --auto-type to keep typing automatically.",
-            ),
-          );
-        }
+      } else {
+        this.logListening(
+          "Sent a single typing indicator. Use --auto-type to keep typing automatically.",
+          flags,
+        );
       }
 
       // Keep typing active by calling keystroke() periodically if autoType is enabled

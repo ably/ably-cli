@@ -17,10 +17,7 @@ import {
   formatClientId,
   formatEventType,
   formatLabel,
-  formatListening,
-  formatProgress,
   formatResource,
-  formatSuccess,
   formatTimestamp,
 } from "../../../../utils/output.js";
 
@@ -83,13 +80,10 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
         "connecting",
         `Connecting to Ably and subscribing to message reactions in room ${room}...`,
       );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Connecting to Ably and subscribing to message reactions in room ${formatResource(room)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Connecting to Ably and subscribing to message reactions in room ${formatResource(room)}`,
+        flags,
+      );
 
       // Get the room
       this.logCliEvent(
@@ -233,14 +227,11 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
         );
       }
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(
-            `Subscribed to message reactions in room: ${formatResource(room)}.`,
-          ),
-        );
-        this.log(formatListening("Listening for message reactions."));
-      }
+      this.logSuccessMessage(
+        `Subscribed to message reactions in room: ${formatResource(room)}.`,
+        flags,
+      );
+      this.logListening("Listening for message reactions.", flags);
 
       this.logCliEvent(
         flags,

@@ -3,13 +3,7 @@ import { Args, Flags } from "@oclif/core";
 import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import {
-  formatListening,
-  formatProgress,
-  formatResource,
-  formatSuccess,
-  formatLabel,
-} from "../../../utils/output.js";
+import { formatResource, formatLabel } from "../../../utils/output.js";
 
 export default class SpacesCursorsSet extends SpacesBaseCommand {
   static override args = {
@@ -152,9 +146,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         );
       }
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress("Entering space"));
-      }
+      this.logProgress("Entering space", flags);
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
@@ -193,8 +185,9 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           flags,
         );
       } else {
-        this.log(
-          formatSuccess(`Set cursor in space ${formatResource(spaceName)}.`),
+        this.logSuccessMessage(
+          `Set cursor in space ${formatResource(spaceName)}.`,
+          flags,
         );
         const lines: string[] = [
           `${formatLabel("Position X")} ${position.x}`,
@@ -215,11 +208,10 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
           "Starting cursor movement simulation",
         );
 
-        if (!this.shouldOutputJson(flags)) {
-          this.log(
-            formatProgress("Starting cursor movement simulation every 250ms"),
-          );
-        }
+        this.logProgress(
+          "Starting cursor movement simulation every 250ms",
+          flags,
+        );
 
         this.simulationIntervalId = setInterval(() => {
           void (async () => {
@@ -280,17 +272,10 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
       }
 
       // Hold in both simulate and non-simulate modes
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatListening(
-            flags.simulate ? "Simulating cursor movement." : "Holding cursor.",
-          ),
-        );
-      }
-
-      this.logJsonStatus(
-        "holding",
-        "Holding cursor. Press Ctrl+C to exit.",
+      this.logHolding(
+        flags.simulate
+          ? "Simulating cursor movement. Press Ctrl+C to exit."
+          : "Holding cursor. Press Ctrl+C to exit.",
         flags,
       );
 

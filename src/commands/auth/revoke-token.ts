@@ -108,7 +108,7 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
             flags,
           );
         } else {
-          this.log("Token successfully revoked");
+          this.logSuccessMessage("Token successfully revoked.", flags);
         }
       } catch (requestError: unknown) {
         // Handle specific API errors

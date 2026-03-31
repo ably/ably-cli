@@ -1,11 +1,7 @@
 import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import {
-  formatLabel,
-  formatResource,
-  formatSuccess,
-} from "../../utils/output.js";
+import { formatLabel, formatResource } from "../../utils/output.js";
 
 export default class QueuesCreateCommand extends ControlBaseCommand {
   static description = "Create a queue";
@@ -82,9 +78,6 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
           flags,
         );
       } else {
-        this.log(
-          formatSuccess(`Queue created: ${formatResource(createdQueue.name)}.`),
-        );
         this.log(`${formatLabel("Queue ID")} ${createdQueue.id}`);
         this.log(`${formatLabel("Name")} ${createdQueue.name}`);
         this.log(`${formatLabel("Region")} ${createdQueue.region}`);
@@ -105,6 +98,11 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
           `${formatLabel("Destination")} ${createdQueue.stomp.destination}`,
         );
       }
+
+      this.logSuccessMessage(
+        `Queue created: ${formatResource(createdQueue.name)}.`,
+        flags,
+      );
     } catch (error) {
       this.fail(error, flags, "queueCreate");
     }

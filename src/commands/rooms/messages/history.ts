@@ -8,8 +8,6 @@ import {
   formatIndex,
   formatLabel,
   formatLimitWarning,
-  formatProgress,
-  formatSuccess,
   formatResource,
   formatTimestamp,
   formatMessageTimestamp,
@@ -94,13 +92,12 @@ export default class MessagesHistory extends ChatBaseCommand {
             },
             flags,
           );
-        } else {
-          this.log(
-            formatProgress(
-              `Fetching ${flags.limit} most recent messages from room ${formatResource(args.room)}`,
-            ),
-          );
         }
+
+        this.logProgress(
+          `Fetching ${flags.limit} most recent messages from room ${formatResource(args.room)}`,
+          flags,
+        );
       }
 
       // Build history query parameters
@@ -152,7 +149,7 @@ export default class MessagesHistory extends ChatBaseCommand {
         true,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
-        this.log(paginationWarning);
+        this.logToStderr(paginationWarning);
       }
 
       if (this.shouldOutputJson(flags)) {
@@ -176,9 +173,7 @@ export default class MessagesHistory extends ChatBaseCommand {
           flags,
         );
       } else {
-        // Display messages count
-        this.log(formatSuccess(`Retrieved ${items.length} messages.`));
-
+        this.logSuccessMessage(`Retrieved ${items.length} messages.`, flags);
         if (items.length === 0) {
           this.log(chalk.dim("No messages found in this room."));
         } else {

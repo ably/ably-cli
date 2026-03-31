@@ -6,9 +6,8 @@ import { SpacesBaseCommand } from "../../spaces-base-command.js";
 import {
   formatEventType,
   formatLabel,
-  formatListening,
   formatMessageTimestamp,
-  formatProgress,
+  formatResource,
   formatTimestamp,
 } from "../../utils/output.js";
 import {
@@ -52,9 +51,7 @@ export default class SpacesSubscribe extends SpacesBaseCommand {
     >();
 
     try {
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress("Subscribing to space updates"));
-      }
+      this.logProgress("Subscribing to space updates", flags);
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
@@ -161,9 +158,11 @@ export default class SpacesSubscribe extends SpacesBaseCommand {
       this.space!.members.subscribe("update", memberListener);
       this.space!.locations.subscribe("update", locationListener);
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatListening("Listening for space updates."));
-      }
+      this.logSuccessMessage(
+        `Subscribed to space: ${formatResource(spaceName)}.`,
+        flags,
+      );
+      this.logListening("Listening for space updates.", flags);
 
       this.logCliEvent(
         flags,

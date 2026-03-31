@@ -8,10 +8,7 @@ import {
   rewindFlag,
 } from "../../flags.js";
 import {
-  formatListening,
-  formatProgress,
   formatResource,
-  formatSuccess,
   formatMessageTimestamp,
   formatIndex,
   formatMessagesOutput,
@@ -151,13 +148,10 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           `Subscribing to channel: ${channel.name}`,
           { channel: channel.name },
         );
-        if (!this.shouldOutputJson(flags)) {
-          this.log(
-            formatProgress(
-              `Attaching to channel: ${formatResource(channel.name)}`,
-            ),
-          );
-        }
+        this.logProgress(
+          `Attaching to channel: ${formatResource(channel.name)}`,
+          flags,
+        );
 
         // Set up channel state logging
         this.setupChannelStateLogging(channel, flags, {
@@ -233,26 +227,28 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       // Wait for all channels to attach via subscribe
       await Promise.all(subscribePromises);
 
+      const firstChannelName = channelNames[0] ?? "";
+
       // Log the ready signal for E2E tests
       if (channelNames.length === 1 && !this.shouldOutputJson(flags)) {
-        this.log(`Successfully attached to channel: ${channelNames[0]}`);
+        this.log(`Successfully attached to channel: ${firstChannelName}`);
       }
 
       // Show success message once all channels are attached
-      if (!this.shouldOutputJson(flags)) {
-        if (channelNames.length === 1) {
-          this.log(
-            formatSuccess(
-              `Subscribed to channel: ${formatResource(channelNames[0]!)}.`,
-            ),
-          );
-        } else {
-          this.log(
-            formatSuccess(`Subscribed to ${channelNames.length} channels.`),
-          );
-        }
+      if (channelNames.length === 1) {
+        this.logSuccessMessage(
+          `Subscribed to channel: ${formatResource(firstChannelName)}.`,
+          flags,
+        );
+      } else {
+        this.logSuccessMessage(
+          `Subscribed to ${channelNames.length} channels.`,
+          flags,
+        );
+      }
 
-        this.log(formatListening("Listening for messages."));
+      this.logListening("Listening for messages.", flags);
+      if (!this.shouldOutputJson(flags)) {
         this.log("");
       }
 

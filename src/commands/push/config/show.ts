@@ -1,11 +1,7 @@
 import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
-import {
-  formatLabel,
-  formatProgress,
-  formatResource,
-} from "../../../utils/output.js";
+import { formatLabel, formatResource } from "../../../utils/output.js";
 
 export default class PushConfigShow extends ControlBaseCommand {
   static override description =
@@ -32,13 +28,10 @@ export default class PushConfigShow extends ControlBaseCommand {
       async (controlApi) => {
         const appId = await this.requireAppId(flags);
 
-        if (!this.shouldOutputJson(flags)) {
-          this.log(
-            formatProgress(
-              `Fetching push configuration for app ${formatResource(appId)}`,
-            ),
-          );
-        }
+        this.logProgress(
+          `Fetching push configuration for app ${formatResource(appId)}`,
+          flags,
+        );
 
         const app = await controlApi.getApp(appId);
 

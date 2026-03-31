@@ -2,11 +2,8 @@ import { Args, Flags } from "@oclif/core";
 import * as readline from "node:readline";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import {
-  formatLabel,
-  formatProgress,
-  formatResource,
-} from "../../utils/output.js";
+import { forceFlag } from "../../flags.js";
+import { formatLabel, formatResource } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 import AppsSwitch from "./switch.js";
 
@@ -32,11 +29,7 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
 
   static flags = {
     ...ControlBaseCommand.globalFlags,
-    force: Flags.boolean({
-      char: "f",
-      default: false,
-      description: "Skip confirmation prompt",
-    }),
+    ...forceFlag,
     app: Flags.string({
       description: "The app ID or name (defaults to current app)",
       env: "ABLY_APP_ID",
@@ -68,7 +61,16 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
       // Get app details
       const app = await controlApi.getApp(appIdToDelete);
 
-      // If not using force flag or JSON mode, get app details and prompt for confirmation
+      // In JSON mode, require --force to prevent accidental destructive actions
+      if (!flags.force && this.shouldOutputJson(flags)) {
+        this.fail(
+          "The --force flag is required when using --json to confirm deletion",
+          flags,
+          "appDelete",
+        );
+      }
+
+      // If not using force flag, prompt for confirmation
       if (!flags.force && !this.shouldOutputJson(flags)) {
         this.log(`\nYou are about to delete the following app:`);
         this.log(`${formatLabel("App ID")} ${app.id}`);
@@ -82,7 +84,10 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
         if (!nameConfirmed) {
           // This branch is only reachable when !shouldOutputJson (see outer condition),
           // so only human-readable output is needed here.
-          this.log("Deletion cancelled - app name did not match");
+          this.logWarning(
+            "Deletion cancelled - app name did not match.",
+            flags,
+          );
           return;
         }
 
@@ -93,16 +98,12 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
         if (!confirmed) {
           // This branch is only reachable when !shouldOutputJson (see outer condition),
           // so only human-readable output is needed here.
-          this.log("Deletion cancelled");
+          this.logWarning("Deletion cancelled.", flags);
           return;
         }
       }
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(`Deleting app ${formatResource(appIdToDelete)}`),
-        );
-      }
+      this.logProgress(`Deleting app ${formatResource(appIdToDelete)}`, flags);
 
       await controlApi.deleteApp(appIdToDelete);
 
@@ -117,13 +118,16 @@ export default class AppsDeleteCommand extends ControlBaseCommand {
           },
           flags,
         );
-      } else {
-        this.log("App deleted successfully");
       }
 
+      this.logSuccessMessage("App deleted successfully.", flags);
+
       // If we deleted the current app, run switch command to select a new one
-      if (isDeletingCurrentApp && !this.shouldOutputJson(flags)) {
-        this.log("\nThe current app was deleted. Switching to another app...");
+      if (isDeletingCurrentApp) {
+        this.logProgress(
+          "The current app was deleted. Switching to another app",
+          flags,
+        );
 
         // Create a new instance of AppsSwitch and run it
         const switchCommand = new AppsSwitch(this.argv, this.config);

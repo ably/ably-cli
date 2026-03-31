@@ -7,12 +7,7 @@ import { CommandError } from "../../errors/command-error.js";
 import { productApiFlags } from "../../flags.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 import { BaseFlags } from "../../types/cli.js";
-import {
-  formatCountLabel,
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../utils/output.js";
+import { formatCountLabel, formatResource } from "../../utils/output.js";
 
 interface BatchResponseItem {
   channel: string;
@@ -237,13 +232,10 @@ export default class PushBatchPublish extends AblyBaseCommand {
           }
         }
 
-        if (!this.shouldOutputJson(flags)) {
-          this.log(
-            formatProgress(
-              `Publishing batch of ${formatCountLabel(recipientItems.length, "notification")} to recipients`,
-            ),
-          );
-        }
+        this.logProgress(
+          `Publishing batch of ${formatCountLabel(recipientItems.length, "notification")} to recipients`,
+          flags,
+        );
 
         const response = await rest.request(
           "post",
@@ -322,13 +314,10 @@ export default class PushBatchPublish extends AblyBaseCommand {
           }
         }
 
-        if (!this.shouldOutputJson(flags)) {
-          this.log(
-            formatProgress(
-              `Publishing batch of ${formatCountLabel(channelItems.length, "notification")} to channels`,
-            ),
-          );
-        }
+        this.logProgress(
+          `Publishing batch of ${formatCountLabel(channelItems.length, "notification")} to channels`,
+          flags,
+        );
 
         const response = await rest.request(
           "post",
@@ -387,21 +376,22 @@ export default class PushBatchPublish extends AblyBaseCommand {
         );
       } else {
         if (totalFailed > 0) {
-          this.log(
-            formatSuccess(
-              `Batch published: ${totalSucceeded} succeeded, ${totalFailed} failed out of ${formatCountLabel(total, "notification")}.`,
-            ),
-          );
           for (const detail of failedDetails) {
             this.logToStderr(detail);
           }
-        } else {
-          this.log(
-            formatSuccess(
-              `Batch of ${formatCountLabel(total, "notification")} published.`,
-            ),
-          );
         }
+      }
+
+      if (totalFailed > 0) {
+        this.logSuccessMessage(
+          `Batch published: ${totalSucceeded} succeeded, ${totalFailed} failed out of ${formatCountLabel(total, "notification")}.`,
+          flags,
+        );
+      } else {
+        this.logSuccessMessage(
+          `Batch of ${formatCountLabel(total, "notification")} published.`,
+          flags,
+        );
       }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushBatchPublish");

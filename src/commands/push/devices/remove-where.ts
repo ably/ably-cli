@@ -3,7 +3,6 @@ import { Flags } from "@oclif/core";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { forceFlag, productApiFlags } from "../../../flags.js";
 import { BaseFlags } from "../../../types/cli.js";
-import { formatProgress, formatSuccess } from "../../../utils/output.js";
 import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class PushDevicesRemoveWhere extends AblyBaseCommand {
@@ -46,6 +45,15 @@ export default class PushDevicesRemoveWhere extends AblyBaseCommand {
       if (flags["device-id"]) params.deviceId = flags["device-id"];
       if (flags["client-id"]) params.clientId = flags["client-id"];
 
+      // In JSON mode, require --force to prevent accidental destructive actions
+      if (!flags.force && this.shouldOutputJson(flags)) {
+        this.fail(
+          "The --force flag is required when using --json to confirm removal",
+          flags,
+          "pushDeviceRemoveWhere",
+        );
+      }
+
       if (!flags.force && !this.shouldOutputJson(flags)) {
         const filterDesc = Object.entries(params)
           .map(([k, v]) => `${k}=${v}`)
@@ -56,14 +64,12 @@ export default class PushDevicesRemoveWhere extends AblyBaseCommand {
         );
 
         if (!confirmed) {
-          this.log("Operation cancelled.");
+          this.logWarning("Operation cancelled.", flags);
           return;
         }
       }
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress("Removing matching device registrations"));
-      }
+      this.logProgress("Removing matching device registrations", flags);
 
       await rest.push.admin.deviceRegistrations.removeWhere(params);
 
@@ -73,7 +79,7 @@ export default class PushDevicesRemoveWhere extends AblyBaseCommand {
           flags,
         );
       } else {
-        this.log(formatSuccess("Matching device registrations removed."));
+        this.logSuccessMessage("Matching device registrations removed.", flags);
       }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushDeviceRemoveWhere");

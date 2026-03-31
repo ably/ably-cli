@@ -7,9 +7,7 @@ import {
   formatCountLabel,
   formatHeading,
   formatIndex,
-  formatProgress,
   formatResource,
-  formatWarning,
 } from "../../../utils/output.js";
 import {
   formatCursorBlock,
@@ -46,13 +44,10 @@ export default class SpacesCursorsGet extends SpacesBaseCommand {
         setupConnectionLogging: false,
       });
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Fetching cursors for space ${formatResource(spaceName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Fetching cursors for space ${formatResource(spaceName)}`,
+        flags,
+      );
 
       const allCursors = await this.space!.cursors.getAll();
 
@@ -68,7 +63,7 @@ export default class SpacesCursorsGet extends SpacesBaseCommand {
           flags,
         );
       } else if (cursors.length === 0) {
-        this.logToStderr(formatWarning("No active cursors found in space."));
+        this.logWarning("No active cursors found in space.", flags);
       } else {
         this.log(
           `\n${formatHeading("Current cursors")} (${formatCountLabel(cursors.length, "cursor")}):\n`,

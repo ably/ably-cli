@@ -7,9 +7,7 @@ import {
   formatHeading,
   formatIndex,
   formatLabel,
-  formatProgress,
   formatResource,
-  formatWarning,
 } from "../../../utils/output.js";
 import type { LocationEntry } from "../../../utils/spaces-output.js";
 
@@ -43,13 +41,10 @@ export default class SpacesLocationsGet extends SpacesBaseCommand {
         setupConnectionLogging: false,
       });
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Fetching locations for space ${formatResource(spaceName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Fetching locations for space ${formatResource(spaceName)}`,
+        flags,
+      );
 
       const locationsFromSpace = await this.space!.locations.getAll();
 
@@ -72,9 +67,7 @@ export default class SpacesLocationsGet extends SpacesBaseCommand {
           flags,
         );
       } else if (entries.length === 0) {
-        this.logToStderr(
-          formatWarning("No locations are currently set in this space."),
-        );
+        this.logWarning("No locations are currently set in this space.", flags);
       } else {
         this.log(
           `\n${formatHeading("Current locations")} (${formatCountLabel(entries.length, "location")}):\n`,

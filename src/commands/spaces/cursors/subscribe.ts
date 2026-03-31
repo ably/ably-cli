@@ -2,11 +2,7 @@ import { type CursorUpdate } from "@ably/spaces";
 import { Args } from "@oclif/core";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import {
-  formatListening,
-  formatProgress,
-  formatTimestamp,
-} from "../../../utils/output.js";
+import { formatTimestamp } from "../../../utils/output.js";
 import {
   formatCursorBlock,
   formatCursorOutput,
@@ -42,9 +38,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
     const { space_name: spaceName } = args;
 
     try {
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress("Subscribing to cursor updates"));
-      }
+      this.logProgress("Subscribing to cursor updates", flags);
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
@@ -103,9 +97,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
         });
       }
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatListening("Listening for cursor movements."));
-      }
+      this.logListening("Listening for cursor movements.", flags);
 
       await this.waitAndTrackCleanup(flags, "cursor", flags.duration);
     } catch (error) {

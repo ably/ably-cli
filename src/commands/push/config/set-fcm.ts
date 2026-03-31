@@ -3,11 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
-import {
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 
 export default class PushConfigSetFcm extends ControlBaseCommand {
   static override description = "Configure FCM push notifications for an app";
@@ -75,11 +71,10 @@ export default class PushConfigSetFcm extends ControlBaseCommand {
           );
         }
 
-        if (!this.shouldOutputJson(flags)) {
-          this.log(
-            formatProgress(`Configuring FCM for app ${formatResource(appId)}`),
-          );
-        }
+        this.logProgress(
+          `Configuring FCM for app ${formatResource(appId)}`,
+          flags,
+        );
 
         await controlApi.updateApp(appId, {
           fcmProjectId: parsed.project_id as string,
@@ -89,10 +84,9 @@ export default class PushConfigSetFcm extends ControlBaseCommand {
         if (this.shouldOutputJson(flags)) {
           this.logJsonResult({ config: { appId, provider: "fcm" } }, flags);
         } else {
-          this.log(
-            formatSuccess(
-              `FCM configuration updated for app ${formatResource(appId)}.`,
-            ),
+          this.logSuccessMessage(
+            `FCM configuration updated for app ${formatResource(appId)}.`,
+            flags,
           );
         }
       },

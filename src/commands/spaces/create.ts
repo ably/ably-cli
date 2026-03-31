@@ -2,12 +2,7 @@ import { Args } from "@oclif/core";
 
 import { productApiFlags, clientIdFlag } from "../../flags.js";
 import { SpacesBaseCommand } from "../../spaces-base-command.js";
-import {
-  formatProgress,
-  formatResource,
-  formatSuccess,
-  formatWarning,
-} from "../../utils/output.js";
+import { formatResource } from "../../utils/output.js";
 
 export default class SpacesCreate extends SpacesBaseCommand {
   static override args = {
@@ -35,11 +30,10 @@ export default class SpacesCreate extends SpacesBaseCommand {
     const spaceName = args.space_name;
 
     try {
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(`Initializing space ${formatResource(spaceName)}`),
-        );
-      }
+      this.logProgress(
+        `Initializing space ${formatResource(spaceName)}`,
+        flags,
+      );
 
       await this.initializeSpace(flags, spaceName, {
         enterSpace: false,
@@ -57,12 +51,11 @@ export default class SpacesCreate extends SpacesBaseCommand {
           flags,
         );
       } else {
-        this.log(
-          formatSuccess(
-            `Space ${formatResource(spaceName)} initialized. Use "ably spaces members enter" to activate it.`,
-          ),
+        this.logSuccessMessage(
+          `Space ${formatResource(spaceName)} initialized. Use "ably spaces members enter" to activate it.`,
+          flags,
         );
-        this.log(formatWarning(ephemeralSpaceWarning));
+        this.logWarning(ephemeralSpaceWarning, flags);
       }
     } catch (error) {
       this.fail(error, flags, "spaceCreate");

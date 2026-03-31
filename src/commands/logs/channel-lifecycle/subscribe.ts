@@ -11,9 +11,7 @@ import {
 import { formatMessageData } from "../../../utils/json-formatter.js";
 import {
   formatLabel,
-  formatListening,
   formatResource,
-  formatSuccess,
   formatTimestamp,
   formatMessageTimestamp,
 } from "../../../utils/output.js";
@@ -130,12 +128,14 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
       });
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(`Subscribed to ${formatResource(channelName)}.`),
-        );
-        this.log(formatListening("Listening for channel lifecycle logs."));
         this.log("");
       }
+
+      this.logSuccessMessage(
+        `Subscribed to ${formatResource(channelName)}.`,
+        flags,
+      );
+      this.logListening("Listening for channel lifecycle logs.", flags);
 
       this.logCliEvent(
         flags,

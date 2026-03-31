@@ -9,7 +9,6 @@ import {
   formatMessageTimestamp,
   formatIndex,
   formatCountLabel,
-  formatProgress,
   formatResource,
   formatLimitWarning,
   formatMessagesOutput,
@@ -100,10 +99,9 @@ export default class ChannelsHistory extends AblyBaseCommand {
           flags,
         );
       } else {
-        this.log(
-          formatProgress(
-            `Fetching ${flags.limit} most recent messages from channel ${formatResource(channelName)}`,
-          ),
+        this.logProgress(
+          `Fetching ${flags.limit} most recent messages from channel ${formatResource(channelName)}`,
+          flags,
         );
       }
 
@@ -121,7 +119,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
         true,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
-        this.log(paginationWarning);
+        this.logToStderr(paginationWarning);
       }
 
       // Display results based on format

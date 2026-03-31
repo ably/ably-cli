@@ -3,11 +3,7 @@ import { Args } from "@oclif/core";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { forceFlag, productApiFlags } from "../../../flags.js";
 import { BaseFlags } from "../../../types/cli.js";
-import {
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class PushDevicesRemove extends AblyBaseCommand {
@@ -39,27 +35,37 @@ export default class PushDevicesRemove extends AblyBaseCommand {
       const rest = await this.createAblyRestClient(flags as BaseFlags);
       if (!rest) return;
 
+      // In JSON mode, require --force to prevent accidental destructive actions
+      if (!flags.force && this.shouldOutputJson(flags)) {
+        this.fail(
+          "The --force flag is required when using --json to confirm removal",
+          flags,
+          "pushDeviceRemove",
+        );
+      }
+
       if (!flags.force && !this.shouldOutputJson(flags)) {
         const confirmed = await promptForConfirmation(
           `Are you sure you want to remove device ${deviceId}?`,
         );
 
         if (!confirmed) {
-          this.log("Operation cancelled.");
+          this.logWarning("Operation cancelled.", flags);
           return;
         }
       }
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress(`Removing device ${formatResource(deviceId)}`));
-      }
+      this.logProgress(`Removing device ${formatResource(deviceId)}`, flags);
 
       await rest.push.admin.deviceRegistrations.remove(deviceId);
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult({ device: { id: deviceId, removed: true } }, flags);
       } else {
-        this.log(formatSuccess(`Device ${formatResource(deviceId)} removed.`));
+        this.logSuccessMessage(
+          `Device ${formatResource(deviceId)} removed.`,
+          flags,
+        );
       }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushDeviceRemove");

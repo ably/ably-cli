@@ -10,11 +10,8 @@ import {
 } from "../../../flags.js";
 import {
   formatAnnotationsOutput,
-  formatListening,
   formatMessageTimestamp,
-  formatProgress,
   formatResource,
-  formatSuccess,
 } from "../../../utils/output.js";
 import type { AnnotationDisplayFields } from "../../../utils/output.js";
 
@@ -84,13 +81,10 @@ export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
         { channel: channelName },
       );
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Attaching to channel: ${formatResource(channelName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Attaching to channel: ${formatResource(channelName)}`,
+        flags,
+      );
 
       this.setupChannelStateLogging(channel, flags, {
         includeUserFriendlyMessages: true,
@@ -173,13 +167,12 @@ export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
 
       await attachPromise;
 
+      this.logSuccessMessage(
+        `Subscribed to annotations on channel: ${formatResource(channelName)}.`,
+        flags,
+      );
+      this.logListening("Listening for annotations.", flags);
       if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(
-            `Subscribed to annotations on channel: ${formatResource(channelName)}.`,
-          ),
-        );
-        this.log(formatListening("Listening for annotations."));
         this.log("");
       }
 

@@ -7,10 +7,7 @@ import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import {
   formatClientId,
   formatLabel,
-  formatListening,
-  formatProgress,
   formatResource,
-  formatSuccess,
   formatTimestamp,
 } from "../../../utils/output.js";
 
@@ -66,13 +63,10 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         "connecting",
         `Connecting to Ably and subscribing to reactions in room ${roomName}...`,
       );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Connecting to Ably and subscribing to reactions in room ${formatResource(roomName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Connecting to Ably and subscribing to reactions in room ${formatResource(roomName)}`,
+        flags,
+      );
 
       // Get the room
       this.logCliEvent(
@@ -154,14 +148,11 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         "Subscribed to reactions",
       );
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(
-            `Subscribed to reactions in room: ${formatResource(roomName)}.`,
-          ),
-        );
-        this.log(formatListening("Listening for reactions."));
-      }
+      this.logSuccessMessage(
+        `Subscribed to reactions in room: ${formatResource(roomName)}.`,
+        flags,
+      );
+      this.logListening("Listening for reactions.", flags);
 
       this.logCliEvent(
         flags,

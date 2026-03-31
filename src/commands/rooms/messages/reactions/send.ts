@@ -4,7 +4,7 @@ import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../../chat-base-command.js";
 import { clientIdFlag, productApiFlags } from "../../../../flags.js";
-import { formatResource, formatSuccess } from "../../../../utils/output.js";
+import { formatResource } from "../../../../utils/output.js";
 import { REACTION_TYPE_MAP } from "../../../../utils/chat-constants.js";
 
 export default class MessagesReactionsSend extends ChatBaseCommand {
@@ -140,13 +140,12 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
           },
           flags,
         );
-      } else {
-        this.log(
-          formatSuccess(
-            `Sent reaction ${chalk.yellow(reaction)} to message ${formatResource(messageSerial)} in room ${formatResource(room)}.`,
-          ),
-        );
       }
+
+      this.logSuccessMessage(
+        `Sent reaction ${chalk.yellow(reaction)} to message ${formatResource(messageSerial)} in room ${formatResource(room)}.`,
+        flags,
+      );
     } catch (error) {
       this.fail(error, flags, "roomMessageReactionSend", {
         room,

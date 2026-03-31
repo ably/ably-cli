@@ -2,12 +2,7 @@ import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
-import {
-  formatLabel,
-  formatResource,
-  formatSuccess,
-  formatWarning,
-} from "../../../utils/output.js";
+import { formatLabel, formatResource } from "../../../utils/output.js";
 
 export default class RulesCreateCommand extends ControlBaseCommand {
   static description = "Create a rule";
@@ -107,13 +102,10 @@ export default class RulesCreateCommand extends ControlBaseCommand {
 
       if (mutableMessages) {
         persisted = true;
-        if (!this.shouldOutputJson(flags)) {
-          this.logToStderr(
-            formatWarning(
-              "Message persistence is automatically enabled when mutable messages is enabled.",
-            ),
-          );
-        }
+        this.logWarning(
+          "Message persistence is automatically enabled when mutable messages is enabled.",
+          flags,
+        );
       }
 
       const namespaceData = {
@@ -164,11 +156,6 @@ export default class RulesCreateCommand extends ControlBaseCommand {
           flags,
         );
       } else {
-        this.log(
-          formatSuccess(
-            "Rule " + formatResource(createdNamespace.id) + " created.",
-          ),
-        );
         this.log(`${formatLabel("ID")} ${formatResource(createdNamespace.id)}`);
         for (const line of formatChannelRuleDetails(createdNamespace, {
           bold: true,
@@ -177,6 +164,11 @@ export default class RulesCreateCommand extends ControlBaseCommand {
           this.log(line);
         }
       }
+
+      this.logSuccessMessage(
+        "Channel rule " + formatResource(createdNamespace.id) + " created.",
+        flags,
+      );
     } catch (error) {
       this.fail(error, flags, "ruleCreate", { appId });
     }

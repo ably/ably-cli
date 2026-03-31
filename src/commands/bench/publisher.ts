@@ -6,7 +6,6 @@ import Table from "cli-table3";
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { errorMessage } from "../../utils/errors.js";
-import { formatSuccess } from "../../utils/output.js";
 import type { BenchPresenceData } from "../../types/bench.js";
 
 interface TestMetrics {
@@ -206,13 +205,10 @@ export default class BenchPublisher extends AblyBaseCommand {
         `Starting benchmark test with ID: ${testId}`,
         { messageCount, messageRate, messageSize, transport: flags.transport },
       );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(`\nStarting benchmark test with ID: ${testId}`);
-        this.log(
-          `Publishing ${messageCount} messages at ${messageRate} msg/sec using ${flags.transport} transport`,
-        );
-        this.log(`Message size: ${messageSize} bytes\n`);
-      }
+      this.logProgress(
+        `Starting benchmark test with ID: ${testId}. Publishing ${messageCount} messages at ${messageRate} msg/sec using ${flags.transport} transport. Message size: ${messageSize} bytes`,
+        flags,
+      );
 
       const { intervalId: progressIntervalId, progressDisplay } =
         this.setupProgressDisplay(flags, metrics, messageCount);
@@ -249,9 +245,10 @@ export default class BenchPublisher extends AblyBaseCommand {
         "waitingForEchoes",
         "Waiting for remaining messages to be echoed back...",
       );
-      if (!this.shouldOutputJson(flags)) {
-        this.log("\nWaiting for remaining messages to be echoed back...");
-      }
+      this.logProgress(
+        "Waiting for remaining messages to be echoed back",
+        flags,
+      );
 
       await this.delay(3000);
 
@@ -530,7 +527,7 @@ export default class BenchPublisher extends AblyBaseCommand {
         process.stdout.write("\u001B[2J\u001B[0f");
       }
 
-      this.log("\n\n" + formatSuccess("Benchmark complete.") + "\n");
+      this.log("");
       const summaryTable = new Table({
         head: [chalk.white("Metric"), chalk.white("Value")],
         style: { border: [], head: [] },
@@ -565,8 +562,10 @@ export default class BenchPublisher extends AblyBaseCommand {
         "• Echo Latency: Round trip time (Publisher → Ably → Publisher)",
       );
       this.log(latencyTable.toString());
-      this.log("\nTest complete. Disconnecting...");
+      this.logProgress("Test complete. Disconnecting", flags);
     }
+
+    this.logSuccessMessage("Benchmark complete.", flags);
   }
 
   private async enterPresence(

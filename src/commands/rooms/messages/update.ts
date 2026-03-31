@@ -8,11 +8,7 @@ import type {
 
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import {
-  formatProgress,
-  formatSuccess,
-  formatResource,
-} from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 
 export default class MessagesUpdate extends ChatBaseCommand {
   static override args = {
@@ -132,16 +128,13 @@ export default class MessagesUpdate extends ChatBaseCommand {
 
       const room = await chatClient.rooms.get(args.room);
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            "Updating message " +
-              formatResource(args.serial) +
-              " in room " +
-              formatResource(args.room),
-          ),
-        );
-      }
+      this.logProgress(
+        "Updating message " +
+          formatResource(args.serial) +
+          " in room " +
+          formatResource(args.room),
+        flags,
+      );
 
       // Build update params
       const updateParams: UpdateMessageParams = {
@@ -190,13 +183,13 @@ export default class MessagesUpdate extends ChatBaseCommand {
           flags,
         );
       } else {
-        this.log(
-          formatSuccess(
-            `Message ${formatResource(args.serial)} updated in room ${formatResource(args.room)}.`,
-          ),
-        );
         this.log(`  Version serial: ${formatResource(result.version.serial)}`);
       }
+
+      this.logSuccessMessage(
+        `Message ${formatResource(args.serial)} updated in room ${formatResource(args.room)}.`,
+        flags,
+      );
     } catch (error) {
       this.fail(error, flags, "roomMessageUpdate", {
         room: args.room,

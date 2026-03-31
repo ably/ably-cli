@@ -10,9 +10,7 @@ import {
   formatLabel,
   formatLimitWarning,
   formatMessageTimestamp,
-  formatProgress,
   formatResource,
-  formatWarning,
 } from "../../../utils/output.js";
 import {
   buildPaginationNext,
@@ -55,13 +53,10 @@ export default class ChannelsPresenceGet extends AblyBaseCommand {
 
       const channelName = args.channel;
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Fetching presence members for channel: ${formatResource(channelName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Fetching presence members for channel: ${formatResource(channelName)}`,
+        flags,
+      );
 
       this.logCliEvent(
         flags,
@@ -94,7 +89,7 @@ export default class ChannelsPresenceGet extends AblyBaseCommand {
         items.length,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
-        this.log(paginationWarning);
+        this.logToStderr(paginationWarning);
       }
 
       if (this.shouldOutputJson(flags)) {
@@ -118,9 +113,7 @@ export default class ChannelsPresenceGet extends AblyBaseCommand {
           flags,
         );
       } else if (items.length === 0) {
-        this.logToStderr(
-          formatWarning("No members currently present on this channel."),
-        );
+        this.logWarning("No members currently present on this channel.", flags);
       } else {
         this.log(
           `\n${formatHeading(`Presence members on channel: ${channelName}`)} (${formatCountLabel(items.length, "member")}):\n`,

@@ -1,13 +1,10 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { forceFlag } from "../../../flags.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
 import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
-import {
-  formatLabel,
-  formatResource,
-  formatSuccess,
-} from "../../../utils/output.js";
+import { formatLabel, formatResource } from "../../../utils/output.js";
 
 export default class KeysRevokeCommand extends ControlBaseCommand {
   static args = {
@@ -33,10 +30,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
       description: "The app ID or name (defaults to current app)",
       env: "ABLY_APP_ID",
     }),
-    force: Flags.boolean({
-      default: false,
-      description: "Skip confirmation prompt",
-    }),
+    ...forceFlag,
   };
 
   async run(): Promise<void> {
@@ -71,24 +65,24 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
         this.log("");
       }
 
-      let confirmed = flags.force;
-
-      if (!confirmed) {
-        confirmed = await this.interactiveHelper.confirm(
-          "This will permanently revoke this key and any applications using it will stop working. Continue?",
+      // In JSON mode, require --force to prevent accidental destructive actions
+      if (!flags.force && this.shouldOutputJson(flags)) {
+        this.fail(
+          "The --force flag is required when using --json to confirm revocation",
+          flags,
+          "keyRevoke",
         );
       }
 
-      if (!confirmed) {
-        if (this.shouldOutputJson(flags)) {
-          this.fail("Revocation cancelled by user", flags, "keyRevoke", {
-            keyName,
-          });
-        } else {
-          this.log("Revocation cancelled.");
-        }
+      if (!flags.force && !this.shouldOutputJson(flags)) {
+        const confirmed = await this.interactiveHelper.confirm(
+          "This will permanently revoke this key and any applications using it will stop working. Continue?",
+        );
 
-        return;
+        if (!confirmed) {
+          this.logWarning("Revocation cancelled.", flags);
+          return;
+        }
       }
 
       await controlApi.revokeKey(appId, keyId);
@@ -104,8 +98,9 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
           flags,
         );
       } else {
-        this.log(
-          formatSuccess(`Key ${formatResource(keyName)} has been revoked.`),
+        this.logSuccessMessage(
+          `Key ${formatResource(keyName)} has been revoked.`,
+          flags,
         );
       }
 
@@ -119,9 +114,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
 
         if (shouldRemove) {
           this.configManager.removeApiKey(appId);
-          if (!this.shouldOutputJson(flags)) {
-            this.log("Key removed from configuration.");
-          }
+          this.logSuccessMessage("Key removed from configuration.", flags);
         }
       }
     } catch (error) {
