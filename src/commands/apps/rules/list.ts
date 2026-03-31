@@ -7,7 +7,6 @@ import {
   formatCountLabel,
   formatHeading,
   formatLimitWarning,
-  formatResource,
 } from "../../../utils/output.js";
 
 interface ChannelRuleOutput {
@@ -99,7 +98,7 @@ export default class RulesListCommand extends ControlBaseCommand {
         this.log(`Found ${formatCountLabel(namespaces.length, "rule")}:\n`);
 
         namespaces.forEach((namespace: Namespace) => {
-          this.log(`${formatHeading("ID")} ${formatResource(namespace.id)}`);
+          this.log(formatHeading(`ID: ${namespace.id}`));
           for (const line of formatChannelRuleDetails(namespace, {
             bold: true,
             formatDate: (t) => this.formatDate(t),
