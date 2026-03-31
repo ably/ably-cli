@@ -5,6 +5,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../helpers/ndjson.js";
 
 describe("version command", () => {
   standardHelpTests("version", import.meta.url);
@@ -32,7 +33,7 @@ describe("version command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "version");
       expect(result).toHaveProperty("success", true);

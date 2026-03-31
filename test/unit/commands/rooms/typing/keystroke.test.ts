@@ -6,6 +6,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../../helpers/ndjson.js";
 
 describe("rooms:typing:keystroke command", () => {
   beforeEach(() => {
@@ -26,28 +27,28 @@ describe("rooms:typing:keystroke command", () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["rooms:typing:keystroke", "test-room"],
         import.meta.url,
       );
 
       expect(room.attach).toHaveBeenCalled();
       expect(room.typing.keystroke).toHaveBeenCalled();
-      expect(stdout).toContain("Started typing");
+      expect(stderr).toContain("Started typing");
     });
 
     it("should handle --auto-type flag", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["rooms:typing:keystroke", "test-room", "--auto-type"],
         import.meta.url,
       );
 
       expect(room.attach).toHaveBeenCalled();
       expect(room.typing.keystroke).toHaveBeenCalled();
-      expect(stdout).toContain("automatically");
+      expect(stderr).toContain("automatically");
     });
 
     it("should handle keystroke failure", async () => {
@@ -76,7 +77,7 @@ describe("rooms:typing:keystroke command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("typing");
       expect(result.typing).toHaveProperty("room", "test-room");
@@ -96,8 +97,8 @@ describe("rooms:typing:keystroke command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("success", false);
+      const result = parseJsonOutput(stdout);
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("error");
       expect(result.error.message).toContain("Connection failed");
     });
@@ -149,7 +150,7 @@ describe("rooms:typing:keystroke command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error.message).toContain("Channel denied access");

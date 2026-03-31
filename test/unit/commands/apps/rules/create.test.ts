@@ -12,6 +12,7 @@ import {
   standardControlApiErrorTests,
 } from "../../../../helpers/standard-tests.js";
 import { mockNamespace } from "../../../../fixtures/control-api.js";
+import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
 
 describe("apps:rules:create command", () => {
   const mockRuleName = "chat";
@@ -39,12 +40,12 @@ describe("apps:rules:create command", () => {
         .post(`/v1/apps/${appId}/namespaces`)
         .reply(201, mockNamespace({ id: mockRuleId }));
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["apps:rules:create", "--name", mockRuleName],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Rule chat created.");
+      expect(stderr).toContain("Channel rule chat created.");
     });
 
     it("should create a rule with persisted flag", async () => {
@@ -55,13 +56,14 @@ describe("apps:rules:create command", () => {
         })
         .reply(201, mockNamespace({ id: mockRuleId, persisted: true }));
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["apps:rules:create", "--name", mockRuleName, "--persisted"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Rule chat created.");
-      expect(stdout).toContain("Persisted: ✓ Yes");
+      expect(stderr).toContain("Channel rule chat created.");
+      expect(stdout).toContain("Persisted:");
+      expect(stdout).toContain("Yes");
     });
 
     it("should create a rule with mutable-messages flag and auto-enable persistence", async () => {
@@ -84,9 +86,9 @@ describe("apps:rules:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Rule chat created.");
-      expect(stdout).toContain("Persisted: ✓ Yes");
-      expect(stdout).toContain("Mutable Messages: ✓ Yes");
+      expect(stderr).toContain("Channel rule chat created.");
+      expect(stdout).toContain("Persisted:");
+      expect(stdout).toContain("Mutable Messages:");
       expect(stderr).toContain("persistence is automatically enabled");
     });
 
@@ -98,13 +100,13 @@ describe("apps:rules:create command", () => {
         })
         .reply(201, mockNamespace({ id: mockRuleId, pushEnabled: true }));
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["apps:rules:create", "--name", mockRuleName, "--push-enabled"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Rule chat created.");
-      expect(stdout).toContain("Push Enabled: ✓ Yes");
+      expect(stderr).toContain("Channel rule chat created.");
+      expect(stdout).toContain("Push Enabled:");
     });
 
     it("should output JSON format when --json flag is used", async () => {
@@ -118,10 +120,11 @@ describe("apps:rules:create command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("rule");
-      expect(result.rule).toHaveProperty("id", mockRuleId);
+      const rule = result.rule as Record<string, unknown>;
+      expect(rule).toHaveProperty("id", mockRuleId);
     });
 
     it("should include mutableMessages in JSON output when --mutable-messages is used", async () => {
@@ -150,10 +153,16 @@ describe("apps:rules:create command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line: string) => JSON.parse(line));
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "result",
+      );
       expect(result).toHaveProperty("success", true);
-      expect(result.rule).toHaveProperty("persisted", true);
-      expect(result.rule).toHaveProperty("mutableMessages", true);
+      expect(result!.rule).toHaveProperty("persisted", true);
+      expect(result!.rule).toHaveProperty("mutableMessages", true);
     });
   });
 

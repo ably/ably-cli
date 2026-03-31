@@ -53,12 +53,12 @@ describe("auth:keys:create command", () => {
           revocable: true,
         });
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Key created:");
+      expect(stderr).toContain("Key created:");
       expect(stdout).toContain(mockKeyName);
       expect(stdout).toContain(mockKeyId);
     });
@@ -90,7 +90,7 @@ describe("auth:keys:create command", () => {
           revocable: true,
         });
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         [
           "auth:keys:create",
           "--name",
@@ -103,7 +103,7 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Key created:");
+      expect(stderr).toContain("Key created:");
       expect(stdout).toContain("channel1");
       expect(stdout).toContain("publish");
       expect(stdout).toContain("subscribe");
@@ -139,8 +139,14 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("type", "result");
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line: string) => JSON.parse(line));
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "result",
+      ) as Record<string, unknown>;
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("command", "auth:keys:create");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("key");
@@ -181,12 +187,12 @@ describe("auth:keys:create command", () => {
           revocable: true,
         });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Key created:");
+      expect(stderr).toContain("Key created:");
     });
   });
 
@@ -397,7 +403,7 @@ describe("auth:keys:create command", () => {
           revocable: true,
         });
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         [
           "auth:keys:create",
           "--name",
@@ -410,7 +416,7 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Key created:");
+      expect(stderr).toContain("Key created:");
       expect(stdout).toContain("publish");
     });
 
@@ -441,7 +447,7 @@ describe("auth:keys:create command", () => {
           revocable: true,
         });
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         [
           "auth:keys:create",
           "--name",
@@ -454,7 +460,7 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Key created:");
+      expect(stderr).toContain("Key created:");
       expect(stdout).toContain("chat-*");
       expect(stdout).toContain("subscribe");
       expect(stdout).toContain("updates");

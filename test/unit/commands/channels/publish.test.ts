@@ -29,7 +29,7 @@ describe("ChannelsPublish", function () {
       const restMock = getMockAblyRest();
       const channel = restMock.channels._getChannel("test-channel");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "channels:publish",
           "test-channel",
@@ -43,14 +43,14 @@ describe("ChannelsPublish", function () {
       expect(restMock.channels.get).toHaveBeenCalledWith("test-channel");
       expect(channel.publish).toHaveBeenCalledOnce();
       expect(channel.publish.mock.calls[0][0]).toEqual({ data: "hello" });
-      expect(stdout).toContain("Message published to channel");
+      expect(stderr).toContain("Message published to channel");
     });
 
     it("should publish a message using Realtime successfully", async function () {
       const realtimeMock = getMockAblyRealtime();
       const channel = realtimeMock.channels._getChannel("test-channel");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "channels:publish",
           "test-channel",
@@ -66,7 +66,7 @@ describe("ChannelsPublish", function () {
       expect(channel.publish.mock.calls[0][0]).toEqual({
         data: "realtime hello",
       });
-      expect(stdout).toContain("Message published to channel");
+      expect(stderr).toContain("Message published to channel");
     });
 
     it("should publish with specified event name", async function () {
@@ -96,7 +96,7 @@ describe("ChannelsPublish", function () {
       const restMock = getMockAblyRest();
       const channel = restMock.channels._getChannel("test-channel");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "channels:publish",
           "test-channel",
@@ -112,7 +112,7 @@ describe("ChannelsPublish", function () {
       );
 
       expect(channel.publish).toHaveBeenCalledTimes(3);
-      expect(stdout).toContain("messages published to channel");
+      expect(stderr).toContain("messages published to channel");
     });
 
     it("should output JSON when requested", async function () {
@@ -131,8 +131,13 @@ describe("ChannelsPublish", function () {
         import.meta.url,
       );
 
-      // Parse the JSON output
-      const jsonOutput = JSON.parse(stdout.trim());
+      // Parse NDJSON output — find the result record
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const jsonOutput = records.find((r) => r.type === "result");
+      expect(jsonOutput).toBeDefined();
       expect(jsonOutput).toHaveProperty("type", "result");
       expect(jsonOutput).toHaveProperty("command", "channels:publish");
       expect(jsonOutput).toHaveProperty("success", true);
@@ -522,7 +527,7 @@ describe("ChannelsPublish", function () {
         publishedData.push(message.data ?? "");
       });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "channels:publish",
           "test-channel",
@@ -540,9 +545,9 @@ describe("ChannelsPublish", function () {
       // Should have attempted all 5, but only 4 succeeded
       expect(channel.publish).toHaveBeenCalledTimes(5);
       expect(publishedData).toHaveLength(4);
-      expect(stdout).toContain("4/5");
-      expect(stdout).toContain("1");
-      expect(stdout).toMatch(/error/i);
+      expect(stderr).toContain("4/5");
+      expect(stderr).toContain("1");
+      expect(stderr).toMatch(/error/i);
     });
 
     it("should reject --count 0", async function () {

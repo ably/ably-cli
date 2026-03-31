@@ -33,14 +33,14 @@ describe("rooms:messages:subscribe command", () => {
         return { unsubscribe: vi.fn() };
       });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["rooms:messages:subscribe", "test-room"],
         import.meta.url,
       );
 
       expect(room.attach).toHaveBeenCalled();
       expect(room.messages.subscribe).toHaveBeenCalled();
-      expect(stdout).toContain("Subscribed to room");
+      expect(stderr).toContain("Subscribed to room");
     });
 
     it("should display received messages with action and serial", async () => {

@@ -56,13 +56,13 @@ describe("channels:presence:get command", () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["channels:presence:get", "test-channel"],
         import.meta.url,
       );
 
       expect(channel.presence.get).toHaveBeenCalledWith({ limit: 100 });
-      expect(stdout).toContain("Fetching presence members");
+      expect(stderr).toContain("Fetching presence members");
       expect(stdout).toContain("test-channel");
       expect(stdout).toContain("client-1");
       expect(stdout).toContain("client-2");
@@ -88,7 +88,16 @@ describe("channels:presence:get command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout.trim());
+      // Parse NDJSON output — find the result record
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const result = records.find((r) => r.type === "result") as Record<
+        string,
+        unknown
+      >;
+      expect(result).toBeDefined();
       expect(result.type).toBe("result");
       expect(result.members).toBeDefined();
       expect(result.members).toHaveLength(2);
@@ -148,10 +157,21 @@ describe("channels:presence:get command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout.trim());
+      // Parse NDJSON output — find the result record
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const result = records.find((r) => r.type === "result") as Record<
+        string,
+        unknown
+      >;
+      expect(result).toBeDefined();
       expect(result.hasMore).toBe(true);
       expect(result.next).toBeDefined();
-      expect(result.next.hint).toContain("--limit");
+      expect((result.next as Record<string, unknown>).hint).toContain(
+        "--limit",
+      );
     });
   });
 

@@ -43,14 +43,14 @@ describe("logs:channel-lifecycle:subscribe command", () => {
 
   describe("functionality", () => {
     it("should subscribe to channel lifecycle events and show initial message", async () => {
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["logs:channel-lifecycle:subscribe"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Subscribed to");
-      expect(stdout).toContain("[meta]channel.lifecycle");
-      expect(stdout).toContain("Press Ctrl+C to exit");
+      expect(stderr).toContain("Subscribed to");
+      expect(stderr).toContain("[meta]channel.lifecycle");
+      expect(stderr).toContain("Press Ctrl+C to exit");
     });
 
     it("should subscribe to channel messages", async () => {

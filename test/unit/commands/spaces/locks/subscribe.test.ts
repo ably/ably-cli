@@ -40,12 +40,12 @@ describe("spaces:locks:subscribe command", () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["spaces:locks:subscribe", "test-space"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Subscribing to lock events");
+      expect(stderr).toContain("Subscribing to lock events");
       expect(space.locks.getAll).not.toHaveBeenCalled();
     });
 

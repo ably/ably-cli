@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../helpers/mock-ably-chat.js";
 
@@ -31,25 +31,31 @@ describe("rooms feature commands", function () {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
 
-      const { stdout } = await runCommand(
+      room.occupancy.subscribe.mockImplementation(
+        (_callback: (event: unknown) => void) => {
+          return { unsubscribe: vi.fn() };
+        },
+      );
+
+      const { stderr } = await runCommand(
         ["rooms:occupancy:subscribe", "test-room"],
         import.meta.url,
       );
 
       expect(room.occupancy.subscribe).toHaveBeenCalled();
-      expect(stdout).toContain("Subscribed to occupancy");
+      expect(stderr).toContain("Subscribed to occupancy");
     });
 
     it("should display subscribing message", async function () {
       const chatMock = getMockAblyChat();
       chatMock.rooms._getRoom("test-room");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["rooms:occupancy:subscribe", "test-room"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Subscribed to occupancy in room");
+      expect(stderr).toContain("Subscribed to occupancy in room");
     });
   });
 
@@ -62,14 +68,14 @@ describe("rooms feature commands", function () {
 
       // Emit SIGINT to stop the command
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["rooms:presence:enter", "test-room"],
         import.meta.url,
       );
 
       expect(room.attach).toHaveBeenCalled();
       expect(room.presence.enter).toHaveBeenCalled();
-      expect(stdout).toContain("Entered");
+      expect(stderr).toContain("Entered");
     });
 
     it("should handle presence data", async function () {
@@ -102,7 +108,7 @@ describe("rooms feature commands", function () {
 
       room.reactions.send.mockImplementation(async () => {});
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["rooms:reactions:send", "test-room", "👍"],
         import.meta.url,
       );
@@ -112,7 +118,7 @@ describe("rooms feature commands", function () {
         name: "👍",
         metadata: {},
       });
-      expect(stdout).toContain("Sent reaction");
+      expect(stderr).toContain("Sent reaction");
     });
 
     it("should handle metadata in reactions", async function () {
@@ -148,14 +154,14 @@ describe("rooms feature commands", function () {
 
       // Emit SIGINT to stop the command
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["rooms:typing:keystroke", "test-room"],
         import.meta.url,
       );
 
       expect(room.attach).toHaveBeenCalled();
       expect(room.typing.keystroke).toHaveBeenCalled();
-      expect(stdout).toContain("typing");
+      expect(stderr).toContain("typing");
     });
   });
 

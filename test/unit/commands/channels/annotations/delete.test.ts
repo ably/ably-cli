@@ -36,7 +36,7 @@ describe("channels:annotations:delete command", () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("test-channel");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "channels:annotations:delete",
           "test-channel",
@@ -53,7 +53,7 @@ describe("channels:annotations:delete command", () => {
           type: "reactions:flag.v1",
         },
       );
-      expect(stdout).toContain("Annotation deleted");
+      expect(stderr).toContain("Annotation deleted");
     });
 
     it("should pass --name flag to annotation", async () => {
@@ -82,7 +82,7 @@ describe("channels:annotations:delete command", () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("test-channel");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "channels:annotations:delete",
           "test-channel",
@@ -98,7 +98,7 @@ describe("channels:annotations:delete command", () => {
         type: "reactions:multiple.v1",
         name: "thumbsup",
       });
-      expect(stdout).toContain("Annotation deleted");
+      expect(stderr).toContain("Annotation deleted");
     });
 
     it("should output JSON when --json flag is used", async () => {
@@ -116,7 +116,10 @@ describe("channels:annotations:delete command", () => {
       });
 
       expect(records.length).toBeGreaterThanOrEqual(1);
-      const result = records[0];
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "result",
+      );
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "channels:annotations:delete");
       expect(result).toHaveProperty("success", true);
@@ -125,8 +128,8 @@ describe("channels:annotations:delete command", () => {
       expect(result.annotation).toHaveProperty("serial", "serial-001");
     });
 
-    it("should show Type and Name labels in non-JSON output", async () => {
-      const { stdout } = await runCommand(
+    it("should show success message in non-JSON output", async () => {
+      const { stderr } = await runCommand(
         [
           "channels:annotations:delete",
           "test-channel",
@@ -138,10 +141,9 @@ describe("channels:annotations:delete command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Type");
-      expect(stdout).toContain("reactions:distinct.v1");
-      expect(stdout).toContain("Name");
-      expect(stdout).toContain("thumbsup");
+      expect(stderr).toContain("Annotation deleted");
+      expect(stderr).toContain("serial-001");
+      expect(stderr).toContain("test-channel");
     });
 
     it("should not include name in JSON output when not provided", async () => {

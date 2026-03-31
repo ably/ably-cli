@@ -34,7 +34,7 @@ describe("rooms:messages:send command", () => {
         createdAt: Date.now(),
       });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["rooms:messages:send", "test-room", "HelloWorld"],
         import.meta.url,
       );
@@ -42,7 +42,7 @@ describe("rooms:messages:send command", () => {
       expect(room.messages.send).toHaveBeenCalledWith({
         text: "HelloWorld",
       });
-      expect(stdout).toContain("Message sent to room test-room");
+      expect(stderr).toContain("Message sent to room test-room");
     });
 
     it("should send message with metadata", async () => {
@@ -83,7 +83,7 @@ describe("rooms:messages:send command", () => {
         },
       );
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "rooms:messages:send",
           "test-room",
@@ -100,7 +100,7 @@ describe("rooms:messages:send command", () => {
       expect(sentTexts).toContain("Message1");
       expect(sentTexts).toContain("Message2");
       expect(sentTexts).toContain("Message3");
-      expect(stdout).toContain("3/3 messages sent to room test-room");
+      expect(stderr).toContain("3/3 messages sent to room test-room");
     });
 
     it("should emit JSON envelope with type result for --json single send", async () => {

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
+import { parseNdjsonLines } from "../../../helpers/ndjson.js";
 import {
   nockControl,
   controlApiCleanup,
@@ -52,14 +53,14 @@ describe("apps:switch command", () => {
           },
         ]);
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["apps:switch", mockAppId],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Switched to app");
-      expect(stdout).toContain(mockAppName);
-      expect(stdout).toContain(mockAppId);
+      expect(stderr).toContain("Switched to app");
+      expect(stderr).toContain(mockAppName);
+      expect(stderr).toContain(mockAppId);
     });
 
     it("should output JSON when --json flag is used", async () => {
@@ -89,7 +90,7 @@ describe("apps:switch command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "apps:switch");
       expect(result).toHaveProperty("success", true);

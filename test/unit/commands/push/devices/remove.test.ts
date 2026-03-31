@@ -25,13 +25,13 @@ describe("push:devices:remove command", () => {
     it("should remove a device with --force", async () => {
       const mock = getMockAblyRest();
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["push:devices:remove", "device-123", "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("device-123");
-      expect(stdout).toContain("removed");
+      expect(stderr).toContain("device-123");
+      expect(stderr).toContain("removed");
       expect(mock.push.admin.deviceRegistrations.remove).toHaveBeenCalledWith(
         "device-123",
       );
@@ -43,8 +43,14 @@ describe("push:devices:remove command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("type", "result");
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line: string) => JSON.parse(line));
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "result",
+      );
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("device");
       expect(result.device).toHaveProperty("id", "device-123");

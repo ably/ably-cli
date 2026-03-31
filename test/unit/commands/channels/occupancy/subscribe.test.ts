@@ -43,13 +43,13 @@ describe("channels:occupancy:subscribe command", () => {
     it("should subscribe to occupancy events and show initial message", async () => {
       const mock = getMockAblyRealtime();
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["channels:occupancy:subscribe", "test-channel"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Subscribing to occupancy events on channel");
-      expect(stdout).toContain("test-channel");
+      expect(stderr).toContain("Subscribing to occupancy events on channel");
+      expect(stderr).toContain("test-channel");
       expect(mock.channels.get).toHaveBeenCalledWith("test-channel", {
         params: { occupancy: "metrics" },
       });

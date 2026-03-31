@@ -7,6 +7,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 
 describe("auth:issue-ably-token command", () => {
   beforeEach(() => {
@@ -189,7 +190,7 @@ describe("auth:issue-ably-token command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("token");
       expect(result.token).toHaveProperty("capability");
     });

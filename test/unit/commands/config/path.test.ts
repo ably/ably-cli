@@ -5,6 +5,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 
 describe("config:path command", () => {
   describe("functionality", () => {
@@ -21,7 +22,7 @@ describe("config:path command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("config");
       expect(result.config).toHaveProperty("path");
       expect(result.config.path).toBe("/mock/config/path");
@@ -33,7 +34,7 @@ describe("config:path command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("config");
       expect(result.config).toHaveProperty("path");
       expect(result.config.path).toBe("/mock/config/path");

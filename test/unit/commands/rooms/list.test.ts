@@ -4,6 +4,7 @@ import {
   getMockAblyRest,
   createMockPaginatedResult,
 } from "../../../helpers/mock-ably-rest.js";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -127,7 +128,7 @@ describe("rooms:list command", () => {
       import.meta.url,
     );
 
-    const json = JSON.parse(stdout);
+    const json = parseJsonOutput(stdout);
     expect(json).toHaveProperty("rooms");
     expect(json.rooms).toBeInstanceOf(Array);
     expect(json.rooms.length).toBe(2);

@@ -31,7 +31,7 @@ describe("rooms:messages:reactions:remove command", () => {
       // Configure message reactions delete mock
       room.messages.reactions.delete.mockImplementation(async () => {});
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "rooms:messages:reactions:remove",
           "test-room",
@@ -48,10 +48,10 @@ describe("rooms:messages:reactions:remove command", () => {
           name: "👍",
         },
       );
-      expect(stdout).toContain("Removed reaction");
-      expect(stdout).toContain("👍");
-      expect(stdout).toContain("msg-serial-123");
-      expect(stdout).toContain("test-room");
+      expect(stderr).toContain("Removed reaction");
+      expect(stderr).toContain("👍");
+      expect(stderr).toContain("msg-serial-123");
+      expect(stderr).toContain("test-room");
     });
 
     it("should remove a reaction with type flag", async () => {
@@ -60,7 +60,7 @@ describe("rooms:messages:reactions:remove command", () => {
 
       room.messages.reactions.delete.mockImplementation(async () => {});
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "rooms:messages:reactions:remove",
           "test-room",
@@ -79,8 +79,8 @@ describe("rooms:messages:reactions:remove command", () => {
           type: expect.any(String),
         },
       );
-      expect(stdout).toContain("Removed reaction");
-      expect(stdout).toContain("❤️");
+      expect(stderr).toContain("Removed reaction");
+      expect(stderr).toContain("❤️");
     });
 
     it("should output JSON when --json flag is used", async () => {
@@ -100,7 +100,8 @@ describe("rooms:messages:reactions:remove command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const lines = stdout.trim().split("\n");
+      const result = JSON.parse(lines[0]);
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("reaction");
       expect(result.reaction).toHaveProperty("room", "test-room");

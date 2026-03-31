@@ -10,6 +10,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 
 describe("accounts:switch command", () => {
   const mockAccountId = "switch-account-id";
@@ -42,13 +43,13 @@ describe("accounts:switch command", () => {
           user: { email: mockUserEmail },
         });
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["accounts:switch", "second"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Switched to account:");
-      expect(stdout).toContain(mockAccountName);
+      expect(stderr).toContain("Switched to account");
+      expect(stderr).toContain(mockAccountName);
       expect(stdout).toContain(mockUserEmail);
     });
 
@@ -75,7 +76,7 @@ describe("accounts:switch command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result.error.message).toContain("No accounts configured");
     });
@@ -89,7 +90,7 @@ describe("accounts:switch command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error.message).toContain("No accounts configured");
@@ -103,7 +104,7 @@ describe("accounts:switch command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error.message).toContain("not found");

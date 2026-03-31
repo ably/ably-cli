@@ -6,6 +6,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../helpers/standard-tests.js";
+import { parseNdjsonLines } from "../../../helpers/ndjson.js";
 
 describe("accounts:logout command", () => {
   standardHelpTests("accounts:logout", import.meta.url);
@@ -24,7 +25,9 @@ describe("accounts:logout command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find(
+        (r) => r.type === "result" || r.type === "error",
+      )!;
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error.message).toContain("No account");
@@ -54,7 +57,9 @@ describe("accounts:logout command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find(
+        (r) => r.type === "result" || r.type === "error",
+      )!;
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("account");
       expect(result.account).toHaveProperty("alias", "testaccount");
@@ -72,7 +77,9 @@ describe("accounts:logout command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find(
+        (r) => r.type === "result" || r.type === "error",
+      )!;
       expect(result).toHaveProperty("success", true);
       expect(result.account).toHaveProperty("alias", "testaccount");
 
@@ -112,7 +119,9 @@ describe("accounts:logout command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find(
+        (r) => r.type === "result" || r.type === "error",
+      )!;
       expect(result).toHaveProperty("success", true);
       expect(result.account).toHaveProperty("alias", "primary");
       expect(result.account.remainingAccounts).toContain("secondary");
@@ -134,7 +143,9 @@ describe("accounts:logout command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find(
+        (r) => r.type === "result" || r.type === "error",
+      )!;
       expect(result).toHaveProperty("success", true);
       expect(result.account).toHaveProperty("alias", "secondary");
       expect(result.account.remainingAccounts).toContain("primary");
@@ -174,7 +185,9 @@ describe("accounts:logout command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find(
+        (r) => r.type === "result" || r.type === "error",
+      )!;
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error.message).toContain("not found");

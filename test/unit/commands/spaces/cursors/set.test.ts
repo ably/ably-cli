@@ -78,7 +78,7 @@ describe("spaces:cursors:set command", () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["spaces:cursors:set", "test-space", "--x", "100", "--y", "200"],
         import.meta.url,
       );
@@ -89,8 +89,8 @@ describe("spaces:cursors:set command", () => {
           position: { x: 100, y: 200 },
         }),
       );
-      expect(stdout).toContain("Set cursor");
-      expect(stdout).toContain("test-space");
+      expect(stderr).toContain("Set cursor");
+      expect(stderr).toContain("test-space");
       expect(stdout).toContain("Position X:");
       expect(stdout).toContain("100");
       expect(stdout).toContain("Position Y:");
@@ -122,13 +122,13 @@ describe("spaces:cursors:set command", () => {
       const spacesMock = getMockAblySpaces();
       spacesMock._getSpace("test-space");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["spaces:cursors:set", "test-space", "--x", "100", "--y", "200"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Holding cursor.");
-      expect(stdout).toContain("Press Ctrl+C to exit.");
+      expect(stderr).toContain("Holding cursor.");
+      expect(stderr).toContain("Press Ctrl+C to exit.");
     });
 
     it("should include data in simulated cursor output", async () => {
@@ -209,9 +209,10 @@ describe("spaces:cursors:set command", () => {
       expect(cursor).toHaveProperty("clientId");
       expect(cursor).toHaveProperty("connectionId");
 
-      const status = records.find((r) => r.type === "status");
+      const status = records.find(
+        (r) => r.type === "status" && r.status === "holding",
+      );
       expect(status).toBeDefined();
-      expect(status).toHaveProperty("status", "holding");
       expect(status!.message).toContain("Holding cursor");
     });
 

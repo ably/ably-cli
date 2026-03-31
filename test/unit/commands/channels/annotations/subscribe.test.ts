@@ -63,12 +63,12 @@ describe("channels:annotations:subscribe command", () => {
     it("should subscribe to annotations on a channel", async () => {
       const mock = getMockAblyRealtime();
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["channels:annotations:subscribe", "test-channel"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("test-channel");
+      expect(stderr).toContain("test-channel");
       expect(mock.channels.get).toHaveBeenCalledWith(
         "test-channel",
         expect.objectContaining({

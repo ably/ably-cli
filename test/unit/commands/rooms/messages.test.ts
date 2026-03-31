@@ -19,7 +19,7 @@ describe("rooms messages commands", function () {
         createdAt: Date.now(),
       });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["rooms:messages:send", "test-room", "HelloWorld"],
         import.meta.url,
       );
@@ -27,7 +27,7 @@ describe("rooms messages commands", function () {
       expect(room.messages.send).toHaveBeenCalledWith({
         text: "HelloWorld",
       });
-      expect(stdout).toContain("Message sent to room test-room");
+      expect(stderr).toContain("Message sent to room test-room");
     });
 
     it("should emit JSON envelope with type result for --json single send", async function () {
@@ -69,7 +69,7 @@ describe("rooms messages commands", function () {
         },
       );
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "rooms:messages:send",
           "test-room",
@@ -86,7 +86,7 @@ describe("rooms messages commands", function () {
       expect(sentTexts).toContain("Message1");
       expect(sentTexts).toContain("Message2");
       expect(sentTexts).toContain("Message3");
-      expect(stdout).toContain("3/3 messages sent to room test-room");
+      expect(stderr).toContain("3/3 messages sent to room test-room");
     });
 
     it("should handle metadata in messages", async function () {
@@ -268,14 +268,14 @@ describe("rooms messages commands", function () {
 
         // Emit SIGINT after a delay to stop the command
 
-        const { stdout } = await runCommand(
+        const { stderr } = await runCommand(
           ["rooms:messages:subscribe", "test-room"],
           import.meta.url,
         );
 
         expect(room.attach).toHaveBeenCalled();
         expect(room.messages.subscribe).toHaveBeenCalled();
-        expect(stdout).toContain("Subscribed to room");
+        expect(stderr).toContain("Subscribed to room");
       });
 
       it("should display received messages", async function () {

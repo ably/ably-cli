@@ -25,12 +25,12 @@ describe("push:devices:remove-where command", () => {
     it("should remove devices matching filter with --force", async () => {
       const mock = getMockAblyRest();
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["push:devices:remove-where", "--client-id", "client-1", "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("removed");
+      expect(stderr).toContain("removed");
       expect(
         mock.push.admin.deviceRegistrations.removeWhere,
       ).toHaveBeenCalledWith(expect.objectContaining({ clientId: "client-1" }));
@@ -57,8 +57,14 @@ describe("push:devices:remove-where command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("type", "result");
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line: string) => JSON.parse(line));
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "result",
+      );
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("devices");
       expect(result.devices).toHaveProperty("removed", true);

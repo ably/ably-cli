@@ -7,6 +7,7 @@ import {
 } from "../../../helpers/control-api-test-helpers.js";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -140,7 +141,7 @@ describe("queues:list command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "queues:list");
       expect(result).toHaveProperty("success", true);
@@ -295,7 +296,7 @@ describe("queues:list command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "error");
       expect(result).toHaveProperty("command", "queues:list");
       expect(result).toHaveProperty("success", false);
@@ -360,7 +361,7 @@ describe("queues:list command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "queues:list");
       expect(result).toHaveProperty("success", true);

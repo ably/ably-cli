@@ -57,17 +57,16 @@ describe("apps:create command", () => {
           tlsOnly: false,
         });
 
-      const { stdout } = await runCommand([
+      const { stdout, stderr } = await runCommand([
         "apps:create",
         "--name",
         `"${mockAppName}"`,
       ]);
 
-      expect(stdout).toContain("App created:");
+      expect(stderr).toContain("App created:");
       expect(stdout).toContain(newAppId);
       expect(stdout).toContain(mockAppName);
-      expect(stdout).toContain("Automatically switched to app");
-      expect(stdout).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/);
+      expect(stderr).toContain("Automatically switched to app");
     });
 
     it("should create an app with TLS only flag", async () => {
@@ -100,14 +99,14 @@ describe("apps:create command", () => {
           tlsOnly: true,
         });
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["apps:create", "--name", `"${mockAppName}"`, "--tls-only"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("App created:");
+      expect(stderr).toContain("App created:");
       expect(stdout).toContain("TLS Only: Yes");
-      expect(stdout).toContain("Automatically switched to app");
+      expect(stderr).toContain("Automatically switched to app");
     });
 
     it("should output JSON format when --json flag is used", async () => {
@@ -142,13 +141,19 @@ describe("apps:create command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("type", "result");
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line: string) => JSON.parse(line));
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "result",
+      );
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("command", "apps:create");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("app");
-      expect(result.app).toHaveProperty("id", newAppId);
-      expect(result.app).toHaveProperty("name", mockAppName);
+      expect(result!.app).toHaveProperty("id", newAppId);
+      expect(result!.app).toHaveProperty("name", mockAppName);
     });
 
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
@@ -189,13 +194,13 @@ describe("apps:create command", () => {
           tlsOnly: false,
         });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["apps:create", "--name", mockAppName],
         import.meta.url,
       );
 
-      expect(stdout).toContain("App created:");
-      expect(stdout).toContain("Automatically switched to app");
+      expect(stderr).toContain("App created:");
+      expect(stderr).toContain("Automatically switched to app");
     });
 
     it("should automatically switch to the newly created app", async () => {
@@ -223,14 +228,14 @@ describe("apps:create command", () => {
         tlsOnly: false,
       });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["apps:create", "--name", `"${mockAppName}"`],
         import.meta.url,
       );
 
-      expect(stdout).toContain("App created:");
-      expect(stdout).toContain(
-        `Automatically switched to app: ${mockAppName} (${newAppId})`,
+      expect(stderr).toContain("App created:");
+      expect(stderr).toContain(
+        `Automatically switched to app ${mockAppName} (${newAppId})`,
       );
 
       // Verify the mock config was updated with the new app

@@ -5,6 +5,7 @@ import {
   controlApiCleanup,
 } from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -88,7 +89,7 @@ describe("integrations:get command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("rule");
       expect(result.rule).toHaveProperty("id", mockRuleId);
       expect(result.rule).toHaveProperty("appId", appId);
@@ -136,7 +137,7 @@ describe("integrations:get command", () => {
 
       // Pretty JSON should have newlines
       expect(stdout).toContain("\n");
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("rule");
       expect(result.rule).toHaveProperty("id", mockRuleId);
     });

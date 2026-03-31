@@ -11,6 +11,7 @@ import {
   standardFlagTests,
   standardControlApiErrorTests,
 } from "../../../helpers/standard-tests.js";
+import { parseNdjsonLines } from "../../../helpers/ndjson.js";
 
 describe("integrations:create command", () => {
   const mockRuleId = "rule-123456";
@@ -40,7 +41,7 @@ describe("integrations:create command", () => {
           status: "enabled",
         });
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         [
           "integrations:create",
           "--rule-type",
@@ -55,7 +56,7 @@ describe("integrations:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Integration rule created:");
+      expect(stderr).toContain("Integration rule created:");
       expect(stdout).toContain(mockRuleId);
       expect(stdout).toContain("http");
     });
@@ -81,7 +82,7 @@ describe("integrations:create command", () => {
           status: "enabled",
         });
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         [
           "integrations:create",
           "--rule-type",
@@ -92,7 +93,7 @@ describe("integrations:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Integration rule created:");
+      expect(stderr).toContain("Integration rule created:");
       expect(stdout).toContain("amqp");
     });
 
@@ -135,7 +136,7 @@ describe("integrations:create command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "integrations:create");
       expect(result).toHaveProperty("success", true);
@@ -181,7 +182,7 @@ describe("integrations:create command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "integrations:create");
       expect(result).toHaveProperty("success", true);
@@ -226,7 +227,7 @@ describe("integrations:create command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "integrations:create");
       expect(result).toHaveProperty("success", true);
@@ -382,11 +383,13 @@ describe("integrations:create command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "integrations:create");
       expect(result).toHaveProperty("success", true);
-      expect(result.integration.source.type).toBe("channel.presence");
+      const integration = result.integration as Record<string, unknown>;
+      const source = integration.source as Record<string, unknown>;
+      expect(source.type).toBe("channel.presence");
     });
 
     it("should accept channel.lifecycle source type", async () => {
@@ -424,11 +427,13 @@ describe("integrations:create command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "integrations:create");
       expect(result).toHaveProperty("success", true);
-      expect(result.integration.source.type).toBe("channel.lifecycle");
+      const integration = result.integration as Record<string, unknown>;
+      const source = integration.source as Record<string, unknown>;
+      expect(source.type).toBe("channel.lifecycle");
     });
   });
 

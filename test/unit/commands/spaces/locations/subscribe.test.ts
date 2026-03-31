@@ -43,12 +43,12 @@ describe("spaces:locations:subscribe command", () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["spaces:locations:subscribe", "test-space"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Subscribing to location updates");
+      expect(stderr).toContain("Subscribing to location updates");
       expect(space.locations.getAll).not.toHaveBeenCalled();
     });
 

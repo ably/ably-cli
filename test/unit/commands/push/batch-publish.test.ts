@@ -6,6 +6,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 
 describe("push:batch-publish command", () => {
   beforeEach(() => {
@@ -25,12 +26,12 @@ describe("push:batch-publish command", () => {
       const payload =
         '[{"recipient":{"deviceId":"dev-1"},"payload":{"notification":{"title":"Hello"}}}]';
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["push:batch-publish", payload, "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("published");
+      expect(stderr).toContain("published");
       expect(mock.request).toHaveBeenCalledWith(
         "post",
         "/push/batch/publish",
@@ -45,12 +46,12 @@ describe("push:batch-publish command", () => {
       const payload =
         '[{"channels":["my-channel"],"payload":{"notification":{"title":"Hello"}}}]';
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["push:batch-publish", payload, "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("published");
+      expect(stderr).toContain("published");
       expect(mock.request).toHaveBeenCalledWith(
         "post",
         "/messages",
@@ -70,7 +71,8 @@ describe("push:batch-publish command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("publish");
@@ -104,12 +106,12 @@ describe("push:batch-publish command", () => {
       const payload =
         '[{"channels":"my-channel","payload":{"notification":{"title":"Hello"}}}]';
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["push:batch-publish", payload, "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("published");
+      expect(stderr).toContain("published");
       expect(mock.request).toHaveBeenCalledWith(
         "post",
         "/messages",
@@ -189,7 +191,7 @@ describe("push:batch-publish command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result.publish.failed).toBeTruthy();
       expect(result.publish.failedItems).toHaveLength(1);
       expect(result.publish.failedItems[0].originalIndex).toBe(1);
@@ -232,7 +234,7 @@ describe("push:batch-publish command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result.publish.failed).toBeTruthy();
       expect(result.publish.failedItems).toHaveLength(1);
       expect(result.publish.failedItems[0].originalIndex).toBe(1);

@@ -12,6 +12,7 @@ import {
   standardFlagTests,
   standardControlApiErrorTests,
 } from "../../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../../helpers/ndjson.js";
 
 describe("push:config:set-apns command", () => {
   let appId: string;
@@ -42,7 +43,7 @@ describe("push:config:set-apns command", () => {
     it("should configure APNs with P8 key successfully", async () => {
       nockControl().patch(`/v1/apps/${appId}`).reply(200, { id: appId });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "push:config:set-apns",
           "--key-file",
@@ -57,7 +58,7 @@ describe("push:config:set-apns command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("APNs P8 key configured");
+      expect(stderr).toContain("APNs P8 key configured");
     });
 
     it("should upload P12 certificate successfully", async () => {
@@ -65,12 +66,12 @@ describe("push:config:set-apns command", () => {
         .post(`/v1/apps/${appId}/pkcs12`)
         .reply(200, { id: "cert-123" });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["push:config:set-apns", "--certificate", p8FixturePath],
         import.meta.url,
       );
 
-      expect(stdout).toContain("APNs P12 certificate uploaded");
+      expect(stderr).toContain("APNs P12 certificate uploaded");
     });
 
     it("should output JSON for P8 key when requested", async () => {
@@ -92,7 +93,8 @@ describe("push:config:set-apns command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("config");
@@ -109,7 +111,7 @@ describe("push:config:set-apns command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("config");
@@ -203,12 +205,12 @@ describe("push:config:set-apns command", () => {
         .patch(`/v1/apps/${appId}`)
         .reply(200, { id: appId, apnsUseSandboxEndpoint: true });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["push:config:set-apns", "--certificate", p8FixturePath, "--sandbox"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("APNs P12 certificate uploaded");
+      expect(stderr).toContain("APNs P12 certificate uploaded");
     });
 
     it("should fail when certificate file not found", async () => {

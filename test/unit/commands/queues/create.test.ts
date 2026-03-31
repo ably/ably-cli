@@ -14,6 +14,7 @@ import {
   standardControlApiErrorTests,
 } from "../../../helpers/standard-tests.js";
 import { mockQueue } from "../../../fixtures/control-api.js";
+import { parseNdjsonLines } from "../../../helpers/ndjson.js";
 
 describe("queues:create command", () => {
   const mockQueueName = "test-queue";
@@ -54,12 +55,12 @@ describe("queues:create command", () => {
         })
         .reply(201, createMockQueueResponse(appId));
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["queues:create", "--name", mockQueueName],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Queue created:");
+      expect(stderr).toContain("Queue created:");
       expect(stdout).toContain(`Queue ID: ${mockQueueId}`);
       expect(stdout).toContain(`Name: ${mockQueueName}`);
       expect(stdout).toContain("Region: us-east-1-a");
@@ -95,7 +96,7 @@ describe("queues:create command", () => {
           ttl: 3600,
         });
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         [
           "queues:create",
           "--name",
@@ -110,7 +111,7 @@ describe("queues:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Queue created:");
+      expect(stderr).toContain("Queue created:");
       expect(stdout).toContain("Region: eu-west-1-a");
       expect(stdout).toContain("TTL: 3600 seconds");
       expect(stdout).toContain("Max Length: 5000 messages");
@@ -137,7 +138,7 @@ describe("queues:create command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "queues:create");
       expect(result).toHaveProperty("success", true);
@@ -169,12 +170,12 @@ describe("queues:create command", () => {
           appId: customAppId,
         });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["queues:create", "--name", mockQueueName, "--app", "custom-app-id"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Queue created:");
+      expect(stderr).toContain("Queue created:");
     });
 
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
@@ -208,12 +209,12 @@ describe("queues:create command", () => {
         .post(`/v1/apps/${appId}/queues`)
         .reply(201, createMockQueueResponse(appId));
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["queues:create", "--name", mockQueueName],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Queue created:");
+      expect(stderr).toContain("Queue created:");
     });
   });
 
@@ -394,7 +395,7 @@ describe("queues:create command", () => {
           ttl: 1,
         });
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         [
           "queues:create",
           "--name",
@@ -407,7 +408,7 @@ describe("queues:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Queue created:");
+      expect(stderr).toContain("Queue created:");
       expect(stdout).toContain("TTL: 1 seconds");
       expect(stdout).toContain("Max Length: 1 messages");
     });
@@ -438,7 +439,7 @@ describe("queues:create command", () => {
           ttl: 3600,
         });
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         [
           "queues:create",
           "--name",
@@ -453,7 +454,7 @@ describe("queues:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Queue created:");
+      expect(stderr).toContain("Queue created:");
       expect(stdout).toContain("Region: ap-southeast-2-a");
       expect(stdout).toContain("TTL: 3600 seconds");
       expect(stdout).toContain("Max Length: 10000 messages");

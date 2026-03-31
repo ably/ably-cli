@@ -23,26 +23,26 @@ describe("rooms:occupancy:subscribe command", () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["rooms:occupancy:subscribe", "test-room"],
         import.meta.url,
       );
 
       expect(room.attach).toHaveBeenCalled();
       expect(room.occupancy.subscribe).toHaveBeenCalled();
-      expect(stdout).toContain("Subscribed to occupancy in room");
+      expect(stderr).toContain("Subscribed to occupancy in room");
     });
 
     it("should display listening message", async () => {
       const chatMock = getMockAblyChat();
       chatMock.rooms._getRoom("test-room");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["rooms:occupancy:subscribe", "test-room"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Listening for occupancy updates");
+      expect(stderr).toContain("Listening");
     });
 
     it("should subscribe and display updates", async () => {

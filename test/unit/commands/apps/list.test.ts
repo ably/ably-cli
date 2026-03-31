@@ -6,6 +6,7 @@ import {
   CONTROL_HOST,
 } from "../../../helpers/control-api-test-helpers.js";
 import { runCommand } from "@oclif/test";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -89,7 +90,7 @@ describe("apps:list command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "apps:list");
       expect(result).toHaveProperty("success", true);

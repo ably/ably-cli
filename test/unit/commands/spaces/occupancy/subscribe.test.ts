@@ -39,13 +39,13 @@ describe("spaces:occupancy:subscribe command", () => {
 
   describe("functionality", () => {
     it("should subscribe and show initial messages", async () => {
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["spaces:occupancy:subscribe", "test-space"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Subscribing to occupancy events on space");
-      expect(stdout).toContain("test-space");
+      expect(stderr).toContain("Subscribing to occupancy events on space");
+      expect(stderr).toContain("test-space");
     });
 
     it("should get channel with mapped name and occupancy params", async () => {

@@ -41,10 +41,10 @@ describe("logs:subscribe command", () => {
 
   describe("functionality", () => {
     it("should subscribe to log channel and show initial message", async () => {
-      const { stdout } = await runCommand(["logs:subscribe"], import.meta.url);
+      const { stderr } = await runCommand(["logs:subscribe"], import.meta.url);
 
-      expect(stdout).toContain("Subscribed to app logs");
-      expect(stdout).toContain("Press Ctrl+C to exit");
+      expect(stderr).toContain("Subscribed to app logs");
+      expect(stderr).toContain("Press Ctrl+C to exit");
     });
 
     it("should subscribe to specific log types", async () => {

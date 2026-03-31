@@ -34,7 +34,7 @@ describe("push:devices:save command", () => {
         platform: "ios",
       });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "push:devices:save",
           "--id",
@@ -51,7 +51,7 @@ describe("push:devices:save command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Device registration saved");
+      expect(stderr).toContain("Device registration saved");
       expect(mock.push.admin.deviceRegistrations.save).toHaveBeenCalledWith(
         expect.objectContaining({
           id: "device-1",
@@ -67,7 +67,7 @@ describe("push:devices:save command", () => {
         id: "device-2",
       });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "push:devices:save",
           "--data",
@@ -76,7 +76,7 @@ describe("push:devices:save command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Device registration saved");
+      expect(stderr).toContain("Device registration saved");
     });
 
     it("should output JSON when requested", async () => {
@@ -103,7 +103,13 @@ describe("push:devices:save command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      // Parse NDJSON output — find the result record
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const result = records.find((r) => r.type === "result");
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("device");
@@ -116,7 +122,7 @@ describe("push:devices:save command", () => {
         platform: "browser",
       });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "push:devices:save",
           "--id",
@@ -137,7 +143,7 @@ describe("push:devices:save command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Device registration saved");
+      expect(stderr).toContain("Device registration saved");
       expect(mock.push.admin.deviceRegistrations.save).toHaveBeenCalledWith(
         expect.objectContaining({
           id: "browser-1",

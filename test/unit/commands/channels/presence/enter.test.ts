@@ -53,15 +53,15 @@ describe("channels:presence:enter command", () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("test-channel");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["channels:presence:enter", "test-channel"],
         import.meta.url,
       );
 
       // Should show progress and successful entry
-      expect(stdout).toContain("Entering presence on channel");
-      expect(stdout).toContain("test-channel");
-      expect(stdout).toContain("Entered");
+      expect(stderr).toContain("Entering presence on channel");
+      expect(stderr).toContain("test-channel");
+      expect(stderr).toContain("Entered");
       // Verify presence.enter was called
       expect(channel.presence.enter).toHaveBeenCalled();
     });
@@ -70,7 +70,7 @@ describe("channels:presence:enter command", () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("test-channel");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "channels:presence:enter",
           "test-channel",
@@ -80,7 +80,7 @@ describe("channels:presence:enter command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Entered");
+      expect(stderr).toContain("Entered");
       // Verify presence.enter was called with the data
       expect(channel.presence.enter).toHaveBeenCalledWith({
         status: "online",
@@ -141,10 +141,9 @@ describe("channels:presence:enter command", () => {
 
       // Parse JSON lines
       const lines = stdout.trim().split("\n").filter(Boolean);
-      expect(lines.length).toBeGreaterThanOrEqual(1);
-
-      const result = JSON.parse(lines[0]);
-      expect(result.type).toBe("result");
+      const parsed = lines.map((l) => JSON.parse(l));
+      const result = parsed.find((r) => r.type === "result");
+      expect(result).toBeDefined();
       expect(result.presenceMessage).toBeDefined();
       expect(result.presenceMessage.action).toBe("enter");
       expect(result.presenceMessage.channel).toBe("test-channel");
@@ -159,11 +158,11 @@ describe("channels:presence:enter command", () => {
       );
 
       const lines = stdout.trim().split("\n").filter(Boolean);
-      expect(lines.length).toBeGreaterThanOrEqual(2);
-
-      const status = JSON.parse(lines[1]);
-      expect(status.type).toBe("status");
-      expect(status.status).toBe("holding");
+      const parsed = lines.map((l) => JSON.parse(l));
+      const status = parsed.find(
+        (r) => r.type === "status" && r.status === "holding",
+      );
+      expect(status).toBeDefined();
       expect(status.message).toContain("Holding presence");
     });
 
@@ -182,7 +181,7 @@ describe("channels:presence:enter command", () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("test-channel");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["channels:presence:enter", "test-channel"],
         import.meta.url,
       );
@@ -190,26 +189,26 @@ describe("channels:presence:enter command", () => {
       // Without --show-others, the command should not subscribe to presence events
       expect(channel.presence.subscribe).not.toHaveBeenCalled();
       // But should still show entry confirmation
-      expect(stdout).toContain("Entered");
-      expect(stdout).toContain("test-channel");
+      expect(stderr).toContain("Entered");
+      expect(stderr).toContain("test-channel");
     });
 
     it("should show holding message without --show-others", async () => {
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["channels:presence:enter", "test-channel"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Holding presence");
+      expect(stderr).toContain("Holding presence");
     });
 
     it("should show listening message with --show-others", async () => {
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["channels:presence:enter", "test-channel", "--show-others"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Listening for presence events");
+      expect(stderr).toContain("Listening for presence events");
     });
   });
 

@@ -59,33 +59,43 @@ describe("bench:subscriber command", () => {
 
   describe("functionality", () => {
     it("should subscribe to the specified channel with duration flag", async () => {
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["bench:subscriber", "test-channel"],
         import.meta.url,
       );
 
       // Should show subscription message
-      expect(stdout).toContain("test-channel");
+      expect(stderr).toContain("test-channel");
     }, 10_000);
 
     it("should output subscription status", async () => {
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["bench:subscriber", "test-channel"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Subscribed to channel");
+      expect(stderr).toContain("Subscribed to channel");
     }, 10_000);
 
-    it("should suppress human-readable output when --json flag is used", async () => {
+    it("should emit JSON status records instead of human-readable output when --json flag is used", async () => {
       const { stdout } = await runCommand(
         ["bench:subscriber", "test-channel", "--json"],
         import.meta.url,
       );
 
-      // In JSON mode, human-readable progress/success messages are suppressed
-      expect(stdout).not.toContain("Subscribed to channel");
-      expect(stdout).not.toContain("Attaching to channel");
+      // In JSON mode, progress/success helpers emit JSON status records (not formatted text)
+      expect(stdout).not.toContain("✓");
+      const lines = stdout.trim().split("\n").filter(Boolean);
+      const statusLines = lines
+        .map((l: string) => {
+          try {
+            return JSON.parse(l);
+          } catch {
+            return null;
+          }
+        })
+        .filter((r: Record<string, unknown> | null) => r?.type === "status");
+      expect(statusLines.length).toBeGreaterThan(0);
     }, 10_000);
   });
 

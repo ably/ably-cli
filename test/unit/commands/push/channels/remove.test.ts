@@ -26,7 +26,7 @@ describe("push:channels:remove command", () => {
     it("should remove subscription with --force", async () => {
       const mock = getMockAblyRest();
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "push:channels:remove",
           "--channel",
@@ -38,7 +38,7 @@ describe("push:channels:remove command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("removed");
+      expect(stderr).toContain("removed");
       expect(mock.push.admin.channelSubscriptions.remove).toHaveBeenCalledWith(
         expect.objectContaining({
           channel: "my-channel",
@@ -70,7 +70,13 @@ describe("push:channels:remove command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      // Parse NDJSON output — find the result record
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const result = records.find((r) => r.type === "result");
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("subscription");

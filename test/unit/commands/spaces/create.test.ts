@@ -26,14 +26,14 @@ describe("spaces:create command", () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["spaces:create", "test-space"],
         import.meta.url,
       );
 
       expect(space.enter).not.toHaveBeenCalled();
-      expect(stdout).toContain("initialized");
-      expect(stdout).toContain("test-space");
+      expect(stderr).toContain("initialized");
+      expect(stderr).toContain("test-space");
     });
 
     it("should output JSON envelope with space name", async () => {

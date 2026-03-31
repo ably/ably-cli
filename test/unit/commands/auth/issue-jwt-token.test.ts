@@ -7,6 +7,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 
 describe("auth:issue-jwt-token command", () => {
   describe("functionality", () => {
@@ -147,7 +148,7 @@ describe("auth:issue-jwt-token command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "auth:issue-jwt-token");
       expect(result).toHaveProperty("success", true);

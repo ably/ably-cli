@@ -12,6 +12,7 @@ import {
   standardControlApiErrorTests,
 } from "../../../../helpers/standard-tests.js";
 import { mockNamespace } from "../../../../fixtures/control-api.js";
+import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
 
 describe("apps:rules:delete command", () => {
   const mockRuleId = "chat";
@@ -41,12 +42,12 @@ describe("apps:rules:delete command", () => {
         .delete(`/v1/apps/${appId}/namespaces/${mockRuleId}`)
         .reply(204);
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["apps:rules:delete", mockRuleId, "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("deleted");
+      expect(stderr).toContain("deleted");
     });
 
     it("should output JSON format when --json flag is used", async () => {
@@ -64,10 +65,11 @@ describe("apps:rules:delete command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("rule");
-      expect(result.rule).toHaveProperty("id", mockRuleId);
+      const rule = result.rule as Record<string, unknown>;
+      expect(rule).toHaveProperty("id", mockRuleId);
     });
   });
 
