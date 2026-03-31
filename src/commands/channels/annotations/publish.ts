@@ -153,8 +153,12 @@ export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
           );
         }
 
-        if (flags.data !== undefined) {
-          this.log(`  ${formatLabel("Data")} ${formatResource(flags.data)}`);
+        if (annotation.data !== undefined) {
+          const displayData =
+            typeof annotation.data === "string"
+              ? annotation.data
+              : JSON.stringify(annotation.data, null, 2);
+          this.log(`  ${formatLabel("Data")} ${formatResource(displayData)}`);
         }
 
         if (flags.encoding !== undefined) {
