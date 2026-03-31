@@ -115,6 +115,15 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   // Core global flags available to all commands (verbose, json, pretty-json, web-cli-help)
   static globalFlags = { ...coreGlobalFlags };
 
+  /**
+   * Strip internal SDK channel suffixes from error messages so users see
+   * room/space names, not underlying channel IDs.
+   * Covers Chat (::$chat::messages, etc.), Spaces (::$space), and Cursors (::$cursors).
+   */
+  private static sanitizeSdkErrorMessage(message: string): string {
+    return message.replaceAll(/::\$(?:chat|space|cursors)(?:::\w+)*/g, "");
+  }
+
   protected configManager: ConfigManager;
   protected interactiveHelper: InteractiveHelper;
 
@@ -1551,6 +1560,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     if (error instanceof Error && "oclif" in error) throw error;
 
     const cmdError = CommandError.from(error, context);
+    cmdError.message = AblyBaseCommand.sanitizeSdkErrorMessage(
+      cmdError.message,
+    );
 
     this.logCliEvent(
       flags,

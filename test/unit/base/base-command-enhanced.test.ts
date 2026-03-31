@@ -493,5 +493,48 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
       // No stray undefined values
       expect(raw).not.toContain("undefined");
     });
+
+    it("should strip ::$chat channel suffixes from error messages", function () {
+      const msg = "Channel denied access; channelId = abc::$chat::messages";
+      expect(() => command.testFail(new Error(msg), {}, "room")).toThrow(
+        "Channel denied access; channelId = abc",
+      );
+    });
+
+    it("should strip ::$space channel suffixes from error messages", function () {
+      const msg = "Channel denied access; channelId = myspace::$space";
+      expect(() => command.testFail(new Error(msg), {}, "space")).toThrow(
+        "Channel denied access; channelId = myspace",
+      );
+    });
+
+    it("should strip ::$cursors channel suffixes from error messages", function () {
+      const msg = "Channel denied access; channelId = myspace::$cursors";
+      expect(() => command.testFail(new Error(msg), {}, "cursors")).toThrow(
+        "Channel denied access; channelId = myspace",
+      );
+    });
+
+    it("should preserve Ably error codes when sanitizing channel suffixes", function () {
+      const mockConfig = { root: "" } as unknown as Config;
+      const cmd = new TestCommand(["--json"], mockConfig);
+      const ablyError = Object.assign(
+        new Error("Channel denied access; channelId = room1::$chat"),
+        { code: 40160, statusCode: 401 },
+      );
+
+      expect(() => cmd.testFail(ablyError, { json: true }, "room")).toThrow();
+
+      const parsed = JSON.parse(cmd.capturedOutput[0]);
+      expect(parsed.error).toBe("Channel denied access; channelId = room1");
+      expect(parsed.code).toBe(40160);
+      expect(parsed.statusCode).toBe(401);
+    });
+
+    it("should not modify errors without SDK channel suffixes", function () {
+      expect(() =>
+        command.testFail(new Error("Connection timeout"), {}, "connection"),
+      ).toThrow("Connection timeout");
+    });
   });
 });
