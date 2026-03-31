@@ -190,7 +190,7 @@ apiKey = "${mockApiKey}"
       expect(result).toHaveProperty("command", "config:show");
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
-      expect(result.error).toMatch(/Config file does not exist/i);
+      expect(result.error.message).toMatch(/Config file does not exist/i);
       expect(result).toHaveProperty("path");
     });
   });

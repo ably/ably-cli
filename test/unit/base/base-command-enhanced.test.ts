@@ -170,7 +170,7 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
     });
 
     it("should add success:false for error type in formatJsonRecord", function () {
-      const data = { error: "something went wrong" };
+      const data = { error: { message: "something went wrong" } };
       const flags: BaseFlags = { json: true };
 
       const output = command.testFormatJsonRecord("error", data, flags);
@@ -178,7 +178,7 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
 
       expect(parsed.type).toBe("error");
       expect(parsed.success).toBe(false);
-      expect(parsed.error).toBe("something went wrong");
+      expect(parsed.error).toEqual({ message: "something went wrong" });
     });
 
     it("should not add success field for event type in formatJsonRecord", function () {
@@ -341,7 +341,7 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
       const parsed = JSON.parse(cmd.capturedOutput[0]);
       expect(parsed.type).toBe("error");
       expect(parsed.success).toBe(false);
-      expect(parsed.error).toBe("auth failed");
+      expect(parsed.error).toEqual({ message: "auth failed" });
     });
 
     it("should preserve Ably error codes in JSON output", function () {
@@ -357,9 +357,9 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
       const parsed = JSON.parse(cmd.capturedOutput[0]);
       expect(parsed.type).toBe("error");
       expect(parsed.success).toBe(false);
-      expect(parsed.error).toBe("Unauthorized");
-      expect(parsed.code).toBe(40100);
-      expect(parsed.statusCode).toBe(401);
+      expect(parsed.error.message).toBe("Unauthorized");
+      expect(parsed.error.code).toBe(40100);
+      expect(parsed.error.statusCode).toBe(401);
     });
 
     it("should include context in JSON error output", function () {
@@ -373,7 +373,7 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
       ).toThrow();
 
       const parsed = JSON.parse(cmd.capturedOutput[0]);
-      expect(parsed.error).toBe("queue not found");
+      expect(parsed.error.message).toBe("queue not found");
       expect(parsed.queueName).toBe("my-queue");
     });
 
@@ -398,7 +398,7 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
       expect(cmd.capturedOutput.length).toBe(1);
       const parsed = JSON.parse(cmd.capturedOutput[0]);
       expect(parsed.type).toBe("error");
-      expect(parsed.error).toBe("pre-parse error");
+      expect(parsed.error.message).toBe("pre-parse error");
     });
 
     it("should append friendly hint to human-readable output for known Ably error codes", function () {
@@ -423,7 +423,7 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
       expect(() => cmd.testFail(ablyError, { json: true }, "auth")).toThrow();
 
       const parsed = JSON.parse(cmd.capturedOutput[0]);
-      expect(parsed.hint).toContain("ably login");
+      expect(parsed.error.hint).toContain("ably login");
     });
 
     it("should not include hint for unknown Ably error codes", function () {
@@ -437,7 +437,61 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
       expect(() => cmd.testFail(ablyError, { json: true }, "test")).toThrow();
 
       const parsed = JSON.parse(cmd.capturedOutput[0]);
-      expect(parsed.hint).toBeUndefined();
+      expect(parsed.error.hint).toBeUndefined();
+    });
+
+    it("should produce correct full JSON envelope for plain error (no code/statusCode)", function () {
+      const mockConfig = { root: "" } as unknown as Config;
+      const cmd = new TestCommand(["--json"], mockConfig);
+
+      expect(() =>
+        cmd.testFail("simple failure", { json: true }, "test"),
+      ).toThrow();
+
+      const raw = cmd.capturedOutput[0];
+      const parsed = JSON.parse(raw);
+      // Envelope fields
+      expect(parsed.type).toBe("error");
+      expect(parsed.success).toBe(false);
+      expect(parsed.command).toBeDefined();
+      // Error object contains only message — no code, statusCode, or hint
+      expect(parsed.error).toEqual({ message: "simple failure" });
+      // No stray undefined values in serialized JSON
+      expect(raw).not.toContain("undefined");
+      // No error fields leaked to top level
+      expect(parsed).not.toHaveProperty("message");
+      expect(parsed).not.toHaveProperty("code");
+      expect(parsed).not.toHaveProperty("statusCode");
+    });
+
+    it("should produce correct full JSON envelope for Ably ErrorInfo with context", function () {
+      const mockConfig = { root: "" } as unknown as Config;
+      const cmd = new TestCommand(["--json"], mockConfig);
+      const ablyError = Object.assign(new Error("Capability insufficient"), {
+        code: 40160,
+        statusCode: 401,
+      });
+
+      expect(() =>
+        cmd.testFail(ablyError, { json: true }, "publish", {
+          channel: "my-channel",
+        }),
+      ).toThrow();
+
+      const raw = cmd.capturedOutput[0];
+      const parsed = JSON.parse(raw);
+      // Envelope
+      expect(parsed.type).toBe("error");
+      expect(parsed.success).toBe(false);
+      // Error object has message, code, statusCode, and hint (40160 has a known hint)
+      expect(parsed.error.message).toBe("Capability insufficient");
+      expect(parsed.error.code).toBe(40160);
+      expect(parsed.error.statusCode).toBe(401);
+      expect(parsed.error.hint).toBeDefined();
+      // Context stays at top level
+      expect(parsed.channel).toBe("my-channel");
+      // No stray undefined values
+      expect(raw).not.toContain("undefined");
     });
   });
 });

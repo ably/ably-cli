@@ -77,7 +77,7 @@ describe("accounts:switch command", () => {
 
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", false);
-      expect(result.error).toContain("No accounts configured");
+      expect(result.error.message).toContain("No accounts configured");
     });
 
     it("should output JSON error when no accounts with --json", async () => {
@@ -92,7 +92,7 @@ describe("accounts:switch command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
-      expect(result.error).toContain("No accounts configured");
+      expect(result.error.message).toContain("No accounts configured");
     });
   });
 
@@ -106,7 +106,7 @@ describe("accounts:switch command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
-      expect(result.error).toContain("not found");
+      expect(result.error.message).toContain("not found");
       expect(result).toHaveProperty("availableAccounts");
       expect(result.availableAccounts).toBeInstanceOf(Array);
     });

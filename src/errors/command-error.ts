@@ -95,10 +95,13 @@ export class CommandError extends Error {
 
   /** Produce JSON-safe data for the error envelope */
   toJsonData(): Record<string, unknown> {
-    return {
-      error: this.message,
+    const errorObj: Record<string, unknown> = {
+      message: this.message,
       ...(this.code === undefined ? {} : { code: this.code }),
       ...(this.statusCode === undefined ? {} : { statusCode: this.statusCode }),
+    };
+    return {
+      error: errorObj,
       ...this.context,
     };
   }

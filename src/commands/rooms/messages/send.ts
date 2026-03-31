@@ -1,7 +1,7 @@
 import { Args, Flags } from "@oclif/core";
 import { ChatClient, JsonObject } from "@ably/chat";
 
-import { errorMessage } from "../../../utils/errors.js";
+import { errorMessage, extractErrorInfo } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { interpolateMessage } from "../../../utils/message.js";
@@ -24,7 +24,7 @@ interface MessageResult {
   room: string;
   serial?: string;
   success: boolean;
-  error?: string;
+  error?: { message: string; code?: number; statusCode?: number };
   [key: string]: unknown;
 }
 
@@ -231,7 +231,7 @@ export default class MessagesSend extends ChatBaseCommand {
               errorCount++;
               const errorMsg = errorMessage(error);
               const result: MessageResult = {
-                error: errorMsg,
+                error: extractErrorInfo(error),
                 index: i + 1,
                 room: args.room,
                 success: false,

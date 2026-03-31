@@ -99,7 +99,7 @@ describe("rooms:typing:keystroke command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
-      expect(result.error).toContain("Connection failed");
+      expect(result.error.message).toContain("Connection failed");
     });
   });
 

@@ -5,7 +5,7 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { BaseFlags } from "../../types/cli.js";
-import { errorMessage } from "../../utils/errors.js";
+import { errorMessage, extractErrorInfo } from "../../utils/errors.js";
 import { prepareMessageFromInput } from "../../utils/message.js";
 import {
   formatProgress,
@@ -184,7 +184,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
     let publishedCount = 0;
     let errorCount = 0;
     const results: {
-      error?: string;
+      error?: { message: string; code?: number; statusCode?: number };
       index: number;
       message?: Ably.Message;
       success: boolean;
@@ -248,7 +248,11 @@ export default class ChannelsPublish extends AblyBaseCommand {
       } catch (error) {
         errorCount++;
         const errorMsg = errorMessage(error);
-        const result = { error: errorMsg, index: messageIndex, success: false };
+        const result = {
+          error: extractErrorInfo(error),
+          index: messageIndex,
+          success: false,
+        };
         results.push(result);
         this.logCliEvent(
           flags,

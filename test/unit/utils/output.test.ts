@@ -262,10 +262,10 @@ describe("buildJsonRecord", () => {
 
   it("adds success:false for error type", () => {
     const record = buildJsonRecord("error", "channels publish", {
-      error: "not found",
+      error: { message: "not found" },
     });
     expect(record.success).toBe(false);
-    expect(record.error).toBe("not found");
+    expect(record.error).toEqual({ message: "not found" });
   });
 
   it("does not add success for event type", () => {
@@ -315,9 +315,9 @@ describe("buildJsonRecord", () => {
   it("does not allow data to override success on error type", () => {
     const record = buildJsonRecord("error", "channels publish", {
       success: true,
-      error: "something failed",
+      error: { message: "something failed" },
     });
     expect(record.success).toBe(false);
-    expect(record.error).toBe("something failed");
+    expect(record.error).toEqual({ message: "something failed" });
   });
 });

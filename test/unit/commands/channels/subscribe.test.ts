@@ -297,9 +297,9 @@ describe("channels:subscribe command", () => {
       const parsed = JSON.parse(errorLine!);
       expect(parsed.type).toBe("error");
       expect(parsed.success).toBe(false);
-      expect(parsed.code).toBe(40160);
-      expect(parsed.hint).toBeDefined();
-      expect(parsed.hint).toContain("Ably dashboard");
+      expect(parsed.error.code).toBe(40160);
+      expect(parsed.error.hint).toBeDefined();
+      expect(parsed.error.hint).toContain("Ably dashboard");
     });
   });
 });

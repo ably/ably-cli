@@ -128,7 +128,7 @@ describe("channels:list command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
-      expect(result.error).toContain("Network error");
+      expect(result.error.message).toContain("Network error");
       expect(result).toHaveProperty("type", "error");
     });
   });

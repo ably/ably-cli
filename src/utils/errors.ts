@@ -6,6 +6,35 @@ export function errorMessage(error: unknown): string {
 }
 
 /**
+ * Extract structured error info from an unknown error value.
+ * Returns an object matching the Ably ErrorInfo shape: { message, code?, statusCode? }.
+ * Suitable for embedding in JSON output as an `error` field.
+ */
+export function extractErrorInfo(error: unknown): {
+  message: string;
+  code?: number;
+  statusCode?: number;
+} {
+  if (error instanceof Error) {
+    const errWithCode = error as Error & {
+      code?: number | string;
+      statusCode?: number;
+    };
+    const result: { message: string; code?: number; statusCode?: number } = {
+      message: error.message,
+    };
+    if (typeof errWithCode.code === "number") {
+      result.code = errWithCode.code;
+    }
+    if (typeof errWithCode.statusCode === "number") {
+      result.statusCode = errWithCode.statusCode;
+    }
+    return result;
+  }
+  return { message: String(error) };
+}
+
+/**
  * Return a friendly, actionable hint for known Ably error codes.
  * Returns undefined for unknown codes.
  */

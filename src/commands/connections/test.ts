@@ -3,6 +3,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { extractErrorInfo } from "../../utils/errors.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
 import {
   formatProgress,
@@ -97,8 +98,14 @@ export default class ConnectionsTest extends AblyBaseCommand {
     xhrError: Error | null,
   ): void {
     const summary = {
-      ws: { error: wsError?.message || null, success: wsSuccess },
-      xhr: { error: xhrError?.message || null, success: xhrSuccess },
+      ws: {
+        error: wsError ? extractErrorInfo(wsError) : null,
+        success: wsSuccess,
+      },
+      xhr: {
+        error: xhrError ? extractErrorInfo(xhrError) : null,
+        success: xhrSuccess,
+      },
     };
     this.logCliEvent(
       flags,
@@ -130,7 +137,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
             connectionKey: wsSuccess
               ? this.wsClient?.connection.key
               : undefined,
-            error: wsError?.message || undefined,
+            error: wsError ? extractErrorInfo(wsError) : undefined,
           };
           break;
         }
@@ -144,14 +151,14 @@ export default class ConnectionsTest extends AblyBaseCommand {
             connectionKey: xhrSuccess
               ? this.xhrClient?.connection.key
               : undefined,
-            error: xhrError?.message || undefined,
+            error: xhrError ? extractErrorInfo(xhrError) : undefined,
           };
           break;
         }
         default: {
           jsonOutput = {
             testPassed: false,
-            error: "Unknown transport",
+            error: { message: "Unknown transport" },
           };
         }
       }

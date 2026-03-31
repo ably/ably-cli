@@ -27,7 +27,7 @@ describe("accounts:logout command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
-      expect(result.error).toContain("No account");
+      expect(result.error.message).toContain("No account");
     });
   });
 
@@ -177,7 +177,7 @@ describe("accounts:logout command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
-      expect(result.error).toContain("not found");
+      expect(result.error.message).toContain("not found");
     });
   });
 
