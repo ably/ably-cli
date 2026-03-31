@@ -117,5 +117,45 @@ describe("rooms:typing:keystroke command", () => {
       expect(error).toBeDefined();
       expect(error?.message).toContain("Room unavailable");
     });
+
+    it("should handle keystroke failure gracefully without a stack trace", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+      room.typing.keystroke.mockRejectedValue(
+        new Error("Channel denied access based on given capability"),
+      );
+
+      const { error, stderr } = await runCommand(
+        ["rooms:typing:keystroke", "test-room"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Channel denied access");
+      // Must not dump a raw stack trace — the error should be caught cleanly
+      expect(stderr).not.toContain("at ");
+      expect(stderr).not.toContain("CLIError");
+    });
+
+    it("should output JSON error on keystroke failure", async () => {
+      const chatMock = getMockAblyChat();
+      const room = chatMock.rooms._getRoom("test-room");
+      room.typing.keystroke.mockRejectedValue(
+        new Error("Channel denied access based on given capability"),
+      );
+
+      const { stdout, stderr } = await runCommand(
+        ["rooms:typing:keystroke", "test-room", "--json"],
+        import.meta.url,
+      );
+
+      const result = JSON.parse(stdout);
+      expect(result).toHaveProperty("success", false);
+      expect(result).toHaveProperty("error");
+      expect(result.error).toContain("Channel denied access");
+      // Must not dump a raw stack trace — the error should be caught cleanly
+      expect(stderr).not.toContain("at ");
+      expect(stderr).not.toContain("CLIError");
+    });
   });
 });
