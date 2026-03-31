@@ -8,6 +8,7 @@ import {
   validateAnnotationParams,
 } from "../../../utils/annotations.js";
 import {
+  formatLabel,
   formatProgress,
   formatResource,
   formatSuccess,
@@ -105,7 +106,7 @@ export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
               channel: channelName,
               serial,
               type,
-              name: flags.name,
+              ...(flags.name === undefined ? {} : { name: flags.name }),
             },
           },
           flags,
@@ -116,6 +117,10 @@ export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
             `Annotation deleted on message ${formatResource(serial)} in channel ${formatResource(channelName)}.`,
           ),
         );
+        this.log(`  ${formatLabel("Type")} ${formatResource(type)}`);
+        if (flags.name !== undefined) {
+          this.log(`  ${formatLabel("Name")} ${formatResource(flags.name)}`);
+        }
       }
     } catch (error) {
       this.fail(error, flags, "annotationDelete", {

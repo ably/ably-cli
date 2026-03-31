@@ -8,6 +8,7 @@ import {
   validateAnnotationParams,
 } from "../../../utils/annotations.js";
 import {
+  formatLabel,
   formatProgress,
   formatResource,
   formatSuccess,
@@ -118,7 +119,12 @@ export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
               channel: channelName,
               serial,
               type,
-              name: flags.name,
+              ...(flags.name === undefined ? {} : { name: flags.name }),
+              ...(flags.count === undefined ? {} : { count: flags.count }),
+              ...(flags.data === undefined ? {} : { data: flags.data }),
+              ...(flags.encoding === undefined
+                ? {}
+                : { encoding: flags.encoding }),
             },
           },
           flags,
@@ -129,6 +135,16 @@ export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
             `Annotation published on message ${formatResource(serial)} in channel ${formatResource(channelName)}.`,
           ),
         );
+        this.log(`  ${formatLabel("Type")} ${formatResource(type)}`);
+        if (flags.name !== undefined) {
+          this.log(`  ${formatLabel("Name")} ${formatResource(flags.name)}`);
+        }
+
+        if (flags.count !== undefined) {
+          this.log(
+            `  ${formatLabel("Count")} ${formatResource(String(flags.count))}`,
+          );
+        }
       }
     } catch (error) {
       this.fail(error, flags, "annotationPublish", {
