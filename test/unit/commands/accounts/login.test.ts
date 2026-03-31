@@ -224,7 +224,7 @@ describe("accounts:login command", () => {
       expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
-      expect(result.error).toContain("Network error");
+      expect(result.error.message).toContain("Network error");
     });
 
     it("should handle 500 server error", async () => {

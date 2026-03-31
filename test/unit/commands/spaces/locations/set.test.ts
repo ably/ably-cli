@@ -152,7 +152,9 @@ describe("spaces:locations:set command", () => {
       const errorRecord = records.find((r) => r.type === "error");
       expect(errorRecord).toBeDefined();
       expect(errorRecord!.success).toBe(false);
-      expect(errorRecord!.error).toContain("Invalid location JSON");
+      expect((errorRecord!.error as Record<string, unknown>).message).toContain(
+        "Invalid location JSON",
+      );
     });
   });
 

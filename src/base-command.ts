@@ -1586,10 +1586,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     );
 
     if (this.shouldOutputJson(flags)) {
-      const jsonData = cmdError.toJsonData();
-      if (friendlyHint) {
-        jsonData.hint = friendlyHint;
-      }
+      const jsonData = cmdError.toJsonData(friendlyHint);
       this.log(this.formatJsonRecord(JsonRecordType.Error, jsonData, flags));
       this.exit(1);
     }

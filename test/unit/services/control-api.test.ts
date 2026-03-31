@@ -434,10 +434,12 @@ describe("ControlApi", function () {
       const error = await api.getMe().catch((error_) => error_);
       const cmdError = error as CommandError;
       const jsonData = cmdError.toJsonData();
-      expect(jsonData.statusCode).toBe(400);
+      const errorObj = jsonData.error as Record<string, unknown>;
+      expect(errorObj.statusCode).toBe(400);
+      expect(errorObj.message).toContain("Namespace not found");
+      // Context fields stay at top level
       expect(jsonData.errorCode).toBe(40400);
       expect(jsonData.helpUrl).toBe("https://help.ably.io/error/40400");
-      expect(jsonData.error).toContain("Namespace not found");
     });
 
     it("should not include errorCode or helpUrl when API response lacks them", async function () {

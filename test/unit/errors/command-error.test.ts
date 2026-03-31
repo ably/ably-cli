@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { CommandError } from "../../../src/errors/command-error.js";
+import { extractErrorInfo } from "../../../src/utils/errors.js";
 
 describe("CommandError", () => {
   describe("constructor", () => {
@@ -185,14 +186,18 @@ describe("CommandError", () => {
   });
 
   describe("toJsonData()", () => {
-    it("should include error message", () => {
+    it("should nest error data under error key with message field", () => {
       const err = new CommandError("test error");
-      expect(err.toJsonData()).toEqual({ error: "test error" });
+      expect(err.toJsonData()).toEqual({
+        error: { message: "test error" },
+      });
     });
 
     it("should include code when present", () => {
       const err = new CommandError("auth error", { code: 40100 });
-      expect(err.toJsonData()).toEqual({ error: "auth error", code: 40100 });
+      expect(err.toJsonData()).toEqual({
+        error: { message: "auth error", code: 40100 },
+      });
     });
 
     it("should include statusCode when present", () => {
@@ -201,30 +206,161 @@ describe("CommandError", () => {
         statusCode: 401,
       });
       expect(err.toJsonData()).toEqual({
-        error: "auth error",
-        code: 40100,
-        statusCode: 401,
+        error: { message: "auth error", code: 40100, statusCode: 401 },
       });
     });
 
-    it("should include context fields", () => {
+    it("should include context fields at top level, not inside error object", () => {
       const err = new CommandError("failed", {
         code: 40400,
         context: { appId: "abc", channel: "test" },
       });
       expect(err.toJsonData()).toEqual({
-        error: "failed",
-        code: 40400,
+        error: { message: "failed", code: 40400 },
         appId: "abc",
         channel: "test",
       });
     });
 
+    it("should include hint in error object when provided", () => {
+      const err = new CommandError("auth error", {
+        code: 40100,
+        statusCode: 401,
+      });
+      expect(err.toJsonData("Check your API key.")).toEqual({
+        error: {
+          message: "auth error",
+          code: 40100,
+          statusCode: 401,
+          hint: "Check your API key.",
+        },
+      });
+    });
+
+    it("should omit hint when not provided", () => {
+      const err = new CommandError("auth error", { code: 40100 });
+      const data = err.toJsonData();
+      const errorObj = data.error as Record<string, unknown>;
+      expect(errorObj).not.toHaveProperty("hint");
+    });
+
     it("should omit code and statusCode when undefined", () => {
       const err = new CommandError("plain error");
       const data = err.toJsonData();
-      expect(data).not.toHaveProperty("code");
-      expect(data).not.toHaveProperty("statusCode");
+      const errorObj = data.error as Record<string, unknown>;
+      expect(errorObj).not.toHaveProperty("code");
+      expect(errorObj).not.toHaveProperty("statusCode");
+    });
+
+    it("should produce no undefined values in serialized JSON", () => {
+      const err = new CommandError("plain error");
+      const json = JSON.stringify(err.toJsonData());
+      expect(json).not.toContain("undefined");
+      const parsed = JSON.parse(json);
+      expect(parsed).toEqual({ error: { message: "plain error" } });
+    });
+
+    it("should produce clean JSON with all fields when fully populated", () => {
+      const err = new CommandError("Unauthorized", {
+        code: 40100,
+        statusCode: 401,
+        context: { appId: "abc", helpUrl: "https://help.ably.io/error/40100" },
+      });
+      const json = JSON.stringify(err.toJsonData());
+      const parsed = JSON.parse(json);
+      expect(parsed).toEqual({
+        error: { message: "Unauthorized", code: 40100, statusCode: 401 },
+        appId: "abc",
+        helpUrl: "https://help.ably.io/error/40100",
+      });
+      // Verify no stray keys at wrong level
+      expect(parsed.error).not.toHaveProperty("appId");
+      expect(parsed.error).not.toHaveProperty("helpUrl");
+      expect(parsed).not.toHaveProperty("message");
+      expect(parsed).not.toHaveProperty("code");
+      expect(parsed).not.toHaveProperty("statusCode");
+    });
+  });
+});
+
+describe("extractErrorInfo", () => {
+  it("should extract message from plain Error", () => {
+    const err = new Error("something broke");
+    expect(extractErrorInfo(err)).toEqual({ message: "something broke" });
+  });
+
+  it("should extract code and statusCode from Ably ErrorInfo-like error", () => {
+    const err = Object.assign(new Error("Unauthorized"), {
+      code: 40100,
+      statusCode: 401,
+    });
+    expect(extractErrorInfo(err)).toEqual({
+      message: "Unauthorized",
+      code: 40100,
+      statusCode: 401,
+    });
+  });
+
+  it("should extract code without statusCode when only code is present", () => {
+    const err = Object.assign(new Error("Connection timeout"), { code: 80003 });
+    expect(extractErrorInfo(err)).toEqual({
+      message: "Connection timeout",
+      code: 80003,
+    });
+  });
+
+  it("should ignore non-numeric code", () => {
+    const err = Object.assign(new Error("ENOENT"), { code: "ENOENT" });
+    expect(extractErrorInfo(err)).toEqual({ message: "ENOENT" });
+  });
+
+  it("should wrap string values", () => {
+    expect(extractErrorInfo("bad input")).toEqual({ message: "bad input" });
+  });
+
+  it("should wrap non-Error objects via String()", () => {
+    expect(extractErrorInfo(42)).toEqual({ message: "42" });
+    expect(extractErrorInfo(null)).toEqual({ message: "null" });
+  });
+
+  it("should omit code and statusCode from serialized JSON when absent", () => {
+    const result = extractErrorInfo(new Error("plain"));
+    const json = JSON.stringify(result);
+    expect(json).not.toContain("code");
+    expect(json).not.toContain("statusCode");
+    expect(JSON.parse(json)).toEqual({ message: "plain" });
+  });
+
+  it("should extract href from Ably ErrorInfo-like error", () => {
+    const err = Object.assign(new Error("Not found"), {
+      code: 40400,
+      statusCode: 404,
+      href: "https://help.ably.io/error/40400",
+    });
+    expect(extractErrorInfo(err)).toEqual({
+      message: "Not found",
+      code: 40400,
+      statusCode: 404,
+      href: "https://help.ably.io/error/40400",
+    });
+  });
+
+  it("should omit href when not present", () => {
+    const err = new Error("plain");
+    expect(extractErrorInfo(err)).toEqual({ message: "plain" });
+  });
+
+  it("should include all fields in serialized JSON when present", () => {
+    const err = Object.assign(new Error("Forbidden"), {
+      code: 40300,
+      statusCode: 403,
+    });
+    const result = extractErrorInfo(err);
+    const json = JSON.stringify(result);
+    expect(JSON.parse(json)).toEqual({
+      message: "Forbidden",
+      code: 40300,
+      statusCode: 403,
     });
   });
 });

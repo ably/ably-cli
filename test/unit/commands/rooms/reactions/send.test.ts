@@ -108,7 +108,7 @@ describe("rooms:reactions:send command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
-      expect(result.error).toContain("Send failed");
+      expect(result.error.message).toContain("Send failed");
     });
   });
 

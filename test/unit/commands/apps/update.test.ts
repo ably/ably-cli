@@ -249,7 +249,7 @@ describe("apps:update command", () => {
       expect(result).toHaveProperty("command", "apps:update");
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
-      expect(result.error).toMatch(/At least one update parameter/);
+      expect(result.error.message).toMatch(/At least one update parameter/);
     });
 
     it("should require app ID argument", async () => {
