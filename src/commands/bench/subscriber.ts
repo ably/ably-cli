@@ -11,6 +11,7 @@ import {
   formatResource,
   formatSuccess,
 } from "../../utils/output.js";
+import type { BenchMessageData, BenchPresenceData } from "../../types/bench.js";
 
 interface TestMetrics {
   endToEndLatencies: number[]; // Publisher -> Subscriber
@@ -156,13 +157,12 @@ export default class BenchSubscriber extends AblyBaseCommand {
     flags: Record<string, unknown>,
   ): Promise<void> {
     const members = await channel.presence.get();
-    const publishers = members.filter(
-      (m) =>
-        m.data &&
-        typeof m.data === "object" &&
-        "role" in m.data &&
-        m.data.role === "publisher",
-    );
+    const publishers = members.filter((m) => {
+      const d = m.data as BenchPresenceData | undefined;
+      return (
+        d && typeof d === "object" && "role" in d && d.role === "publisher"
+      );
+    });
 
     if (publishers.length > 0) {
       this.logCliEvent(
@@ -176,7 +176,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
       }
 
       for (const publisher of publishers) {
-        const { data } = publisher;
+        const data = publisher.data as BenchPresenceData | undefined;
         if (
           data &&
           typeof data === "object" &&
@@ -405,7 +405,8 @@ export default class BenchSubscriber extends AblyBaseCommand {
     await channel.presence.subscribe(
       "enter",
       (member: Ably.PresenceMessage) => {
-        const { clientId, data } = member; // Destructure member
+        const { clientId } = member;
+        const data = member.data as BenchPresenceData | undefined;
         this.logCliEvent(
           flags,
           "presence",
@@ -451,7 +452,8 @@ export default class BenchSubscriber extends AblyBaseCommand {
     await channel.presence.subscribe(
       "leave",
       (member: Ably.PresenceMessage) => {
-        const { clientId, data } = member; // Destructure member
+        const { clientId } = member;
+        const data = member.data as BenchPresenceData | undefined;
         this.logCliEvent(
           flags,
           "presence",
@@ -668,16 +670,14 @@ export default class BenchSubscriber extends AblyBaseCommand {
   ): Promise<void> {
     await channel.subscribe((message: Ably.Message) => {
       const currentTime = Date.now();
+      const msgData = message.data as BenchMessageData;
 
       // Check if this message is the start of a new test
-      if (
-        message.data.type === "start" &&
-        message.data.testId !== metrics.testId
-      ) {
+      if (msgData.type === "start" && msgData.testId !== metrics.testId) {
         this.startNewTest(
           metrics,
-          message.data.testId,
-          message.data.startTime,
+          msgData.testId,
+          msgData.startTime ?? currentTime,
           flags,
         );
         // Initialize publisher check only when a test starts
@@ -693,13 +693,13 @@ export default class BenchSubscriber extends AblyBaseCommand {
         );
         const logMsg = `Benchmark test started: ${metrics.testId}`;
         this.addLogToBuffer(logMsg, flags); // Pass flags here
-      } else if (message.data.type === "message") {
+      } else if (msgData.type === "message") {
         // If we missed the 'start' envelope (subscriber started late), initialise on first message
         if (!this.testInProgress || metrics.testId === null) {
           this.startNewTest(
             metrics,
-            message.data.testId,
-            message.data.timestamp, // best approximation if startTime unknown
+            msgData.testId,
+            msgData.timestamp, // best approximation if startTime unknown
             flags,
           );
           this.startPublisherCheckInterval(metrics, flags, () =>
@@ -714,7 +714,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
           );
         }
 
-        if (message.data.testId !== metrics.testId) {
+        if (msgData.testId !== metrics.testId) {
           // Ignore stray messages from previous/future tests
           return;
         }
@@ -722,7 +722,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
         metrics.messagesReceived += 1;
         metrics.lastMessageTime = currentTime;
 
-        const endToEndLatency = currentTime - message.data.timestamp;
+        const endToEndLatency = currentTime - msgData.timestamp;
         metrics.endToEndLatencies.push(endToEndLatency);
         metrics.totalLatency += endToEndLatency;
 
@@ -732,10 +732,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
         if (!this.shouldOutputJson(flags)) {
           this.updateStatusAndLogs(this.displayTable, metrics);
         }
-      } else if (
-        message.data.type === "end" &&
-        message.data.testId === metrics.testId
-      ) {
+      } else if (msgData.type === "end" && msgData.testId === metrics.testId) {
         // Explicit end-of-test control message – finish even if testInProgress flag somehow false
         this.finishTest(flags, metrics);
         this.testInProgress = false;
