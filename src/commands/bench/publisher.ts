@@ -727,7 +727,7 @@ export default class BenchPublisher extends AblyBaseCommand {
           .then(() => {
             const requestLatency = Date.now() - publishStart;
             if (messageTracking[payload.msgId]) {
-              messageTracking[payload.msgId].requestCompleteTime = Date.now();
+              messageTracking[payload.msgId]!.requestCompleteTime = Date.now();
             }
 
             metrics.requestLatencies.push(requestLatency);
@@ -837,7 +837,7 @@ export default class BenchPublisher extends AblyBaseCommand {
           .then(() => {
             const requestLatency = Date.now() - publishStart;
             if (messageTracking[payload.msgId]) {
-              messageTracking[payload.msgId].requestCompleteTime = Date.now();
+              messageTracking[payload.msgId]!.requestCompleteTime = Date.now();
             }
 
             metrics.requestLatencies.push(requestLatency);

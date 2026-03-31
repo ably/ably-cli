@@ -202,7 +202,7 @@ export default class AccountsLogin extends ControlBaseCommand {
 
         if (apps.length === 1) {
           // Auto-select the only app
-          selectedApp = apps[0];
+          selectedApp = apps[0]!;
           isAutoSelected = true;
           this.configManager.setCurrentApp(selectedApp.id);
           this.configManager.storeAppInfo(selectedApp.id, {
@@ -274,7 +274,7 @@ export default class AccountsLogin extends ControlBaseCommand {
 
           if (keys.length === 1) {
             // Auto-select the only key
-            selectedKey = keys[0];
+            selectedKey = keys[0]!;
             isKeyAutoSelected = true;
             this.configManager.storeAppKey(selectedApp.id, selectedKey.key, {
               keyId: selectedKey.id,

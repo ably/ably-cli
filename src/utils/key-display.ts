@@ -20,7 +20,7 @@ export function formatCapabilities(
   }
 
   if (capEntries.length === 1) {
-    const [scope, privileges] = capEntries[0];
+    const [scope, privileges] = capEntries[0]!;
     return [
       `${indent}Capabilities: ${scope} → ${Array.isArray(privileges) ? privileges.join(", ") : privileges}`,
     ];

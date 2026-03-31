@@ -113,7 +113,7 @@ export default class RoomsList extends ChatBaseCommand {
       // Normalize names in a separate step (keep filter as pure predicate)
       const rooms = limitedRooms.map((r) => {
         const match = r.channelId.match(/^(.+?)::\$chat.*$/)!;
-        return { ...r, channelId: match[1], room: match[1] };
+        return { ...r, channelId: match[1]!, room: match[1]! };
       });
 
       const paginationWarning = formatPaginationLog(

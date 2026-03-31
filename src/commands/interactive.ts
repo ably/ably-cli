@@ -194,11 +194,11 @@ export default class Interactive extends Command {
         );
 
         // Calculate padding for alignment
-        const maxCmdLength = Math.max(...commands.map(([cmd]) => cmd.length));
+        const maxCmdLength = Math.max(...commands.map(([cmd]) => cmd!.length));
 
         // Display commands with proper alignment
         commands.forEach(([cmd, desc]) => {
-          const paddedCmd = cmd.padEnd(maxCmdLength + 2);
+          const paddedCmd = cmd!.padEnd(maxCmdLength + 2);
           console.log(`  ${chalk.cyan(paddedCmd)}${desc}`);
         });
 
@@ -1210,8 +1210,7 @@ export default class Interactive extends Command {
     // Find matches (search from most recent to oldest)
     // Note: readline stores history in reverse order (most recent first)
     this.historySearch.matches = [];
-    for (let i = 0; i < history.length; i++) {
-      const command = history[i];
+    for (const command of history) {
       if (
         command
           .toLowerCase()
@@ -1247,7 +1246,7 @@ export default class Interactive extends Command {
     if (this.historySearch.matches.length > 0) {
       // Show current match
       const currentMatch =
-        this.historySearch.matches[this.historySearch.currentIndex];
+        this.historySearch.matches[this.historySearch.currentIndex]!;
       const searchPrompt = `(reverse-i-search\`${this.historySearch.searchTerm}'): `;
 
       // Write the search prompt and matched command
@@ -1276,7 +1275,7 @@ export default class Interactive extends Command {
 
     // Get current match
     const currentMatch =
-      this.historySearch.matches[this.historySearch.currentIndex];
+      this.historySearch.matches[this.historySearch.currentIndex]!;
 
     // Exit search mode
     this.historySearch.active = false;

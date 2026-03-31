@@ -88,7 +88,7 @@ export abstract class BaseTopicCommand extends InteractiveBaseCommand {
         // Check if we found a close match
         const threshold = Math.max(
           1,
-          Math.floor(possibleSubcommand.length / 2),
+          Math.floor(possibleSubcommand!.length / 2),
         );
         const maxDistance = 3;
 

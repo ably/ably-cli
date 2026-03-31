@@ -4,6 +4,7 @@
     "module": "NodeNext",
     "outDir": "./dist",
     "strict": true,
+    "noUncheckedIndexedAccess": true,
     "target": "es2022",
     "lib": ["es2022"],
     "moduleResolution": "nodenext",

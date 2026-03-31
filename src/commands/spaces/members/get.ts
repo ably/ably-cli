@@ -70,9 +70,9 @@ export default class SpacesMembersGet extends SpacesBaseCommand {
           `\n${formatHeading("Current members")} (${formatCountLabel(members.length, "member")}):\n`,
         );
 
-        for (let i = 0; i < members.length; i++) {
+        for (const [i, member] of members.entries()) {
           this.log(`${formatIndex(i + 1)}`);
-          this.log(formatMemberBlock(members[i], { indent: "  " }));
+          this.log(formatMemberBlock(member, { indent: "  " }));
           this.log("");
         }
       }

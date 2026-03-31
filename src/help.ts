@@ -101,8 +101,8 @@ export default class CustomHelp extends Help {
         if (match) {
           const [, indent, commandId, rest] = match;
           // Replace colons with spaces in the command ID
-          const formattedId = commandId.replaceAll(":", " ");
-          return indent + formattedId + rest;
+          const formattedId = commandId!.replaceAll(":", " ");
+          return indent! + formattedId + rest!;
         }
         return line;
       })
@@ -360,12 +360,12 @@ export default class CustomHelp extends Help {
     );
 
     // Calculate padding for alignment
-    const maxCmdLength = Math.max(...commands.map(([cmd]) => cmd.length));
+    const maxCmdLength = Math.max(...commands.map(([cmd]) => cmd!.length));
 
     // Display commands with proper alignment
     commands.forEach(([cmd, desc]) => {
-      const paddedCmd = cmd.padEnd(maxCmdLength + 2);
-      lines.push(`  ${chalk.cyan(paddedCmd)}${chalk.whiteBright(desc)}`);
+      const paddedCmd = cmd!.padEnd(maxCmdLength + 2);
+      lines.push(`  ${chalk.cyan(paddedCmd)}${chalk.whiteBright(desc!)}`);
     });
 
     // Always show help instruction
@@ -558,7 +558,7 @@ export default class CustomHelp extends Help {
       this.renderList(
         visibleCommands.map((c) => {
           const description =
-            c.description && this.render(c.description.split("\n")[0]);
+            c.description && this.render(c.description.split("\n")[0]!);
           return [
             chalk.cyan(c.id),
             description ? chalk.whiteBright(description) : undefined,
@@ -588,7 +588,7 @@ export default class CustomHelp extends Help {
         .filter((t) => this.shouldDisplay({ id: t.name } as Command.Loadable)) // Reuse shouldDisplay logic
         .map((c) => {
           const description =
-            c.description && this.render(c.description.split("\n")[0]);
+            c.description && this.render(c.description.split("\n")[0]!);
           return [
             chalk.cyan(c.name),
             description ? chalk.whiteBright(description) : undefined,

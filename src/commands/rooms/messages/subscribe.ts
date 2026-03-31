@@ -232,7 +232,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       const roomList =
         this.roomNames.length > 1
           ? this.roomNames.map((r) => formatResource(r)).join(", ")
-          : formatResource(this.roomNames[0]);
+          : formatResource(this.roomNames[0]!);
 
       if (!this.shouldOutputJson(flags)) {
         this.log(

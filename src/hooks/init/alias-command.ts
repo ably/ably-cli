@@ -26,7 +26,7 @@ const hook: Hook<"init"> = async function () {
   // so process.argv[2] contains the first CLI command (e.g., 'account')
   if (process.argv.length <= 2) return; // Not enough arguments
 
-  const firstArg = process.argv[2];
+  const firstArg = process.argv[2]!;
 
   // Check if this is a singular form that has a plural equivalent
   const pluralForm = singularToPluralMap[firstArg];

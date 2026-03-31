@@ -57,12 +57,12 @@ export default class AppsCurrent extends ControlBaseCommand {
 
         if (apiKey) {
           const keyId =
-            this.configManager.getKeyId(currentAppId) || apiKey.split(":")[0];
+            this.configManager.getKeyId(currentAppId) || apiKey.split(":")[0]!;
           const keyLabel =
             this.configManager.getKeyName(currentAppId) || "Unnamed key";
           const keyName = keyId.includes(".")
             ? keyId
-            : `${currentAppId}.${keyId.split(".")[1] || keyId}`;
+            : `${currentAppId}.${keyId.split(".")[1] ?? keyId}`;
 
           keyInfo = {
             keyName,
@@ -94,14 +94,14 @@ export default class AppsCurrent extends ControlBaseCommand {
         if (apiKey) {
           // Extract the key ID and format the full key name (app_id.key_id)
           const keyId =
-            this.configManager.getKeyId(currentAppId) || apiKey.split(":")[0];
+            this.configManager.getKeyId(currentAppId) || apiKey.split(":")[0]!;
           const keyLabel =
             this.configManager.getKeyName(currentAppId) || "Unnamed key";
 
           // Format the full key name (app_id.key_id)
           const keyName = keyId.includes(".")
             ? keyId
-            : `${currentAppId}.${keyId.split(".")[1] || keyId}`;
+            : `${currentAppId}.${keyId.split(".")[1] ?? keyId}`;
 
           this.log(`${formatLabel("API Key")} ${chalk.yellow.bold(keyName)}`);
           this.log(
@@ -138,8 +138,8 @@ export default class AppsCurrent extends ControlBaseCommand {
     }
 
     // API key format is [APP_ID].[KEY_ID]:[KEY_SECRET]
-    const appId = apiKey.split(".")[0];
-    const keyId = apiKey.split(":")[0]; // This includes APP_ID.KEY_ID
+    const appId = apiKey.split(".")[0]!;
+    const keyId = apiKey.split(":")[0]!; // This includes APP_ID.KEY_ID
 
     try {
       // Create a control API instance using the base class method

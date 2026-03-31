@@ -102,7 +102,7 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
       });
 
       if (stats.length > 0) {
-        this.statsDisplay!.display(stats[0]);
+        this.statsDisplay!.display(stats[0]!);
       }
     } catch (error) {
       this.fail(error, flags, "stats");

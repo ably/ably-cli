@@ -129,8 +129,7 @@ export default class RoomsPresenceGet extends AblyBaseCommand {
           `\n${formatHeading(`Presence members in room: ${formatResource(roomName)}`)} (${formatCountLabel(items.length, "member")}):\n`,
         );
 
-        for (let i = 0; i < items.length; i++) {
-          const member = items[i];
+        for (const [i, member] of items.entries()) {
           this.log(`${formatIndex(i + 1)}`);
           this.log(
             `  ${formatLabel("Client ID")} ${formatClientId(member.clientId)}`,

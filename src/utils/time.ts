@@ -22,7 +22,9 @@ export function parseTimestamp(input: string, label = "timestamp"): number {
       d: 86_400_000,
       w: 604_800_000,
     };
-    return Date.now() - Number.parseInt(match[1], 10) * multipliers[match[2]];
+    return (
+      Date.now() - Number.parseInt(match[1]!, 10) * multipliers[match[2]!]!
+    );
   }
 
   // Strict ISO 8601 validation: date-only (interpreted as UTC) or date-time with required timezone

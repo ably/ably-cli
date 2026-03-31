@@ -129,9 +129,9 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
         `\n${formatHeading("Current locks")} (${formatCountLabel(locks.length, "lock")}):\n`,
       );
 
-      for (let i = 0; i < locks.length; i++) {
+      for (const [i, lock] of locks.entries()) {
         this.log(`${formatIndex(i + 1)}`);
-        this.log(formatLockBlock(locks[i], { indent: "  " }));
+        this.log(formatLockBlock(lock, { indent: "  " }));
         this.log("");
       }
     }

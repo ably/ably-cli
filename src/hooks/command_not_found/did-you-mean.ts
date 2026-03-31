@@ -281,7 +281,7 @@ const hook: Hook<"command_not_found"> = async function (opts) {
       // Extract the topic from the suggestion (e.g., "accounts:current" -> "accounts")
       const topicParts = suggestion.split(":");
       if (topicParts.length > 1) {
-        const topicCommand = topicParts[0];
+        const topicCommand = topicParts[0]!;
         const topicCmd = config.findCommand(topicCommand);
 
         if (topicCmd) {

@@ -138,8 +138,7 @@ export default class SpacesGet extends SpacesBaseCommand {
           `${formatHeading("Members")} (${formatCountLabel(members.length, "member")}):\n`,
         );
 
-        for (let i = 0; i < members.length; i++) {
-          const member = members[i];
+        for (const [i, member] of members.entries()) {
           this.log(`${formatIndex(i + 1)}`);
           this.log(
             `  ${formatLabel("Client ID")} ${formatClientId(member.clientId)}`,

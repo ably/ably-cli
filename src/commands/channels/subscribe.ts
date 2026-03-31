@@ -243,7 +243,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
         if (channelNames.length === 1) {
           this.log(
             formatSuccess(
-              `Subscribed to channel: ${formatResource(channelNames[0])}.`,
+              `Subscribed to channel: ${formatResource(channelNames[0]!)}.`,
             ),
           );
         } else {

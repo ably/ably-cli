@@ -81,8 +81,8 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
         );
       }
 
-      const keyName = keyParts[0]; // This gets the appId.keyId portion
-      const secret = keyParts[1];
+      const keyName = keyParts[0]!; // This gets the appId.keyId portion
+      const secret = keyParts[1]!;
 
       // Create the properly formatted body for token revocation
       const requestBody = {

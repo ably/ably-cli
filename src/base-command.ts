@@ -626,7 +626,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           const apiKey =
             flags["api-key"] || this.configManager.getApiKey(appId);
           if (apiKey) {
-            const keyId = apiKey.split(":")[0]; // Extract key ID (part before colon)
+            const keyId = apiKey.split(":")[0]!; // Extract key ID (part before colon)
             const keyName =
               this.configManager.getKeyName(appId) || "Default Key";
             // Format the full key name (app_id.key_id)
@@ -1097,13 +1097,13 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       return null;
     }
 
-    const keyParts = parts[0].split(".");
+    const keyParts = parts[0]!.split(".");
     if (keyParts.length !== 2) {
       this.debug(`Invalid API key format: missing period separator in key`);
       return null;
     }
 
-    const appId = keyParts[0];
+    const appId = keyParts[0]!;
     const keyId = keyParts[1];
     const keySecret = parts[1];
 

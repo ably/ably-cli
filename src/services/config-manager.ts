@@ -343,7 +343,7 @@ export class TomlConfigManager implements ConfigManager {
     }
 
     // Set the current app for this account
-    this.config.accounts[currentAlias].currentAppId = appId;
+    this.config.accounts[currentAlias]!.currentAppId = appId;
     this.saveConfig();
   }
 
