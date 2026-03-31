@@ -101,8 +101,8 @@ export class CommandError extends Error {
       ...(this.statusCode === undefined ? {} : { statusCode: this.statusCode }),
     };
     return {
-      error: errorObj,
       ...this.context,
+      error: errorObj,
     };
   }
 }
