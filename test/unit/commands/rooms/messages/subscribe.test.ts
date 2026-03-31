@@ -143,15 +143,17 @@ describe("rooms:messages:subscribe command", () => {
       });
 
       const events = records.filter(
-        (r) => r.type === "event" && r.room === "test-room",
+        (r) =>
+          r.type === "event" &&
+          (r.message as Record<string, unknown>)?.room === "test-room",
       );
       expect(events.length).toBeGreaterThan(0);
       const record = events[0];
       expect(record).toHaveProperty("type", "event");
       expect(record).toHaveProperty("command", "rooms:messages:subscribe");
-      expect(record).toHaveProperty("room", "test-room");
-      expect(record).toHaveProperty("eventType", "message.created");
       const msg = record.message as Record<string, unknown>;
+      expect(msg).toHaveProperty("room", "test-room");
+      expect(msg).toHaveProperty("eventType", "message.created");
       expect(msg).toHaveProperty("serial", "msg-json");
       expect(msg).toHaveProperty("action", "message.created");
     });

@@ -93,8 +93,9 @@ describe("apps:switch command", () => {
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "apps:switch");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("appId", mockAppId);
-      expect(result).toHaveProperty("appName", mockAppName);
+      expect(result).toHaveProperty("app");
+      expect(result.app).toHaveProperty("id", mockAppId);
+      expect(result.app).toHaveProperty("name", mockAppName);
     });
   });
 

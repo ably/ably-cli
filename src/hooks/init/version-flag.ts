@@ -1,7 +1,11 @@
 import { Hook } from "@oclif/core";
 import {
+  buildJsonRecord,
+  JsonRecordType,
+  formatJsonString,
+} from "../../utils/output.js";
+import {
   getVersionInfo,
-  formatVersionJson,
   formatVersionString,
   formatReleaseStatus,
 } from "../../utils/version.js";
@@ -46,7 +50,13 @@ const hook: Hook<"init"> = async function (opts) {
 
     // Handle JSON output
     if (hasJsonFlag || hasPrettyJsonFlag) {
-      const jsonOutput = formatVersionJson(versionInfo, hasPrettyJsonFlag);
+      const record = buildJsonRecord(JsonRecordType.Result, "version", {
+        version: versionInfo,
+      });
+      const jsonOutput = formatJsonString(record, {
+        json: !hasPrettyJsonFlag,
+        prettyJson: hasPrettyJsonFlag,
+      } as Record<string, unknown>);
       console.log(jsonOutput);
       handleVersionExit();
     } else {

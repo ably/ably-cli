@@ -79,10 +79,10 @@ export default class AccountsLogout extends ControlBaseCommand {
           {
             account: {
               alias: targetAlias,
+              remainingAccounts: remainingAccounts.map(
+                (account) => account.alias,
+              ),
             },
-            remainingAccounts: remainingAccounts.map(
-              (account) => account.alias,
-            ),
           },
           flags,
         );

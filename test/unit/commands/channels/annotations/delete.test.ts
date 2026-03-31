@@ -120,8 +120,9 @@ describe("channels:annotations:delete command", () => {
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "channels:annotations:delete");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("channel", "test-channel");
-      expect(result).toHaveProperty("serial", "serial-001");
+      expect(result).toHaveProperty("annotation");
+      expect(result.annotation).toHaveProperty("channel", "test-channel");
+      expect(result.annotation).toHaveProperty("serial", "serial-001");
     });
   });
 

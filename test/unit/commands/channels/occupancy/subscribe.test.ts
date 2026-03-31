@@ -192,13 +192,13 @@ describe("channels:occupancy:subscribe command", () => {
         await commandPromise;
       });
       const events = records.filter(
-        (r) => r.type === "event" && r.channel === "test-channel",
+        (r) => r.type === "event" && r.occupancy?.channel === "test-channel",
       );
       expect(events.length).toBeGreaterThan(0);
       const record = events[0];
       expect(record).toHaveProperty("type", "event");
       expect(record).toHaveProperty("command", "channels:occupancy:subscribe");
-      expect(record).toHaveProperty("channel", "test-channel");
+      expect(record.occupancy).toHaveProperty("channel", "test-channel");
     });
   });
 });

@@ -2,7 +2,6 @@
  * Common utilities for version-related functionality
  */
 import chalk from "chalk";
-import colorJson from "color-json";
 // Import package.json directly - TypeScript will resolve this at compile time
 import packageJson from "../../package.json" with { type: "json" };
 
@@ -54,22 +53,4 @@ export function formatVersionString(config: {
   arch: string;
 }): string {
   return `${config.name}/${config.version} ${process.platform}-${config.arch} ${process.version}`;
-}
-
-/**
- * Format version info as JSON based on flag preferences
- */
-export function formatVersionJson(
-  versionInfo: ReturnType<typeof getVersionInfo>,
-  isPretty: boolean,
-): string {
-  try {
-    if (isPretty) {
-      return colorJson(versionInfo);
-    }
-    return JSON.stringify(versionInfo);
-  } catch {
-    // Fallback to regular JSON.stringify if colorJson fails
-    return JSON.stringify(versionInfo, undefined, isPretty ? 2 : undefined);
-  }
 }

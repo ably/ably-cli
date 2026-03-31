@@ -100,7 +100,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
 
         if (this.shouldOutputJson(flags)) {
           this.logJsonEvent(
-            { eventType: typingSetEvent.type, ...eventData },
+            { typing: { eventType: typingSetEvent.type, ...eventData } },
             flags,
           );
         } else {

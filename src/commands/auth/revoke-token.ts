@@ -100,8 +100,10 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
         if (this.shouldOutputJson(flags)) {
           this.logJsonResult(
             {
-              message: "Token revocation processed successfully",
-              response,
+              revocation: {
+                message: "Token revocation processed successfully",
+                response,
+              },
             },
             flags,
           );

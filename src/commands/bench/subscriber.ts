@@ -307,7 +307,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
     if (this.shouldOutputJson(flags)) {
       // In JSON mode, output the structured results object
-      this.logJsonResult(results, flags);
+      this.logJsonResult({ benchmark: results }, flags);
       return;
     }
 

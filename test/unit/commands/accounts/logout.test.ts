@@ -58,7 +58,7 @@ describe("accounts:logout command", () => {
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("account");
       expect(result.account).toHaveProperty("alias", "testaccount");
-      expect(result).toHaveProperty("remainingAccounts");
+      expect(result.account).toHaveProperty("remainingAccounts");
 
       // Verify config was updated - account should be removed
       const mock = getMockConfigManager();
@@ -115,7 +115,7 @@ describe("accounts:logout command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", true);
       expect(result.account).toHaveProperty("alias", "primary");
-      expect(result.remainingAccounts).toContain("secondary");
+      expect(result.account.remainingAccounts).toContain("secondary");
 
       // Verify config was updated - primary removed, secondary remains
       const mock = getMockConfigManager();
@@ -137,7 +137,7 @@ describe("accounts:logout command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", true);
       expect(result.account).toHaveProperty("alias", "secondary");
-      expect(result.remainingAccounts).toContain("primary");
+      expect(result.account.remainingAccounts).toContain("primary");
 
       // Verify config was updated - secondary removed, primary remains
       const mock = getMockConfigManager();

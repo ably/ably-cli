@@ -70,9 +70,14 @@ describe("ChannelsOccupancyGet", function () {
 
     // Parse and verify the JSON output
     const parsedOutput = JSON.parse(stdout.trim());
-    expect(parsedOutput).toHaveProperty("channel", "test-occupancy-channel");
-    expect(parsedOutput).toHaveProperty("metrics");
-    expect(parsedOutput.metrics).toMatchObject({
+    expect(parsedOutput).toHaveProperty("success", true);
+    expect(parsedOutput).toHaveProperty("occupancy");
+    expect(parsedOutput.occupancy).toHaveProperty(
+      "channel",
+      "test-occupancy-channel",
+    );
+    expect(parsedOutput.occupancy).toHaveProperty("metrics");
+    expect(parsedOutput.occupancy.metrics).toMatchObject({
       connections: 10,
       presenceConnections: 5,
       presenceMembers: 8,
@@ -80,7 +85,6 @@ describe("ChannelsOccupancyGet", function () {
       publishers: 2,
       subscribers: 6,
     });
-    expect(parsedOutput).toHaveProperty("success", true);
   });
 
   it("should handle empty occupancy metrics", async function () {

@@ -133,10 +133,10 @@ describe("accounts:login command", () => {
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("app");
-      expect(result.app).toHaveProperty("id", mockAppId);
-      expect(result.app).toHaveProperty("name", mockAppName);
-      expect(result.app).toHaveProperty("autoSelected", true);
+      expect(result.account).toHaveProperty("app");
+      expect(result.account.app).toHaveProperty("id", mockAppId);
+      expect(result.account.app).toHaveProperty("name", mockAppName);
+      expect(result.account.app).toHaveProperty("autoSelected", true);
 
       // Verify config was written with app info via mock
       const mock = getMockConfigManager();
@@ -179,7 +179,7 @@ describe("accounts:login command", () => {
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", true);
-      expect(result).not.toHaveProperty("app");
+      expect(result.account).not.toHaveProperty("app");
 
       // Verify config was written without app selection via mock
       const mock = getMockConfigManager();

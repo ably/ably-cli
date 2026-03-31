@@ -29,7 +29,7 @@ export default class Version extends AblyBaseCommand {
 
     // Check if output should be in JSON format
     if (this.shouldOutputJson(flags)) {
-      this.logJsonResult(versionInfo, flags);
+      this.logJsonResult({ version: versionInfo }, flags);
     } else {
       // Use shared string formatting and display release status
       this.log(formatVersionString(this.config));

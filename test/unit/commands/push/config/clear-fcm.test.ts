@@ -129,7 +129,8 @@ describe("push:config:clear-fcm command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("cleared", "fcm");
+      expect(result).toHaveProperty("config");
+      expect(result.config).toHaveProperty("cleared", "fcm");
     });
   });
 

@@ -123,8 +123,9 @@ describe("Connections E2E Tests", () => {
 
         // Check for expected test result structure
         expect(jsonOutput).toHaveProperty("success");
-        expect(jsonOutput).toHaveProperty("transport");
-        expect(jsonOutput.transport).toBe("ws");
+        expect(jsonOutput).toHaveProperty("connection");
+        expect(jsonOutput.connection).toHaveProperty("transport");
+        expect(jsonOutput.connection.transport).toBe("ws");
       },
     );
   });
@@ -233,21 +234,22 @@ describe("Connections E2E Tests", () => {
                   // Check different possible locations for client ID
                   let foundClientId: string | null = null;
 
-                  // Based on actual connection lifecycle events, clientId is in data.transport.requestParams.clientId as an array
-                  if (logEvent.data?.transport?.requestParams?.clientId) {
+                  // Based on actual connection lifecycle events, clientId is in log.data.transport.requestParams.clientId as an array
+                  if (logEvent.log?.data?.transport?.requestParams?.clientId) {
                     const clientIdArray =
-                      logEvent.data.transport.requestParams.clientId;
+                      logEvent.log.data.transport.requestParams.clientId;
                     foundClientId = Array.isArray(clientIdArray)
                       ? clientIdArray[0]
                       : clientIdArray;
                   }
-                  // Also check in data.clientId (for backwards compatibility)
-                  else if (logEvent.data?.clientId) {
-                    foundClientId = logEvent.data.clientId;
+                  // Also check in log.data.clientId (for backwards compatibility)
+                  else if (logEvent.log?.data?.clientId) {
+                    foundClientId = logEvent.log.data.clientId;
                   }
-                  // Check in data.connectionDetails.clientId
-                  else if (logEvent.data?.connectionDetails?.clientId) {
-                    foundClientId = logEvent.data.connectionDetails.clientId;
+                  // Check in log.data.connectionDetails.clientId
+                  else if (logEvent.log?.data?.connectionDetails?.clientId) {
+                    foundClientId =
+                      logEvent.log.data.connectionDetails.clientId;
                   }
 
                   if (foundClientId === testClientId) {
@@ -257,11 +259,13 @@ describe("Connections E2E Tests", () => {
                     connectionEvents.push({
                       timestamp: Date.now(),
                       eventType:
-                        logEvent.event || logEvent.eventType || "connection",
+                        logEvent.log?.event ||
+                        logEvent.log?.eventType ||
+                        "connection",
                       clientId: foundClientId,
                       connectionId:
-                        logEvent.data?.connectionId ||
-                        logEvent.connectionId ||
+                        logEvent.log?.data?.connectionId ||
+                        logEvent.log?.connectionId ||
                         null,
                     });
                   }

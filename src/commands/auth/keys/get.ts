@@ -94,15 +94,15 @@ export default class KeysGetCommand extends ControlBaseCommand {
             key: {
               ...key,
               keyName,
+              ...(hasEnvOverride
+                ? {
+                    envKeyOverride: {
+                      keyName: envKeyPrefix,
+                      note: "ABLY_API_KEY env var overrides this key for product API commands",
+                    },
+                  }
+                : {}),
             },
-            ...(hasEnvOverride
-              ? {
-                  envKeyOverride: {
-                    keyName: envKeyPrefix,
-                    note: "ABLY_API_KEY env var overrides this key for product API commands",
-                  },
-                }
-              : {}),
           },
           flags,
         );

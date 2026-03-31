@@ -81,11 +81,14 @@ export default class AccountsCurrent extends ControlBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            account: { name: account.name, id: account.id },
-            user: { email: user.email },
-            appsConfigured: appCount,
-            currentApp,
-            currentKey,
+            account: {
+              name: account.name,
+              id: account.id,
+              user: { email: user.email },
+              appsConfigured: appCount,
+              currentApp,
+              currentKey,
+            },
           },
           flags,
         );
@@ -117,14 +120,14 @@ export default class AccountsCurrent extends ControlBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            cached: true,
             account: {
+              cached: true,
               name: currentAccount.accountName || "Unknown",
               id: currentAccount.accountId || "Unknown ID",
+              user: { email: currentAccount.userEmail || null },
+              warning:
+                "Unable to verify account information. Your access token may have expired.",
             },
-            user: { email: currentAccount.userEmail || null },
-            warning:
-              "Unable to verify account information. Your access token may have expired.",
           },
           flags,
         );
@@ -223,7 +226,9 @@ export default class AccountsCurrent extends ControlBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            error: errorMessage(error),
+            account: {
+              error: errorMessage(error),
+            },
             mode: "web-cli",
           },
           flags,

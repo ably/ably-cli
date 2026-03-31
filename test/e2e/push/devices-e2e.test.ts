@@ -422,8 +422,8 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Devices E2E Tests", () => {
 
       const json = JSON.parse(result.stdout);
       expect(json.success).toBe(true);
-      expect(json.removed).toBe(true);
-      expect(json.deviceId).toBe(deviceId);
+      expect(json.device.removed).toBe(true);
+      expect(json.device.id).toBe(deviceId);
     });
   });
 

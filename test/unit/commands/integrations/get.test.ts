@@ -89,11 +89,12 @@ describe("integrations:get command", () => {
       );
 
       const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("id", mockRuleId);
-      expect(result).toHaveProperty("appId", appId);
-      expect(result).toHaveProperty("ruleType", "http");
-      expect(result).toHaveProperty("source");
-      expect(result.source).toHaveProperty("type", "channel.message");
+      expect(result).toHaveProperty("rule");
+      expect(result.rule).toHaveProperty("id", mockRuleId);
+      expect(result.rule).toHaveProperty("appId", appId);
+      expect(result.rule).toHaveProperty("ruleType", "http");
+      expect(result.rule).toHaveProperty("source");
+      expect(result.rule.source).toHaveProperty("type", "channel.message");
     });
 
     it("should output pretty JSON when --pretty-json flag is used", async () => {
@@ -130,7 +131,8 @@ describe("integrations:get command", () => {
       // Pretty JSON should have newlines
       expect(stdout).toContain("\n");
       const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("id", mockRuleId);
+      expect(result).toHaveProperty("rule");
+      expect(result.rule).toHaveProperty("id", mockRuleId);
     });
 
     it("should display channel filter", async () => {

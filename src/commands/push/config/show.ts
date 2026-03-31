@@ -70,7 +70,7 @@ export default class PushConfigShow extends ControlBaseCommand {
         };
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonResult(config, flags);
+          this.logJsonResult({ config }, flags);
           return;
         }
 

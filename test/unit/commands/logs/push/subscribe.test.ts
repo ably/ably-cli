@@ -150,13 +150,14 @@ describe("logs:push:subscribe command", () => {
         await runCommand(["logs:push:subscribe", "--json"], import.meta.url);
       });
       const events = records.filter(
-        (r) => r.type === "event" && r.event === "push.sent",
+        (r) => r.type === "event" && r.log?.event === "push.sent",
       );
       expect(events.length).toBeGreaterThan(0);
       const record = events[0];
       expect(record).toHaveProperty("type", "event");
       expect(record).toHaveProperty("command", "logs:push:subscribe");
-      expect(record).toHaveProperty("channel", "[meta]log:push");
+      expect(record).toHaveProperty("log");
+      expect(record.log).toHaveProperty("channel", "[meta]log:push");
     });
   });
 });

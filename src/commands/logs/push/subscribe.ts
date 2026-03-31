@@ -97,7 +97,7 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonEvent(logEvent, flags);
+          this.logJsonEvent({ log: logEvent }, flags);
           return;
         }
 

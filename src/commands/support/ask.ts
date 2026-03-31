@@ -76,8 +76,10 @@ export default class AskCommand extends ControlBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            answer: response.answer,
-            links: response.links,
+            answer: {
+              text: response.answer,
+              links: response.links,
+            },
           },
           flags,
         );

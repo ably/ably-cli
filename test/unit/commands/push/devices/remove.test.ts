@@ -46,8 +46,9 @@ describe("push:devices:remove command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("deviceId", "device-123");
-      expect(result).toHaveProperty("removed", true);
+      expect(result).toHaveProperty("device");
+      expect(result.device).toHaveProperty("id", "device-123");
+      expect(result.device).toHaveProperty("removed", true);
     });
   });
 

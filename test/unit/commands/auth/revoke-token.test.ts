@@ -87,11 +87,12 @@ describe("auth:revoke-token command", () => {
 
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty(
+      expect(result).toHaveProperty("revocation");
+      expect(result.revocation).toHaveProperty(
         "message",
         "Token revocation processed successfully",
       );
-      expect(result).toHaveProperty("response");
+      expect(result.revocation).toHaveProperty("response");
     });
 
     it("should handle token not found error with special message", async () => {

@@ -63,7 +63,9 @@ describe("push:config:set-fcm command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("appId");
+      expect(result).toHaveProperty("config");
+      expect(result.config).toHaveProperty("appId");
+      expect(result.config).toHaveProperty("provider", "fcm");
     });
 
     it("should fail when service account file not found", async () => {

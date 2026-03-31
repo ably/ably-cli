@@ -120,7 +120,7 @@ describe("rooms:reactions:subscribe command", () => {
 
       // Find the JSON output with reaction data
       const records = allRecords.filter(
-        (r) => r.type === "event" && r.name && r.clientId,
+        (r) => r.type === "event" && r.reaction?.name && r.reaction?.clientId,
       );
 
       // Verify that reaction event was actually output in JSON format
@@ -128,8 +128,8 @@ describe("rooms:reactions:subscribe command", () => {
       const parsed = records[0];
       expect(parsed).toHaveProperty("command");
       expect(parsed).toHaveProperty("type", "event");
-      expect(parsed).toHaveProperty("name", "thumbsup");
-      expect(parsed).toHaveProperty("clientId", "user1");
+      expect(parsed.reaction).toHaveProperty("name", "thumbsup");
+      expect(parsed.reaction).toHaveProperty("clientId", "user1");
     });
   });
 

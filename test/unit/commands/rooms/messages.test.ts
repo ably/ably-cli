@@ -46,14 +46,15 @@ describe("rooms messages commands", function () {
         );
       });
       const results = records.filter(
-        (r) => r.type === "result" && r.room === "test-room",
+        (r) => r.type === "result" && r.message?.room === "test-room",
       );
       expect(results.length).toBeGreaterThan(0);
       const record = results[0];
       expect(record).toHaveProperty("type", "result");
       expect(record).toHaveProperty("command", "rooms:messages:send");
       expect(record).toHaveProperty("success", true);
-      expect(record).toHaveProperty("room", "test-room");
+      expect(record).toHaveProperty("message");
+      expect(record.message).toHaveProperty("room", "test-room");
     });
 
     it("should send multiple messages with interpolation", async function () {
@@ -344,13 +345,16 @@ describe("rooms messages commands", function () {
           await commandPromise;
         });
         const events = records.filter(
-          (r) => r.type === "event" && r.room === "test-room",
+          (r) =>
+            r.type === "event" &&
+            (r.message as Record<string, unknown>)?.room === "test-room",
         );
         expect(events.length).toBeGreaterThan(0);
         const record = events[0];
         expect(record).toHaveProperty("type", "event");
         expect(record).toHaveProperty("command", "rooms:messages:subscribe");
-        expect(record).toHaveProperty("room", "test-room");
+        const msg = record.message as Record<string, unknown>;
+        expect(msg).toHaveProperty("room", "test-room");
       });
     });
 

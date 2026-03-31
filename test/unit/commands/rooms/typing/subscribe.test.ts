@@ -116,7 +116,7 @@ describe("rooms:typing:subscribe command", () => {
 
       // Find the JSON output with typing data from captured logs
       const records = allRecords.filter(
-        (r) => r.type === "event" && r.currentlyTyping,
+        (r) => r.type === "event" && r.typing?.currentlyTyping,
       );
 
       // Verify that typing event was actually output in JSON format
@@ -124,7 +124,7 @@ describe("rooms:typing:subscribe command", () => {
       const parsed = records[0];
       expect(parsed).toHaveProperty("command");
       expect(parsed).toHaveProperty("type", "event");
-      expect(parsed.currentlyTyping).toContain("user1");
+      expect(parsed.typing.currentlyTyping).toContain("user1");
     });
   });
 

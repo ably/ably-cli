@@ -306,13 +306,11 @@ export default class AccountsLogin extends ControlBaseCommand {
       }
 
       if (this.shouldOutputJson(flags)) {
-        const response: {
-          account: {
-            alias: string;
-            id: string;
-            name: string;
-            user: { email: string };
-          };
+        const accountData: {
+          alias: string;
+          id: string;
+          name: string;
+          user: { email: string };
           app?: {
             id: string;
             name: string;
@@ -324,25 +322,23 @@ export default class AccountsLogin extends ControlBaseCommand {
             autoSelected: boolean;
           };
         } = {
-          account: {
-            alias,
-            id: account.id,
-            name: account.name,
-            user: {
-              email: user.email,
-            },
+          alias,
+          id: account.id,
+          name: account.name,
+          user: {
+            email: user.email,
           },
         };
 
         if (selectedApp) {
-          response.app = {
+          accountData.app = {
             id: selectedApp.id,
             name: selectedApp.name,
             autoSelected: isAutoSelected,
           };
 
           if (selectedKey) {
-            response.key = {
+            accountData.key = {
               id: selectedKey.id,
               name: selectedKey.name || "Unnamed key",
               autoSelected: isKeyAutoSelected,
@@ -350,7 +346,7 @@ export default class AccountsLogin extends ControlBaseCommand {
           }
         }
 
-        this.logJsonResult(response, flags);
+        this.logJsonResult({ account: accountData }, flags);
       } else {
         this.log(
           `Successfully logged in to ${formatResource(account.name)} (account ID: ${chalk.greenBright(account.id)})`,

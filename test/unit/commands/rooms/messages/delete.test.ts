@@ -119,16 +119,19 @@ describe("rooms:messages:delete command", () => {
       });
 
       const results = records.filter(
-        (r) => r.type === "result" && r.room === "test-room",
+        (r) => r.type === "result" && r.message?.room === "test-room",
       );
       expect(results.length).toBeGreaterThan(0);
       const record = results[0];
       expect(record).toHaveProperty("type", "result");
       expect(record).toHaveProperty("command", "rooms:messages:delete");
       expect(record).toHaveProperty("success", true);
-      expect(record).toHaveProperty("room", "test-room");
-      expect(record).toHaveProperty("serial", "serial-001");
-      expect(record).toHaveProperty("versionSerial", "version-serial-001");
+      expect(record.message).toHaveProperty("room", "test-room");
+      expect(record.message).toHaveProperty("serial", "serial-001");
+      expect(record.message).toHaveProperty(
+        "versionSerial",
+        "version-serial-001",
+      );
     });
 
     it("should display version serial in human output", async () => {

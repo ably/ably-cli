@@ -523,7 +523,7 @@ export default class BenchPublisher extends AblyBaseCommand {
     );
 
     if (this.shouldOutputJson(flags)) {
-      this.logJsonResult(summaryData, flags);
+      this.logJsonResult({ benchmark: summaryData }, flags);
     } else {
       if (progressDisplay && this.shouldUseTerminalUpdates()) {
         // Skip terminal control in CI/test mode

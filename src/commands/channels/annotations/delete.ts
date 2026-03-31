@@ -101,10 +101,12 @@ export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            channel: channelName,
-            serial,
-            type,
-            name: flags.name,
+            annotation: {
+              channel: channelName,
+              serial,
+              type,
+              name: flags.name,
+            },
           },
           flags,
         );

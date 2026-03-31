@@ -67,7 +67,8 @@ describe("support:ask command", () => {
       expect(result).toHaveProperty("command", "support:ask");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("answer");
-      expect(result).toHaveProperty("links");
+      expect(result.answer).toHaveProperty("text");
+      expect(result.answer).toHaveProperty("links");
     });
 
     it("should display helpful links when present", async () => {

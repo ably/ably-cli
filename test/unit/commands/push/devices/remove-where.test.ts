@@ -60,7 +60,8 @@ describe("push:devices:remove-where command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("removed", true);
+      expect(result).toHaveProperty("devices");
+      expect(result.devices).toHaveProperty("removed", true);
     });
   });
 

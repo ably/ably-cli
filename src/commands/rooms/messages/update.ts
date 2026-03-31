@@ -180,10 +180,12 @@ export default class MessagesUpdate extends ChatBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            room: args.room,
-            serial: args.serial,
-            updatedText: result.text,
-            versionSerial: result.version.serial,
+            message: {
+              room: args.room,
+              serial: args.serial,
+              updatedText: result.text,
+              versionSerial: result.version.serial,
+            },
           },
           flags,
         );

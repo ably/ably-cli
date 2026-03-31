@@ -96,7 +96,10 @@ export default class PushConfigSetApns extends ControlBaseCommand {
           );
 
           if (this.shouldOutputJson(flags)) {
-            this.logJsonResult({ appId, method: "p12", ...result }, flags);
+            this.logJsonResult(
+              { config: { appId, method: "p12", ...result } },
+              flags,
+            );
           } else {
             this.log(
               formatSuccess(
@@ -156,7 +159,7 @@ export default class PushConfigSetApns extends ControlBaseCommand {
           });
 
           if (this.shouldOutputJson(flags)) {
-            this.logJsonResult({ appId, method: "p8" }, flags);
+            this.logJsonResult({ config: { appId, method: "p8" } }, flags);
           } else {
             this.log(
               formatSuccess(

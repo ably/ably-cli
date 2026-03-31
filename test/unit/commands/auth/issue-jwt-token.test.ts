@@ -152,11 +152,12 @@ describe("auth:issue-jwt-token command", () => {
       expect(result).toHaveProperty("command", "auth:issue-jwt-token");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("token");
-      expect(result).toHaveProperty("appId", appId);
-      expect(result).toHaveProperty("keyId", keyId);
-      expect(result).toHaveProperty("tokenType", "jwt");
-      expect(result).toHaveProperty("capability");
-      expect(result).toHaveProperty("ttl");
+      expect(result.token).toHaveProperty("appId", appId);
+      expect(result.token).toHaveProperty("keyId", keyId);
+      expect(result.token).toHaveProperty("tokenType", "jwt");
+      expect(result.token).toHaveProperty("capability");
+      expect(result.token).toHaveProperty("ttl");
+      expect(result.token).toHaveProperty("value");
     });
 
     it("should generate token with default capability of all permissions", async () => {

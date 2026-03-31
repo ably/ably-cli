@@ -37,10 +37,11 @@ describe("version command", () => {
       expect(result).toHaveProperty("command", "version");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("version");
-      expect(result).toHaveProperty("name");
-      expect(result).toHaveProperty("arch");
-      expect(result).toHaveProperty("nodeVersion");
-      expect(result).toHaveProperty("platform");
+      expect(result.version).toHaveProperty("version");
+      expect(result.version).toHaveProperty("name");
+      expect(result.version).toHaveProperty("arch");
+      expect(result.version).toHaveProperty("nodeVersion");
+      expect(result.version).toHaveProperty("platform");
     });
   });
 

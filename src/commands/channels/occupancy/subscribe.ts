@@ -103,7 +103,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonEvent(event, flags);
+          this.logJsonEvent({ occupancy: event }, flags);
         } else {
           this.log(
             `${formatTimestamp(timestamp)} ${formatResource(`Channel: ${channelName}`)} | ${formatEventType("Occupancy Update")}`,

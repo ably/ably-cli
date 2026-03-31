@@ -50,7 +50,7 @@ export default class AppsSwitch extends ControlBaseCommand {
         });
         if (this.shouldOutputJson(flags)) {
           this.logJsonResult(
-            { appId: selectedApp.id, appName: selectedApp.name },
+            { app: { id: selectedApp.id, name: selectedApp.name } },
             flags,
           );
         } else {
@@ -82,7 +82,7 @@ export default class AppsSwitch extends ControlBaseCommand {
       this.configManager.storeAppInfo(appId, { appName: app.name });
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ appId: app.id, appName: app.name }, flags);
+        this.logJsonResult({ app: { id: app.id, name: app.name } }, flags);
       } else {
         this.log(`Switched to app: ${formatResource(app.name)} (${app.id})`);
       }

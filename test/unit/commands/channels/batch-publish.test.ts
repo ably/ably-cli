@@ -206,9 +206,10 @@ describe("channels:batch-publish command", () => {
       // In JSON mode, progress messages are suppressed by JSON guard
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("channels");
-      expect(result.channels).toEqual(["channel1", "channel2"]);
-      expect(result).toHaveProperty("response");
+      expect(result).toHaveProperty("publish");
+      expect(result.publish).toHaveProperty("channels");
+      expect(result.publish.channels).toEqual(["channel1", "channel2"]);
+      expect(result.publish).toHaveProperty("response");
     });
 
     it("should handle API errors gracefully", async () => {

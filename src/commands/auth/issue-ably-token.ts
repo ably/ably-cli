@@ -112,11 +112,13 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
-            token: tokenDetails.token,
-            issuedAt: new Date(tokenDetails.issued).toISOString(),
-            expiresAt: new Date(tokenDetails.expires).toISOString(),
-            clientId: tokenDetails.clientId || null,
-            capability: tokenDetails.capability,
+            token: {
+              value: tokenDetails.token,
+              issuedAt: new Date(tokenDetails.issued).toISOString(),
+              expiresAt: new Date(tokenDetails.expires).toISOString(),
+              clientId: tokenDetails.clientId || null,
+              capability: tokenDetails.capability,
+            },
           },
           flags,
         );

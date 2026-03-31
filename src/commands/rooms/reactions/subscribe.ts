@@ -130,7 +130,10 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         );
 
         if (this.shouldOutputJson(flags)) {
-          this.logJsonEvent({ eventType: event.type, ...eventData }, flags);
+          this.logJsonEvent(
+            { reaction: { eventType: event.type, ...eventData } },
+            flags,
+          );
         } else {
           this.log(
             `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${formatClientId(reaction.clientId || "Unknown")} reacted with ${chalk.yellow(reaction.name || "unknown")}`,

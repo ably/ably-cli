@@ -132,7 +132,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
             );
 
             if (this.shouldOutputJson(flags)) {
-              this.logJsonEvent(event, flags);
+              this.logJsonEvent({ log: event }, flags);
             } else {
               this.log(
                 `${formatTimestamp(timestamp)} Type: ${formatEventType(logType)}`,

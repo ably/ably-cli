@@ -164,9 +164,10 @@ describe("push:config:show command", () => {
       const result = JSON.parse(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("appId");
-      expect(result).toHaveProperty("apns");
-      expect(result).toHaveProperty("fcm");
+      expect(result).toHaveProperty("config");
+      expect(result.config).toHaveProperty("appId");
+      expect(result.config).toHaveProperty("apns");
+      expect(result.config).toHaveProperty("fcm");
     });
   });
 

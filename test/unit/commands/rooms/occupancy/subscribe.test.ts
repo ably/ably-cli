@@ -109,14 +109,15 @@ describe("rooms:occupancy:subscribe command", () => {
 
       // Find the JSON output with initial snapshot
       const records = allRecords.filter(
-        (r) => r.type === "event" && r.eventType === "initialSnapshot",
+        (r) =>
+          r.type === "event" && r.occupancy?.eventType === "initialSnapshot",
       );
 
       expect(records.length).toBeGreaterThan(0);
       const parsed = records[0];
       expect(parsed).toHaveProperty("type", "event");
-      expect(parsed).toHaveProperty("eventType", "initialSnapshot");
-      expect(parsed).toHaveProperty("room", "test-room");
+      expect(parsed.occupancy).toHaveProperty("eventType", "initialSnapshot");
+      expect(parsed.occupancy).toHaveProperty("room", "test-room");
     });
   });
 
