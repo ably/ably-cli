@@ -24,7 +24,7 @@ $ npm install -g @ably/cli
 $ ably COMMAND
 running command...
 $ ably (--version)
-@ably/cli/0.17.0 darwin-arm64 node-v25.3.0
+@ably/cli/0.17.0 darwin-arm64 node-v22.14.0
 $ ably --help [COMMAND]
 USAGE
   $ ably COMMAND
@@ -151,7 +151,7 @@ $ ably-interactive
 * [`ably logs push subscribe`](#ably-logs-push-subscribe)
 * [`ably logs subscribe`](#ably-logs-subscribe)
 * [`ably push`](#ably-push)
-* [`ably push batch-publish`](#ably-push-batch-publish)
+* [`ably push batch-publish [PAYLOAD]`](#ably-push-batch-publish)
 * [`ably push channels`](#ably-push-channels)
 * [`ably push channels list`](#ably-push-channels-list)
 * [`ably push channels list-channels`](#ably-push-channels-list-channels)
@@ -2952,36 +2952,75 @@ COMMANDS
   ably push channels       Manage push notification channel subscriptions
   ably push config         Manage push notification configuration (APNs, FCM)
   ably push devices        Manage push notification device registrations
-  ably push publish        Publish a push notification to a device or client
+  ably push publish        Publish a push notification to a device, client, or channel
 ```
 
 _See code: [src/commands/push/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/index.ts)_
 
-## `ably push batch-publish`
+## `ably push batch-publish [PAYLOAD]`
 
 Publish push notifications to multiple recipients in a batch
 
 ```
 USAGE
-  $ ably push batch-publish --payload <value> [-v] [--json | --pretty-json]
+  $ ably push batch-publish [PAYLOAD] [-v] [--json | --pretty-json] [-f]
+
+ARGUMENTS
+  PAYLOAD  Batch payload as JSON array, filepath, or - for stdin. Each item must have either a "recipient" or "channels"
+           key. Items with "channels" are routed via channel batch publish with the payload wrapped in extras.push
 
 FLAGS
-  -v, --verbose          Output verbose logs
-      --json             Output in JSON format
-      --payload=<value>  (required) Batch payload as JSON array, @filepath, or - for stdin
-      --pretty-json      Output in colorized JSON format
+  -f, --force        Skip confirmation prompt when publishing to channels (confirmation is also skipped in --json mode)
+  -v, --verbose      Output verbose logs
+      --json         Output in JSON format
+      --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
   Publish push notifications to multiple recipients in a batch
 
 EXAMPLES
-  $ ably push batch-publish --payload '[{"recipient":{"deviceId":"dev1"},"payload":{"notification":{"title":"Hello","body":"World"}}}]'
+  Send a notification to a specific device
 
-  $ ably push batch-publish --payload @batch.json
+    $ ably push batch-publish \
+      '[{"recipient":{"deviceId":"device-123"},"payload":{"notification":{"title":"Hello","body":"World"}}}]'
 
-  cat batch.json | ably push batch-publish --payload -
+  Send a notification to a client ID
 
-  $ ably push batch-publish --payload @batch.json --json
+    $ ably push batch-publish \
+      '[{"recipient":{"clientId":"user-456"},"payload":{"notification":{"title":"Hello","body":"World"}}}]'
+
+  Send a data-only push (no notification) to a device
+
+    $ ably push batch-publish \
+      '[{"recipient":{"deviceId":"device-123"},"payload":{"data":{"orderId":"123","action":"update"}}}]'
+
+  Publish to all devices subscribed to a channel
+
+    $ ably push batch-publish \
+      '[{"channels":["my-channel"],"payload":{"notification":{"title":"Hello","body":"World"}}}]' --force
+
+  Publish to multiple channels in one batch item
+
+    $ ably push batch-publish \
+      '[{"channels":["channel-1","channel-2"],"payload":{"notification":{"title":"Alert","body":"Message"}}}]' --force
+
+  Mixed batch: device recipient and channel in one request
+
+    $ ably push batch-publish '[{"recipient":{"deviceId":"device-123"},"payload":{"notification":{"title":"Hello","b \
+      ody":"World"}}},{"channels":["my-channel"],"payload":{"notification":{"title":"Hello","body":"World"}}}]' \
+      --force
+
+  Load batch payload from a JSON file
+
+    $ ably push batch-publish ./notifications.json --force
+
+  Read batch payload from stdin
+
+    $ cat batch.json | ably push batch-publish --force
+
+  Output results as JSON
+
+    $ ably push batch-publish ./notifications.json --json --force
 ```
 
 _See code: [src/commands/push/batch-publish.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/push/batch-publish.ts)_
@@ -3536,19 +3575,24 @@ _See code: [src/commands/push/devices/save.ts](https://github.com/ably/ably-cli/
 
 ## `ably push publish`
 
-Publish a push notification to a device or client
+Publish a push notification to a device, client, or channel
 
 ```
 USAGE
   $ ably push publish [-v] [--json | --pretty-json] [--device-id <value> | --client-id <value> | --recipient
-    <value>] [--title <value>] [--body <value>] [--sound <value>] [--icon <value>] [--badge <value>] [--data <value>]
-    [--collapse-key <value>] [--ttl <value>] [--payload <value>] [--apns <value>] [--fcm <value>] [--web <value>]
+    <value>] [--channel <value>] [--title <value>] [--body <value>] [--sound <value>] [--icon <value>] [--badge <value>]
+    [--data <value>] [--collapse-key <value>] [--ttl <value>] [--payload <value>] [--apns <value>] [--fcm <value>]
+    [--web <value>] [-f]
 
 FLAGS
+  -f, --force                 Skip confirmation prompt when publishing to a channel (confirmation is also skipped in
+                              --json mode)
   -v, --verbose               Output verbose logs
       --apns=<value>          APNs-specific override as JSON
       --badge=<value>         Notification badge count
       --body=<value>          Notification body
+      --channel=<value>       Target channel name (publishes push notification via the channel using extras.push;
+                              ignored if --device-id, --client-id, or --recipient is also provided)
       --client-id=<value>     Target client ID
       --collapse-key=<value>  Collapse key for notification grouping
       --data=<value>          Custom data payload as JSON
@@ -3565,14 +3609,28 @@ FLAGS
       --web=<value>           Web push-specific override as JSON
 
 DESCRIPTION
-  Publish a push notification to a device or client
+  Publish a push notification to a device, client, or channel
 
 EXAMPLES
   $ ably push publish --device-id device-123 --title Hello --body World
 
-  $ ably push publish --client-id client-1 --title Hello --body World
+  $ ably push publish --device-id device-123 --title Hello --body World --data '{"key":"value"}'
 
   $ ably push publish --device-id device-123 --payload '{"notification":{"title":"Hello","body":"World"}}'
+
+  $ ably push publish --device-id device-123 --payload ./notification.json
+
+  $ ably push publish --client-id client-1 --title Hello --body World
+
+  $ ably push publish --client-id client-1 --payload '{"notification":{"title":"Hello","body":"World"}}'
+
+  $ ably push publish --channel my-channel --title Hello --body World
+
+  $ ably push publish --channel my-channel --title Hello --body World --data '{"key":"value"}'
+
+  $ ably push publish --channel my-channel --payload '{"notification":{"title":"Hello","body":"World"},"data":{"key":"value"}}'
+
+  $ ably push publish --channel my-channel --payload ./notification.json
 
   $ ably push publish --recipient '{"transportType":"apns","deviceToken":"token123"}' --title Hello --body World
 
