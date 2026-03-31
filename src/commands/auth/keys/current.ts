@@ -71,7 +71,7 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
       const currentAccountAlias = this.configManager.getCurrentAccountAlias();
 
       this.log(
-        `${formatLabel("Account")} ${chalk.cyan.bold(currentAccount?.accountName || currentAccountAlias)} ${chalk.gray(`(${currentAccount?.accountId || "Unknown ID"})`)}`,
+        `${formatLabel("Account")} ${chalk.cyan.bold(currentAccount?.accountName || currentAccountAlias)} ${currentAccount?.accountId ? chalk.gray(`(${currentAccount.accountId})`) : ""}`,
       );
       this.log(
         `${formatLabel("App")} ${chalk.green.bold(appName)} ${chalk.gray(`(${appId})`)}`,

@@ -73,8 +73,8 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
 
         // Determine the action from the member's lastEvent
         const action = member.lastEvent.name || "unknown";
-        const clientId = member.clientId || "Unknown";
-        const connectionId = member.connectionId || "Unknown";
+        const clientId = member.clientId;
+        const connectionId = member.connectionId;
 
         // Create a unique key for this client+connection combination
         const clientKey = `${clientId}:${connectionId}`;

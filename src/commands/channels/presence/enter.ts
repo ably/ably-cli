@@ -124,7 +124,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
               ? `${formatIndex(this.sequenceCounter)}`
               : "";
             this.log(
-              `${formatTimestamp(timestamp)}${sequencePrefix} ${formatResource(`Channel: ${channelName}`)} | Action: ${formatEventType(String(presenceMessage.action))} | Client: ${formatClientId(presenceMessage.clientId || "N/A")}`,
+              `${formatTimestamp(timestamp)}${sequencePrefix} ${formatResource(`Channel: ${channelName}`)} | Action: ${formatEventType(String(presenceMessage.action))} | Client: ${formatClientId(presenceMessage.clientId)}`,
             );
 
             if (

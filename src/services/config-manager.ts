@@ -14,15 +14,15 @@ export interface AppConfig {
 
 export interface AccountConfig {
   accessToken: string;
-  accountId?: string;
-  accountName?: string;
+  accountId: string;
+  accountName: string;
   apps?: {
     [appId: string]: AppConfig;
   };
   currentAppId?: string;
   endpoint?: string;
   tokenId?: string;
-  userEmail?: string;
+  userEmail: string;
 }
 
 export interface AblyConfig {
@@ -48,12 +48,12 @@ export interface ConfigManager {
   listAccounts(): { account: AccountConfig; alias: string }[];
   storeAccount(
     accessToken: string,
-    alias?: string,
-    accountInfo?: {
-      accountId?: string;
-      accountName?: string;
+    alias: string,
+    accountInfo: {
+      accountId: string;
+      accountName: string;
       tokenId?: string;
-      userEmail?: string;
+      userEmail: string;
     },
   ): void;
   switchAccount(alias: string): boolean;
@@ -347,23 +347,26 @@ export class TomlConfigManager implements ConfigManager {
     this.saveConfig();
   }
 
-  // Store account information with an optional alias
+  // Store account information
   public storeAccount(
     accessToken: string,
     alias: string = "default",
-    accountInfo?: {
-      accountId?: string;
-      accountName?: string;
+    accountInfo: {
+      accountId: string;
+      accountName: string;
       tokenId?: string;
-      userEmail?: string;
+      userEmail: string;
     },
   ): void {
-    // Create or update the account entry
+    const existing = this.config.accounts[alias];
     this.config.accounts[alias] = {
       accessToken,
-      ...accountInfo,
-      apps: this.config.accounts[alias]?.apps || {},
-      currentAppId: this.config.accounts[alias]?.currentAppId,
+      accountId: accountInfo.accountId,
+      accountName: accountInfo.accountName,
+      userEmail: accountInfo.userEmail,
+      tokenId: accountInfo.tokenId,
+      apps: existing?.apps || {},
+      currentAppId: existing?.currentAppId,
     };
 
     // Set as current account if it's the first one or no current account is set

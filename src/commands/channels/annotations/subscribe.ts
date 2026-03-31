@@ -107,10 +107,7 @@ export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
       });
 
       const callback = (annotation: Ably.Annotation) => {
-        const timestamp =
-          annotation.timestamp !== undefined && annotation.timestamp !== null
-            ? formatMessageTimestamp(annotation.timestamp)
-            : "[Unknown timestamp]";
+        const timestamp = formatMessageTimestamp(annotation.timestamp);
         const annotationData = {
           id: annotation.id,
           timestamp,

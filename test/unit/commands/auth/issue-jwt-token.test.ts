@@ -237,13 +237,22 @@ describe("auth:issue-jwt-token command", () => {
       expect(stdout).toContain("TTL: 1800 seconds");
     });
 
-    it("should display client ID as None when not specified with none", async () => {
+    it("should display client ID when specified", async () => {
+      const { stdout } = await runCommand(
+        ["auth:issue-jwt-token", "--client-id", "my-client"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Client ID: my-client");
+    });
+
+    it("should omit client ID line when not specified with none", async () => {
       const { stdout } = await runCommand(
         ["auth:issue-jwt-token", "--client-id", "none"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Client ID: None");
+      expect(stdout).not.toContain("Client ID:");
     });
   });
 });

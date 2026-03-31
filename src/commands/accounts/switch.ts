@@ -63,8 +63,8 @@ export default class AccountsSwitch extends ControlBaseCommand {
         {
           availableAccounts: accounts.map(({ account, alias }) => ({
             alias,
-            id: account.accountId || "Unknown",
-            name: account.accountName || "Unknown",
+            id: account.accountId,
+            name: account.accountName,
           })),
         },
       );
@@ -99,8 +99,8 @@ export default class AccountsSwitch extends ControlBaseCommand {
         {
           availableAccounts: accounts.map(({ account, alias }) => ({
             alias,
-            id: account.accountId || "Unknown",
-            name: account.accountName || "Unknown",
+            id: account.accountId,
+            name: account.accountName,
           })),
         },
       );

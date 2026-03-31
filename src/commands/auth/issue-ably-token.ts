@@ -116,7 +116,9 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
               value: tokenDetails.token,
               issuedAt: new Date(tokenDetails.issued).toISOString(),
               expiresAt: new Date(tokenDetails.expires).toISOString(),
-              clientId: tokenDetails.clientId || null,
+              ...(tokenDetails.clientId
+                ? { clientId: tokenDetails.clientId }
+                : {}),
               capability: tokenDetails.capability,
             },
           },
@@ -129,7 +131,9 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
         this.log(`Issued: ${new Date(tokenDetails.issued).toISOString()}`);
         this.log(`Expires: ${new Date(tokenDetails.expires).toISOString()}`);
         this.log(`TTL: ${flags.ttl} seconds`);
-        this.log(`Client ID: ${tokenDetails.clientId || "None"}`);
+        if (tokenDetails.clientId) {
+          this.log(`Client ID: ${tokenDetails.clientId}`);
+        }
         this.log(
           `Capability: ${this.formatJsonOutput({ capability: tokenDetails.capability }, flags)}`,
         );

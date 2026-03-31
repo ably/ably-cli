@@ -260,6 +260,7 @@ accessToken = "testaccesstoken"
       configManager.storeAccount("newaccesstoken", "newaccount", {
         accountId: "newaccountid",
         accountName: "New Account",
+        userEmail: "new@test.com",
       });
 
       expect(writeFileStub).toHaveBeenCalledOnce();
@@ -281,7 +282,11 @@ accessToken = "testaccesstoken"
       const writeFileStub = vi.spyOn(fs, "writeFileSync");
 
       const manager = new TomlConfigManager();
-      manager.storeAccount("firstaccesstoken", "firstaccount");
+      manager.storeAccount("firstaccesstoken", "firstaccount", {
+        accountId: "acc-1",
+        accountName: "First",
+        userEmail: "first@test.com",
+      });
 
       expect(writeFileStub).toHaveBeenCalledOnce();
       expect(manager.getCurrentAccountAlias()).toBe("firstaccount");
@@ -310,7 +315,11 @@ accessToken = "testaccesstoken"
     it("should store an API key for an app with a specific account", () => {
       const writeFileStub = fs.writeFileSync as ReturnType<typeof vi.fn>;
       // First create a new account
-      configManager.storeAccount("anotheraccesstoken", "anotheraccount");
+      configManager.storeAccount("anotheraccesstoken", "anotheraccount", {
+        accountId: "acc-2",
+        accountName: "Another",
+        userEmail: "another@test.com",
+      });
 
       configManager.storeAppKey(
         "anotherappid",
@@ -379,7 +388,11 @@ accessToken = "testaccesstoken"
     it("should switch to another account and return true", () => {
       const writeFileStub = fs.writeFileSync as ReturnType<typeof vi.fn>;
       // First create another account
-      configManager.storeAccount("anotheraccesstoken", "anotheraccount");
+      configManager.storeAccount("anotheraccesstoken", "anotheraccount", {
+        accountId: "acc-2",
+        accountName: "Another",
+        userEmail: "another@test.com",
+      });
 
       expect(configManager.switchAccount("anotheraccount")).toBe(true);
       // writeFileSync called for storeAccount and switchAccount
