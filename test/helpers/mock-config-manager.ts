@@ -374,18 +374,26 @@ export class MockConfigManager implements ConfigManager {
   public storeAccount(
     accessToken: string,
     alias: string = "default",
-    accountInfo?: {
-      accountId?: string;
-      accountName?: string;
+    accountInfo: {
+      accountId: string;
+      accountName: string;
       tokenId?: string;
-      userEmail?: string;
+      userEmail: string;
+    } = {
+      accountId: "test-account-id",
+      accountName: "Test Account",
+      userEmail: "test@example.com",
     },
   ): void {
+    const existing = this.config.accounts[alias];
     this.config.accounts[alias] = {
       accessToken,
-      ...accountInfo,
-      apps: this.config.accounts[alias]?.apps || {},
-      currentAppId: this.config.accounts[alias]?.currentAppId,
+      accountId: accountInfo.accountId,
+      accountName: accountInfo.accountName,
+      userEmail: accountInfo.userEmail,
+      tokenId: accountInfo.tokenId,
+      apps: existing?.apps || {},
+      currentAppId: existing?.currentAppId,
     };
 
     if (!this.config.current || !this.config.current.account) {

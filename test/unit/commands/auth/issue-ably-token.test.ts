@@ -141,7 +141,7 @@ describe("auth:issue-ably-token command", () => {
       );
 
       expect(stdout).toContain("Generated Ably Token");
-      expect(stdout).toContain("Client ID: None");
+      expect(stdout).not.toContain("Client ID:");
       expect(restMock.auth.createTokenRequest).toHaveBeenCalled();
       const tokenParams = restMock.auth.createTokenRequest.mock.calls[0][0];
       expect(tokenParams.clientId).toBeUndefined();

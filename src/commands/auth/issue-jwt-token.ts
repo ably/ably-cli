@@ -133,7 +133,7 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
             token: {
               appId,
               capability: capabilities,
-              clientId,
+              ...(clientId ? { clientId } : {}),
               expires: new Date(jwtPayload.exp * 1000).toISOString(),
               issued: new Date(jwtPayload.iat * 1000).toISOString(),
               keyId,
@@ -153,7 +153,9 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
         this.log(`TTL: ${flags.ttl} seconds`);
         this.log(`App ID: ${appId}`);
         this.log(`Key ID: ${keyId}`);
-        this.log(`Client ID: ${clientId || "None"}`);
+        if (clientId) {
+          this.log(`Client ID: ${clientId}`);
+        }
         this.log(`Capability: ${this.formatJsonOutput(capabilities, flags)}`);
       }
     } catch (error) {

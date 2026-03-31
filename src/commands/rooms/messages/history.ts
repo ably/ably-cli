@@ -188,7 +188,7 @@ export default class MessagesHistory extends ChatBaseCommand {
           const messagesInOrder = [...items];
           for (const [i, message] of messagesInOrder.entries()) {
             const timestamp = formatMessageTimestamp(message.timestamp);
-            const author = message.clientId || "Unknown";
+            const author = message.clientId;
 
             this.log(`${formatIndex(i + 1)} ${formatTimestamp(timestamp)}`);
             this.log(

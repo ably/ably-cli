@@ -108,7 +108,7 @@ export default class PushChannelsList extends AblyBaseCommand {
 
       for (const sub of subscriptions) {
         const type = sub.deviceId ? "device" : "client";
-        const id = sub.deviceId || sub.clientId || "unknown";
+        const id = sub.deviceId || sub.clientId;
         this.log(formatHeading(`${type}: ${id}`));
         this.log(`  ${formatLabel("Channel")} ${formatResource(sub.channel)}`);
         if (sub.deviceId)

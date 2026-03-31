@@ -83,7 +83,7 @@ export default class AppsCurrent extends ControlBaseCommand {
         );
       } else {
         this.log(
-          `${formatLabel("Account")} ${chalk.cyan.bold(currentAccount.accountName || currentAccountAlias)} ${chalk.gray(`(${currentAccount.accountId || "Unknown ID"})`)}`,
+          `${formatLabel("Account")} ${chalk.cyan.bold(currentAccount.accountName || currentAccountAlias)} ${currentAccount.accountId ? chalk.gray(`(${currentAccount.accountId})`) : ""}`,
         );
         this.log(
           `${formatLabel("App")} ${chalk.green.bold(appName)} ${chalk.gray(`(${currentAppId})`)}`,

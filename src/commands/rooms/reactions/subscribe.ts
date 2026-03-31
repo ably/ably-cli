@@ -136,7 +136,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
           );
         } else {
           this.log(
-            `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${formatClientId(reaction.clientId || "Unknown")} reacted with ${chalk.yellow(reaction.name || "unknown")}`,
+            `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${formatClientId(reaction.clientId)} reacted with ${chalk.yellow(reaction.name || "unknown")}`,
           );
 
           // Show any additional metadata in the reaction

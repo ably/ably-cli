@@ -69,9 +69,9 @@ export default class SpacesSubscribe extends SpacesBaseCommand {
       const memberListener = (member: SpaceMember) => {
         const now = Date.now();
 
-        const action = member.lastEvent.name;
-        const clientId = member.clientId || "Unknown";
-        const connectionId = member.connectionId || "Unknown";
+        const action = member.lastEvent.name || "unknown";
+        const clientId = member.clientId;
+        const connectionId = member.connectionId;
 
         // Dedup within 500ms window
         const clientKey = `${clientId}:${connectionId}`;

@@ -152,7 +152,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
               this.logJsonEvent({ reaction: eventData }, flags);
             } else {
               this.log(
-                `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${formatClientId(event.reaction.clientId || "Unknown")} [${event.reaction.type}] ${event.type}: ${formatEventType(event.reaction.name || "unknown")} to message ${formatResource(event.reaction.messageSerial)}`,
+                `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${formatClientId(event.reaction.clientId)} [${event.reaction.type}] ${event.type}: ${formatEventType(event.reaction.name || "unknown")} to message ${formatResource(event.reaction.messageSerial)}`,
               );
             }
           },
