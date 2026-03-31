@@ -124,7 +124,7 @@ export default class AccountsCurrent extends ControlBaseCommand {
               cached: true,
               name: currentAccount.accountName,
               id: currentAccount.accountId,
-              user: { email: currentAccount.userEmail || null },
+              user: { email: currentAccount.userEmail },
               warning:
                 "Unable to verify account information. Your access token may have expired.",
             },

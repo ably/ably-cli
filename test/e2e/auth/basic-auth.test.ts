@@ -226,6 +226,7 @@ describe("Authentication E2E", () => {
       configManager.storeAccount("token", "platform-test", {
         accountId: "platform_test",
         accountName: "Platform Test",
+        userEmail: "platform@test.com",
       });
 
       expect(fs.existsSync(configPath)).toBe(true);
@@ -242,6 +243,7 @@ describe("Authentication E2E", () => {
       configManager.storeAccount("token", "lineending-test", {
         accountId: "lineending_test",
         accountName: "Line Ending Test",
+        userEmail: "lineending@test.com",
       });
 
       // Read config file and verify it's readable regardless of line endings
@@ -270,6 +272,7 @@ describe("Authentication E2E", () => {
       configManager.storeAccount("isolated-token", "isolated-account", {
         accountId: "isolated_account",
         accountName: "Isolated Account",
+        userEmail: "isolated@test.com",
       });
 
       // Verify it's in our temp directory, not the user's home
