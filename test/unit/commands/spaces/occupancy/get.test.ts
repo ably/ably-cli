@@ -18,11 +18,7 @@ describe("spaces:occupancy:get command", () => {
             occupancy: {
               metrics: {
                 connections: 10,
-                presenceConnections: 5,
                 presenceMembers: 8,
-                presenceSubscribers: 4,
-                publishers: 2,
-                subscribers: 6,
               },
             },
           },
@@ -60,11 +56,11 @@ describe("spaces:occupancy:get command", () => {
 
       expect(stdout).toContain("test-space");
       expect(stdout).toContain("Connections: 10");
-      expect(stdout).toContain("Publishers: 2");
-      expect(stdout).toContain("Subscribers: 6");
-      expect(stdout).toContain("Presence Connections: 5");
       expect(stdout).toContain("Presence Members: 8");
-      expect(stdout).toContain("Presence Subscribers: 4");
+      expect(stdout).not.toContain("Publishers:");
+      expect(stdout).not.toContain("Subscribers:");
+      expect(stdout).not.toContain("Presence Connections");
+      expect(stdout).not.toContain("Presence Subscribers");
     });
 
     it("should output JSON envelope with spaceName and metrics", async () => {
@@ -88,12 +84,12 @@ describe("spaces:occupancy:get command", () => {
       expect(occupancy).toHaveProperty("metrics");
       expect(occupancy.metrics).toMatchObject({
         connections: 10,
-        presenceConnections: 5,
         presenceMembers: 8,
-        presenceSubscribers: 4,
-        publishers: 2,
-        subscribers: 6,
       });
+      expect(occupancy.metrics).not.toHaveProperty("presenceConnections");
+      expect(occupancy.metrics).not.toHaveProperty("presenceSubscribers");
+      expect(occupancy.metrics).not.toHaveProperty("publishers");
+      expect(occupancy.metrics).not.toHaveProperty("subscribers");
     });
 
     it("should handle empty occupancy metrics", async () => {
@@ -108,8 +104,11 @@ describe("spaces:occupancy:get command", () => {
       );
 
       expect(stdout).toContain("Connections: 0");
-      expect(stdout).toContain("Publishers: 0");
-      expect(stdout).toContain("Subscribers: 0");
+      expect(stdout).toContain("Presence Members: 0");
+      expect(stdout).not.toContain("Publishers:");
+      expect(stdout).not.toContain("Subscribers:");
+      expect(stdout).not.toContain("Presence Connections");
+      expect(stdout).not.toContain("Presence Subscribers");
     });
   });
 

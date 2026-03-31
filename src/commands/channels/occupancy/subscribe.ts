@@ -105,17 +105,35 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
         if (this.shouldOutputJson(flags)) {
           this.logJsonEvent({ occupancy: event }, flags);
         } else {
+          this.log(formatTimestamp(timestamp));
+          this.log(`${formatLabel("Channel")} ${formatResource(channelName)}`);
           this.log(
-            `${formatTimestamp(timestamp)} ${formatResource(`Channel: ${channelName}`)} | ${formatEventType("Occupancy Update")}`,
+            `${formatLabel("Event")} ${formatEventType("Occupancy Update")}`,
           );
 
-          if (message.data !== null && message.data !== undefined) {
+          if (message.data?.metrics) {
+            const metrics = message.data.metrics;
+            this.log(`${formatLabel("Connections")} ${metrics.connections}`);
+            this.log(`${formatLabel("Publishers")} ${metrics.publishers}`);
+            this.log(`${formatLabel("Subscribers")} ${metrics.subscribers}`);
             this.log(
-              `${formatLabel("Occupancy Data")} ${JSON.stringify(message.data, null, 2)}`,
+              `${formatLabel("Presence Connections")} ${metrics.presenceConnections}`,
+            );
+            this.log(
+              `${formatLabel("Presence Members")} ${metrics.presenceMembers}`,
+            );
+            this.log(
+              `${formatLabel("Presence Subscribers")} ${metrics.presenceSubscribers}`,
+            );
+            this.log(
+              `${formatLabel("Object Publishers")} ${metrics.objectPublishers}`,
+            );
+            this.log(
+              `${formatLabel("Object Subscribers")} ${metrics.objectSubscribers}`,
             );
           }
 
-          this.log(""); // Empty line for better readability
+          this.log("");
         }
       });
 

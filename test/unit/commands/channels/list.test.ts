@@ -14,32 +14,8 @@ describe("channels:list command", () => {
   // Mock channel response data
   const mockChannelsResponse = {
     ...createMockPaginatedResult([
-      {
-        channelId: "test-channel-1",
-        status: {
-          occupancy: {
-            metrics: {
-              connections: 5,
-              publishers: 2,
-              subscribers: 3,
-              presenceConnections: 1,
-              presenceMembers: 2,
-            },
-          },
-        },
-      },
-      {
-        channelId: "test-channel-2",
-        status: {
-          occupancy: {
-            metrics: {
-              connections: 3,
-              publishers: 1,
-              subscribers: 2,
-            },
-          },
-        },
-      },
+      { channelId: "test-channel-1" },
+      { channelId: "test-channel-2" },
     ]),
     statusCode: 200,
   };
@@ -72,14 +48,6 @@ describe("channels:list command", () => {
       expect(stdout).toContain("active channels");
       expect(stdout).toContain("test-channel-1");
       expect(stdout).toContain("test-channel-2");
-    });
-
-    it("should display channel metrics", async () => {
-      const { stdout } = await runCommand(["channels:list"], import.meta.url);
-
-      expect(stdout).toContain("Connections: 5");
-      expect(stdout).toContain("Publishers: 2");
-      expect(stdout).toContain("Subscribers: 3");
     });
 
     it("should handle empty channels response", async () => {
@@ -140,33 +108,12 @@ describe("channels:list command", () => {
       expect(jsonOutput).toHaveProperty("channels");
       expect(jsonOutput.channels).toBeInstanceOf(Array);
       expect(jsonOutput.channels).toHaveLength(2);
-      expect(jsonOutput.channels[0]).toHaveProperty(
-        "channelId",
-        "test-channel-1",
-      );
-      expect(jsonOutput.channels[0]).toHaveProperty("metrics");
+      expect(jsonOutput.channels[0]).toEqual("test-channel-1");
+      expect(jsonOutput.channels[1]).toEqual("test-channel-2");
       expect(jsonOutput).toHaveProperty("success", true);
       expect(jsonOutput).toHaveProperty("total", 2);
       expect(jsonOutput).toHaveProperty("hasMore", false);
       expect(jsonOutput).toHaveProperty("timestamp");
-    });
-
-    it("should include channel metrics in JSON output", async () => {
-      const { stdout } = await runCommand(
-        ["channels:list", "--json"],
-        import.meta.url,
-      );
-
-      const jsonOutput = JSON.parse(stdout);
-
-      // Verify metrics are included
-      expect(jsonOutput.channels[0].metrics).toEqual({
-        connections: 5,
-        publishers: 2,
-        subscribers: 3,
-        presenceConnections: 1,
-        presenceMembers: 2,
-      });
     });
 
     it("should handle API errors in JSON mode", async () => {

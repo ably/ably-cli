@@ -121,14 +121,6 @@ describe("rooms:list command", () => {
     expect(stdout).toContain("No active chat rooms found");
   });
 
-  it("should display occupancy metrics when present", async () => {
-    const { stdout } = await runCommand(["rooms:list"], import.meta.url);
-
-    expect(stdout).toContain("Connections:");
-    expect(stdout).toContain("Publishers:");
-    expect(stdout).toContain("Subscribers:");
-  });
-
   it("should output JSON with items array", async () => {
     const { stdout } = await runCommand(
       ["rooms:list", "--json"],
@@ -139,8 +131,11 @@ describe("rooms:list command", () => {
     expect(json).toHaveProperty("rooms");
     expect(json.rooms).toBeInstanceOf(Array);
     expect(json.rooms.length).toBe(2);
-    expect(json.rooms[0]).toHaveProperty("room", "room1");
-    expect(json.rooms[1]).toHaveProperty("room", "room2");
+    expect(json.rooms[0]).toEqual("room1");
+    expect(json.rooms[1]).toEqual("room2");
+    expect(json).toHaveProperty("total", 2);
+    expect(json).toHaveProperty("timestamp");
+    expect(json).toHaveProperty("hasMore", false);
   });
 
   it("should handle non-200 response with error", async () => {

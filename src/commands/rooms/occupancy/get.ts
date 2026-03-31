@@ -2,7 +2,7 @@ import { Args } from "@oclif/core";
 import { ChatClient, Room } from "@ably/chat";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { productApiFlags } from "../../../flags.js";
-import { formatResource } from "../../../utils/output.js";
+import { formatLabel, formatResource } from "../../../utils/output.js";
 
 export default class RoomsOccupancyGet extends ChatBaseCommand {
   static override args = {
@@ -62,9 +62,12 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
         );
       } else {
         this.log(`Occupancy metrics for room ${formatResource(roomName)}:\n`);
-        this.log(`Connections: ${occupancyMetrics.connections ?? 0}`);
-
-        this.log(`Presence Members: ${occupancyMetrics.presenceMembers ?? 0}`);
+        this.log(
+          `${formatLabel("Connections")} ${occupancyMetrics.connections ?? 0}`,
+        );
+        this.log(
+          `${formatLabel("Presence Members")} ${occupancyMetrics.presenceMembers ?? 0}`,
+        );
       }
     } catch (error) {
       this.fail(error, flags, "roomOccupancyGet", { room: args.room });

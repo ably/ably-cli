@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyChat } from "../../../../helpers/mock-ably-chat.js";
-import { captureJsonLogs } from "../../../../helpers/ndjson.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -20,13 +19,9 @@ describe("rooms:occupancy:subscribe command", () => {
   standardFlagTests("rooms:occupancy:subscribe", import.meta.url, ["--json"]);
 
   describe("functionality", () => {
-    it("should display initial occupancy snapshot", async () => {
+    it("should attach and subscribe to occupancy events", async () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
-      room.occupancy.get.mockResolvedValue({
-        connections: 3,
-        presenceMembers: 1,
-      });
 
       const { stdout } = await runCommand(
         ["rooms:occupancy:subscribe", "test-room"],
@@ -34,23 +29,20 @@ describe("rooms:occupancy:subscribe command", () => {
       );
 
       expect(room.attach).toHaveBeenCalled();
-      expect(room.occupancy.get).toHaveBeenCalled();
-      expect(stdout).toContain("Initial occupancy");
-      expect(stdout).toContain("Connections: 3");
+      expect(room.occupancy.subscribe).toHaveBeenCalled();
+      expect(stdout).toContain("Subscribed to occupancy in room");
     });
 
-    it("should warn on initial fetch failure but continue listening", async () => {
+    it("should display listening message", async () => {
       const chatMock = getMockAblyChat();
-      const room = chatMock.rooms._getRoom("test-room");
-      room.occupancy.get.mockRejectedValue(new Error("Fetch failed"));
+      chatMock.rooms._getRoom("test-room");
 
       const { stdout } = await runCommand(
         ["rooms:occupancy:subscribe", "test-room"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Failed to fetch initial occupancy");
-      expect(stdout).toContain("Listening");
+      expect(stdout).toContain("Listening for occupancy updates");
     });
 
     it("should subscribe and display updates", async () => {
@@ -92,32 +84,16 @@ describe("rooms:occupancy:subscribe command", () => {
       expect(room.occupancy.subscribe).toHaveBeenCalled();
     });
 
-    it("should output JSON with type field", async () => {
+    it("should run with --json flag without errors", async () => {
       const chatMock = getMockAblyChat();
-      const room = chatMock.rooms._getRoom("test-room");
-      room.occupancy.get.mockResolvedValue({
-        connections: 2,
-        presenceMembers: 0,
-      });
+      chatMock.rooms._getRoom("test-room");
 
-      const allRecords = await captureJsonLogs(async () => {
-        await runCommand(
-          ["rooms:occupancy:subscribe", "test-room", "--json"],
-          import.meta.url,
-        );
-      });
-
-      // Find the JSON output with initial snapshot
-      const records = allRecords.filter(
-        (r) =>
-          r.type === "event" && r.occupancy?.eventType === "initialSnapshot",
+      const { error } = await runCommand(
+        ["rooms:occupancy:subscribe", "test-room", "--json"],
+        import.meta.url,
       );
 
-      expect(records.length).toBeGreaterThan(0);
-      const parsed = records[0];
-      expect(parsed).toHaveProperty("type", "event");
-      expect(parsed.occupancy).toHaveProperty("eventType", "initialSnapshot");
-      expect(parsed.occupancy).toHaveProperty("room", "test-room");
+      expect(error).toBeUndefined();
     });
   });
 

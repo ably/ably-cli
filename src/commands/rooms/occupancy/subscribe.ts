@@ -1,11 +1,10 @@
 import { OccupancyEvent, ChatClient } from "@ably/chat";
 import { Args } from "@oclif/core";
-import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { errorMessage } from "../../../utils/errors.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import {
+  formatLabel,
   formatProgress,
   formatResource,
   formatTimestamp,
@@ -80,9 +79,11 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         "gettingRoom",
         `Getting room handle for ${this.roomName}`,
       );
+
       const room = await this.chatClient.rooms.get(this.roomName, {
         occupancy: { enableEvents: true },
       });
+
       this.logCliEvent(
         flags,
         "room",
@@ -107,38 +108,6 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       await room.attach();
       // Successful attach logged by onStatusChange handler
 
-      // Get the initial occupancy metrics
-      this.logCliEvent(
-        flags,
-        "occupancy",
-        "gettingInitial",
-        "Fetching initial occupancy metrics",
-      );
-      try {
-        const initialOccupancy = await room.occupancy.get();
-        this.logCliEvent(
-          flags,
-          "occupancy",
-          "gotInitial",
-          "Initial occupancy metrics fetched",
-          { metrics: initialOccupancy },
-        );
-        this.displayOccupancyMetrics(
-          initialOccupancy,
-          this.roomName,
-          flags,
-          true,
-        );
-      } catch (error) {
-        const errorMsg = `Failed to fetch initial occupancy: ${errorMessage(error)}`;
-        this.logCliEvent(flags, "occupancy", "getInitialError", errorMsg, {
-          error: errorMsg,
-        });
-        if (!this.shouldOutputJson(flags)) {
-          this.log(chalk.yellow(errorMsg));
-        }
-      }
-
       // Subscribe to occupancy events
       this.logCliEvent(
         flags,
@@ -146,6 +115,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         "subscribing",
         "Subscribing to occupancy updates",
       );
+
       room.occupancy.subscribe((occupancyEvent: OccupancyEvent) => {
         const occupancyMetrics = occupancyEvent.occupancy;
         this.logCliEvent(
@@ -157,6 +127,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         );
         this.displayOccupancyMetrics(occupancyMetrics, this.roomName, flags);
       });
+
       this.logCliEvent(
         flags,
         "occupancy",
@@ -174,10 +145,9 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
   }
 
   private displayOccupancyMetrics(
-    occupancyMetrics: OccupancyMetrics | OccupancyEvent,
+    occupancyMetrics: OccupancyMetrics,
     roomName: string | null,
     flags: Record<string, unknown>,
-    isInitial = false,
   ): void {
     if (!roomName) return; // Guard against null roomName
     if (!occupancyMetrics) return; // Guard against undefined occupancyMetrics
@@ -187,36 +157,19 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       metrics: occupancyMetrics,
       room: roomName,
       timestamp,
-      eventType: isInitial ? "initialSnapshot" : "update",
+      eventType: "update",
     };
-    this.logCliEvent(
-      flags,
-      "occupancy",
-      isInitial ? "initialMetrics" : "updateReceived",
-      isInitial ? "Initial occupancy metrics" : "Occupancy update received",
-      logData,
-    );
 
     if (this.shouldOutputJson(flags)) {
       this.logJsonEvent({ occupancy: logData }, flags);
     } else {
-      const prefix = isInitial ? "Initial occupancy" : "Occupancy update";
-      this.log(
-        `${formatTimestamp(timestamp)} ${prefix} for room ${formatResource(roomName)}`,
-      );
+      this.log(`${formatTimestamp(timestamp)}`);
       // Type guard to handle both OccupancyMetrics and OccupancyEvent
-      const connections =
-        "connections" in occupancyMetrics ? occupancyMetrics.connections : 0;
-      const presenceMembers =
-        "presenceMembers" in occupancyMetrics
-          ? occupancyMetrics.presenceMembers
-          : undefined;
+      const connections = occupancyMetrics?.connections ?? 0;
+      const presenceMembers = occupancyMetrics?.presenceMembers ?? 0;
 
-      this.log(`  Connections: ${connections ?? 0}`);
-
-      if (presenceMembers !== undefined) {
-        this.log(`  Presence Members: ${presenceMembers}`);
-      }
+      this.log(`${formatLabel("Connections")} ${connections}`);
+      this.log(`${formatLabel("Presence Members")} ${presenceMembers}`);
 
       this.log(""); // Empty line for better readability
     }

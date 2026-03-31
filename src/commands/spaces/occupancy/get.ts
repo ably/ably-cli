@@ -8,11 +8,7 @@ const SPACE_CHANNEL_TAG = "::$space";
 
 interface OccupancyMetrics {
   connections: number;
-  presenceConnections: number;
   presenceMembers: number;
-  presenceSubscribers: number;
-  publishers: number;
-  subscribers: number;
 }
 
 export default class SpacesOccupancyGet extends SpacesBaseCommand {
@@ -54,14 +50,10 @@ export default class SpacesOccupancyGet extends SpacesBaseCommand {
       );
 
       const occupancyData = channelDetails.items?.[0] || {};
-      const occupancyMetrics: OccupancyMetrics = occupancyData.status?.occupancy
-        ?.metrics || {
-        connections: 0,
-        presenceConnections: 0,
-        presenceMembers: 0,
-        presenceSubscribers: 0,
-        publishers: 0,
-        subscribers: 0,
+      const raw = occupancyData.status?.occupancy?.metrics || {};
+      const occupancyMetrics: OccupancyMetrics = {
+        connections: raw.connections ?? 0,
+        presenceMembers: raw.presenceMembers ?? 0,
       };
 
       if (this.shouldOutputJson(flags)) {
@@ -79,18 +71,8 @@ export default class SpacesOccupancyGet extends SpacesBaseCommand {
         this.log(
           `${formatLabel("Connections")} ${occupancyMetrics.connections}`,
         );
-        this.log(`${formatLabel("Publishers")} ${occupancyMetrics.publishers}`);
-        this.log(
-          `${formatLabel("Subscribers")} ${occupancyMetrics.subscribers}`,
-        );
-        this.log(
-          `${formatLabel("Presence Connections")} ${occupancyMetrics.presenceConnections}`,
-        );
         this.log(
           `${formatLabel("Presence Members")} ${occupancyMetrics.presenceMembers}`,
-        );
-        this.log(
-          `${formatLabel("Presence Subscribers")} ${occupancyMetrics.presenceSubscribers}`,
         );
       }
     } catch (error) {
