@@ -77,12 +77,14 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
       // Prepare update data - explicitly typed
       const updatePayload: Partial<Omit<PartialRuleData, "status">> = {
         ...(flags["request-mode"] && { requestMode: flags["request-mode"] }),
-        ...(flags.source && { source: JSON.parse(flags.source) }),
+        ...(flags.source && {
+          source: JSON.parse(flags.source) as Record<string, unknown>,
+        }),
         ...(flags.target && {
           target: {
             // Properly type the existing target
             ...(existingRule.target as Record<string, unknown>),
-            ...JSON.parse(flags.target),
+            ...(JSON.parse(flags.target) as Record<string, unknown>),
           },
         }),
       };

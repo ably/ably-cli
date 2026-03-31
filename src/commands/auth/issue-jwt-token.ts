@@ -79,9 +79,9 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
       }
 
       // Parse capabilities
-      let capabilities;
+      let capabilities: Record<string, string[]>;
       try {
-        capabilities = JSON.parse(flags.capability);
+        capabilities = JSON.parse(flags.capability) as Record<string, string[]>;
       } catch (error) {
         this.fail(error, flags, "issueJwtToken", {
           context: "parsing capability JSON",

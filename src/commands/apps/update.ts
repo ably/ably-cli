@@ -61,7 +61,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
       const updateData: { name?: string; tlsOnly?: boolean } = {};
 
       if (flags.name !== undefined) {
-        updateData.name = flags.name;
+        updateData.name = flags.name as string;
       }
 
       if (flags["tls-only"] !== undefined) {

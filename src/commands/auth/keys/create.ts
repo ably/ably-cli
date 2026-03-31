@@ -45,9 +45,9 @@ export default class KeysCreateCommand extends ControlBaseCommand {
 
     const appId = await this.requireAppId(flags);
 
-    let capabilities;
+    let capabilities: Record<string, string[]>;
     try {
-      capabilities = JSON.parse(flags.capabilities);
+      capabilities = JSON.parse(flags.capabilities) as Record<string, string[]>;
     } catch {
       this.fail(
         "Invalid capabilities JSON format. Please provide a valid JSON string.",

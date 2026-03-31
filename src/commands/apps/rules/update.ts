@@ -193,7 +193,7 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
       }
 
       if (flags["batching-interval"] !== undefined) {
-        updateData.batchingInterval = flags["batching-interval"];
+        updateData.batchingInterval = flags["batching-interval"] as number;
       }
 
       if (flags["conflation-enabled"] !== undefined) {
@@ -201,11 +201,11 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
       }
 
       if (flags["conflation-interval"] !== undefined) {
-        updateData.conflationInterval = flags["conflation-interval"];
+        updateData.conflationInterval = flags["conflation-interval"] as number;
       }
 
       if (flags["conflation-key"] !== undefined) {
-        updateData.conflationKey = flags["conflation-key"];
+        updateData.conflationKey = flags["conflation-key"] as string;
       }
 
       if (flags["tls-only"] !== undefined) {
