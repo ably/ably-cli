@@ -22,7 +22,7 @@ For subscribe/realtime commands. Uses `getMockAblyRealtime()` and standard test 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRealtime } from "../../../helpers/mock-ably-realtime.js";
-import { captureJsonLogs } from "../../../helpers/ndjson.js";
+import { captureJsonLogs, parseJsonOutput } from "../../../helpers/ndjson.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -152,6 +152,7 @@ For history/get commands. Uses `getMockAblyRest()` and standard test helpers.
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -205,7 +206,7 @@ describe("topic:action command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "topic:action");
       expect(result).toHaveProperty("success", true);
@@ -244,6 +245,7 @@ import {
   controlApiCleanup,
 } from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -292,7 +294,7 @@ describe("topic:action command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "topic:action");
       expect(result).toHaveProperty("success", true);

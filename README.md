@@ -24,7 +24,7 @@ $ npm install -g @ably/cli
 $ ably COMMAND
 running command...
 $ ably (--version)
-@ably/cli/0.17.0 darwin-arm64 node-v22.14.0
+@ably/cli/0.17.0 darwin-arm64 node-v24.4.1
 $ ably --help [COMMAND]
 USAGE
   $ ably COMMAND
@@ -361,7 +361,7 @@ ARGUMENTS
   ALIAS  Alias of the account to log out from (defaults to current account)
 
 FLAGS
-  -f, --force        Force logout without confirmation
+  -f, --force        Skip confirmation prompt (required with --json)
   -v, --verbose      Output verbose logs
       --json         Output in JSON format
       --pretty-json  Output in colorized JSON format
@@ -516,7 +516,7 @@ ARGUMENTS
   APPID  App ID to delete (uses current app if not specified)
 
 FLAGS
-  -f, --force        Skip confirmation prompt
+  -f, --force        Skip confirmation prompt (required with --json)
   -v, --verbose      Output verbose logs
       --app=<value>  The app ID or name (defaults to current app)
       --json         Output in JSON format
@@ -659,7 +659,7 @@ ARGUMENTS
   NAMEORID  Name or ID of the rule to delete
 
 FLAGS
-  -f, --force        Force deletion without confirmation
+  -f, --force        Skip confirmation prompt (required with --json)
   -v, --verbose      Output verbose logs
       --app=<value>  The app ID or name (defaults to current app)
       --json         Output in JSON format
@@ -1114,15 +1114,15 @@ Revoke an API key (permanently disables the key)
 
 ```
 USAGE
-  $ ably auth keys revoke KEYNAME [-v] [--json | --pretty-json] [--app <value>] [--force]
+  $ ably auth keys revoke KEYNAME [-v] [--json | --pretty-json] [--app <value>] [-f]
 
 ARGUMENTS
   KEYNAME  Key name (APP_ID.KEY_ID) of the key to revoke
 
 FLAGS
+  -f, --force        Skip confirmation prompt (required with --json)
   -v, --verbose      Output verbose logs
       --app=<value>  The app ID or name (defaults to current app)
-      --force        Skip confirmation prompt
       --json         Output in JSON format
       --pretty-json  Output in colorized JSON format
 
@@ -2427,7 +2427,7 @@ ARGUMENTS
   INTEGRATIONID  The integration ID to delete
 
 FLAGS
-  -f, --force        Force deletion without confirmation
+  -f, --force        Skip confirmation prompt (required with --json)
   -v, --verbose      Output verbose logs
       --app=<value>  The app ID or name (defaults to current app)
       --json         Output in JSON format
@@ -3121,7 +3121,7 @@ USAGE
     [-f]
 
 FLAGS
-  -f, --force              Skip confirmation prompt
+  -f, --force              Skip confirmation prompt (required with --json)
   -v, --verbose            Output verbose logs
       --channel=<value>    (required) Channel name to unsubscribe from
       --client-id=<value>  Client ID to unsubscribe
@@ -3152,7 +3152,7 @@ USAGE
     [-f]
 
 FLAGS
-  -f, --force              Skip confirmation prompt
+  -f, --force              Skip confirmation prompt (required with --json)
   -v, --verbose            Output verbose logs
       --channel=<value>    (required) Channel name to filter by
       --client-id=<value>  Filter by client ID
@@ -3239,7 +3239,7 @@ USAGE
   $ ably push config clear-apns [-v] [--json | --pretty-json] [--app <value>] [-f]
 
 FLAGS
-  -f, --force        Skip confirmation prompt
+  -f, --force        Skip confirmation prompt (required with --json)
   -v, --verbose      Output verbose logs
       --app=<value>  The app ID or name (defaults to current app)
       --json         Output in JSON format
@@ -3267,7 +3267,7 @@ USAGE
   $ ably push config clear-fcm [-v] [--json | --pretty-json] [--app <value>] [-f]
 
 FLAGS
-  -f, --force        Skip confirmation prompt
+  -f, --force        Skip confirmation prompt (required with --json)
   -v, --verbose      Output verbose logs
       --app=<value>  The app ID or name (defaults to current app)
       --json         Output in JSON format
@@ -3479,7 +3479,7 @@ ARGUMENTS
   DEVICE-ID  The device ID to remove
 
 FLAGS
-  -f, --force        Skip confirmation prompt
+  -f, --force        Skip confirmation prompt (required with --json)
   -v, --verbose      Output verbose logs
       --json         Output in JSON format
       --pretty-json  Output in colorized JSON format
@@ -3506,7 +3506,7 @@ USAGE
   $ ably push devices remove-where [-v] [--json | --pretty-json] [--device-id <value>] [--client-id <value>] [-f]
 
 FLAGS
-  -f, --force              Skip confirmation prompt
+  -f, --force              Skip confirmation prompt (required with --json)
   -v, --verbose            Output verbose logs
       --client-id=<value>  Filter by client ID
       --device-id=<value>  Filter by device ID
@@ -3711,7 +3711,7 @@ ARGUMENTS
   QUEUEID  ID of the queue to delete
 
 FLAGS
-  -f, --force        Force deletion without confirmation
+  -f, --force        Skip confirmation prompt (required with --json)
   -v, --verbose      Output verbose logs
       --app=<value>  The app ID or name (defaults to current app)
       --json         Output in JSON format

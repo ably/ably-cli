@@ -97,7 +97,7 @@ For each changed command file, run the relevant checks. Spawn agents for paralle
 2. **Grep** for `chalk\.yellow\(` — should use `formatWarning()` instead
 3. **Grep** for `formatProgress(` and check for manual `...` appended
 4. **Grep** for `formatSuccess(` and check lines end with `.`
-5. **Read** the file and look for unguarded `this.log()` calls (not inside `if (!this.shouldOutputJson(flags))`)
+5. **Grep** for `this\.log(formatProgress\|this\.log(formatSuccess\|this\.log(formatListening\|this\.log(formatWarning` and `this\.logToStderr(formatProgress\|this\.logToStderr(formatSuccess\|this\.logToStderr(formatListening\|this\.logToStderr(formatWarning` — these must use the base command helpers instead: `this.logProgress(msg, flags)`, `this.logSuccessMessage(msg, flags)`, `this.logListening(msg, flags)`, `this.logHolding(msg, flags)`, `this.logWarning(msg, flags)`. In non-JSON mode all helpers emit to stderr. In JSON mode: `logProgress` and `logSuccessMessage` are **silent** (no-ops), while `logListening` (status: "listening"), `logHolding` (status: "holding"), and `logWarning` (status: "warning") emit structured JSON on stdout. `logSuccessMessage` should be inside the `else` block after `logJsonResult`. Also check these helpers are NOT inside `shouldOutputJson` guards — they don't need them.
 6. Look for quoted resource names instead of `formatResource(name)`
 7. **Grep** for box-drawing characters (`┌`, `┬`, `├`, `└`, `─.*─`, `│`) — non-JSON output must use multi-line labeled blocks, not ASCII tables or grids
 8. **Read** the file and check that non-JSON data output uses `formatLabel()` for field labels in multi-line blocks, not inline or single-line formatting
@@ -120,7 +120,7 @@ For each changed command file, run the relevant checks. Spawn agents for paralle
 3. **Grep** for `shouldOutputJson` — verify human output is guarded
 4. **Read** the file to verify streaming commands use `logJsonEvent` and one-shot commands use `logJsonResult`
 5. **Read** `logJsonResult`/`logJsonEvent` call sites and check data is nested under a domain key (singular for events/single items, plural for collections) — not spread at top level. Top-level envelope fields are `type`, `command`, `success` only. Metadata like `total`, `timestamp`, `appId` may sit alongside the domain key.
-6. **Check** hold commands (set, enter, acquire) emit `logJsonStatus("holding", ...)` after `logJsonResult` — this signals to JSON consumers that the command is alive and waiting for Ctrl+C / `--duration`
+6. **Check** hold commands (set, enter, acquire) emit `this.logHolding(...)` after `logJsonResult` — this emits `status: "holding"` in JSON mode, signaling to consumers that the command is alive and waiting for Ctrl+C / `--duration`. For passive subscribe commands, check for `this.logListening(...)` instead (emits `status: "listening"`)
 
 **Control API helper check (grep — for Control API commands only):**
 1. **Grep** for `resolveAppId` — should use `requireAppId` instead (encapsulates null check and `fail()`)

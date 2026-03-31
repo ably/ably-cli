@@ -94,14 +94,14 @@ Launch these agents **in parallel**. Each agent gets a focused mandate and uses 
 
 ### Agent 3: Output Formatting Sweep
 
-**Goal:** Verify all human output uses the correct format helpers and is JSON-guarded.
+**Goal:** Verify all human output uses the correct format helpers and correct output method (stderr for status, stdout for data).
 
 **Method (grep/read — text patterns):**
 1. **Grep** for `chalk\.cyan\(` in command files — should use `formatResource()` instead
 2. **Grep** for `formatProgress(` and check matches for manual `...` appended
 3. **Grep** for `formatSuccess(` and read the lines to check they end with `.`
-4. **Grep** for `shouldOutputJson` to find all JSON-aware commands
-5. **Read** command files and look for unguarded `this.log()` calls (not inside `if (!this.shouldOutputJson(flags))`)
+4. **Grep** for `this\.log(formatProgress\|this\.log(formatSuccess\|this\.log(formatListening\|this\.log(formatWarning` and `this\.logToStderr(formatProgress\|this\.logToStderr(formatSuccess\|this\.logToStderr(formatListening\|this\.logToStderr(formatWarning` — these must use the base command helpers instead: `this.logProgress(msg, flags)`, `this.logSuccessMessage(msg, flags)`, `this.logListening(msg, flags)`, `this.logHolding(msg, flags)`, `this.logWarning(msg, flags)`. In non-JSON mode all helpers emit to stderr. In JSON mode: `logProgress` and `logSuccessMessage` are **silent** (no-ops), while `logListening` (status: "listening"), `logHolding` (status: "holding"), and `logWarning` (status: "warning") emit structured JSON on stdout. `logSuccessMessage` should be inside the `else` block after `logJsonResult`. Also check these helpers are NOT inside `shouldOutputJson` guards — they don't need them.
+5. **Grep** for `shouldOutputJson` to find all JSON-aware commands and verify data output is properly branched
 6. **Grep** for quoted resource names patterns like `"${` or `'${` near `channel`, `name`, `app` variables — should use `formatResource()`
 
 **Method (grep — structured output format):**
@@ -155,7 +155,7 @@ Launch these agents **in parallel**. Each agent gets a focused mandate and uses 
 4. Cross-reference: every leaf command should appear in both the `logJsonResult`/`logJsonEvent` list and the `shouldOutputJson` list
 5. **Read** streaming commands to verify they use `logJsonEvent`, one-shot commands use `logJsonResult`
 6. **Read** each `logJsonResult`/`logJsonEvent` call and verify data is nested under a domain key — singular for events/single items (e.g., `{message: ...}`, `{cursor: ...}`), plural for collections (e.g., `{cursors: [...]}`, `{rules: [...]}`). Top-level envelope fields are `type`, `command`, `success` only. Metadata like `total`, `timestamp`, `appId` may sit alongside the domain key.
-7. **Check** hold commands (set, enter, acquire) emit `logJsonStatus("holding", ...)` after `logJsonResult` — this signals to JSON consumers that the command is alive and waiting for Ctrl+C / `--duration`
+7. **Check** hold commands (set, enter, acquire) emit `this.logHolding(...)` after `logJsonResult` — this emits `status: "holding"` in JSON mode, signaling to consumers that the command is alive and waiting for Ctrl+C / `--duration`. For passive subscribe commands, check for `this.logListening(...)` instead (emits `status: "listening"`)
 
 **Reasoning guidance:**
 - Commands that ONLY have human output (no JSON path) are deviations
@@ -163,7 +163,7 @@ Launch these agents **in parallel**. Each agent gets a focused mandate and uses 
 - Topic index commands (showing help) don't need JSON output
 - Data spread at the top level without a domain key is a deviation — nest under a singular or plural domain noun
 - Metadata fields (`total`, `timestamp`, `hasMore`, `appId`) alongside the domain key are acceptable — they describe the result, not the domain objects
-- Hold commands missing `logJsonStatus` after `logJsonResult` are deviations — JSON consumers need the hold signal
+- Hold commands missing `logHolding` after `logJsonResult` are deviations — JSON consumers need the hold signal
 
 ### Agent 6: Test Pattern Sweep
 

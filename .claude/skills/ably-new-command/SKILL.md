@@ -210,19 +210,15 @@ export default class TopicAction extends AblyBaseCommand {
 
 ### Output patterns
 
-The CLI has specific output helpers in `src/utils/output.ts`. All human-readable output must be wrapped in a JSON guard:
+The base command provides five logging helpers: `this.logProgress(msg, flags)`, `this.logSuccessMessage(msg, flags)`, `this.logListening(msg, flags)`, `this.logHolding(msg, flags)`, `this.logWarning(msg, flags)`. These do NOT need `shouldOutputJson` guards. In non-JSON mode they all emit formatted text on stderr. In JSON mode: `logProgress` and `logSuccessMessage` are **silent** (no-ops — the JSON result/event records already convey progress and success), while `logListening` (status: "listening"), `logHolding` (status: "holding"), and `logWarning` (status: "warning") emit structured JSON on stdout. `logSuccessMessage` should be placed inside the `else` block after `logJsonResult` for readability. Only human-readable **data output** (field labels, headings, record blocks) needs the `if/else` guard:
 
 ```typescript
-// JSON guard — all human output goes through this
-if (!this.shouldOutputJson(flags)) {
-  this.log(formatProgress("Attaching to channel: " + formatResource(channelName)));
-}
+// Progress/success/listening — no guard needed, helpers handle both modes
+this.logProgress("Attaching to channel: " + formatResource(channelName), flags);
 
 // After success:
-if (!this.shouldOutputJson(flags)) {
-  this.log(formatSuccess("Subscribed to channel: " + formatResource(channelName) + "."));
-  this.log(formatListening("Listening for messages."));
-}
+this.logSuccessMessage("Subscribed to channel: " + formatResource(channelName) + ".", flags);
+this.logListening("Listening for messages.", flags);
 
 // JSON output — nest data under a domain key, not spread at top level.
 // Envelope provides top-level: type, command, success.
@@ -276,7 +272,11 @@ Rules:
 - `formatHeading(text)` — bold, for record headings in lists
 - `formatIndex(n)` — dim bracketed number, for history ordering
 - Use `this.fail()` for all errors (see Error handling below), never `this.log(chalk.red(...))`
-- Never use `console.log` or `console.error` — always `this.log()` or `this.logToStderr()`
+- Never use `console.log` or `console.error` — always `this.log()` for data or the logging helpers for status messages
+- Use `this.logProgress(msg, flags)`, `this.logSuccessMessage(msg, flags)`, `this.logListening(msg, flags)`, `this.logHolding(msg, flags)`, `this.logWarning(msg, flags)` for status messages — no `shouldOutputJson` guard needed. In non-JSON mode all emit to stderr. In JSON mode: `logProgress` and `logSuccessMessage` are silent; `logListening` (status: "listening"), `logHolding` (status: "holding"), and `logWarning` (status: "warning") emit structured JSON on stdout
+- Do NOT use the old pattern `this.logToStderr(formatProgress/Success/Listening/Warning(...))` — use the helpers instead
+- `formatPaginationLog()` output still uses `this.logToStderr()` directly (not a helper yet)
+- `formatLabel()`, `formatHeading()`, `formatIndex()`, `formatTimestamp()`, `formatClientId()`, `formatEventType()` → `this.log()` inside the non-JSON branch
 
 ### JSON envelope — reserved keys
 
@@ -454,9 +454,10 @@ See the "Keeping Skills Up to Date" section in `CLAUDE.md` for the full list of 
 - [ ] Correct base class (`AblyBaseCommand`, `ControlBaseCommand`, `ChatBaseCommand`, `SpacesBaseCommand`, or `StatsBaseCommand`)
 - [ ] Correct flag set (`productApiFlags` vs `ControlBaseCommand.globalFlags`)
 - [ ] `clientIdFlag` only if command needs client identity
-- [ ] All human output wrapped in `if (!this.shouldOutputJson(flags))`
-- [ ] Output helpers used correctly (`formatProgress`, `formatSuccess`, `formatWarning`, `formatListening`, `formatResource`, `formatTimestamp`, `formatClientId`, `formatEventType`, `formatLabel`, `formatHeading`, `formatIndex`)
-- [ ] `formatSuccess()` messages end with `.` (period)
+- [ ] Human data output wrapped in `if (!this.shouldOutputJson(flags))` — but `logProgress`, `logSuccessMessage`, `logListening`, `logWarning` helpers do NOT need guards
+- [ ] Status messages use base command helpers (`this.logProgress`, `this.logSuccessMessage`, `this.logListening`, `this.logWarning`) — NOT `this.logToStderr(formatProgress/Success/Listening/Warning(...))`
+- [ ] Output formatters used correctly for data display (`formatResource`, `formatTimestamp`, `formatClientId`, `formatEventType`, `formatLabel`, `formatHeading`, `formatIndex`)
+- [ ] `logSuccessMessage()` messages end with `.` (period)
 - [ ] Non-JSON data output uses multi-line labeled blocks (see `patterns.md` "Human-Readable Output Format"), not tables or custom grids
 - [ ] Non-JSON output exposes all available SDK fields (same data as JSON mode, omitting only null/empty values)
 - [ ] SDK types imported directly (`import type { CursorUpdate } from "@ably/spaces"`) — no local interface redefinitions of SDK types (display interfaces in `src/utils/` are fine)
