@@ -63,6 +63,7 @@ export default class RulesDeleteCommand extends ControlBaseCommand {
         this.log(`\nYou are about to delete the following rule:`);
         this.log(`${formatLabel("ID")} ${formatResource(namespace.id)}`);
         for (const line of formatChannelRuleDetails(namespace, {
+          bold: true,
           formatDate: (t) => this.formatDate(t),
           showTimestamps: true,
         })) {

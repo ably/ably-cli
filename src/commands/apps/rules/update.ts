@@ -244,6 +244,7 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
         );
         this.log(`${formatLabel("ID")} ${formatResource(updatedNamespace.id)}`);
         for (const line of formatChannelRuleDetails(updatedNamespace, {
+          bold: true,
           formatDate: (t) => this.formatDate(t),
           showTimestamps: true,
         })) {

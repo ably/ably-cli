@@ -170,6 +170,7 @@ export default class RulesCreateCommand extends ControlBaseCommand {
         );
         this.log(`${formatLabel("ID")} ${formatResource(createdNamespace.id)}`);
         for (const line of formatChannelRuleDetails(createdNamespace, {
+          bold: true,
           formatDate: (t) => this.formatDate(t),
         })) {
           this.log(line);

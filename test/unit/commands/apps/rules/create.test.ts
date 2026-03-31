@@ -61,7 +61,7 @@ describe("apps:rules:create command", () => {
       );
 
       expect(stdout).toContain("Rule chat created.");
-      expect(stdout).toContain("Persisted: Yes");
+      expect(stdout).toContain("Persisted: ✓ Yes");
     });
 
     it("should create a rule with mutable-messages flag and auto-enable persistence", async () => {
@@ -85,8 +85,8 @@ describe("apps:rules:create command", () => {
       );
 
       expect(stdout).toContain("Rule chat created.");
-      expect(stdout).toContain("Persisted: Yes");
-      expect(stdout).toContain("Mutable Messages: Yes");
+      expect(stdout).toContain("Persisted: ✓ Yes");
+      expect(stdout).toContain("Mutable Messages: ✓ Yes");
       expect(stderr).toContain("persistence is automatically enabled");
     });
 
@@ -104,7 +104,7 @@ describe("apps:rules:create command", () => {
       );
 
       expect(stdout).toContain("Rule chat created.");
-      expect(stdout).toContain("Push Enabled: Yes");
+      expect(stdout).toContain("Push Enabled: ✓ Yes");
     });
 
     it("should output JSON format when --json flag is used", async () => {

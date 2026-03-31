@@ -712,7 +712,7 @@ describe("Control API E2E Workflow Tests", () => {
 
       const listOutput = JSON.parse(listResult.stdout);
       const deletedRule = listOutput.rules.find(
-        (ns: any) => ns.id === namespaceId,
+        (ns: { id: string }) => ns.id === namespaceId,
       );
       expect(deletedRule).toBeUndefined();
     });
