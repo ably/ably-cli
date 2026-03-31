@@ -119,9 +119,29 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * Strip internal SDK channel suffixes from error messages so users see
    * room/space names, not underlying channel IDs.
    * Covers Chat (::$chat::messages, etc.), Spaces (::$space), and Cursors (::$cursors).
+   * Also rewrites "Channel"/"channelId" terminology to "Room"/"Space" when the
+   * suffix reveals the product context.
    */
   private static sanitizeSdkErrorMessage(message: string): string {
-    return message.replaceAll(/::\$(?:chat|space|cursors)(?:::\w+)*/g, "");
+    const isRoom = /::\$chat(?:::\w+)*/.test(message);
+    const isSpace = /::\$(?:space|cursors)(?:::\w+)*/.test(message);
+
+    let sanitized = message.replaceAll(
+      /::\$(?:chat|space|cursors)(?:::\w+)*/g,
+      "",
+    );
+
+    if (isRoom) {
+      sanitized = sanitized
+        .replace(/\bChannel denied access\b/, "Room denied access")
+        .replace(/\bchannelId\b/, "room");
+    } else if (isSpace) {
+      sanitized = sanitized
+        .replace(/\bChannel denied access\b/, "Space denied access")
+        .replace(/\bchannelId\b/, "space");
+    }
+
+    return sanitized;
   }
 
   protected configManager: ConfigManager;
