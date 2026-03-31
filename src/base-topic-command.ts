@@ -129,7 +129,7 @@ export abstract class BaseTopicCommand extends InteractiveBaseCommand {
 
             const result = await runInquirerWithReadlineRestore(
               async () =>
-                inquirer.prompt([
+                inquirer.prompt<{ confirmed: boolean }>([
                   {
                     name: "confirmed",
                     type: "confirm",

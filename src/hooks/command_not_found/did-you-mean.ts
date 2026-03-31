@@ -120,7 +120,7 @@ const hook: Hook<"command_not_found"> = async function (opts) {
 
       const result = await runInquirerWithReadlineRestore(
         async () =>
-          inquirer.prompt([
+          inquirer.prompt<{ confirmed: boolean }>([
             {
               name: "confirmed",
               type: "confirm",

@@ -22,7 +22,7 @@ export class InteractiveHelper {
    * Confirm an action with the user
    */
   async confirm(message: string): Promise<boolean> {
-    const { confirmed } = await inquirer.prompt([
+    const { confirmed } = await inquirer.prompt<{ confirmed: boolean }>([
       {
         default: false,
         message,
@@ -52,7 +52,9 @@ export class InteractiveHelper {
         return null;
       }
 
-      const { selectedAccount } = await inquirer.prompt([
+      const { selectedAccount } = await inquirer.prompt<{
+        selectedAccount: { account: AccountConfig; alias: string };
+      }>([
         {
           choices: accounts.map((account) => {
             const isCurrent = account.alias === currentAlias;
@@ -95,7 +97,7 @@ export class InteractiveHelper {
         return null;
       }
 
-      const { selectedApp } = await inquirer.prompt([
+      const { selectedApp } = await inquirer.prompt<{ selectedApp: App }>([
         {
           choices: apps.map((app) => ({
             name: `${app.name} (${app.id})`,
@@ -128,7 +130,7 @@ export class InteractiveHelper {
         return null;
       }
 
-      const { selectedKey } = await inquirer.prompt([
+      const { selectedKey } = await inquirer.prompt<{ selectedKey: Key }>([
         {
           choices: keys.map((key) => ({
             name: `${key.name || "Unnamed key"} (${key.id})`,
