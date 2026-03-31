@@ -1,62 +1,168 @@
 version: 2
 updates:
-  # pnpm dependencies (Dependabot uses "npm" ecosystem for npm/yarn/pnpm)
+  # ─────────────────────────────────────────────────────────────
+  # Root CLI package — the core product, highest scrutiny
+  #
+  # Uses a 3-tier grouping strategy (industry standard from Fastify,
+  # SPS Commerce, and others managing large dependency trees):
+  #   Tier 1: minor/patch grouped by dev/prod — safe, low-risk
+  #   Tier 2: dev majors grouped — breaking but only affects dev workflow
+  #   Tier 3: prod majors individual — highest risk, reviewed one-by-one
+  #
+  # Why not group all majors together? A single broken major blocks the
+  # entire grouped PR, holding safe minor/patch updates hostage.
+  # ─────────────────────────────────────────────────────────────
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: "09:00"
+    # Use `increase` to only bump the version constraint when the new
+    # version falls outside the existing range (avoids noisy lockfile-only diffs)
     versioning-strategy: increase
     open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    # Conventional commit prefixes — if semantic release is ever adopted,
+    # prod deps (fix) auto-trigger patch releases, dev deps (chore) do not.
+    # Pattern used by Fastify and Grafana.
+    commit-message:
+      prefix: "fix(deps)"
+      prefix-development: "chore(dev-deps)"
     groups:
-      dev-dependencies:
+      # Tier 1: Minor + patch updates split by dev/prod.
+      # These are backwards-compatible and rarely break anything.
+      dev-minor-patch:
         dependency-type: development
-        update-types:
-          - minor
-          - patch
-      production-dependencies:
+        update-types: [minor, patch]
+      prod-minor-patch:
         dependency-type: production
-        update-types:
-          - minor
-          - patch
+        update-types: [minor, patch]
+      # Tier 2: Dev major bumps grouped together.
+      # Breaking changes to linters, test frameworks, bundlers only affect
+      # the dev workflow, not CLI users. Safe to review as a batch.
+      dev-major:
+        dependency-type: development
+        update-types: [major]
+      # Tier 3: Prod majors are intentionally NOT grouped.
+      # Each arrives as an individual PR for maximum visibility on
+      # breaking changes that could affect CLI end users (e.g., SDK rewrites).
+    ignore:
+      # Large migrations that require dedicated planning — these PRs sit open
+      # for weeks, waste CI on every rebase, and consume PR limit slots.
+      # Revisit quarterly; remove the rule when the team is ready to migrate.
+      - dependency-name: "zod"
+        update-types: ["version-update:semver-major"]   # v3 → v4: new validation paradigm
+      - dependency-name: "inquirer"
+        update-types: ["version-update:semver-major"]   # v9 → v13: complete API rewrite
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]   # v5 → v6: major compiler changes
+    # Cooldown defers PRs for newly published package versions.
+    # Protects against supply-chain attacks (malicious versions are usually
+    # caught within days) and buggy releases (hotfix follow-ups are common).
+    # Security updates bypass cooldown entirely.
+    # Pattern: Node.js uses 5d across the board; we use 7d for majors
+    # since major releases often get immediate hotfix follow-ups.
+    cooldown:
+      semver-major-days: 7
+      semver-minor-days: 3
+      semver-patch-days: 3
 
+  # ─────────────────────────────────────────────────────────────
+  # React Web CLI package — not the core product
+  #
+  # Monthly schedule — this sub-package has only ~20-24 dependencies,
+  # is not published independently, and doesn't need weekly churn.
+  # Monthly batches all updates into fewer PRs and reduces CI load.
+  # Pattern: Node.js uses different frequencies per directory;
+  # Grafana uses monthly for non-core packages.
+  #
+  # Uses a single wildcard group (patterns: ["*"]) to collapse all
+  # updates into one PR. The dev/prod split adds no value at this scale.
+  # Pattern: Node.js uses patterns: ["*"] for tool subdirectories.
+  # ─────────────────────────────────────────────────────────────
   - package-ecosystem: npm
     directory: /packages/react-web-cli
     schedule:
-      interval: weekly
+      interval: monthly
     versioning-strategy: increase
-    open-pull-requests-limit: 10
+    # Lower limit — this is a low-traffic sub-package, no need to
+    # reserve 10 PR slots that could block root package updates.
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      # Directory-specific label for easy filtering in GitHub UI
+      # and building automation rules (e.g., "auto-approve all PRs labeled react-web-cli")
+      - "react-web-cli"
+    commit-message:
+      prefix: "fix(deps)"
+      prefix-development: "chore(dev-deps)"
     groups:
-      dev-dependencies:
-        dependency-type: development
-        update-types:
-          - minor
-          - patch
-      production-dependencies:
-        dependency-type: production
-        update-types:
-          - minor
-          - patch
+      # Single wildcard group — everything in one PR per cycle
+      all-dependencies:
+        patterns: ["*"]
+        update-types: [major, minor, patch]
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+    cooldown:
+      semver-major-days: 7
+      semver-minor-days: 3
+      semver-patch-days: 3
 
+  # ─────────────────────────────────────────────────────────────
+  # Web CLI example app — not published, lowest priority
+  #
+  # Monthly schedule — same reasoning as react-web-cli. Example apps
+  # don't need weekly dependency churn. A single monthly PR is enough.
+  #
+  # Same wildcard strategy as react-web-cli. Example apps don't need
+  # granular update visibility — one grouped PR is sufficient.
+  # ─────────────────────────────────────────────────────────────
   - package-ecosystem: npm
     directory: /examples/web-cli
     schedule:
-      interval: weekly
+      interval: monthly
     versioning-strategy: increase
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "examples"
+    commit-message:
+      prefix: "fix(deps)"
+      prefix-development: "chore(dev-deps)"
     groups:
-      dev-dependencies:
-        dependency-type: development
-        update-types:
-          - minor
-          - patch
-      production-dependencies:
-        dependency-type: production
-        update-types:
-          - minor
-          - patch
+      all-dependencies:
+        patterns: ["*"]
+        update-types: [major, minor, patch]
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+    cooldown:
+      semver-major-days: 7
+      semver-minor-days: 3
+      semver-patch-days: 3
 
+  # ─────────────────────────────────────────────────────────────
+  # GitHub Actions — all grouped into one PR
+  #
+  # Currently 5 individual PRs for action bumps. There is no reason
+  # to review actions/setup-node separately from actions/upload-artifact.
+  # Wildcard grouping collapses them into a single PR.
+  # Pattern: TypeScript, Node.js both use patterns: ["*"] for GH Actions.
+  # ─────────────────────────────────────────────────────────────
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: "09:00"
     open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    groups:
+      # Single group for all actions — low risk, review together
+      all-actions:
+        patterns: ["*"]
