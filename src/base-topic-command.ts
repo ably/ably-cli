@@ -64,7 +64,7 @@ export abstract class BaseTopicCommand extends InteractiveBaseCommand {
           }
         }
 
-        return await this.config.runCommand(fullCommandId, remainingArgs);
+        return this.config.runCommand(fullCommandId, remainingArgs);
       } else {
         // Try to find the closest subcommand
         const subcommands = await this.getTopicCommands();

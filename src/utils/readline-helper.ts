@@ -14,7 +14,7 @@ export async function runInquirerWithReadlineRestore<T>(
 ): Promise<T> {
   if (!interactiveReadline) {
     // Not in interactive mode, just run the prompt normally
-    return await promptFn();
+    return promptFn();
   }
 
   // Pause readline and save its state

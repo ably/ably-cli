@@ -1,4 +1,4 @@
-import { Command, Config } from "@oclif/core";
+import { Command } from "@oclif/core";
 import * as readline from "node:readline";
 import * as path from "node:path";
 import * as fs from "node:fs";
@@ -66,10 +66,6 @@ export default class Interactive extends Command {
     originalLine: "",
     originalCursorPos: 0,
   };
-
-  constructor(argv: string[], config: Config) {
-    super(argv, config);
-  }
 
   async run() {
     TerminalDiagnostics.log("Interactive.run() started");

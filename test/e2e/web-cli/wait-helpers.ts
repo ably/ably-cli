@@ -294,7 +294,7 @@ export async function waitForTerminalOutput(
  * Get terminal content using the best available method
  */
 export async function getTerminalContent(page: Page): Promise<string> {
-  return await page.evaluate(() => {
+  return page.evaluate(() => {
     const win = window as Window & { getTerminalBufferText?: () => string };
     if (typeof win.getTerminalBufferText === "function") {
       return win.getTerminalBufferText();
