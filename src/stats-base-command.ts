@@ -7,7 +7,6 @@ import { StatsDisplay, StatsDisplayData } from "./services/stats-display.js";
 import type { BaseFlags } from "./types/cli.js";
 import type { ControlApi } from "./services/control-api.js";
 import { errorMessage } from "./utils/errors.js";
-import { formatProgress } from "./utils/output.js";
 import { parseTimestamp } from "./utils/time.js";
 
 export abstract class StatsBaseCommand extends ControlBaseCommand {
@@ -138,10 +137,8 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
     controlApi: ControlApi,
   ): Promise<void> {
     try {
-      if (!this.shouldOutputJson(flags)) {
-        const label = await this.getStatsLabel(flags, controlApi);
-        this.log(formatProgress(`Subscribing to live stats for ${label}`));
-      }
+      const label = await this.getStatsLabel(flags, controlApi);
+      this.logProgress(`Subscribing to live stats for ${label}`, flags);
 
       const isJson = this.shouldOutputJson(flags);
       const cleanup = () => {
@@ -192,10 +189,8 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
     controlApi: ControlApi,
   ): Promise<void> {
     try {
-      if (!this.shouldOutputJson(flags)) {
-        const label = await this.getStatsLabel(flags, controlApi);
-        this.log(formatProgress(`Fetching stats for ${label}`));
-      }
+      const label = await this.getStatsLabel(flags, controlApi);
+      this.logProgress(`Fetching stats for ${label}`, flags);
 
       let startMs: number | undefined;
       let endMs: number | undefined;

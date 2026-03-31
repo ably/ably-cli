@@ -17,8 +17,13 @@ import { BaseFlags, CommandConfig } from "./types/cli.js";
 import {
   JsonRecordType,
   buildJsonRecord,
+  formatListening,
+  formatProgress,
+  formatResource,
+  formatSuccess,
   formatWarning,
 } from "./utils/output.js";
+import stripAnsi from "strip-ansi";
 import { getCliVersion } from "./utils/version.js";
 import Spaces from "@ably/spaces";
 import { ChatClient } from "@ably/chat";
@@ -842,6 +847,23 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       this.debug(`Realtime client cleanup error: ${String(error)}`);
     }
 
+    // Emit a terminal "completed" line so JSON consumers know the command is done.
+    const isJsonMode =
+      this.argv.includes("--json") || this.argv.includes("--pretty-json");
+    if (isJsonMode) {
+      const flags: BaseFlags = this.argv.includes("--pretty-json")
+        ? ({ "pretty-json": true } as BaseFlags)
+        : ({ json: true } as BaseFlags);
+      const exitCode = err ? 1 : 0;
+      this.log(
+        this.formatJsonRecord(
+          JsonRecordType.Status,
+          { status: "completed", exitCode },
+          flags,
+        ),
+      );
+    }
+
     // Call super to maintain the parent class functionality
     await super.finally(err);
   }
@@ -897,19 +919,81 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     this.log(this.formatJsonRecord(JsonRecordType.Event, data, flags));
   }
 
-  protected logJsonStatus(
-    status: string,
-    message: string,
-    flags: BaseFlags,
-  ): void {
+  /**
+   * Log a progress message. Silent in JSON mode (structured events convey
+   * the same information). Non-JSON mode: emits formatted text on stderr.
+   */
+  protected logProgress(message: string, flags: BaseFlags): void {
+    if (!this.shouldOutputJson(flags)) {
+      this.logToStderr(formatProgress(message));
+    }
+  }
+
+  /**
+   * Log a success message. Silent in JSON mode (the result record's
+   * success:true already conveys this). Non-JSON mode: emits formatted
+   * text on stderr.
+   */
+  protected logSuccessMessage(message: string, flags: BaseFlags): void {
+    if (!this.shouldOutputJson(flags)) {
+      this.logToStderr(formatSuccess(message));
+    }
+  }
+
+  /**
+   * Log a listening message for passive subscribe/stream commands.
+   * JSON mode: emits a status event on stdout (agents need the signal).
+   * Non-JSON mode: emits formatted text on stderr.
+   */
+  protected logListening(message: string, flags: BaseFlags): void {
     if (this.shouldOutputJson(flags)) {
       this.log(
         this.formatJsonRecord(
           JsonRecordType.Status,
-          { status, message },
+          { status: "listening", message: stripAnsi(message) },
           flags,
         ),
       );
+    } else {
+      this.logToStderr(formatListening(message));
+    }
+  }
+
+  /**
+   * Log a holding message for commands that hold state (enter, set, acquire).
+   * JSON mode: emits a status event on stdout (agents need the signal).
+   * Non-JSON mode: emits formatted text on stderr.
+   */
+  protected logHolding(message: string, flags: BaseFlags): void {
+    if (this.shouldOutputJson(flags)) {
+      this.log(
+        this.formatJsonRecord(
+          JsonRecordType.Status,
+          { status: "holding", message: stripAnsi(message) },
+          flags,
+        ),
+      );
+    } else {
+      this.logToStderr(formatListening(message));
+    }
+  }
+
+  /**
+   * Log a warning message. JSON mode: emits a status event on stdout
+   * (agents need actionable warnings). Non-JSON mode: emits formatted
+   * text on stderr.
+   */
+  protected logWarning(message: string, flags: BaseFlags): void {
+    if (this.shouldOutputJson(flags)) {
+      this.log(
+        this.formatJsonRecord(
+          JsonRecordType.Status,
+          { status: "warning", message: stripAnsi(message) },
+          flags,
+        ),
+      );
+    } else {
+      this.logToStderr(formatWarning(message));
     }
   }
 
@@ -924,7 +1008,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       // When using token auth, we don't set the clientId as it may conflict
       // with any clientId embedded in the token
       if (flags["client-id"] && !this.shouldSuppressOutput(flags)) {
-        this.log(
+        this.logToStderr(
           chalk.yellow(
             "Warning: clientId is ignored when using token authentication as the clientId is embedded in the token",
           ),
@@ -1325,11 +1409,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
 
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        // Log timeout only if not in JSON mode
-        if (!this.shouldOutputJson({})) {
-          // TODO: Pass actual flags here
-          this.log(formatWarning("Cleanup operation timed out."));
-        }
+        this.logToStderr(formatWarning("Cleanup operation timed out."));
         reject(new Error("Cleanup timed out")); // Reject promise on timeout
       }, effectiveTimeout);
 
@@ -1338,13 +1418,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
         try {
           await cleanupFunction();
         } catch (error) {
-          // Log cleanup error only if not in JSON mode
-          if (!this.shouldOutputJson({})) {
-            // TODO: Pass actual flags here
-            this.log(
-              chalk.red(`Error during cleanup: ${(error as Error).message}`),
-            );
-          }
+          this.logToStderr(
+            chalk.red(`Error during cleanup: ${(error as Error).message}`),
+          );
           // Don't necessarily reject the main promise here, depends on desired behavior
           // For now, we just log it
         } finally {
@@ -1396,6 +1472,29 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     const connectionStateHandler = (
       stateChange: Ably.ConnectionStateChange,
     ) => {
+      // Always emit in JSON mode so agents can observe connection lifecycle
+      if (this.shouldOutputJson(flags)) {
+        const eventData: Record<string, unknown> = {
+          current: stateChange.current,
+          previous: stateChange.previous,
+        };
+        if (stateChange.reason) {
+          eventData.reason = {
+            message: stateChange.reason.message,
+            code: stateChange.reason.code,
+            statusCode: stateChange.reason.statusCode,
+          };
+        }
+        this.log(
+          this.formatJsonRecord(
+            JsonRecordType.Event,
+            { component, event: "connectionStateChange", ...eventData },
+            flags,
+          ),
+        );
+      }
+
+      // Verbose log (for non-JSON verbose, or JSON verbose with extra detail)
       this.logCliEvent(
         flags,
         component,
@@ -1404,27 +1503,26 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
         { reason: stateChange.reason },
       );
 
-      // Optional user-friendly messages for non-JSON output
-      if (showUserMessages && !this.shouldOutputJson(flags)) {
+      // User-friendly messages on stderr (visible even when piping JSON)
+      if (showUserMessages) {
         switch (stateChange.current) {
           case "connected": {
             // Don't show connected message - it's implied by successful channel/space operations
             break;
           }
           case "disconnected": {
-            this.log(formatWarning("Disconnected from Ably"));
+            this.logWarning("Disconnected from Ably.", flags);
             break;
           }
           case "failed": {
-            this.log(
-              chalk.red(
-                `✗ Connection failed: ${stateChange.reason?.message || "Unknown error"}`,
-              ),
+            this.logWarning(
+              `Connection failed: ${stateChange.reason?.message || "Unknown error"}.`,
+              flags,
             );
             break;
           }
           case "suspended": {
-            this.log(formatWarning("Connection suspended"));
+            this.logWarning("Connection suspended.", flags);
             break;
           }
           case "connecting": {
@@ -1459,6 +1557,30 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     const showUserMessages = options?.includeUserFriendlyMessages || false;
 
     const stateChangeHandler = (stateChange: Ably.ChannelStateChange) => {
+      // Always emit in JSON mode so agents can observe channel lifecycle
+      if (this.shouldOutputJson(flags)) {
+        const eventData: Record<string, unknown> = {
+          channel: channel.name,
+          current: stateChange.current,
+          previous: stateChange.previous,
+        };
+        if (stateChange.reason) {
+          eventData.reason = {
+            message: stateChange.reason.message,
+            code: stateChange.reason.code,
+            statusCode: stateChange.reason.statusCode,
+          };
+        }
+        this.log(
+          this.formatJsonRecord(
+            JsonRecordType.Event,
+            { component, event: "channelStateChange", ...eventData },
+            flags,
+          ),
+        );
+      }
+
+      // Verbose log
       this.logCliEvent(
         flags,
         component,
@@ -1467,25 +1589,24 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
         { channel: channel.name, reason: stateChange.reason },
       );
 
-      if (showUserMessages && !this.shouldOutputJson(flags)) {
+      // Channel state messages on stderr (visible even when piping JSON)
+      if (showUserMessages) {
         switch (stateChange.current) {
           case "attached": {
             // Success will be shown by the command itself in context
             break;
           }
           case "failed": {
-            this.log(
-              chalk.red(
-                `✗ Failed to attach to channel ${chalk.cyan(channel.name)}: ${stateChange.reason?.message || "Unknown error"}`,
-              ),
+            this.logWarning(
+              `Failed to attach to channel ${formatResource(channel.name)}: ${stateChange.reason?.message || "Unknown error"}.`,
+              flags,
             );
             break;
           }
           case "detached": {
-            this.log(
-              chalk.yellow(
-                `! Detached from channel: ${chalk.cyan(channel.name)} ${stateChange.reason ? `(Reason: ${stateChange.reason.message})` : ""}`,
-              ),
+            this.logWarning(
+              `Detached from channel ${formatResource(channel.name)}${stateChange.reason ? ` (Reason: ${stateChange.reason.message})` : ""}.`,
+              flags,
             );
             break;
           }
@@ -1648,7 +1769,13 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     if (exitReason === "timeout" && !isTestMode()) {
       const message = "Duration elapsed – command finished cleanly.";
       if (this.shouldOutputJson(flags)) {
-        this.logJsonStatus("complete", message, flags);
+        this.log(
+          this.formatJsonRecord(
+            JsonRecordType.Status,
+            { status: "complete", message },
+            flags,
+          ),
+        );
       } else {
         this.log(message);
       }
