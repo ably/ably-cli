@@ -17,16 +17,16 @@ export function prepareMessageFromInput(
       ? rawMessage
       : interpolateMessage(rawMessage, options.interpolationIndex);
 
-  let messageData;
+  let messageData: Record<string, unknown>;
   try {
-    const parsed = JSON.parse(processedMessage);
+    const parsed: unknown = JSON.parse(processedMessage);
     // Only treat plain objects as structured message data; wrap primitives and arrays in { data: ... }
     if (
       typeof parsed === "object" &&
       parsed !== null &&
       !Array.isArray(parsed)
     ) {
-      messageData = parsed;
+      messageData = parsed as Record<string, unknown>;
     } else {
       messageData = { data: parsed };
     }
@@ -43,16 +43,16 @@ export function prepareMessageFromInput(
   if (flags.name) {
     message.name = flags.name as string;
   } else if (messageData.name) {
-    message.name = messageData.name;
+    message.name = messageData.name as string;
     delete messageData.name;
   }
 
   if (
     messageData.extras &&
     typeof messageData.extras === "object" &&
-    Object.keys(messageData.extras).length > 0
+    Object.keys(messageData.extras as Record<string, unknown>).length > 0
   ) {
-    message.extras = messageData.extras;
+    message.extras = messageData.extras as Record<string, unknown>;
     delete messageData.extras;
   }
 

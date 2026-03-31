@@ -232,7 +232,10 @@ export default class CustomHelp extends Help {
 
     // 3. Get, filter, combine, sort, and format visible commands/topics
     // Use a Map to ensure unique entries by command/topic name
-    const uniqueEntries = new Map();
+    const uniqueEntries = new Map<
+      string,
+      { id: string; description?: string; isCommand: boolean }
+    >();
 
     // Process commands first
     config.commands
@@ -270,7 +273,7 @@ export default class CustomHelp extends Help {
       const commandListString = this.renderList(
         combined.map((c) => {
           const description =
-            c.description && this.render(c.description.split("\n")[0]);
+            c.description && this.render(c.description.split("\n")[0]!);
           const descString = description
             ? chalk.whiteBright(description)
             : undefined;

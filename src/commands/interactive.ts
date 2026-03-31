@@ -906,7 +906,7 @@ export default class Interactive extends Command {
         if (fs.existsSync(manifestPath)) {
           this._manifestCache = JSON.parse(
             fs.readFileSync(manifestPath, "utf8"),
-          );
+          ) as typeof this._manifestCache;
         }
       }
 
@@ -1134,54 +1134,67 @@ export default class Interactive extends Command {
     if (process.stdin.isTTY && typeof process.stdin.setRawMode === "function") {
       // Note: We don't call setRawMode(true) here because readline manages it
       // The keypress event handler will still work
-      process.stdin.on("keypress", (str, key) => {
-        if (!key) return;
+      process.stdin.on(
+        "keypress",
+        (
+          str: string,
+          key:
+            | {
+                ctrl?: boolean;
+                meta?: boolean;
+                name?: string;
+                sequence?: string;
+              }
+            | undefined,
+        ) => {
+          if (!key) return;
 
-        // Ctrl+R: Start or cycle through history search
-        if (key.ctrl && key.name === "r") {
-          if (this.historySearch.active) {
-            this.cycleHistorySearch();
-          } else {
-            this.startHistorySearch();
-          }
-          return;
-        }
-
-        // Handle keys during history search
-        if (this.historySearch.active) {
-          // Escape: Exit history search
-          if (key.name === "escape") {
-            this.exitHistorySearch();
-            return;
-          }
-
-          // Enter: Accept current match
-          if (key.name === "return") {
-            this.acceptHistoryMatch();
-            return;
-          }
-
-          // Backspace: Remove character from search
-          if (key.name === "backspace") {
-            if (this.historySearch.searchTerm.length > 0) {
-              this.historySearch.searchTerm =
-                this.historySearch.searchTerm.slice(0, -1);
-              this.updateHistorySearch();
+          // Ctrl+R: Start or cycle through history search
+          if (key.ctrl && key.name === "r") {
+            if (this.historySearch.active) {
+              this.cycleHistorySearch();
             } else {
-              // Exit search if no search term
-              this.exitHistorySearch();
+              this.startHistorySearch();
             }
             return;
           }
 
-          // Regular character: Add to search term
-          if (str && str.length === 1 && !key.ctrl && !key.meta) {
-            this.historySearch.searchTerm += str;
-            this.updateHistorySearch();
-            return;
+          // Handle keys during history search
+          if (this.historySearch.active) {
+            // Escape: Exit history search
+            if (key.name === "escape") {
+              this.exitHistorySearch();
+              return;
+            }
+
+            // Enter: Accept current match
+            if (key.name === "return") {
+              this.acceptHistoryMatch();
+              return;
+            }
+
+            // Backspace: Remove character from search
+            if (key.name === "backspace") {
+              if (this.historySearch.searchTerm.length > 0) {
+                this.historySearch.searchTerm =
+                  this.historySearch.searchTerm.slice(0, -1);
+                this.updateHistorySearch();
+              } else {
+                // Exit search if no search term
+                this.exitHistorySearch();
+              }
+              return;
+            }
+
+            // Regular character: Add to search term
+            if (str && str.length === 1 && !key.ctrl && !key.meta) {
+              this.historySearch.searchTerm += str;
+              this.updateHistorySearch();
+              return;
+            }
           }
-        }
-      });
+        },
+      );
     }
   }
 

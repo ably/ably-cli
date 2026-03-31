@@ -89,7 +89,7 @@ export default class AskCommand extends ControlBaseCommand {
         // Process code blocks first
         const processedWithCodeBlocks = response.answer.replaceAll(
           /```(?:javascript|js|html)?\n([\S\s]*?)```/g,
-          (_, codeContent) =>
+          (_: string, codeContent: string) =>
             // Return the code block with each line highlighted in green
             codeContent
               .split("\n")

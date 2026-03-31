@@ -1595,11 +1595,13 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       humanMessage += `\n${friendlyHint}`;
     }
 
-    const code = cmdError.code ?? cmdError.context.errorCode;
+    const code =
+      cmdError.code ??
+      (cmdError.context.errorCode as number | string | undefined);
     if (code !== undefined) {
-      const helpUrl = cmdError.context.helpUrl;
+      const helpUrl = cmdError.context.helpUrl as string | undefined;
       humanMessage += helpUrl
-        ? `\nAbly error code: ${String(code)} (${String(helpUrl)})`
+        ? `\nAbly error code: ${String(code)} (${helpUrl})`
         : `\nAbly error code: ${String(code)}`;
     }
 

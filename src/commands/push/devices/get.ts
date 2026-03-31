@@ -60,22 +60,25 @@ export default class PushDevicesGet extends AblyBaseCommand {
         this.log(
           `${formatLabel("State")} ${formatDeviceState(device.push.state)}`,
         );
-      if (device.push.recipient?.transportType) {
+      const recipient = device.push.recipient as
+        | Record<string, unknown>
+        | undefined;
+      if (recipient?.transportType) {
         this.log(
-          `${formatLabel("Transport Type")} ${device.push.recipient.transportType}`,
+          `${formatLabel("Transport Type")} ${recipient.transportType as string}`,
         );
       }
-      if (device.push.recipient?.deviceToken) {
-        const token = device.push.recipient.deviceToken as string;
+      if (recipient?.deviceToken) {
+        const token = recipient.deviceToken as string;
         const redacted =
           token.length > 8
             ? `${token.slice(0, 4)}...${token.slice(-4)} (redacted)`
             : "****(redacted)";
         this.log(`${formatLabel("Device Token")} ${redacted}`);
       }
-      if (device.push.recipient?.targetUrl) {
+      if (recipient?.targetUrl) {
         this.log(
-          `${formatLabel("Target URL")} ${device.push.recipient.targetUrl}`,
+          `${formatLabel("Target URL")} ${recipient.targetUrl as string}`,
         );
       }
       if (device.metadata) {
