@@ -14,13 +14,20 @@ export function extractErrorInfo(error: unknown): {
   message: string;
   code?: number;
   statusCode?: number;
+  href?: string;
 } {
   if (error instanceof Error) {
     const errWithCode = error as Error & {
       code?: number | string;
       statusCode?: number;
+      href?: string;
     };
-    const result: { message: string; code?: number; statusCode?: number } = {
+    const result: {
+      message: string;
+      code?: number;
+      statusCode?: number;
+      href?: string;
+    } = {
       message: error.message,
     };
     if (typeof errWithCode.code === "number") {
@@ -28,6 +35,9 @@ export function extractErrorInfo(error: unknown): {
     }
     if (typeof errWithCode.statusCode === "number") {
       result.statusCode = errWithCode.statusCode;
+    }
+    if (typeof errWithCode.href === "string") {
+      result.href = errWithCode.href;
     }
     return result;
   }

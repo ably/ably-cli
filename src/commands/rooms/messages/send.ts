@@ -24,7 +24,12 @@ interface MessageResult {
   room: string;
   serial?: string;
   success: boolean;
-  error?: { message: string; code?: number; statusCode?: number };
+  error?: {
+    message: string;
+    code?: number;
+    statusCode?: number;
+    href?: string;
+  };
   [key: string]: unknown;
 }
 

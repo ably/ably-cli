@@ -222,6 +222,28 @@ describe("CommandError", () => {
       });
     });
 
+    it("should include hint in error object when provided", () => {
+      const err = new CommandError("auth error", {
+        code: 40100,
+        statusCode: 401,
+      });
+      expect(err.toJsonData("Check your API key.")).toEqual({
+        error: {
+          message: "auth error",
+          code: 40100,
+          statusCode: 401,
+          hint: "Check your API key.",
+        },
+      });
+    });
+
+    it("should omit hint when not provided", () => {
+      const err = new CommandError("auth error", { code: 40100 });
+      const data = err.toJsonData();
+      const errorObj = data.error as Record<string, unknown>;
+      expect(errorObj).not.toHaveProperty("hint");
+    });
+
     it("should omit code and statusCode when undefined", () => {
       const err = new CommandError("plain error");
       const data = err.toJsonData();
@@ -307,6 +329,25 @@ describe("extractErrorInfo", () => {
     expect(json).not.toContain("code");
     expect(json).not.toContain("statusCode");
     expect(JSON.parse(json)).toEqual({ message: "plain" });
+  });
+
+  it("should extract href from Ably ErrorInfo-like error", () => {
+    const err = Object.assign(new Error("Not found"), {
+      code: 40400,
+      statusCode: 404,
+      href: "https://help.ably.io/error/40400",
+    });
+    expect(extractErrorInfo(err)).toEqual({
+      message: "Not found",
+      code: 40400,
+      statusCode: 404,
+      href: "https://help.ably.io/error/40400",
+    });
+  });
+
+  it("should omit href when not present", () => {
+    const err = new Error("plain");
+    expect(extractErrorInfo(err)).toEqual({ message: "plain" });
   });
 
   it("should include all fields in serialized JSON when present", () => {

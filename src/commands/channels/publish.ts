@@ -184,7 +184,12 @@ export default class ChannelsPublish extends AblyBaseCommand {
     let publishedCount = 0;
     let errorCount = 0;
     const results: {
-      error?: { message: string; code?: number; statusCode?: number };
+      error?: {
+        message: string;
+        code?: number;
+        statusCode?: number;
+        href?: string;
+      };
       index: number;
       message?: Ably.Message;
       success: boolean;

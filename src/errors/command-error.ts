@@ -94,11 +94,12 @@ export class CommandError extends Error {
   }
 
   /** Produce JSON-safe data for the error envelope */
-  toJsonData(): Record<string, unknown> {
+  toJsonData(hint?: string): Record<string, unknown> {
     const errorObj: Record<string, unknown> = {
       message: this.message,
       ...(this.code === undefined ? {} : { code: this.code }),
       ...(this.statusCode === undefined ? {} : { statusCode: this.statusCode }),
+      ...(hint === undefined ? {} : { hint }),
     };
     return {
       ...this.context,
