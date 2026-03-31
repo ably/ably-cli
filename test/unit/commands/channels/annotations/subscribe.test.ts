@@ -239,6 +239,79 @@ describe("channels:annotations:subscribe command", () => {
       expect(stdout).toContain("thumbs-up");
     });
 
+    it("should display encoding, messageSerial, and extras when present", async () => {
+      const commandPromise = runCommand(
+        ["channels:annotations:subscribe", "test-channel"],
+        import.meta.url,
+      );
+
+      await vi.waitFor(() => {
+        expect(mockAnnotationCallback).not.toBeNull();
+      });
+
+      mockAnnotationCallback!({
+        id: "ann-extras-001",
+        action: "annotation.create",
+        type: "reactions:flag.v1",
+        name: "thumbsup",
+        serial: "ann-serial-001",
+        messageSerial: "msg-serial-001",
+        timestamp: Date.now(),
+        encoding: "utf8",
+        extras: { headers: { key: "value" } },
+      });
+
+      const { stdout } = await commandPromise;
+
+      expect(stdout).toContain("Encoding:");
+      expect(stdout).toContain("utf8");
+      expect(stdout).toContain("Message Serial:");
+      expect(stdout).toContain("msg-serial-001");
+      expect(stdout).toContain("Extras:");
+      expect(stdout).toContain("headers");
+    });
+
+    it("should omit optional fields from JSON when undefined", async () => {
+      const records = await captureJsonLogs(async () => {
+        const commandPromise = runCommand(
+          ["channels:annotations:subscribe", "test-channel", "--json"],
+          import.meta.url,
+        );
+
+        await vi.waitFor(() => {
+          expect(mockAnnotationCallback).not.toBeNull();
+        });
+
+        mockAnnotationCallback!({
+          id: "ann-minimal-001",
+          action: "annotation.create",
+          type: "reactions:flag.v1",
+          serial: "ann-001",
+          messageSerial: "msg-001",
+          timestamp: Date.now(),
+        });
+
+        await commandPromise;
+      });
+
+      const events = records.filter(
+        (r) =>
+          r.type === "event" &&
+          (r as Record<string, unknown>).annotation &&
+          ((r as Record<string, unknown>).annotation as Record<string, unknown>)
+            .id === "ann-minimal-001",
+      );
+      expect(events.length).toBeGreaterThan(0);
+      const annotation = (events[0] as Record<string, unknown>)
+        .annotation as Record<string, unknown>;
+      expect(annotation).not.toHaveProperty("name");
+      expect(annotation).not.toHaveProperty("clientId");
+      expect(annotation).not.toHaveProperty("count");
+      expect(annotation).not.toHaveProperty("data");
+      expect(annotation).not.toHaveProperty("encoding");
+      expect(annotation).not.toHaveProperty("extras");
+    });
+
     it("should pass --type filter to subscribe", async () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("test-channel");

@@ -117,11 +117,22 @@ export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
           channel: channelName,
           annotationType: annotation.type,
           action: annotation.action,
-          name: annotation.name,
-          clientId: annotation.clientId,
-          count: annotation.count,
           serial: annotation.serial,
-          data: annotation.data,
+          messageSerial: annotation.messageSerial,
+          ...(annotation.name === undefined ? {} : { name: annotation.name }),
+          ...(annotation.clientId === undefined
+            ? {}
+            : { clientId: annotation.clientId }),
+          ...(annotation.count === undefined
+            ? {}
+            : { count: annotation.count }),
+          ...(annotation.data === undefined ? {} : { data: annotation.data }),
+          ...(annotation.encoding === undefined
+            ? {}
+            : { encoding: annotation.encoding }),
+          ...(annotation.extras === undefined
+            ? {}
+            : { extras: annotation.extras }),
         };
 
         this.logCliEvent(
@@ -149,6 +160,9 @@ export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
             count: annotation.count,
             serial: annotation.serial,
             data: annotation.data,
+            encoding: annotation.encoding,
+            messageSerial: annotation.messageSerial,
+            extras: annotation.extras,
           };
           this.log(formatAnnotationsOutput([displayFields]));
           this.log("");
