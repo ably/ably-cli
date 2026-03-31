@@ -196,7 +196,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
       );
 
       expect(result.exitCode).not.toBe(0);
-      expect(result.stderr).toContain("A recipient is required");
+      expect(result.stderr).toContain("A target is required");
     });
 
     it("should error when both device-id and client-id provided", async () => {
@@ -249,7 +249,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
       ]);
 
       const result = await runCommand(
-        ["push", "batch-publish", "--payload", batchPayload],
+        ["push", "batch-publish", batchPayload, "--force"],
         {
           env: { ABLY_API_KEY: E2E_API_KEY || "" },
           timeoutMs: 30000,
@@ -269,7 +269,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
       ]);
 
       const result = await runCommand(
-        ["push", "batch-publish", "--payload", batchPayload, "--json"],
+        ["push", "batch-publish", batchPayload, "--json", "--force"],
         {
           env: { ABLY_API_KEY: E2E_API_KEY || "" },
           timeoutMs: 30000,
@@ -285,7 +285,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
 
     it("should error with invalid batch payload format", async () => {
       const result = await runCommand(
-        ["push", "batch-publish", "--payload", '{"not":"an array"}'],
+        ["push", "batch-publish", '{"not":"an array"}'],
         {
           env: { ABLY_API_KEY: E2E_API_KEY || "" },
           timeoutMs: 30000,
@@ -298,16 +298,13 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
 
     it("should error with missing recipient in batch item", async () => {
       const batchPayload = JSON.stringify([
-        { notification: { title: "No recipient" } },
+        { payload: { notification: { title: "No recipient or channels" } } },
       ]);
 
-      const result = await runCommand(
-        ["push", "batch-publish", "--payload", batchPayload],
-        {
-          env: { ABLY_API_KEY: E2E_API_KEY || "" },
-          timeoutMs: 30000,
-        },
-      );
+      const result = await runCommand(["push", "batch-publish", batchPayload], {
+        env: { ABLY_API_KEY: E2E_API_KEY || "" },
+        timeoutMs: 30000,
+      });
 
       expect(result.exitCode).not.toBe(0);
       expect(result.stderr).toContain("recipient");

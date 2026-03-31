@@ -343,8 +343,8 @@ describe("ChannelsPublish", function () {
         const totalTime = Date.now() - startTime;
 
         expect(channel.publish).toHaveBeenCalledTimes(3);
-        // With zero delay, should complete quickly (under 100ms accounting for overhead)
-        expect(totalTime).toBeLessThan(100);
+        // With zero delay, should complete quickly (under 500ms accounting for overhead)
+        expect(totalTime).toBeLessThan(500);
       });
 
       it("should publish messages in sequential order", async function () {

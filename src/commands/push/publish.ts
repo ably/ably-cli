@@ -5,16 +5,29 @@ import * as path from "node:path";
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
 import { BaseFlags } from "../../types/cli.js";
-import { formatProgress, formatSuccess } from "../../utils/output.js";
+import {
+  formatProgress,
+  formatResource,
+  formatSuccess,
+  formatWarning,
+} from "../../utils/output.js";
+import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class PushPublish extends AblyBaseCommand {
   static override description =
-    "Publish a push notification to a device or client";
+    "Publish a push notification to a device, client, or channel";
 
   static override examples = [
     "<%= config.bin %> <%= command.id %> --device-id device-123 --title Hello --body World",
-    "<%= config.bin %> <%= command.id %> --client-id client-1 --title Hello --body World",
+    '<%= config.bin %> <%= command.id %> --device-id device-123 --title Hello --body World --data \'{"key":"value"}\'',
     '<%= config.bin %> <%= command.id %> --device-id device-123 --payload \'{"notification":{"title":"Hello","body":"World"}}\'',
+    "<%= config.bin %> <%= command.id %> --device-id device-123 --payload ./notification.json",
+    "<%= config.bin %> <%= command.id %> --client-id client-1 --title Hello --body World",
+    '<%= config.bin %> <%= command.id %> --client-id client-1 --payload \'{"notification":{"title":"Hello","body":"World"}}\'',
+    "<%= config.bin %> <%= command.id %> --channel my-channel --title Hello --body World",
+    '<%= config.bin %> <%= command.id %> --channel my-channel --title Hello --body World --data \'{"key":"value"}\'',
+    '<%= config.bin %> <%= command.id %> --channel my-channel --payload \'{"notification":{"title":"Hello","body":"World"},"data":{"key":"value"}}\'',
+    "<%= config.bin %> <%= command.id %> --channel my-channel --payload ./notification.json",
     '<%= config.bin %> <%= command.id %> --recipient \'{"transportType":"apns","deviceToken":"token123"}\' --title Hello --body World',
     "<%= config.bin %> <%= command.id %> --device-id device-123 --title Hello --body World --json",
   ];
@@ -32,6 +45,10 @@ export default class PushPublish extends AblyBaseCommand {
     recipient: Flags.string({
       description: "Raw recipient JSON for advanced targeting",
       exclusive: ["device-id", "client-id"],
+    }),
+    channel: Flags.string({
+      description:
+        "Target channel name (publishes push notification via the channel using extras.push; ignored if --device-id, --client-id, or --recipient is also provided)",
     }),
     title: Flags.string({
       description: "Notification title",
@@ -70,17 +87,35 @@ export default class PushPublish extends AblyBaseCommand {
     web: Flags.string({
       description: "Web push-specific override as JSON",
     }),
+    force: Flags.boolean({
+      char: "f",
+      description:
+        "Skip confirmation prompt when publishing to a channel (confirmation is also skipped in --json mode)",
+    }),
   };
 
   async run(): Promise<void> {
     const { flags } = await this.parse(PushPublish);
 
-    if (!flags["device-id"] && !flags["client-id"] && !flags.recipient) {
+    const hasDirectRecipient =
+      flags["device-id"] || flags["client-id"] || flags.recipient;
+
+    if (!hasDirectRecipient && !flags.channel) {
       this.fail(
-        "A recipient is required: --device-id, --client-id, or --recipient",
+        "A target is required: --device-id, --client-id, --recipient, or --channel",
         flags as BaseFlags,
         "pushPublish",
       );
+    }
+
+    if (hasDirectRecipient && flags.channel) {
+      const channelIgnoredWarning =
+        "--channel is ignored when --device-id, --client-id, or --recipient is provided.";
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonStatus("warning", channelIgnoredWarning, flags);
+      } else {
+        this.log(formatWarning(channelIgnoredWarning));
+      }
     }
 
     try {
@@ -88,14 +123,14 @@ export default class PushPublish extends AblyBaseCommand {
       if (!rest) return;
 
       // Build recipient
-      let recipient: Record<string, unknown>;
+      let recipient: Record<string, unknown> | undefined;
       if (flags["device-id"]) {
         recipient = { deviceId: flags["device-id"] };
       } else if (flags["client-id"]) {
         recipient = { clientId: flags["client-id"] };
-      } else {
+      } else if (flags.recipient) {
         recipient = this.parseJsonObjectFlag(
-          flags.recipient!,
+          flags.recipient,
           "--recipient",
           flags as BaseFlags,
         );
@@ -129,6 +164,8 @@ export default class PushPublish extends AblyBaseCommand {
             );
           }
           jsonString = fs.readFileSync(filePath, "utf8");
+        } else if (fs.existsSync(path.resolve(flags.payload))) {
+          jsonString = fs.readFileSync(path.resolve(flags.payload), "utf8");
         } else {
           jsonString = flags.payload;
         }
@@ -202,15 +239,46 @@ export default class PushPublish extends AblyBaseCommand {
         this.log(formatProgress("Publishing push notification"));
       }
 
-      await rest.push.admin.publish(recipient!, payload);
+      if (recipient) {
+        await rest.push.admin.publish(recipient, payload);
 
-      if (this.shouldOutputJson(flags)) {
-        this.logJsonResult(
-          { notification: { published: true, recipient: recipient! } },
-          flags,
-        );
+        if (this.shouldOutputJson(flags)) {
+          this.logJsonResult(
+            { notification: { published: true, recipient } },
+            flags,
+          );
+        } else {
+          this.log(formatSuccess("Push notification published."));
+        }
       } else {
-        this.log(formatSuccess("Push notification published."));
+        const channelName = flags.channel!;
+
+        if (!this.shouldOutputJson(flags) && !flags.force) {
+          const confirmed = await promptForConfirmation(
+            `This will send a push notification to all devices subscribed to channel ${formatResource(channelName)}. Continue?`,
+          );
+          if (!confirmed) {
+            this.log("Publish cancelled.");
+            return;
+          }
+        }
+
+        await rest.channels
+          .get(channelName)
+          .publish({ extras: { push: payload } });
+
+        if (this.shouldOutputJson(flags)) {
+          this.logJsonResult(
+            { notification: { published: true, channel: channelName } },
+            flags,
+          );
+        } else {
+          this.log(
+            formatSuccess(
+              `Push notification published to channel: ${formatResource(channelName)}.`,
+            ),
+          );
+        }
       }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushPublish");

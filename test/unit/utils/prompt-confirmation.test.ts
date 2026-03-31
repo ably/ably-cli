@@ -36,13 +36,13 @@ describe("promptForConfirmation", () => {
     },
   );
 
-  it("appends [yes/no] suffix when message does not include it", async () => {
+  it("appends [y/n] suffix when message does not include it", async () => {
     let capturedQuery = "";
     mockQuestion = (query, callback) => {
       capturedQuery = query;
       callback("no");
     };
     await promptForConfirmation("Are you sure?");
-    expect(capturedQuery).toBe("Are you sure? [yes/no]");
+    expect(capturedQuery).toBe("Are you sure? [y/n]");
   });
 });
