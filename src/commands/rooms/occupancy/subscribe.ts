@@ -4,6 +4,7 @@ import { Args } from "@oclif/core";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import {
+  formatLabel,
   formatProgress,
   formatResource,
   formatTimestamp,
@@ -167,8 +168,8 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       const connections = occupancyMetrics?.connections ?? 0;
       const presenceMembers = occupancyMetrics?.presenceMembers ?? 0;
 
-      this.log(`Connections: ${connections}`);
-      this.log(`Presence Members: ${presenceMembers}`);
+      this.log(`${formatLabel("Connections")} ${connections}`);
+      this.log(`${formatLabel("Presence Members")} ${presenceMembers}`);
 
       this.log(""); // Empty line for better readability
     }

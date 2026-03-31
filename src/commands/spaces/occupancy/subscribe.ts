@@ -84,13 +84,14 @@ export default class SpacesOccupancySubscribe extends SpacesBaseCommand {
       await channel.subscribe(occupancyEventName, (message: Ably.Message) => {
         const timestamp = formatMessageTimestamp(message.timestamp);
 
-        // Strip objectPublishers/objectSubscribers from metrics
+        // Only expose connections and presenceMembers
         const rawData = message.data || {};
         const filteredData = { ...rawData };
         if (filteredData.metrics) {
-          filteredData.metrics = { ...filteredData.metrics };
-          delete filteredData.metrics.objectPublishers;
-          delete filteredData.metrics.objectSubscribers;
+          filteredData.metrics = {
+            connections: filteredData.metrics.connections,
+            presenceMembers: filteredData.metrics.presenceMembers,
+          };
         }
 
         const event = {
@@ -120,16 +121,8 @@ export default class SpacesOccupancySubscribe extends SpacesBaseCommand {
           if (filteredData.metrics) {
             const metrics = filteredData.metrics;
             this.log(`${formatLabel("Connections")} ${metrics.connections}`);
-            this.log(`${formatLabel("Publishers")} ${metrics.publishers}`);
-            this.log(`${formatLabel("Subscribers")} ${metrics.subscribers}`);
-            this.log(
-              `${formatLabel("Presence Connections")} ${metrics.presenceConnections}`,
-            );
             this.log(
               `${formatLabel("Presence Members")} ${metrics.presenceMembers}`,
-            );
-            this.log(
-              `${formatLabel("Presence Subscribers")} ${metrics.presenceSubscribers}`,
             );
           }
 
