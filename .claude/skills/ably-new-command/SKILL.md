@@ -364,6 +364,15 @@ if (!appId) {
 
 **Error hints** — `fail()` appends a CLI-specific hint from `src/utils/errors.ts` if one exists for the Ably error code. If your command may surface an error code not yet in the hints map, **fetch** https://ably.com/docs/platform/errors/codes using WebFetch to get the official description before adding a hint. Do NOT rely on memory or assumptions about what an error code means — always fetch the doc. Hints must only contain actionable CLI advice, not restate the upstream error message.
 
+**JSON error envelope structure** — `CommandError.toJsonData(hint?)` nests error details under an `error` object: `{ error: { message, code?, statusCode?, hint? }, ...context }`. Context fields (e.g., `channel`, `room`) sit alongside the `error` key, not inside it.
+
+**Inline error extraction** — For commands that report per-item errors inline (batch publish, connections test), use `extractErrorInfo(error)` from `src/utils/errors.ts` instead of `this.fail()`. It returns `{ message, code?, statusCode?, href? }` — suitable for embedding in result objects:
+```typescript
+import { extractErrorInfo } from "../../utils/errors.js";
+// In a batch loop:
+const result = { error: extractErrorInfo(error), index, success: false };
+```
+
 ### Pattern-specific implementation
 
 Read `references/patterns.md` for the full implementation template matching your pattern (Subscribe, Publish/Send, History, Enter/Presence, List, CRUD/Control API). Each template includes the correct flags, `run()` method structure, and output conventions.
