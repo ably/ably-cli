@@ -53,9 +53,11 @@ export default class IntegrationsGetCommand extends ControlBaseCommand {
         this.log(`${formatLabel("App ID")} ${rule.appId}`);
         this.log(`${formatLabel("Rule Type")} ${rule.ruleType}`);
         this.log(`${formatLabel("Request Mode")} ${rule.requestMode}`);
-        this.log(
-          `${formatLabel("Source Channel Filter")} ${rule.source.channelFilter}`,
-        );
+        if (rule.source.channelFilter) {
+          this.log(
+            `${formatLabel("Source Channel Filter")} ${rule.source.channelFilter}`,
+          );
+        }
         this.log(`${formatLabel("Source Type")} ${rule.source.type}`);
         this.log(
           `${formatLabel("Target")} ${this.formatJsonOutput(structuredClone(rule.target) as unknown as Record<string, unknown>, flags).replaceAll("\n", "\n  ")}`,

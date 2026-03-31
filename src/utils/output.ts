@@ -118,7 +118,7 @@ export interface MessageDisplayFields {
   channel: string;
   clientId?: string;
   data: unknown;
-  event: string;
+  event?: string;
   id?: string;
   indexPrefix?: string;
   sequencePrefix?: string;
@@ -160,8 +160,11 @@ export function formatMessagesOutput(messages: MessageDisplayFields[]): string {
     lines.push(
       `${formatLabel("Timestamp")} ${formatMessageTimestamp(msg.timestamp)}`,
       `${formatLabel("Channel")} ${formatResource(msg.channel)}`,
-      `${formatLabel("Event")} ${formatEventType(msg.event)}`,
     );
+
+    if (msg.event) {
+      lines.push(`${formatLabel("Event")} ${formatEventType(msg.event)}`);
+    }
 
     if (msg.action) {
       lines.push(`${formatLabel("Action")} ${formatEventType(msg.action)}`);
@@ -323,7 +326,9 @@ export function formatAnnotationsOutput(
     lines.push(
       `${formatLabel("Timestamp")} ${formatMessageTimestamp(ann.timestamp)}`,
       `${formatLabel("Channel")} ${formatResource(ann.channel)}`,
-      `${formatLabel("Type")} ${formatEventType(ann.type || "(none)")}`,
+      ...(ann.type
+        ? [`${formatLabel("Type")} ${formatEventType(ann.type)}`]
+        : []),
     );
 
     if (ann.action) {

@@ -163,9 +163,11 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
         this.log(
           `${formatLabel("Request Mode")} ${createdIntegration.requestMode}`,
         );
-        this.log(
-          `${formatLabel("Source Channel Filter")} ${createdIntegration.source.channelFilter}`,
-        );
+        if (createdIntegration.source.channelFilter) {
+          this.log(
+            `${formatLabel("Source Channel Filter")} ${createdIntegration.source.channelFilter}`,
+          );
+        }
         this.log(
           `${formatLabel("Source Type")} ${createdIntegration.source.type}`,
         );
