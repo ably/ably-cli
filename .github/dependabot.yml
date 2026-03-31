@@ -1,62 +1,105 @@
 version: 2
 updates:
-  # pnpm dependencies (Dependabot uses "npm" ecosystem for npm/yarn/pnpm)
+  # Root CLI package
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: "09:00"
     versioning-strategy: increase
     open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "fix(deps)"
+      prefix-development: "chore(dev-deps)"
     groups:
-      dev-dependencies:
+      dev-minor-patch:
         dependency-type: development
-        update-types:
-          - minor
-          - patch
-      production-dependencies:
+        update-types: [minor, patch]
+      prod-minor-patch:
         dependency-type: production
-        update-types:
-          - minor
-          - patch
+        update-types: [minor, patch]
+      dev-major:
+        dependency-type: development
+        update-types: [major]
+      # Prod majors intentionally ungrouped — reviewed individually
+    ignore:
+      - dependency-name: "zod"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "inquirer"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+    cooldown:
+      semver-major-days: 7
+      semver-minor-days: 3
+      semver-patch-days: 3
 
+  # React Web CLI package
   - package-ecosystem: npm
     directory: /packages/react-web-cli
     schedule:
       interval: weekly
+      day: monday
+      time: "09:00"
     versioning-strategy: increase
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "react-web-cli"
+    commit-message:
+      prefix: "fix(deps)"
+      prefix-development: "chore(dev-deps)"
     groups:
-      dev-dependencies:
-        dependency-type: development
-        update-types:
-          - minor
-          - patch
-      production-dependencies:
-        dependency-type: production
-        update-types:
-          - minor
-          - patch
+      all-dependencies:
+        patterns: ["*"]
+        update-types: [major, minor, patch]
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+    cooldown:
+      semver-major-days: 7
+      semver-minor-days: 3
+      semver-patch-days: 3
 
+  # Web CLI example app
   - package-ecosystem: npm
     directory: /examples/web-cli
     schedule:
-      interval: weekly
+      interval: monthly
     versioning-strategy: increase
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "examples"
+    commit-message:
+      prefix: "fix(deps)"
+      prefix-development: "chore(dev-deps)"
     groups:
-      dev-dependencies:
-        dependency-type: development
-        update-types:
-          - minor
-          - patch
-      production-dependencies:
-        dependency-type: production
-        update-types:
-          - minor
-          - patch
+      all-dependencies:
+        patterns: ["*"]
+        update-types: [major, minor, patch]
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+    cooldown:
+      semver-major-days: 7
+      semver-minor-days: 3
+      semver-patch-days: 3
 
+  # GitHub Actions — all grouped into one PR
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: "09:00"
     open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    groups:
+      all-actions:
+        patterns: ["*"]
