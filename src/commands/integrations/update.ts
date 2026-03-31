@@ -114,7 +114,11 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
         this.log(`App ID: ${updatedRule.appId}`);
         this.log(`Rule Type: ${updatedRule.ruleType}`);
         this.log(`Request Mode: ${updatedRule.requestMode}`);
-        this.log(`Source Channel Filter: ${updatedRule.source.channelFilter}`);
+        if (updatedRule.source.channelFilter) {
+          this.log(
+            `Source Channel Filter: ${updatedRule.source.channelFilter}`,
+          );
+        }
         this.log(`Source Type: ${updatedRule.source.type}`);
         if (
           typeof updatedRule.target === "object" &&

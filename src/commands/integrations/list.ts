@@ -77,9 +77,9 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
           this.log(`  Type: ${integration.ruleType}`);
           this.log(`  Request Mode: ${integration.requestMode}`);
           this.log(`  Source Type: ${integration.source.type}`);
-          this.log(
-            `  Channel Filter: ${integration.source.channelFilter || "(none)"}`,
-          );
+          if (integration.source.channelFilter) {
+            this.log(`  Channel Filter: ${integration.source.channelFilter}`);
+          }
           this.log(
             `  Target: ${JSON.stringify(integration.target, null, 2).replaceAll("\n", "\n    ")}`,
           );
