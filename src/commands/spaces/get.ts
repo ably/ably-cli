@@ -96,7 +96,7 @@ export default class SpacesGet extends SpacesBaseCommand {
         );
       }
 
-      const items: PresenceItem[] = response.items;
+      const items = response.items as PresenceItem[];
 
       if (items.length === 0) {
         this.fail(

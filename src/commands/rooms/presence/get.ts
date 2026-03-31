@@ -108,7 +108,7 @@ export default class RoomsPresenceGet extends AblyBaseCommand {
           clientId: member.clientId,
           connectionId: member.connectionId,
           action: member.action,
-          data: member.data ?? null,
+          data: (member.data as unknown) ?? null,
           timestamp: formatMessageTimestamp(member.timestamp),
           id: member.id,
         }));

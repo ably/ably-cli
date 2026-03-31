@@ -89,7 +89,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
             channel: channelName,
             clientId: presenceMessage.clientId,
             connectionId: presenceMessage.connectionId,
-            data: presenceMessage.data,
+            data: presenceMessage.data as unknown,
           };
           this.logCliEvent(
             flags,
@@ -109,7 +109,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
               channel: channelName,
               clientId: presenceMessage.clientId,
               connectionId: presenceMessage.connectionId,
-              data: presenceMessage.data,
+              data: presenceMessage.data as unknown,
             };
             this.log(formatPresenceOutput([displayFields]));
             this.log(""); // Empty line for better readability

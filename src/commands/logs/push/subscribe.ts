@@ -84,7 +84,7 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
         const event = message.name || "unknown";
         const logEvent = {
           channel: channelName,
-          data: message.data,
+          data: message.data as unknown,
           event,
           timestamp,
         };
@@ -105,12 +105,9 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
         let eventColor = chalk.blue;
 
         // For push log events - based on examples and severity
-        if (
-          message.data &&
-          typeof message.data === "object" &&
-          "severity" in message.data
-        ) {
-          const severity = message.data.severity as string;
+        const msgData = message.data as Record<string, unknown> | undefined;
+        if (msgData && typeof msgData === "object" && "severity" in msgData) {
+          const severity = msgData.severity as string;
           switch (severity) {
             case "error": {
               eventColor = chalk.red;

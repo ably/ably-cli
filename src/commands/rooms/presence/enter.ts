@@ -110,7 +110,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
               room: this.roomName,
               clientId: member.clientId,
               connectionId: member.connectionId,
-              data: member.data ?? null,
+              data: (member.data as unknown) ?? null,
               timestamp,
               ...(flags["sequence-numbers"]
                 ? { sequence: this.sequenceCounter }

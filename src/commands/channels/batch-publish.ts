@@ -129,7 +129,9 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
           channels = flags.channels.split(",").map((c) => c.trim());
         } else if (flags["channels-json"]) {
           try {
-            const parsedChannels = JSON.parse(flags["channels-json"]);
+            const parsedChannels = JSON.parse(
+              flags["channels-json"],
+            ) as unknown;
             if (!Array.isArray(parsedChannels)) {
               this.fail(
                 "channels-json must be a valid JSON array of channel names",
@@ -138,7 +140,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
               );
             }
 
-            channels = parsedChannels;
+            channels = parsedChannels as string[];
           } catch (error) {
             this.fail(error, flags, "batchPublish");
           }
@@ -161,7 +163,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
         // Parse the message
         let messageData: MessageData;
         try {
-          messageData = JSON.parse(args.message);
+          messageData = JSON.parse(args.message) as MessageData;
         } catch {
           // If parsing fails, use the raw message as data
           messageData = { data: args.message };

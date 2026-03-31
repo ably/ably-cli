@@ -86,7 +86,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
         const event = {
           timestamp,
           event: message.name || "connection.lifecycle",
-          data: message.data,
+          data: message.data as unknown,
           id: message.id,
         };
         this.logCliEvent(

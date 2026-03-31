@@ -123,13 +123,15 @@ export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
           ...(annotation.count === undefined
             ? {}
             : { count: annotation.count }),
-          ...(annotation.data === undefined ? {} : { data: annotation.data }),
+          ...(annotation.data === undefined
+            ? {}
+            : { data: annotation.data as unknown }),
           ...(annotation.encoding === undefined
             ? {}
             : { encoding: annotation.encoding }),
           ...(annotation.extras === undefined
             ? {}
-            : { extras: annotation.extras }),
+            : { extras: annotation.extras as unknown }),
         };
 
         this.logCliEvent(

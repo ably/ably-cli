@@ -106,10 +106,10 @@ export default class ChannelsAnnotationsGet extends AblyBaseCommand {
               clientId: annotation.clientId,
               count: annotation.count,
               serial: annotation.serial,
-              data: annotation.data,
+              data: annotation.data as unknown,
               encoding: annotation.encoding,
               messageSerial: annotation.messageSerial,
-              extras: annotation.extras,
+              extras: annotation.extras as unknown,
               indexPrefix: `${formatIndex(index + 1)} ${formatTimestamp(formatMessageTimestamp(ts))}`,
             };
           },

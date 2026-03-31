@@ -89,7 +89,7 @@ export default class LogsConnectionLifecycleHistory extends AblyBaseCommand {
             messages: messages.map((msg) => ({
               clientId: msg.clientId,
               connectionId: msg.connectionId,
-              data: msg.data,
+              data: msg.data as unknown,
               encoding: msg.encoding,
               id: msg.id,
               name: msg.name,

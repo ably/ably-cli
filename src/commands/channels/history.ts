@@ -157,7 +157,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
               action: String(message.action),
               channel: channelName,
               clientId: message.clientId,
-              data: message.data,
+              data: message.data as unknown,
               event: message.name || undefined,
               id: message.id,
               indexPrefix: `${formatIndex(index + 1)} ${formatTimestamp(formatMessageTimestamp(ts))}`,

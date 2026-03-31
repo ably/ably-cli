@@ -175,7 +175,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
             event: message.name || undefined,
             clientId: message.clientId,
             connectionId: message.connectionId,
-            data: message.data,
+            data: message.data as unknown,
             encoding: message.encoding,
             action:
               message.action === undefined ? undefined : String(message.action),

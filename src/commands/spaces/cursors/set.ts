@@ -83,7 +83,10 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
         if (flags.data) {
           try {
-            const additionalData = JSON.parse(flags.data);
+            const additionalData = JSON.parse(flags.data) as Record<
+              string,
+              unknown
+            >;
             cursorData.data = additionalData;
           } catch {
             this.fail(
@@ -101,7 +104,10 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
         if (flags.data) {
           try {
-            const additionalData = JSON.parse(flags.data);
+            const additionalData = JSON.parse(flags.data) as Record<
+              string,
+              unknown
+            >;
             cursorData.data = additionalData;
           } catch {
             this.fail(
@@ -114,7 +120,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
         }
       } else if (flags.data) {
         try {
-          cursorData = JSON.parse(flags.data);
+          cursorData = JSON.parse(flags.data) as Record<string, unknown>;
         } catch {
           this.fail(
             'Invalid JSON in --data flag. Expected format: {"position":{"x":number,"y":number},"data":{...}}',

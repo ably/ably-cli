@@ -102,7 +102,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
             channel: channelName,
             clientId: presenceMessage.clientId,
             connectionId: presenceMessage.connectionId,
-            data: presenceMessage.data,
+            data: presenceMessage.data as unknown,
             id: presenceMessage.id,
             timestamp,
             ...(flags["sequence-numbers"]
