@@ -62,12 +62,6 @@ export function formatChannelRuleDetails(
     );
   }
 
-  if (rule.exposeTimeSerial !== undefined) {
-    lines.push(
-      `${indent}${formatLabel("Expose Time Serial")} ${bool(rule.exposeTimeSerial)}`,
-    );
-  }
-
   if (rule.populateChannelRegistry !== undefined) {
     lines.push(
       `${indent}${formatLabel("Populate Channel Registry")} ${bool(rule.populateChannelRegistry)}`,

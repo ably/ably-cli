@@ -33,7 +33,7 @@ describe("apps:rules:create command", () => {
   ]);
 
   describe("functionality", () => {
-    it("should create a channel rule successfully", async () => {
+    it("should create a rule successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
         .post(`/v1/apps/${appId}/namespaces`)
@@ -44,10 +44,10 @@ describe("apps:rules:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Channel rule chat created.");
+      expect(stdout).toContain("Rule chat created.");
     });
 
-    it("should create a channel rule with persisted flag", async () => {
+    it("should create a rule with persisted flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
         .post(`/v1/apps/${appId}/namespaces`, (body) => {
@@ -60,11 +60,11 @@ describe("apps:rules:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Channel rule chat created.");
-      expect(stdout).toContain("Persisted: Yes");
+      expect(stdout).toContain("Rule chat created.");
+      expect(stdout).toContain("Persisted: ✓ Yes");
     });
 
-    it("should create a channel rule with mutable-messages flag and auto-enable persistence", async () => {
+    it("should create a rule with mutable-messages flag and auto-enable persistence", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
         .post(`/v1/apps/${appId}/namespaces`, (body) => {
@@ -84,13 +84,13 @@ describe("apps:rules:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Channel rule chat created.");
-      expect(stdout).toContain("Persisted: Yes");
-      expect(stdout).toContain("Mutable Messages: Yes");
+      expect(stdout).toContain("Rule chat created.");
+      expect(stdout).toContain("Persisted: ✓ Yes");
+      expect(stdout).toContain("Mutable Messages: ✓ Yes");
       expect(stderr).toContain("persistence is automatically enabled");
     });
 
-    it("should create a channel rule with push-enabled flag", async () => {
+    it("should create a rule with push-enabled flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
         .post(`/v1/apps/${appId}/namespaces`, (body) => {
@@ -103,8 +103,8 @@ describe("apps:rules:create command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Channel rule chat created.");
-      expect(stdout).toContain("Push Enabled: Yes");
+      expect(stdout).toContain("Rule chat created.");
+      expect(stdout).toContain("Push Enabled: ✓ Yes");
     });
 
     it("should output JSON format when --json flag is used", async () => {

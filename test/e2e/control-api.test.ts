@@ -62,7 +62,7 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
         }
       }
 
-      // 2. Delete namespaces (channel rules)
+      // 2. Delete namespaces (rules)
       for (const namespaceId of createdResources.namespaces) {
         try {
           if (testAppId) {
@@ -335,7 +335,7 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
       });
     });
 
-    describe("Namespace/Channel Rules Management", () => {
+    describe("Namespace/Rules Management", () => {
       let testNamespaceId: string;
 
       it("should create a new namespace", async () => {

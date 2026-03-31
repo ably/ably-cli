@@ -2,9 +2,9 @@ import { BaseTopicCommand } from "../../../base-topic-command.js";
 
 export default class RulesIndexCommand extends BaseTopicCommand {
   protected topicName = "apps:rules";
-  protected commandGroup = "channel rules";
+  protected commandGroup = "rules";
 
-  static description = "Manage Ably channel rules (namespaces)";
+  static description = "Manage Ably rules (namespaces)";
 
   static examples = [
     "$ ably apps rules list",

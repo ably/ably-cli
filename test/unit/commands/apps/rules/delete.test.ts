@@ -31,7 +31,7 @@ describe("apps:rules:delete command", () => {
   ]);
 
   describe("functionality", () => {
-    it("should delete a channel rule with force flag", async () => {
+    it("should delete a rule with force flag", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
         .get(`/v1/apps/${appId}/namespaces`)
@@ -85,7 +85,7 @@ describe("apps:rules:delete command", () => {
       },
     });
 
-    it("should handle channel rule not found", async () => {
+    it("should handle rule not found", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl().get(`/v1/apps/${appId}/namespaces`).reply(200, []);
 

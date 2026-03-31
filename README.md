@@ -441,7 +441,7 @@ COMMANDS
   ably apps current  Show the currently selected app
   ably apps delete   Delete an app
   ably apps list     List all apps in the current account
-  ably apps rules    Manage Ably channel rules (namespaces)
+  ably apps rules    Manage Ably rules (namespaces)
   ably apps switch   Switch to a different Ably app
   ably apps update   Update an app
 ```
@@ -572,14 +572,14 @@ _See code: [src/commands/apps/list.ts](https://github.com/ably/ably-cli/blob/v0.
 
 ## `ably apps rules`
 
-Manage Ably channel rules (namespaces)
+Manage Ably rules (namespaces)
 
 ```
 USAGE
   $ ably apps rules
 
 DESCRIPTION
-  Manage Ably channel rules (namespaces)
+  Manage Ably rules (namespaces)
 
 EXAMPLES
   $ ably apps rules list
@@ -591,24 +591,24 @@ EXAMPLES
   $ ably apps rules delete chat
 
 COMMANDS
-  ably apps rules create  Create a channel rule
-  ably apps rules delete  Delete a channel rule
-  ably apps rules list    List channel rules for an app
-  ably apps rules update  Update a channel rule
+  ably apps rules create  Create a rule
+  ably apps rules delete  Delete a rule
+  ably apps rules list    List rules for an app
+  ably apps rules update  Update a rule
 ```
 
 _See code: [src/commands/apps/rules/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/apps/rules/index.ts)_
 
 ## `ably apps rules create`
 
-Create a channel rule
+Create a rule
 
 ```
 USAGE
   $ ably apps rules create --name <value> [-v] [--json | --pretty-json] [--app <value>] [--authenticated]
     [--batching-enabled] [--batching-interval <value>] [--conflation-enabled] [--conflation-interval <value>]
-    [--conflation-key <value>] [--expose-time-serial] [--mutable-messages] [--persist-last] [--persisted]
-    [--populate-channel-registry] [--push-enabled] [--tls-only]
+    [--conflation-key <value>] [--mutable-messages] [--persist-last] [--persisted] [--populate-channel-registry]
+    [--push-enabled] [--tls-only]
 
 FLAGS
   -v, --verbose                      Output verbose logs
@@ -619,11 +619,10 @@ FLAGS
       --conflation-enabled           Whether to enable conflation for messages on channels matching this rule
       --conflation-interval=<value>  The conflation interval for messages on channels matching this rule
       --conflation-key=<value>       The conflation key for messages on channels matching this rule
-      --expose-time-serial           Whether to expose the time serial for messages on channels matching this rule
       --json                         Output in JSON format
       --mutable-messages             Whether messages on channels matching this rule can be updated or deleted after
                                      publishing. Automatically enables message persistence.
-      --name=<value>                 (required) Name of the channel rule
+      --name=<value>                 (required) Name of the rule
       --persist-last                 Whether to persist only the last message on channels matching this rule
       --persisted                    Whether messages on channels matching this rule should be persisted
       --populate-channel-registry    Whether to populate the channel registry for channels matching this rule
@@ -632,7 +631,7 @@ FLAGS
       --tls-only                     Whether to enforce TLS for channels matching this rule
 
 DESCRIPTION
-  Create a channel rule
+  Create a rule
 
 EXAMPLES
   $ ably apps rules create --name "chat" --persisted
@@ -650,14 +649,14 @@ _See code: [src/commands/apps/rules/create.ts](https://github.com/ably/ably-cli/
 
 ## `ably apps rules delete NAMEORID`
 
-Delete a channel rule
+Delete a rule
 
 ```
 USAGE
   $ ably apps rules delete NAMEORID [-v] [--json | --pretty-json] [--app <value>] [-f]
 
 ARGUMENTS
-  NAMEORID  Name or ID of the channel rule to delete
+  NAMEORID  Name or ID of the rule to delete
 
 FLAGS
   -f, --force        Force deletion without confirmation
@@ -667,7 +666,7 @@ FLAGS
       --pretty-json  Output in colorized JSON format
 
 DESCRIPTION
-  Delete a channel rule
+  Delete a rule
 
 EXAMPLES
   $ ably apps rules delete chat
@@ -685,7 +684,7 @@ _See code: [src/commands/apps/rules/delete.ts](https://github.com/ably/ably-cli/
 
 ## `ably apps rules list`
 
-List channel rules for an app
+List rules for an app
 
 ```
 USAGE
@@ -699,7 +698,7 @@ FLAGS
       --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
-  List channel rules for an app
+  List rules for an app
 
 EXAMPLES
   $ ably apps rules list
@@ -715,17 +714,17 @@ _See code: [src/commands/apps/rules/list.ts](https://github.com/ably/ably-cli/bl
 
 ## `ably apps rules update NAMEORID`
 
-Update a channel rule
+Update a rule
 
 ```
 USAGE
   $ ably apps rules update NAMEORID [-v] [--json | --pretty-json] [--app <value>] [--authenticated]
     [--batching-enabled] [--batching-interval <value>] [--conflation-enabled] [--conflation-interval <value>]
-    [--conflation-key <value>] [--expose-time-serial] [--mutable-messages] [--persist-last] [--persisted]
-    [--populate-channel-registry] [--push-enabled] [--tls-only]
+    [--conflation-key <value>] [--mutable-messages] [--persist-last] [--persisted] [--populate-channel-registry]
+    [--push-enabled] [--tls-only]
 
 ARGUMENTS
-  NAMEORID  Name or ID of the channel rule to update
+  NAMEORID  Name or ID of the rule to update
 
 FLAGS
   -v, --verbose                         Output verbose logs
@@ -736,7 +735,6 @@ FLAGS
       --[no-]conflation-enabled         Whether to enable conflation for messages on channels matching this rule
       --conflation-interval=<value>     The conflation interval for messages on channels matching this rule
       --conflation-key=<value>          The conflation key for messages on channels matching this rule
-      --[no-]expose-time-serial         Whether to expose the time serial for messages on channels matching this rule
       --json                            Output in JSON format
       --[no-]mutable-messages           Whether messages on channels matching this rule can be updated or deleted after
                                         publishing. Automatically enables message persistence.
@@ -748,7 +746,7 @@ FLAGS
       --[no-]tls-only                   Whether to enforce TLS for channels matching this rule
 
 DESCRIPTION
-  Update a channel rule
+  Update a rule
 
 EXAMPLES
   $ ably apps rules update chat --persisted

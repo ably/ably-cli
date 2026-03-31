@@ -12,12 +12,12 @@ import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 export default class RulesDeleteCommand extends ControlBaseCommand {
   static args = {
     nameOrId: Args.string({
-      description: "Name or ID of the channel rule to delete",
+      description: "Name or ID of the rule to delete",
       required: true,
     }),
   };
 
-  static description = "Delete a channel rule";
+  static description = "Delete a rule";
 
   static examples = [
     "$ ably apps rules delete chat",
@@ -53,19 +53,17 @@ export default class RulesDeleteCommand extends ControlBaseCommand {
       const namespace = namespaces.find((n) => n.id === args.nameOrId);
 
       if (!namespace) {
-        this.fail(
-          `Channel rule "${args.nameOrId}" not found`,
-          flags,
-          "ruleDelete",
-          { appId },
-        );
+        this.fail(`Rule "${args.nameOrId}" not found`, flags, "ruleDelete", {
+          appId,
+        });
       }
 
       // If not using force flag or JSON mode, prompt for confirmation
       if (!flags.force && !this.shouldOutputJson(flags)) {
-        this.log(`\nYou are about to delete the following channel rule:`);
+        this.log(`\nYou are about to delete the following rule:`);
         this.log(`${formatLabel("ID")} ${formatResource(namespace.id)}`);
         for (const line of formatChannelRuleDetails(namespace, {
+          bold: true,
           formatDate: (t) => this.formatDate(t),
           showTimestamps: true,
         })) {
@@ -73,7 +71,7 @@ export default class RulesDeleteCommand extends ControlBaseCommand {
         }
 
         const confirmed = await promptForConfirmation(
-          `\nAre you sure you want to delete channel rule with ID "${namespace.id}"?`,
+          `\nAre you sure you want to delete rule with ID "${namespace.id}"?`,
         );
 
         if (!confirmed) {
@@ -99,9 +97,7 @@ export default class RulesDeleteCommand extends ControlBaseCommand {
         );
       } else {
         this.log(
-          formatSuccess(
-            `Channel rule ${formatResource(namespace.id)} deleted.`,
-          ),
+          formatSuccess(`Rule ${formatResource(namespace.id)} deleted.`),
         );
       }
     } catch (error) {

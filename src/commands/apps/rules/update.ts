@@ -12,12 +12,12 @@ import {
 export default class RulesUpdateCommand extends ControlBaseCommand {
   static args = {
     nameOrId: Args.string({
-      description: "Name or ID of the channel rule to update",
+      description: "Name or ID of the rule to update",
       required: true,
     }),
   };
 
-  static description = "Update a channel rule";
+  static description = "Update a rule";
 
   static examples = [
     "$ ably apps rules update chat --persisted",
@@ -64,12 +64,6 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
     "conflation-key": Flags.string({
       description:
         "The conflation key for messages on channels matching this rule",
-      required: false,
-    }),
-    "expose-time-serial": Flags.boolean({
-      allowNo: true,
-      description:
-        "Whether to expose the time serial for messages on channels matching this rule",
       required: false,
     }),
     "mutable-messages": Flags.boolean({
@@ -121,12 +115,9 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
       const namespace = namespaces.find((n) => n.id === args.nameOrId);
 
       if (!namespace) {
-        this.fail(
-          `Channel rule "${args.nameOrId}" not found`,
-          flags,
-          "ruleUpdate",
-          { appId },
-        );
+        this.fail(`Rule "${args.nameOrId}" not found`, flags, "ruleUpdate", {
+          appId,
+        });
       }
 
       // Prepare update data
@@ -178,10 +169,6 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
         updateData.persistLast = flags["persist-last"];
       }
 
-      if (flags["expose-time-serial"] !== undefined) {
-        updateData.exposeTimeSerial = flags["expose-time-serial"];
-      }
-
       if (flags["populate-channel-registry"] !== undefined) {
         updateData.populateChannelRegistry = flags["populate-channel-registry"];
       }
@@ -213,7 +200,7 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
       // Check if there's anything to update
       if (Object.keys(updateData).length === 0) {
         this.fail(
-          "No update parameters provided. Use one of the flag options to update the channel rule.",
+          "No update parameters provided. Use one of the flag options to update the rule.",
           flags,
           "ruleUpdate",
           { appId, ruleId: namespace.id },
@@ -231,22 +218,22 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
           {
             appId,
             rule: {
-              authenticated: updatedNamespace.authenticated,
-              batchingEnabled: updatedNamespace.batchingEnabled,
-              batchingInterval: updatedNamespace.batchingInterval,
-              conflationEnabled: updatedNamespace.conflationEnabled,
-              conflationInterval: updatedNamespace.conflationInterval,
-              conflationKey: updatedNamespace.conflationKey,
+              authenticated: updatedNamespace.authenticated || false,
+              batchingEnabled: updatedNamespace.batchingEnabled || false,
+              batchingInterval: updatedNamespace.batchingInterval ?? null,
+              conflationEnabled: updatedNamespace.conflationEnabled || false,
+              conflationInterval: updatedNamespace.conflationInterval ?? null,
+              conflationKey: updatedNamespace.conflationKey ?? null,
               created: new Date(updatedNamespace.created).toISOString(),
-              exposeTimeSerial: updatedNamespace.exposeTimeSerial,
               id: updatedNamespace.id,
               modified: new Date(updatedNamespace.modified).toISOString(),
-              mutableMessages: updatedNamespace.mutableMessages,
-              persistLast: updatedNamespace.persistLast,
-              persisted: updatedNamespace.persisted,
-              populateChannelRegistry: updatedNamespace.populateChannelRegistry,
-              pushEnabled: updatedNamespace.pushEnabled,
-              tlsOnly: updatedNamespace.tlsOnly,
+              mutableMessages: updatedNamespace.mutableMessages || false,
+              persistLast: updatedNamespace.persistLast || false,
+              persisted: updatedNamespace.persisted || false,
+              populateChannelRegistry:
+                updatedNamespace.populateChannelRegistry || false,
+              pushEnabled: updatedNamespace.pushEnabled || false,
+              tlsOnly: updatedNamespace.tlsOnly || false,
             },
             timestamp: new Date().toISOString(),
           },
@@ -254,12 +241,11 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
         );
       } else {
         this.log(
-          formatSuccess(
-            `Channel rule ${formatResource(updatedNamespace.id)} updated.`,
-          ),
+          formatSuccess(`Rule ${formatResource(updatedNamespace.id)} updated.`),
         );
         this.log(`${formatLabel("ID")} ${formatResource(updatedNamespace.id)}`);
         for (const line of formatChannelRuleDetails(updatedNamespace, {
+          bold: true,
           formatDate: (t) => this.formatDate(t),
           showTimestamps: true,
         })) {

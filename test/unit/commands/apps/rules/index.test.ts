@@ -27,16 +27,6 @@ describe("apps:rules topic command", () => {
       expect(stdout).toContain("update");
       expect(stdout).toContain("delete");
     });
-
-    it("should not show hidden channel-rules alias in apps help", async () => {
-      const { stdout } = await runCommand(["apps", "--help"], import.meta.url);
-      expect(stdout).not.toContain("channel-rules");
-    });
-
-    it("should not show hidden channel-rule alias in top-level help", async () => {
-      const { stdout } = await runCommand(["--help"], import.meta.url);
-      expect(stdout).not.toContain("channel-rule");
-    });
   });
 
   describe("flags", () => {

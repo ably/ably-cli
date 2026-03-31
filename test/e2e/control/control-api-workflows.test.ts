@@ -90,7 +90,7 @@ describe("Control API E2E Workflow Tests", () => {
       }
     }
 
-    // 2. Delete namespaces (channel rules)
+    // 2. Delete namespaces (rules)
     for (const namespaceId of createdResources.namespaces) {
       try {
         const appId = createdResources.apps[0];
@@ -500,14 +500,14 @@ describe("Control API E2E Workflow Tests", () => {
     });
   });
 
-  describe("Channel Rules Workflow", () => {
+  describe("Rules Workflow", () => {
     let testAppId: string;
 
     beforeAll(async () => {
       if (shouldSkip) return;
 
       // Create a test app first
-      const appName = `E2E Channel Rules Test App ${Date.now()}`;
+      const appName = `E2E Rules Test App ${Date.now()}`;
       const createResult = await runCommand(
         ["apps", "create", "--name", appName, "--json"],
         {
@@ -533,21 +533,20 @@ describe("Control API E2E Workflow Tests", () => {
     });
 
     it(
-      "should create and manage channel rules through CLI",
+      "should create and manage rules through CLI",
       { timeout: 20000 },
       async () => {
-        setupTestFailureHandler(
-          "should create and manage channel rules through CLI",
-        );
+        setupTestFailureHandler("should create and manage rules through CLI");
 
         if (shouldSkip) return;
 
-        const ruleName = `e2e-channel-rule-${Date.now()}`;
+        const ruleName = `e2e-rule-${Date.now()}`;
 
-        // 1. Create channel rule
+        // 1. Create rule
         const createResult = await runCommand(
           [
-            "channel-rule",
+            "apps",
+            "rules",
             "create",
             "--app",
             testAppId,
@@ -575,9 +574,9 @@ describe("Control API E2E Workflow Tests", () => {
         const namespaceId = createOutput.rule.id;
         createdResources.namespaces.push(namespaceId);
 
-        // 2. List channel rules and verify our rule is included
+        // 2. List rules and verify our rule is included
         const listResult = await runCommand(
-          ["channel-rule", "list", "--app", testAppId, "--json"],
+          ["apps", "rules", "list", "--app", testAppId, "--json"],
           {
             env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
           },
@@ -597,138 +596,126 @@ describe("Control API E2E Workflow Tests", () => {
       },
     );
 
-    it(
-      "should update a channel rule through CLI",
-      { timeout: 20000 },
-      async () => {
-        setupTestFailureHandler("should update a channel rule through CLI");
+    it("should update a rule through CLI", { timeout: 20000 }, async () => {
+      setupTestFailureHandler("should update a rule through CLI");
 
-        if (shouldSkip) return;
+      if (shouldSkip) return;
 
-        const ruleName = `e2e-update-rule-${Date.now()}`;
+      const ruleName = `e2e-update-rule-${Date.now()}`;
 
-        // 1. Create channel rule
-        const createResult = await runCommand(
-          [
-            "channel-rule",
-            "create",
-            "--app",
-            testAppId,
-            "--name",
-            ruleName,
-            "--persisted",
-            "--json",
-          ],
-          {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
-          },
-        );
+      // 1. Create rule
+      const createResult = await runCommand(
+        [
+          "apps",
+          "rules",
+          "create",
+          "--app",
+          testAppId,
+          "--name",
+          ruleName,
+          "--persisted",
+          "--json",
+        ],
+        {
+          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+        },
+      );
 
-        expect(createResult.stderr).toBe("");
-        const createOutput = JSON.parse(createResult.stdout);
-        expect(createOutput).toHaveProperty("success", true);
-        expect(createOutput.rule).toHaveProperty("persisted", true);
-        expect(createOutput.rule).toHaveProperty("pushEnabled", false);
+      expect(createResult.stderr).toBe("");
+      const createOutput = JSON.parse(createResult.stdout);
+      expect(createOutput).toHaveProperty("success", true);
+      expect(createOutput.rule).toHaveProperty("persisted", true);
+      expect(createOutput.rule).toHaveProperty("pushEnabled", false);
 
-        const namespaceId = createOutput.rule.id;
-        createdResources.namespaces.push(namespaceId);
+      const namespaceId = createOutput.rule.id;
+      createdResources.namespaces.push(namespaceId);
 
-        // 2. Update channel rule - enable push, disable persisted
-        const updateResult = await runCommand(
-          [
-            "channel-rule",
-            "update",
-            namespaceId,
-            "--app",
-            testAppId,
-            "--push-enabled",
-            "--no-persisted",
-            "--json",
-          ],
-          {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
-          },
-        );
+      // 2. Update rule - enable push, disable persisted
+      const updateResult = await runCommand(
+        [
+          "apps",
+          "rules",
+          "update",
+          namespaceId,
+          "--app",
+          testAppId,
+          "--push-enabled",
+          "--no-persisted",
+          "--json",
+        ],
+        {
+          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+        },
+      );
 
-        expect(updateResult.stderr).toBe("");
-        const updateOutput = JSON.parse(updateResult.stdout);
-        expect(updateOutput).toHaveProperty("success", true);
-        expect(updateOutput.rule).toHaveProperty("id", namespaceId);
-        expect(updateOutput.rule).toHaveProperty("pushEnabled", true);
-        expect(updateOutput.rule).toHaveProperty("persisted", false);
+      expect(updateResult.stderr).toBe("");
+      const updateOutput = JSON.parse(updateResult.stdout);
+      expect(updateOutput).toHaveProperty("success", true);
+      expect(updateOutput.rule).toHaveProperty("id", namespaceId);
+      expect(updateOutput.rule).toHaveProperty("pushEnabled", true);
+      expect(updateOutput.rule).toHaveProperty("persisted", false);
 
-        // Verify null batchingInterval/conflationInterval don't cause errors
-        // These fields may be null in the response
-        expect(updateOutput.rule).toHaveProperty("batchingInterval");
-        expect(updateOutput.rule).toHaveProperty("conflationInterval");
-      },
-    );
+      // Verify null batchingInterval/conflationInterval don't cause errors
+      // These fields may be null in the response
+      expect(updateOutput.rule).toHaveProperty("batchingInterval");
+      expect(updateOutput.rule).toHaveProperty("conflationInterval");
+    });
 
-    it(
-      "should delete a channel rule through CLI",
-      { timeout: 20000 },
-      async () => {
-        setupTestFailureHandler("should delete a channel rule through CLI");
+    it("should delete a rule through CLI", { timeout: 20000 }, async () => {
+      setupTestFailureHandler("should delete a rule through CLI");
 
-        if (shouldSkip) return;
+      if (shouldSkip) return;
 
-        const ruleName = `e2e-delete-rule-${Date.now()}`;
+      const ruleName = `e2e-delete-rule-${Date.now()}`;
 
-        // 1. Create channel rule
-        const createResult = await runCommand(
-          [
-            "channel-rule",
-            "create",
-            "--app",
-            testAppId,
-            "--name",
-            ruleName,
-            "--json",
-          ],
-          {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
-          },
-        );
+      // 1. Create rule
+      const createResult = await runCommand(
+        [
+          "apps",
+          "rules",
+          "create",
+          "--app",
+          testAppId,
+          "--name",
+          ruleName,
+          "--json",
+        ],
+        {
+          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+        },
+      );
 
-        expect(createResult.stderr).toBe("");
-        const createOutput = JSON.parse(createResult.stdout);
-        expect(createOutput).toHaveProperty("success", true);
-        const namespaceId = createOutput.rule.id;
-        createdResources.namespaces.push(namespaceId);
+      expect(createResult.stderr).toBe("");
+      const createOutput = JSON.parse(createResult.stdout);
+      expect(createOutput).toHaveProperty("success", true);
+      const namespaceId = createOutput.rule.id;
+      createdResources.namespaces.push(namespaceId);
 
-        // 2. Delete channel rule with --force
-        const deleteResult = await runCommand(
-          [
-            "channel-rule",
-            "delete",
-            namespaceId,
-            "--app",
-            testAppId,
-            "--force",
-          ],
-          {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
-          },
-        );
+      // 2. Delete rule with --force
+      const deleteResult = await runCommand(
+        ["apps", "rules", "delete", namespaceId, "--app", testAppId, "--force"],
+        {
+          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+        },
+      );
 
-        expect(deleteResult.stderr).toBe("");
-        expect(deleteResult.stdout).toContain("deleted successfully");
+      expect(deleteResult.stderr).toBe("");
+      expect(deleteResult.stdout).toContain("deleted successfully");
 
-        // 3. Verify the rule is gone by listing
-        const listResult = await runCommand(
-          ["channel-rule", "list", "--app", testAppId, "--json"],
-          {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
-          },
-        );
+      // 3. Verify the rule is gone by listing
+      const listResult = await runCommand(
+        ["apps", "rules", "list", "--app", testAppId, "--json"],
+        {
+          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+        },
+      );
 
-        const listOutput = JSON.parse(listResult.stdout);
-        const deletedRule = listOutput.rules.find(
-          (ns: { id: string }) => ns.id === namespaceId,
-        );
-        expect(deletedRule).toBeUndefined();
-      },
-    );
+      const listOutput = JSON.parse(listResult.stdout);
+      const deletedRule = listOutput.rules.find(
+        (ns: { id: string }) => ns.id === namespaceId,
+      );
+      expect(deletedRule).toBeUndefined();
+    });
   });
 
   describe("Error Handling and Edge Cases", () => {
