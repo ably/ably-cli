@@ -112,9 +112,7 @@ export default [
       // Too many false positives on intentional String() conversions
       "@typescript-eslint/no-base-to-string": "off",
       // Cherry-picked from strict-type-checked
-      // no-unnecessary-condition disabled: causes false positives on Record/index
-      // types without noUncheckedIndexedAccess in tsconfig.
-      "@typescript-eslint/no-unnecessary-condition": "off",
+      "@typescript-eslint/no-unnecessary-condition": "error",
       "@typescript-eslint/no-deprecated": "warn",
       "@typescript-eslint/no-useless-constructor": "error",
       "@typescript-eslint/unified-signatures": "error",

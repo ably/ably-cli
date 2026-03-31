@@ -135,7 +135,7 @@ export async function globalCleanup(): Promise<void> {
       }, 2000); // 2 second timeout per client
 
       try {
-        if (client instanceof Ably.Realtime && client.connection) {
+        if (client instanceof Ably.Realtime) {
           if (
             client.connection.state === "closed" ||
             client.connection.state === "failed"

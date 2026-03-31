@@ -140,7 +140,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
           );
 
           // Show any additional metadata in the reaction
-          if (reaction.metadata && Object.keys(reaction.metadata).length > 0) {
+          if (Object.keys(reaction.metadata).length > 0) {
             this.log(
               `  ${formatLabel("Metadata")} ${this.formatJsonOutput(reaction.metadata, flags)}`,
             );

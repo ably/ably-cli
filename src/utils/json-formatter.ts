@@ -11,7 +11,7 @@ export function formatJson(data: unknown): string {
 
   try {
     // For non-object/non-array simple values, don't do full JSON formatting
-    if (typeof data !== "object" || data === null) {
+    if (typeof data !== "object") {
       return colorValue(data);
     }
 

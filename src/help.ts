@@ -36,7 +36,7 @@ export default class CustomHelp extends Help {
   // Override formatHelpOutput to apply stripAnsi when necessary
   formatHelpOutput(output: string): string {
     // Check if we're generating readme (passed as an option from oclif)
-    if (this.opts?.stripAnsi || process.env.GENERATING_README === "true") {
+    if (this.opts.stripAnsi || process.env.GENERATING_README === "true") {
       output = stripAnsi(output);
     }
 
@@ -175,7 +175,7 @@ export default class CustomHelp extends Help {
     // Set flag to indicate we're showing root help
     this.isShowingRootHelp = true;
 
-    const args = process.argv || [];
+    const args = process.argv;
     const isWebCliHelp = args.includes("--web-cli-help");
 
     // Show web CLI help if:

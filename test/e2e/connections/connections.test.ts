@@ -195,7 +195,7 @@ describe("Connections E2E Tests", () => {
           let jsonBuffer = "";
           let braceDepth = 0;
 
-          connectionsMonitor.stdout?.on("data", (data) => {
+          connectionsMonitor.stdout.on("data", (data) => {
             const output = data.toString();
             monitorOutput += output;
 
@@ -382,7 +382,7 @@ describe("Connections E2E Tests", () => {
             },
           );
 
-          connectionsMonitor.stdout?.on("data", () => {
+          connectionsMonitor.stdout.on("data", () => {
             // Just consume the output
           });
 

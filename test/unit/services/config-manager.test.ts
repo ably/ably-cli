@@ -333,7 +333,7 @@ accessToken = "testaccesstoken"
       expect(configManager.getKeyName("anotherappid")).toBe("Another Key");
 
       // Expect writeFileSync to have been called multiple times (storeAccount, storeAppKey, switchAccount)
-      expect(writeFileStub?.mock.calls.length).toBeGreaterThan(2);
+      expect(writeFileStub.mock.calls.length).toBeGreaterThan(2);
     });
 
     it("should throw error if account doesn't exist", () => {

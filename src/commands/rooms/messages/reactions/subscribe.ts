@@ -208,26 +208,17 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
               );
 
               // Display the summaries by type if they exist
-              if (
-                event.reactions.unique &&
-                Object.keys(event.reactions.unique).length > 0
-              ) {
+              if (Object.keys(event.reactions.unique).length > 0) {
                 this.log(`  ${formatLabel("Unique reactions")}`);
                 this.displayReactionSummary(event.reactions.unique);
               }
 
-              if (
-                event.reactions.distinct &&
-                Object.keys(event.reactions.distinct).length > 0
-              ) {
+              if (Object.keys(event.reactions.distinct).length > 0) {
                 this.log(`  ${formatLabel("Distinct reactions")}`);
                 this.displayReactionSummary(event.reactions.distinct);
               }
 
-              if (
-                event.reactions.multiple &&
-                Object.keys(event.reactions.multiple).length > 0
-              ) {
+              if (Object.keys(event.reactions.multiple).length > 0) {
                 this.log(`  ${formatLabel("Multiple reactions")}`);
                 this.displayMultipleReactionSummary(event.reactions.multiple);
               }

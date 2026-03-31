@@ -95,7 +95,11 @@ export class StatsDisplay {
     }
   }
 
-  public display(stats: StatsDisplayData): void {
+  public display(stats: StatsDisplayData | null): void {
+    if (!stats) {
+      return;
+    }
+
     if (this.options.json) {
       const record = buildJsonRecord(
         this.options.live ? JsonRecordType.Event : JsonRecordType.Result,
@@ -108,11 +112,6 @@ export class StatsDisplay {
           prettyJson: this.options.prettyJson,
         }),
       );
-      return;
-    }
-
-    // For no stats, just return
-    if (!stats) {
       return;
     }
 

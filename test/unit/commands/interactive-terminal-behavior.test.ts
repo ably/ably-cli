@@ -48,7 +48,7 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     mockOutput = new Writable({
       write(chunk: Buffer | string, _encoding: string, callback: () => void) {
         _outputData += chunk.toString();
-        if (callback) callback();
+        callback();
         return true;
       },
     });

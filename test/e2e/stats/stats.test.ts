@@ -210,10 +210,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
           );
 
           let output = "";
-          statsMonitor.stdout?.on("data", (data) => {
+          statsMonitor.stdout.on("data", (data) => {
             output += data.toString();
           });
-          statsMonitor.stderr?.on("data", (data) => {
+          statsMonitor.stderr.on("data", (data) => {
             output += data.toString();
           });
 
@@ -446,10 +446,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
           );
 
           let output = "";
-          statsMonitor.stdout?.on("data", (data) => {
+          statsMonitor.stdout.on("data", (data) => {
             output += data.toString();
           });
-          statsMonitor.stderr?.on("data", (data) => {
+          statsMonitor.stderr.on("data", (data) => {
             output += data.toString();
           });
 

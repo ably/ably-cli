@@ -466,7 +466,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
           "role" in data &&
           data.role === "publisher"
         ) {
-          const { testId } = (data as { testId?: string }) || {};
+          const { testId } = data as { testId?: string };
 
           // Only finish the test if the leaving publisher matches the current test (or we don't know yet)
           if (metrics.testId && testId && testId !== metrics.testId) {

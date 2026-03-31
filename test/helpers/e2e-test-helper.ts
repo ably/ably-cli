@@ -215,11 +215,11 @@ export async function runBackgroundProcessAndGetOutput(
       }
     }, timeoutMs);
 
-    childProcess.stdout?.on("data", (data) => {
+    childProcess.stdout.on("data", (data) => {
       stdout += data.toString();
     });
 
-    childProcess.stderr?.on("data", (data) => {
+    childProcess.stderr.on("data", (data) => {
       stderr += data.toString();
     });
 
@@ -360,11 +360,7 @@ async function attemptProcessStart(
           const output = await readProcessOutput(outputPath);
 
           // Check if the child process has exited prematurely
-          if (
-            childProcess &&
-            childProcess.exitCode !== null &&
-            !signal.aborted
-          ) {
+          if (childProcess && childProcess.exitCode !== null) {
             const prematureExitOutput = await readProcessOutput(outputPath);
             controller.abort(
               `Process ${command} exited prematurely (code ${childProcess.exitCode}) before emitting ready signal "${readySignal}". Full Output:\n${prematureExitOutput}`,
@@ -554,12 +550,10 @@ async function attemptProcessStart(
 
     // Handle process exit early
     childProcess.on("exit", (code, _signal) => {
-      if (outputStream && !outputStream.destroyed) {
+      if (!outputStream.destroyed) {
         outputStream.end(() => {
           // Output stream ended after process exit
         });
-      } else {
-        // Output stream was already destroyed
       }
       if (code !== null && code !== 0 && code !== 130) {
         // 130 is SIGINT
@@ -585,7 +579,7 @@ async function attemptProcessStart(
 
     // Handle process errors more explicitly
     childProcess.on("error", (error) => {
-      if (outputStream && !outputStream.destroyed) {
+      if (!outputStream.destroyed) {
         outputStream.end();
       }
       // Explicitly reject readinessPromise if process errors out
@@ -608,9 +602,7 @@ async function attemptProcessStart(
     if (childProcess && !childProcess.killed) {
       childProcess.kill("SIGTERM");
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (!childProcess.killed) {
-        childProcess.kill("SIGKILL");
-      }
+      childProcess.kill("SIGKILL");
     }
     throw error;
   }

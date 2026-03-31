@@ -146,8 +146,8 @@ const hook: Hook<"command_not_found"> = async function (opts) {
         // Check if it's a missing arguments error
         const isMissingArgsError =
           err.message?.includes("Missing") &&
-          (err.message?.includes("required arg") ||
-            err.message?.includes("required flag"));
+          (err.message.includes("required arg") ||
+            err.message.includes("required flag"));
 
         // Get command details to show help if it's a missing args error
         if (isMissingArgsError) {
@@ -156,8 +156,8 @@ const hook: Hook<"command_not_found"> = async function (opts) {
             const cmd = config.findCommand(suggestion);
             if (cmd) {
               // Get command help
-              const commandHelp = cmd.load ? await cmd.load() : null;
-              if (commandHelp && commandHelp.id) {
+              const commandHelp = await cmd.load();
+              if (commandHelp.id) {
                 // Format usage to use spaces instead of colons
                 const usage = commandHelp.usage || commandHelp.id;
                 const formattedUsage =
@@ -179,10 +179,7 @@ const hook: Hook<"command_not_found"> = async function (opts) {
                 logFn("\nUSAGE");
                 logFn(`  $ ${binPrefix}${formattedUsage}`);
 
-                if (
-                  commandHelp.args &&
-                  Object.keys(commandHelp.args).length > 0
-                ) {
+                if (Object.keys(commandHelp.args).length > 0) {
                   logFn("\nARGUMENTS");
                   for (const [name, arg] of Object.entries(commandHelp.args)) {
                     logFn(`  ${name}  ${arg.description || ""}`);

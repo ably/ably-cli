@@ -252,7 +252,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
           recipientItems.map(({ entry }) => entry),
         );
 
-        const items = (response.items ?? []) as Record<string, unknown>[];
+        const items = response.items as Record<string, unknown>[];
         const failedWithIndex = items
           .map((item, i) => ({
             item,
@@ -321,7 +321,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
           channelBatchSpecs,
         );
 
-        const responseItems = (response.items ?? []) as BatchResponseItem[];
+        const responseItems = response.items as BatchResponseItem[];
         const failedWithIndex = responseItems
           .map((item, i) => ({
             item,
@@ -336,7 +336,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
 
         for (const { item, originalIndex } of failedWithIndex) {
           failedDetails.push(
-            `  Failed on ${formatResource(item.channel)}: ${item.error?.message} (code: ${item.error?.code})`,
+            `  Failed on ${formatResource(item.channel)}: ${String(item.error?.message)} (code: ${String(item.error?.code)})`,
           );
           failedItems.push({ ...item, originalIndex });
         }

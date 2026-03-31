@@ -49,17 +49,15 @@ describe("rooms:presence:subscribe command", () => {
       );
 
       // Simulate a presence event
-      if (presenceCallback) {
-        presenceCallback({
-          type: "enter",
-          member: {
-            clientId: "user-123",
-            connectionId: "conn-123",
-            data: { name: "Test User" },
-            updatedAt: new Date(),
-          },
-        });
-      }
+      presenceCallback!({
+        type: "enter",
+        member: {
+          clientId: "user-123",
+          connectionId: "conn-123",
+          data: { name: "Test User" },
+          updatedAt: new Date(),
+        },
+      });
 
       await commandPromise;
 

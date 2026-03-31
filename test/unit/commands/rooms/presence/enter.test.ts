@@ -119,28 +119,26 @@ describe("rooms:presence:enter command", () => {
       );
 
       // Simulate a self event (should be filtered out)
-      if (presenceCallback) {
-        presenceCallback({
-          type: "enter",
-          member: {
-            clientId: mock.clientId,
-            connectionId: "conn-self",
-            data: {},
-            updatedAt: new Date(),
-          },
-        });
+      presenceCallback!({
+        type: "enter",
+        member: {
+          clientId: mock.clientId,
+          connectionId: "conn-self",
+          data: {},
+          updatedAt: new Date(),
+        },
+      });
 
-        // Simulate another user's event (should be shown)
-        presenceCallback({
-          type: "enter",
-          member: {
-            clientId: "other-user",
-            connectionId: "conn-other",
-            data: {},
-            updatedAt: new Date(),
-          },
-        });
-      }
+      // Simulate another user's event (should be shown)
+      presenceCallback!({
+        type: "enter",
+        member: {
+          clientId: "other-user",
+          connectionId: "conn-other",
+          data: {},
+          updatedAt: new Date(),
+        },
+      });
 
       const { stdout } = await commandPromise;
       expect(stdout).toContain("other-user");

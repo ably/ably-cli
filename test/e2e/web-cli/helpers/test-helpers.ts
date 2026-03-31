@@ -29,7 +29,7 @@ export function setupConsoleCapture(page: Page): void {
     // Only log page errors that aren't rate limiting in CI
     if (
       !process.env.CI ||
-      !error.message?.includes("429") ||
+      !error.message.includes("429") ||
       process.env.VERBOSE_TESTS
     ) {
       console.error("[Page Error]", error);

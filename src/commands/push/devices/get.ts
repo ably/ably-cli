@@ -52,22 +52,20 @@ export default class PushDevicesGet extends AblyBaseCommand {
       this.log(formatSuccess(`Device ${formatResource(deviceId)} found.`));
       this.log("");
       this.log(`${formatLabel("Device ID")} ${device.id}`);
-      if (device.platform)
-        this.log(`${formatLabel("Platform")} ${device.platform}`);
-      if (device.formFactor)
-        this.log(`${formatLabel("Form Factor")} ${device.formFactor}`);
+      this.log(`${formatLabel("Platform")} ${device.platform}`);
+      this.log(`${formatLabel("Form Factor")} ${device.formFactor}`);
       if (device.clientId)
         this.log(`${formatLabel("Client ID")} ${device.clientId}`);
-      if (device.push?.state)
+      if (device.push.state)
         this.log(
           `${formatLabel("State")} ${formatDeviceState(device.push.state)}`,
         );
-      if (device.push?.recipient?.transportType) {
+      if (device.push.recipient?.transportType) {
         this.log(
           `${formatLabel("Transport Type")} ${device.push.recipient.transportType}`,
         );
       }
-      if (device.push?.recipient?.deviceToken) {
+      if (device.push.recipient?.deviceToken) {
         const token = device.push.recipient.deviceToken as string;
         const redacted =
           token.length > 8
@@ -75,7 +73,7 @@ export default class PushDevicesGet extends AblyBaseCommand {
             : "****(redacted)";
         this.log(`${formatLabel("Device Token")} ${redacted}`);
       }
-      if (device.push?.recipient?.targetUrl) {
+      if (device.push.recipient?.targetUrl) {
         this.log(
           `${formatLabel("Target URL")} ${device.push.recipient.targetUrl}`,
         );

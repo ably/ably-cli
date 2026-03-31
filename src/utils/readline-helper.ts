@@ -36,7 +36,7 @@ export async function runInquirerWithReadlineRestore<T>(
     return result;
   } finally {
     // Restore terminal settings
-    if (stdin.isTTY && isRaw !== undefined) {
+    if (stdin.isTTY) {
       stdin.setRawMode(isRaw);
     }
 

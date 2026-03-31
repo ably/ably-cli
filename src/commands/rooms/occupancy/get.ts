@@ -63,10 +63,10 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
       } else {
         this.log(`Occupancy metrics for room ${formatResource(roomName)}:\n`);
         this.log(
-          `${formatLabel("Connections")} ${occupancyMetrics.connections ?? 0}`,
+          `${formatLabel("Connections")} ${occupancyMetrics.connections}`,
         );
         this.log(
-          `${formatLabel("Presence Members")} ${occupancyMetrics.presenceMembers ?? 0}`,
+          `${formatLabel("Presence Members")} ${occupancyMetrics.presenceMembers}`,
         );
       }
     } catch (error) {

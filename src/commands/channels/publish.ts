@@ -220,7 +220,9 @@ export default class ChannelsPublish extends AblyBaseCommand {
       try {
         const publishResult = await publisher(message);
         publishedCount++;
-        const serial = publishResult?.serials?.[0] ?? undefined;
+        // publishResult is void | PublishResult — void when channels don't support serials
+        const serial = (publishResult as { serials?: string[] } | undefined)
+          ?.serials?.[0];
         const result = {
           index: messageIndex,
           message,

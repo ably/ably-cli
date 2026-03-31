@@ -80,7 +80,7 @@ export default class ChannelsUpdate extends AblyBaseCommand {
 
       const result = await channel.updateMessage(message, operation);
 
-      const versionSerial = result?.versionSerial;
+      const versionSerial = result.versionSerial;
 
       this.logCliEvent(
         flags,

@@ -107,9 +107,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
           const spaceChannel = (
             this.space as unknown as { channel: Ably.RealtimeChannel }
           ).channel;
-          if (spaceChannel) {
-            spaceChannel.presence.unsubscribe();
-          }
+          spaceChannel.presence.unsubscribe();
         } catch (error) {
           this.debug(
             `Space channel presence unsubscribe error: ${String(error)}`,
@@ -301,9 +299,6 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     const setupResult = await this.setupSpacesClient(flags, spaceName);
     this.realtimeClient = setupResult.realtimeClient;
     this.space = setupResult.space;
-    if (!this.realtimeClient || !this.space) {
-      this.fail("Failed to initialize clients or space", flags, "client");
-    }
 
     if (setupConnectionLogging) {
       this.setupConnectionStateLogging(this.realtimeClient, flags, {

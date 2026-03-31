@@ -67,7 +67,7 @@ export default class ChannelsAnnotationsGet extends AblyBaseCommand {
       const params: Ably.GetAnnotationsParams = { limit: flags.limit };
 
       const result = await channel.annotations.get(serial, params);
-      const annotations = result.items || [];
+      const annotations = result.items;
 
       this.logCliEvent(
         flags,
@@ -95,16 +95,13 @@ export default class ChannelsAnnotationsGet extends AblyBaseCommand {
 
         const displayAnnotations: AnnotationDisplayFields[] = annotations.map(
           (annotation, index) => {
-            const ts = annotation.timestamp ?? Date.now();
+            const ts = annotation.timestamp;
             return {
               id: annotation.id,
               timestamp: ts,
               channel: channelName,
               type: annotation.type,
-              action:
-                annotation.action === undefined
-                  ? undefined
-                  : String(annotation.action),
+              action: String(annotation.action),
               name: annotation.name,
               clientId: annotation.clientId,
               count: annotation.count,

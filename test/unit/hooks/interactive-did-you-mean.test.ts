@@ -186,9 +186,9 @@ describe("Did You Mean Hook - Interactive Mode", function () {
 
       // Should throw error with oclif exit code
       expect(thrownError).toBeDefined();
-      expect(thrownError?.message).toContain("Missing required arg: channel");
+      expect(thrownError.message).toContain("Missing required arg: channel");
       expect(
-        (thrownError as unknown as { oclif?: { exit?: number } })?.oclif?.exit,
+        (thrownError as unknown as { oclif?: { exit?: number } }).oclif?.exit,
       ).toBeDefined();
       expect(errorStub).not.toHaveBeenCalled();
 

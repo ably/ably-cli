@@ -245,7 +245,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
                       clientId: this.realtimeClient!.auth.clientId,
                       connectionId: this.realtimeClient!.connection.id,
                       position: { x: simulatedX, y: simulatedY },
-                      data: (cursorData.data as CursorData) ?? null,
+                      data: (cursorData.data as CursorData | undefined) ?? null,
                     },
                   },
                   flags,

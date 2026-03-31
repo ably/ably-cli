@@ -84,7 +84,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
       );
       room.typing.subscribe((typingSetEvent) => {
         const timestamp = new Date().toISOString();
-        const currentlyTyping = [...(typingSetEvent.currentlyTyping || [])];
+        const currentlyTyping = [...typingSetEvent.currentlyTyping];
         const eventData = {
           currentlyTyping,
           room: roomName,

@@ -216,7 +216,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         // Success response
-        const responseItems = response.items || [];
+        const responseItems = response.items;
 
         if (!this.shouldSuppressOutput(flags)) {
           if (this.shouldOutputJson(flags)) {
@@ -242,11 +242,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
         const responseData = response.items;
 
         // Handle the error response which could contain a batchResponse field
-        if (
-          responseData &&
-          typeof responseData === "object" &&
-          !Array.isArray(responseData)
-        ) {
+        if (typeof responseData === "object" && !Array.isArray(responseData)) {
           const errorInfo = responseData as ErrorInfo;
 
           if (
@@ -313,11 +309,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
         let errMsg = "Unknown error";
         let errorCode = response.statusCode;
 
-        if (
-          responseData &&
-          typeof responseData === "object" &&
-          !Array.isArray(responseData)
-        ) {
+        if (typeof responseData === "object" && !Array.isArray(responseData)) {
           const errorInfo = responseData as ErrorInfo;
           if (errorInfo.error) {
             errMsg = errorInfo.error.message || errMsg;

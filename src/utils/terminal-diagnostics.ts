@@ -57,7 +57,7 @@ export class TerminalDiagnostics {
     };
 
     // Try to get raw mode state
-    if (process.stdin.isTTY && process.stdin.isRaw !== undefined) {
+    if (process.stdin.isTTY) {
       state.stdin.rawMode = process.stdin.isRaw;
     }
 
@@ -106,22 +106,17 @@ export class TerminalDiagnostics {
         setRawMode?: (mode: boolean) => NodeJS.ReadStream;
       };
       const originalSetRawMode = stdinWithRaw.setRawMode;
-      if (originalSetRawMode) {
-        stdinWithRaw.setRawMode = function (mode: boolean): NodeJS.ReadStream {
-          TerminalDiagnostics.log(`setRawMode(${mode}) called`);
-          try {
-            const result = originalSetRawMode.call(this, mode);
-            TerminalDiagnostics.log(`setRawMode(${mode}) succeeded`);
-            return result;
-          } catch (error) {
-            TerminalDiagnostics.log(
-              `setRawMode(${mode}) failed`,
-              error as Error,
-            );
-            throw error;
-          }
-        };
-      }
+      stdinWithRaw.setRawMode = function (mode: boolean): NodeJS.ReadStream {
+        TerminalDiagnostics.log(`setRawMode(${mode}) called`);
+        try {
+          const result = originalSetRawMode.call(this, mode);
+          TerminalDiagnostics.log(`setRawMode(${mode}) succeeded`);
+          return result;
+        } catch (error) {
+          TerminalDiagnostics.log(`setRawMode(${mode}) failed`, error as Error);
+          throw error;
+        }
+      };
     }
   }
 }

@@ -72,8 +72,6 @@ describe("Control API E2E Workflow Tests", () => {
   });
 
   afterAll(async () => {
-    if (!controlApi) return;
-
     console.log("Cleaning up E2E test resources...");
 
     // Clean up in reverse order of dependencies

@@ -58,7 +58,7 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
   }
 
   afterEach(() => {
-    if (proc && !proc.killed) {
+    if (!proc.killed) {
       proc.kill("SIGTERM");
     }
   });
@@ -519,12 +519,9 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
         );
 
         let output = "";
-        let captureOutputFlag = true;
 
         proc.stdout?.on("data", (data) => {
-          if (captureOutputFlag) {
-            output += data.toString();
-          }
+          output += data.toString();
         });
 
         // Wait for initial prompt

@@ -166,25 +166,23 @@ export async function teardownWebServer(): Promise<void> {
       console.log("[Shared Setup] Tearing down web server...");
     }
 
-    if (webServerProcess) {
-      webServerProcess.kill("SIGTERM");
+    webServerProcess.kill("SIGTERM");
 
-      // Wait for process to exit
-      await new Promise<void>((resolve) => {
-        if (webServerProcess) {
-          webServerProcess.on("exit", () => resolve());
-          setTimeout(() => resolve(), 2000); // Timeout after 2s
-        } else {
-          resolve();
-        }
-      });
-
-      webServerProcess = null;
-      webServerUrl = null;
-      webServerPort = null;
-      if (!process.env.CI || process.env.VERBOSE_TESTS) {
-        console.log("[Shared Setup] Web server stopped.");
+    // Wait for process to exit
+    await new Promise<void>((resolve) => {
+      if (webServerProcess) {
+        webServerProcess.on("exit", () => resolve());
+        setTimeout(() => resolve(), 2000); // Timeout after 2s
+      } else {
+        resolve();
       }
+    });
+
+    webServerProcess = null;
+    webServerUrl = null;
+    webServerPort = null;
+    if (!process.env.CI || process.env.VERBOSE_TESTS) {
+      console.log("[Shared Setup] Web server stopped.");
     }
   })();
 

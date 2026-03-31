@@ -72,11 +72,9 @@ describe("rooms:occupancy:subscribe command", () => {
         { timeout: 1000 },
       );
 
-      if (occupancyCallback) {
-        occupancyCallback({
-          occupancy: { connections: 8, presenceMembers: 4 },
-        });
-      }
+      occupancyCallback!({
+        occupancy: { connections: 8, presenceMembers: 4 },
+      });
 
       await commandPromise;
       logSpy.mockRestore();

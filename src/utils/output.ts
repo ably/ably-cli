@@ -201,11 +201,7 @@ export function formatMessagesOutput(messages: MessageDisplayFields[]): string {
       }
     }
 
-    if (
-      msg.annotations &&
-      msg.annotations.summary &&
-      Object.keys(msg.annotations.summary).length > 0
-    ) {
+    if (msg.annotations && Object.keys(msg.annotations.summary).length > 0) {
       lines.push(`${formatLabel("Annotations")}`);
       for (const [annotationType, value] of Object.entries(
         msg.annotations.summary,

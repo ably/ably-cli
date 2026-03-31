@@ -496,12 +496,12 @@ export class TomlConfigManager implements ConfigManager {
     if (fs.existsSync(this.configPath)) {
       try {
         const configContent = fs.readFileSync(this.configPath, "utf8");
-        this.config = parse(configContent) as unknown as AblyConfig;
-
-        // Ensure config has the expected structure
-        if (!this.config.accounts) {
-          this.config.accounts = {};
-        }
+        // Parse returns unknown shape — accounts may be absent in fresh configs
+        const parsed = parse(configContent) as unknown as Partial<AblyConfig>;
+        this.config = {
+          ...parsed,
+          accounts: parsed.accounts ?? {},
+        };
 
         // Migrate old config format if needed - move app from current to account.currentAppId
         const legacyCurrent = this.config.current as

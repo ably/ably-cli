@@ -9,7 +9,8 @@ export function buildHistoryParams(flags: {
   limit?: number;
 }): Ably.RealtimeHistoryParams {
   const params: Ably.RealtimeHistoryParams = {
-    direction: (flags.direction as "backwards" | "forwards") || "backwards",
+    direction:
+      (flags.direction as "backwards" | "forwards" | undefined) ?? "backwards",
     limit: flags.limit,
   };
 

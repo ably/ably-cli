@@ -104,8 +104,8 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
           } else {
             const displayFields: PresenceDisplayFields = {
               id: presenceMessage.id,
-              timestamp: presenceMessage.timestamp ?? Date.now(),
-              action: presenceMessage.action || "unknown",
+              timestamp: presenceMessage.timestamp,
+              action: presenceMessage.action,
               channel: channelName,
               clientId: presenceMessage.clientId,
               connectionId: presenceMessage.connectionId,

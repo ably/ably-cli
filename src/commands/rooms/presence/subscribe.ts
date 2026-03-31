@@ -92,7 +92,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
 
       currentRoom.presence.subscribe((event: PresenceEvent) => {
         const member = event.member;
-        const timestamp = formatMessageTimestamp(member.updatedAt?.getTime());
+        const timestamp = formatMessageTimestamp(member.updatedAt.getTime());
         const presenceData = {
           action: event.type,
           room: this.roomName,

@@ -122,7 +122,7 @@ describe("Channel Subscribe E2E Tests", () => {
     } finally {
       // Cleanup is handled by afterEach hook
       console.log(
-        `[Test Subscribe] Test finished, cleanup will handle process ${subscribeProcessInfo?.processId}`,
+        `[Test Subscribe] Test finished, cleanup will handle process ${subscribeProcessInfo.processId}`,
       );
     }
   });

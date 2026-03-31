@@ -103,7 +103,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
           if (member.clientId !== this.chatClient?.clientId) {
             this.sequenceCounter++;
             const timestamp = formatMessageTimestamp(
-              member.updatedAt?.getTime(),
+              member.updatedAt.getTime(),
             );
             const presenceEvent = {
               action: event.type,
@@ -195,7 +195,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
         this.log(
           `${formatLabel("Connection ID")} ${this.chatClient.realtime.connection.id}`,
         );
-        if (this.data !== undefined && this.data !== null) {
+        if (this.data !== null) {
           this.log(`${formatLabel("Data")} ${JSON.stringify(this.data)}`);
         }
         this.log(

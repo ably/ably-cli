@@ -293,12 +293,12 @@ export function clearConnectingMessage(term: Terminal): void {
   const termAny = term as any;
   if (termAny._connectingLine !== undefined) {
     try {
-      const currentY = term.buffer?.active?.cursorY ?? 0;
-      const currentX = term.buffer?.active?.cursorX ?? 0;
+      const currentY = term.buffer.active.cursorY;
+      const currentX = term.buffer.active.cursorX;
       const connectingLine = termAny._connectingLine;
-      const bufferLength = term.buffer?.active?.length ?? 0;
-      const baseY = term.buffer?.active?.baseY ?? 0;
-      const viewportY = term.buffer?.active?.viewportY ?? 0;
+      const bufferLength = term.buffer.active.length;
+      const baseY = term.buffer.active.baseY;
+      const viewportY = term.buffer.active.viewportY;
 
       // Move to the connecting line and clear it
       term.write(`\u001B[${connectingLine + 1};1H`); // Move to line
@@ -323,11 +323,11 @@ export function showConnectingMessage(
   message: string = "Connecting to Ably CLI server...",
 ): void {
   try {
-    const cursorY = term.buffer?.active?.cursorY ?? 0;
-    const cursorX = term.buffer?.active?.cursorX ?? 0;
-    const bufferLength = term.buffer?.active?.length ?? 0;
-    const baseY = term.buffer?.active?.baseY ?? 0;
-    const viewportY = term.buffer?.active?.viewportY ?? 0;
+    const cursorY = term.buffer.active.cursorY;
+    const cursorX = term.buffer.active.cursorX;
+    const bufferLength = term.buffer.active.length;
+    const baseY = term.buffer.active.baseY;
+    const viewportY = term.buffer.active.viewportY;
 
     term.writeln(message);
 

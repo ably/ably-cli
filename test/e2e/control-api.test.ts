@@ -45,8 +45,6 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
     });
 
     afterAll(async function () {
-      if (!controlApi) return;
-
       console.log("Cleaning up created resources...");
 
       // Clean up in reverse order of dependencies

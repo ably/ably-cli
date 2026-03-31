@@ -48,11 +48,9 @@ describe("rooms:typing:subscribe command", () => {
       );
 
       // Simulate a typing event
-      if (typingCallback) {
-        typingCallback({
-          currentlyTyping: new Set(["user1", "user2"]),
-        });
-      }
+      typingCallback!({
+        currentlyTyping: new Set(["user1", "user2"]),
+      });
 
       // Give time for output to be generated
 

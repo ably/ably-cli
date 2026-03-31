@@ -11,7 +11,7 @@ import { formatProgress, formatSuccess } from "../utils/output.js";
 import { getCliVersion } from "../utils/version.js";
 
 interface StatusResponse {
-  status: boolean;
+  status?: boolean;
 }
 
 export default class StatusCommand extends AblyBaseCommand {
@@ -55,9 +55,7 @@ export default class StatusCommand extends AblyBaseCommand {
 
       if (data.status === undefined) {
         this.fail(
-          new Error(
-            "Invalid response from status endpoint: status attribute is missing",
-          ),
+          "Invalid response from status endpoint: status attribute is missing",
           flags as BaseFlags,
           "status",
         );

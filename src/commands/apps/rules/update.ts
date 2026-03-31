@@ -104,7 +104,22 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(RulesUpdateCommand);
+    const { args, flags: rawFlags } = await this.parse(RulesUpdateCommand);
+
+    // allowNo flags are typed as `boolean` by oclif but are actually `boolean | undefined` at runtime
+    type AllowNoFlags =
+      | "authenticated"
+      | "batching-enabled"
+      | "conflation-enabled"
+      | "expose-time-serial"
+      | "mutable-messages"
+      | "persist-last"
+      | "persisted"
+      | "populate-channel-registry"
+      | "push-enabled"
+      | "tls-only";
+    const flags = rawFlags as Omit<typeof rawFlags, AllowNoFlags> &
+      Record<AllowNoFlags, boolean | undefined>;
 
     const appId = await this.requireAppId(flags);
 

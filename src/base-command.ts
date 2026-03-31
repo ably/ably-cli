@@ -519,7 +519,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       // Handle any synchronous errors when creating the client
       const err = error as { code?: number } & Error; // Type assertion
       if (
-        (err.code === 40_100 || err.message?.includes("invalid key")) && // Unauthorized or invalid key format
+        (err.code === 40_100 || err.message.includes("invalid key")) && // Unauthorized or invalid key format
         flags["api-key"]
       ) {
         // Provided key is invalid - reset it
@@ -1307,9 +1307,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       : timeoutMs;
 
     return new Promise((resolve, reject) => {
-      let cleanupTimedOut = false;
       const timeout = setTimeout(() => {
-        cleanupTimedOut = true;
         // Log timeout only if not in JSON mode
         if (!this.shouldOutputJson({})) {
           // TODO: Pass actual flags here
@@ -1334,10 +1332,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           // For now, we just log it
         } finally {
           clearTimeout(timeout);
-          // Only resolve if the timeout didn't already reject
-          if (!cleanupTimedOut) {
-            resolve();
-          }
+          resolve();
         }
       })();
     });
@@ -1501,7 +1496,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     value: string,
     flagName: string,
     flags: BaseFlags = {},
-  ): Record<string, unknown> {
+  ): unknown {
     const trimmed = value.trim();
     try {
       return JSON.parse(trimmed);
@@ -1541,9 +1536,13 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   ): Record<string, unknown> {
     const parsed = this.parseJsonFlag(value, flagName, flags);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      this.fail(`${flagName} must be a JSON object`, flags, "parse");
+      this.fail(
+        `${flagName} must be a JSON object, not ${Array.isArray(parsed) ? "an array" : typeof parsed}`,
+        flags,
+        "parse",
+      );
     }
-    return parsed;
+    return parsed as Record<string, unknown>;
   }
 
   /**

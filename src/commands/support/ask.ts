@@ -113,7 +113,7 @@ export default class AskCommand extends ControlBaseCommand {
         this.log(formattedAnswer);
 
         // Display the links section if there are links
-        if (response.links && response.links.length > 0) {
+        if (response.links.length > 0) {
           this.log("");
           this.log(chalk.bold("Helpful Links:"));
           for (const [index, link] of response.links.entries()) {

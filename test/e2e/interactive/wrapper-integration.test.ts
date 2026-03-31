@@ -248,7 +248,7 @@ describe("Interactive Mode - Wrapper Integration", () => {
         const errors: string[] = [];
         let promptCount = 0;
 
-        proc.stdout?.on("data", (data) => {
+        proc.stdout.on("data", (data) => {
           const text = data.toString();
           output += text;
 
@@ -259,7 +259,7 @@ describe("Interactive Mode - Wrapper Integration", () => {
           }
         });
 
-        proc.stderr?.on("data", (data) => {
+        proc.stderr.on("data", (data) => {
           const text = data.toString();
           output += text;
 
@@ -364,11 +364,11 @@ describe("Interactive Mode - Wrapper Integration", () => {
         let errorOccurred = false;
         const errorMessages: string[] = [];
 
-        proc.stdout?.on("data", (data) => {
+        proc.stdout.on("data", (data) => {
           output += data.toString();
         });
 
-        proc.stderr?.on("data", (data) => {
+        proc.stderr.on("data", (data) => {
           const text = data.toString();
           output += text;
 

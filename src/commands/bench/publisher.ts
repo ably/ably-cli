@@ -901,9 +901,7 @@ export default class BenchPublisher extends AblyBaseCommand {
     this.log(progressDisplay.toString());
     this.log("\n--- Logs (Last 10) ---");
     intervalId = setInterval(() => {
-      if (progressDisplay) {
-        this.updateProgressAndLogs(metrics, progressDisplay, messageCount);
-      }
+      this.updateProgressAndLogs(metrics, progressDisplay, messageCount);
     }, 500);
 
     return { intervalId, progressDisplay };
