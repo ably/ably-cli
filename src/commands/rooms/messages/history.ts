@@ -165,7 +165,7 @@ export default class MessagesHistory extends ChatBaseCommand {
             messages: items.map((message) => ({
               clientId: message.clientId,
               text: message.text,
-              timestamp: message.timestamp,
+              timestamp: message.timestamp.toISOString(),
               serial: message.serial,
               action: String(message.action),
               ...(message.metadata ? { metadata: message.metadata } : {}),

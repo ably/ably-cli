@@ -19,7 +19,7 @@ import {
 interface ChatMessage {
   clientId: string;
   text: string;
-  timestamp: number | Date; // Support both timestamp types
+  timestamp: string;
   serial: string;
   action: string;
   metadata?: Record<string, unknown>;
@@ -100,7 +100,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       const messageLog: ChatMessage = {
         clientId: message.clientId,
         text: message.text,
-        timestamp: message.timestamp,
+        timestamp: message.timestamp.toISOString(),
         serial: message.serial,
         action: String(messageEvent.type),
         ...(message.metadata ? { metadata: message.metadata } : {}),

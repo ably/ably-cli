@@ -9,7 +9,6 @@ import {
   formatHeading,
   formatIndex,
   formatLabel,
-  formatMessageTimestamp,
   formatProgress,
   formatResource,
 } from "../../utils/output.js";
@@ -116,7 +115,10 @@ export default class SpacesGet extends SpacesBaseCommand {
           isConnected: action !== "leave" && action !== "absent",
           profileData: item.data?.profileUpdate?.current ?? null,
           location: item.data?.locationUpdate?.current ?? null,
-          lastEvent: { name: action, timestamp: item.timestamp },
+          lastEvent: {
+            name: action,
+            timestamp: new Date(item.timestamp).toISOString(),
+          },
         };
       });
 
@@ -163,7 +165,7 @@ export default class SpacesGet extends SpacesBaseCommand {
             `  ${formatLabel("Last Event")} ${formatEventType(member.lastEvent.name)}`,
           );
           this.log(
-            `  ${formatLabel("Event Timestamp")} ${formatMessageTimestamp(member.lastEvent.timestamp)}`,
+            `  ${formatLabel("Event Timestamp")} ${member.lastEvent.timestamp}`,
           );
           this.log("");
         }
