@@ -230,14 +230,14 @@ describe("Channel E2E Tests", () => {
     // Enhanced diagnostic error messages
     expect(publishResult.exitCode).toBe(0);
 
-    if (!publishResult.stdout || publishResult.stdout.trim() === "") {
+    if (!publishResult.stderr || publishResult.stderr.trim() === "") {
       throw new Error(
         `Publish command returned empty stderr. Exit code: ${publishResult.exitCode}, Stderr: ${publishResult.stderr}, Stdout length: ${publishResult.stdout.length}`,
       );
     }
 
-    expect(publishResult.stdout).toContain(`Message published to channel`);
-    expect(publishResult.stdout).toContain(uniqueChannel);
+    expect(publishResult.stderr).toContain(`Message published to channel`);
+    expect(publishResult.stderr).toContain(uniqueChannel);
 
     // Add a delay to ensure message is stored and available in history
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -406,13 +406,13 @@ describe("Channel E2E Tests", () => {
     // Enhanced diagnostic error messages
     expect(batchPublishResult.exitCode).toBe(0);
 
-    if (!batchPublishResult.stdout || batchPublishResult.stdout.trim() === "") {
+    if (!batchPublishResult.stderr || batchPublishResult.stderr.trim() === "") {
       throw new Error(
         `Batch publish command returned empty stderr. Exit code: ${batchPublishResult.exitCode}, Stderr: ${batchPublishResult.stderr}, Stdout length: ${batchPublishResult.stdout.length}`,
       );
     }
 
-    expect(batchPublishResult.stdout).toContain("Batch publish successful");
+    expect(batchPublishResult.stderr).toContain("Batch publish successful");
 
     // Add a delay to ensure message is stored and available in history
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -475,25 +475,25 @@ describe("Channel E2E Tests", () => {
     // Enhanced diagnostic error messages
     expect(countPublishResult.exitCode).toBe(0);
 
-    if (!countPublishResult.stdout || countPublishResult.stdout.trim() === "") {
+    if (!countPublishResult.stderr || countPublishResult.stderr.trim() === "") {
       throw new Error(
         `Count publish command returned empty stderr. Exit code: ${countPublishResult.exitCode}, Stderr: ${countPublishResult.stderr}, Stdout length: ${countPublishResult.stdout.length}`,
       );
     }
 
-    expect(countPublishResult.stdout).toContain(
+    expect(countPublishResult.stderr).toContain(
       "Message 1 published to channel",
     );
-    expect(countPublishResult.stdout).toContain(
+    expect(countPublishResult.stderr).toContain(
       "Message 2 published to channel",
     );
-    expect(countPublishResult.stdout).toContain(
+    expect(countPublishResult.stderr).toContain(
       "Message 3 published to channel",
     );
-    expect(countPublishResult.stdout).toContain(
+    expect(countPublishResult.stderr).toContain(
       "3/3 messages published to channel",
     );
-    expect(countPublishResult.stdout).toContain(countChannel);
+    expect(countPublishResult.stderr).toContain(countChannel);
 
     // Add a delay to ensure messages are stored and available in history
     await new Promise((resolve) => setTimeout(resolve, 2000));

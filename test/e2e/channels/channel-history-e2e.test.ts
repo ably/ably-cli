@@ -88,15 +88,15 @@ describe("Channel History E2E Tests", () => {
 
       expect(publishResult.exitCode).toBe(0);
 
-      // Check if publish stdout is empty and provide diagnostic info
-      if (!publishResult.stdout || publishResult.stdout.trim() === "") {
+      // Check if publish stderr is empty and provide diagnostic info
+      if (!publishResult.stderr || publishResult.stderr.trim() === "") {
         throw new Error(
-          `Publish command returned empty output. Exit code: ${publishResult.exitCode}, stderr: "${publishResult.stderr}", stdout: "${publishResult.stdout}"`,
+          `Publish command returned empty stderr. Exit code: ${publishResult.exitCode}, stderr: "${publishResult.stderr}", stdout: "${publishResult.stdout}"`,
         );
       }
 
-      expect(publishResult.stdout).toContain(`Message published to channel`);
-      expect(publishResult.stdout).toContain(historyChannel);
+      expect(publishResult.stderr).toContain(`Message published to channel`);
+      expect(publishResult.stderr).toContain(historyChannel);
     }
 
     // Add a delay to ensure messages are stored

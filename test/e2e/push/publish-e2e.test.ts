@@ -18,6 +18,7 @@ import {
   createAblyClient,
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
+import { parseNdjsonLines } from "../../helpers/ndjson.js";
 
 describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
   let testDeviceId: string;
@@ -87,7 +88,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
       );
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("published");
+      expect(result.stderr).toContain("published");
     });
 
     it("should publish with JSON output", async () => {
@@ -111,10 +112,16 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
 
       expect(result.exitCode).toBe(0);
 
-      const json = JSON.parse(result.stdout);
-      expect(json.success).toBe(true);
-      expect(json.notification.published).toBe(true);
-      expect(json.notification.recipient.deviceId).toBe(testDeviceId);
+      const records = parseNdjsonLines(result.stdout);
+      const json = records.find((r) => r.type === "result");
+      expect(json).toBeDefined();
+      expect(json!.success).toBe(true);
+      expect((json!.notification as Record<string, unknown>).published).toBe(
+        true,
+      );
+      expect((json!.notification as Record<string, unknown>).recipient).toEqual(
+        expect.objectContaining({ deviceId: testDeviceId }),
+      );
     });
 
     it("should publish with custom data payload", async () => {
@@ -138,7 +145,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
       );
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("published");
+      expect(result.stderr).toContain("published");
     });
 
     it("should publish with full payload", async () => {
@@ -161,7 +168,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
       );
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("published");
+      expect(result.stderr).toContain("published");
     });
 
     it("should publish to a client ID", async () => {
@@ -183,7 +190,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
       );
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("published");
+      expect(result.stderr).toContain("published");
     });
 
     it("should error when neither device-id nor client-id provided", async () => {
@@ -257,7 +264,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
       );
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("published");
+      expect(result.stderr).toContain("published");
     });
 
     it("should batch publish with JSON output", async () => {
@@ -278,9 +285,13 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Publish E2E Tests", () => {
 
       expect(result.exitCode).toBe(0);
 
-      const json = JSON.parse(result.stdout);
-      expect(json.publish.total).toBe(1);
-      expect(json.publish.succeeded).toBeDefined();
+      const records = parseNdjsonLines(result.stdout);
+      const json = records.find((r) => r.type === "result");
+      expect(json).toBeDefined();
+      expect((json!.publish as Record<string, unknown>).total).toBe(1);
+      expect(
+        (json!.publish as Record<string, unknown>).succeeded,
+      ).toBeDefined();
     });
 
     it("should error with invalid batch payload format", async () => {

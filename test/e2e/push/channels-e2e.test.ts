@@ -18,6 +18,7 @@ import {
   createAblyClient,
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
+import { parseNdjsonLines } from "../../helpers/ndjson.js";
 
 describe.skipIf(SHOULD_SKIP_E2E)("Push Channel Subscriptions E2E Tests", () => {
   let testDeviceIdBase: string;
@@ -131,7 +132,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Channel Subscriptions E2E Tests", () => {
       expect(result.exitCode).toBe(0);
       // Output is either "Found N channels." or "No channels with push subscriptions found."
       expect(
-        result.stdout.includes("Found") ||
+        result.stderr.includes("Found") ||
           result.stdout.includes("No channels"),
       ).toBe(true);
     });
@@ -147,9 +148,11 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Channel Subscriptions E2E Tests", () => {
 
       expect(result.exitCode).toBe(0);
 
-      const json = JSON.parse(result.stdout);
-      expect(json.success).toBe(true);
-      expect(json.channels).toBeInstanceOf(Array);
+      const records = parseNdjsonLines(result.stdout);
+      const json = records.find((r) => r.type === "result");
+      expect(json).toBeDefined();
+      expect(json!.success).toBe(true);
+      expect(json!.channels).toBeInstanceOf(Array);
     });
   });
 

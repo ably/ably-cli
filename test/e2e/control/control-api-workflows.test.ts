@@ -18,6 +18,7 @@ import {
   resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
+import { parseNdjsonLines } from "../../helpers/ndjson.js";
 
 describe("Control API E2E Workflow Tests", () => {
   let controlApi: ControlApi;
@@ -161,12 +162,17 @@ describe("Control API E2E Workflow Tests", () => {
         );
 
         expect(createResult.exitCode).toBe(0);
-        const createOutput = JSON.parse(createResult.stdout);
+        const createRecords = parseNdjsonLines(createResult.stdout);
+        const createOutput = createRecords.find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
+        expect(createOutput).toBeDefined();
         expect(createOutput).toHaveProperty("app");
-        expect(createOutput.app).toHaveProperty("id");
-        expect(createOutput.app).toHaveProperty("name", appName);
+        const createdApp = createOutput.app as Record<string, unknown>;
+        expect(createdApp).toHaveProperty("id");
+        expect(createdApp).toHaveProperty("name", appName);
 
-        const appId = createOutput.app.id;
+        const appId = createdApp.id as string;
         createdResources.apps.push(appId);
 
         // 2. List apps and verify our app is included
@@ -202,11 +208,20 @@ describe("Control API E2E Workflow Tests", () => {
           },
         );
 
-        expect(updateResult.stderr).toBe("");
-        const updateOutput = JSON.parse(updateResult.stdout);
+        const updateRecords = parseNdjsonLines(updateResult.stdout);
+        const updateOutput = updateRecords.find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
+        expect(updateOutput).toBeDefined();
         expect(updateOutput).toHaveProperty("app");
-        expect(updateOutput.app).toHaveProperty("name", updatedName);
-        expect(updateOutput.app).toHaveProperty("tlsOnly", true);
+        expect(updateOutput.app as Record<string, unknown>).toHaveProperty(
+          "name",
+          updatedName,
+        );
+        expect(updateOutput.app as Record<string, unknown>).toHaveProperty(
+          "tlsOnly",
+          true,
+        );
       },
     );
   });
@@ -226,8 +241,10 @@ describe("Control API E2E Workflow Tests", () => {
         },
       );
 
-      const result = JSON.parse(createResult.stdout);
-      testAppId = result.app.id;
+      const result = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
+      testAppId = (result.app as Record<string, unknown>).id as string;
     });
 
     afterAll(async () => {
@@ -265,10 +282,16 @@ describe("Control API E2E Workflow Tests", () => {
         },
       );
 
-      const result = JSON.parse(createResult.stdout);
+      const result = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("success", true);
-      expect(result.key).toHaveProperty("name", keyName);
-      expect(result.key).toHaveProperty("key");
+      expect(result.key as Record<string, unknown>).toHaveProperty(
+        "name",
+        keyName,
+      );
+      expect(result.key as Record<string, unknown>).toHaveProperty("key");
     });
 
     it("should list API keys", async () => {
@@ -305,8 +328,10 @@ describe("Control API E2E Workflow Tests", () => {
         },
       );
 
-      const result = JSON.parse(createResult.stdout);
-      testAppId = result.app.id;
+      const result = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
+      testAppId = (result.app as Record<string, unknown>).id as string;
     });
 
     afterAll(async () => {
@@ -394,8 +419,7 @@ describe("Control API E2E Workflow Tests", () => {
         },
       );
 
-      expect(deleteResult.stderr).toBe("");
-      expect(deleteResult.stdout).toContain("deleted successfully");
+      expect(deleteResult.stderr).toContain("deleted");
 
       // Remove from cleanup list since we deleted it
       const index = createdResources.queues.indexOf(queueName);
@@ -420,8 +444,10 @@ describe("Control API E2E Workflow Tests", () => {
         },
       );
 
-      const result = JSON.parse(createResult.stdout);
-      testAppId = result.app.id;
+      const result = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
+      testAppId = (result.app as Record<string, unknown>).id as string;
     });
 
     afterAll(async () => {
@@ -504,8 +530,10 @@ describe("Control API E2E Workflow Tests", () => {
         },
       );
 
-      const result = JSON.parse(createResult.stdout);
-      testAppId = result.app.id;
+      const result = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
+      testAppId = (result.app as Record<string, unknown>).id as string;
     });
 
     afterAll(async () => {
@@ -688,8 +716,7 @@ describe("Control API E2E Workflow Tests", () => {
         },
       );
 
-      expect(deleteResult.stderr).toBe("");
-      expect(deleteResult.stdout).toContain("deleted successfully");
+      expect(deleteResult.stderr).toContain("deleted");
 
       // 3. Verify the rule is gone by listing
       const listResult = await runCommand(
@@ -780,8 +807,10 @@ describe("Control API E2E Workflow Tests", () => {
           },
         );
 
-        const appOutput = JSON.parse(createAppResult.stdout);
-        const appId = appOutput.app.id;
+        const appOutput = parseNdjsonLines(createAppResult.stdout).find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
+        const appId = (appOutput.app as Record<string, unknown>).id as string;
         createdResources.apps.push(appId);
 
         // 2. Create API key
@@ -801,8 +830,10 @@ describe("Control API E2E Workflow Tests", () => {
           },
         );
 
-        const keyOutput = JSON.parse(createKeyResult.stdout);
-        const keyId = keyOutput.key.id;
+        const keyOutput = parseNdjsonLines(createKeyResult.stdout).find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
+        const keyId = (keyOutput.key as Record<string, unknown>).id as string;
         createdResources.keys.push(keyId);
 
         // 3. Create queue

@@ -18,6 +18,7 @@ import {
   createAblyClient,
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
+import { parseNdjsonLines } from "../../helpers/ndjson.js";
 
 describe.skipIf(SHOULD_SKIP_E2E)("Push Devices E2E Tests", () => {
   let testDeviceIdBase: string;
@@ -78,8 +79,8 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Devices E2E Tests", () => {
       );
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("Device registration saved");
-      expect(result.stdout).toContain(deviceId);
+      expect(result.stderr).toContain("Device registration saved");
+      expect(result.stderr).toContain(deviceId);
 
       // Verify with SDK
       const device = await client.push.admin.deviceRegistrations.get(deviceId);
@@ -119,7 +120,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Devices E2E Tests", () => {
       );
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("Device registration saved");
+      expect(result.stderr).toContain("Device registration saved");
 
       // Cleanup
       await client.push.admin.deviceRegistrations.remove(deviceId);
@@ -154,11 +155,15 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Devices E2E Tests", () => {
 
       expect(result.exitCode).toBe(0);
 
-      const json = JSON.parse(result.stdout);
-      expect(json.success).toBe(true);
-      expect(json.device).toBeDefined();
-      expect(json.device.id).toBe(deviceId);
-      expect(json.device.platform).toBe("android");
+      const records = parseNdjsonLines(result.stdout);
+      const json = records.find((r) => r.type === "result");
+      expect(json).toBeDefined();
+      expect(json!.success).toBe(true);
+      expect(json!.device as Record<string, unknown>).toBeDefined();
+      expect((json!.device as Record<string, unknown>).id).toBe(deviceId);
+      expect((json!.device as Record<string, unknown>).platform).toBe(
+        "android",
+      );
 
       // Cleanup
       await client.push.admin.deviceRegistrations.remove(deviceId);
@@ -222,12 +227,15 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Devices E2E Tests", () => {
 
       expect(result.exitCode).toBe(0);
 
-      const json = JSON.parse(result.stdout);
-      expect(json.success).toBe(true);
-      expect(json.device).toBeDefined();
-      expect(json.device.id).toBe(testDeviceId);
-      expect(json.device.platform).toBe("android");
-      expect(json.device.clientId).toBe("e2e-get-test-user");
+      const records = parseNdjsonLines(result.stdout);
+      const json = records.find((r) => r.type === "result");
+      expect(json).toBeDefined();
+      expect(json!.success).toBe(true);
+      const device = json!.device as Record<string, unknown>;
+      expect(device).toBeDefined();
+      expect(device.id).toBe(testDeviceId);
+      expect(device.platform).toBe("android");
+      expect(device.clientId).toBe("e2e-get-test-user");
     });
 
     it("should handle non-existent device", async () => {
@@ -289,8 +297,8 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Devices E2E Tests", () => {
       });
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("Found");
-      expect(result.stdout).toContain("device");
+      expect(result.stderr).toContain("Found");
+      expect(result.stderr).toContain("device");
     });
 
     it("should filter by client ID", async () => {
@@ -327,10 +335,12 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Devices E2E Tests", () => {
 
       expect(result.exitCode).toBe(0);
 
-      const json = JSON.parse(result.stdout);
-      expect(json.success).toBe(true);
-      expect(json.devices).toBeInstanceOf(Array);
-      expect(json.devices.length).toBeGreaterThanOrEqual(3);
+      const records = parseNdjsonLines(result.stdout);
+      const json = records.find((r) => r.type === "result");
+      expect(json).toBeDefined();
+      expect(json!.success).toBe(true);
+      expect(json!.devices).toBeInstanceOf(Array);
+      expect((json!.devices as unknown[]).length).toBeGreaterThanOrEqual(3);
     });
 
     it("should respect --limit flag", async () => {
@@ -353,8 +363,10 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Devices E2E Tests", () => {
 
       expect(result.exitCode).toBe(0);
 
-      const json = JSON.parse(result.stdout);
-      expect(json.devices.length).toBeLessThanOrEqual(2);
+      const records = parseNdjsonLines(result.stdout);
+      const json = records.find((r) => r.type === "result");
+      expect(json).toBeDefined();
+      expect((json!.devices as unknown[]).length).toBeLessThanOrEqual(2);
     });
   });
 
@@ -385,8 +397,8 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Devices E2E Tests", () => {
       );
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("removed");
-      expect(result.stdout).toContain(deviceId);
+      expect(result.stderr).toContain("removed");
+      expect(result.stderr).toContain(deviceId);
 
       // Verify device is gone
       await expect(
@@ -420,10 +432,12 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Devices E2E Tests", () => {
 
       expect(result.exitCode).toBe(0);
 
-      const json = JSON.parse(result.stdout);
-      expect(json.success).toBe(true);
-      expect(json.device.removed).toBe(true);
-      expect(json.device.id).toBe(deviceId);
+      const records = parseNdjsonLines(result.stdout);
+      const json = records.find((r) => r.type === "result");
+      expect(json).toBeDefined();
+      expect(json!.success).toBe(true);
+      expect((json!.device as Record<string, unknown>).removed).toBe(true);
+      expect((json!.device as Record<string, unknown>).id).toBe(deviceId);
     });
   });
 
@@ -468,7 +482,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Devices E2E Tests", () => {
       );
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("removed");
+      expect(result.stderr).toContain("removed");
 
       // Verify all devices are gone
       for (const deviceId of deviceIds) {

@@ -8,6 +8,7 @@ import {
   expect,
 } from "vitest";
 import { runCommand } from "../../helpers/command-helpers.js";
+import { parseNdjsonLines } from "../../helpers/ndjson.js";
 import {
   forceExit,
   cleanupTrackedResources,
@@ -57,7 +58,7 @@ describe("Connections E2E Tests", () => {
         );
 
         expect(result.exitCode).toBe(0);
-        expect(result.stdout).toContain("WebSocket connection");
+        expect(result.stderr).toContain("WebSocket connection");
       },
     );
 
@@ -76,7 +77,7 @@ describe("Connections E2E Tests", () => {
         );
 
         expect(result.exitCode).toBe(0);
-        expect(result.stdout).toContain("HTTP connection");
+        expect(result.stderr).toContain("HTTP connection");
       },
     );
 
@@ -113,13 +114,10 @@ describe("Connections E2E Tests", () => {
 
         expect(result.exitCode).toBe(0);
 
-        // Verify it's valid JSON
-        let jsonOutput;
-        try {
-          jsonOutput = JSON.parse(result.stdout);
-        } catch {
-          throw new Error(`Invalid JSON output: ${result.stdout}`);
-        }
+        // Parse NDJSON output — find the result record
+        const records = parseNdjsonLines(result.stdout);
+        const jsonOutput = records.find((r) => r.type === "result");
+        expect(jsonOutput).toBeDefined();
 
         // Check for expected test result structure
         expect(jsonOutput).toHaveProperty("success");
