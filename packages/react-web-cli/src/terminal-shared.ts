@@ -98,14 +98,6 @@ export function filterDockerHandshake(
 }
 
 /**
- * Checks if a string contains Docker handshake markers (legacy function for compatibility)
- * Note: This only works for complete chunks and is kept for backward compatibility
- */
-export function isHijackMetaChunk(txt: string): boolean {
-  return /"stream"\s*:\s*true/.test(txt) || /"hijack"\s*:\s*true/.test(txt);
-}
-
-/**
  * Terminal configuration shared between primary and secondary terminals
  */
 export const SHARED_TERMINAL_CONFIG = {
@@ -296,9 +288,6 @@ export function clearConnectingMessage(term: Terminal): void {
       const currentY = term.buffer.active.cursorY;
       const currentX = term.buffer.active.cursorX;
       const connectingLine = termAny._connectingLine;
-      const bufferLength = term.buffer.active.length;
-      const baseY = term.buffer.active.baseY;
-      const viewportY = term.buffer.active.viewportY;
 
       // Move to the connecting line and clear it
       term.write(`\u001B[${connectingLine + 1};1H`); // Move to line
@@ -324,10 +313,6 @@ export function showConnectingMessage(
 ): void {
   try {
     const cursorY = term.buffer.active.cursorY;
-    const cursorX = term.buffer.active.cursorX;
-    const bufferLength = term.buffer.active.length;
-    const baseY = term.buffer.active.baseY;
-    const viewportY = term.buffer.active.viewportY;
 
     term.writeln(message);
 

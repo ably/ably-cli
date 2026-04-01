@@ -1,5 +1,5 @@
 import React from "react";
-import { render, act, waitFor } from "@testing-library/react";
+import { render, act } from "@testing-library/react";
 import { describe, vi, test, expect, beforeEach } from "vitest";
 import { AblyCliTerminal } from "./AblyCliTerminal";
 
