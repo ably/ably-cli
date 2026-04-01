@@ -107,6 +107,40 @@ describe("CommandError", () => {
       expect(result.cause).toBeUndefined();
     });
 
+    it("should extract message and code from plain error object", () => {
+      const plainError = { message: "Invalid message format", code: 40000 };
+      const result = CommandError.from(plainError);
+      expect(result.message).toBe("Invalid message format");
+      expect(result.code).toBe(40000);
+      expect(result.statusCode).toBeUndefined();
+    });
+
+    it("should extract message, code, and statusCode from plain error object", () => {
+      const plainError = {
+        message: "Unauthorized",
+        code: 40101,
+        statusCode: 401,
+      };
+      const result = CommandError.from(plainError);
+      expect(result.message).toBe("Unauthorized");
+      expect(result.code).toBe(40101);
+      expect(result.statusCode).toBe(401);
+    });
+
+    it("should handle plain object with message only", () => {
+      const plainError = { message: "Something went wrong" };
+      const result = CommandError.from(plainError);
+      expect(result.message).toBe("Something went wrong");
+      expect(result.code).toBeUndefined();
+      expect(result.statusCode).toBeUndefined();
+    });
+
+    it("should not treat objects without message as plain error objects", () => {
+      const notAnError = { code: 123, data: "test" };
+      const result = CommandError.from(notAnError);
+      expect(result.message).toBe("[object Object]");
+    });
+
     it("should wrap unknown values via String()", () => {
       const result = CommandError.from(42);
       expect(result.message).toBe("42");
@@ -182,6 +216,67 @@ describe("CommandError", () => {
       });
       const result = CommandError.from(ablyError);
       expect(result.context.helpUrl).toBeUndefined();
+    });
+  });
+
+  describe("fromHttpResponse()", () => {
+    it("should extract errorCode, errorMessage, and statusCode", () => {
+      const response = {
+        statusCode: 401,
+        errorCode: 40101,
+        errorMessage: "Invalid credentials",
+      };
+      const result = CommandError.fromHttpResponse(
+        response,
+        "Failed to list channels",
+      );
+      expect(result.message).toBe("Invalid credentials");
+      expect(result.code).toBe(40101);
+      expect(result.statusCode).toBe(401);
+    });
+
+    it("should fall back to action message when errorMessage is empty", () => {
+      const response = {
+        statusCode: 500,
+        errorCode: 0,
+        errorMessage: "",
+      };
+      const result = CommandError.fromHttpResponse(
+        response,
+        "Failed to list spaces",
+      );
+      expect(result.message).toBe("Failed to list spaces (status 500)");
+      expect(result.code).toBeUndefined();
+      expect(result.statusCode).toBe(500);
+    });
+
+    it("should set code to undefined when errorCode is 0", () => {
+      const response = {
+        statusCode: 500,
+        errorCode: 0,
+        errorMessage: "Internal server error",
+      };
+      const result = CommandError.fromHttpResponse(
+        response,
+        "Failed to list rooms",
+      );
+      expect(result.message).toBe("Internal server error");
+      expect(result.code).toBeUndefined();
+      expect(result.statusCode).toBe(500);
+    });
+
+    it("should preserve non-zero errorCode", () => {
+      const response = {
+        statusCode: 403,
+        errorCode: 40160,
+        errorMessage: "Action not permitted",
+      };
+      const result = CommandError.fromHttpResponse(
+        response,
+        "Failed to fetch space",
+      );
+      expect(result.code).toBe(40160);
+      expect(result.statusCode).toBe(403);
     });
   });
 

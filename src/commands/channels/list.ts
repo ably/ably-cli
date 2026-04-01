@@ -1,5 +1,6 @@
 import { Flags } from "@oclif/core";
 import { AblyBaseCommand } from "../../base-command.js";
+import { CommandError } from "../../errors/command-error.js";
 import { productApiFlags } from "../../flags.js";
 import {
   formatCountLabel,
@@ -78,7 +79,10 @@ export default class ChannelsList extends AblyBaseCommand {
 
       if (channelsResponse.statusCode !== 200) {
         this.fail(
-          `Failed to list channels: ${channelsResponse.statusCode}`,
+          CommandError.fromHttpResponse(
+            channelsResponse,
+            "Failed to list channels",
+          ),
           flags,
           "channelList",
         );

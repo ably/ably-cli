@@ -1,4 +1,4 @@
-import { RoomStatus, ChatClient } from "@ably/chat";
+import { ChatClient } from "@ably/chat";
 import { Args, Flags } from "@oclif/core";
 
 import { ChatBaseCommand } from "../../../chat-base-command.js";
@@ -96,101 +96,9 @@ export default class TypingKeystroke extends ChatBaseCommand {
         `Got room handle for ${roomName}`,
       );
 
-      // Subscribe to room status changes — combines logging and keystroke trigger
-      room.onStatusChange((statusChange) => {
-        let reason: Error | null | string | undefined;
-        if (statusChange.current === RoomStatus.Failed) {
-          reason = room.error;
-        }
-        const reasonMsg = reason instanceof Error ? reason.message : reason;
-        this.logCliEvent(
-          flags,
-          "room",
-          `status-${statusChange.current}`,
-          `Room status changed to ${statusChange.current}`,
-          { reason: reasonMsg, room: roomName },
-        );
-
-        if (statusChange.current === RoomStatus.Attached) {
-          if (!this.shouldOutputJson(flags)) {
-            this.log(
-              formatSuccess(`Connected to room: ${formatResource(roomName)}.`),
-            );
-          }
-
-          // Start typing immediately
-          this.logCliEvent(
-            flags,
-            "typing",
-            "startAttempt",
-            "Attempting to start typing...",
-          );
-          room.typing
-            .keystroke()
-            .then(() => {
-              this.logCliEvent(flags, "typing", "started", "Started typing");
-              if (this.shouldOutputJson(flags)) {
-                this.logJsonResult(
-                  {
-                    typing: {
-                      room: roomName,
-                      isTyping: true,
-                      autoType: Boolean(flags["auto-type"]),
-                    },
-                  },
-                  flags,
-                );
-              } else {
-                this.log(
-                  formatSuccess(
-                    `Started typing in room: ${formatResource(roomName)}.`,
-                  ),
-                );
-                if (flags["auto-type"]) {
-                  this.log(
-                    formatListening(
-                      "Will automatically remain typing until terminated.",
-                    ),
-                  );
-                } else {
-                  this.log(
-                    formatListening(
-                      "Sent a single typing indicator. Use --auto-type to keep typing automatically.",
-                    ),
-                  );
-                }
-              }
-
-              // Keep typing active by calling keystroke() periodically if autoType is enabled
-              if (this.typingIntervalId) clearInterval(this.typingIntervalId);
-
-              if (flags["auto-type"]) {
-                this.typingIntervalId = setInterval(() => {
-                  room.typing.keystroke().catch((error: Error) => {
-                    this.logCliEvent(
-                      flags,
-                      "typing",
-                      "startErrorPeriodic",
-                      `Error refreshing typing state: ${error.message}`,
-                      { error: error.message },
-                    );
-                  });
-                }, KEYSTROKE_INTERVAL);
-              }
-            })
-            .catch((error: Error) => {
-              this.fail(error, flags, "roomTypingKeystroke", {
-                room: roomName,
-              });
-            });
-        } else if (statusChange.current === RoomStatus.Failed) {
-          this.fail(
-            `Failed to attach to room ${roomName}: ${reasonMsg || "Unknown error"}`,
-            flags,
-            "roomTypingKeystroke",
-            { room: roomName },
-          );
-        }
+      // Subscribe to room status changes
+      const { failurePromise } = this.setupRoomStatusHandler(room, flags, {
+        roomName,
       });
 
       // Attach to the room
@@ -201,7 +109,61 @@ export default class TypingKeystroke extends ChatBaseCommand {
         `Attaching to room ${roomName}`,
       );
       await room.attach();
-      // Successful attach and initial typing start logged by onStatusChange handler
+
+      // Start typing
+      this.logCliEvent(
+        flags,
+        "typing",
+        "startAttempt",
+        "Attempting to start typing...",
+      );
+      await room.typing.keystroke();
+      this.logCliEvent(flags, "typing", "started", "Started typing");
+
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonResult(
+          {
+            typing: {
+              room: roomName,
+              isTyping: true,
+              autoType: Boolean(flags["auto-type"]),
+            },
+          },
+          flags,
+        );
+      } else {
+        this.log(
+          formatSuccess(`Started typing in room: ${formatResource(roomName)}.`),
+        );
+        if (flags["auto-type"]) {
+          this.log(
+            formatListening(
+              "Will automatically remain typing until terminated.",
+            ),
+          );
+        } else {
+          this.log(
+            formatListening(
+              "Sent a single typing indicator. Use --auto-type to keep typing automatically.",
+            ),
+          );
+        }
+      }
+
+      // Keep typing active by calling keystroke() periodically if autoType is enabled
+      if (flags["auto-type"]) {
+        this.typingIntervalId = setInterval(() => {
+          room.typing.keystroke().catch((error: Error) => {
+            this.logCliEvent(
+              flags,
+              "typing",
+              "startErrorPeriodic",
+              `Error refreshing typing state: ${error.message}`,
+              { error: error.message },
+            );
+          });
+        }, KEYSTROKE_INTERVAL);
+      }
 
       this.logCliEvent(
         flags,
@@ -210,8 +172,11 @@ export default class TypingKeystroke extends ChatBaseCommand {
         "Maintaining typing status...",
       );
 
-      // Decide how long to remain connected
-      await this.waitAndTrackCleanup(flags, "typing", flags.duration);
+      // Wait until the user interrupts, duration elapses, or the room fails
+      await Promise.race([
+        this.waitAndTrackCleanup(flags, "typing", flags.duration),
+        failurePromise,
+      ]);
     } catch (error) {
       this.fail(error, flags, "roomTypingKeystroke", { room: args.room });
     }

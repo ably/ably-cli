@@ -12,6 +12,7 @@ describe("ChannelsOccupancyGet", function () {
     const mock = getMockAblyRest();
     // Set up default mock response for REST request
     mock.request.mockResolvedValue({
+      statusCode: 200,
       items: [
         {
           status: {
@@ -95,6 +96,7 @@ describe("ChannelsOccupancyGet", function () {
     const mock = getMockAblyRest();
     // Override mock to return empty metrics
     mock.request.mockResolvedValue({
+      statusCode: 200,
       occupancy: {
         metrics: null,
       },
@@ -151,6 +153,43 @@ describe("ChannelsOccupancyGet", function () {
       );
 
       expect(error).toBeDefined();
+    });
+
+    it("should handle HTTP error responses from API", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({
+        success: false,
+        statusCode: 401,
+        errorCode: 40101,
+        errorMessage: "Invalid credentials",
+      });
+
+      const { error } = await runCommand(
+        ["channels:occupancy:get", "test-channel"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Invalid credentials");
+    });
+
+    it("should surface errorCode and errorMessage from HTTP response", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({
+        success: false,
+        statusCode: 404,
+        errorCode: 40400,
+        errorMessage: "Channel not found",
+      });
+
+      const { error } = await runCommand(
+        ["channels:occupancy:get", "test-channel"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Channel not found");
+      expect(error?.message).toContain("40400");
     });
   });
 });

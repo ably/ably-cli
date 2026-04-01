@@ -661,7 +661,7 @@ Commands must behave strictly according to their documented purpose — no unint
 **Subscribe commands** — passive observers:
 - **Only** listen for new events — must NOT fetch initial state (use `get-all` for that)
 - **NOT enter presence/space** — use `enterSpace: false`. The Spaces SDK's `subscribe()` methods do NOT require `space.enter()`
-- Use the message pattern: `formatProgress("Subscribing to X")` → `formatListening("Listening for X.")`
+- Use the message pattern: `formatProgress("Subscribing to X")` → `formatSuccess("Subscribed to X.")` → `formatListening("Listening for X.")`
 
 **Get-all / get commands** — one-shot queries:
 - **NOT enter presence/space** — `getAll()`, `get()` do NOT require `space.enter()`
@@ -676,6 +676,13 @@ Commands must behave strictly according to their documented purpose — no unint
 - `space.enter()` only when SDK requires it (set, enter, acquire)
 - Call `this.markAsEntered()` after every `space.enter()` (enables cleanup)
 - For hold commands, always use manual entry (`enterSpace: false` + `space.enter()` + `markAsEntered()`) for consistency
+
+**Room success message timing** (`setupRoomStatusHandler` in `ChatBaseCommand`):
+- `setupRoomStatusHandler` can emit `successMessage` and `listeningMessage` on `RoomStatus.Attached`, but this fires when `room.attach()` completes — **before** any subscribe/action call that happens after attach.
+- Chat SDK `subscribe()` calls just register a listener (synchronous, no I/O) — they work before or after `room.attach()`. The ordering doesn't affect correctness. But the success message must not claim "Subscribed" before the subscribe call has been made.
+- **Pattern 1** (handler messages): Only use `successMessage`/`listeningMessage` in `setupRoomStatusHandler` when the subscribe call is placed **before** `room.attach()` in the code. Examples: `messages/subscribe`, `typing/subscribe`.
+- **Pattern 2** (manual messages): When the subscribe or action is placed **after** `room.attach()`, print `formatSuccess()` and `formatListening()` manually after the subscribe/action call. Examples: `presence/subscribe`, `occupancy/subscribe`, `reactions/subscribe`, `presence/enter`, `typing/keystroke`.
+- Never say "Connected to room" — the attach event is not a connection event. Use "Subscribed to X in room" for subscribe commands, or an action-specific message ("Entered presence in room", "Started typing in room") for action commands.
 
 ```typescript
 // WRONG — subscribe enters the space

@@ -5,8 +5,10 @@ import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import {
   formatLabel,
+  formatListening,
   formatProgress,
   formatResource,
+  formatSuccess,
   formatTimestamp,
 } from "../../../utils/output.js";
 
@@ -92,10 +94,8 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       );
 
       // Subscribe to room status changes
-      this.setupRoomStatusHandler(room, flags, {
+      const { failurePromise } = this.setupRoomStatusHandler(room, flags, {
         roomName: this.roomName,
-        successMessage: `Subscribed to occupancy in room: ${formatResource(this.roomName)}.`,
-        listeningMessage: "Listening for occupancy updates.",
       });
 
       // Attach to the room
@@ -135,8 +135,20 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         "Subscribed to occupancy updates",
       );
 
+      if (!this.shouldOutputJson(flags)) {
+        this.log(
+          formatSuccess(
+            `Subscribed to occupancy in room: ${formatResource(this.roomName)}.`,
+          ),
+        );
+        this.log(formatListening("Listening for occupancy updates."));
+      }
+
       // Wait until the user interrupts or the optional duration elapses
-      await this.waitAndTrackCleanup(flags, "occupancy", flags.duration);
+      await Promise.race([
+        this.waitAndTrackCleanup(flags, "occupancy", flags.duration),
+        failurePromise,
+      ]);
     } catch (error) {
       this.fail(error, flags, "roomOccupancySubscribe", {
         room: this.roomName,

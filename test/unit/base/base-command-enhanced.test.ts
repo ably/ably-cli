@@ -493,5 +493,71 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
       // No stray undefined values
       expect(raw).not.toContain("undefined");
     });
+
+    it("should strip ::$chat suffixes and rewrite to Room terminology", function () {
+      const msg =
+        "Channel denied access based on given capability; channelId = abc::$chat::$chatMessages";
+      expect(() => command.testFail(new Error(msg), {}, "room")).toThrow(
+        "Room denied access based on given capability; room = abc",
+      );
+    });
+
+    it("should strip ::$chat::$typingindicators suffix", function () {
+      const msg =
+        "Channel denied access based on given capability; channelId = abc::$chat::$typingindicators";
+      expect(() => command.testFail(new Error(msg), {}, "room")).toThrow(
+        "Room denied access based on given capability; room = abc",
+      );
+    });
+
+    it("should strip ::$space suffixes and rewrite to Space terminology", function () {
+      const msg =
+        "Channel denied access based on given capability; channelId = myspace::$space";
+      expect(() => command.testFail(new Error(msg), {}, "space")).toThrow(
+        "Space denied access based on given capability; space = myspace",
+      );
+    });
+
+    it("should strip ::$cursors suffixes and rewrite to Space terminology", function () {
+      const msg =
+        "Channel denied access based on given capability; channelId = myspace::$cursors";
+      expect(() => command.testFail(new Error(msg), {}, "cursors")).toThrow(
+        "Space denied access based on given capability; space = myspace",
+      );
+    });
+
+    it("should preserve Ably error codes when sanitizing channel suffixes", function () {
+      const mockConfig = { root: "" } as unknown as Config;
+      const cmd = new TestCommand(["--json"], mockConfig);
+      const ablyError = Object.assign(
+        new Error(
+          "Channel denied access based on given capability; channelId = room1::$chat::$typingindicators",
+        ),
+        { code: 40160, statusCode: 401 },
+      );
+
+      expect(() => cmd.testFail(ablyError, { json: true }, "room")).toThrow();
+
+      const parsed = JSON.parse(cmd.capturedOutput[0]);
+      expect(parsed.error.message).toBe(
+        "Room denied access based on given capability; room = room1",
+      );
+      expect(parsed.error.code).toBe(40160);
+      expect(parsed.error.statusCode).toBe(401);
+    });
+
+    it("should not modify errors without SDK channel suffixes", function () {
+      expect(() =>
+        command.testFail(new Error("Connection timeout"), {}, "connection"),
+      ).toThrow("Connection timeout");
+    });
+
+    it("should not rewrite Channel terminology for plain channel errors", function () {
+      const msg =
+        "Channel denied access based on given capability; channelId = my-channel";
+      expect(() => command.testFail(new Error(msg), {}, "channel")).toThrow(
+        "Channel denied access based on given capability; channelId = my-channel",
+      );
+    });
   });
 });

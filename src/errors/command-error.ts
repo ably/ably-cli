@@ -86,11 +86,47 @@ export class CommandError extends Error {
       return new CommandError(error.message, { context, cause: error });
     }
 
+    // Duck-type plain objects with a message property (e.g., parsed JSON error bodies)
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "message" in error &&
+      typeof (error as Record<string, unknown>).message === "string"
+    ) {
+      const obj = error as Record<string, unknown>;
+      return new CommandError(obj.message as string, {
+        code: typeof obj.code === "number" ? obj.code : undefined,
+        statusCode:
+          typeof obj.statusCode === "number" ? obj.statusCode : undefined,
+        context,
+      });
+    }
+
     if (typeof error === "string") {
       return new CommandError(error, { context });
     }
 
     return new CommandError(String(error), { context });
+  }
+
+  /**
+   * Create a CommandError from an HttpPaginatedResponse error.
+   * Extracts errorCode, errorMessage, and statusCode from the response.
+   */
+  static fromHttpResponse(
+    response: {
+      statusCode: number;
+      errorCode?: number | null;
+      errorMessage?: string | null;
+    },
+    action: string,
+  ): CommandError {
+    const message =
+      response.errorMessage || `${action} (status ${response.statusCode})`;
+    return new CommandError(message, {
+      code: response.errorCode || undefined,
+      statusCode: response.statusCode,
+    });
   }
 
   /** Produce JSON-safe data for the error envelope */

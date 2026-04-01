@@ -1,5 +1,6 @@
 import { Flags } from "@oclif/core";
 
+import { CommandError } from "../../errors/command-error.js";
 import { productApiFlags } from "../../flags.js";
 import {
   formatCountLabel,
@@ -73,7 +74,10 @@ export default class SpacesList extends SpacesBaseCommand {
 
       if (channelsResponse.statusCode !== 200) {
         this.fail(
-          `Failed to list spaces: ${channelsResponse.statusCode}`,
+          CommandError.fromHttpResponse(
+            channelsResponse,
+            "Failed to list spaces",
+          ),
           flags,
           "spaceList",
         );

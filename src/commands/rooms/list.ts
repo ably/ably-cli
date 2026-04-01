@@ -1,5 +1,6 @@
 import { Flags } from "@oclif/core";
 import { ChatBaseCommand } from "../../chat-base-command.js";
+import { CommandError } from "../../errors/command-error.js";
 import { productApiFlags } from "../../flags.js";
 import {
   formatCountLabel,
@@ -79,7 +80,10 @@ export default class RoomsList extends ChatBaseCommand {
 
       if (channelsResponse.statusCode !== 200) {
         this.fail(
-          `Failed to list rooms: ${channelsResponse.statusCode}`,
+          CommandError.fromHttpResponse(
+            channelsResponse,
+            "Failed to list rooms",
+          ),
           flags,
           "roomList",
         );

@@ -14,12 +14,14 @@ import {
   productApiFlags,
 } from "../../../../flags.js";
 import {
-  formatProgress,
-  formatResource,
-  formatTimestamp,
   formatClientId,
   formatEventType,
   formatLabel,
+  formatListening,
+  formatProgress,
+  formatResource,
+  formatSuccess,
+  formatTimestamp,
 } from "../../../../utils/output.js";
 
 export default class MessagesReactionsSubscribe extends ChatBaseCommand {
@@ -110,10 +112,8 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
       this.logCliEvent(flags, "room", "gotRoom", `Got room handle for ${room}`);
 
       // Subscribe to room status changes
-      this.setupRoomStatusHandler(chatRoom, flags, {
+      const { failurePromise } = this.setupRoomStatusHandler(chatRoom, flags, {
         roomName: room,
-        successMessage: "Connected to Ably.",
-        listeningMessage: `Listening for message reactions in room ${formatResource(room)}.`,
       });
 
       // Attach to the room
@@ -233,6 +233,15 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
         );
       }
 
+      if (!this.shouldOutputJson(flags)) {
+        this.log(
+          formatSuccess(
+            `Subscribed to message reactions in room: ${formatResource(room)}.`,
+          ),
+        );
+        this.log(formatListening("Listening for message reactions."));
+      }
+
       this.logCliEvent(
         flags,
         "reactions",
@@ -241,7 +250,10 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
       );
 
       // Wait until the user interrupts or the optional duration elapses
-      await this.waitAndTrackCleanup(flags, "reactions", flags.duration);
+      await Promise.race([
+        this.waitAndTrackCleanup(flags, "reactions", flags.duration),
+        failurePromise,
+      ]);
     } catch (error) {
       this.fail(error, flags, "roomMessageReactionSubscribe", {
         room: args.room,

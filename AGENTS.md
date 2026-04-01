@@ -251,6 +251,7 @@ Each command type has strict rules about what side effects it may have. Remove u
 - **Set / enter / acquire** = hold state until Ctrl+C / `--duration` (enter, operate, hold — no subscribing after)
 - Call `space.enter()` only when SDK requires it; always call `this.markAsEntered()` after
 - Hold commands use manual entry (`enterSpace: false` + `space.enter()` + `markAsEntered()`) for consistency
+- **Room success messages**: Only use `successMessage` in `setupRoomStatusHandler` when the subscribe call is **before** `room.attach()`. Otherwise, print success/listening manually **after** the subscribe/action. Never say "Connected to room" — use action-specific wording.
 
 See `references/patterns.md` "Command behavior semantics" in the `ably-new-command` skill for full rules, side-effect table, and code examples.
 
