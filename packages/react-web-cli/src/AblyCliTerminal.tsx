@@ -453,6 +453,7 @@ const AblyCliTerminalInner = (
       // If there's no secondary terminal, just close everything (same as handleCloseSplit)
       handleCloseSplit();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- isSecondarySessionActive, secondarySessionId, updateSessionActive, updateSecondaryConnectionStatus are all defined later in the component (hoisting constraint); values are current at call time via closures
   }, [handleCloseSplit, resumeOnReload]);
 
   /** Close the secondary pane and return to single-pane mode */
@@ -508,6 +509,8 @@ const AblyCliTerminalInner = (
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [credentialHash, setCredentialHash] = useState<string | null>(null);
   const [credentialsInitialized, setCredentialsInitialized] = useState(false);
+  const credentialsInitializedRef = useRef(false);
+  credentialsInitializedRef.current = credentialsInitialized;
 
   // Track the second terminal's sessionId
   const [secondarySessionId, setSecondarySessionId] = useState<string | null>(
@@ -1044,6 +1047,8 @@ const AblyCliTerminalInner = (
       clearPromptDetectionTimeout,
     ],
   );
+  const handleControlMessageRef = useRef(handleControlMessage);
+  handleControlMessageRef.current = handleControlMessage;
 
   // Function to clear the secondary terminal overlay and status displays
   const clearSecondaryStatusDisplay = useCallback(() => {
@@ -1274,7 +1279,7 @@ const AblyCliTerminalInner = (
       "⚠️ DIAGNOSTIC: connectWebSocket called - start of connection process",
     );
     debugLog(
-      `⚠️ DIAGNOSTIC: Current sessionId: ${sessionId}, credentialsInitialized: ${credentialsInitialized}`,
+      `⚠️ DIAGNOSTIC: Current sessionId: ${sessionId}, credentialsInitialized: ${credentialsInitializedRef.current}`,
     );
 
     // Skip attempt if terminal not visible to avoid unnecessary server load
@@ -1411,7 +1416,6 @@ const AblyCliTerminalInner = (
     clearConnectionTimeout,
     connectionStartTime,
     clearInstallInstructionsTimer,
-    term,
   ]);
 
   const socketReference = useRef<WebSocket | null>(null); // Ref to hold the current socket for cleanup
@@ -1513,7 +1517,7 @@ const AblyCliTerminalInner = (
           // Handle control messages
 
           // Handle control messages using the extracted handler
-          handleControlMessage(message);
+          handleControlMessageRef.current(message);
           return;
         }
 
@@ -1575,7 +1579,7 @@ const AblyCliTerminalInner = (
                 );
 
                 // Process the control message using the extracted handler
-                handleControlMessage(message_);
+                handleControlMessageRef.current(message_);
               } catch (error) {
                 console.warn(
                   "[WebSocket] Failed to parse text-based control message:",
@@ -1625,15 +1629,7 @@ const AblyCliTerminalInner = (
         console.error("[AblyCLITerminal] Error processing message:", error);
       }
     },
-    [
-      handlePtyData,
-      onSessionEnd,
-      updateConnectionStatusAndExpose,
-      updateSessionActive,
-      credentialHash,
-      resumeOnReload,
-      sessionId,
-    ],
+    [handlePtyData],
   );
 
   const handleWebSocketError = useCallback(
@@ -3219,6 +3215,7 @@ const AblyCliTerminalInner = (
     });
 
     return newSocket;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- callback is accessed via connectSecondaryWebSocketReference ref; missing deps include hoisted callbacks and state that would cause cascading recreations
   }, [
     websocketUrl,
     signedConfig,
