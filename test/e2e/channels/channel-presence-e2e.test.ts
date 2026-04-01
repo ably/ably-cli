@@ -82,11 +82,12 @@ describe("Channel Presence E2E Tests", () => {
       },
     );
 
-    console.log(`Presence enter output: ${enterResult.stdout}`);
+    console.log(`Presence enter stdout: ${enterResult.stdout}`);
+    console.log(`Presence enter stderr: ${enterResult.stderr}`);
     expect(enterResult.exitCode).toBe(0);
-    expect(enterResult.stdout).toContain("Entered presence on channel");
-    expect(enterResult.stdout).toContain(
-      "Duration elapsed – command finished cleanly",
-    );
+    // Status messages go to stderr
+    const allOutput = enterResult.stdout + enterResult.stderr;
+    expect(allOutput).toContain("Entered presence on channel");
+    expect(allOutput).toContain("Duration elapsed – command finished cleanly");
   });
 });

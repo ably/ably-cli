@@ -181,7 +181,10 @@ describe("Channel E2E Tests", () => {
 
     let result;
     try {
-      result = JSON.parse(listResult.stdout);
+      // JSON output may contain multiple NDJSON lines (result + completed status).
+      // Parse the first non-empty line which contains the result data.
+      const line = listResult.stdout.trim().split("\n").find(Boolean);
+      result = JSON.parse(line);
     } catch (parseError) {
       throw new Error(
         `Failed to parse JSON output. Parse error: ${String(parseError)}. Exit code: ${listResult.exitCode}, Stderr: ${listResult.stderr}, Stdout: ${listResult.stdout}`,
@@ -339,10 +342,13 @@ describe("Channel E2E Tests", () => {
 
     let result;
     try {
-      // The --json output is NDJSON (one event line + one result line).
-      // Parse the last non-empty line which contains the result.
+      // The --json output is NDJSON: event lines, then a result line, then a completed status.
+      // Find the line with type "result" which contains the history data.
       const lines = historyResult.stdout.trim().split("\n").filter(Boolean);
-      result = JSON.parse(lines.at(-1));
+      const resultLine = lines
+        .map((l) => JSON.parse(l))
+        .find((obj) => obj.type === "result");
+      result = resultLine;
     } catch (parseError) {
       throw new Error(
         `Failed to parse JSON history output. Parse error: ${String(parseError)}. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}, Stdout: ${historyResult.stdout}`,

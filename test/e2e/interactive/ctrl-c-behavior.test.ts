@@ -357,10 +357,10 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
           }, 100);
         });
 
-        // Wait for command to start
+        // Wait for command to start (status messages go to stderr)
         await new Promise<void>((resolve) => {
           const checkForWaiting = setInterval(() => {
-            if (output.includes("Waiting for")) {
+            if (errorOutput.includes("Waiting for")) {
               clearInterval(checkForWaiting);
               resolve();
             }
@@ -435,10 +435,10 @@ describe("E2E: Interactive Mode - Ctrl+C Behavior", () => {
           }, 100);
         });
 
-        // Wait for command to start
+        // Wait for command to start (status messages go to stderr)
         await new Promise<void>((resolve) => {
           const checkInterval = setInterval(() => {
-            if (output.includes("Waiting for")) {
+            if (errorOutput.includes("Waiting for")) {
               clearInterval(checkInterval);
               resolve();
             }
