@@ -83,7 +83,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
   private async switchToAccount(
     alias: string,
     accounts: Array<{
-      account: { accountId?: string; accountName?: string };
+      account: { accountId: string; accountName: string };
       alias: string;
     }>,
     flags: Record<string, unknown>,

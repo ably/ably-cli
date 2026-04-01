@@ -102,6 +102,7 @@ export default class ChannelsPresenceGet extends AblyBaseCommand {
           clientId: member.clientId,
           connectionId: member.connectionId,
           action: member.action,
+          // SDK presence data may be undefined; emit null for consistent JSON schema
           data: (member.data as unknown) ?? null,
           timestamp: formatMessageTimestamp(member.timestamp),
           id: member.id,
