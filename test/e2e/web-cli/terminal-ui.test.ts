@@ -215,8 +215,8 @@ test.describe("Web CLI Terminal UI Tests", () => {
         page.locator('[data-testid="terminal-container-secondary"]'),
       ).toBeVisible();
 
-      // Wait a bit for both terminals to initialize
-      await page.waitForTimeout(2000);
+      // Wait for both terminals to initialize (needs extra time to avoid server-side rate limiting)
+      await page.waitForTimeout(5000);
 
       // Type in the first terminal
       const primaryTerminal = page.locator(

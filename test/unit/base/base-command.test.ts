@@ -590,35 +590,19 @@ describe("AblyBaseCommand", function () {
     it("should use ABLY_API_KEY environment variable if available", async function () {
       const flags: BaseFlags = {};
 
-      // Reset relevant stubs
+      // Reset relevant stubs — no config available
       configManagerStub.getCurrentAppId.mockReturnValue();
       configManagerStub.getApiKey.mockReturnValue();
-      // Set access token to ensure the control API path is followed
-      configManagerStub.getAccessToken.mockReturnValue("test-token");
 
-      // Set up interactive helper to simulate user selecting an app and key
-      const mockApp = { id: "envApp", name: "Test App" };
-      const mockKey = {
-        id: "keyId",
-        name: "Test Key",
-        key: "envApp.keyId:keySecret",
-      };
-
-      interactiveHelperStub.selectApp.mockResolvedValue(mockApp);
-      interactiveHelperStub.selectKey.mockResolvedValue(mockKey);
-
-      // Set environment variable but it will be used in getClientOptions, not directly in this test path
+      // Set environment variable
       process.env.ABLY_API_KEY = "envApp.keyId:keySecret";
 
       const result = await command.testEnsureAppAndKey(flags);
 
+      // Should return the env var directly without interactive selection
       expect(result).not.toBeNull();
       expect(result?.appId).toBe("envApp");
       expect(result?.apiKey).toBe("envApp.keyId:keySecret");
-      expect(interactiveHelperStub.selectKey).toHaveBeenCalledWith(
-        expect.anything(),
-        "envApp",
-      );
     });
 
     it("should handle web CLI mode appropriately", async function () {
