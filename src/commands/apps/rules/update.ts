@@ -111,7 +111,6 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
       | "authenticated"
       | "batching-enabled"
       | "conflation-enabled"
-      | "expose-time-serial"
       | "mutable-messages"
       | "persist-last"
       | "persisted"
