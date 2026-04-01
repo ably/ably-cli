@@ -149,7 +149,7 @@ export default [
       ...tsPlugin.configs["recommended-type-checked"].rules,
       // React hooks rules
       "react-hooks/rules-of-hooks": "error",
-      "react-hooks/exhaustive-deps": "warn",
+      "react-hooks/exhaustive-deps": "error",
       // Custom overrides for this package
       "unicorn/prefer-module": "off",
       "unicorn/filename-case": "off",
