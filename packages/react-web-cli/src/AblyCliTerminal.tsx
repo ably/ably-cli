@@ -2045,7 +2045,7 @@ const AblyCliTerminalInner = (
         // Enhanced logging for special keys
         const bytes = [...data]
           .map((char) => {
-            const code = char.charCodeAt(0);
+            const code = char.codePointAt(0)!;
             if (code < 32 || code > 126) {
               return `\\x${code.toString(16).padStart(2, "0")}`;
             }
@@ -2217,8 +2217,8 @@ const AblyCliTerminalInner = (
           }
         } else if (
           data.length === 1 &&
-          data.charCodeAt(0) >= 32 &&
-          data.charCodeAt(0) <= 126
+          data.codePointAt(0)! >= 32 &&
+          data.codePointAt(0)! <= 126
         ) {
           // Regular printable character
           currentInputLine =
@@ -3417,8 +3417,8 @@ const AblyCliTerminalInner = (
         }
       } else if (
         data.length === 1 &&
-        data.charCodeAt(0) >= 32 &&
-        data.charCodeAt(0) <= 126
+        data.codePointAt(0)! >= 32 &&
+        data.codePointAt(0)! <= 126
       ) {
         // Regular printable character
         secondaryCurrentInputLine =
