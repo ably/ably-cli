@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
+import type React from "react";
+import { useEffect, useState, useRef } from "react";
 
 /**
  * useTerminalVisibility detects whether the referenced element is currently visible to the user.
