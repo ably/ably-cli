@@ -799,11 +799,7 @@ const AblyCliTerminalInner = (
         }
       }
     },
-    [
-      clearPtyBuffer,
-      clearStatusDisplay,
-      activateSessionAndSendCommand,
-    ],
+    [clearPtyBuffer, clearStatusDisplay, activateSessionAndSendCommand],
   );
 
   // Secondary terminal instance references
@@ -2359,7 +2355,8 @@ const AblyCliTerminalInner = (
       grResetState(); // Ensure global state is clean
       clearConnectionTimeout(); // Clear any pending connection timeout
     };
-  }, []); // Empty deps - this effect only runs once on mount to initialize the terminal
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only initialization; adding deps would destroy/recreate the terminal on every state change
+  }, []);
 
   // Single unified effect for initial connection (handles both mount and visibility changes)
   // When resumeOnReload is enabled, waits for credentialsInitialized to ensure sessionId restoration completes first
@@ -3526,7 +3523,8 @@ const AblyCliTerminalInner = (
       setSecondarySessionId(null);
       setSecondaryOverlay(null);
     };
-  }, [isSplit]); // Only re-run when split mode changes, not when connectSecondaryWebSocket changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- secondary terminal init; adding state deps would re-init mid-session
+  }, [isSplit]);
 
   // Persist secondary sessionId to localStorage whenever it changes (if enabled)
   useEffect(() => {
