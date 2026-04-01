@@ -161,6 +161,10 @@ if (globalThis.window !== undefined) {
   }
 }
 
+// Static spinner frames — hoisted to module scope so the array identity is
+// stable between renders and doesn't trigger exhaustive-deps warnings.
+const spinnerFrames = ["●  ", " ● ", "  ●", " ● "];
+
 const AblyCliTerminalInner = (
   {
     websocketUrl,
@@ -297,6 +301,7 @@ const AblyCliTerminalInner = (
         }
       }
     }, 50);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resumeOnReload is a stable prop; updateSecondaryConnectionStatus is defined later in the component (hoisting constraint) but has [] deps
   }, []);
 
   // Imperative handle for external control of split operations
@@ -496,6 +501,7 @@ const AblyCliTerminalInner = (
         }
       }
     }, 50);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateSecondaryConnectionStatus has [] deps but is defined later (hoisting constraint)
   }, [resumeOnReload]);
 
   // Track the current sessionId received from the server (if any)
@@ -547,8 +553,6 @@ const AblyCliTerminalInner = (
   // Keep a ref for sessionId to use in closures
   const sessionIdReference = useRef<string | null>(sessionId);
 
-  // Use block-based spinner where empty dots are invisible in most monospace fonts
-  const spinnerFrames = ["●  ", " ● ", "  ●", " ● "];
   const spinnerIntervalReference = useRef<ReturnType<
     typeof setInterval
   > | null>(null);
@@ -793,11 +797,8 @@ const AblyCliTerminalInner = (
       }
     },
     [
-      updateConnectionStatusAndExpose,
-      updateSessionActive,
       clearPtyBuffer,
       clearStatusDisplay,
-      clearInstallInstructionsTimer,
       activateSessionAndSendCommand,
     ],
   );
@@ -1034,14 +1035,13 @@ const AblyCliTerminalInner = (
       sessionId,
       onSessionId,
       clearStatusDisplay,
-      updateSessionActive,
       updateConnectionStatusAndExpose,
-      clearPtyBuffer,
       resumeOnReload,
       websocketUrl,
       credentialHash,
       onSessionEnd,
-      grSuccessfulConnectionReset,
+      activateSessionAndSendCommand,
+      clearPromptDetectionTimeout,
     ],
   );
 
@@ -1097,6 +1097,7 @@ const AblyCliTerminalInner = (
         }
       }, 50);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateSecondaryConnectionStatus has [] deps but is defined later (hoisting constraint)
   }, [clearSecondaryPromptDetectionTimeout]);
 
   const handleSecondaryPtyData = useCallback(
@@ -1489,14 +1490,10 @@ const AblyCliTerminalInner = (
     // persistence handled by dedicated useEffect
     debugLog("WebSocket OPEN handler completed. sessionId:", sessionId);
   }, [
-    clearAnimationMessages,
     initialCommand,
-    updateConnectionStatusAndExpose,
     clearPtyBuffer,
     sessionId,
-    resumeOnReload,
     clearConnectionTimeout,
-    credentialHash,
     signedConfig,
     signature,
   ]);
@@ -2338,11 +2335,15 @@ const AblyCliTerminalInner = (
     // Initial connection on mount - do NOT connect here, let the dedicated connection effects handle it
     // This prevents duplicate connections from multiple effects running in the same render cycle
 
+    // Capture ref value for cleanup — React warns if we read .current
+    // inside the cleanup function because it may have changed by then.
+    const termCleanup = termCleanupReference.current;
+
     // Cleanup terminal on unmount
     return () => {
       // Execute resize listener cleanup if it exists
-      if (termCleanupReference.current) {
-        termCleanupReference.current();
+      if (termCleanup) {
+        termCleanup();
       }
 
       if (term.current) {
@@ -2387,7 +2388,7 @@ const AblyCliTerminalInner = (
     componentConnectionStatus,
     clearPtyBuffer,
     connectWebSocket,
-    // resumeOnReload is intentionally omitted - it's a prop that doesn't change during component lifecycle
+    resumeOnReload,
   ]);
 
   useEffect(() => {
@@ -2579,8 +2580,7 @@ const AblyCliTerminalInner = (
     }, INACTIVITY_TIMEOUT_MS);
   }, [
     INACTIVITY_TIMEOUT_MS,
-    grCancelReconnect,
-    grResetState,
+    clearInactivityTimer,
     updateConnectionStatusAndExpose,
   ]);
 
