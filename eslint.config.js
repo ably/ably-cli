@@ -170,7 +170,7 @@ export default [
       "@typescript-eslint/no-unsafe-argument": "off",
       "@typescript-eslint/no-unsafe-return": "off",
       "@typescript-eslint/no-base-to-string": "off",
-      "no-console": "off",
+      "no-console": ["warn", { allow: ["warn", "error"] }],
       "no-control-regex": "off", // Terminal escape sequences use control chars
       "n/no-missing-import": "off", // TSX imports are handled by TypeScript
       "react/prop-types": "off", // Using TypeScript for prop validation

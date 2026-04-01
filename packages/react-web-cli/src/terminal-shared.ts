@@ -203,7 +203,7 @@ export function createAuthPayload(
       if (parsedConfig.accessToken) {
         payload.accessToken = parsedConfig.accessToken;
       }
-      console.log("[createAuthPayload] Using signed config auth", {
+      debugLog("[createAuthPayload] Using signed config auth", {
         hasApiKey: !!payload.apiKey,
         hasAccessToken: !!payload.accessToken,
       });
@@ -222,7 +222,7 @@ export function createAuthPayload(
     payload.ciAuthToken = ciToken;
     // Debug logging in CI
     if (win.__ABLY_CLI_CI_MODE__ === "true") {
-      console.log("[CI Auth] Including CI auth token in payload", {
+      debugLog("[CI Auth] Including CI auth token in payload", {
         tokenLength: ciToken.length,
         testGroup: win.__ABLY_CLI_TEST_GROUP__ || "unknown",
         runId: win.__ABLY_CLI_RUN_ID__ || "unknown",
@@ -331,6 +331,7 @@ export function showConnectingMessage(
  */
 export function debugLog(...args: unknown[]): void {
   if (typeof globalThis !== "undefined" && (globalThis as any).ABLY_CLI_DEBUG) {
+    // eslint-disable-next-line no-console -- deliberate debug output gate
     console.log("[AblyCLITerminal DEBUG]", ...args);
   }
 }
