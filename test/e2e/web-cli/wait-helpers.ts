@@ -78,7 +78,7 @@ export async function waitForTerminalReady(
 
     if (
       currentState?.componentConnectionStatus === "connected" &&
-      currentState?.isSessionActive
+      currentState.isSessionActive
     ) {
       if (!process.env.CI || process.env.VERBOSE_TESTS) {
         console.log("Terminal connected and session active");
@@ -98,7 +98,7 @@ export async function waitForTerminalReady(
 
     if (
       currentState?.componentConnectionStatus === "disconnected" &&
-      currentState?.showManualReconnectPrompt
+      currentState.showManualReconnectPrompt
     ) {
       if (manualReconnectAttempts < maxManualReconnects) {
         console.log(
@@ -284,7 +284,7 @@ export async function waitForTerminalOutput(
     });
     console.error(`Failed to find expected text: "${expectedText}"`);
     console.error(
-      `Terminal content: ${terminalContent?.slice(0, 500) || "No content"}`,
+      `Terminal content: ${terminalContent.slice(0, 500) || "No content"}`,
     );
     throw error;
   }
@@ -294,7 +294,7 @@ export async function waitForTerminalOutput(
  * Get terminal content using the best available method
  */
 export async function getTerminalContent(page: Page): Promise<string> {
-  return await page.evaluate(() => {
+  return page.evaluate(() => {
     const win = window as Window & { getTerminalBufferText?: () => string };
     if (typeof win.getTerminalBufferText === "function") {
       return win.getTerminalBufferText();
@@ -553,7 +553,7 @@ export async function executeCommandWithRetry(
     } catch (error) {
       if (!process.env.CI || process.env.VERBOSE_TESTS) {
         console.log(
-          `Command execution failed (attempt ${attempt}/${retries}): ${error}`,
+          `Command execution failed (attempt ${attempt}/${retries}): ${String(error)}`,
         );
       }
 

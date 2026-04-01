@@ -57,9 +57,7 @@ export default class SpacesLocationsGet extends SpacesBaseCommand {
         .filter(
           ([, loc]) =>
             loc != null &&
-            !(
-              typeof loc === "object" && Object.keys(loc as object).length === 0
-            ),
+            !(typeof loc === "object" && Object.keys(loc).length === 0),
         )
         .map(([connectionId, loc]) => ({ connectionId, location: loc }));
 
@@ -82,8 +80,7 @@ export default class SpacesLocationsGet extends SpacesBaseCommand {
           `\n${formatHeading("Current locations")} (${formatCountLabel(entries.length, "location")}):\n`,
         );
 
-        for (let i = 0; i < entries.length; i++) {
-          const entry = entries[i];
+        for (const [i, entry] of entries.entries()) {
           this.log(`${formatIndex(i + 1)}`);
           this.log(`  ${formatLabel("Connection ID")} ${entry.connectionId}`);
           this.log(

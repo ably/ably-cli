@@ -89,12 +89,12 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
             channel: channelName,
             clientId: presenceMessage.clientId,
             connectionId: presenceMessage.connectionId,
-            data: presenceMessage.data,
+            data: presenceMessage.data as unknown,
           };
           this.logCliEvent(
             flags,
             "presence",
-            presenceMessage.action!,
+            presenceMessage.action,
             `Presence event: ${presenceMessage.action} by ${presenceMessage.clientId}`,
             presenceData,
           );
@@ -104,12 +104,12 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
           } else {
             const displayFields: PresenceDisplayFields = {
               id: presenceMessage.id,
-              timestamp: presenceMessage.timestamp ?? Date.now(),
-              action: presenceMessage.action || "unknown",
+              timestamp: presenceMessage.timestamp,
+              action: presenceMessage.action,
               channel: channelName,
               clientId: presenceMessage.clientId,
               connectionId: presenceMessage.connectionId,
-              data: presenceMessage.data,
+              data: presenceMessage.data as unknown,
             };
             this.log(formatPresenceOutput([displayFields]));
             this.log(""); // Empty line for better readability

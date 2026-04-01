@@ -7,6 +7,7 @@ import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { errorMessage } from "../../utils/errors.js";
 import { formatSuccess } from "../../utils/output.js";
+import type { BenchPresenceData } from "../../types/bench.js";
 
 interface TestMetrics {
   batchCount: number;
@@ -319,11 +320,12 @@ export default class BenchPublisher extends AblyBaseCommand {
       });
 
       const subscriberCheck = (member: Ably.PresenceMessage) => {
+        const presenceData = member.data as BenchPresenceData | undefined;
         if (
-          member.data &&
-          typeof member.data === "object" &&
-          "role" in member.data &&
-          member.data.role === "subscriber"
+          presenceData &&
+          typeof presenceData === "object" &&
+          "role" in presenceData &&
+          presenceData.role === "subscriber"
         ) {
           this.logCliEvent(
             flags,
@@ -342,13 +344,12 @@ export default class BenchPublisher extends AblyBaseCommand {
       // Check if subscribers are already present
       try {
         const members = await channel.presence.get();
-        const subscribers = members.filter(
-          (m) =>
-            m.data &&
-            typeof m.data === "object" &&
-            "role" in m.data &&
-            m.data.role === "subscriber",
-        );
+        const subscribers = members.filter((m) => {
+          const d = m.data as BenchPresenceData | undefined;
+          return (
+            d && typeof d === "object" && "role" in d && d.role === "subscriber"
+          );
+        });
         if (subscribers.length > 0) {
           this.logCliEvent(
             flags,
@@ -373,13 +374,12 @@ export default class BenchPublisher extends AblyBaseCommand {
       }
     } else {
       const members = await channel.presence.get();
-      const subscribers = members.filter(
-        (m) =>
-          m.data &&
-          typeof m.data === "object" &&
-          "role" in m.data &&
-          m.data.role === "subscriber",
-      );
+      const subscribers = members.filter((m) => {
+        const d = m.data as BenchPresenceData | undefined;
+        return (
+          d && typeof d === "object" && "role" in d && d.role === "subscriber"
+        );
+      });
       this.logCliEvent(
         flags,
         "benchmark",
@@ -727,7 +727,7 @@ export default class BenchPublisher extends AblyBaseCommand {
           .then(() => {
             const requestLatency = Date.now() - publishStart;
             if (messageTracking[payload.msgId]) {
-              messageTracking[payload.msgId].requestCompleteTime = Date.now();
+              messageTracking[payload.msgId]!.requestCompleteTime = Date.now();
             }
 
             metrics.requestLatencies.push(requestLatency);
@@ -837,7 +837,7 @@ export default class BenchPublisher extends AblyBaseCommand {
           .then(() => {
             const requestLatency = Date.now() - publishStart;
             if (messageTracking[payload.msgId]) {
-              messageTracking[payload.msgId].requestCompleteTime = Date.now();
+              messageTracking[payload.msgId]!.requestCompleteTime = Date.now();
             }
 
             metrics.requestLatencies.push(requestLatency);
@@ -901,9 +901,7 @@ export default class BenchPublisher extends AblyBaseCommand {
     this.log(progressDisplay.toString());
     this.log("\n--- Logs (Last 10) ---");
     intervalId = setInterval(() => {
-      if (progressDisplay) {
-        this.updateProgressAndLogs(metrics, progressDisplay, messageCount);
-      }
+      this.updateProgressAndLogs(metrics, progressDisplay, messageCount);
     }, 500);
 
     return { intervalId, progressDisplay };
@@ -917,15 +915,16 @@ export default class BenchPublisher extends AblyBaseCommand {
     channelName: string,
   ): Promise<void> {
     await channel.subscribe("benchmark", (message: Ably.Message) => {
+      const messageData = message.data as Record<string, unknown> | undefined;
       if (
-        !message.data ||
-        typeof message.data !== "object" ||
-        !("msgId" in message.data)
+        !messageData ||
+        typeof messageData !== "object" ||
+        !("msgId" in messageData)
       ) {
         return; // Not our benchmark message
       }
 
-      const msgId = message.data.msgId as string;
+      const msgId = messageData.msgId as string;
       const tracker = messageTracking[msgId];
 
       if (tracker && tracker.publishTime) {

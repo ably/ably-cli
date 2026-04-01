@@ -152,15 +152,12 @@ export default class ChannelsHistory extends AblyBaseCommand {
 
         const displayMessages: MessageDisplayFields[] = messages.map(
           (message, index) => {
-            const ts = message.timestamp ?? Date.now();
+            const ts = message.timestamp;
             return {
-              action:
-                message.action === undefined
-                  ? undefined
-                  : String(message.action),
+              action: String(message.action),
               channel: channelName,
               clientId: message.clientId,
-              data: message.data,
+              data: message.data as unknown,
               event: message.name || undefined,
               id: message.id,
               indexPrefix: `${formatIndex(index + 1)} ${formatTimestamp(formatMessageTimestamp(ts))}`,

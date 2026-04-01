@@ -305,7 +305,6 @@ describe("Spaces E2E Tests", () => {
         let client2SpaceProcess: ChildProcess | null = null;
         let cursorSetProcess: ChildProcess | null = null;
         let outputPath: string = "";
-        let shouldSkipCursorTest = false;
 
         try {
           // Create output file for cursors monitoring
@@ -372,8 +371,7 @@ describe("Spaces E2E Tests", () => {
             !currentOutput.includes("Entered space:") &&
             !currentOutput.includes("Subscribing to cursor updates")
           ) {
-            // The cursor subscribe process might have failed, let's skip this test
-            shouldSkipCursorTest = true;
+            // The cursor subscribe process might have failed, skip this test
             return;
           }
 
@@ -442,11 +440,6 @@ describe("Spaces E2E Tests", () => {
           if (client2SpaceProcess) {
             await killProcess(client2SpaceProcess);
           }
-        }
-
-        // Handle skip outside of try/finally
-        if (shouldSkipCursorTest) {
-          return; // Skip test by early return
         }
       },
     );

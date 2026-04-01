@@ -14,6 +14,7 @@ export class HistoryManager {
       path.join(os.homedir(), ".ably", "history");
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await -- kept async for interface consistency
   async loadHistory(rl: readline.Interface): Promise<void> {
     try {
       // Ensure directory exists
@@ -43,6 +44,7 @@ export class HistoryManager {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await -- kept async for interface consistency
   async saveCommand(command: string): Promise<void> {
     if (!command.trim()) return;
 

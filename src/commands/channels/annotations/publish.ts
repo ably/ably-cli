@@ -94,7 +94,7 @@ export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
       if (flags.count !== undefined) annotation.count = flags.count;
       if (flags.data !== undefined) {
         try {
-          annotation.data = JSON.parse(flags.data);
+          annotation.data = JSON.parse(flags.data) as unknown;
         } catch {
           annotation.data = flags.data;
         }
@@ -128,7 +128,7 @@ export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
               ...(flags.count === undefined ? {} : { count: flags.count }),
               ...(annotation.data === undefined
                 ? {}
-                : { data: annotation.data }),
+                : { data: annotation.data as unknown }),
               ...(flags.encoding === undefined
                 ? {}
                 : { encoding: flags.encoding }),

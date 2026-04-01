@@ -347,7 +347,7 @@ describe("rooms messages commands", function () {
         const events = records.filter(
           (r) =>
             r.type === "event" &&
-            (r.message as Record<string, unknown>)?.room === "test-room",
+            (r.message as Record<string, unknown>).room === "test-room",
         );
         expect(events.length).toBeGreaterThan(0);
         const record = events[0];

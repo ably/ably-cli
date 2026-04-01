@@ -80,7 +80,7 @@ export default class ChannelsAppend extends AblyBaseCommand {
 
       const result = await channel.appendMessage(message, operation);
 
-      const versionSerial = result?.versionSerial;
+      const versionSerial = result.versionSerial;
 
       this.logCliEvent(
         flags,

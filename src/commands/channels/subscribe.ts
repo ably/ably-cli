@@ -132,7 +132,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
           channelName,
         );
 
-        return client!.channels.get(channelName, channelOptions);
+        return client.channels.get(channelName, channelOptions);
       });
 
       // Set up connection state logging
@@ -175,7 +175,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
             event: message.name || undefined,
             clientId: message.clientId,
             connectionId: message.connectionId,
-            data: message.data,
+            data: message.data as unknown,
             encoding: message.encoding,
             action:
               message.action === undefined ? undefined : String(message.action),
@@ -243,7 +243,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
         if (channelNames.length === 1) {
           this.log(
             formatSuccess(
-              `Subscribed to channel: ${formatResource(channelNames[0])}.`,
+              `Subscribed to channel: ${formatResource(channelNames[0]!)}.`,
             ),
           );
         } else {

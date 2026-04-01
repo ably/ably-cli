@@ -85,7 +85,7 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
         const event = message.name || "unknown";
         const logEvent = {
           channel: channelName,
-          data: message.data,
+          data: message.data as unknown,
           event,
           timestamp,
         };

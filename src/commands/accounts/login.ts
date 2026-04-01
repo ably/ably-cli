@@ -191,7 +191,7 @@ export default class AccountsLogin extends ControlBaseCommand {
 
       // Store custom endpoint if provided
       if (flags.endpoint) {
-        this.configManager.storeEndpoint(flags.endpoint as string);
+        this.configManager.storeEndpoint(flags.endpoint);
       }
 
       // Handle app selection based on available apps
@@ -202,7 +202,7 @@ export default class AccountsLogin extends ControlBaseCommand {
 
         if (apps.length === 1) {
           // Auto-select the only app
-          selectedApp = apps[0];
+          selectedApp = apps[0]!;
           isAutoSelected = true;
           this.configManager.setCurrentApp(selectedApp.id);
           this.configManager.storeAppInfo(selectedApp.id, {
@@ -274,7 +274,7 @@ export default class AccountsLogin extends ControlBaseCommand {
 
           if (keys.length === 1) {
             // Auto-select the only key
-            selectedKey = keys[0];
+            selectedKey = keys[0]!;
             isKeyAutoSelected = true;
             this.configManager.storeAppKey(selectedApp.id, selectedKey.key, {
               keyId: selectedKey.id,
@@ -390,7 +390,7 @@ export default class AccountsLogin extends ControlBaseCommand {
       // This handles platform differences safely and avoids shell injection
       await open(url);
     } catch (error) {
-      this.warn(`Failed to open browser: ${error}`);
+      this.warn(`Failed to open browser: ${String(error)}`);
       this.log(`Please visit ${url} manually to create an access token`);
     }
   }

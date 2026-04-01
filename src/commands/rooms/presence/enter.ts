@@ -89,7 +89,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       });
 
       this.room = await this.chatClient.rooms.get(this.roomName);
-      const currentRoom = this.room!;
+      const currentRoom = this.room;
 
       if (flags["show-others"]) {
         // Subscribe to room status changes only when showing others
@@ -103,14 +103,14 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
           if (member.clientId !== this.chatClient?.clientId) {
             this.sequenceCounter++;
             const timestamp = formatMessageTimestamp(
-              member.updatedAt?.getTime(),
+              member.updatedAt.getTime(),
             );
             const presenceEvent = {
               action: event.type,
               room: this.roomName,
               clientId: member.clientId,
               connectionId: member.connectionId,
-              data: member.data ?? null,
+              data: (member.data as unknown) ?? null,
               timestamp,
               ...(flags["sequence-numbers"]
                 ? { sequence: this.sequenceCounter }
@@ -160,13 +160,13 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
 
       this.logCliEvent(flags, "presence", "entering", "Entering presence", {
         room: this.roomName,
-        clientId: this.chatClient!.clientId,
+        clientId: this.chatClient.clientId,
         data: this.data,
       });
       await currentRoom.presence.enter(this.data ?? undefined);
       this.logCliEvent(flags, "presence", "entered", "Entered presence", {
         room: this.roomName,
-        clientId: this.chatClient!.clientId,
+        clientId: this.chatClient.clientId,
       });
 
       if (this.shouldOutputJson(flags)) {
@@ -175,8 +175,8 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
             presenceMessage: {
               action: "enter",
               room: this.roomName,
-              clientId: this.chatClient!.clientId,
-              connectionId: this.chatClient!.realtime.connection.id,
+              clientId: this.chatClient.clientId,
+              connectionId: this.chatClient.realtime.connection.id,
               data: this.data ?? null,
               timestamp: new Date().toISOString(),
             },
@@ -186,16 +186,16 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       } else {
         this.log(
           formatSuccess(
-            `Entered presence in room: ${formatResource(this.roomName!)}.`,
+            `Entered presence in room: ${formatResource(this.roomName)}.`,
           ),
         );
         this.log(
-          `${formatLabel("Client ID")} ${formatClientId(this.chatClient!.clientId ?? "unknown")}`,
+          `${formatLabel("Client ID")} ${formatClientId(this.chatClient.clientId ?? "unknown")}`,
         );
         this.log(
-          `${formatLabel("Connection ID")} ${this.chatClient!.realtime.connection.id}`,
+          `${formatLabel("Connection ID")} ${this.chatClient.realtime.connection.id}`,
         );
-        if (this.data !== undefined && this.data !== null) {
+        if (this.data !== null) {
           this.log(`${formatLabel("Data")} ${JSON.stringify(this.data)}`);
         }
         this.log(

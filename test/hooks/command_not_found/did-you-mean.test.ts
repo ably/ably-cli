@@ -137,12 +137,7 @@ async function setupTestContext(): Promise<TestContext> {
 
       const errorToThrow =
         input instanceof Error ? input : new TypeError(String(input));
-      const exitCode =
-        options?.exit ??
-        (input instanceof Errors.CLIError
-          ? (input as unknown as { oclif?: { exit?: number } }).oclif?.exit
-          : undefined) ??
-        1;
+      const exitCode = options.exit;
       if (exitCode !== false) {
         (
           errorToThrow as unknown as { oclif?: { exit: number | false } }
@@ -181,12 +176,7 @@ async function setupRejectingTestContext(): Promise<TestContext> {
 
       const errorToThrow =
         input instanceof Error ? input : new TypeError(String(input));
-      const exitCode =
-        options?.exit ??
-        (input instanceof Errors.CLIError
-          ? (input as unknown as { oclif?: { exit?: number } }).oclif?.exit
-          : undefined) ??
-        1;
+      const exitCode = options.exit;
       if (exitCode !== false) {
         (
           errorToThrow as unknown as { oclif?: { exit: number | false } }

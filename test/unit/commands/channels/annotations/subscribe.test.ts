@@ -153,9 +153,8 @@ describe("channels:annotations:subscribe command", () => {
       const events = records.filter(
         (r) =>
           r.type === "event" &&
-          (r as Record<string, unknown>).annotation &&
-          ((r as Record<string, unknown>).annotation as Record<string, unknown>)
-            .channel === "test-channel",
+          r.annotation &&
+          (r.annotation as Record<string, unknown>).channel === "test-channel",
       );
       expect(events.length).toBeGreaterThan(0);
       const record = events[0];
@@ -197,9 +196,8 @@ describe("channels:annotations:subscribe command", () => {
       const events = records.filter(
         (r) =>
           r.type === "event" &&
-          (r as Record<string, unknown>).annotation &&
-          ((r as Record<string, unknown>).annotation as Record<string, unknown>)
-            .channel === "test-channel",
+          r.annotation &&
+          (r.annotation as Record<string, unknown>).channel === "test-channel",
       );
       expect(events.length).toBeGreaterThan(0);
       expect(events[0]).toHaveProperty(
@@ -297,13 +295,11 @@ describe("channels:annotations:subscribe command", () => {
       const events = records.filter(
         (r) =>
           r.type === "event" &&
-          (r as Record<string, unknown>).annotation &&
-          ((r as Record<string, unknown>).annotation as Record<string, unknown>)
-            .id === "ann-minimal-001",
+          r.annotation &&
+          (r.annotation as Record<string, unknown>).id === "ann-minimal-001",
       );
       expect(events.length).toBeGreaterThan(0);
-      const annotation = (events[0] as Record<string, unknown>)
-        .annotation as Record<string, unknown>;
+      const annotation = events[0].annotation as Record<string, unknown>;
       expect(annotation).not.toHaveProperty("name");
       expect(annotation).not.toHaveProperty("clientId");
       expect(annotation).not.toHaveProperty("count");

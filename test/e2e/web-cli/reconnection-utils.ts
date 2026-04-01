@@ -43,10 +43,10 @@ export async function startWebServer(port: number): Promise<ChildProcess> {
     },
   );
 
-  webServerProcess.stdout?.on("data", (data) =>
+  webServerProcess.stdout.on("data", (data) =>
     console.log(`[Web Server]: ${data.toString().trim()}`),
   );
-  webServerProcess.stderr?.on("data", (data) =>
+  webServerProcess.stderr.on("data", (data) =>
     console.error(`[Web Server ERR]: ${data.toString().trim()}`),
   );
 

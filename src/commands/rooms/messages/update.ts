@@ -67,8 +67,8 @@ export default class MessagesUpdate extends ChatBaseCommand {
           flags,
         );
         if (
+          !parsedMetadata ||
           typeof parsedMetadata !== "object" ||
-          parsedMetadata === null ||
           Array.isArray(parsedMetadata)
         ) {
           this.fail(
@@ -98,8 +98,8 @@ export default class MessagesUpdate extends ChatBaseCommand {
           flags,
         );
         if (
+          !parsedHeaders ||
           typeof parsedHeaders !== "object" ||
-          parsedHeaders === null ||
           Array.isArray(parsedHeaders)
         ) {
           this.fail(

@@ -29,7 +29,7 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
     const { flags } = await this.parse(IntegrationsListCommand);
 
     // Display authentication information
-    this.showAuthInfoIfNeeded(flags);
+    await this.showAuthInfoIfNeeded(flags);
 
     const appId = await this.requireAppId(flags);
 

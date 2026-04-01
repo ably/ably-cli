@@ -10,7 +10,7 @@ export function parseKeyIdentifier(identifier: string): {
     const parts = identifier.split(".");
     // If it has exactly one period and no colon, it's likely an app_id.key_id
     if (parts.length === 2 && !identifier.includes(":")) {
-      return { appId: parts[0], keyId: parts[1] };
+      return { appId: parts[0]!, keyId: parts[1]! };
     }
   }
   return { keyId: identifier };

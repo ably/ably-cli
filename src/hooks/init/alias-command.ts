@@ -19,13 +19,14 @@ const singularToPluralMap: Record<string, string> = {
  * This allows commands like 'ably account list' to work as an alias for 'ably accounts list'
  * without requiring separate alias files for each command
  */
+// eslint-disable-next-line @typescript-eslint/require-await -- oclif Hook type requires async
 const hook: Hook<"init"> = async function () {
   // We need access to the arguments to modify them
   // The first two arguments are node and the script path,
   // so process.argv[2] contains the first CLI command (e.g., 'account')
   if (process.argv.length <= 2) return; // Not enough arguments
 
-  const firstArg = process.argv[2];
+  const firstArg = process.argv[2]!;
 
   // Check if this is a singular form that has a plural equivalent
   const pluralForm = singularToPluralMap[firstArg];

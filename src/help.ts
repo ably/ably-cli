@@ -36,7 +36,7 @@ export default class CustomHelp extends Help {
   // Override formatHelpOutput to apply stripAnsi when necessary
   formatHelpOutput(output: string): string {
     // Check if we're generating readme (passed as an option from oclif)
-    if (this.opts?.stripAnsi || process.env.GENERATING_README === "true") {
+    if (this.opts.stripAnsi || process.env.GENERATING_README === "true") {
       output = stripAnsi(output);
     }
 
@@ -101,8 +101,8 @@ export default class CustomHelp extends Help {
         if (match) {
           const [, indent, commandId, rest] = match;
           // Replace colons with spaces in the command ID
-          const formattedId = commandId.replaceAll(":", " ");
-          return indent + formattedId + rest;
+          const formattedId = commandId!.replaceAll(":", " ");
+          return indent! + formattedId + rest!;
         }
         return line;
       })
@@ -112,6 +112,7 @@ export default class CustomHelp extends Help {
   }
 
   // Override the display method to clean up trailing whitespace and exit cleanly
+  // eslint-disable-next-line @typescript-eslint/require-await -- oclif Help base class requires async
   async showCommandHelp(command: Command.Loadable): Promise<void> {
     // For topic commands, we need to add the COMMANDS section manually
     const output = this.formatCommand(command);
@@ -155,6 +156,7 @@ export default class CustomHelp extends Help {
   }
 
   // Override for root help as well
+  // eslint-disable-next-line @typescript-eslint/require-await -- oclif Help base class requires async
   async showRootHelp(): Promise<void> {
     // Get formatted output
     const output = this.formatRoot();
@@ -173,7 +175,7 @@ export default class CustomHelp extends Help {
     // Set flag to indicate we're showing root help
     this.isShowingRootHelp = true;
 
-    const args = process.argv || [];
+    const args = process.argv;
     const isWebCliHelp = args.includes("--web-cli-help");
 
     // Show web CLI help if:
@@ -230,7 +232,10 @@ export default class CustomHelp extends Help {
 
     // 3. Get, filter, combine, sort, and format visible commands/topics
     // Use a Map to ensure unique entries by command/topic name
-    const uniqueEntries = new Map();
+    const uniqueEntries = new Map<
+      string,
+      { id: string; description?: string; isCommand: boolean }
+    >();
 
     // Process commands first
     config.commands
@@ -268,7 +273,7 @@ export default class CustomHelp extends Help {
       const commandListString = this.renderList(
         combined.map((c) => {
           const description =
-            c.description && this.render(c.description.split("\n")[0]);
+            c.description && this.render(c.description.split("\n")[0]!);
           const descString = description
             ? chalk.whiteBright(description)
             : undefined;
@@ -358,12 +363,12 @@ export default class CustomHelp extends Help {
     );
 
     // Calculate padding for alignment
-    const maxCmdLength = Math.max(...commands.map(([cmd]) => cmd.length));
+    const maxCmdLength = Math.max(...commands.map(([cmd]) => cmd!.length));
 
     // Display commands with proper alignment
     commands.forEach(([cmd, desc]) => {
-      const paddedCmd = cmd.padEnd(maxCmdLength + 2);
-      lines.push(`  ${chalk.cyan(paddedCmd)}${chalk.whiteBright(desc)}`);
+      const paddedCmd = cmd!.padEnd(maxCmdLength + 2);
+      lines.push(`  ${chalk.cyan(paddedCmd)}${chalk.whiteBright(desc!)}`);
     });
 
     // Always show help instruction
@@ -556,7 +561,7 @@ export default class CustomHelp extends Help {
       this.renderList(
         visibleCommands.map((c) => {
           const description =
-            c.description && this.render(c.description.split("\n")[0]);
+            c.description && this.render(c.description.split("\n")[0]!);
           return [
             chalk.cyan(c.id),
             description ? chalk.whiteBright(description) : undefined,
@@ -586,7 +591,7 @@ export default class CustomHelp extends Help {
         .filter((t) => this.shouldDisplay({ id: t.name } as Command.Loadable)) // Reuse shouldDisplay logic
         .map((c) => {
           const description =
-            c.description && this.render(c.description.split("\n")[0]);
+            c.description && this.render(c.description.split("\n")[0]!);
           return [
             chalk.cyan(c.name),
             description ? chalk.whiteBright(description) : undefined,

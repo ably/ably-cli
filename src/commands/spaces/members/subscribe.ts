@@ -72,7 +72,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
         const now = Date.now();
 
         // Determine the action from the member's lastEvent
-        const action = member.lastEvent.name || "unknown";
+        const action = member.lastEvent.name;
         const clientId = member.clientId || "Unknown";
         const connectionId = member.connectionId || "Unknown";
 
@@ -123,7 +123,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
       };
 
       // Subscribe using the listener
-      await this.space!.members.subscribe("update", memberListener);
+      this.space!.members.subscribe("update", memberListener);
 
       this.logCliEvent(
         flags,

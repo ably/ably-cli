@@ -35,7 +35,12 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(AppsUpdateCommand);
+    const { args, flags: rawFlags } = await this.parse(AppsUpdateCommand);
+
+    // tls-only is typed as `boolean` by oclif but is actually `boolean | undefined` at runtime
+    const flags = rawFlags as Omit<typeof rawFlags, "tls-only"> & {
+      "tls-only": boolean | undefined;
+    };
 
     // Ensure at least one update parameter is provided
     if (flags.name === undefined && flags["tls-only"] === undefined) {
@@ -56,7 +61,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
       const updateData: { name?: string; tlsOnly?: boolean } = {};
 
       if (flags.name !== undefined) {
-        updateData.name = flags.name;
+        updateData.name = flags.name as string;
       }
 
       if (flags["tls-only"] !== undefined) {

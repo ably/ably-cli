@@ -215,11 +215,11 @@ export async function runBackgroundProcessAndGetOutput(
       }
     }, timeoutMs);
 
-    childProcess.stdout?.on("data", (data) => {
+    childProcess.stdout.on("data", (data) => {
       stdout += data.toString();
     });
 
-    childProcess.stderr?.on("data", (data) => {
+    childProcess.stderr.on("data", (data) => {
       stderr += data.toString();
     });
 
@@ -325,13 +325,14 @@ async function attemptProcessStart(
 
   // Use a separate promise for readiness detection with better error handling
   const readinessPromise = new Promise<void>((resolveReady, rejectReady) => {
-    const overallTimeout = setTimeout(async () => {
+    const overallTimeout = setTimeout(() => {
       // Ensure controller.abort is called only once
       if (!signal.aborted) {
-        const finalOutput = await readProcessOutput(outputPath);
-        controller.abort(
-          `Timeout for ${command}: Process did not emit ready signal "${readySignal}" within ${timeoutMs}ms. Output was: ${finalOutput.slice(-1000)}`,
-        );
+        void readProcessOutput(outputPath).then((finalOutput) => {
+          controller.abort(
+            `Timeout for ${command}: Process did not emit ready signal "${readySignal}" within ${timeoutMs}ms. Output was: ${finalOutput.slice(-1000)}`,
+          );
+        });
       }
     }, timeoutMs);
 
@@ -359,11 +360,7 @@ async function attemptProcessStart(
           const output = await readProcessOutput(outputPath);
 
           // Check if the child process has exited prematurely
-          if (
-            childProcess &&
-            childProcess.exitCode !== null &&
-            !signal.aborted
-          ) {
+          if (childProcess && childProcess.exitCode !== null) {
             const prematureExitOutput = await readProcessOutput(outputPath);
             controller.abort(
               `Process ${command} exited prematurely (code ${childProcess.exitCode}) before emitting ready signal "${readySignal}". Full Output:\n${prematureExitOutput}`,
@@ -483,7 +480,7 @@ async function attemptProcessStart(
 
     pollForSignal().catch((error) => {
       clearTimeout(overallTimeout);
-      rejectReady(error);
+      rejectReady(error instanceof Error ? error : new Error(String(error)));
     });
   });
 
@@ -553,12 +550,10 @@ async function attemptProcessStart(
 
     // Handle process exit early
     childProcess.on("exit", (code, _signal) => {
-      if (outputStream && !outputStream.destroyed) {
+      if (!outputStream.destroyed) {
         outputStream.end(() => {
           // Output stream ended after process exit
         });
-      } else {
-        // Output stream was already destroyed
       }
       if (code !== null && code !== 0 && code !== 130) {
         // 130 is SIGINT
@@ -584,7 +579,7 @@ async function attemptProcessStart(
 
     // Handle process errors more explicitly
     childProcess.on("error", (error) => {
-      if (outputStream && !outputStream.destroyed) {
+      if (!outputStream.destroyed) {
         outputStream.end();
       }
       // Explicitly reject readinessPromise if process errors out
@@ -607,9 +602,7 @@ async function attemptProcessStart(
     if (childProcess && !childProcess.killed) {
       childProcess.kill("SIGTERM");
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (!childProcess.killed) {
-        childProcess.kill("SIGKILL");
-      }
+      childProcess.kill("SIGKILL");
     }
     throw error;
   }
@@ -923,7 +916,7 @@ export async function displayTestFailureDebugOutput(
           }
         } catch (error) {
           console.error(`\n--- ${filePath} (error reading) ---`);
-          console.error(`Error: ${error}`);
+          console.error(`Error: ${String(error)}`);
         }
       }
 
@@ -931,7 +924,7 @@ export async function displayTestFailureDebugOutput(
     }
   } catch (debugError) {
     console.error(`\n=== DEBUG OUTPUT ERROR ===`);
-    console.error(`Error in debug output: ${debugError}`);
+    console.error(`Error in debug output: ${String(debugError)}`);
     console.error(`testCommands.length: ${testCommands.length}`);
     console.error(`testOutputFiles.size: ${testOutputFiles.size}`);
     console.error(`=== END DEBUG OUTPUT ERROR ===`);

@@ -92,7 +92,7 @@ export default class AccountsLogout extends ControlBaseCommand {
         // Suggest switching to another account if there are any left
         if (remainingAccounts.length > 0) {
           this.log(
-            `Use "ably accounts switch ${remainingAccounts[0].alias}" to select another account.`,
+            `Use "ably accounts switch ${remainingAccounts[0]!.alias}" to select another account.`,
           );
         } else {
           this.log(

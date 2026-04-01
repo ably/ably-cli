@@ -41,6 +41,7 @@ export default class StatsAppCommand extends StatsBaseCommand {
     return controlApi.getAppStats(this.appId, params);
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await -- base class requires async
   protected async getStatsLabel(): Promise<string> {
     return `app ${formatResource(this.appId)}`;
   }

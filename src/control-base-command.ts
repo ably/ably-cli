@@ -68,7 +68,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
     // If app is provided in flags, use it (it could be ID or name)
     if (flags.app) {
       // Try to parse as app ID or name
-      return await this.resolveAppIdFromNameOrId(flags.app, flags);
+      return this.resolveAppIdFromNameOrId(flags.app, flags);
     }
 
     // Try to get from current app configuration
@@ -78,7 +78,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
     }
 
     // No app ID found, try to prompt for it
-    return await this.promptForApp(flags);
+    return this.promptForApp(flags);
   }
 
   /**

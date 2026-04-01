@@ -15,7 +15,7 @@ export interface MemberOutput {
   connectionId: string;
   isConnected: boolean;
   profileData: Record<string, unknown> | null;
-  location: unknown | null;
+  location: unknown;
   lastEvent: { name: string; timestamp: string };
 }
 
@@ -61,7 +61,7 @@ export function formatCursorOutput(cursor: CursorUpdate): CursorOutput {
     clientId: cursor.clientId,
     connectionId: cursor.connectionId,
     position: cursor.position,
-    data: (cursor.data as Record<string, unknown>) ?? null,
+    data: (cursor.data as Record<string, unknown> | null) ?? null,
   };
 }
 
@@ -71,7 +71,7 @@ export function formatLockOutput(lock: Lock): LockOutput {
     status: lock.status,
     member: formatMemberOutput(lock.member),
     timestamp: new Date(lock.timestamp).toISOString(),
-    attributes: (lock.attributes as Record<string, unknown>) ?? null,
+    attributes: (lock.attributes as Record<string, unknown> | null) ?? null,
     reason: lock.reason
       ? {
           message: lock.reason.message,

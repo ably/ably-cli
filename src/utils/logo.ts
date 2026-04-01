@@ -29,12 +29,11 @@ export function displayLogo(
   const logoWidth = Math.max(...logo.map((line) => line.length));
 
   // Display each line with gradient color
-  for (let y = 0; y < logoHeight; y++) {
-    const line = logo[y];
+  for (const [y, line] of logo.entries()) {
     let coloredLine = "";
 
     for (let x = 0; x < line.length; x++) {
-      const element = line[x];
+      const element = line[x]!;
       // Skip spaces - they don't need coloring
       if (element === " ") {
         coloredLine += " ";

@@ -163,15 +163,15 @@ test.describe("Web CLI E2E Tests", () => {
     // Check if the scrollbar appears when needed
     const scrollbarInfo = await page.evaluate((selector) => {
       const terminal = document.querySelector(selector) as HTMLElement;
-      const scrollContainer = terminal?.querySelector(
+      const scrollContainer = terminal.querySelector(
         ".xterm-screen",
       ) as HTMLElement;
 
       return {
-        terminalHeight: terminal?.clientHeight || 0,
-        scrollHeight: scrollContainer?.scrollHeight || 0,
+        terminalHeight: terminal.clientHeight || 0,
+        scrollHeight: scrollContainer.scrollHeight || 0,
         hasScrollbar:
-          (scrollContainer?.scrollHeight || 0) > (terminal?.clientHeight || 0),
+          (scrollContainer.scrollHeight || 0) > (terminal.clientHeight || 0),
       };
     }, terminalSelector);
 

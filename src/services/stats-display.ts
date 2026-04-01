@@ -95,7 +95,11 @@ export class StatsDisplay {
     }
   }
 
-  public display(stats: StatsDisplayData): void {
+  public display(stats: StatsDisplayData | null): void {
+    if (!stats) {
+      return;
+    }
+
     if (this.options.json) {
       const record = buildJsonRecord(
         this.options.live ? JsonRecordType.Event : JsonRecordType.Result,
@@ -108,11 +112,6 @@ export class StatsDisplay {
           prettyJson: this.options.prettyJson,
         }),
       );
-      return;
-    }
-
-    // For no stats, just return
-    if (!stats) {
       return;
     }
 
@@ -697,9 +696,13 @@ export class StatsDisplay {
           // Format: yyyy-mm-dd:hh:mm
           const parts = intervalId.split(":");
           if (parts.length >= 3) {
-            const [year, month, day] = parts[0].split("-").map(Number);
-            const hour = Number.parseInt(parts[1]);
-            const minute = Number.parseInt(parts[2]);
+            const [year, month, day] = parts[0]!.split("-").map(Number) as [
+              number,
+              number,
+              number,
+            ];
+            const hour = Number.parseInt(parts[1]!);
+            const minute = Number.parseInt(parts[2]!);
             date = new Date(Date.UTC(year, month - 1, day, hour, minute));
 
             const utcTime = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")} UTC`;
@@ -711,7 +714,14 @@ export class StatsDisplay {
               /^(\d{4})-(\d{2})-(\d{2}):(\d{2}):(\d{2})$/,
             );
             if (match) {
-              const [_, year, month, day, hour, minute] = match.map(Number);
+              const [, year, month, day, hour, minute] = match.map(Number) as [
+                number,
+                number,
+                number,
+                number,
+                number,
+                number,
+              ];
               date = new Date(Date.UTC(year, month - 1, day, hour, minute));
 
               const utcTime = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")} UTC`;
@@ -729,7 +739,13 @@ export class StatsDisplay {
           // Format: yyyy-mm-dd:hh
           const match = intervalId.match(/^(\d{4})-(\d{2})-(\d{2}):(\d{2})$/);
           if (match) {
-            const [_, year, month, day, hour] = match.map(Number);
+            const [, year, month, day, hour] = match.map(Number) as [
+              number,
+              number,
+              number,
+              number,
+              number,
+            ];
             date = new Date(Date.UTC(year, month - 1, day, hour));
 
             const utcTime = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hour.toString().padStart(2, "0")}:00 UTC`;
@@ -756,7 +772,12 @@ export class StatsDisplay {
           }
 
           if (match) {
-            const [_, year, month, day] = match.map(Number);
+            const [, year, month, day] = match.map(Number) as [
+              number,
+              number,
+              number,
+              number,
+            ];
             date = new Date(Date.UTC(year, month - 1, day));
 
             const utcTime = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} UTC`;
@@ -782,8 +803,8 @@ export class StatsDisplay {
           }
 
           if (match) {
-            const year = Number.parseInt(match[1]);
-            const month = Number.parseInt(match[2]);
+            const year = Number.parseInt(match[1]!);
+            const month = Number.parseInt(match[2]!);
             date = new Date(Date.UTC(year, month - 1, 1));
 
             const utcTime = `${year}-${month.toString().padStart(2, "0")} UTC`;

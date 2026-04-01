@@ -484,7 +484,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             // Unauthorized
             if (clientOptions.key) {
               // Check the original options object
-              this.handleInvalidKey(flags);
+              void this.handleInvalidKey(flags);
               reject(
                 Object.assign(
                   new Error(
@@ -519,7 +519,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       // Handle any synchronous errors when creating the client
       const err = error as { code?: number } & Error; // Type assertion
       if (
-        (err.code === 40_100 || err.message?.includes("invalid key")) && // Unauthorized or invalid key format
+        (err.code === 40_100 || err.message.includes("invalid key")) && // Unauthorized or invalid key format
         flags["api-key"]
       ) {
         // Provided key is invalid - reset it
@@ -626,7 +626,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           const apiKey =
             flags["api-key"] || this.configManager.getApiKey(appId);
           if (apiKey) {
-            const keyId = apiKey.split(":")[0]; // Extract key ID (part before colon)
+            const keyId = apiKey.split(":")[0]!; // Extract key ID (part before colon)
             const keyName =
               this.configManager.getKeyName(appId) || "Default Key";
             // Format the full key name (app_id.key_id)
@@ -809,7 +809,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       }
     } catch (error) {
       // Log but don't throw cleanup errors
-      this.debug(`Realtime client cleanup error: ${error}`);
+      this.debug(`Realtime client cleanup error: ${String(error)}`);
     }
 
     // Call super to maintain the parent class functionality
@@ -1097,13 +1097,13 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       return null;
     }
 
-    const keyParts = parts[0].split(".");
+    const keyParts = parts[0]!.split(".");
     if (keyParts.length !== 2) {
       this.debug(`Invalid API key format: missing period separator in key`);
       return null;
     }
 
-    const appId = keyParts[0];
+    const appId = keyParts[0]!;
     const keyId = keyParts[1];
     const keySecret = parts[1];
 
@@ -1307,9 +1307,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       : timeoutMs;
 
     return new Promise((resolve, reject) => {
-      let cleanupTimedOut = false;
       const timeout = setTimeout(() => {
-        cleanupTimedOut = true;
         // Log timeout only if not in JSON mode
         if (!this.shouldOutputJson({})) {
           // TODO: Pass actual flags here
@@ -1319,7 +1317,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       }, effectiveTimeout);
 
       // Execute the cleanup function
-      (async () => {
+      void (async () => {
         try {
           await cleanupFunction();
         } catch (error) {
@@ -1334,10 +1332,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           // For now, we just log it
         } finally {
           clearTimeout(timeout);
-          // Only resolve if the timeout didn't already reject
-          if (!cleanupTimedOut) {
-            resolve();
-          }
+          resolve();
         }
       })();
     });
@@ -1501,7 +1496,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     value: string,
     flagName: string,
     flags: BaseFlags = {},
-  ): Record<string, unknown> {
+  ): unknown {
     const trimmed = value.trim();
     try {
       return JSON.parse(trimmed);
@@ -1541,7 +1536,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   ): Record<string, unknown> {
     const parsed = this.parseJsonFlag(value, flagName, flags);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      this.fail(`${flagName} must be a JSON object`, flags, "parse");
+      this.fail(
+        `${flagName} must be a JSON object, not ${Array.isArray(parsed) ? "an array" : typeof parsed}`,
+        flags,
+        "parse",
+      );
     }
     return parsed as Record<string, unknown>;
   }
@@ -1596,12 +1595,14 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       humanMessage += `\n${friendlyHint}`;
     }
 
-    const code = cmdError.code ?? cmdError.context.errorCode;
+    const code =
+      cmdError.code ??
+      (cmdError.context.errorCode as number | string | undefined);
     if (code !== undefined) {
-      const helpUrl = cmdError.context.helpUrl;
+      const helpUrl = cmdError.context.helpUrl as string | undefined;
       humanMessage += helpUrl
-        ? `\nAbly error code: ${code} (${helpUrl})`
-        : `\nAbly error code: ${code}`;
+        ? `\nAbly error code: ${String(code)} (${helpUrl})`
+        : `\nAbly error code: ${String(code)}`;
     }
 
     this.error(humanMessage);

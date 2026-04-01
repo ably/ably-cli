@@ -196,19 +196,13 @@ export function scheduleReconnect(
       );
       return;
     }
-    if (!reconnectCallback) {
-      console.error(
-        `[GlobalReconnect] ERROR: reconnectTimer FIRED for attempt #${attempts + 1}, but reconnectCallback is null/undefined!`,
-      );
-      return;
-    }
     console.log(
       `[GlobalReconnect] reconnectTimer FIRED. Attempting connection to ${url}, attempt #${attempts + 1}`,
     );
     reconnectCallback();
   }, delay);
   console.log(
-    `[GlobalReconnect] scheduleReconnect: NEW reconnectTimer scheduled with ID: ${reconnectTimer} for attempt #${attempts + 1}`,
+    `[GlobalReconnect] scheduleReconnect: NEW reconnectTimer scheduled with ID: ${String(reconnectTimer)} for attempt #${attempts + 1}`,
   );
 }
 

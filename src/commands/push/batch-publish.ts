@@ -252,7 +252,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
           recipientItems.map(({ entry }) => entry),
         );
 
-        const items = (response.items ?? []) as Record<string, unknown>[];
+        const items = response.items as Record<string, unknown>[];
         const failedWithIndex = items
           .map((item, i) => ({
             item,
@@ -270,8 +270,13 @@ export default class PushBatchPublish extends AblyBaseCommand {
 
         for (const { item, originalIndex } of failedWithIndex) {
           const error = item.error as Record<string, unknown> | undefined;
-          const message = error?.message ?? "Unknown error";
-          const code = error?.code ? ` (code: ${error.code})` : "";
+          const message =
+            typeof error?.message === "string"
+              ? error.message
+              : "Unknown error";
+          const code = error?.code
+            ? ` (code: ${String(error.code as string | number)})`
+            : "";
           failedDetails.push(`  Failed: ${message}${code}`);
           failedItems.push({ ...item, originalIndex });
         }
@@ -321,7 +326,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
           channelBatchSpecs,
         );
 
-        const responseItems = (response.items ?? []) as BatchResponseItem[];
+        const responseItems = response.items as BatchResponseItem[];
         const failedWithIndex = responseItems
           .map((item, i) => ({
             item,
@@ -336,7 +341,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
 
         for (const { item, originalIndex } of failedWithIndex) {
           failedDetails.push(
-            `  Failed on ${formatResource(item.channel)}: ${item.error?.message} (code: ${item.error?.code})`,
+            `  Failed on ${formatResource(item.channel)}: ${String(item.error?.message)} (code: ${String(item.error?.code)})`,
           );
           failedItems.push({ ...item, originalIndex });
         }
@@ -385,7 +390,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
       let data = "";
       process.stdin.setEncoding("utf8");
       process.stdin.on("data", (chunk) => {
-        data += chunk;
+        data += String(chunk);
       });
       process.stdin.on("end", () => {
         resolve(data);

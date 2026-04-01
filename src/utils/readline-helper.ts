@@ -14,7 +14,7 @@ export async function runInquirerWithReadlineRestore<T>(
 ): Promise<T> {
   if (!interactiveReadline) {
     // Not in interactive mode, just run the prompt normally
-    return await promptFn();
+    return promptFn();
   }
 
   // Pause readline and save its state
@@ -36,7 +36,7 @@ export async function runInquirerWithReadlineRestore<T>(
     return result;
   } finally {
     // Restore terminal settings
-    if (stdin.isTTY && isRaw !== undefined) {
+    if (stdin.isTTY) {
       stdin.setRawMode(isRaw);
     }
 

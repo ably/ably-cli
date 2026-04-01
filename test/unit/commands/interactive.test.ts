@@ -42,11 +42,10 @@ describe("Interactive Command", () => {
 
       // The run method sets the env var early, before any setup that might fail
       // We'll stub the setupReadline method to prevent actual readline setup
-      (cmd as unknown as { setupReadline: () => Promise<void> }).setupReadline =
-        async () => {
-          // Don't actually set up readline
-          throw new Error("Test complete");
-        };
+      (cmd as unknown as { setupReadline: () => void }).setupReadline = () => {
+        // Don't actually set up readline
+        throw new Error("Test complete");
+      };
 
       // Suppress console.error and stub process.exit using spies
       const consoleErrorSpy = vi

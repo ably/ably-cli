@@ -69,7 +69,7 @@ export const test = base.extend({
           if (process.env.VERBOSE_TESTS) {
             console.log(
               `[WebSocket] Sent at ${new Date().toISOString()}:`,
-              frame.payload?.toString().slice(0, 100),
+              frame.payload.toString().slice(0, 100),
             );
           }
           // Special handling for auth payloads in CI
@@ -92,7 +92,7 @@ export const test = base.extend({
           if (process.env.VERBOSE_TESTS) {
             console.log(
               `[WebSocket] Received at ${new Date().toISOString()}:`,
-              frame.payload?.toString().slice(0, 100),
+              frame.payload.toString().slice(0, 100),
             );
           }
         });

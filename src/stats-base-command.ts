@@ -102,7 +102,7 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
       });
 
       if (stats.length > 0) {
-        this.statsDisplay!.display(stats[0]);
+        this.statsDisplay!.display(stats[0]!);
       }
     } catch (error) {
       this.fail(error, flags, "stats");
@@ -163,7 +163,7 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
       this.pollInterval = setInterval(
         () => {
           if (!this.isPolling) {
-            this.pollStats(flags, controlApi);
+            void this.pollStats(flags, controlApi);
           } else if (flags.debug) {
             this.log(
               chalk.yellow(

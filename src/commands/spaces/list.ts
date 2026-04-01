@@ -103,7 +103,7 @@ export default class SpacesList extends SpacesBaseCommand {
       // Normalize names in a separate step (keep filter as pure predicate)
       const spaces = limitedSpaces.map((s) => {
         const match = s.channelId!.match(/^(.+?)::\$space(?:$|::)/)!;
-        return { ...s, channelId: match[1], spaceName: match[1] };
+        return { ...s, channelId: match[1]!, spaceName: match[1]! };
       });
 
       const paginationWarning = formatPaginationLog(

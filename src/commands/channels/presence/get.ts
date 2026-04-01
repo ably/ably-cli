@@ -102,7 +102,7 @@ export default class ChannelsPresenceGet extends AblyBaseCommand {
           clientId: member.clientId,
           connectionId: member.connectionId,
           action: member.action,
-          data: member.data ?? null,
+          data: (member.data as unknown) ?? null,
           timestamp: formatMessageTimestamp(member.timestamp),
           id: member.id,
         }));
@@ -125,8 +125,7 @@ export default class ChannelsPresenceGet extends AblyBaseCommand {
           `\n${formatHeading(`Presence members on channel: ${channelName}`)} (${formatCountLabel(items.length, "member")}):\n`,
         );
 
-        for (let i = 0; i < items.length; i++) {
-          const member = items[i];
+        for (const [i, member] of items.entries()) {
           this.log(`${formatIndex(i + 1)}`);
           this.log(
             `  ${formatLabel("Client ID")} ${formatClientId(member.clientId)}`,

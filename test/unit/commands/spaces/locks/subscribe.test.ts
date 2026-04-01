@@ -151,9 +151,9 @@ describe("spaces:locks:subscribe command", () => {
     it("should handle subscribe rejection gracefully", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locks.subscribe.mockRejectedValue(
-        new Error("Failed to subscribe to locks"),
-      );
+      space.locks.subscribe.mockImplementation(() => {
+        throw new Error("Failed to subscribe to locks");
+      });
 
       const { error } = await runCommand(
         ["spaces:locks:subscribe", "test-space"],

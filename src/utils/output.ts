@@ -201,11 +201,7 @@ export function formatMessagesOutput(messages: MessageDisplayFields[]): string {
       }
     }
 
-    if (
-      msg.annotations &&
-      msg.annotations.summary &&
-      Object.keys(msg.annotations.summary).length > 0
-    ) {
+    if (msg.annotations && Object.keys(msg.annotations.summary).length > 0) {
       lines.push(`${formatLabel("Annotations")}`);
       for (const [annotationType, value] of Object.entries(
         msg.annotations.summary,
@@ -277,7 +273,7 @@ export function formatPresenceOutput(
       if (isJsonData(msg.data)) {
         lines.push(`${formatLabel("Data")}`, formatMessageData(msg.data));
       } else {
-        lines.push(`${formatLabel("Data")} ${String(msg.data)}`);
+        lines.push(`${formatLabel("Data")} ${formatMessageData(msg.data)}`);
       }
     }
 
@@ -358,7 +354,7 @@ export function formatAnnotationsOutput(
       if (isJsonData(ann.data)) {
         lines.push(`${formatLabel("Data")}`, formatMessageData(ann.data));
       } else {
-        lines.push(`${formatLabel("Data")} ${String(ann.data)}`);
+        lines.push(`${formatLabel("Data")} ${formatMessageData(ann.data)}`);
       }
     }
 
@@ -374,7 +370,7 @@ export function formatAnnotationsOutput(
       if (isJsonData(ann.extras)) {
         lines.push(`${formatLabel("Extras")}`, formatMessageData(ann.extras));
       } else {
-        lines.push(`${formatLabel("Extras")} ${String(ann.extras)}`);
+        lines.push(`${formatLabel("Extras")} ${formatMessageData(ann.extras)}`);
       }
     }
 

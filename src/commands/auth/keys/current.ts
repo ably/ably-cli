@@ -45,14 +45,14 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
     }
 
     // Extract the key ID (part before the colon)
-    const keyId = this.configManager.getKeyId(appId) || apiKey.split(":")[0];
+    const keyId = this.configManager.getKeyId(appId) || apiKey.split(":")[0]!;
     const keyLabel = this.configManager.getKeyName(appId) || "Unnamed key";
     const appName = this.configManager.getAppName(appId) || appId;
 
     // Format the full key name (app_id.key_id)
     const keyName = keyId.includes(".")
       ? keyId
-      : `${appId}.${keyId.split(".")[1] || keyId}`;
+      : `${appId}.${keyId.split(".")[1] ?? keyId}`;
 
     if (this.shouldOutputJson(flags)) {
       this.logJsonResult(
@@ -99,8 +99,8 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
     }
 
     // Parse components from the API key
-    const appId = apiKey.split(".")[0];
-    const keyComponents = apiKey.split(":")[0].split(".");
+    const appId = apiKey.split(".")[0]!;
+    const keyComponents = apiKey.split(":")[0]!.split(".");
     const keyId = keyComponents.length > 1 ? keyComponents[1] : null;
     const keyName = `${appId}.${keyId || ""}`;
 

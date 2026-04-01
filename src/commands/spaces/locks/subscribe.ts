@@ -72,7 +72,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
         }
       };
 
-      await this.space!.locks.subscribe(this.listener);
+      this.space!.locks.subscribe(this.listener);
 
       this.logCliEvent(
         flags,

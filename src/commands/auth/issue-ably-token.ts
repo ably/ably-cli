@@ -60,9 +60,11 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
 
     try {
       // Parse capabilities
-      let capabilities;
+      let capabilities: { [key: string]: Ably.capabilityOp[] | ["*"] };
       try {
-        capabilities = JSON.parse(flags.capability);
+        capabilities = JSON.parse(flags.capability) as {
+          [key: string]: Ably.capabilityOp[] | ["*"];
+        };
       } catch (error) {
         this.fail(error, flags, "issueAblyToken", {
           context: "parsing capability JSON",

@@ -112,11 +112,7 @@ export default class MessagesSend extends ChatBaseCommand {
           "metadata",
           flags,
         );
-        if (
-          typeof parsedMetadata !== "object" ||
-          parsedMetadata === null ||
-          Array.isArray(parsedMetadata)
-        ) {
+        if (Array.isArray(parsedMetadata)) {
           this.fail("Metadata must be a JSON object", flags, "roomMessageSend");
         }
 

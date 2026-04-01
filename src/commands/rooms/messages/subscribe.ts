@@ -103,7 +103,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         timestamp: message.timestamp.toISOString(),
         serial: message.serial,
         action: String(messageEvent.type),
-        ...(message.metadata ? { metadata: message.metadata } : {}),
+        metadata: message.metadata,
       };
       this.logCliEvent(flags, "message", "received", "Message received", {
         message: messageLog,
@@ -151,7 +151,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         );
 
         // Show metadata if enabled and available
-        if (flags["show-metadata"] && message.metadata) {
+        if (flags["show-metadata"]) {
           this.log(
             `${roomPrefix}  ${formatLabel("Metadata")} ${chalk.yellow(this.formatJsonOutput(message.metadata, flags))}`,
           );
@@ -232,7 +232,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       const roomList =
         this.roomNames.length > 1
           ? this.roomNames.map((r) => formatResource(r)).join(", ")
-          : formatResource(this.roomNames[0]);
+          : formatResource(this.roomNames[0]!);
 
       if (!this.shouldOutputJson(flags)) {
         this.log(

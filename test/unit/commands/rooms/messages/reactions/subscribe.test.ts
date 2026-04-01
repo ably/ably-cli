@@ -53,19 +53,18 @@ describe("rooms:messages:reactions:subscribe command", () => {
       );
 
       // Simulate a message reaction summary event
-      if (reactionsCallback) {
-        reactionsCallback({
-          messageSerial: "msg-123",
-          reactions: {
-            unique: {
-              like: { total: 1, clientIds: ["user1"] },
-            },
-            distinct: {
-              like: { total: 1, clientIds: ["user1"] },
-            },
+      reactionsCallback!({
+        messageSerial: "msg-123",
+        reactions: {
+          unique: {
+            like: { total: 1, clientIds: ["user1"] },
           },
-        });
-      }
+          distinct: {
+            like: { total: 1, clientIds: ["user1"] },
+          },
+          multiple: {},
+        },
+      });
 
       await commandPromise;
 
@@ -133,7 +132,7 @@ describe("rooms:messages:reactions:subscribe command", () => {
         (r) =>
           r.type === "event" &&
           r.reactionSummary?.summary &&
-          r.reactionSummary?.room,
+          r.reactionSummary.room,
       );
 
       // Verify that reaction summary was actually output in JSON format

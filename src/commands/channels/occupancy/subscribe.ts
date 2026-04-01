@@ -88,10 +88,11 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
 
       await channel.subscribe(occupancyEventName, (message: Ably.Message) => {
         const timestamp = formatMessageTimestamp(message.timestamp);
+        const data = message.data as Record<string, unknown> | undefined;
         const event = {
           channel: channelName,
           event: occupancyEventName,
-          data: message.data,
+          data,
           timestamp,
         };
         this.logCliEvent(
@@ -111,8 +112,8 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
             `${formatLabel("Event")} ${formatEventType("Occupancy Update")}`,
           );
 
-          if (message.data?.metrics) {
-            const metrics = message.data.metrics;
+          const metrics = data?.metrics as Record<string, number> | undefined;
+          if (metrics) {
             this.log(`${formatLabel("Connections")} ${metrics.connections}`);
             this.log(`${formatLabel("Publishers")} ${metrics.publishers}`);
             this.log(`${formatLabel("Subscribers")} ${metrics.subscribers}`);

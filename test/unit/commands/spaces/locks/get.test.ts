@@ -25,7 +25,7 @@ describe("spaces:locks:get command", () => {
     it("should get a specific lock by ID", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locks.get.mockResolvedValue({
+      space.locks.get.mockReturnValue({
         id: "my-lock",
         member: {
           clientId: "user-1",
@@ -54,7 +54,7 @@ describe("spaces:locks:get command", () => {
     it("should output JSON envelope with type and command for single lock result", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locks.get.mockResolvedValue({
+      space.locks.get.mockReturnValue({
         id: "my-lock",
         member: {
           clientId: "user-1",
@@ -91,7 +91,7 @@ describe("spaces:locks:get command", () => {
     it("should handle lock not found", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locks.get.mockResolvedValue(null);
+      space.locks.get.mockReturnValue(null);
 
       const { stdout } = await runCommand(
         ["spaces:locks:get", "test-space", "nonexistent-lock", "--json"],
@@ -197,7 +197,9 @@ describe("spaces:locks:get command", () => {
     it("should handle single lock get errors gracefully", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
-      space.locks.get.mockRejectedValue(new Error("Failed to get lock"));
+      space.locks.get.mockImplementation(() => {
+        throw new Error("Failed to get lock");
+      });
 
       const { error } = await runCommand(
         ["spaces:locks:get", "test-space", "my-lock"],

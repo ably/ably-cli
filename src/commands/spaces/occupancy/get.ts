@@ -49,8 +49,17 @@ export default class SpacesOccupancyGet extends SpacesBaseCommand {
         null,
       );
 
-      const occupancyData = channelDetails.items?.[0] || {};
-      const raw = occupancyData.status?.occupancy?.metrics || {};
+      const occupancyData = (channelDetails.items[0] ?? {}) as Record<
+        string,
+        unknown
+      >;
+      const status = occupancyData.status as
+        | Record<string, unknown>
+        | undefined;
+      const occupancy = status?.occupancy as
+        | Record<string, unknown>
+        | undefined;
+      const raw = (occupancy?.metrics ?? {}) as Record<string, number>;
       const occupancyMetrics: OccupancyMetrics = {
         connections: raw.connections ?? 0,
         presenceMembers: raw.presenceMembers ?? 0,

@@ -81,8 +81,8 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
         );
       }
 
-      const keyName = keyParts[0]; // This gets the appId.keyId portion
-      const secret = keyParts[1];
+      const keyName = keyParts[0]!; // This gets the appId.keyId portion
+      const secret = keyParts[1]!;
 
       // Create the properly formatted body for token revocation
       const requestBody = {
@@ -158,7 +158,10 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
         res.on("end", () => {
           if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
             try {
-              const jsonResponse = data.length > 0 ? JSON.parse(data) : null;
+              const jsonResponse: Record<string, unknown> | null =
+                data.length > 0
+                  ? (JSON.parse(data) as Record<string, unknown>)
+                  : null;
               resolve(jsonResponse);
             } catch {
               resolve(data);

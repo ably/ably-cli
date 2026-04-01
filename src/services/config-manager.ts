@@ -329,7 +329,7 @@ export class TomlConfigManager implements ConfigManager {
       // Write the config to disk
       fs.writeFileSync(this.configPath, tomlContent, { mode: 0o600 }); // Secure file permissions
     } catch (error) {
-      throw new Error(`Failed to save Ably config: ${error}`);
+      throw new Error(`Failed to save Ably config: ${String(error)}`);
     }
   }
 
@@ -343,7 +343,7 @@ export class TomlConfigManager implements ConfigManager {
     }
 
     // Set the current app for this account
-    this.config.accounts[currentAlias].currentAppId = appId;
+    this.config.accounts[currentAlias]!.currentAppId = appId;
     this.saveConfig();
   }
 
@@ -496,12 +496,12 @@ export class TomlConfigManager implements ConfigManager {
     if (fs.existsSync(this.configPath)) {
       try {
         const configContent = fs.readFileSync(this.configPath, "utf8");
-        this.config = parse(configContent) as unknown as AblyConfig;
-
-        // Ensure config has the expected structure
-        if (!this.config.accounts) {
-          this.config.accounts = {};
-        }
+        // Parse returns unknown shape — accounts may be absent in fresh configs
+        const parsed = parse(configContent) as unknown as Partial<AblyConfig>;
+        this.config = {
+          ...parsed,
+          accounts: parsed.accounts ?? {},
+        };
 
         // Migrate old config format if needed - move app from current to account.currentAppId
         const legacyCurrent = this.config.current as
@@ -520,7 +520,7 @@ export class TomlConfigManager implements ConfigManager {
           }
         }
       } catch (error) {
-        throw new Error(`Failed to load Ably config: ${error}`);
+        throw new Error(`Failed to load Ably config: ${String(error)}`);
       }
     }
   }

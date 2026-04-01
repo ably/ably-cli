@@ -35,7 +35,6 @@ async function getChannelHistory(channelName: string): Promise<Ably.Message[]> {
 async function listAllChannels(): Promise<string[]> {
   const client = createAblyClient();
   const result = await client.request("get", "/channels", 2, {}, null);
-  if (!result.items) return [];
   return result.items.map(
     (channel: { channelId: string }) => channel.channelId,
   );
@@ -137,7 +136,7 @@ describe("Channel E2E Tests", () => {
 
     if (!listResult.stdout || listResult.stdout.trim() === "") {
       throw new Error(
-        `Command returned empty output. Exit code: ${listResult.exitCode}, Stderr: ${listResult.stderr}, Stdout length: ${listResult.stdout?.length || 0}`,
+        `Command returned empty output. Exit code: ${listResult.exitCode}, Stderr: ${listResult.stderr}, Stdout length: ${listResult.stdout.length}`,
       );
     }
 
@@ -176,7 +175,7 @@ describe("Channel E2E Tests", () => {
 
     if (!listResult.stdout || listResult.stdout.trim() === "") {
       throw new Error(
-        `Command returned empty output. Exit code: ${listResult.exitCode}, Stderr: ${listResult.stderr}, Stdout length: ${listResult.stdout?.length || 0}`,
+        `Command returned empty output. Exit code: ${listResult.exitCode}, Stderr: ${listResult.stderr}, Stdout length: ${listResult.stdout.length}`,
       );
     }
 
@@ -185,7 +184,7 @@ describe("Channel E2E Tests", () => {
       result = JSON.parse(listResult.stdout);
     } catch (parseError) {
       throw new Error(
-        `Failed to parse JSON output. Parse error: ${parseError}. Exit code: ${listResult.exitCode}, Stderr: ${listResult.stderr}, Stdout: ${listResult.stdout}`,
+        `Failed to parse JSON output. Parse error: ${String(parseError)}. Exit code: ${listResult.exitCode}, Stderr: ${listResult.stderr}, Stdout: ${listResult.stdout}`,
       );
     }
     expect(result).toHaveProperty("success", true);
@@ -233,7 +232,7 @@ describe("Channel E2E Tests", () => {
 
     if (!publishResult.stdout || publishResult.stdout.trim() === "") {
       throw new Error(
-        `Publish command returned empty output. Exit code: ${publishResult.exitCode}, Stderr: ${publishResult.stderr}, Stdout length: ${publishResult.stdout?.length || 0}`,
+        `Publish command returned empty output. Exit code: ${publishResult.exitCode}, Stderr: ${publishResult.stderr}, Stdout length: ${publishResult.stdout.length}`,
       );
     }
 
@@ -257,7 +256,7 @@ describe("Channel E2E Tests", () => {
 
     if (!historyResult.stdout || historyResult.stdout.trim() === "") {
       throw new Error(
-        `History command returned empty output. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}, Stdout length: ${historyResult.stdout?.length || 0}`,
+        `History command returned empty output. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}, Stdout length: ${historyResult.stdout.length}`,
       );
     }
 
@@ -289,7 +288,7 @@ describe("Channel E2E Tests", () => {
 
     if (!historyResult.stdout || historyResult.stdout.trim() === "") {
       throw new Error(
-        `History command returned empty output. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}, Stdout length: ${historyResult.stdout?.length || 0}`,
+        `History command returned empty output. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}, Stdout length: ${historyResult.stdout.length}`,
       );
     }
 
@@ -334,7 +333,7 @@ describe("Channel E2E Tests", () => {
 
     if (!historyResult.stdout || historyResult.stdout.trim() === "") {
       throw new Error(
-        `JSON History command returned empty output. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}, Stdout length: ${historyResult.stdout?.length || 0}`,
+        `JSON History command returned empty output. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}, Stdout length: ${historyResult.stdout.length}`,
       );
     }
 
@@ -346,7 +345,7 @@ describe("Channel E2E Tests", () => {
       result = JSON.parse(lines.at(-1));
     } catch (parseError) {
       throw new Error(
-        `Failed to parse JSON history output. Parse error: ${parseError}. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}, Stdout: ${historyResult.stdout}`,
+        `Failed to parse JSON history output. Parse error: ${String(parseError)}. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}, Stdout: ${historyResult.stdout}`,
       );
     }
     expect(result).toHaveProperty("messages");
@@ -409,7 +408,7 @@ describe("Channel E2E Tests", () => {
 
     if (!batchPublishResult.stdout || batchPublishResult.stdout.trim() === "") {
       throw new Error(
-        `Batch publish command returned empty output. Exit code: ${batchPublishResult.exitCode}, Stderr: ${batchPublishResult.stderr}, Stdout length: ${batchPublishResult.stdout?.length || 0}`,
+        `Batch publish command returned empty output. Exit code: ${batchPublishResult.exitCode}, Stderr: ${batchPublishResult.stderr}, Stdout length: ${batchPublishResult.stdout.length}`,
       );
     }
 
@@ -432,7 +431,7 @@ describe("Channel E2E Tests", () => {
 
     if (!batchHistoryResult.stdout || batchHistoryResult.stdout.trim() === "") {
       throw new Error(
-        `Batch history command returned empty output. Exit code: ${batchHistoryResult.exitCode}, Stderr: ${batchHistoryResult.stderr}, Stdout length: ${batchHistoryResult.stdout?.length || 0}`,
+        `Batch history command returned empty output. Exit code: ${batchHistoryResult.exitCode}, Stderr: ${batchHistoryResult.stderr}, Stdout length: ${batchHistoryResult.stdout.length}`,
       );
     }
 
@@ -478,7 +477,7 @@ describe("Channel E2E Tests", () => {
 
     if (!countPublishResult.stdout || countPublishResult.stdout.trim() === "") {
       throw new Error(
-        `Count publish command returned empty output. Exit code: ${countPublishResult.exitCode}, Stderr: ${countPublishResult.stderr}, Stdout length: ${countPublishResult.stdout?.length || 0}`,
+        `Count publish command returned empty output. Exit code: ${countPublishResult.exitCode}, Stderr: ${countPublishResult.stderr}, Stdout length: ${countPublishResult.stdout.length}`,
       );
     }
 
@@ -513,7 +512,7 @@ describe("Channel E2E Tests", () => {
 
     if (!countHistoryResult.stdout || countHistoryResult.stdout.trim() === "") {
       throw new Error(
-        `Count history command returned empty output. Exit code: ${countHistoryResult.exitCode}, Stderr: ${countHistoryResult.stderr}, Stdout length: ${countHistoryResult.stdout?.length || 0}`,
+        `Count history command returned empty output. Exit code: ${countHistoryResult.exitCode}, Stderr: ${countHistoryResult.stderr}, Stdout length: ${countHistoryResult.stdout.length}`,
       );
     }
 

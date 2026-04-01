@@ -69,7 +69,7 @@ export default class SpacesSubscribe extends SpacesBaseCommand {
       const memberListener = (member: SpaceMember) => {
         const now = Date.now();
 
-        const action = member.lastEvent.name || "unknown";
+        const action = member.lastEvent.name;
         const clientId = member.clientId || "Unknown";
         const connectionId = member.connectionId || "Unknown";
 
@@ -158,7 +158,7 @@ export default class SpacesSubscribe extends SpacesBaseCommand {
       };
 
       // Subscribe to both member and location events
-      await this.space!.members.subscribe("update", memberListener);
+      this.space!.members.subscribe("update", memberListener);
       this.space!.locations.subscribe("update", locationListener);
 
       if (!this.shouldOutputJson(flags)) {

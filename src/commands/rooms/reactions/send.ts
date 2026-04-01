@@ -48,7 +48,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
       // Parse metadata if provided
       if (flags.metadata) {
         try {
-          this.metadataObj = JSON.parse(flags.metadata);
+          this.metadataObj = JSON.parse(flags.metadata) as JsonObject;
           this.logCliEvent(
             flags,
             "reaction",

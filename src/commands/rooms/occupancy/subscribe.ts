@@ -93,8 +93,8 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
 
       // Subscribe to room status changes
       this.setupRoomStatusHandler(room, flags, {
-        roomName: this.roomName!,
-        successMessage: `Subscribed to occupancy in room: ${formatResource(this.roomName!)}.`,
+        roomName: this.roomName,
+        successMessage: `Subscribed to occupancy in room: ${formatResource(this.roomName)}.`,
         listeningMessage: "Listening for occupancy updates.",
       });
 
@@ -145,7 +145,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
   }
 
   private displayOccupancyMetrics(
-    occupancyMetrics: OccupancyMetrics,
+    occupancyMetrics: OccupancyMetrics | undefined,
     roomName: string | null,
     flags: Record<string, unknown>,
   ): void {
@@ -165,8 +165,8 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
     } else {
       this.log(`${formatTimestamp(timestamp)}`);
       // Type guard to handle both OccupancyMetrics and OccupancyEvent
-      const connections = occupancyMetrics?.connections ?? 0;
-      const presenceMembers = occupancyMetrics?.presenceMembers ?? 0;
+      const connections = occupancyMetrics.connections ?? 0;
+      const presenceMembers = occupancyMetrics.presenceMembers ?? 0;
 
       this.log(`${formatLabel("Connections")} ${connections}`);
       this.log(`${formatLabel("Presence Members")} ${presenceMembers}`);

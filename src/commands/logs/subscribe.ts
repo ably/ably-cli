@@ -120,7 +120,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
             const event = {
               logType,
               timestamp,
-              data: message.data,
+              data: message.data as unknown,
               id: message.id,
             };
             this.logCliEvent(

@@ -64,7 +64,7 @@ export abstract class BaseTopicCommand extends InteractiveBaseCommand {
           }
         }
 
-        return await this.config.runCommand(fullCommandId, remainingArgs);
+        return this.config.runCommand(fullCommandId, remainingArgs);
       } else {
         // Try to find the closest subcommand
         const subcommands = await this.getTopicCommands();
@@ -88,7 +88,7 @@ export abstract class BaseTopicCommand extends InteractiveBaseCommand {
         // Check if we found a close match
         const threshold = Math.max(
           1,
-          Math.floor(possibleSubcommand.length / 2),
+          Math.floor(possibleSubcommand!.length / 2),
         );
         const maxDistance = 3;
 
@@ -129,7 +129,7 @@ export abstract class BaseTopicCommand extends InteractiveBaseCommand {
 
             const result = await runInquirerWithReadlineRestore(
               async () =>
-                inquirer.prompt([
+                inquirer.prompt<{ confirmed: boolean }>([
                   {
                     name: "confirmed",
                     type: "confirm",

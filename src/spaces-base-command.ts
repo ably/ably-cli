@@ -77,7 +77,9 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     const suppressedErrors: unknown[] = [];
     const onUnhandledRejection = (reason: unknown) => {
       suppressedErrors.push(reason);
-      this.debug(`Suppressed unhandled rejection during cleanup: ${reason}`);
+      this.debug(
+        `Suppressed unhandled rejection during cleanup: ${String(reason)}`,
+      );
     };
 
     process.on("unhandledRejection", onUnhandledRejection);
@@ -86,12 +88,12 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
       if (this.space !== null) {
         // Unsubscribe from all namespace listeners
         try {
-          await this.space.members.unsubscribe();
-          await this.space.locks.unsubscribe();
+          this.space.members.unsubscribe();
+          this.space.locks.unsubscribe();
           this.space.locations.unsubscribe();
           this.space.cursors.unsubscribe();
         } catch (error) {
-          this.debug(`Namespace unsubscribe error: ${error}`);
+          this.debug(`Namespace unsubscribe error: ${String(error)}`);
         }
 
         // Unsubscribe the SDK's internal presence handler on the space channel.
@@ -105,16 +107,16 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
           const spaceChannel = (
             this.space as unknown as { channel: Ably.RealtimeChannel }
           ).channel;
-          if (spaceChannel) {
-            spaceChannel.presence.unsubscribe();
-          }
+          spaceChannel.presence.unsubscribe();
         } catch (error) {
-          this.debug(`Space channel presence unsubscribe error: ${error}`);
+          this.debug(
+            `Space channel presence unsubscribe error: ${String(error)}`,
+          );
         }
 
         // Only leave and wait for member cleanup if we actually entered the space
         if (this.hasEnteredSpace) {
-          await this.space!.leave();
+          await this.space.leave();
           await new Promise((resolve) => setTimeout(resolve, 200));
 
           // Spaces maintains an internal map of members which have timeouts. This keeps node alive.
@@ -147,13 +149,13 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
             };
 
             intervalId = setInterval(() => {
-              getAll();
+              void getAll();
             }, 1000);
           });
         }
       }
     } catch (error) {
-      this.debug(`Space cleanup error: ${error}`);
+      this.debug(`Space cleanup error: ${String(error)}`);
     }
 
     await super.finally(error);
@@ -200,8 +202,8 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
 
     return {
       realtimeClient: this.realtimeClient,
-      space: this.space!,
-      spacesClient: this.spaces!,
+      space: this.space,
+      spacesClient: this.spaces,
     };
   }
 
@@ -297,12 +299,9 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     const setupResult = await this.setupSpacesClient(flags, spaceName);
     this.realtimeClient = setupResult.realtimeClient;
     this.space = setupResult.space;
-    if (!this.realtimeClient || !this.space) {
-      this.fail("Failed to initialize clients or space", flags, "client");
-    }
 
     if (setupConnectionLogging) {
-      this.setupConnectionStateLogging(this.realtimeClient!, flags, {
+      this.setupConnectionStateLogging(this.realtimeClient, flags, {
         includeUserFriendlyMessages: true,
       });
     }

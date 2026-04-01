@@ -89,7 +89,7 @@ export default class SpacesCursorsSubscribe extends SpacesBaseCommand {
         };
 
         await this.waitForCursorsChannelAttachment(flags);
-        await this.space!.cursors.subscribe("update", this.listener);
+        this.space!.cursors.subscribe("update", this.listener);
 
         this.logCliEvent(
           flags,

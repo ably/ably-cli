@@ -77,12 +77,14 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
       // Prepare update data - explicitly typed
       const updatePayload: Partial<Omit<PartialRuleData, "status">> = {
         ...(flags["request-mode"] && { requestMode: flags["request-mode"] }),
-        ...(flags.source && { source: JSON.parse(flags.source) }),
+        ...(flags.source && {
+          source: JSON.parse(flags.source) as Record<string, unknown>,
+        }),
         ...(flags.target && {
           target: {
             // Properly type the existing target
             ...(existingRule.target as Record<string, unknown>),
-            ...JSON.parse(flags.target),
+            ...(JSON.parse(flags.target) as Record<string, unknown>),
           },
         }),
       };
@@ -90,14 +92,14 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
       if (flags["channel-filter"]) {
         // Ensure source exists before assigning to channelFilter
         if (!updatePayload.source) updatePayload.source = {};
-        updatePayload.source!.channelFilter = flags["channel-filter"];
+        updatePayload.source.channelFilter = flags["channel-filter"];
       }
 
       // Update target if it's an HTTP rule and target-url is provided
       if (existingRule.ruleType === "http" && flags["target-url"]) {
         // Ensure target exists before assigning to url
         if (!updatePayload.target) updatePayload.target = {};
-        updatePayload.target!.url = flags["target-url"];
+        updatePayload.target.url = flags["target-url"];
       }
 
       const updatedRule = await controlApi.updateRule(
@@ -135,7 +137,7 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
           "url" in updatedRule.target
         ) {
           this.log(
-            `Target URL: ${(updatedRule.target as Record<string, unknown>).url}`,
+            `Target URL: ${String((updatedRule.target as Record<string, unknown>).url)}`,
           );
         }
         this.log(`Target: ${JSON.stringify(updatedRule.target, null, 2)}`);

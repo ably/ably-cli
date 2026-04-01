@@ -108,7 +108,7 @@ export default class RoomsPresenceGet extends AblyBaseCommand {
           clientId: member.clientId,
           connectionId: member.connectionId,
           action: member.action,
-          data: member.data ?? null,
+          data: (member.data as unknown) ?? null,
           timestamp: formatMessageTimestamp(member.timestamp),
           id: member.id,
         }));
@@ -129,8 +129,7 @@ export default class RoomsPresenceGet extends AblyBaseCommand {
           `\n${formatHeading(`Presence members in room: ${formatResource(roomName)}`)} (${formatCountLabel(items.length, "member")}):\n`,
         );
 
-        for (let i = 0; i < items.length; i++) {
-          const member = items[i];
+        for (const [i, member] of items.entries()) {
           this.log(`${formatIndex(i + 1)}`);
           this.log(
             `  ${formatLabel("Client ID")} ${formatClientId(member.clientId)}`,

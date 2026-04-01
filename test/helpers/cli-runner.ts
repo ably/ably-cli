@@ -218,7 +218,7 @@ export class CliRunner extends EventTarget {
     // Set up timeout
     if (this.opts.timeoutMs && this.opts.timeoutMs > 0) {
       this.timeoutHandle = setTimeout(() => {
-        this.kill("SIGKILL");
+        void this.kill("SIGKILL");
       }, this.opts.timeoutMs);
     }
 

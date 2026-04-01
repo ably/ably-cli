@@ -4222,7 +4222,7 @@ EXAMPLES
 
 COMMANDS
   ably rooms occupancy get        Get current occupancy metrics for a room
-  ably rooms occupancy subscribe  Subscribe to occupancy events on a room
+  ably rooms occupancy subscribe  Subscribe to real-time occupancy metrics for a room
 ```
 
 _See code: [src/commands/rooms/occupancy/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/occupancy/index.ts)_
@@ -4249,25 +4249,25 @@ DESCRIPTION
 EXAMPLES
   $ ably rooms occupancy get my-room
 
+  $ ABLY_API_KEY="YOUR_API_KEY" ably rooms occupancy get my-room
+
   $ ably rooms occupancy get my-room --json
 
   $ ably rooms occupancy get my-room --pretty-json
-
-  $ ABLY_API_KEY="YOUR_API_KEY" ably rooms occupancy get my-room
 ```
 
 _See code: [src/commands/rooms/occupancy/get.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/occupancy/get.ts)_
 
 ## `ably rooms occupancy subscribe ROOM`
 
-Subscribe to occupancy events on a room
+Subscribe to real-time occupancy metrics for a room
 
 ```
 USAGE
   $ ably rooms occupancy subscribe ROOM [-v] [--json | --pretty-json] [--client-id <value>] [-D <value>]
 
 ARGUMENTS
-  ROOM  Room to subscribe to occupancy events
+  ROOM  Room to subscribe to occupancy for
 
 FLAGS
   -D, --duration=<value>   Automatically exit after N seconds
@@ -4278,16 +4278,14 @@ FLAGS
       --pretty-json        Output in colorized JSON format
 
 DESCRIPTION
-  Subscribe to occupancy events on a room
+  Subscribe to real-time occupancy metrics for a room
 
 EXAMPLES
   $ ably rooms occupancy subscribe my-room
 
   $ ably rooms occupancy subscribe my-room --json
 
-  $ ably rooms occupancy subscribe my-room --duration 30
-
-  $ ably rooms occupancy subscribe my-room --pretty-json
+  $ ably rooms occupancy subscribe --pretty-json my-room
 ```
 
 _See code: [src/commands/rooms/occupancy/subscribe.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/rooms/occupancy/subscribe.ts)_

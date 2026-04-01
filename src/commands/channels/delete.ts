@@ -68,7 +68,7 @@ export default class ChannelsDelete extends AblyBaseCommand {
         operation,
       );
 
-      const versionSerial = result?.versionSerial;
+      const versionSerial = result.versionSerial;
 
       this.logCliEvent(
         flags,

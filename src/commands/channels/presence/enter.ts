@@ -102,7 +102,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
             channel: channelName,
             clientId: presenceMessage.clientId,
             connectionId: presenceMessage.connectionId,
-            data: presenceMessage.data,
+            data: presenceMessage.data as unknown,
             id: presenceMessage.id,
             timestamp,
             ...(flags["sequence-numbers"]
@@ -112,7 +112,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
           this.logCliEvent(
             flags,
             "presence",
-            presenceMessage.action!,
+            presenceMessage.action,
             `Presence event: ${presenceMessage.action} by ${presenceMessage.clientId}`,
             event,
           );

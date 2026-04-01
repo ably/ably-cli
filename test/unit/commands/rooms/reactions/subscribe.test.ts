@@ -49,16 +49,14 @@ describe("rooms:reactions:subscribe command", () => {
       );
 
       // Simulate a reaction event
-      if (reactionsCallback) {
-        reactionsCallback({
-          reaction: {
-            name: "heart",
-            clientId: "client-123",
-            metadata: { color: "red" },
-            createdAt: new Date("2025-01-01T00:00:00.000Z"),
-          },
-        });
-      }
+      reactionsCallback!({
+        reaction: {
+          name: "heart",
+          clientId: "client-123",
+          metadata: { color: "red" },
+          createdAt: new Date("2025-01-01T00:00:00.000Z"),
+        },
+      });
 
       await commandPromise;
 
@@ -120,7 +118,7 @@ describe("rooms:reactions:subscribe command", () => {
 
       // Find the JSON output with reaction data
       const records = allRecords.filter(
-        (r) => r.type === "event" && r.reaction?.name && r.reaction?.clientId,
+        (r) => r.type === "event" && r.reaction?.name && r.reaction.clientId,
       );
 
       // Verify that reaction event was actually output in JSON format

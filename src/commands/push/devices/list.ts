@@ -100,19 +100,20 @@ export default class PushDevicesList extends AblyBaseCommand {
 
       for (const device of devices) {
         this.log(formatHeading(`Device ID: ${device.id}`));
-        if (device.platform)
-          this.log(`  ${formatLabel("Platform")} ${device.platform}`);
-        if (device.formFactor)
-          this.log(`  ${formatLabel("Form Factor")} ${device.formFactor}`);
-        if (device.push?.state)
+        this.log(`  ${formatLabel("Platform")} ${device.platform}`);
+        this.log(`  ${formatLabel("Form Factor")} ${device.formFactor}`);
+        if (device.push.state)
           this.log(
             `  ${formatLabel("State")} ${formatDeviceState(device.push.state)}`,
           );
         if (device.clientId)
           this.log(`  ${formatLabel("Client ID")} ${device.clientId}`);
-        if (device.push?.recipient?.transportType) {
+        const recipient = device.push.recipient as
+          | Record<string, unknown>
+          | undefined;
+        if (recipient?.transportType) {
           this.log(
-            `  ${formatLabel("Transport")} ${device.push.recipient.transportType}`,
+            `  ${formatLabel("Transport")} ${recipient.transportType as string}`,
           );
         }
         if (device.metadata) {

@@ -68,7 +68,7 @@ export default class AccountsCurrent extends ControlBaseCommand {
         const apiKey = this.configManager.getApiKey(currentAppId);
         if (apiKey) {
           const keyId =
-            this.configManager.getKeyId(currentAppId) || apiKey.split(":")[0];
+            this.configManager.getKeyId(currentAppId) || apiKey.split(":")[0]!;
           const keyName =
             this.configManager.getKeyName(currentAppId) || "Unnamed key";
           const formattedKeyName = keyId.includes(".")
@@ -199,8 +199,8 @@ export default class AccountsCurrent extends ControlBaseCommand {
         let keyId = "";
 
         if (apiKey) {
-          appId = apiKey.split(".")[0];
-          keyId = apiKey.split(":")[0]; // This includes APP_ID.KEY_ID
+          appId = apiKey.split(".")[0]!;
+          keyId = apiKey.split(":")[0]!; // This includes APP_ID.KEY_ID
         }
 
         this.log(

@@ -114,11 +114,7 @@ describe("E2E: ably bench publisher and subscriber", () => {
               `[TEST] Subscriber process spawned with PID: ${subscriberProcess.pid}`,
             );
 
-            if (subscriberProcess.stdout) {
-              console.log("[TEST] subscriberProcess.stdout is available");
-            } else {
-              console.error("[TEST] ERROR: subscriberProcess.stdout is null!");
-            }
+            console.log("[TEST] subscriberProcess.stdout is available");
 
             let jsonBuffer = "";
 
@@ -152,7 +148,7 @@ describe("E2E: ably bench publisher and subscriber", () => {
                   continue;
                 }
 
-                if (char === '"' && !escapeNext) {
+                if (char === '"') {
                   inString = !inString;
                   continue;
                 }
@@ -190,7 +186,9 @@ describe("E2E: ably bench publisher and subscriber", () => {
                           resolveSubscriber();
                         }
                       } catch (err) {
-                        console.error(`[TEST] Failed to parse JSON: ${err}`);
+                        console.error(
+                          `[TEST] Failed to parse JSON: ${String(err)}`,
+                        );
                       }
                     }
                   }
@@ -220,7 +218,7 @@ describe("E2E: ably bench publisher and subscriber", () => {
                 } else {
                   rejectSubscriber(
                     new Error(
-                      `Subscriber process exited with code ${code}. Full Output:\n${subscriberOutput}\nStderr:\n${subscriberProcess?.stderr?.toString() || "N/A"}`,
+                      `Subscriber process exited with code ${code}. Full Output:\n${subscriberOutput}\nStderr:\n${String(subscriberProcess?.stderr) || "N/A"}`,
                     ),
                   );
                 }
@@ -319,14 +317,10 @@ describe("E2E: ably bench publisher and subscriber", () => {
       } catch (error) {
         testError = error;
       } finally {
-        if (subscriberProcess) {
-          const sp = subscriberProcess as ChildProcessWithoutNullStreams;
-          if (sp.killed === false) sp.kill("SIGTERM");
-        }
-        if (publisherProcess) {
-          const pp = publisherProcess as ChildProcessWithoutNullStreams;
-          if (pp.killed === false) pp.kill("SIGTERM");
-        }
+        const sp = subscriberProcess as ChildProcessWithoutNullStreams | null;
+        if (sp?.killed === false) sp.kill("SIGTERM");
+        const pp = publisherProcess as ChildProcessWithoutNullStreams | null;
+        if (pp?.killed === false) pp.kill("SIGTERM");
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
 

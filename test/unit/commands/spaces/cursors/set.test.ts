@@ -237,7 +237,7 @@ describe("spaces:cursors:set command", () => {
       const event = events[0];
       expect(event).toHaveProperty("command", "spaces:cursors:set");
       expect(event).toHaveProperty("cursor");
-      const cursor = event!.cursor as Record<string, unknown>;
+      const cursor = event.cursor as Record<string, unknown>;
       expect(cursor).toHaveProperty("position");
       expect(cursor).toHaveProperty("clientId");
       expect(cursor).toHaveProperty("connectionId");

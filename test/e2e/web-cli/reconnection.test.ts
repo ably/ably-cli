@@ -90,7 +90,7 @@ async function _waitForPrompt(
     const terminalContent = await getTerminalContent(page);
     console.log(
       "Terminal content:",
-      terminalContent?.slice(0, 500) || "No content",
+      terminalContent.slice(0, 500) || "No content",
     );
     console.log("-----------------------------------------");
 
@@ -574,7 +574,7 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
     const terminalText = await getTerminalContent(page);
     console.log(
       "Terminal content during reconnection:",
-      terminalText?.slice(0, 500),
+      terminalText.slice(0, 500),
     );
 
     // If we're already back to connected, skip the reconnection UI checks

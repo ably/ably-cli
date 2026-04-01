@@ -107,7 +107,7 @@ describe("Interactive Mode - Terminal Integration Tests", () => {
           sendKeys(child, "\nexit\n");
         };
 
-        sequence();
+        void sequence();
 
         child.on("exit", (_code) => {
           // Log output for debugging
@@ -178,7 +178,7 @@ describe("Interactive Mode - Terminal Integration Tests", () => {
           sendKeys(child, "exit\n");
         };
 
-        sequence();
+        void sequence();
 
         child.on("exit", () => {
           // More flexible checks
@@ -239,7 +239,7 @@ describe("Interactive Mode - Terminal Integration Tests", () => {
           sendKeys(child, "exit\n");
         };
 
-        sequence();
+        void sequence();
 
         child.on("exit", () => {
           // Should see multiple prompts indicating terminal state was maintained

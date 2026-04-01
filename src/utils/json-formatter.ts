@@ -11,7 +11,7 @@ export function formatJson(data: unknown): string {
 
   try {
     // For non-object/non-array simple values, don't do full JSON formatting
-    if (typeof data !== "object" || data === null) {
+    if (typeof data !== "object") {
       return colorValue(data);
     }
 
@@ -19,8 +19,16 @@ export function formatJson(data: unknown): string {
     const jsonString = JSON.stringify(data, null, 2);
     return colorizeJson(jsonString);
   } catch {
-    // If JSON serialization fails, return the string representation
-    return String(data);
+    // If JSON serialization fails (e.g. circular reference), return a safe string representation
+    if (typeof data !== "object") {
+      return String(data as string | number | boolean | bigint | symbol);
+    }
+
+    try {
+      return JSON.stringify(data);
+    } catch {
+      return "[Circular]";
+    }
   }
 }
 
@@ -45,7 +53,7 @@ export function isJsonData(data: unknown): boolean {
 
   if (typeof data === "string") {
     try {
-      const parsed = JSON.parse(data);
+      const parsed: unknown = JSON.parse(data);
       return typeof parsed === "object" && parsed !== null;
     } catch {
       return false;
@@ -78,7 +86,9 @@ function colorValue(value: unknown): string {
     }
 
     default: {
-      return String(value);
+      return typeof value === "object"
+        ? JSON.stringify(value)
+        : String(value as string | number | boolean | bigint | symbol);
     }
   }
 }

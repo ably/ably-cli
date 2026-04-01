@@ -168,7 +168,7 @@ export default class MessagesHistory extends ChatBaseCommand {
               timestamp: message.timestamp.toISOString(),
               serial: message.serial,
               action: String(message.action),
-              ...(message.metadata ? { metadata: message.metadata } : {}),
+              metadata: message.metadata,
             })),
             ...(next && { next }),
             room: args.room,
@@ -186,8 +186,7 @@ export default class MessagesHistory extends ChatBaseCommand {
 
           // Display messages in order provided
           const messagesInOrder = [...items];
-          for (let i = 0; i < messagesInOrder.length; i++) {
-            const message = messagesInOrder[i];
+          for (const [i, message] of messagesInOrder.entries()) {
             const timestamp = formatMessageTimestamp(message.timestamp);
             const author = message.clientId || "Unknown";
 
@@ -202,7 +201,7 @@ export default class MessagesHistory extends ChatBaseCommand {
             );
 
             // Show metadata if enabled and available
-            if (flags["show-metadata"] && message.metadata) {
+            if (flags["show-metadata"]) {
               this.log(
                 `  ${formatLabel("Metadata")} ${chalk.yellow(this.formatJsonOutput(message.metadata, flags))}`,
               );

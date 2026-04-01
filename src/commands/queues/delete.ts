@@ -41,7 +41,7 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(QueuesDeleteCommand);
-    if (!args.queueId?.trim()) {
+    if (!args.queueId.trim()) {
       this.fail("Queue ID cannot be empty", flags, "parse");
     }
 

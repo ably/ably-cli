@@ -91,17 +91,11 @@ export default class PushConfigShow extends ControlBaseCommand {
           if (config.apns.hasP8Key) {
             this.log(`  ${formatLabel("Auth Method")} P8 Key`);
             if (config.apns.teamId)
-              this.log(
-                `  ${formatLabel("Team ID")} ${config.apns.teamId as string}`,
-              );
+              this.log(`  ${formatLabel("Team ID")} ${config.apns.teamId}`);
             if (config.apns.keyId)
-              this.log(
-                `  ${formatLabel("Key ID")} ${config.apns.keyId as string}`,
-              );
+              this.log(`  ${formatLabel("Key ID")} ${config.apns.keyId}`);
             if (config.apns.bundleId)
-              this.log(
-                `  ${formatLabel("Bundle ID")} ${config.apns.bundleId as string}`,
-              );
+              this.log(`  ${formatLabel("Bundle ID")} ${config.apns.bundleId}`);
           }
         }
         this.log("");
@@ -110,9 +104,7 @@ export default class PushConfigShow extends ControlBaseCommand {
           `  ${formatLabel("Status")} ${fcmConfigured ? "Configured" : "Not configured"}`,
         );
         if (config.fcm.projectId) {
-          this.log(
-            `  ${formatLabel("Project ID")} ${config.fcm.projectId as string}`,
-          );
+          this.log(`  ${formatLabel("Project ID")} ${config.fcm.projectId}`);
         }
         this.log("");
         this.log("Web Push:");

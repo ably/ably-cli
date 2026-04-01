@@ -1,4 +1,3 @@
-import type * as Ably from "ably";
 import { ChatClient, LogLevel, Room, RoomStatus } from "@ably/chat";
 
 import { AblyBaseCommand } from "./base-command.js";
