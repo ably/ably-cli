@@ -34,6 +34,7 @@ import { useTerminalVisibility } from "./use-terminal-visibility.js";
 import { SplitSquareHorizontal, X } from "lucide-react";
 import { hashCredentials } from "./utils/crypto";
 import { getConnectionMessage } from "./connection-messages";
+import type { ControlMessage, AblyCliGlobals } from "./types";
 import {
   HandshakeFilterState,
   createHandshakeFilterState,
@@ -53,7 +54,7 @@ import {
 /**
  * Simple debounce utility function to prevent rapid successive calls
  */
-function debounce<T extends (...arguments_: any[]) => any>(
+function debounce<T extends (...arguments_: unknown[]) => void>(
   function_: T,
   wait: number,
 ): (...arguments_: Parameters<T>) => void {
@@ -148,7 +149,7 @@ if (globalThis.window !== undefined) {
       "cliDebug",
     );
     if (urlFlag === "true") {
-      (globalThis as any).ABLY_CLI_DEBUG = true;
+      (globalThis as typeof globalThis & AblyCliGlobals).ABLY_CLI_DEBUG = true;
     }
   } catch {
     /* ignore URL parsing errors in non-browser env */
@@ -594,11 +595,9 @@ const AblyCliTerminalInner = (
       connectionStatusReference.current = status;
 
       // Only report status changes from the primary terminal
-      if (
-        typeof (globalThis as any).setWindowTestFlagOnStatusChange ===
-        "function"
-      ) {
-        (globalThis as any).setWindowTestFlagOnStatusChange(status);
+      const g = globalThis as typeof globalThis & AblyCliGlobals;
+      if (typeof g.setWindowTestFlagOnStatusChange === "function") {
+        g.setWindowTestFlagOnStatusChange(status);
       }
 
       if (onConnectionStatusChange) {
@@ -839,7 +838,7 @@ const AblyCliTerminalInner = (
 
   // Extracted control message handler to avoid duplication
   const handleControlMessage = useCallback(
-    (message: any) => {
+    (message: ControlMessage) => {
       if (message.type === "hello" && typeof message.sessionId === "string") {
         debugLog(
           `⚠️ DIAGNOSTIC: Received hello message with sessionId=${message.sessionId}`,
@@ -1286,7 +1285,7 @@ const AblyCliTerminalInner = (
       socketReference.current &&
       socketReference.current.readyState === WebSocket.OPEN
     ) {
-      if ((globalThis as any).ABLY_CLI_DEBUG)
+      if ((globalThis as typeof globalThis & AblyCliGlobals).ABLY_CLI_DEBUG)
         console.warn(
           "[AblyCLITerminal] connectWebSocket already open/connecting – skip",
         );
@@ -1348,7 +1347,8 @@ const AblyCliTerminalInner = (
       `⚠️ DIAGNOSTIC: New WebSocket created with ID: ${Math.random().toString(36).slice(2, 10)}`,
     );
 
-    (globalThis as any).ablyCliSocket = newSocket; // For E2E tests
+    (globalThis as typeof globalThis & AblyCliGlobals).ablyCliSocket =
+      newSocket;
     socketReference.current = newSocket; // Use ref for listeners
     setSocket(newSocket); // Trigger effect to add listeners
 
@@ -1658,7 +1658,7 @@ const AblyCliTerminalInner = (
             message = getConnectionMessage("maxReconnects");
           } else if (grIsCancelledState()) {
             message = getConnectionMessage("reconnectCancelled");
-          } else if ((event as any).isTimeout) {
+          } else if ((event as Event & { isTimeout?: boolean }).isTimeout) {
             message = getConnectionMessage("connectionTimeout");
           } else {
             message = getConnectionMessage("connectionFailed");
@@ -2385,7 +2385,8 @@ const AblyCliTerminalInner = (
 
   useEffect(() => {
     // Expose a debug function to get current component state for Playwright
-    (globalThis as any).getAblyCliTerminalReactState = () => ({
+    const g = globalThis as typeof globalThis & AblyCliGlobals;
+    g.getAblyCliTerminalReactState = () => ({
       componentConnectionStatus,
       isSessionActive,
       connectionHelpMessage,
@@ -2398,7 +2399,7 @@ const AblyCliTerminalInner = (
     });
 
     // Expose a function to get terminal buffer content for testing
-    (globalThis as any).getTerminalBufferText = () => {
+    g.getTerminalBufferText = () => {
       if (!term.current) return "";
       const buffer = term.current.buffer.active;
       let text = "";
@@ -2412,7 +2413,7 @@ const AblyCliTerminalInner = (
     };
 
     // Expose terminal buffer info for debugging
-    (globalThis as any).getTerminalBufferInfo = () => {
+    g.getTerminalBufferInfo = () => {
       if (!term.current) return { exists: false };
       const buffer = term.current.buffer.active;
       return {
@@ -2426,9 +2427,10 @@ const AblyCliTerminalInner = (
     };
 
     return () => {
-      delete (globalThis as any).getAblyCliTerminalReactState;
-      delete (globalThis as any).getTerminalBufferText;
-      delete (globalThis as any).getTerminalBufferInfo;
+      const g2 = globalThis as typeof globalThis & AblyCliGlobals;
+      delete g2.getAblyCliTerminalReactState;
+      delete g2.getTerminalBufferText;
+      delete g2.getTerminalBufferInfo;
     };
   }, [
     componentConnectionStatus,
