@@ -128,7 +128,11 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
 
       // If token-only flag is set, output just the token string
       if (flags["token-only"]) {
-        this.log(token);
+        if (this.shouldOutputJson(flags)) {
+          this.logJsonResult({ token: { value: token } }, flags);
+        } else {
+          this.log(token);
+        }
         return;
       }
 

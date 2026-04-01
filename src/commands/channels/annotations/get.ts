@@ -118,7 +118,7 @@ export default class ChannelsAnnotationsGet extends AblyBaseCommand {
           flags.limit,
           "annotations",
         );
-        if (warning) this.log(warning);
+        if (warning) this.logToStderr(warning);
       }
     } catch (error) {
       this.fail(error, flags, "annotationGet", {

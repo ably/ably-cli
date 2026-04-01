@@ -167,7 +167,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
           flags,
         );
       } else {
-        this.warn(warningMessage);
+        this.logWarning(warningMessage, flags);
       }
     }
   }

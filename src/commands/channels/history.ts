@@ -175,7 +175,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
             flags.limit,
             "messages",
           );
-          if (warning) this.log(warning);
+          if (warning) this.logToStderr(warning);
         }
       }
     } catch (error) {

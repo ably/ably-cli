@@ -162,7 +162,7 @@ export default class QueuesListCommand extends ControlBaseCommand {
             flags.limit,
             "queues",
           );
-          if (warning) this.log(warning);
+          if (warning) this.logToStderr(warning);
         }
       }
     } catch (error) {

@@ -1,10 +1,10 @@
-import { Args, Flags } from "@oclif/core";
+import { Args } from "@oclif/core";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { CommandError } from "../../errors/command-error.js";
-import { productApiFlags } from "../../flags.js";
+import { forceFlag, productApiFlags } from "../../flags.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 import { BaseFlags } from "../../types/cli.js";
 import { formatCountLabel, formatResource } from "../../utils/output.js";
@@ -79,11 +79,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
-    force: Flags.boolean({
-      char: "f",
-      description:
-        "Skip confirmation prompt when publishing to channels (confirmation is also skipped in --json mode)",
-    }),
+    ...forceFlag,
   };
 
   async run(): Promise<void> {
@@ -222,12 +218,20 @@ export default class PushBatchPublish extends AblyBaseCommand {
 
       // Recipient-based push: route to /push/batch/publish
       if (recipientItems.length > 0) {
+        if (!flags.force && this.shouldOutputJson(flags)) {
+          this.fail(
+            "The --force flag is required when using --json to confirm publishing",
+            flags,
+            "pushBatchPublish",
+          );
+        }
+
         if (!this.shouldOutputJson(flags) && !flags.force) {
           const confirmed = await promptForConfirmation(
             `This will send push notifications to ${formatCountLabel(recipientItems.length, "recipient")}. Continue?`,
           );
           if (!confirmed) {
-            this.log("Publish cancelled.");
+            this.logWarning("Publish cancelled.", flags);
             return;
           }
         }
@@ -295,6 +299,14 @@ export default class PushBatchPublish extends AblyBaseCommand {
           },
         }));
 
+        if (!flags.force && this.shouldOutputJson(flags)) {
+          this.fail(
+            "The --force flag is required when using --json to confirm publishing",
+            flags,
+            "pushBatchPublish",
+          );
+        }
+
         if (!this.shouldOutputJson(flags) && !flags.force) {
           const allChannels = channelItems.flatMap(({ entry }) =>
             Array.isArray(entry.channels)
@@ -309,7 +321,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
             `This will send a push notification to all devices subscribed to ${formatCountLabel(uniqueChannels.length, "channel")} (${channelList}). Continue?`,
           );
           if (!confirmed) {
-            this.log("Publish cancelled.");
+            this.logWarning("Publish cancelled.", flags);
             return;
           }
         }

@@ -60,8 +60,9 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
     controlApi: ControlApi,
   ): Promise<void> {
     if (flags.live && flags.unit !== "minute") {
-      this.warn(
+      this.logWarning(
         "Live stats only support minute intervals. Using minute interval.",
+        flags,
       );
       flags.unit = "minute";
     }
@@ -115,7 +116,7 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
     try {
       this.isPolling = true;
       if (flags.debug) {
-        this.log(
+        this.logToStderr(
           chalk.dim(`\n[${new Date().toISOString()}] Polling for new stats...`),
         );
       }
@@ -162,7 +163,7 @@ export abstract class StatsBaseCommand extends ControlBaseCommand {
           if (!this.isPolling) {
             void this.pollStats(flags, controlApi);
           } else if (flags.debug) {
-            this.log(
+            this.logToStderr(
               chalk.yellow(
                 "Skipping poll - previous request still in progress",
               ),

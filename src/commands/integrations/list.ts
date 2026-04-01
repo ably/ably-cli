@@ -95,7 +95,7 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
             flags.limit,
             "integrations",
           );
-          if (warning) this.log(warning);
+          if (warning) this.logToStderr(warning);
         }
       }
     } catch (error) {

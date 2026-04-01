@@ -91,7 +91,7 @@ export default class AppsList extends ControlBaseCommand {
 
         if (hasMore) {
           const warning = formatLimitWarning(apps.length, flags.limit, "apps");
-          if (warning) this.log(warning);
+          if (warning) this.logToStderr(warning);
         }
       },
       "Error listing apps",

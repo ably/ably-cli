@@ -107,14 +107,18 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
       // Check if the revoked key is the current key for this app
       const currentKey = this.configManager.getApiKey(appId);
       if (currentKey === key.key) {
-        // Ask to delete the key from the config
-        const shouldRemove = await this.interactiveHelper.confirm(
-          "The revoked key was your current key for this app. Remove it from configuration?",
-        );
-
-        if (shouldRemove) {
+        if (this.shouldOutputJson(flags)) {
+          // Auto-remove in JSON mode — key is already revoked, can't be used
           this.configManager.removeApiKey(appId);
-          this.logSuccessMessage("Key removed from configuration.", flags);
+        } else {
+          const shouldRemove = await this.interactiveHelper.confirm(
+            "The revoked key was your current key for this app. Remove it from configuration?",
+          );
+
+          if (shouldRemove) {
+            this.configManager.removeApiKey(appId);
+            this.logSuccessMessage("Key removed from configuration.", flags);
+          }
         }
       }
     } catch (error) {

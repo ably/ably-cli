@@ -118,7 +118,7 @@ export default class RulesListCommand extends ControlBaseCommand {
             flags.limit,
             "rules",
           );
-          if (warning) this.log(warning);
+          if (warning) this.logToStderr(warning);
         }
       }
     } catch (error) {

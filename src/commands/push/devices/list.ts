@@ -125,7 +125,7 @@ export default class PushDevicesList extends AblyBaseCommand {
           flags.limit,
           "device registrations",
         );
-        if (limitWarning) this.log(limitWarning);
+        if (limitWarning) this.logToStderr(limitWarning);
       }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushDeviceList");

@@ -161,7 +161,7 @@ export default class RoomsList extends ChatBaseCommand {
             flags.limit,
             "rooms",
           );
-          if (warning) this.log(`\n${warning}`);
+          if (warning) this.logToStderr(`\n${warning}`);
         }
       }
     } catch (error) {

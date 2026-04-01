@@ -172,7 +172,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
             flags.limit,
             "logs",
           );
-          if (warning) this.log(warning);
+          if (warning) this.logToStderr(warning);
         }
       }
     } catch (error) {

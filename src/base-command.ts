@@ -1008,10 +1008,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       // When using token auth, we don't set the clientId as it may conflict
       // with any clientId embedded in the token
       if (flags["client-id"] && !this.shouldSuppressOutput(flags)) {
-        this.logToStderr(
-          chalk.yellow(
-            "Warning: clientId is ignored when using token authentication as the clientId is embedded in the token",
-          ),
+        this.logWarning(
+          "clientId is ignored when using token authentication as the clientId is embedded in the token.",
+          flags,
         );
       }
     } else if (flags["api-key"]) {
@@ -1337,15 +1336,22 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     const appId = flags.app || this.configManager.getCurrentAppId();
 
     if (appId) {
-      this.log("The configured API key appears to be invalid or revoked.");
-
-      const shouldRemove = await this.interactiveHelper.confirm(
-        "Would you like to remove this invalid key from your configuration?",
-      );
-
-      if (shouldRemove) {
+      if (this.shouldOutputJson(flags)) {
+        // In JSON mode, auto-remove the invalid key — it can't be used anyway
         this.configManager.removeApiKey(appId);
-        this.log("Invalid key removed from configuration.");
+      } else {
+        this.logToStderr(
+          "The configured API key appears to be invalid or revoked.",
+        );
+
+        const shouldRemove = await this.interactiveHelper.confirm(
+          "Would you like to remove this invalid key from your configuration?",
+        );
+
+        if (shouldRemove) {
+          this.configManager.removeApiKey(appId);
+          this.logToStderr("Invalid key removed from configuration.");
+        }
       }
     }
   }

@@ -52,8 +52,6 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
-      this.logListening("Listening for member events.", flags);
-
       // Subscribe to member presence events
       this.logCliEvent(
         flags,
@@ -118,6 +116,8 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
 
       // Subscribe using the listener
       this.space!.members.subscribe("update", memberListener);
+
+      this.logListening("Listening for member events.", flags);
 
       this.logCliEvent(
         flags,

@@ -119,7 +119,7 @@ export default class PushChannelsList extends AblyBaseCommand {
           flags.limit,
           "subscriptions",
         );
-        if (limitWarning) this.log(limitWarning);
+        if (limitWarning) this.logToStderr(limitWarning);
       }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushChannelList");

@@ -138,7 +138,7 @@ export default class ChannelsList extends AblyBaseCommand {
             flags.limit,
             "channels",
           );
-          if (warning) this.log(`\n${warning}`);
+          if (warning) this.logToStderr(`\n${warning}`);
         }
       }
     } catch (error) {

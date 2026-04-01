@@ -178,7 +178,15 @@ describe("push:publish command", () => {
 
     it("should output JSON with channel when publishing via channel", async () => {
       const { stdout } = await runCommand(
-        ["push:publish", "--channel", "my-channel", "--title", "Hi", "--json"],
+        [
+          "push:publish",
+          "--channel",
+          "my-channel",
+          "--title",
+          "Hi",
+          "--json",
+          "--force",
+        ],
         import.meta.url,
       );
 

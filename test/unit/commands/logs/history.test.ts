@@ -129,13 +129,13 @@ describe("logs:history command", () => {
         createMockPaginatedResult(messages, [{ id: "more" }]),
       );
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["logs:history", "--limit", "10"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Showing maximum of 10 logs");
-      expect(stdout).toContain("Use --limit to show more");
+      expect(stderr).toContain("Showing maximum of 10 logs");
+      expect(stderr).toContain("Use --limit to show more");
     });
 
     it("should show 'No application logs found' on empty results", async () => {

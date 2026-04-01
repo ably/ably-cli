@@ -101,6 +101,7 @@ export default class BenchPublisher extends AblyBaseCommand {
   // Helper function for delays
   private delay = (ms: number): Promise<void> =>
     new Promise((resolve) => setTimeout(resolve, ms));
+  private _flags: PublisherFlags | null = null;
   private intervalId: NodeJS.Timeout | null = null;
   private readonly MAX_LOG_LINES = 10; // Buffer for the last 10 logs
   private messageLogBuffer: string[] = [];
@@ -121,6 +122,7 @@ export default class BenchPublisher extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(BenchPublisher);
+    this._flags = flags;
 
     // Validate max values
     const messageCount = Math.min(flags.messages, 10_000);
@@ -291,7 +293,7 @@ export default class BenchPublisher extends AblyBaseCommand {
 
   // --- Original Private Methods ---
   private addLogToBuffer(logMessage: string): void {
-    if (this.shouldOutputJson({})) return; // Don't buffer in JSON mode
+    if (this.shouldOutputJson(this._flags ?? {})) return; // Don't buffer in JSON mode
     this.messageLogBuffer.push(
       `[${new Date().toLocaleTimeString()}] ${logMessage}`,
     );

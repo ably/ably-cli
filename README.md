@@ -2970,7 +2970,7 @@ ARGUMENTS
            key. Items with "channels" are routed via channel batch publish with the payload wrapped in extras.push
 
 FLAGS
-  -f, --force        Skip confirmation prompt when publishing to channels (confirmation is also skipped in --json mode)
+  -f, --force        Skip confirmation prompt (required with --json)
   -v, --verbose      Output verbose logs
       --json         Output in JSON format
       --pretty-json  Output in colorized JSON format
@@ -3585,8 +3585,7 @@ USAGE
     [--web <value>] [-f]
 
 FLAGS
-  -f, --force                 Skip confirmation prompt when publishing to a channel (confirmation is also skipped in
-                              --json mode)
+  -f, --force                 Skip confirmation prompt (required with --json)
   -v, --verbose               Output verbose logs
       --apns=<value>          APNs-specific override as JSON
       --badge=<value>         Notification badge count

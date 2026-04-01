@@ -150,7 +150,7 @@ export default class SpacesList extends SpacesBaseCommand {
             flags.limit,
             "spaces",
           );
-          if (warning) this.log(`\n${warning}`);
+          if (warning) this.logToStderr(`\n${warning}`);
         }
       }
     } catch (error) {

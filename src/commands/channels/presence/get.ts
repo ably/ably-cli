@@ -143,7 +143,7 @@ export default class ChannelsPresenceGet extends AblyBaseCommand {
             flags.limit,
             "members",
           );
-          if (warning) this.log(warning);
+          if (warning) this.logToStderr(warning);
         }
       }
     } catch (error) {

@@ -39,8 +39,6 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
-      this.logListening("Listening for location updates.", flags);
-
       this.logCliEvent(
         flags,
         "location",
@@ -91,6 +89,8 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
       };
 
       this.space!.locations.subscribe("update", locationHandler);
+
+      this.logListening("Listening for location updates.", flags);
 
       this.logCliEvent(
         flags,

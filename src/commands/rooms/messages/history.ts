@@ -210,7 +210,7 @@ export default class MessagesHistory extends ChatBaseCommand {
             flags.limit,
             "messages",
           );
-          if (warning) this.log(warning);
+          if (warning) this.logToStderr(warning);
         }
       }
     } catch (error) {

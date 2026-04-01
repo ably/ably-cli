@@ -205,8 +205,9 @@ export default class AppsCurrent extends ControlBaseCommand {
           `${formatLabel("App")} ${chalk.green.bold("Unknown")} ${chalk.gray(`(${appId})`)}`,
         );
         this.log(`${formatLabel("API Key")} ${chalk.yellow.bold(keyId)}`);
-        this.warn(
+        this.logWarning(
           `Could not fetch additional app details: ${errorMessage(error)}`,
+          flags,
         );
         this.log(
           `${formatLabel("Mode")} ${chalk.magenta.bold("Web CLI")} ${chalk.dim("(using environment variables)")}`,

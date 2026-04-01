@@ -40,6 +40,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
     ...durationFlag,
   };
 
+  private _flags: Record<string, unknown> | null = null;
   private receivedEchoCount = 0;
   private checkPublisherIntervalId: NodeJS.Timeout | null = null;
   private intervalId: NodeJS.Timeout | null = null;
@@ -70,6 +71,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(BenchSubscriber);
+    this._flags = flags;
 
     this.realtime = await this.setupClient(flags);
     if (!this.realtime) return; // Exit if client setup failed
@@ -741,7 +743,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
     displayTable: InstanceType<typeof Table> | null,
     metrics: TestMetrics,
   ): void {
-    if (this.shouldOutputJson({})) return;
+    if (this.shouldOutputJson(this._flags ?? {})) return;
 
     // Fallback to the command's stored table reference if none provided
     const tableRef = displayTable ?? this.displayTable;
