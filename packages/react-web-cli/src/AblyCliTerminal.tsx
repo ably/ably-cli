@@ -1687,7 +1687,7 @@ const AblyCliTerminalInner = (
         // Immediately enter "reconnecting" state so countdown / spinner UI is active
         updateConnectionStatusAndExpose("reconnecting");
 
-        console.log(
+        debugLog(
           "[AblyCLITerminal handleWebSocketError] Entered reconnection branch. isCancelled=",
           grIsCancelledState(),
           "maxReached=",
@@ -1705,13 +1705,13 @@ const AblyCliTerminalInner = (
 
         startConnectingAnimation(true);
         grIncrement();
-        console.log(
+        debugLog(
           "[AblyCLITerminal handleWebSocketError] grIncrement done. Attempts now:",
           grGetAttempts(),
         );
 
         if (connectWebSocketReference.current) {
-          console.log(
+          debugLog(
             "[AblyCLITerminal handleWebSocketError] Scheduling reconnect...",
           );
           grScheduleReconnect(connectWebSocketReference.current!, websocketUrl);
@@ -2635,7 +2635,7 @@ const AblyCliTerminalInner = (
         `ably.cli.credentialHash.${urlDomain}`,
       );
 
-      console.log("[AblyCLITerminal] Credential validation:", {
+      debugLog("[AblyCLITerminal] Credential validation:", {
         urlDomain,
         storedSessionId,
         storedHash,
@@ -2649,7 +2649,7 @@ const AblyCliTerminalInner = (
           `⚠️ DIAGNOSTIC: Restoring sessionId ${storedSessionId} from sessionStorage`,
         );
         setSessionId(storedSessionId);
-        console.log(
+        debugLog(
           "[AblyCLITerminal] Restored session with matching credentials for domain:",
           urlDomain,
         );
@@ -2663,7 +2663,7 @@ const AblyCliTerminalInner = (
         globalThis.sessionStorage.removeItem(
           `ably.cli.credentialHash.${urlDomain}`,
         );
-        console.log(
+        debugLog(
           "[AblyCLITerminal] Cleared session due to credential mismatch for domain:",
           urlDomain,
         );
@@ -2848,7 +2848,7 @@ const AblyCliTerminalInner = (
     }
 
     debugLog("[AblyCLITerminal] Creating secondary WebSocket instance");
-    console.log(
+    debugLog(
       "[AblyCLITerminal] Secondary WebSocket connecting to:",
       websocketUrl,
     );

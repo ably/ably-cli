@@ -3,6 +3,8 @@
  * This is kept outside React's lifecycle to maintain state between component remounts
  */
 
+import { debugLog } from "./terminal-shared";
+
 // Global state
 let attempts = 0;
 let isCancelled = false;
@@ -31,7 +33,7 @@ export function getBackoffDelay(attempt: number): number {
  * Reset the reconnection state
  */
 export function resetState(): void {
-  console.log(
+  debugLog(
     `[GlobalReconnect] resetState called. Current attempts (before potential reset): ${attempts}, isCancelled: ${isCancelled}`,
   );
   // ATTEMPTS ARE NO LONGER RESET HERE. They should be reset by a successful connection
@@ -42,14 +44,14 @@ export function resetState(): void {
   // scheduleReconnect will handle its own timer. isCancelled drives this.
   if (isCancelled) {
     if (countdownTimer) {
-      console.log(
+      debugLog(
         "[GlobalReconnect] resetState: Clearing countdownTimer because isCancelled=true",
       );
       clearInterval(countdownTimer);
       countdownTimer = null;
     }
     if (reconnectTimer) {
-      console.log(
+      debugLog(
         "[GlobalReconnect] resetState: Clearing reconnectTimer because isCancelled=true",
       );
       clearTimeout(reconnectTimer);
@@ -65,7 +67,7 @@ export function resetState(): void {
  */
 export function increment(): void {
   attempts++;
-  console.log(`[GlobalReconnect] Attempt counter incremented to ${attempts}`);
+  debugLog(`[GlobalReconnect] Attempt counter incremented to ${attempts}`);
 }
 
 /**
@@ -100,7 +102,7 @@ export function isMaxAttemptsReached(): boolean {
  * Cancel reconnection attempts
  */
 export function cancelReconnect(): void {
-  console.log(
+  debugLog(
     "[GlobalReconnect] cancelReconnect called. Clearing timers and resetting attempts.",
   );
   isCancelled = true;
@@ -135,7 +137,7 @@ export function scheduleReconnect(
   url: string,
 ): void {
   if (attempts >= maxAttempts) {
-    console.log(
+    debugLog(
       `[GlobalReconnect] scheduleReconnect: Aborting due to maxAttemptsReached (attempts=${attempts}, max=${maxAttempts})`,
     );
     console.warn("[GlobalReconnect] Maximum reconnection attempts reached.");
@@ -148,7 +150,7 @@ export function scheduleReconnect(
   isCancelled = false;
 
   const delay = getBackoffDelay(attempts);
-  console.log(
+  debugLog(
     `[GlobalReconnect] scheduleReconnect: Current attempts: ${attempts}, Calculated delay: ${delay}ms, isCancelled: ${isCancelled}`,
   );
 
@@ -175,33 +177,33 @@ export function scheduleReconnect(
   }
 
   if (reconnectTimer) {
-    console.log(
+    debugLog(
       "[GlobalReconnect] scheduleReconnect: Clearing existing reconnectTimer before setting new one.",
     );
     clearTimeout(reconnectTimer);
     reconnectTimer = null; // Explicitly nullify after clearing
   }
 
-  console.log(
+  debugLog(
     `[GlobalReconnect] PRE-SETIMEOUT: About to set timer for attempt #${attempts + 1} with delay ${delay}ms.`,
   );
 
   reconnectTimer = setTimeout(() => {
-    console.log(
+    debugLog(
       `[GlobalReconnect] SETTIMEOUT_FIRED_RAW for attempt #${attempts + 1}. isCancelled: ${isCancelled}`,
     );
     if (isCancelled) {
-      console.log(
+      debugLog(
         `[GlobalReconnect] reconnectTimer FIRED but isCancelled is true. Aborting reconnectCallback for attempt #${attempts + 1}.`,
       );
       return;
     }
-    console.log(
+    debugLog(
       `[GlobalReconnect] reconnectTimer FIRED. Attempting connection to ${url}, attempt #${attempts + 1}`,
     );
     reconnectCallback();
   }, delay);
-  console.log(
+  debugLog(
     `[GlobalReconnect] scheduleReconnect: NEW reconnectTimer scheduled with ID: ${String(reconnectTimer)} for attempt #${attempts + 1}`,
   );
 }
@@ -212,7 +214,7 @@ export function setMaxAttempts(value: number): void {
 }
 
 export function successfulConnectionReset(): void {
-  console.log(
+  debugLog(
     `[GlobalReconnect] successfulConnectionReset called. Resetting attempts from ${attempts} to 0.`,
   );
   attempts = 0;
@@ -223,7 +225,7 @@ export function successfulConnectionReset(): void {
     countdownTimer = null;
   }
   if (reconnectTimer) {
-    console.log(
+    debugLog(
       "[GlobalReconnect] successfulConnectionReset: Clearing reconnectTimer.",
     );
     clearTimeout(reconnectTimer);
