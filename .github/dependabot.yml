@@ -51,11 +51,15 @@ updates:
     ignore:
       # Large migrations that require dedicated planning — these PRs sit open
       # for weeks, waste CI on every rebase, and consume PR limit slots.
+      # Note: These rules only suppress version updates. Dependabot security
+      # alerts will still raise PRs for vulnerabilities regardless of ignore rules.
       # Revisit quarterly; remove the rule when the team is ready to migrate.
       - dependency-name: "zod"
         update-types: ["version-update:semver-major"]   # v3 → v4: new validation paradigm
       - dependency-name: "inquirer"
         update-types: ["version-update:semver-major"]   # v9 → v13: complete API rewrite
+      - dependency-name: "@inquirer/prompts"
+        update-types: ["version-update:semver-major"]   # v5 → v8: same family as inquirer, rapid major churn
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]   # v5 → v6: major compiler changes
     # Cooldown defers PRs for newly published package versions.
@@ -104,8 +108,10 @@ updates:
         patterns: ["*"]
         update-types: [major, minor, patch]
     ignore:
+      # Security alerts still raise PRs regardless of ignore rules.
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+    # Cooldown: security updates bypass this entirely.
     cooldown:
       semver-major-days: 7
       semver-minor-days: 3
@@ -137,8 +143,10 @@ updates:
         patterns: ["*"]
         update-types: [major, minor, patch]
     ignore:
+      # Security alerts still raise PRs regardless of ignore rules.
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+    # Cooldown: security updates bypass this entirely.
     cooldown:
       semver-major-days: 7
       semver-minor-days: 3
