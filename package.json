@@ -127,7 +127,7 @@
     "inquirer": "^9.2.16",
     "jsonwebtoken": "^9.0.3",
     "node-fetch": "^3.3.2",
-    "open": "^10.1.0",
+    "open": "^11.0.0",
     "ora": "^8.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
