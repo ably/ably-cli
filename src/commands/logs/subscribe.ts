@@ -62,15 +62,6 @@ export default class LogsSubscribe extends AblyBaseCommand {
         includeUserFriendlyMessages: true,
       });
 
-      // Get the logs channel
-      const appConfig = await this.ensureAppAndKey(flags);
-      if (!appConfig) {
-        this.fail(
-          "Unable to determine app configuration",
-          flags,
-          "logSubscribe",
-        );
-      }
       const logsChannelName = `[meta]log`;
 
       // Configure channel options for rewind if specified

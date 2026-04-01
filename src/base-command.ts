@@ -751,6 +751,15 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       return { apiKey, appId };
     }
 
+    // Fall back to ABLY_API_KEY environment variable (for CI/scripting)
+    const envApiKey = process.env.ABLY_API_KEY;
+    if (envApiKey) {
+      const envAppId = envApiKey.split(".")[0] || "";
+      if (envAppId) {
+        return { apiKey: envApiKey, appId: envAppId };
+      }
+    }
+
     // Get access token for control API
     const accessToken =
       process.env.ABLY_ACCESS_TOKEN || this.configManager.getAccessToken();
