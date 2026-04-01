@@ -23,12 +23,12 @@ describe("Control API E2E Workflow Tests", () => {
   let controlApi: ControlApi;
   let testAccountId: string;
   let cliPath: string;
-  let createdResources: {
-    apps: string[];
-    keys: string[];
-    queues: string[];
-    rules: string[];
-    namespaces: string[];
+  let createdResources = {
+    apps: [] as string[],
+    keys: [] as string[],
+    queues: [] as string[],
+    rules: [] as string[],
+    namespaces: [] as string[],
   };
   let shouldSkip = false;
 
@@ -50,15 +50,6 @@ describe("Control API E2E Workflow Tests", () => {
       accessToken,
       logErrors: false,
     });
-
-    // Initialize resource tracking
-    createdResources = {
-      apps: [],
-      keys: [],
-      queues: [],
-      rules: [],
-      namespaces: [],
-    };
 
     try {
       // Get account info
