@@ -11,8 +11,6 @@ import { ControlApi } from "../../../src/services/control-api.js";
 import {
   forceExit,
   cleanupTrackedResources,
-  testOutputFiles,
-  testCommands,
   setupTestFailureHandler,
   resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
@@ -73,8 +71,6 @@ describe("Push Config E2E Tests", () => {
 
   beforeEach(() => {
     resetTestTracking();
-    testOutputFiles.clear();
-    testCommands.length = 0;
   });
 
   afterEach(async () => {
