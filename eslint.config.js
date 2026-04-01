@@ -9,6 +9,7 @@ import eslintPluginPrettier from "eslint-plugin-prettier";
 import eslint from "@eslint/js"; // Import base eslint config
 import vitest from '@vitest/eslint-plugin'
 import eslintPluginReact from "eslint-plugin-react"
+import eslintPluginReactHooks from "eslint-plugin-react-hooks"
 
 export default [
   {
@@ -120,6 +121,7 @@ export default [
     files: ["packages/react-web-cli/**/*.{ts,tsx}"],
     plugins: {
       react: eslintPluginReact,
+      "react-hooks": eslintPluginReactHooks,
       "@typescript-eslint": tsPlugin,
     },
     languageOptions: {
@@ -145,6 +147,9 @@ export default [
       ...eslintPluginReact.configs["jsx-runtime"].rules,
       // TypeScript rules
       ...tsPlugin.configs.recommended.rules,
+      // React hooks rules
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
       // Custom overrides for this package
       "unicorn/prefer-module": "off",
       "unicorn/filename-case": "off",
