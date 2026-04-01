@@ -9,11 +9,7 @@ import {
 } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { vi, describe, test, expect, beforeEach, afterEach } from "vitest";
-import {
-  getAttempts,
-  getMaxAttempts,
-  isMaxAttemptsReached,
-} from "./global-reconnect";
+import "./global-reconnect";
 
 // Mock the GlobalReconnect module AT THE TOP LEVEL using a factory function.
 vi.mock("./global-reconnect", () => ({
@@ -121,8 +117,6 @@ vi.mock("@xterm/addon-fit", () => ({
 import * as GlobalReconnect from "./global-reconnect";
 import { AblyCliTerminal } from "./AblyCliTerminal"; // Import now
 import type { AblyCliTerminalHandle } from "./AblyCliTerminal";
-import * as TerminalBoxModule from "./terminal-box"; // Import to access mocked colours if needed for assertions
-
 // Mock use-terminal-visibility
 vi.mock("./use-terminal-visibility", () => ({
   useTerminalVisibility: () => true,
@@ -130,8 +124,8 @@ vi.mock("./use-terminal-visibility", () => ({
 
 // Mock lucide-react icons to simple stubs to avoid SVG complexity in tests
 vi.mock("lucide-react", () => ({
-  SplitSquareHorizontal: (properties: any) => null,
-  X: (properties: any) => null,
+  SplitSquareHorizontal: (_properties: any) => null,
+  X: (_properties: any) => null,
 }));
 
 // Mock the crypto utility
@@ -1013,7 +1007,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
     const consoleLogSpy = vi.spyOn(console, "log");
 
     // Render component with resumeOnReload enabled so it reads the stored sessionId
-    const { container } = renderTerminal({ resumeOnReload: true });
+    renderTerminal({ resumeOnReload: true });
 
     // Wait for the session to be restored
     await waitFor(() => {

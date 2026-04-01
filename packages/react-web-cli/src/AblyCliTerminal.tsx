@@ -15,7 +15,6 @@ import {
   clearBox,
   updateLine,
   colour as boxColour,
-  colour,
   type TerminalBox,
 } from "./terminal-box";
 import {
@@ -41,14 +40,12 @@ import {
   filterDockerHandshake,
   createTerminal,
   createFitAddon,
-  safeFit,
   createAuthPayload,
   parseControlMessage,
   messageDataToUint8Array,
   clearConnectingMessage,
   showConnectingMessage,
   debugLog as sharedDebugLog,
-  CONTROL_MESSAGE_PREFIX,
   MAX_PTY_BUFFER_LENGTH,
   TERMINAL_PROMPT_PATTERN,
 } from "./terminal-shared";
@@ -80,9 +77,6 @@ export type ConnectionStatus =
   | "disconnected"
   | "reconnecting"
   | "error";
-
-// Prompts that indicate the terminal is ready for input
-const TERMINAL_PROMPT_IDENTIFIER = "ably> "; // Basic prompt
 
 // Shared CLI installation tip
 const CLI_INSTALL_TIP = {
@@ -160,9 +154,6 @@ if (globalThis.window !== undefined) {
     /* ignore URL parsing errors in non-browser env */
   }
 }
-
-// Import isHijackMetaChunk from shared module for backward compatibility
-import { isHijackMetaChunk } from "./terminal-shared";
 
 const AblyCliTerminalInner = (
   {
@@ -505,7 +496,6 @@ const AblyCliTerminalInner = (
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [credentialHash, setCredentialHash] = useState<string | null>(null);
   const [credentialsInitialized, setCredentialsInitialized] = useState(false);
-  const [sessionIdInitialized, setSessionIdInitialized] = useState(false);
 
   // Track the second terminal's sessionId
   const [secondarySessionId, setSecondarySessionId] = useState<string | null>(
@@ -559,19 +549,6 @@ const AblyCliTerminalInner = (
   const spinnerIndexReference = useRef<number>(0);
   const spinnerPrefixReference = useRef<string>("");
   const statusBoxReference = useRef<TerminalBox | null>(null);
-
-  // ANSI colour / style helpers
-  const colour = {
-    reset: "\u001B[0m",
-    bold: "\u001B[1m",
-    dim: "\u001B[2m",
-    red: "\u001B[31m",
-    green: "\u001B[32m",
-    yellow: "\u001B[33m",
-    blue: "\u001B[34m",
-    magenta: "\u001B[35m",
-    cyan: "\u001B[36m",
-  } as const;
 
   const clearStatusDisplay = useCallback(() => {
     if (spinnerIntervalReference.current) {
@@ -833,9 +810,7 @@ const AblyCliTerminalInner = (
   const secondaryTermCleanupReference = useRef<() => void>(() => {});
 
   // Secondary terminal state
-  const [secondarySocket, setSecondarySocket] = useState<WebSocket | null>(
-    null,
-  );
+  const [, setSecondarySocket] = useState<WebSocket | null>(null);
   const [isSecondarySessionActive, setIsSecondarySessionActive] =
     useState(false);
   const [secondaryOverlay, setSecondaryOverlay] = useState<null | {
@@ -847,20 +822,15 @@ const AblyCliTerminalInner = (
   // Secondary terminal refs - need their own copies for event handlers
   const secondaryConnectionStatusReference =
     useRef<ConnectionStatus>("initial");
-  const [secondaryConnectionStatus, setSecondaryConnectionStatus] =
+  const [, setSecondaryConnectionStatus] =
     useState<ConnectionStatus>("initial");
-  const secondarySpinnerPrefixReference = useRef<string>("");
   const secondarySpinnerIndexReference = useRef<number>(0);
   const secondaryStatusBoxReference = useRef<TerminalBox | null>(null);
   const secondarySpinnerIntervalReference = useRef<ReturnType<
     typeof setInterval
   > | null>(null);
   const secondaryShowManualReconnectPromptReference = useRef<boolean>(false);
-  const [
-    secondaryShowManualReconnectPrompt,
-    setSecondaryShowManualReconnectPrompt,
-  ] = useState(false);
-  const secondaryReconnectScheduledThisCycleReference = useRef<boolean>(false);
+  const [, setSecondaryShowManualReconnectPrompt] = useState(false);
 
   // Secondary terminal: pending initial command and timeout refs
   const pendingSecondaryInitialCommandReference = useRef<string | null>(null);
@@ -874,10 +844,6 @@ const AblyCliTerminalInner = (
         debugLog(
           `⚠️ DIAGNOSTIC: Received hello message with sessionId=${message.sessionId}`,
         );
-        const wasReconnecting =
-          connectionStatusReference.current === "reconnecting";
-        const wasConnecting =
-          connectionStatusReference.current === "connecting";
         setSessionId(message.sessionId);
         if (onSessionId) onSessionId(message.sessionId);
         debugLog(
@@ -2704,7 +2670,6 @@ const AblyCliTerminalInner = (
       }
 
       setCredentialsInitialized(true);
-      setSessionIdInitialized(true);
       debugLog(
         `⚠️ DIAGNOSTIC: Credentials initialized, restored sessionId: ${storedSessionId || "none"}`,
       );
@@ -3393,54 +3358,49 @@ const AblyCliTerminalInner = (
 
     // Handle data input in secondary terminal
     secondaryTerm.current.onData((data: string) => {
-      // Special handling for Enter key
-      if (data === "\r") {
-        const latestStatus = secondaryConnectionStatusReference.current;
+      // Special handling for Enter key when manual reconnect prompt is visible
+      if (
+        data === "\r" &&
+        secondaryShowManualReconnectPromptReference.current
+      ) {
+        debugLog(
+          "[AblyCLITerminal] Secondary terminal: Enter pressed for manual reconnect.",
+        );
 
-        // Manual prompt visible: attempt manual reconnect even if an old socket is open
-        if (secondaryShowManualReconnectPromptReference.current) {
-          debugLog(
-            "[AblyCLITerminal] Secondary terminal: Enter pressed for manual reconnect.",
-          );
+        // Clear overlay and status displays
+        clearSecondaryStatusDisplay();
+        secondaryShowManualReconnectPromptReference.current = false;
+        setSecondaryShowManualReconnectPrompt(false);
 
-          // Clear overlay and status displays
-          clearSecondaryStatusDisplay();
-          secondaryShowManualReconnectPromptReference.current = false;
-          setSecondaryShowManualReconnectPrompt(false);
-
-          // Forget previous session completely so no resume is attempted
-          if (!resumeOnReload) {
-            setSecondarySessionId(null);
-          }
-
-          // Ensure any lingering socket is fully closed before opening a new one
-          if (
-            secondarySocketReference.current &&
-            secondarySocketReference.current.readyState !== WebSocket.CLOSED
-          ) {
-            try {
-              secondarySocketReference.current.close(1000, "manual-reconnect");
-            } catch {
-              /* ignore */
-            }
-            secondarySocketReference.current = null; // Make sure the reference is cleared
-          }
-
-          // Give the browser a micro-task to mark socket CLOSED before reconnect
-          setTimeout(() => {
-            debugLog(
-              "[AblyCLITerminal] [Secondary] Starting fresh reconnect sequence",
-            );
-            secondaryPtyBuffer.current = ""; // Clear buffer
-            secondaryHandshakeFilterState.current =
-              createHandshakeFilterState(); // Reset handshake filter
-            connectSecondaryWebSocketReference.current?.();
-          }, 20);
-
-          return;
+        // Forget previous session completely so no resume is attempted
+        if (!resumeOnReload) {
+          setSecondarySessionId(null);
         }
 
-        // Handle other special cases like primary terminal if needed
+        // Ensure any lingering socket is fully closed before opening a new one
+        if (
+          secondarySocketReference.current &&
+          secondarySocketReference.current.readyState !== WebSocket.CLOSED
+        ) {
+          try {
+            secondarySocketReference.current.close(1000, "manual-reconnect");
+          } catch {
+            /* ignore */
+          }
+          secondarySocketReference.current = null; // Make sure the reference is cleared
+        }
+
+        // Give the browser a micro-task to mark socket CLOSED before reconnect
+        setTimeout(() => {
+          debugLog(
+            "[AblyCLITerminal] [Secondary] Starting fresh reconnect sequence",
+          );
+          secondaryPtyBuffer.current = ""; // Clear buffer
+          secondaryHandshakeFilterState.current = createHandshakeFilterState();
+          connectSecondaryWebSocketReference.current?.();
+        }, 20);
+
+        return;
       }
 
       // Track input line for autocomplete (simple tracking - reset on Enter)
