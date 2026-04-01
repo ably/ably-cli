@@ -4,6 +4,11 @@ import { randomUUID } from "node:crypto";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
+import {
+  formatClientId,
+  formatLabel,
+  formatSuccess,
+} from "../../utils/output.js";
 
 export default class IssueAblyTokenCommand extends AblyBaseCommand {
   static description = "Create an Ably Token with capabilities";
@@ -118,22 +123,32 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
               value: tokenDetails.token,
               issuedAt: new Date(tokenDetails.issued).toISOString(),
               expiresAt: new Date(tokenDetails.expires).toISOString(),
-              clientId: tokenDetails.clientId || null,
+              ...(tokenDetails.clientId
+                ? { clientId: tokenDetails.clientId }
+                : {}),
               capability: tokenDetails.capability,
             },
           },
           flags,
         );
       } else {
-        this.log("Generated Ably Token:");
-        this.log(`Token: ${tokenDetails.token}`);
-        this.log(`Type: Ably`);
-        this.log(`Issued: ${new Date(tokenDetails.issued).toISOString()}`);
-        this.log(`Expires: ${new Date(tokenDetails.expires).toISOString()}`);
-        this.log(`TTL: ${flags.ttl} seconds`);
-        this.log(`Client ID: ${tokenDetails.clientId || "None"}`);
+        this.log(formatSuccess("Ably token generated."));
+        this.log(`${formatLabel("Token")} ${tokenDetails.token}`);
+        this.log(`${formatLabel("Type")} Ably`);
         this.log(
-          `Capability: ${this.formatJsonOutput({ capability: tokenDetails.capability }, flags)}`,
+          `${formatLabel("Issued")} ${new Date(tokenDetails.issued).toISOString()}`,
+        );
+        this.log(
+          `${formatLabel("Expires")} ${new Date(tokenDetails.expires).toISOString()}`,
+        );
+        this.log(`${formatLabel("TTL")} ${flags.ttl} seconds`);
+        if (tokenDetails.clientId) {
+          this.log(
+            `${formatLabel("Client ID")} ${formatClientId(tokenDetails.clientId)}`,
+          );
+        }
+        this.log(
+          `${formatLabel("Capability")} ${this.formatJsonOutput({ capability: tokenDetails.capability }, flags)}`,
         );
       }
     } catch (error) {

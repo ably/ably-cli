@@ -32,7 +32,7 @@ describe("queues:create command", () => {
     it("should create a queue successfully with default settings", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
 
       nockControl()
         .get("/v1/me")
@@ -72,7 +72,7 @@ describe("queues:create command", () => {
     it("should create a queue with custom settings", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
 
       nockControl()
         .get("/v1/me")
@@ -119,7 +119,7 @@ describe("queues:create command", () => {
     it("should output JSON format when --json flag is used", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
 
       nockControl()
         .get("/v1/me")
@@ -148,7 +148,7 @@ describe("queues:create command", () => {
     });
 
     it("should use custom app ID when provided", async () => {
-      const accountId = getMockConfigManager().getCurrentAccount()!.accountId!;
+      const accountId = getMockConfigManager().getCurrentAccount()!.accountId;
       const customAppId = "custom-app-id";
 
       nockControl()
@@ -180,7 +180,7 @@ describe("queues:create command", () => {
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
       const customToken = "custom_access_token";
 
       process.env.ABLY_ACCESS_TOKEN = customToken;
@@ -224,7 +224,7 @@ describe("queues:create command", () => {
       setupNock: (scenario) => {
         const mockConfig = getMockConfigManager();
         const appId = mockConfig.getCurrentAppId()!;
-        const accountId = mockConfig.getCurrentAccount()!.accountId!;
+        const accountId = mockConfig.getCurrentAccount()!.accountId;
         // Pre-mock /v1/me (needed for app resolution)
         nockControl()
           .get("/v1/me")
@@ -243,7 +243,7 @@ describe("queues:create command", () => {
     it("should handle 403 forbidden error", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
 
       nockControl()
         .get("/v1/me")
@@ -269,7 +269,7 @@ describe("queues:create command", () => {
     it("should handle 404 app not found error", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
 
       nockControl()
         .get("/v1/me")
@@ -316,7 +316,7 @@ describe("queues:create command", () => {
     it("should handle validation errors from API", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
 
       nockControl()
         .get("/v1/me")
@@ -343,7 +343,7 @@ describe("queues:create command", () => {
     it("should handle 429 rate limit error", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
 
       nockControl()
         .get("/v1/me")
@@ -372,7 +372,7 @@ describe("queues:create command", () => {
     it("should accept minimum valid parameter values", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
 
       nockControl()
         .get("/v1/me")
@@ -415,7 +415,7 @@ describe("queues:create command", () => {
     it("should accept max parameter values and different regions", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
 
       nockControl()
         .get("/v1/me")

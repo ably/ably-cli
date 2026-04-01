@@ -19,7 +19,7 @@ describe("auth:issue-jwt-token command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Generated Ably JWT Token");
+      expect(stdout).toContain("Ably JWT token generated.");
       expect(stdout).toContain("Token:");
       expect(stdout).toContain("Type: JWT");
       expect(stdout).toContain(`App ID: ${appId}`);
@@ -134,7 +134,7 @@ describe("auth:issue-jwt-token command", () => {
       );
 
       // Should only output the token string (no "Generated" message)
-      expect(stdout).not.toContain("Generated Ably JWT Token");
+      expect(stdout).not.toContain("Ably JWT token generated.");
       expect(stdout.trim().split(".")).toHaveLength(3); // JWT has 3 parts
     });
 
@@ -219,7 +219,7 @@ describe("auth:issue-jwt-token command", () => {
       );
 
       // When no app is configured, command should not produce token output
-      expect(stdout).not.toContain("Generated Ably JWT Token");
+      expect(stdout).not.toContain("Ably JWT token generated.");
     });
   });
 
@@ -237,13 +237,22 @@ describe("auth:issue-jwt-token command", () => {
       expect(stdout).toContain("TTL: 1800 seconds");
     });
 
-    it("should display client ID as None when not specified with none", async () => {
+    it("should display client ID when specified", async () => {
+      const { stdout } = await runCommand(
+        ["auth:issue-jwt-token", "--client-id", "my-client"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Client ID: my-client");
+    });
+
+    it("should omit client ID line when not specified with none", async () => {
       const { stdout } = await runCommand(
         ["auth:issue-jwt-token", "--client-id", "none"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Client ID: None");
+      expect(stdout).not.toContain("Client ID:");
     });
   });
 });

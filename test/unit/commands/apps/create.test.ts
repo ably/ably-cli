@@ -29,9 +29,9 @@ describe("apps:create command", () => {
   describe("functionality", () => {
     it("should create an app successfully", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const accountName = mock.getCurrentAccount()!.accountName;
+      const userEmail = mock.getCurrentAccount()!.userEmail;
 
       // Mock the /me endpoint to get account ID
       nockControl()
@@ -72,9 +72,9 @@ describe("apps:create command", () => {
 
     it("should create an app with TLS only flag", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const accountName = mock.getCurrentAccount()!.accountName;
+      const userEmail = mock.getCurrentAccount()!.userEmail;
 
       // Mock the /me endpoint
       nockControl()
@@ -112,9 +112,9 @@ describe("apps:create command", () => {
 
     it("should output JSON format when --json flag is used", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const accountName = mock.getCurrentAccount()!.accountName;
+      const userEmail = mock.getCurrentAccount()!.userEmail;
 
       const mockApp = {
         id: newAppId,
@@ -153,9 +153,9 @@ describe("apps:create command", () => {
 
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const accountName = mock.getCurrentAccount()!.accountName;
+      const userEmail = mock.getCurrentAccount()!.userEmail;
       const customToken = "custom_access_token";
 
       process.env.ABLY_ACCESS_TOKEN = customToken;
@@ -200,9 +200,9 @@ describe("apps:create command", () => {
 
     it("should automatically switch to the newly created app", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const accountName = mock.getCurrentAccount()!.accountName;
+      const userEmail = mock.getCurrentAccount()!.userEmail;
 
       // Mock the /me endpoint
       nockControl()
@@ -265,9 +265,9 @@ describe("apps:create command", () => {
         }
         // 500: need /v1/me pre-mock, then fail on the actual endpoint
         const mock = getMockConfigManager();
-        const accountId = mock.getCurrentAccount()!.accountId!;
-        const accountName = mock.getCurrentAccount()!.accountName!;
-        const userEmail = mock.getCurrentAccount()!.userEmail!;
+        const accountId = mock.getCurrentAccount()!.accountId;
+        const accountName = mock.getCurrentAccount()!.accountName;
+        const userEmail = mock.getCurrentAccount()!.userEmail;
         nockControl()
           .get("/v1/me")
           .reply(200, {
@@ -282,9 +282,9 @@ describe("apps:create command", () => {
 
     it("should handle 403 forbidden error", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const accountName = mock.getCurrentAccount()!.accountName;
+      const userEmail = mock.getCurrentAccount()!.userEmail;
 
       // Mock the /me endpoint
       nockControl()
@@ -310,9 +310,9 @@ describe("apps:create command", () => {
 
     it("should handle 404 not found error", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const accountName = mock.getCurrentAccount()!.accountName;
+      const userEmail = mock.getCurrentAccount()!.userEmail;
 
       // Mock the /me endpoint
       nockControl()
@@ -345,9 +345,9 @@ describe("apps:create command", () => {
 
     it("should handle validation errors from API", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const accountName = mock.getCurrentAccount()!.accountName;
+      const userEmail = mock.getCurrentAccount()!.userEmail;
 
       // Mock the /me endpoint
       nockControl()

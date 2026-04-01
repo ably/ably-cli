@@ -83,7 +83,7 @@ export default class AppsCurrent extends ControlBaseCommand {
         );
       } else {
         this.log(
-          `${formatLabel("Account")} ${chalk.cyan.bold(currentAccount.accountName || currentAccountAlias)} ${chalk.gray(`(${currentAccount.accountId || "Unknown ID"})`)}`,
+          `${formatLabel("Account")} ${chalk.cyan.bold(currentAccount.accountName)} ${chalk.gray(`(${currentAccount.accountId})`)}`,
         );
         this.log(
           `${formatLabel("App")} ${chalk.green.bold(appName)} ${chalk.gray(`(${currentAppId})`)}`,
@@ -161,7 +161,9 @@ export default class AppsCurrent extends ControlBaseCommand {
           flags,
         );
       } else {
-        // Get account info if possible
+        // Web CLI mode: account info comes from the Control API, not local config.
+        // The API call may fail (e.g. token lacks account-level scope), so we
+        // fall back to generic defaults — accountId stays empty, hiding the "(id)" suffix.
         let accountName = "Web CLI Account";
         let accountId = "";
 
@@ -170,7 +172,7 @@ export default class AppsCurrent extends ControlBaseCommand {
           accountName = account.name;
           accountId = account.id;
         } catch {
-          // If we can't get account details, just use default values
+          // Control API unavailable — use defaults above
         }
 
         this.log(

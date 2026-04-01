@@ -41,6 +41,10 @@ export interface LocationEntry {
 }
 
 // --- JSON formatters (SDK type → display interface) ---
+// These use `?? null` to ensure optional SDK fields always appear in JSON output
+// (consistent schema for consumers). The Spaces SDK uses `null` as its "not set"
+// sentinel for profileData/location; for cursors and locks, undefined → null
+// keeps the field present rather than omitting it from JSON.stringify output.
 
 export function formatMemberOutput(member: SpaceMember): MemberOutput {
   return {

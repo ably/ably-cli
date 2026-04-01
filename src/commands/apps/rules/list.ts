@@ -69,6 +69,7 @@ export default class RulesListCommand extends ControlBaseCommand {
               (rule: Namespace): ChannelRuleOutput => ({
                 authenticated: rule.authenticated || false,
                 batchingEnabled: rule.batchingEnabled || false,
+                // Control API may omit optional fields; emit null for consistent JSON schema
                 batchingInterval: rule.batchingInterval ?? null,
                 conflationEnabled: rule.conflationEnabled || false,
                 conflationInterval: rule.conflationInterval ?? null,

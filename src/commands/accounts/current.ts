@@ -122,9 +122,9 @@ export default class AccountsCurrent extends ControlBaseCommand {
           {
             account: {
               cached: true,
-              name: currentAccount.accountName || "Unknown",
-              id: currentAccount.accountId || "Unknown ID",
-              user: { email: currentAccount.userEmail || null },
+              name: currentAccount.accountName,
+              id: currentAccount.accountId,
+              user: { email: currentAccount.userEmail },
               warning:
                 "Unable to verify account information. Your access token may have expired.",
             },
@@ -142,11 +142,9 @@ export default class AccountsCurrent extends ControlBaseCommand {
         );
 
         // Show cached information
-        if (currentAccount.accountName || currentAccount.accountId) {
-          this.log(
-            `${formatLabel("Account (cached)")} ${chalk.cyan.bold(currentAccount.accountName || "Unknown")} ${chalk.gray(`(${currentAccount.accountId || "Unknown ID"})`)}`,
-          );
-        }
+        this.log(
+          `${formatLabel("Account (cached)")} ${chalk.cyan.bold(currentAccount.accountName)} ${chalk.gray(`(${currentAccount.accountId})`)}`,
+        );
 
         if (currentAccount.userEmail) {
           this.log(

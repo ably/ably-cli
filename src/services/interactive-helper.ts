@@ -58,11 +58,8 @@ export class InteractiveHelper {
         {
           choices: accounts.map((account) => {
             const isCurrent = account.alias === currentAlias;
-            const accountInfo =
-              account.account.accountName ||
-              account.account.accountId ||
-              "Unknown";
-            const userInfo = account.account.userEmail || "Unknown";
+            const accountInfo = account.account.accountName;
+            const userInfo = account.account.userEmail;
             return {
               name: `${isCurrent ? "* " : "  "}${account.alias} (${accountInfo}, ${userInfo})`,
               value: account,

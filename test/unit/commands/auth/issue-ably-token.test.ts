@@ -39,7 +39,7 @@ describe("auth:issue-ably-token command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Generated Ably Token");
+      expect(stdout).toContain("Ably token generated.");
       expect(stdout).toContain(`Token: ${mockTokenDetails.token}`);
       expect(stdout).toContain("Type: Ably");
       expect(restMock.auth.createTokenRequest).toHaveBeenCalled();
@@ -65,7 +65,7 @@ describe("auth:issue-ably-token command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Generated Ably Token");
+      expect(stdout).toContain("Ably token generated.");
       expect(restMock.auth.createTokenRequest).toHaveBeenCalled();
       const tokenParams = restMock.auth.createTokenRequest.mock.calls[0][0];
       expect(tokenParams.capability).toHaveProperty("chat:*");
@@ -89,7 +89,7 @@ describe("auth:issue-ably-token command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Generated Ably Token");
+      expect(stdout).toContain("Ably token generated.");
       expect(stdout).toContain("TTL: 7200 seconds");
       expect(restMock.auth.createTokenRequest).toHaveBeenCalled();
       const tokenParams = restMock.auth.createTokenRequest.mock.calls[0][0];
@@ -115,7 +115,7 @@ describe("auth:issue-ably-token command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Generated Ably Token");
+      expect(stdout).toContain("Ably token generated.");
       expect(stdout).toContain(`Client ID: ${customClientId}`);
       expect(restMock.auth.createTokenRequest).toHaveBeenCalled();
       const tokenParams = restMock.auth.createTokenRequest.mock.calls[0][0];
@@ -140,8 +140,8 @@ describe("auth:issue-ably-token command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Generated Ably Token");
-      expect(stdout).toContain("Client ID: None");
+      expect(stdout).toContain("Ably token generated.");
+      expect(stdout).not.toContain("Client ID:");
       expect(restMock.auth.createTokenRequest).toHaveBeenCalled();
       const tokenParams = restMock.auth.createTokenRequest.mock.calls[0][0];
       expect(tokenParams.clientId).toBeUndefined();
@@ -168,7 +168,7 @@ describe("auth:issue-ably-token command", () => {
 
       // Should only output the token string
       expect(stdout.trim()).toBe(mockTokenString);
-      expect(stdout).not.toContain("Generated Ably Token");
+      expect(stdout).not.toContain("Ably token generated.");
     });
 
     it("should output JSON format when --json flag is used", async () => {
@@ -234,7 +234,7 @@ describe("auth:issue-ably-token command", () => {
       );
 
       // When no app is configured, command should not produce token output
-      expect(stdout).not.toContain("Generated Ably Token");
+      expect(stdout).not.toContain("Ably token generated.");
     });
   });
 

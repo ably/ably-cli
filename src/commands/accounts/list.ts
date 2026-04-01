@@ -47,10 +47,10 @@ export default class AccountsList extends ControlBaseCommand {
                       account.currentAppId,
                   }
                 : undefined,
-            id: account.accountId || "Unknown",
+            id: account.accountId,
             isCurrent: alias === currentAlias,
-            name: account.accountName || "Unknown",
-            user: account.userEmail || "Unknown",
+            name: account.accountName,
+            user: account.userEmail,
           })),
           currentAccount: currentAlias,
         },
@@ -72,9 +72,9 @@ export default class AccountsList extends ControlBaseCommand {
           (isCurrent ? chalk.green(" (current)") : ""),
       );
       this.log(
-        `  ${formatLabel("Name")} ${account.accountName || "Unknown"} (${account.accountId || "Unknown"})`,
+        `  ${formatLabel("Name")} ${account.accountName} (${account.accountId})`,
       );
-      this.log(`  ${formatLabel("User")} ${account.userEmail || "Unknown"}`);
+      this.log(`  ${formatLabel("User")} ${account.userEmail}`);
 
       // Count number of apps configured for this account
       const appCount = account.apps ? Object.keys(account.apps).length : 0;

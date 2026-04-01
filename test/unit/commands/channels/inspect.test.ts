@@ -27,7 +27,7 @@ describe("channels:inspect command", () => {
 
     it("should open browser with correct dashboard URL", async () => {
       const mockConfig = getMockConfigManager();
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
       const appId = mockConfig.getCurrentAppId()!;
 
       const { stdout } = await runCommand(
@@ -44,7 +44,7 @@ describe("channels:inspect command", () => {
 
     it("should URL-encode special characters in channel name", async () => {
       const mockConfig = getMockConfigManager();
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
       const appId = mockConfig.getCurrentAppId()!;
 
       const { stdout } = await runCommand(
@@ -88,7 +88,7 @@ describe("channels:inspect command", () => {
 
     it("should use --app flag over current app", async () => {
       const mockConfig = getMockConfigManager();
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
 
       const { stdout } = await runCommand(
         ["channels:inspect", "my-channel", "--app", "custom-app-id"],
@@ -102,7 +102,7 @@ describe("channels:inspect command", () => {
 
     it("should use --app flag when no current app is set", async () => {
       const mockConfig = getMockConfigManager();
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
       mockConfig.setCurrentAppIdForAccount(undefined);
 
       const { stdout } = await runCommand(
@@ -117,7 +117,7 @@ describe("channels:inspect command", () => {
 
     it("should use --dashboard-host flag to override base URL", async () => {
       const mockConfig = getMockConfigManager();
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
       const appId = mockConfig.getCurrentAppId()!;
 
       const { stdout } = await runCommand(
@@ -138,7 +138,7 @@ describe("channels:inspect command", () => {
 
     it("should prepend https:// when --dashboard-host has no scheme", async () => {
       const mockConfig = getMockConfigManager();
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
       const appId = mockConfig.getCurrentAppId()!;
 
       const { stdout } = await runCommand(
@@ -164,7 +164,7 @@ describe("channels:inspect command", () => {
 
     it("should display URL without opening browser", async () => {
       const mockConfig = getMockConfigManager();
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
       const appId = mockConfig.getCurrentAppId()!;
 
       const { stdout } = await runCommand(

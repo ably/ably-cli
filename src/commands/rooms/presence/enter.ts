@@ -131,7 +131,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
                 ? `${formatIndex(this.sequenceCounter)}`
                 : "";
               this.log(
-                `${formatTimestamp(timestamp)}${sequencePrefix} ${formatResource(`Room: ${this.roomName!}`)} | Action: ${formatEventType(event.type)} | Client: ${formatClientId(member.clientId || "N/A")}`,
+                `${formatTimestamp(timestamp)}${sequencePrefix} ${formatResource(`Room: ${this.roomName!}`)} | Action: ${formatEventType(event.type)} | Client: ${formatClientId(member.clientId)}`,
               );
 
               if (member.data !== null && member.data !== undefined) {

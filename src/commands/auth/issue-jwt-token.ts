@@ -4,6 +4,11 @@ import { randomUUID } from "node:crypto";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
+import {
+  formatClientId,
+  formatLabel,
+  formatSuccess,
+} from "../../utils/output.js";
 
 interface JwtPayload {
   exp: number;
@@ -133,7 +138,7 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
             token: {
               appId,
               capability: capabilities,
-              clientId,
+              ...(clientId ? { clientId } : {}),
               expires: new Date(jwtPayload.exp * 1000).toISOString(),
               issued: new Date(jwtPayload.iat * 1000).toISOString(),
               keyId,
@@ -145,16 +150,24 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
           flags,
         );
       } else {
-        this.log("Generated Ably JWT Token:");
-        this.log(`Token: ${token}`);
-        this.log(`Type: JWT`);
-        this.log(`Issued: ${new Date(jwtPayload.iat * 1000).toISOString()}`);
-        this.log(`Expires: ${new Date(jwtPayload.exp * 1000).toISOString()}`);
-        this.log(`TTL: ${flags.ttl} seconds`);
-        this.log(`App ID: ${appId}`);
-        this.log(`Key ID: ${keyId}`);
-        this.log(`Client ID: ${clientId || "None"}`);
-        this.log(`Capability: ${this.formatJsonOutput(capabilities, flags)}`);
+        this.log(formatSuccess("Ably JWT token generated."));
+        this.log(`${formatLabel("Token")} ${token}`);
+        this.log(`${formatLabel("Type")} JWT`);
+        this.log(
+          `${formatLabel("Issued")} ${new Date(jwtPayload.iat * 1000).toISOString()}`,
+        );
+        this.log(
+          `${formatLabel("Expires")} ${new Date(jwtPayload.exp * 1000).toISOString()}`,
+        );
+        this.log(`${formatLabel("TTL")} ${flags.ttl} seconds`);
+        this.log(`${formatLabel("App ID")} ${appId}`);
+        this.log(`${formatLabel("Key ID")} ${keyId}`);
+        if (clientId) {
+          this.log(`${formatLabel("Client ID")} ${formatClientId(clientId)}`);
+        }
+        this.log(
+          `${formatLabel("Capability")} ${this.formatJsonOutput(capabilities, flags)}`,
+        );
       }
     } catch (error) {
       this.fail(error, flags, "issueJwtToken");

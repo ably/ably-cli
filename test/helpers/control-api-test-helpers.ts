@@ -19,7 +19,7 @@ export function nockControl(): nock.Scope {
 export function getControlApiContext() {
   const mock = getMockConfigManager();
   return {
-    accountId: mock.getCurrentAccount()!.accountId!,
+    accountId: mock.getCurrentAccount()!.accountId,
     appId: mock.getCurrentAppId()!,
     mock,
   };

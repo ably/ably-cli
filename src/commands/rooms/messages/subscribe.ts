@@ -127,7 +127,7 @@ export default class MessagesSubscribe extends ChatBaseCommand {
       } else {
         // Format message with timestamp, author and content
         const timestamp = formatMessageTimestamp(message.timestamp);
-        const author = message.clientId || "Unknown";
+        const author = message.clientId;
 
         // Prefix with room name when multiple rooms
         const roomPrefix =

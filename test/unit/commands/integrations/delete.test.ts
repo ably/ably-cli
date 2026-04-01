@@ -227,7 +227,7 @@ describe("integrations:delete command", () => {
     it("should accept --app flag", async () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
-      const accountId = mockConfig.getCurrentAccount()!.accountId!;
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
       const mockIntegration = {
         id: mockRuleId,
         appId,

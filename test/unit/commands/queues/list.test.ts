@@ -154,7 +154,7 @@ describe("queues:list command", () => {
     });
 
     it("should use custom app ID when provided", async () => {
-      const accountId = getMockConfigManager().getCurrentAccount()!.accountId!;
+      const accountId = getMockConfigManager().getCurrentAccount()!.accountId;
       const customAppId = "custom-app-id";
 
       const mockAppResponse = mockApp({ id: customAppId, accountId });

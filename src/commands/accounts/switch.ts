@@ -63,8 +63,8 @@ export default class AccountsSwitch extends ControlBaseCommand {
         {
           availableAccounts: accounts.map(({ account, alias }) => ({
             alias,
-            id: account.accountId || "Unknown",
-            name: account.accountName || "Unknown",
+            id: account.accountId,
+            name: account.accountName,
           })),
         },
       );
@@ -83,7 +83,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
   private async switchToAccount(
     alias: string,
     accounts: Array<{
-      account: { accountId?: string; accountName?: string };
+      account: { accountId: string; accountName: string };
       alias: string;
     }>,
     flags: Record<string, unknown>,
@@ -99,8 +99,8 @@ export default class AccountsSwitch extends ControlBaseCommand {
         {
           availableAccounts: accounts.map(({ account, alias }) => ({
             alias,
-            id: account.accountId || "Unknown",
-            name: account.accountName || "Unknown",
+            id: account.accountId,
+            name: account.accountName,
           })),
         },
       );
