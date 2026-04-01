@@ -1714,7 +1714,7 @@ const AblyCliTerminalInner = (
           debugLog(
             "[AblyCLITerminal handleWebSocketError] Scheduling reconnect...",
           );
-          grScheduleReconnect(connectWebSocketReference.current!, websocketUrl);
+          grScheduleReconnect(connectWebSocketReference.current, websocketUrl);
         } else {
           console.error(
             "[AblyCLITerminal handleWebSocketError] connectWebSocketRef.current is null, cannot schedule reconnect!",
@@ -1901,7 +1901,7 @@ const AblyCliTerminalInner = (
         );
 
         if (connectWebSocketReference.current) {
-          grScheduleReconnect(connectWebSocketReference.current!, websocketUrl);
+          grScheduleReconnect(connectWebSocketReference.current, websocketUrl);
         } else {
           console.error(
             "[AblyCLITerminal handleWebSocketClose] connectWebSocketRef.current is null, cannot schedule reconnect!",
@@ -2448,8 +2448,11 @@ const AblyCliTerminalInner = (
       debugLog(
         "[AblyCLITerminal] New socket detected, attaching event listeners.",
       );
+      const messageListener = (event: MessageEvent) => {
+        void handleWebSocketMessage(event);
+      };
       socket.addEventListener("open", handleWebSocketOpen);
-      socket.addEventListener("message", handleWebSocketMessage);
+      socket.addEventListener("message", messageListener);
       socket.addEventListener("close", handleWebSocketClose);
       socket.addEventListener("error", handleWebSocketError);
 
@@ -2459,7 +2462,7 @@ const AblyCliTerminalInner = (
           "[AblyCLITerminal] Cleaning up WebSocket event listeners for old socket.",
         );
         socket.removeEventListener("open", handleWebSocketOpen);
-        socket.removeEventListener("message", handleWebSocketMessage);
+        socket.removeEventListener("message", messageListener);
         socket.removeEventListener("close", handleWebSocketClose);
         socket.removeEventListener("error", handleWebSocketError);
       };
@@ -2677,7 +2680,7 @@ const AblyCliTerminalInner = (
       );
     };
 
-    initializeSession();
+    void initializeSession();
   }, [signedConfig, resumeOnReload, websocketUrl]);
 
   // Store credential hash when it becomes available if we already have a sessionId
@@ -2920,85 +2923,48 @@ const AblyCliTerminalInner = (
     });
 
     // WebSocket message handler with binary framing support
-    newSocket.addEventListener("message", async (event) => {
-      try {
-        const data = await messageDataToUint8Array(event.data);
+    newSocket.addEventListener("message", (event) => {
+      void (async () => {
+        try {
+          const data = await messageDataToUint8Array(event.data);
 
-        const message = parseControlMessage(data);
-        if (message) {
-          // Handle control messages
-          if (
-            message.type === "hello" &&
-            typeof message.sessionId === "string"
-          ) {
-            debugLog(
-              `[Secondary] Received hello. sessionId=${message.sessionId}`,
-            );
-            const previousSessionId = secondarySessionId;
-            setSecondarySessionId(message.sessionId);
-
-            // Persist to session storage if enabled
-            if (resumeOnReload && globalThis.window !== undefined) {
-              globalThis.sessionStorage.setItem(
-                "ably.cli.secondarySessionId",
-                message.sessionId,
-              );
-            }
-
-            // Clear the "Connecting..." message and status box
-            if (secondaryTerm.current) {
-              clearConnectingMessage(secondaryTerm.current);
-              secondaryTerm.current.focus();
-            }
-            clearSecondaryStatusDisplay();
-
-            // Check if this is a resumed session
-            const isResumedSession =
-              previousSessionId !== null &&
-              previousSessionId === message.sessionId;
-
-            if (isResumedSession) {
-              // For resumed sessions, activate immediately without waiting for prompt
+          const message = parseControlMessage(data);
+          if (message) {
+            // Handle control messages
+            if (
+              message.type === "hello" &&
+              typeof message.sessionId === "string"
+            ) {
               debugLog(
-                `[Secondary] Resumed existing session ${message.sessionId} - activating immediately`,
+                `[Secondary] Received hello. sessionId=${message.sessionId}`,
               );
-              updateSecondaryConnectionStatus("connected");
+              const previousSessionId = secondarySessionId;
+              setSecondarySessionId(message.sessionId);
 
-              if (!isSecondarySessionActive) {
-                activateSecondarySessionAndSendCommand();
+              // Persist to session storage if enabled
+              if (resumeOnReload && globalThis.window !== undefined) {
+                globalThis.sessionStorage.setItem(
+                  "ably.cli.secondarySessionId",
+                  message.sessionId,
+                );
               }
-            } else {
-              // For new sessions, wait for prompt detection
-              debugLog(
-                `[Secondary] New session ${message.sessionId} - waiting for prompt before activating`,
-              );
-              updateSecondaryConnectionStatus("connected");
-            }
 
-            return;
-          }
-          if (message.type === "status") {
-            debugLog(
-              `[Secondary] Received server status message: ${message.payload}`,
-            );
-
-            if (message.payload === "connected") {
-              // Clear any overlay when connected
-              clearSecondaryStatusDisplay();
-
-              // Clear the "Connecting..." message
+              // Clear the "Connecting..." message and status box
               if (secondaryTerm.current) {
                 clearConnectingMessage(secondaryTerm.current);
                 secondaryTerm.current.focus();
               }
+              clearSecondaryStatusDisplay();
 
-              // Check if we're resuming an existing session
-              const isResuming = secondarySessionId !== null;
+              // Check if this is a resumed session
+              const isResumedSession =
+                previousSessionId !== null &&
+                previousSessionId === message.sessionId;
 
-              if (isResuming) {
-                // For resumed sessions, activate immediately
+              if (isResumedSession) {
+                // For resumed sessions, activate immediately without waiting for prompt
                 debugLog(
-                  `[Secondary] Resuming session ${secondarySessionId} - activating immediately`,
+                  `[Secondary] Resumed existing session ${message.sessionId} - activating immediately`,
                 );
                 updateSecondaryConnectionStatus("connected");
 
@@ -3008,113 +2974,146 @@ const AblyCliTerminalInner = (
               } else {
                 // For new sessions, wait for prompt detection
                 debugLog(
-                  `[Secondary] New session - waiting for prompt before activating`,
+                  `[Secondary] New session ${message.sessionId} - waiting for prompt before activating`,
                 );
                 updateSecondaryConnectionStatus("connected");
-
-                // Start timeout fallback in case prompt is never detected
-                clearSecondaryPromptDetectionTimeout();
-                secondaryPromptDetectionTimeoutReference.current = setTimeout(
-                  () => {
-                    debugLog(
-                      `[Secondary] Prompt detection timeout - activating session anyway after ${PROMPT_DETECTION_TIMEOUT_MS}ms`,
-                    );
-                    if (!isSecondarySessionActive) {
-                      activateSecondarySessionAndSendCommand();
-                    }
-                  },
-                  PROMPT_DETECTION_TIMEOUT_MS,
-                );
               }
 
               return;
             }
-
-            // Handle error & disconnected
-            if (
-              message.payload === "error" ||
-              message.payload === "disconnected"
-            ) {
-              const reason =
-                message.reason ||
-                (message.payload === "error"
-                  ? "Server error"
-                  : "Server disconnected");
-              if (secondaryTerm.current)
-                secondaryTerm.current.writeln(
-                  `\r\n--- ${message.payload === "error" ? "Error" : "Session Ended (from server)"}: ${reason} ---`,
-                );
-              updateSecondaryConnectionStatus(
-                message.payload as ConnectionStatus,
+            if (message.type === "status") {
+              debugLog(
+                `[Secondary] Received server status message: ${message.payload}`,
               );
 
-              if (secondaryTerm.current && message.payload === "disconnected") {
-                const title = "ERROR: SERVER DISCONNECT";
-                const message1 = `Connection closed by server (${message.code})${message.reason ? `: ${message.reason}` : ""}.`;
-                const message2 = "";
-                const message3 = `Press ⏎ to try reconnecting manually.`;
+              if (message.payload === "connected") {
+                // Clear any overlay when connected
+                clearSecondaryStatusDisplay();
 
+                // Clear the "Connecting..." message
                 if (secondaryTerm.current) {
-                  secondaryStatusBoxReference.current = drawBox(
-                    secondaryTerm.current,
-                    boxColour.red,
-                    title,
-                    [message1, message2, message3],
-                    60,
-                  );
-                  setSecondaryOverlay({
-                    variant: "error",
-                    title,
-                    lines: [message1, message2, message3],
-                  });
+                  clearConnectingMessage(secondaryTerm.current);
+                  secondaryTerm.current.focus();
                 }
 
-                secondaryShowManualReconnectPromptReference.current = true;
-                setSecondaryShowManualReconnectPrompt(true);
+                // Check if we're resuming an existing session
+                const isResuming = secondarySessionId !== null;
+
+                if (isResuming) {
+                  // For resumed sessions, activate immediately
+                  debugLog(
+                    `[Secondary] Resuming session ${secondarySessionId} - activating immediately`,
+                  );
+                  updateSecondaryConnectionStatus("connected");
+
+                  if (!isSecondarySessionActive) {
+                    activateSecondarySessionAndSendCommand();
+                  }
+                } else {
+                  // For new sessions, wait for prompt detection
+                  debugLog(
+                    `[Secondary] New session - waiting for prompt before activating`,
+                  );
+                  updateSecondaryConnectionStatus("connected");
+
+                  // Start timeout fallback in case prompt is never detected
+                  clearSecondaryPromptDetectionTimeout();
+                  secondaryPromptDetectionTimeoutReference.current = setTimeout(
+                    () => {
+                      debugLog(
+                        `[Secondary] Prompt detection timeout - activating session anyway after ${PROMPT_DETECTION_TIMEOUT_MS}ms`,
+                      );
+                      if (!isSecondarySessionActive) {
+                        activateSecondarySessionAndSendCommand();
+                      }
+                    },
+                    PROMPT_DETECTION_TIMEOUT_MS,
+                  );
+                }
+
+                return;
+              }
+
+              // Handle error & disconnected
+              if (
+                message.payload === "error" ||
+                message.payload === "disconnected"
+              ) {
+                const reason =
+                  message.reason ||
+                  (message.payload === "error"
+                    ? "Server error"
+                    : "Server disconnected");
+                if (secondaryTerm.current)
+                  secondaryTerm.current.writeln(
+                    `\r\n--- ${message.payload === "error" ? "Error" : "Session Ended (from server)"}: ${reason} ---`,
+                  );
+                updateSecondaryConnectionStatus(
+                  message.payload as ConnectionStatus,
+                );
+
+                if (
+                  secondaryTerm.current &&
+                  message.payload === "disconnected"
+                ) {
+                  const title = "ERROR: SERVER DISCONNECT";
+                  const message1 = `Connection closed by server (${message.code})${message.reason ? `: ${message.reason}` : ""}.`;
+                  const message2 = "";
+                  const message3 = `Press ⏎ to try reconnecting manually.`;
+
+                  if (secondaryTerm.current) {
+                    secondaryStatusBoxReference.current = drawBox(
+                      secondaryTerm.current,
+                      boxColour.red,
+                      title,
+                      [message1, message2, message3],
+                      60,
+                    );
+                    setSecondaryOverlay({
+                      variant: "error",
+                      title,
+                      lines: [message1, message2, message3],
+                    });
+                  }
+
+                  secondaryShowManualReconnectPromptReference.current = true;
+                  setSecondaryShowManualReconnectPrompt(true);
+                }
+                return;
               }
               return;
             }
+
             return;
           }
 
-          // Check for PTY stream/hijack meta-message
-          if (message.stream === true && typeof message.hijack === "boolean") {
-            debugLog(
-              "[AblyCLITerminal] [Secondary] Received PTY meta-message. Ignoring.",
-            );
-            return;
+          // Not a control message - process as PTY data
+          const dataString = new TextDecoder().decode(data);
+
+          // Filter Docker handshake JSON using the shared buffering logic
+          const filteredData = filterDockerHandshake(
+            dataString,
+            secondaryHandshakeFilterState.current,
+          );
+
+          // Only write if we have data after filtering
+          if (filteredData.length > 0) {
+            // Always write PTY data to terminal for the secondary terminal
+            // This ensures character echo works properly
+            if (secondaryTerm.current) {
+              secondaryTerm.current.write(filteredData);
+            }
+
+            // Call handleSecondaryPtyData for prompt detection
+            handleSecondaryPtyData(filteredData);
           }
-
-          // Control message was handled, return
-          return;
+        } catch (error) {
+          console.error(
+            "[AblyCLITerminal] [Secondary] Error processing message:",
+            error,
+          );
         }
-
-        // Not a control message - process as PTY data
-        const dataString = new TextDecoder().decode(data);
-
-        // Filter Docker handshake JSON using the shared buffering logic
-        const filteredData = filterDockerHandshake(
-          dataString,
-          secondaryHandshakeFilterState.current,
-        );
-
-        // Only write if we have data after filtering
-        if (filteredData.length > 0) {
-          // Always write PTY data to terminal for the secondary terminal
-          // This ensures character echo works properly
-          if (secondaryTerm.current) {
-            secondaryTerm.current.write(filteredData);
-          }
-
-          // Call handleSecondaryPtyData for prompt detection
-          handleSecondaryPtyData(filteredData);
-        }
-      } catch (error) {
-        console.error(
-          "[AblyCLITerminal] [Secondary] Error processing message:",
-          error,
-        );
-      }
+      })();
     });
 
     // WebSocket error handler

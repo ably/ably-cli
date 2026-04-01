@@ -145,8 +145,8 @@ export default [
       // React recommended rules
       ...eslintPluginReact.configs.recommended.rules,
       ...eslintPluginReact.configs["jsx-runtime"].rules,
-      // TypeScript rules
-      ...tsPlugin.configs.recommended.rules,
+      // TypeScript rules (type-checked for full safety)
+      ...tsPlugin.configs["recommended-type-checked"].rules,
       // React hooks rules
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
@@ -164,12 +164,12 @@ export default [
         },
       ],
       "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unsafe-assignment": "off",
-      "@typescript-eslint/no-unsafe-call": "off",
-      "@typescript-eslint/no-unsafe-member-access": "off",
-      "@typescript-eslint/no-unsafe-argument": "off",
-      "@typescript-eslint/no-unsafe-return": "off",
-      "@typescript-eslint/no-base-to-string": "off",
+      "@typescript-eslint/no-unsafe-assignment": "warn",
+      "@typescript-eslint/no-unsafe-call": "warn",
+      "@typescript-eslint/no-unsafe-member-access": "warn",
+      "@typescript-eslint/no-unsafe-argument": "warn",
+      "@typescript-eslint/no-unsafe-return": "warn",
+      "@typescript-eslint/no-base-to-string": "warn",
       "no-console": ["warn", { allow: ["warn", "error"] }],
       "no-control-regex": "off", // Terminal escape sequences use control chars
       "n/no-missing-import": "off", // TSX imports are handled by TypeScript
@@ -223,6 +223,8 @@ export default [
       ...vitest.configs.recommended.rules,
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-expressions": "off",
+      "@typescript-eslint/require-await": "off",
+      "@typescript-eslint/unbound-method": "off",
       "vitest/no-focused-tests": "error", // Equivalent to mocha/no-exclusive-tests
       "vitest/no-disabled-tests": "warn", // Equivalent to mocha/no-skipped-tests
     },
