@@ -202,7 +202,10 @@ export function createAuthPayload(
     // Extract fields from signed config for server convenience
     // Server uses these to set environment variables like ABLY_ANONYMOUS_USER_MODE
     try {
-      const parsedConfig = JSON.parse(signedConfig);
+      const parsedConfig = JSON.parse(signedConfig) as {
+        apiKey?: string;
+        accessToken?: string;
+      };
       if (parsedConfig.apiKey) {
         payload.apiKey = parsedConfig.apiKey;
       }
@@ -260,7 +263,7 @@ export function parseControlMessage(data: Uint8Array): ControlMessage | null {
   try {
     const jsonBytes = data.slice(prefixBytes.length);
     const jsonStr = new TextDecoder().decode(jsonBytes);
-    return JSON.parse(jsonStr);
+    return JSON.parse(jsonStr) as ControlMessage;
   } catch (error) {
     console.error("Failed to parse control message:", error);
     return null;
