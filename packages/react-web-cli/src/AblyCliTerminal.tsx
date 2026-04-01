@@ -4,7 +4,6 @@ import React, {
   useState,
   useCallback,
   useImperativeHandle,
-  forwardRef,
 } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
@@ -129,6 +128,7 @@ export interface AblyCliTerminalProperties {
    * Set to false when controlling split externally to hide the internal UI affordance.
    */
   showSplitControl?: boolean;
+  ref?: React.Ref<AblyCliTerminalHandle>;
 }
 
 export interface AblyCliTerminalHandle {
@@ -164,22 +164,20 @@ if (globalThis.window !== undefined) {
 // Import isHijackMetaChunk from shared module for backward compatibility
 import { isHijackMetaChunk } from "./terminal-shared";
 
-const AblyCliTerminalInner = (
-  {
-    websocketUrl,
-    signedConfig,
-    signature,
-    initialCommand,
-    onConnectionStatusChange,
-    onSessionEnd,
-    onSessionId,
-    resumeOnReload,
-    maxReconnectAttempts,
-    enableSplitScreen = false,
-    showSplitControl = true,
-  }: AblyCliTerminalProperties,
-  reference: React.Ref<AblyCliTerminalHandle>,
-) => {
+const AblyCliTerminal = ({
+  websocketUrl,
+  signedConfig,
+  signature,
+  initialCommand,
+  onConnectionStatusChange,
+  onSessionEnd,
+  onSessionId,
+  resumeOnReload,
+  maxReconnectAttempts,
+  enableSplitScreen = false,
+  showSplitControl = true,
+  ref: reference,
+}: AblyCliTerminalProperties) => {
   const [componentConnectionStatus, setComponentConnectionStatusState] =
     useState<ConnectionStatus>("initial");
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -384,7 +382,7 @@ const AblyCliTerminalInner = (
       // Clear the secondary terminal's state AFTER saving references
       secondarySocketReference.current = null;
       secondaryTerm.current = null;
-      secondaryFitAddon.current = undefined;
+      secondaryFitAddon.current = null;
 
       // Ensure we properly transfer the DOM element
       // This is critical - we need to move the secondary terminal's
@@ -529,7 +527,7 @@ const AblyCliTerminalInner = (
   // Determine if terminal is visible (drawer open & tab visible)
   const isVisible = useTerminalVisibility(rootReference);
   const term = useRef<Terminal | null>(null);
-  const fitAddon = useRef<FitAddon>();
+  const fitAddon = useRef<FitAddon | null>(null);
   const ptyBuffer = useRef("");
   const handshakeFilterState = useRef<HandshakeFilterState>(
     createHandshakeFilterState(),
@@ -824,7 +822,7 @@ const AblyCliTerminalInner = (
   // Secondary terminal instance references
   const secondaryRootReference = useRef<HTMLDivElement>(null);
   const secondaryTerm = useRef<Terminal | null>(null);
-  const secondaryFitAddon = useRef<FitAddon>();
+  const secondaryFitAddon = useRef<FitAddon | null>(null);
   const secondarySocketReference = useRef<WebSocket | null>(null);
   const secondaryPtyBuffer = useRef("");
   const secondaryHandshakeFilterState = useRef<HandshakeFilterState>(
@@ -3813,9 +3811,5 @@ const AblyCliTerminalInner = (
   );
 };
 
-export const AblyCliTerminal = forwardRef<
-  AblyCliTerminalHandle,
-  AblyCliTerminalProperties
->(AblyCliTerminalInner);
-
+export { AblyCliTerminal };
 export default AblyCliTerminal;
