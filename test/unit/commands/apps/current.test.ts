@@ -21,7 +21,7 @@ describe("apps:current command", () => {
 
     it("should display account information", async () => {
       const accountName =
-        getMockConfigManager().getCurrentAccount()!.accountName!;
+        getMockConfigManager().getCurrentAccount()!.accountName;
       const { stdout } = await runCommand(["apps:current"], import.meta.url);
 
       expect(stdout).toContain(`Account: ${accountName}`);

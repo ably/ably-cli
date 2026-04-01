@@ -151,7 +151,7 @@ $ ably-interactive
 * [`ably logs push subscribe`](#ably-logs-push-subscribe)
 * [`ably logs subscribe`](#ably-logs-subscribe)
 * [`ably push`](#ably-push)
-* [`ably push batch-publish [PAYLOAD]`](#ably-push-batch-publish)
+* [`ably push batch-publish [PAYLOAD]`](#ably-push-batch-publish-payload)
 * [`ably push channels`](#ably-push-channels)
 * [`ably push channels list`](#ably-push-channels-list)
 * [`ably push channels list-channels`](#ably-push-channels-list-channels)

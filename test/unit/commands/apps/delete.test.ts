@@ -28,9 +28,9 @@ describe("apps:delete command", () => {
   describe("functionality", () => {
     it("should delete app successfully with --force flag", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const accountName = mock.getCurrentAccount()!.accountName;
+      const userEmail = mock.getCurrentAccount()!.userEmail;
       const appId = mock.getCurrentAppId()!;
 
       // Mock the /me endpoint for getApp (listApps)
@@ -69,9 +69,9 @@ describe("apps:delete command", () => {
 
     it("should output JSON format when --json flag is used", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const accountName = mock.getCurrentAccount()!.accountName;
+      const userEmail = mock.getCurrentAccount()!.userEmail;
       const appId = mock.getCurrentAppId()!;
 
       const mockApp = {
@@ -114,9 +114,9 @@ describe("apps:delete command", () => {
 
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const accountName = mock.getCurrentAccount()!.accountName;
+      const userEmail = mock.getCurrentAccount()!.userEmail;
       const appId = mock.getCurrentAppId()!;
       const customToken = "custom_access_token";
 
@@ -209,9 +209,9 @@ describe("apps:delete command", () => {
         }
         // 500: need full pre-mock chain, then fail on DELETE
         const mock = getMockConfigManager();
-        const accountId = mock.getCurrentAccount()!.accountId!;
-        const accountName = mock.getCurrentAccount()!.accountName!;
-        const userEmail = mock.getCurrentAccount()!.userEmail!;
+        const accountId = mock.getCurrentAccount()!.accountId;
+        const accountName = mock.getCurrentAccount()!.accountName;
+        const userEmail = mock.getCurrentAccount()!.userEmail;
         const appId = mock.getCurrentAppId()!;
         nockControl()
           .get("/v1/me")
@@ -240,9 +240,9 @@ describe("apps:delete command", () => {
 
     it("should handle app not found error", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const accountName = mock.getCurrentAccount()!.accountName;
+      const userEmail = mock.getCurrentAccount()!.userEmail;
       const appId = mock.getCurrentAppId()!;
 
       // Mock the /me endpoint
@@ -267,9 +267,9 @@ describe("apps:delete command", () => {
 
     it("should handle errors in JSON format when --json flag is used", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const accountName = mock.getCurrentAccount()!.accountName;
+      const userEmail = mock.getCurrentAccount()!.userEmail;
       const appId = mock.getCurrentAppId()!;
 
       // Mock the /me endpoint
@@ -315,9 +315,9 @@ describe("apps:delete command", () => {
 
     it("should handle 403 forbidden error", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const accountName = mock.getCurrentAccount()!.accountName;
+      const userEmail = mock.getCurrentAccount()!.userEmail;
       const appId = mock.getCurrentAppId()!;
 
       // Mock the /me endpoint
@@ -359,9 +359,9 @@ describe("apps:delete command", () => {
 
     it("should handle 409 conflict error when app has dependencies", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const accountName = mock.getCurrentAccount()!.accountName;
+      const userEmail = mock.getCurrentAccount()!.userEmail;
       const appId = mock.getCurrentAppId()!;
 
       // Mock the /me endpoint
@@ -406,9 +406,9 @@ describe("apps:delete command", () => {
   describe("current app handling", () => {
     it("should use current app when no app ID provided", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
-      const accountName = mock.getCurrentAccount()!.accountName!;
-      const userEmail = mock.getCurrentAccount()!.userEmail!;
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const accountName = mock.getCurrentAccount()!.accountName;
+      const userEmail = mock.getCurrentAccount()!.userEmail;
       const appId = mock.getCurrentAppId()!;
 
       // Set environment variable for current app

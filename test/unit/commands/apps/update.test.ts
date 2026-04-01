@@ -29,7 +29,7 @@ describe("apps:update command", () => {
   describe("functionality", () => {
     it("should update an app name successfully", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
+      const accountId = mock.getCurrentAccount()!.accountId;
       const appId = mock.getCurrentAppId()!;
       const updatedName = "UpdatedAppName";
 
@@ -60,7 +60,7 @@ describe("apps:update command", () => {
 
     it("should update TLS only flag successfully", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
+      const accountId = mock.getCurrentAccount()!.accountId;
       const appId = mock.getCurrentAppId()!;
 
       // Mock the app update endpoint
@@ -89,7 +89,7 @@ describe("apps:update command", () => {
 
     it("should update both name and TLS only successfully", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
+      const accountId = mock.getCurrentAccount()!.accountId;
       const appId = mock.getCurrentAppId()!;
       const updatedName = "UpdatedAppName";
 
@@ -121,7 +121,7 @@ describe("apps:update command", () => {
 
     it("should output JSON format when --json flag is used", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
+      const accountId = mock.getCurrentAccount()!.accountId;
       const appId = mock.getCurrentAppId()!;
       const updatedName = "UpdatedAppName";
 
@@ -154,7 +154,7 @@ describe("apps:update command", () => {
 
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
+      const accountId = mock.getCurrentAccount()!.accountId;
       const appId = mock.getCurrentAppId()!;
       const customToken = "custom_access_token";
       const updatedName = "UpdatedAppName";
@@ -324,7 +324,7 @@ describe("apps:update command", () => {
   describe("output formatting", () => {
     it("should display APNS sandbox cert status when available", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
+      const accountId = mock.getCurrentAccount()!.accountId;
       const appId = mock.getCurrentAppId()!;
 
       // Mock the app update endpoint with APNS cert info
@@ -349,7 +349,7 @@ describe("apps:update command", () => {
 
     it("should include APNS info in JSON output when available", async () => {
       const mock = getMockConfigManager();
-      const accountId = mock.getCurrentAccount()!.accountId!;
+      const accountId = mock.getCurrentAccount()!.accountId;
       const appId = mock.getCurrentAppId()!;
 
       // Mock the app update endpoint with APNS cert info

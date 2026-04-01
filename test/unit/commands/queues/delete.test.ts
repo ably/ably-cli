@@ -55,7 +55,7 @@ describe("queues:delete command", () => {
     });
 
     it("should delete a queue with custom app ID", async () => {
-      const accountId = getMockConfigManager().getCurrentAccount()!.accountId!;
+      const accountId = getMockConfigManager().getCurrentAccount()!.accountId;
       const customAppId = "custom-app-id";
       const mockQueueId = `${customAppId}:us-east-1-a:${mockQueueName}`;
 

@@ -32,7 +32,7 @@ describe("auth:keys:current command", () => {
 
     it("should display account and app information", async () => {
       const mockConfig = getMockConfigManager();
-      const accountName = mockConfig.getCurrentAccount()!.accountName!;
+      const accountName = mockConfig.getCurrentAccount()!.accountName;
       const appId = mockConfig.getCurrentAppId()!;
       const appName = mockConfig.getAppName(appId)!;
       const { stdout } = await runCommand(
