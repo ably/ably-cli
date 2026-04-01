@@ -3,14 +3,9 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { AblyBaseCommand } from "../../base-command.js";
-import { productApiFlags } from "../../flags.js";
+import { forceFlag, productApiFlags } from "../../flags.js";
 import { BaseFlags } from "../../types/cli.js";
-import {
-  formatProgress,
-  formatResource,
-  formatSuccess,
-  formatWarning,
-} from "../../utils/output.js";
+import { formatResource } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class PushPublish extends AblyBaseCommand {
@@ -87,11 +82,7 @@ export default class PushPublish extends AblyBaseCommand {
     web: Flags.string({
       description: "Web push-specific override as JSON",
     }),
-    force: Flags.boolean({
-      char: "f",
-      description:
-        "Skip confirmation prompt when publishing to a channel (confirmation is also skipped in --json mode)",
-    }),
+    ...forceFlag,
   };
 
   async run(): Promise<void> {
@@ -109,13 +100,10 @@ export default class PushPublish extends AblyBaseCommand {
     }
 
     if (hasDirectRecipient && flags.channel) {
-      const channelIgnoredWarning =
-        "--channel is ignored when --device-id, --client-id, or --recipient is provided.";
-      if (this.shouldOutputJson(flags)) {
-        this.logJsonStatus("warning", channelIgnoredWarning, flags);
-      } else {
-        this.log(formatWarning(channelIgnoredWarning));
-      }
+      this.logWarning(
+        "--channel is ignored when --device-id, --client-id, or --recipient is provided.",
+        flags as BaseFlags,
+      );
     }
 
     try {
@@ -235,9 +223,7 @@ export default class PushPublish extends AblyBaseCommand {
         );
       }
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress("Publishing push notification"));
-      }
+      this.logProgress("Publishing push notification", flags);
 
       if (recipient) {
         await rest.push.admin.publish(recipient, payload);
@@ -247,18 +233,26 @@ export default class PushPublish extends AblyBaseCommand {
             { notification: { published: true, recipient } },
             flags,
           );
-        } else {
-          this.log(formatSuccess("Push notification published."));
         }
+
+        this.logSuccessMessage("Push notification published.", flags);
       } else {
         const channelName = flags.channel!;
+
+        if (!flags.force && this.shouldOutputJson(flags)) {
+          this.fail(
+            "The --force flag is required when using --json to confirm publishing",
+            flags,
+            "pushPublish",
+          );
+        }
 
         if (!this.shouldOutputJson(flags) && !flags.force) {
           const confirmed = await promptForConfirmation(
             `This will send a push notification to all devices subscribed to channel ${formatResource(channelName)}. Continue?`,
           );
           if (!confirmed) {
-            this.log("Publish cancelled.");
+            this.logWarning("Publish cancelled.", flags);
             return;
           }
         }
@@ -272,13 +266,12 @@ export default class PushPublish extends AblyBaseCommand {
             { notification: { published: true, channel: channelName } },
             flags,
           );
-        } else {
-          this.log(
-            formatSuccess(
-              `Push notification published to channel: ${formatResource(channelName)}.`,
-            ),
-          );
         }
+
+        this.logSuccessMessage(
+          `Push notification published to channel: ${formatResource(channelName)}.`,
+          flags,
+        );
       }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushPublish");

@@ -112,7 +112,11 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
 
       // If token-only flag is set, output just the token string
       if (flags["token-only"]) {
-        this.log(tokenDetails.token);
+        if (this.shouldOutputJson(flags)) {
+          this.logJsonResult({ token: { value: tokenDetails.token } }, flags);
+        } else {
+          this.log(tokenDetails.token);
+        }
         return;
       }
 

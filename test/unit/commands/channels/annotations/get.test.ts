@@ -120,14 +120,19 @@ describe("channels:annotations:get command", () => {
       });
 
       expect(records.length).toBeGreaterThanOrEqual(1);
-      const result = records[0];
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "result",
+      );
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "channels:annotations:get");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("channel", "test-channel");
       expect(result).toHaveProperty("serial", "serial-001");
       expect(result).toHaveProperty("annotations");
-      expect(result.annotations as unknown[]).toHaveLength(1);
+      expect(
+        (result as Record<string, unknown>).annotations as unknown[],
+      ).toHaveLength(1);
     });
 
     it("should display annotation details in human-readable output", async () => {

@@ -1,16 +1,10 @@
 import { Flags } from "@oclif/core";
 import * as Ably from "ably";
-import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { extractErrorInfo } from "../../utils/errors.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
-import {
-  formatProgress,
-  formatResource,
-  formatSuccess,
-  formatWarning,
-} from "../../utils/output.js";
+import { formatResource } from "../../utils/output.js";
 
 export default class ConnectionsTest extends AblyBaseCommand {
   static override description = "Test connection to Ably";
@@ -167,55 +161,57 @@ export default class ConnectionsTest extends AblyBaseCommand {
     } else {
       this.log("");
       this.log("Connection Test Summary:");
+    }
 
-      switch (flags.transport) {
-        case "all": {
-          // If both were tested
-          const allSuccess = wsSuccess && xhrSuccess;
-          const partialSuccess = wsSuccess || xhrSuccess;
+    switch (flags.transport) {
+      case "all": {
+        // If both were tested
+        const allSuccess = wsSuccess && xhrSuccess;
+        const partialSuccess = wsSuccess || xhrSuccess;
 
-          if (allSuccess) {
-            this.log(
-              formatSuccess("All connection tests passed successfully."),
-            );
-          } else if (partialSuccess) {
-            this.log(
-              formatWarning(
-                "Some connection tests succeeded, but others failed",
-              ),
-            );
-          } else {
-            this.log(`${chalk.red("✗")} All connection tests failed`);
-          }
-
-          break;
+        if (allSuccess) {
+          this.logSuccessMessage(
+            "All connection tests passed successfully.",
+            flags,
+          );
+        } else if (partialSuccess) {
+          this.logWarning(
+            "Some connection tests succeeded, but others failed",
+            flags,
+          );
+        } else {
+          this.logWarning("All connection tests failed.", flags);
         }
 
-        case "ws": {
-          if (wsSuccess) {
-            this.log(
-              formatSuccess("WebSocket connection test passed successfully."),
-            );
-          } else {
-            this.log(`${chalk.red("✗")} WebSocket connection test failed`);
-          }
-
-          break;
-        }
-
-        case "xhr": {
-          if (xhrSuccess) {
-            this.log(
-              formatSuccess("HTTP connection test passed successfully."),
-            );
-          } else {
-            this.log(`${chalk.red("✗")} HTTP connection test failed`);
-          }
-
-          break;
-        }
-        // No default
+        break;
       }
+
+      case "ws": {
+        if (wsSuccess) {
+          this.logSuccessMessage(
+            "WebSocket connection test passed successfully.",
+            flags,
+          );
+        } else {
+          this.logWarning("WebSocket connection test failed.", flags);
+        }
+
+        break;
+      }
+
+      case "xhr": {
+        if (xhrSuccess) {
+          this.logSuccessMessage(
+            "HTTP connection test passed successfully.",
+            flags,
+          );
+        } else {
+          this.logWarning("HTTP connection test failed.", flags);
+        }
+
+        break;
+      }
+      // No default
     }
   }
 
@@ -267,11 +263,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
       `${config.prefix}TestStarting`,
       `Testing ${config.displayName} connection...`,
     );
-    if (!this.shouldOutputJson(flags)) {
-      this.log(
-        formatProgress(`Testing ${config.displayName} connection to Ably`),
-      );
-    }
+    this.logProgress(`Testing ${config.displayName} connection to Ably`, flags);
 
     let client: Ably.Realtime | null = null;
 
@@ -315,10 +307,11 @@ export default class ConnectionsTest extends AblyBaseCommand {
             `${config.displayName} connection successful`,
             { connectionId: client!.connection.id },
           );
+          this.logSuccessMessage(
+            `${config.displayName} connection successful.`,
+            flags,
+          );
           if (!this.shouldOutputJson(flags)) {
-            this.log(
-              formatSuccess(`${config.displayName} connection successful.`),
-            );
             this.log(
               `  Connection ID: ${formatResource(client!.connection.id || "unknown")}`,
             );
@@ -336,11 +329,10 @@ export default class ConnectionsTest extends AblyBaseCommand {
             `${config.displayName} connection failed: ${errorResult.message}`,
             { error: errorResult.message, reason: stateChange.reason },
           );
-          if (!this.shouldOutputJson(flags)) {
-            this.log(
-              `${chalk.red("✗")} ${config.displayName} connection failed: ${errorResult.message}`,
-            );
-          }
+          this.logWarning(
+            `${config.displayName} connection failed: ${errorResult.message}`,
+            flags,
+          );
           resolve();
         });
       });
@@ -353,11 +345,10 @@ export default class ConnectionsTest extends AblyBaseCommand {
         `${config.displayName} connection test caught error: ${errorResult.message}`,
         { error: errorResult.message },
       );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          `${chalk.red("✗")} ${config.displayName} connection failed: ${errorResult.message}`,
-        );
-      }
+      this.logWarning(
+        `${config.displayName} connection failed: ${errorResult.message}`,
+        flags,
+      );
     }
 
     return { client, error: errorResult, success };

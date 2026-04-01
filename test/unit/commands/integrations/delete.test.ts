@@ -49,13 +49,13 @@ describe("integrations:delete command", () => {
       // Mock DELETE endpoint
       nockControl().delete(`/v1/apps/${appId}/rules/${mockRuleId}`).reply(204);
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["integrations:delete", mockRuleId, "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Integration rule deleted:");
-      expect(stdout).toContain(mockRuleId);
+      expect(stderr).toContain("Integration rule deleted:");
+      expect(stderr).toContain(mockRuleId);
     });
 
     it("should display integration details before deletion with --force", async () => {
@@ -216,12 +216,12 @@ describe("integrations:delete command", () => {
 
       nockControl().delete(`/v1/apps/${appId}/rules/${mockRuleId}`).reply(204);
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["integrations:delete", mockRuleId, "-f"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Integration rule deleted:");
+      expect(stderr).toContain("Integration rule deleted:");
     });
 
     it("should accept --app flag", async () => {
@@ -267,12 +267,12 @@ describe("integrations:delete command", () => {
 
       nockControl().delete(`/v1/apps/${appId}/rules/${mockRuleId}`).reply(204);
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["integrations:delete", mockRuleId, "--app", appId, "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Integration rule deleted:");
+      expect(stderr).toContain("Integration rule deleted:");
     });
   });
 

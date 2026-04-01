@@ -41,15 +41,15 @@ describe("spaces:locks:acquire command", () => {
         reason: undefined,
       });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["spaces:locks:acquire", "test-space", "my-lock"],
         import.meta.url,
       );
 
       expect(space.enter).toHaveBeenCalled();
       expect(space.locks.acquire).toHaveBeenCalledWith("my-lock", undefined);
-      expect(stdout).toContain("Lock acquired");
-      expect(stdout).toContain("my-lock");
+      expect(stderr).toContain("Lock acquired");
+      expect(stderr).toContain("my-lock");
     });
 
     it("should pass --data JSON to acquisition", async () => {
@@ -71,7 +71,7 @@ describe("spaces:locks:acquire command", () => {
         reason: undefined,
       });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "spaces:locks:acquire",
           "test-space",
@@ -85,7 +85,7 @@ describe("spaces:locks:acquire command", () => {
       expect(space.locks.acquire).toHaveBeenCalledWith("my-lock", {
         type: "editor",
       });
-      expect(stdout).toContain("Lock acquired");
+      expect(stderr).toContain("Lock acquired");
     });
 
     it("should error on invalid --data JSON", async () => {
@@ -150,9 +150,10 @@ describe("spaces:locks:acquire command", () => {
       expect(lock).toHaveProperty("attributes", null);
       expect(lock).toHaveProperty("reason", null);
 
-      const status = records.find((r) => r.type === "status");
+      const status = records.find(
+        (r) => r.type === "status" && r.status === "holding",
+      );
       expect(status).toBeDefined();
-      expect(status).toHaveProperty("status", "holding");
       expect(status!.message).toContain("Holding lock");
     });
   });

@@ -74,13 +74,13 @@ describe("rooms:messages:history command", () => {
         .fn()
         .mockResolvedValue(createMockPaginatedResult([]));
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["rooms:messages:history", "test-room"],
         import.meta.url,
       );
 
       expect(room.messages.history).toHaveBeenCalled();
-      expect(stdout).toContain("Retrieved 0 messages");
+      expect(stderr).toContain("Retrieved 0 messages");
       expect(stdout).toContain("No messages found");
     });
 

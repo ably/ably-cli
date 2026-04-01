@@ -5,12 +5,7 @@ import Table from "cli-table3";
 
 import { AblyBaseCommand, type BaseFlags } from "../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../flags.js";
-import {
-  formatHeading,
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../utils/output.js";
+import { formatHeading, formatResource } from "../../utils/output.js";
 import type { BenchMessageData, BenchPresenceData } from "../../types/bench.js";
 
 interface TestMetrics {
@@ -45,6 +40,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
     ...durationFlag,
   };
 
+  private _flags: Record<string, unknown> | null = null;
   private receivedEchoCount = 0;
   private checkPublisherIntervalId: NodeJS.Timeout | null = null;
   private intervalId: NodeJS.Timeout | null = null;
@@ -75,6 +71,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(BenchSubscriber);
+    this._flags = flags;
 
     this.realtime = await this.setupClient(flags);
     if (!this.realtime) return; // Exit if client setup failed
@@ -96,13 +93,10 @@ export default class BenchSubscriber extends AblyBaseCommand {
       channel = this.handleChannel(client, args.channel, flags);
 
       // Show initial status
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Attaching to channel: ${formatResource(args.channel)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Attaching to channel: ${formatResource(args.channel)}`,
+        flags,
+      );
 
       await this.handlePresence(channel, metrics, flags);
 
@@ -120,13 +114,10 @@ export default class BenchSubscriber extends AblyBaseCommand {
       );
 
       // Show success message
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(
-            `Subscribed to channel: ${formatResource(args.channel)}. Waiting for benchmark messages.`,
-          ),
-        );
-      }
+      this.logSuccessMessage(
+        `Subscribed to channel: ${formatResource(args.channel)}. Waiting for benchmark messages.`,
+        flags,
+      );
 
       await this.waitForTermination(flags);
     } catch (error) {
@@ -171,9 +162,10 @@ export default class BenchSubscriber extends AblyBaseCommand {
         "initialPublishersFound",
         `Found ${publishers.length} publisher(s) already present`,
       );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(`Found ${publishers.length} publisher(s) already present`);
-      }
+      this.logProgress(
+        `Found ${publishers.length} publisher(s) already present`,
+        flags,
+      );
 
       for (const publisher of publishers) {
         const data = publisher.data as BenchPresenceData | undefined;
@@ -208,13 +200,12 @@ export default class BenchSubscriber extends AblyBaseCommand {
             }
           }
 
-          if (!this.shouldOutputJson(flags)) {
-            this.log(`Active test ID: ${metrics.testId}`);
-            if (metrics.testDetails) {
-              this.log(
-                `Test will send ${String(metrics.testDetails.messageCount)} messages at ${String(metrics.testDetails.messageRate)} msg/sec using ${String(metrics.testDetails.transport)} transport`,
-              );
-            }
+          this.logProgress(`Active test ID: ${metrics.testId}`, flags);
+          if (metrics.testDetails) {
+            this.logProgress(
+              `Test will send ${String(metrics.testDetails.messageCount)} messages at ${String(metrics.testDetails.messageRate)} msg/sec using ${String(metrics.testDetails.transport)} transport`,
+              flags,
+            );
           }
         }
       }
@@ -438,12 +429,11 @@ export default class BenchSubscriber extends AblyBaseCommand {
           metrics.publisherActive = true;
           metrics.lastMessageTime = Date.now();
           // Do not start a new test here, wait for the first message
-          if (!this.shouldOutputJson(flags)) {
-            this.log(`\nPublisher detected with test ID: ${testId}`);
-            this.log(
-              `Test will send ${String(testDetails.messageCount)} messages at ${String(testDetails.messageRate)} msg/sec using ${String(testDetails.transport)} transport`,
-            );
-          }
+          this.logProgress(`Publisher detected with test ID: ${testId}`, flags);
+          this.logProgress(
+            `Test will send ${String(testDetails.messageCount)} messages at ${String(testDetails.messageRate)} msg/sec using ${String(testDetails.transport)} transport`,
+            flags,
+          );
         }
       },
     );
@@ -495,15 +485,14 @@ export default class BenchSubscriber extends AblyBaseCommand {
             this.checkPublisherIntervalId = null;
           }
 
-          if (this.shouldOutputJson(flags)) {
-            this.logCliEvent(
-              flags,
-              "benchmark",
-              "waitingForTest",
-              "Waiting for a new benchmark test to start...",
-            );
-          } else {
-            this.log("\nWaiting for a new benchmark test to start...");
+          this.logCliEvent(
+            flags,
+            "benchmark",
+            "waitingForTest",
+            "Waiting for a new benchmark test to start...",
+          );
+          this.logProgress("Waiting for a new benchmark test to start", flags);
+          if (!this.shouldOutputJson(flags)) {
             this.displayTable = this.createStatusDisplay(null);
             this.log(this.displayTable.toString());
           }
@@ -643,15 +632,14 @@ export default class BenchSubscriber extends AblyBaseCommand {
           this.checkPublisherIntervalId = null;
         }
 
-        if (this.shouldOutputJson(flags)) {
-          this.logCliEvent(
-            flags,
-            "benchmark",
-            "waitingForTest",
-            "Waiting for a new benchmark test to start...",
-          );
-        } else {
-          this.log("\nWaiting for a new benchmark test to start...");
+        this.logCliEvent(
+          flags,
+          "benchmark",
+          "waitingForTest",
+          "Waiting for a new benchmark test to start...",
+        );
+        this.logProgress("Waiting for a new benchmark test to start", flags);
+        if (!this.shouldOutputJson(flags)) {
           this.displayTable = this.createStatusDisplay(null);
           this.log(this.displayTable.toString());
         }
@@ -755,7 +743,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
     displayTable: InstanceType<typeof Table> | null,
     metrics: TestMetrics,
   ): void {
-    if (this.shouldOutputJson({})) return;
+    if (this.shouldOutputJson(this._flags ?? {})) return;
 
     // Fallback to the command's stored table reference if none provided
     const tableRef = displayTable ?? this.displayTable;

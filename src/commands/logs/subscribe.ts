@@ -10,10 +10,8 @@ import {
 } from "../../flags.js";
 import {
   formatEventType,
-  formatListening,
   formatMessageTimestamp,
   formatResource,
-  formatSuccess,
   formatTimestamp,
   formatLabel,
 } from "../../utils/output.js";
@@ -152,13 +150,10 @@ export default class LogsSubscribe extends AblyBaseCommand {
 
       await Promise.all(subscribePromises);
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(
-            `Subscribed to app logs: ${formatResource(logTypes.join(", "))}.`,
-          ),
-        );
-      }
+      this.logSuccessMessage(
+        `Subscribed to app logs: ${formatResource(logTypes.join(", "))}.`,
+        flags,
+      );
 
       this.logCliEvent(
         flags,
@@ -166,9 +161,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
         "listening",
         "Listening for log events. Press Ctrl+C to exit.",
       );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatListening("Listening for log events."));
-      }
+      this.logListening("Listening for log events.", flags);
 
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "logs", flags.duration);

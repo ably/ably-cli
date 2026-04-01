@@ -64,8 +64,14 @@ describe("push:channels:list-channels command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("type", "result");
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line: string) => JSON.parse(line));
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "result",
+      );
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("channels");
     });

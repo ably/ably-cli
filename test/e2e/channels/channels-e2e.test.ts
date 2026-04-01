@@ -181,7 +181,10 @@ describe("Channel E2E Tests", () => {
 
     let result;
     try {
-      result = JSON.parse(listResult.stdout);
+      // JSON output may contain multiple NDJSON lines (result + completed status).
+      // Parse the first non-empty line which contains the result data.
+      const line = listResult.stdout.trim().split("\n").find(Boolean);
+      result = JSON.parse(line);
     } catch (parseError) {
       throw new Error(
         `Failed to parse JSON output. Parse error: ${String(parseError)}. Exit code: ${listResult.exitCode}, Stderr: ${listResult.stderr}, Stdout: ${listResult.stdout}`,
@@ -230,14 +233,14 @@ describe("Channel E2E Tests", () => {
     // Enhanced diagnostic error messages
     expect(publishResult.exitCode).toBe(0);
 
-    if (!publishResult.stdout || publishResult.stdout.trim() === "") {
+    if (!publishResult.stderr || publishResult.stderr.trim() === "") {
       throw new Error(
-        `Publish command returned empty output. Exit code: ${publishResult.exitCode}, Stderr: ${publishResult.stderr}, Stdout length: ${publishResult.stdout.length}`,
+        `Publish command returned empty stderr. Exit code: ${publishResult.exitCode}, Stderr: ${publishResult.stderr}, Stdout length: ${publishResult.stdout.length}`,
       );
     }
 
-    expect(publishResult.stdout).toContain(`Message published to channel`);
-    expect(publishResult.stdout).toContain(uniqueChannel);
+    expect(publishResult.stderr).toContain(`Message published to channel`);
+    expect(publishResult.stderr).toContain(uniqueChannel);
 
     // Add a delay to ensure message is stored and available in history
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -339,10 +342,13 @@ describe("Channel E2E Tests", () => {
 
     let result;
     try {
-      // The --json output is NDJSON (one event line + one result line).
-      // Parse the last non-empty line which contains the result.
+      // The --json output is NDJSON: event lines, then a result line, then a completed status.
+      // Find the line with type "result" which contains the history data.
       const lines = historyResult.stdout.trim().split("\n").filter(Boolean);
-      result = JSON.parse(lines.at(-1));
+      const resultLine = lines
+        .map((l) => JSON.parse(l))
+        .find((obj) => obj.type === "result");
+      result = resultLine;
     } catch (parseError) {
       throw new Error(
         `Failed to parse JSON history output. Parse error: ${String(parseError)}. Exit code: ${historyResult.exitCode}, Stderr: ${historyResult.stderr}, Stdout: ${historyResult.stdout}`,
@@ -406,13 +412,13 @@ describe("Channel E2E Tests", () => {
     // Enhanced diagnostic error messages
     expect(batchPublishResult.exitCode).toBe(0);
 
-    if (!batchPublishResult.stdout || batchPublishResult.stdout.trim() === "") {
+    if (!batchPublishResult.stderr || batchPublishResult.stderr.trim() === "") {
       throw new Error(
-        `Batch publish command returned empty output. Exit code: ${batchPublishResult.exitCode}, Stderr: ${batchPublishResult.stderr}, Stdout length: ${batchPublishResult.stdout.length}`,
+        `Batch publish command returned empty stderr. Exit code: ${batchPublishResult.exitCode}, Stderr: ${batchPublishResult.stderr}, Stdout length: ${batchPublishResult.stdout.length}`,
       );
     }
 
-    expect(batchPublishResult.stdout).toContain("Batch publish successful");
+    expect(batchPublishResult.stderr).toContain("Batch publish successful");
 
     // Add a delay to ensure message is stored and available in history
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -475,25 +481,25 @@ describe("Channel E2E Tests", () => {
     // Enhanced diagnostic error messages
     expect(countPublishResult.exitCode).toBe(0);
 
-    if (!countPublishResult.stdout || countPublishResult.stdout.trim() === "") {
+    if (!countPublishResult.stderr || countPublishResult.stderr.trim() === "") {
       throw new Error(
-        `Count publish command returned empty output. Exit code: ${countPublishResult.exitCode}, Stderr: ${countPublishResult.stderr}, Stdout length: ${countPublishResult.stdout.length}`,
+        `Count publish command returned empty stderr. Exit code: ${countPublishResult.exitCode}, Stderr: ${countPublishResult.stderr}, Stdout length: ${countPublishResult.stdout.length}`,
       );
     }
 
-    expect(countPublishResult.stdout).toContain(
+    expect(countPublishResult.stderr).toContain(
       "Message 1 published to channel",
     );
-    expect(countPublishResult.stdout).toContain(
+    expect(countPublishResult.stderr).toContain(
       "Message 2 published to channel",
     );
-    expect(countPublishResult.stdout).toContain(
+    expect(countPublishResult.stderr).toContain(
       "Message 3 published to channel",
     );
-    expect(countPublishResult.stdout).toContain(
+    expect(countPublishResult.stderr).toContain(
       "3/3 messages published to channel",
     );
-    expect(countPublishResult.stdout).toContain(countChannel);
+    expect(countPublishResult.stderr).toContain(countChannel);
 
     // Add a delay to ensure messages are stored and available in history
     await new Promise((resolve) => setTimeout(resolve, 2000));

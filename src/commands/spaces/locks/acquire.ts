@@ -4,12 +4,7 @@ import { Args, Flags } from "@oclif/core";
 import { errorMessage } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import {
-  formatSuccess,
-  formatListening,
-  formatProgress,
-  formatResource,
-} from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 import {
   formatLockBlock,
   formatLockOutput,
@@ -77,9 +72,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
     const { lockId } = this;
 
     try {
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress("Entering space"));
-      }
+      this.logProgress("Entering space", flags);
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
@@ -124,21 +117,18 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
         if (this.shouldOutputJson(flags)) {
           this.logJsonResult({ lock: formatLockOutput(lock) }, flags);
         } else {
-          this.log(formatSuccess(`Lock acquired: ${formatResource(lockId)}.`));
+          this.logSuccessMessage(
+            `Lock acquired: ${formatResource(lockId)}.`,
+            flags,
+          );
           this.log(formatLockBlock(lock));
-          this.log(formatListening("Holding lock."));
         }
+        this.logHolding("Holding lock. Press Ctrl+C to exit.", flags);
       } catch (error) {
         this.fail(error, flags, "lockAcquire", {
           lockId,
         });
       }
-
-      this.logJsonStatus(
-        "holding",
-        "Holding lock. Press Ctrl+C to exit.",
-        flags,
-      );
 
       this.logCliEvent(
         flags,

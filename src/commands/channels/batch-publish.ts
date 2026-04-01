@@ -4,11 +4,7 @@ import chalk from "chalk";
 import { AblyBaseCommand } from "../../base-command.js";
 import { CommandError } from "../../errors/command-error.js";
 import { productApiFlags } from "../../flags.js";
-import {
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../utils/output.js";
+import { formatResource } from "../../utils/output.js";
 
 // Define interfaces for the batch-publish command
 interface BatchMessage {
@@ -202,8 +198,8 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
         } as BatchContent;
       }
 
-      if (!this.shouldOutputJson(flags) && !this.shouldSuppressOutput(flags)) {
-        this.log(formatProgress("Sending batch publish request"));
+      if (!this.shouldSuppressOutput(flags)) {
+        this.logProgress("Sending batch publish request", flags);
       }
 
       // Make the batch publish request using the REST client's request method
@@ -234,7 +230,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
                 };
             this.logJsonResult({ publish: publishData }, flags);
           } else {
-            this.log(formatSuccess("Batch publish successful."));
+            this.logSuccessMessage("Batch publish successful.", flags);
             this.log(
               `Response: ${JSON.stringify({ responses: responseItems }, null, 2)}`,
             );
@@ -254,36 +250,35 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
             errorInfo.batchResponse
           ) {
             // This is a partial success with batchResponse field
+            if (this.shouldOutputJson(flags)) {
+              this.fail(errorInfo.error.message, flags, "batchPublish", {
+                channels: Array.isArray(batchContentObj.channels)
+                  ? batchContentObj.channels
+                  : [batchContentObj.channels],
+                message: batchContentObj.messages,
+                partial: true,
+                response: errorInfo.batchResponse,
+              });
+            }
+
             if (!this.shouldSuppressOutput(flags)) {
-              if (this.shouldOutputJson(flags)) {
-                this.fail(errorInfo.error, flags, "batchPublish", {
-                  channels: Array.isArray(batchContentObj.channels)
-                    ? batchContentObj.channels
-                    : [batchContentObj.channels],
-                  message: batchContentObj.messages,
-                  partial: true,
-                  response: errorInfo.batchResponse,
-                });
-              } else {
-                this.log(
-                  "Batch publish partially successful (some messages failed).",
-                );
-                // Format batch response in a friendly way
-                const batchResponses = errorInfo.batchResponse;
-                batchResponses.forEach((item: BatchResponseItem) => {
-                  if (item.error) {
-                    this.log(
-                      `${chalk.red("✗")} Failed to publish to channel ${formatResource(item.channel)}: ${item.error.message} (${item.error.code})`,
-                    );
-                  } else {
-                    this.log(
-                      formatSuccess(
-                        `Published to channel ${formatResource(item.channel)} with messageId: ${item.messageId}.`,
-                      ),
-                    );
-                  }
-                });
-              }
+              this.log(
+                "Batch publish partially successful (some messages failed).",
+              );
+              // Format batch response in a friendly way
+              const batchResponses = errorInfo.batchResponse;
+              batchResponses.forEach((item: BatchResponseItem) => {
+                if (item.error) {
+                  this.log(
+                    `${chalk.red("✗")} Failed to publish to channel ${formatResource(item.channel)}: ${item.error.message} (${item.error.code})`,
+                  );
+                } else {
+                  this.logSuccessMessage(
+                    `Published to channel ${formatResource(item.channel)} with messageId: ${item.messageId}.`,
+                    flags,
+                  );
+                }
+              });
             }
           } else {
             // Complete failure

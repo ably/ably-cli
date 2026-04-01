@@ -6,7 +6,6 @@ import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import {
   formatLabel,
-  formatProgress,
   formatResource,
   formatTimestamp,
   formatMessageTimestamp,
@@ -236,13 +235,10 @@ export default class MessagesSubscribe extends ChatBaseCommand {
           ? this.roomNames.map((r) => formatResource(r)).join(", ")
           : formatResource(this.roomNames[0]!);
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Attaching to room${this.roomNames.length > 1 ? "s" : ""}: ${roomList}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Attaching to room${this.roomNames.length > 1 ? "s" : ""}: ${roomList}`,
+        flags,
+      );
 
       if (!this.chatClient) {
         throw new Error("Failed to create Chat or Ably client");

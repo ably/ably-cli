@@ -114,7 +114,7 @@ export default class KeysListCommand extends ControlBaseCommand {
 
         if (hasMore) {
           const warning = formatLimitWarning(keys.length, flags.limit, "keys");
-          if (warning) this.log(warning);
+          if (warning) this.logToStderr(warning);
         }
       }
     } catch (error) {

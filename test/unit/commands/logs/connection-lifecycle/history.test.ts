@@ -4,6 +4,7 @@ import {
   getMockAblyRest,
   createMockPaginatedResult,
 } from "../../../../helpers/mock-ably-rest.js";
+import { parseJsonOutput } from "../../../../helpers/ndjson.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -62,7 +63,7 @@ describe("logs:connection-lifecycle:history command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("messages");
       expect(Array.isArray(result.messages)).toBe(true);

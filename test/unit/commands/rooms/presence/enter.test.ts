@@ -36,13 +36,13 @@ describe("rooms:presence:enter command", () => {
     });
 
     it("should show progress message", async () => {
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["rooms:presence:enter", "test-room"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Entering presence in room");
-      expect(stdout).toContain("test-room");
+      expect(stderr).toContain("Entering presence in room");
+      expect(stderr).toContain("test-room");
     });
 
     it("should pass parsed --data to presence.enter", async () => {

@@ -36,7 +36,7 @@ describe("LogsConnectionLifecycleSubscribe", function () {
     it("should subscribe to the meta connection lifecycle channel", async () => {
       const mock = getMockAblyRealtime();
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["logs:connection-lifecycle:subscribe"],
         import.meta.url,
       );
@@ -47,7 +47,7 @@ describe("LogsConnectionLifecycleSubscribe", function () {
       );
       const channel = mock.channels._getChannel("[meta]connection.lifecycle");
       expect(channel.subscribe).toHaveBeenCalled();
-      expect(stdout).toContain("Subscribed to connection lifecycle logs");
+      expect(stderr).toContain("Subscribed to connection lifecycle logs");
     });
   });
 
@@ -67,7 +67,7 @@ describe("LogsConnectionLifecycleSubscribe", function () {
 
     // Emit SIGINT to stop the command
 
-    const { stdout } = await runCommand(
+    const { stderr } = await runCommand(
       ["logs:connection-lifecycle:subscribe"],
       import.meta.url,
     );
@@ -77,7 +77,7 @@ describe("LogsConnectionLifecycleSubscribe", function () {
       {},
     );
     expect(channel.subscribe).toHaveBeenCalled();
-    expect(stdout).toContain("Subscribed to connection lifecycle logs");
+    expect(stderr).toContain("Subscribed to connection lifecycle logs");
   });
 
   it("should handle rewind parameter", async function () {

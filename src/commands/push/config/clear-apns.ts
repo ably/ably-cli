@@ -2,12 +2,7 @@ import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { forceFlag } from "../../../flags.js";
-import {
-  formatProgress,
-  formatResource,
-  formatSuccess,
-  formatWarning,
-} from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class PushConfigClearApns extends ControlBaseCommand {
@@ -36,24 +31,30 @@ export default class PushConfigClearApns extends ControlBaseCommand {
       async (controlApi) => {
         const appId = await this.requireAppId(flags);
 
+        // In JSON mode, require --force to prevent accidental destructive actions
+        if (!flags.force && this.shouldOutputJson(flags)) {
+          this.fail(
+            "The --force flag is required when using --json to confirm clearing APNs configuration",
+            flags,
+            "pushConfigClearApns",
+          );
+        }
+
         if (!flags.force && !this.shouldOutputJson(flags)) {
           const confirmed = await promptForConfirmation(
             `Are you sure you want to clear APNs configuration for app ${formatResource(appId)}?`,
           );
 
           if (!confirmed) {
-            this.log("Operation cancelled.");
+            this.logWarning("Operation cancelled.", flags);
             return;
           }
         }
 
-        if (!this.shouldOutputJson(flags)) {
-          this.log(
-            formatProgress(
-              `Checking APNs configuration for app ${formatResource(appId)}`,
-            ),
-          );
-        }
+        this.logProgress(
+          `Checking APNs configuration for app ${formatResource(appId)}`,
+          flags,
+        );
 
         const app = await controlApi.getApp(appId);
         const apnsConfigured = !!(
@@ -66,23 +67,19 @@ export default class PushConfigClearApns extends ControlBaseCommand {
               { config: { appId, cleared: "apns", wasConfigured: false } },
               flags,
             );
-          } else {
-            this.log(
-              formatWarning(
-                `APNs is not configured for app ${formatResource(appId)}. Nothing to clear.`,
-              ),
-            );
           }
+
+          this.logWarning(
+            `APNs is not configured for app ${formatResource(appId)}. Nothing to clear.`,
+            flags,
+          );
           return;
         }
 
-        if (!this.shouldOutputJson(flags)) {
-          this.log(
-            formatProgress(
-              `Clearing APNs configuration for app ${formatResource(appId)}`,
-            ),
-          );
-        }
+        this.logProgress(
+          `Clearing APNs configuration for app ${formatResource(appId)}`,
+          flags,
+        );
 
         await controlApi.updateApp(appId, {
           apnsAuthType: null,
@@ -98,10 +95,9 @@ export default class PushConfigClearApns extends ControlBaseCommand {
         if (this.shouldOutputJson(flags)) {
           this.logJsonResult({ config: { appId, cleared: "apns" } }, flags);
         } else {
-          this.log(
-            formatSuccess(
-              `APNs configuration cleared for app ${formatResource(appId)}.`,
-            ),
+          this.logSuccessMessage(
+            `APNs configuration cleared for app ${formatResource(appId)}.`,
+            flags,
           );
         }
       },

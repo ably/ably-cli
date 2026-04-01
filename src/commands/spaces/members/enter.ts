@@ -4,9 +4,6 @@ import { Args, Flags } from "@oclif/core";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
-  formatSuccess,
-  formatListening,
-  formatProgress,
   formatResource,
   formatLabel,
   formatClientId,
@@ -47,9 +44,7 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
     const { space_name: spaceName } = args;
 
     try {
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress("Entering space"));
-      }
+      this.logProgress("Entering space", flags);
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
 
@@ -77,7 +72,10 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         const self = await this.space!.members.getSelf();
         this.logJsonResult({ member: formatMemberOutput(self!) }, flags);
       } else {
-        this.log(formatSuccess(`Entered space: ${formatResource(spaceName)}.`));
+        this.logSuccessMessage(
+          `Entered space: ${formatResource(spaceName)}.`,
+          flags,
+        );
         this.log(
           `${formatLabel("Client ID")} ${formatClientId(this.realtimeClient!.auth.clientId)}`,
         );
@@ -87,14 +85,8 @@ export default class SpacesMembersEnter extends SpacesBaseCommand {
         if (profileData) {
           this.log(`${formatLabel("Profile")} ${JSON.stringify(profileData)}`);
         }
-        this.log(formatListening("Holding presence."));
       }
-
-      this.logJsonStatus(
-        "holding",
-        "Holding presence. Press Ctrl+C to exit.",
-        flags,
-      );
+      this.logHolding("Holding presence. Press Ctrl+C to exit.", flags);
 
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "member", flags.duration);

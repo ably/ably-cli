@@ -2,12 +2,7 @@ import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
-import {
-  formatLabel,
-  formatResource,
-  formatSuccess,
-  formatWarning,
-} from "../../../utils/output.js";
+import { formatLabel, formatResource } from "../../../utils/output.js";
 
 export default class RulesUpdateCommand extends ControlBaseCommand {
   static args = {
@@ -161,13 +156,10 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
         updateData.mutableMessages = flags["mutable-messages"];
         if (flags["mutable-messages"]) {
           updateData.persisted = true;
-          if (!this.shouldOutputJson(flags)) {
-            this.logToStderr(
-              formatWarning(
-                "Message persistence is automatically enabled when mutable messages is enabled.",
-              ),
-            );
-          }
+          this.logWarning(
+            "Message persistence is automatically enabled when mutable messages is enabled.",
+            flags,
+          );
         }
       }
 
@@ -254,9 +246,6 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
           flags,
         );
       } else {
-        this.log(
-          formatSuccess(`Rule ${formatResource(updatedNamespace.id)} updated.`),
-        );
         this.log(`${formatLabel("ID")} ${formatResource(updatedNamespace.id)}`);
         for (const line of formatChannelRuleDetails(updatedNamespace, {
           bold: true,
@@ -266,6 +255,11 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
           this.log(line);
         }
       }
+
+      this.logSuccessMessage(
+        `Channel rule ${formatResource(updatedNamespace.id)} updated.`,
+        flags,
+      );
     } catch (error) {
       this.fail(error, flags, "ruleUpdate", { appId });
     }

@@ -7,12 +7,7 @@ import {
   extractSummarizationType,
   validateAnnotationParams,
 } from "../../../utils/annotations.js";
-import {
-  formatLabel,
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 
 export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
   static override args = {
@@ -73,13 +68,10 @@ export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
 
       const channel = client.channels.get(channelName);
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Deleting annotation on message ${formatResource(serial)} in channel ${formatResource(channelName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Deleting annotation on message ${formatResource(serial)} in channel ${formatResource(channelName)}`,
+        flags,
+      );
 
       const annotation: Ably.OutboundAnnotation = { type };
       if (flags.name !== undefined) annotation.name = flags.name;
@@ -111,17 +103,12 @@ export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
           },
           flags,
         );
-      } else {
-        this.log(
-          formatSuccess(
-            `Annotation deleted on message ${formatResource(serial)} in channel ${formatResource(channelName)}.`,
-          ),
-        );
-        this.log(`  ${formatLabel("Type")} ${formatResource(type)}`);
-        if (flags.name !== undefined) {
-          this.log(`  ${formatLabel("Name")} ${formatResource(flags.name)}`);
-        }
       }
+
+      this.logSuccessMessage(
+        `Annotation deleted on message ${formatResource(serial)} in channel ${formatResource(channelName)}.`,
+        flags,
+      );
     } catch (error) {
       this.fail(error, flags, "annotationDelete", {
         channel: channelName,

@@ -60,12 +60,12 @@ describe("push:config:clear-apns command", () => {
         ]);
       nockControl().patch(`/v1/apps/${appId}`).reply(200, { id: appId });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["push:config:clear-apns", "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("APNs configuration cleared");
+      expect(stderr).toContain("APNs configuration cleared");
     });
 
     it("should warn when APNs is not configured", async () => {
@@ -89,13 +89,13 @@ describe("push:config:clear-apns command", () => {
           },
         ]);
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["push:config:clear-apns", "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("not configured");
-      expect(stdout).toContain("Nothing to clear");
+      expect(stderr).toContain("not configured");
+      expect(stderr).toContain("Nothing to clear");
     });
 
     it("should output JSON when requested", async () => {
@@ -126,7 +126,13 @@ describe("push:config:clear-apns command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      // Parse NDJSON output — find the result record
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const result = records.find((r) => r.type === "result");
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("config");

@@ -9,6 +9,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../../helpers/ndjson.js";
 
 const mockPresenceMembers = [
   {
@@ -57,13 +58,13 @@ describe("rooms:presence:get command", () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-room::$chat");
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["rooms:presence:get", "test-room"],
         import.meta.url,
       );
 
       expect(channel.presence.get).toHaveBeenCalledWith({ limit: 100 });
-      expect(stdout).toContain("Fetching presence members");
+      expect(stderr).toContain("Fetching presence members");
       expect(stdout).toContain("test-room");
       expect(stdout).toContain("user-1");
       expect(stdout).toContain("user-2");
@@ -87,12 +88,12 @@ describe("rooms:presence:get command", () => {
       const channel = mock.channels._getChannel("test-room::$chat");
       channel.presence.get.mockResolvedValue(createMockPaginatedResult([]));
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["rooms:presence:get", "test-room"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("No members currently present");
+      expect(stderr).toContain("No members currently present");
     });
 
     it("should output JSON with members array", async () => {
@@ -101,7 +102,7 @@ describe("rooms:presence:get command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout.trim());
+      const result = parseJsonOutput(stdout);
       expect(result.type).toBe("result");
       expect(result.members).toBeDefined();
       expect(result.members).toHaveLength(2);
@@ -162,7 +163,7 @@ describe("rooms:presence:get command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout.trim());
+      const result = parseJsonOutput(stdout);
       expect(result.hasMore).toBe(true);
       expect(result.next).toBeDefined();
       expect(result.next.hint).toContain("--limit");

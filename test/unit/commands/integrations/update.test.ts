@@ -58,12 +58,12 @@ describe("integrations:update command", () => {
         .patch(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, updatedIntegration);
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["integrations:update", mockRuleId, "--channel-filter", "messages:*"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Integration rule updated.");
+      expect(stderr).toContain("Integration rule updated.");
       expect(stdout).toContain(mockRuleId);
     });
 
@@ -105,12 +105,12 @@ describe("integrations:update command", () => {
         .patch(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, updatedIntegration);
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["integrations:update", mockRuleId, "--target-url", newUrl],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Integration rule updated.");
+      expect(stderr).toContain("Integration rule updated.");
     });
 
     it("should output JSON format when --json flag is used", async () => {
@@ -161,8 +161,14 @@ describe("integrations:update command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("type", "result");
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line: string) => JSON.parse(line));
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "result",
+      );
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("command", "integrations:update");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("rule");
@@ -220,11 +226,20 @@ describe("integrations:update command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("type", "result");
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line: string) => JSON.parse(line));
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "result",
+      );
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("command", "integrations:update");
       expect(result).toHaveProperty("success", true);
-      expect(result.rule).toHaveProperty("requestMode", "batch");
+      expect((result as Record<string, unknown>).rule).toHaveProperty(
+        "requestMode",
+        "batch",
+      );
     });
   });
 
@@ -377,7 +392,7 @@ describe("integrations:update command", () => {
         .patch(`/v1/apps/${appId}/rules/${mockRuleId}`)
         .reply(200, updatedIntegration);
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "integrations:update",
           mockRuleId,
@@ -389,7 +404,7 @@ describe("integrations:update command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Integration rule updated.");
+      expect(stderr).toContain("Integration rule updated.");
     });
   });
 

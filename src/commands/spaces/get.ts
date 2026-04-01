@@ -10,7 +10,6 @@ import {
   formatHeading,
   formatIndex,
   formatLabel,
-  formatProgress,
   formatResource,
 } from "../../utils/output.js";
 import type { MemberOutput } from "../../utils/spaces-output.js";
@@ -69,13 +68,10 @@ export default class SpacesGet extends SpacesBaseCommand {
     const spaceName = args.space_name;
 
     try {
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Fetching state for space ${formatResource(spaceName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Fetching state for space ${formatResource(spaceName)}`,
+        flags,
+      );
 
       const rest = await this.createAblyRestClient(flags);
       if (!rest) return;

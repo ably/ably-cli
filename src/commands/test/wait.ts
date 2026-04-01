@@ -23,14 +23,15 @@ export default class TestWait extends AblyBaseCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(TestWait);
 
-    this.log(
-      `Waiting for ${flags.duration} seconds. Press Ctrl+C to interrupt...`,
+    this.logProgress(
+      `Waiting for ${flags.duration} seconds. Press Ctrl+C to interrupt`,
+      flags,
     );
 
     // Use a simple promise with timeout
     await new Promise<void>((resolve) => {
       const timeout = setTimeout(() => {
-        this.log("Wait completed successfully.");
+        this.logSuccessMessage("Wait completed successfully.", flags);
         resolve();
       }, flags.duration * 1000);
 

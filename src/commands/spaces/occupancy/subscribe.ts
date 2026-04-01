@@ -6,11 +6,8 @@ import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import {
   formatEventType,
   formatLabel,
-  formatListening,
   formatMessageTimestamp,
-  formatProgress,
   formatResource,
-  formatSuccess,
   formatTimestamp,
 } from "../../../utils/output.js";
 
@@ -73,13 +70,10 @@ export default class SpacesOccupancySubscribe extends SpacesBaseCommand {
         { spaceName, channel: channelName },
       );
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Subscribing to occupancy events on space: ${formatResource(spaceName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Subscribing to occupancy events on space: ${formatResource(spaceName)}`,
+        flags,
+      );
 
       await channel.subscribe(occupancyEventName, (message: Ably.Message) => {
         const timestamp = formatMessageTimestamp(message.timestamp);
@@ -136,14 +130,11 @@ export default class SpacesOccupancySubscribe extends SpacesBaseCommand {
         }
       });
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(
-            `Subscribed to occupancy on space: ${formatResource(spaceName)}.`,
-          ),
-        );
-        this.log(formatListening("Listening for occupancy events."));
-      }
+      this.logSuccessMessage(
+        `Subscribed to occupancy on space: ${formatResource(spaceName)}.`,
+        flags,
+      );
+      this.logListening("Listening for occupancy events.", flags);
 
       this.logCliEvent(
         flags,

@@ -2,12 +2,7 @@ import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { forceFlag } from "../../../flags.js";
-import {
-  formatProgress,
-  formatResource,
-  formatSuccess,
-  formatWarning,
-} from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class PushConfigClearFcm extends ControlBaseCommand {
@@ -36,24 +31,30 @@ export default class PushConfigClearFcm extends ControlBaseCommand {
       async (controlApi) => {
         const appId = await this.requireAppId(flags);
 
+        // In JSON mode, require --force to prevent accidental destructive actions
+        if (!flags.force && this.shouldOutputJson(flags)) {
+          this.fail(
+            "The --force flag is required when using --json to confirm clearing FCM configuration",
+            flags,
+            "pushConfigClearFcm",
+          );
+        }
+
         if (!flags.force && !this.shouldOutputJson(flags)) {
           const confirmed = await promptForConfirmation(
             `Are you sure you want to clear FCM configuration for app ${formatResource(appId)}?`,
           );
 
           if (!confirmed) {
-            this.log("Operation cancelled.");
+            this.logWarning("Operation cancelled.", flags);
             return;
           }
         }
 
-        if (!this.shouldOutputJson(flags)) {
-          this.log(
-            formatProgress(
-              `Checking FCM configuration for app ${formatResource(appId)}`,
-            ),
-          );
-        }
+        this.logProgress(
+          `Checking FCM configuration for app ${formatResource(appId)}`,
+          flags,
+        );
 
         const app = await controlApi.getApp(appId);
         const fcmConfigured = !!app.fcmServiceAccountConfigured;
@@ -64,23 +65,19 @@ export default class PushConfigClearFcm extends ControlBaseCommand {
               { config: { appId, cleared: "fcm", wasConfigured: false } },
               flags,
             );
-          } else {
-            this.log(
-              formatWarning(
-                `FCM is not configured for app ${formatResource(appId)}. Nothing to clear.`,
-              ),
-            );
           }
+
+          this.logWarning(
+            `FCM is not configured for app ${formatResource(appId)}. Nothing to clear.`,
+            flags,
+          );
           return;
         }
 
-        if (!this.shouldOutputJson(flags)) {
-          this.log(
-            formatProgress(
-              `Clearing FCM configuration for app ${formatResource(appId)}`,
-            ),
-          );
-        }
+        this.logProgress(
+          `Clearing FCM configuration for app ${formatResource(appId)}`,
+          flags,
+        );
 
         await controlApi.updateApp(appId, {
           fcmProjectId: null,
@@ -90,10 +87,9 @@ export default class PushConfigClearFcm extends ControlBaseCommand {
         if (this.shouldOutputJson(flags)) {
           this.logJsonResult({ config: { appId, cleared: "fcm" } }, flags);
         } else {
-          this.log(
-            formatSuccess(
-              `FCM configuration cleared for app ${formatResource(appId)}.`,
-            ),
+          this.logSuccessMessage(
+            `FCM configuration cleared for app ${formatResource(appId)}.`,
+            flags,
           );
         }
       },

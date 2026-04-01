@@ -44,12 +44,12 @@ describe("push:config:set-fcm command", () => {
     it("should configure FCM successfully", async () => {
       nockControl().patch(`/v1/apps/${appId}`).reply(200, { id: appId });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["push:config:set-fcm", "--service-account", fcmFixturePath],
         import.meta.url,
       );
 
-      expect(stdout).toContain("FCM configuration updated");
+      expect(stderr).toContain("FCM configuration updated");
     });
 
     it("should output JSON when requested", async () => {
@@ -60,7 +60,13 @@ describe("push:config:set-fcm command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      // Parse NDJSON output — find the result record
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const result = records.find((r) => r.type === "result");
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("config");

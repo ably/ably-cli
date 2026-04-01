@@ -3,7 +3,7 @@ import chalk from "chalk";
 
 import { ChatBaseCommand } from "../../../../chat-base-command.js";
 import { clientIdFlag, productApiFlags } from "../../../../flags.js";
-import { formatResource, formatSuccess } from "../../../../utils/output.js";
+import { formatResource } from "../../../../utils/output.js";
 import { REACTION_TYPE_MAP } from "../../../../utils/chat-constants.js";
 
 export default class MessagesReactionsRemove extends ChatBaseCommand {
@@ -106,13 +106,12 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
           },
           flags,
         );
-      } else {
-        this.log(
-          formatSuccess(
-            `Removed reaction ${chalk.yellow(reaction)} from message ${formatResource(messageSerial)} in room ${formatResource(room)}.`,
-          ),
-        );
       }
+
+      this.logSuccessMessage(
+        `Removed reaction ${chalk.yellow(reaction)} from message ${formatResource(messageSerial)} in room ${formatResource(room)}.`,
+        flags,
+      );
     } catch (error) {
       this.fail(error, flags, "roomMessageReactionRemove", {
         room,

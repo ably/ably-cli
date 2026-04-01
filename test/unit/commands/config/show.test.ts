@@ -7,6 +7,7 @@ import {
   standardHelpTests,
   standardFlagTests,
 } from "../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 
 describe("config:show command", () => {
   const mockAccessToken = "fake_access_token";
@@ -95,7 +96,7 @@ apiKey = "${mockApiKey}"
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "config:show");
       expect(result).toHaveProperty("success", true);
@@ -119,7 +120,7 @@ apiKey = "${mockApiKey}"
 
       // Pretty JSON should have newlines and indentation
       expect(stdout).toContain("\n");
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "config:show");
       expect(result).toHaveProperty("success", true);
@@ -133,7 +134,7 @@ apiKey = "${mockApiKey}"
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "config:show");
       expect(result).toHaveProperty("success", true);
@@ -156,7 +157,7 @@ apiKey = "${mockApiKey}"
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "config:show");
       expect(result).toHaveProperty("success", true);
@@ -185,7 +186,7 @@ apiKey = "${mockApiKey}"
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "error");
       expect(result).toHaveProperty("command", "config:show");
       expect(result).toHaveProperty("success", false);

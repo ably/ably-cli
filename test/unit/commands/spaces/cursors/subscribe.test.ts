@@ -45,13 +45,13 @@ describe("spaces:cursors:subscribe command", () => {
       const space = spacesMock._getSpace("test-space");
       space.cursors.getAll.mockResolvedValue({});
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["spaces:cursors:subscribe", "test-space"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Subscribing to cursor updates");
-      expect(stdout).toContain("Listening for cursor movements");
+      expect(stderr).toContain("Subscribing to cursor updates");
+      expect(stderr).toContain("Listening for cursor movements");
     });
   });
 

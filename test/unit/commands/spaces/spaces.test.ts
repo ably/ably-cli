@@ -85,12 +85,12 @@ describe("spaces commands", () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["spaces:members:enter", "test-space"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("test-space");
+      expect(stderr).toContain("test-space");
       expect(space.enter).toHaveBeenCalled();
     });
 
@@ -98,7 +98,7 @@ describe("spaces commands", () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "spaces:members:enter",
           "test-space",
@@ -108,7 +108,7 @@ describe("spaces commands", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("test-space");
+      expect(stderr).toContain("test-space");
       expect(space.enter).toHaveBeenCalledWith({
         name: "TestUser",
         status: "online",
@@ -184,7 +184,7 @@ describe("spaces commands", () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "spaces:locations:set",
           "test-space",
@@ -194,7 +194,7 @@ describe("spaces commands", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Location set in space:");
+      expect(stderr).toContain("Location set in space:");
       expect(space.locations.set).toHaveBeenCalledWith({ x: 100, y: 200 });
     });
   });
@@ -216,7 +216,7 @@ describe("spaces commands", () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "spaces:locks:acquire",
           "test-space",
@@ -227,7 +227,7 @@ describe("spaces commands", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Lock acquired:");
+      expect(stderr).toContain("Lock acquired:");
       expect(space.locks.acquire).toHaveBeenCalledWith("my-lock", {
         reason: "editing",
       });
@@ -250,12 +250,12 @@ describe("spaces commands", () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["spaces:cursors:set", "test-space", "--x", "50", "--y", "75"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Set cursor");
+      expect(stderr).toContain("Set cursor");
       expect(space.cursors.set).toHaveBeenCalledWith({
         position: { x: 50, y: 75 },
       });

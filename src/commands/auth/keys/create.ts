@@ -2,12 +2,7 @@ import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
-import {
-  formatLabel,
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../../utils/output.js";
+import { formatLabel, formatResource } from "../../../utils/output.js";
 
 export default class KeysCreateCommand extends ControlBaseCommand {
   static description = "Create a new API key for an app";
@@ -58,13 +53,10 @@ export default class KeysCreateCommand extends ControlBaseCommand {
 
     try {
       const controlApi = this.createControlApi(flags);
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Creating key ${formatResource(flags.name)} for app ${formatResource(appId)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Creating key ${formatResource(flags.name)} for app ${formatResource(appId)}`,
+        flags,
+      );
 
       const key = await controlApi.createKey(appId, {
         capability: capabilities,
@@ -85,7 +77,6 @@ export default class KeysCreateCommand extends ControlBaseCommand {
         );
       } else {
         const keyName = `${key.appId}.${key.id}`;
-        this.log(formatSuccess(`Key created: ${formatResource(keyName)}.`));
         this.log(`${formatLabel("Key Name")} ${keyName}`);
         this.log(`${formatLabel("Key Label")} ${key.name || "Unnamed key"}`);
 
@@ -104,6 +95,12 @@ export default class KeysCreateCommand extends ControlBaseCommand {
           `\nTo switch to this key, run: ably auth keys switch ${keyName}`,
         );
       }
+
+      const displayKeyName = `${key.appId}.${key.id}`;
+      this.logSuccessMessage(
+        `Key created: ${formatResource(displayKeyName)}.`,
+        flags,
+      );
     } catch (error) {
       this.fail(error, flags, "keyCreate", { appId });
     }

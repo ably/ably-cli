@@ -71,7 +71,13 @@ describe("push:channels:list command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      // Parse NDJSON output — find the result record
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const result = records.find((r) => r.type === "result");
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("subscriptions");

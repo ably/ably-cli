@@ -115,7 +115,7 @@ export default class SpacesList extends SpacesBaseCommand {
         spaces.length,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
-        this.log(paginationWarning);
+        this.logToStderr(paginationWarning);
       }
 
       if (this.shouldOutputJson(flags)) {
@@ -150,7 +150,7 @@ export default class SpacesList extends SpacesBaseCommand {
             flags.limit,
             "spaces",
           );
-          if (warning) this.log(`\n${warning}`);
+          if (warning) this.logToStderr(`\n${warning}`);
         }
       }
     } catch (error) {

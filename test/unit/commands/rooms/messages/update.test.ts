@@ -37,7 +37,7 @@ describe("rooms:messages:update command", () => {
         version: { serial: "version-serial-001", timestamp: new Date() },
       });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["rooms:messages:update", "test-room", "serial-001", "updated-text"],
         import.meta.url,
       );
@@ -47,8 +47,8 @@ describe("rooms:messages:update command", () => {
         { text: "updated-text" },
         undefined,
       );
-      expect(stdout).toContain("updated");
-      expect(stdout).toContain("test-room");
+      expect(stderr).toContain("updated");
+      expect(stderr).toContain("test-room");
     });
 
     it("should pass metadata when --metadata provided", async () => {

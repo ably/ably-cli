@@ -6,6 +6,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../../helpers/ndjson.js";
 
 describe("ChannelsOccupancyGet", function () {
   beforeEach(function () {
@@ -74,7 +75,7 @@ describe("ChannelsOccupancyGet", function () {
     expect(mock.request).toHaveBeenCalledOnce();
 
     // Parse and verify the JSON output
-    const parsedOutput = JSON.parse(stdout.trim());
+    const parsedOutput = parseJsonOutput(stdout);
     expect(parsedOutput).toHaveProperty("success", true);
     expect(parsedOutput).toHaveProperty("occupancy");
     expect(parsedOutput.occupancy).toHaveProperty(

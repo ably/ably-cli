@@ -102,7 +102,7 @@ export default class ChannelsList extends AblyBaseCommand {
         channels.length,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
-        this.log(paginationWarning);
+        this.logToStderr(paginationWarning);
       }
 
       // Output channels based on format
@@ -138,7 +138,7 @@ export default class ChannelsList extends AblyBaseCommand {
             flags.limit,
             "channels",
           );
-          if (warning) this.log(`\n${warning}`);
+          if (warning) this.logToStderr(`\n${warning}`);
         }
       }
     } catch (error) {

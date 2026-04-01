@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
+import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -102,10 +103,11 @@ describe("spaces:members:subscribe command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result.type).toBe("event");
-      expect(result.member).toBeDefined();
-      expect(result.member.clientId).toBe("user-1");
+      const records = parseNdjsonLines(stdout);
+      const result = records.find((r) => r.type === "event");
+      expect(result).toBeDefined();
+      expect(result!.member).toBeDefined();
+      expect(result!.member.clientId).toBe("user-1");
     });
   });
 

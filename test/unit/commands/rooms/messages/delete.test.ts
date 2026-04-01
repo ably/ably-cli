@@ -35,7 +35,7 @@ describe("rooms:messages:delete command", () => {
         version: { serial: "version-serial-001", timestamp: new Date() },
       });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["rooms:messages:delete", "test-room", "serial-001"],
         import.meta.url,
       );
@@ -44,8 +44,8 @@ describe("rooms:messages:delete command", () => {
         "serial-001",
         undefined,
       );
-      expect(stdout).toContain("deleted");
-      expect(stdout).toContain("test-room");
+      expect(stderr).toContain("deleted");
+      expect(stderr).toContain("test-room");
     });
 
     it("should pass description as OperationDetails", async () => {

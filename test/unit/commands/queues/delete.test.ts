@@ -46,12 +46,12 @@ describe("queues:delete command", () => {
         .delete(`/v1/apps/${appId}/queues/${mockQueueId}`)
         .reply(204);
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["queues:delete", mockQueueId, "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Queue deleted:");
+      expect(stderr).toContain("Queue deleted:");
     });
 
     it("should delete a queue with custom app ID", async () => {
@@ -78,12 +78,12 @@ describe("queues:delete command", () => {
         .delete(`/v1/apps/${customAppId}/queues/${mockQueueId}`)
         .reply(204);
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["queues:delete", mockQueueId, "--app", "custom-app-id", "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Queue deleted:");
+      expect(stderr).toContain("Queue deleted:");
     });
 
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
@@ -352,7 +352,7 @@ describe("queues:delete command", () => {
         .get(`/v1/apps/${appId}/queues`)
         .reply(200, [createMockQueue(appId, mockQueueId)]);
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["queues:delete", mockQueueId],
         import.meta.url,
       );
@@ -365,7 +365,7 @@ describe("queues:delete command", () => {
       expect(stdout).toContain(
         "Messages: 10 total (5 ready, 5 unacknowledged)",
       );
-      expect(stdout).toContain("Deletion cancelled");
+      expect(stderr).toContain("Deletion cancelled");
     });
 
     it("should proceed with deletion when user confirms", async () => {
@@ -387,12 +387,12 @@ describe("queues:delete command", () => {
         .delete(`/v1/apps/${appId}/queues/${mockQueueId}`)
         .reply(204);
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["queues:delete", mockQueueId],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Queue deleted:");
+      expect(stderr).toContain("Queue deleted:");
     });
   });
 

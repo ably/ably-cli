@@ -48,12 +48,12 @@ describe("apps:update command", () => {
           tlsOnly: false,
         });
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["apps:update", appId, "--name", updatedName],
         import.meta.url,
       );
 
-      expect(stdout).toContain("App updated successfully");
+      expect(stderr).toContain("App updated successfully");
       expect(stdout).toContain(appId);
       expect(stdout).toContain(updatedName);
     });
@@ -78,12 +78,12 @@ describe("apps:update command", () => {
           tlsOnly: true,
         });
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["apps:update", appId, "--tls-only"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("App updated successfully");
+      expect(stderr).toContain("App updated successfully");
       expect(stdout).toContain("TLS Only: Yes");
     });
 
@@ -109,12 +109,12 @@ describe("apps:update command", () => {
           tlsOnly: true,
         });
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["apps:update", appId, "--name", updatedName, "--tls-only"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("App updated successfully");
+      expect(stderr).toContain("App updated successfully");
       expect(stdout).toContain(updatedName);
       expect(stdout).toContain("TLS Only: Yes");
     });
@@ -143,13 +143,19 @@ describe("apps:update command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("type", "result");
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line: string) => JSON.parse(line));
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "result",
+      );
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("command", "apps:update");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("app");
-      expect(result.app).toHaveProperty("id", appId);
-      expect(result.app).toHaveProperty("name", updatedName);
+      expect(result!.app).toHaveProperty("id", appId);
+      expect(result!.app).toHaveProperty("name", updatedName);
     });
 
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
@@ -178,12 +184,12 @@ describe("apps:update command", () => {
           tlsOnly: false,
         });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["apps:update", appId, "--name", updatedName],
         import.meta.url,
       );
 
-      expect(stdout).toContain("App updated successfully");
+      expect(stderr).toContain("App updated successfully");
     });
   });
 
@@ -244,8 +250,14 @@ describe("apps:update command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("type", "error");
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line: string) => JSON.parse(line));
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "error",
+      );
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("command", "apps:update");
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
@@ -312,8 +324,14 @@ describe("apps:update command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("type", "error");
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line: string) => JSON.parse(line));
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "error",
+      );
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("command", "apps:update");
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
@@ -369,11 +387,20 @@ describe("apps:update command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("type", "result");
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line: string) => JSON.parse(line));
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "result",
+      );
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("command", "apps:update");
       expect(result).toHaveProperty("success", true);
-      expect(result.app).toHaveProperty("apnsUsesSandboxCert", false);
+      expect((result as Record<string, unknown>).app).toHaveProperty(
+        "apnsUsesSandboxCert",
+        false,
+      );
     });
   });
 });

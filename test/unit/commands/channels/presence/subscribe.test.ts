@@ -55,14 +55,14 @@ describe("channels:presence:subscribe command", () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("test-channel");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["channels:presence:subscribe", "test-channel"],
         import.meta.url,
       );
 
       // Should show subscription message
-      expect(stdout).toContain("test-channel");
-      expect(stdout).toContain("presence");
+      expect(stderr).toContain("test-channel");
+      expect(stderr).toContain("presence");
       // Verify presence.subscribe was called
       expect(channel.presence.subscribe).toHaveBeenCalled();
     });

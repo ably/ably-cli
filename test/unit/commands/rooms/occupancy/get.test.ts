@@ -6,6 +6,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../../helpers/ndjson.js";
 
 describe("rooms:occupancy:get command", () => {
   beforeEach(() => {
@@ -67,7 +68,7 @@ describe("rooms:occupancy:get command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("occupancy");
       expect(result.occupancy).toHaveProperty("room", "test-room");
@@ -86,7 +87,7 @@ describe("rooms:occupancy:get command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
     });

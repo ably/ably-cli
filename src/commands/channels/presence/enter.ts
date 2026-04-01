@@ -8,11 +8,8 @@ import {
   formatEventType,
   formatIndex,
   formatLabel,
-  formatListening,
   formatMessageTimestamp,
-  formatProgress,
   formatResource,
-  formatSuccess,
   formatTimestamp,
 } from "../../../utils/output.js";
 
@@ -144,13 +141,10 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
         });
       }
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Entering presence on channel: ${formatResource(channelName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Entering presence on channel: ${formatResource(channelName)}`,
+        flags,
+      );
 
       // Enter presence
       this.logCliEvent(
@@ -186,10 +180,9 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
           flags,
         );
       } else {
-        this.log(
-          formatSuccess(
-            `Entered presence on channel: ${formatResource(channelName)}.`,
-          ),
+        this.logSuccessMessage(
+          `Entered presence on channel: ${formatResource(channelName)}.`,
+          flags,
         );
         this.log(
           `${formatLabel("Client ID")} ${formatClientId(client.auth.clientId)}`,
@@ -198,20 +191,15 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
         if (data !== undefined) {
           this.log(`${formatLabel("Data")} ${JSON.stringify(data)}`);
         }
-        this.log(
-          formatListening(
-            flags["show-others"]
-              ? "Listening for presence events."
-              : "Holding presence.",
-          ),
-        );
       }
-
-      this.logJsonStatus(
-        "holding",
-        "Holding presence. Press Ctrl+C to exit.",
-        flags,
-      );
+      if (flags["show-others"]) {
+        this.logListening(
+          "Listening for presence events. Press Ctrl+C to exit.",
+          flags,
+        );
+      } else {
+        this.logHolding("Holding presence. Press Ctrl+C to exit.", flags);
+      }
 
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "presence", flags.duration);

@@ -1,7 +1,5 @@
 import { Args, Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { formatSuccess } from "../../utils/output.js";
-
 // Interface for rule update data structure (most fields optional)
 interface PartialRuleData {
   requestMode?: string;
@@ -120,7 +118,6 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
           flags,
         );
       } else {
-        this.log(formatSuccess("Integration rule updated."));
         this.log(`ID: ${updatedRule.id}`);
         this.log(`App ID: ${updatedRule.appId}`);
         this.log(`Rule Type: ${updatedRule.ruleType}`);
@@ -142,6 +139,8 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
         }
         this.log(`Target: ${JSON.stringify(updatedRule.target, null, 2)}`);
       }
+
+      this.logSuccessMessage("Integration rule updated.", flags);
     } catch (error) {
       this.fail(error, flags, "integrationUpdate");
     }

@@ -8,6 +8,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../helpers/standard-tests.js";
+import { parseNdjsonLines } from "../../../helpers/ndjson.js";
 
 describe("auth:revoke-token command", () => {
   const mockToken = "test-token-12345";
@@ -40,12 +41,12 @@ describe("auth:revoke-token command", () => {
         })
         .reply(200, {});
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["auth:revoke-token", mockToken, "--client-id", mockClientId],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Token successfully revoked");
+      expect(stderr).toContain("Token successfully revoked");
     });
 
     it("should use token as client-id when --client-id not provided", async () => {
@@ -58,7 +59,7 @@ describe("auth:revoke-token command", () => {
         })
         .reply(200, {});
 
-      const { stdout, stderr } = await runCommand(
+      const { stderr } = await runCommand(
         ["auth:revoke-token", mockToken],
         import.meta.url,
       );
@@ -68,7 +69,7 @@ describe("auth:revoke-token command", () => {
         "Revoking a specific token is only possible if it has a client ID",
       );
       expect(stderr).toContain("Using the token argument as a client ID");
-      expect(stdout).toContain("Token successfully revoked");
+      expect(stderr).toContain("Token successfully revoked");
     });
 
     it("should output JSON format when --json flag is used", async () => {
@@ -85,7 +86,7 @@ describe("auth:revoke-token command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("revocation");
       expect(result.revocation).toHaveProperty(

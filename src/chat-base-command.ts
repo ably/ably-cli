@@ -4,11 +4,6 @@ import { AblyBaseCommand } from "./base-command.js";
 import { productApiFlags } from "./flags.js";
 import { BaseFlags } from "./types/cli.js";
 
-import {
-  formatSuccess,
-  formatListening,
-  formatWarning,
-} from "./utils/output.js";
 import isTestMode from "./utils/test-mode.js";
 
 export abstract class ChatBaseCommand extends AblyBaseCommand {
@@ -134,20 +129,16 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
       );
       switch (statusChange.current) {
         case RoomStatus.Attached: {
-          if (!this.shouldOutputJson(flags)) {
-            if (options.successMessage) {
-              this.log(formatSuccess(options.successMessage));
-            }
-            if (options.listeningMessage) {
-              this.log(formatListening(options.listeningMessage));
-            }
+          if (options.successMessage) {
+            this.logSuccessMessage(options.successMessage, flags as BaseFlags);
+          }
+          if (options.listeningMessage) {
+            this.logListening(options.listeningMessage, flags as BaseFlags);
           }
           break;
         }
         case RoomStatus.Detached: {
-          if (!this.shouldOutputJson(flags)) {
-            this.log(formatWarning("Disconnected from Ably"));
-          }
+          this.logWarning("Disconnected from Ably", flags as BaseFlags);
           break;
         }
         case RoomStatus.Failed: {

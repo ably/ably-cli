@@ -7,11 +7,7 @@ import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { BaseFlags } from "../../types/cli.js";
 import { errorMessage, extractErrorInfo } from "../../utils/errors.js";
 import { prepareMessageFromInput } from "../../utils/message.js";
-import {
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../utils/output.js";
+import { formatResource } from "../../utils/output.js";
 
 export default class ChannelsPublish extends AblyBaseCommand {
   static override args = {
@@ -138,28 +134,20 @@ export default class ChannelsPublish extends AblyBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(finalResult, flags);
       } else if (total > 1) {
-        this.log(
-          formatSuccess(
-            `${published}/${total} messages published to channel: ${formatResource(args.channel as string)}${errors > 0 ? ` (${chalk.red(errors)} errors)` : ""}.`,
-          ),
+        this.logSuccessMessage(
+          `${published}/${total} messages published to channel: ${formatResource(args.channel as string)}${errors > 0 ? ` (${chalk.red(errors)} errors)` : ""}.`,
+          flags,
         );
       } else if (errors === 0) {
-        const serial =
-          results[0]?.serial == null
-            ? undefined
-            : typeof results[0].serial === "string"
-              ? results[0].serial
-              : JSON.stringify(results[0].serial);
-        this.log(
-          formatSuccess(
-            `Message published to channel: ${formatResource(args.channel as string)}.`,
-          ),
+        this.logSuccessMessage(
+          `Message published to channel: ${formatResource(args.channel as string)}.`,
+          flags,
         );
-        if (serial) {
+        const rawSerial = results[0]?.serial;
+        const serial = typeof rawSerial === "string" ? rawSerial : undefined;
+        if (serial && total === 1) {
           this.log(`  Serial: ${formatResource(serial)}`);
         }
-      } else {
-        // Error message already logged by publishMessages loop or prepareMessage
       }
     }
   }
@@ -179,9 +167,10 @@ export default class ChannelsPublish extends AblyBaseCommand {
       `Publishing ${count} messages with ${delay}ms delay...`,
       { count, delay },
     );
-    if (count > 1 && !this.shouldOutputJson(flags)) {
-      this.log(
-        formatProgress(`Publishing ${count} messages with ${delay}ms delay`),
+    if (count > 1) {
+      this.logProgress(
+        `Publishing ${count} messages with ${delay}ms delay`,
+        flags,
       );
     }
 
@@ -244,17 +233,20 @@ export default class ChannelsPublish extends AblyBaseCommand {
         );
         if (
           !this.shouldSuppressOutput(flags) &&
-          !this.shouldOutputJson(flags) &&
           count > 1 // Only show individual success messages when publishing multiple messages
         ) {
-          this.log(
-            formatSuccess(
-              `Message ${messageIndex} published to channel: ${formatResource(args.channel as string)}.`,
-            ),
+          this.logSuccessMessage(
+            `Message ${messageIndex} published to channel: ${formatResource(args.channel as string)}.`,
+            flags,
           );
-          if (serial) {
-            this.log(`  Serial: ${formatResource(serial)}`);
-          }
+        }
+        if (
+          !this.shouldSuppressOutput(flags) &&
+          !this.shouldOutputJson(flags) &&
+          count > 1 && // Only show individual serial when publishing multiple messages
+          serial
+        ) {
+          this.log(`  Serial: ${formatResource(serial)}`);
         }
       } catch (error) {
         errorCount++;
@@ -272,12 +264,10 @@ export default class ChannelsPublish extends AblyBaseCommand {
           `Error publishing message ${messageIndex}: ${errorMsg}`,
           { error: errorMsg, index: messageIndex },
         );
-        if (
-          !this.shouldSuppressOutput(flags) &&
-          !this.shouldOutputJson(flags)
-        ) {
-          this.log(
-            `${chalk.red("✗")} Error publishing message ${messageIndex}: ${errorMsg}`,
+        if (!this.shouldSuppressOutput(flags)) {
+          this.logWarning(
+            `Error publishing message ${messageIndex}: ${errorMsg}`,
+            flags,
           );
         }
       }
@@ -399,8 +389,9 @@ export default class ChannelsPublish extends AblyBaseCommand {
           );
         }, 2000)
       : setInterval(() => {
-          this.log(
-            `Progress: ${getPublishedCount()}/${total} messages published (${getErrorCount()} errors)`,
+          this.logProgress(
+            `${getPublishedCount()}/${total} messages published (${getErrorCount()} errors)`,
+            flags,
           );
         }, 1000);
   }

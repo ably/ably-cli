@@ -9,9 +9,7 @@ import {
 } from "../../../flags.js";
 import {
   formatEventType,
-  formatListening,
   formatMessageTimestamp,
-  formatSuccess,
   formatTimestamp,
   formatLabel,
 } from "../../../utils/output.js";
@@ -114,9 +112,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
         }
       });
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatSuccess("Subscribed to connection lifecycle logs."));
-      }
+      this.logSuccessMessage("Subscribed to connection lifecycle logs.", flags);
 
       this.logCliEvent(
         flags,
@@ -124,11 +120,10 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
         "listening",
         "Listening for connection lifecycle log events. Press Ctrl+C to exit.",
       );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatListening("Listening for connection lifecycle log events."),
-        );
-      }
+      this.logListening(
+        "Listening for connection lifecycle log events.",
+        flags,
+      );
 
       // Wait until the user interrupts or the optional duration elapses
       await this.waitAndTrackCleanup(flags, "logs", flags.duration);

@@ -62,13 +62,18 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
 
       if (!flags["client-id"]) {
         // We need to warn the user that we're using the token as a client ID
-        this.warn(
-          "Revoking a specific token is only possible if it has a client ID or revocation key",
+        this.logWarning(
+          "Revoking a specific token is only possible if it has a client ID or revocation key.",
+          flags,
         );
-        this.warn(
-          "For advanced token revocation options, see: https://ably.com/docs/auth/revocation",
+        this.logWarning(
+          "For advanced token revocation options, see: https://ably.com/docs/auth/revocation.",
+          flags,
         );
-        this.warn("Using the token argument as a client ID for this operation");
+        this.logWarning(
+          "Using the token argument as a client ID for this operation.",
+          flags,
+        );
       }
 
       // Extract the keyName (appId.keyId) from the API key
@@ -108,7 +113,7 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
             flags,
           );
         } else {
-          this.log("Token successfully revoked");
+          this.logSuccessMessage("Token successfully revoked.", flags);
         }
       } catch (requestError: unknown) {
         // Handle specific API errors

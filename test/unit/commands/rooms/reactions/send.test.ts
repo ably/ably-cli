@@ -6,6 +6,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../../helpers/ndjson.js";
 
 describe("rooms:reactions:send command", () => {
   beforeEach(() => {
@@ -26,7 +27,7 @@ describe("rooms:reactions:send command", () => {
       const chatMock = getMockAblyChat();
       const room = chatMock.rooms._getRoom("test-room");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["rooms:reactions:send", "test-room", "thumbsup"],
         import.meta.url,
       );
@@ -35,8 +36,8 @@ describe("rooms:reactions:send command", () => {
       expect(room.reactions.send).toHaveBeenCalledWith(
         expect.objectContaining({ name: "thumbsup" }),
       );
-      expect(stdout).toContain("Sent reaction");
-      expect(stdout).toContain("thumbsup");
+      expect(stderr).toContain("Sent reaction");
+      expect(stderr).toContain("thumbsup");
     });
 
     it("should parse and forward --metadata JSON", async () => {
@@ -88,7 +89,8 @@ describe("rooms:reactions:send command", () => {
       );
 
       expect(room.reactions.send).toHaveBeenCalled();
-      const result = JSON.parse(stdout);
+      const lines = stdout.trim().split("\n");
+      const result = JSON.parse(lines[0]);
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("reaction");
       expect(result.reaction).toHaveProperty("emoji", "fire");
@@ -105,7 +107,7 @@ describe("rooms:reactions:send command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error.message).toContain("Send failed");

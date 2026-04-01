@@ -9,6 +9,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 
 describe("channels:list command", () => {
   // Mock channel response data
@@ -117,7 +118,7 @@ describe("channels:list command", () => {
       );
 
       // Parse the JSON that was output
-      const jsonOutput = JSON.parse(stdout);
+      const jsonOutput = parseJsonOutput(stdout);
 
       // Verify the structure of the JSON output
       expect(jsonOutput).toHaveProperty("channels");
@@ -131,6 +132,19 @@ describe("channels:list command", () => {
       expect(jsonOutput).toHaveProperty("timestamp");
     });
 
+    it("should output channel IDs as strings in JSON output", async () => {
+      const { stdout } = await runCommand(
+        ["channels:list", "--json"],
+        import.meta.url,
+      );
+
+      const jsonOutput = parseJsonOutput(stdout);
+
+      // Channels are output as string IDs (channelId extracted from each item)
+      expect(typeof jsonOutput.channels[0]).toBe("string");
+      expect(jsonOutput.channels[0]).toBe("test-channel-1");
+    });
+
     it("should handle API errors in JSON mode", async () => {
       const mock = getMockAblyRest();
       mock.request.mockRejectedValue(new Error("Network error"));
@@ -140,7 +154,7 @@ describe("channels:list command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error.message).toContain("Network error");

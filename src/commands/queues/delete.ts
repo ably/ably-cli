@@ -1,11 +1,8 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import {
-  formatLabel,
-  formatResource,
-  formatSuccess,
-} from "../../utils/output.js";
+import { forceFlag } from "../../flags.js";
+import { formatLabel, formatResource } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class QueuesDeleteCommand extends ControlBaseCommand {
@@ -31,12 +28,7 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
       description: "The app ID or name (defaults to current app)",
       required: false,
     }),
-    force: Flags.boolean({
-      char: "f",
-      default: false,
-      description: "Force deletion without confirmation",
-      required: false,
-    }),
+    ...forceFlag,
   };
 
   async run(): Promise<void> {
@@ -86,7 +78,7 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
         );
 
         if (!confirmed) {
-          this.log("Deletion cancelled");
+          this.logWarning("Deletion cancelled.", flags);
           return;
         }
       }
@@ -104,13 +96,12 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
           },
           flags,
         );
-      } else {
-        this.log(
-          formatSuccess(
-            `Queue deleted: ${formatResource(queue.name)} (${queue.id}).`,
-          ),
-        );
       }
+
+      this.logSuccessMessage(
+        `Queue deleted: ${formatResource(queue.name)} (${queue.id}).`,
+        flags,
+      );
     } catch (error) {
       this.fail(error, flags, "queueDelete");
     }

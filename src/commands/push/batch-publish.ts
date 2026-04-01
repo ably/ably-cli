@@ -1,18 +1,13 @@
-import { Args, Flags } from "@oclif/core";
+import { Args } from "@oclif/core";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { CommandError } from "../../errors/command-error.js";
-import { productApiFlags } from "../../flags.js";
+import { forceFlag, productApiFlags } from "../../flags.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 import { BaseFlags } from "../../types/cli.js";
-import {
-  formatCountLabel,
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../utils/output.js";
+import { formatCountLabel, formatResource } from "../../utils/output.js";
 
 interface BatchResponseItem {
   channel: string;
@@ -84,11 +79,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
 
   static override flags = {
     ...productApiFlags,
-    force: Flags.boolean({
-      char: "f",
-      description:
-        "Skip confirmation prompt when publishing to channels (confirmation is also skipped in --json mode)",
-    }),
+    ...forceFlag,
   };
 
   async run(): Promise<void> {
@@ -227,23 +218,28 @@ export default class PushBatchPublish extends AblyBaseCommand {
 
       // Recipient-based push: route to /push/batch/publish
       if (recipientItems.length > 0) {
+        if (!flags.force && this.shouldOutputJson(flags)) {
+          this.fail(
+            "The --force flag is required when using --json to confirm publishing",
+            flags,
+            "pushBatchPublish",
+          );
+        }
+
         if (!this.shouldOutputJson(flags) && !flags.force) {
           const confirmed = await promptForConfirmation(
             `This will send push notifications to ${formatCountLabel(recipientItems.length, "recipient")}. Continue?`,
           );
           if (!confirmed) {
-            this.log("Publish cancelled.");
+            this.logWarning("Publish cancelled.", flags);
             return;
           }
         }
 
-        if (!this.shouldOutputJson(flags)) {
-          this.log(
-            formatProgress(
-              `Publishing batch of ${formatCountLabel(recipientItems.length, "notification")} to recipients`,
-            ),
-          );
-        }
+        this.logProgress(
+          `Publishing batch of ${formatCountLabel(recipientItems.length, "notification")} to recipients`,
+          flags,
+        );
 
         const response = await rest.request(
           "post",
@@ -303,6 +299,14 @@ export default class PushBatchPublish extends AblyBaseCommand {
           },
         }));
 
+        if (!flags.force && this.shouldOutputJson(flags)) {
+          this.fail(
+            "The --force flag is required when using --json to confirm publishing",
+            flags,
+            "pushBatchPublish",
+          );
+        }
+
         if (!this.shouldOutputJson(flags) && !flags.force) {
           const allChannels = channelItems.flatMap(({ entry }) =>
             Array.isArray(entry.channels)
@@ -317,18 +321,15 @@ export default class PushBatchPublish extends AblyBaseCommand {
             `This will send a push notification to all devices subscribed to ${formatCountLabel(uniqueChannels.length, "channel")} (${channelList}). Continue?`,
           );
           if (!confirmed) {
-            this.log("Publish cancelled.");
+            this.logWarning("Publish cancelled.", flags);
             return;
           }
         }
 
-        if (!this.shouldOutputJson(flags)) {
-          this.log(
-            formatProgress(
-              `Publishing batch of ${formatCountLabel(channelItems.length, "notification")} to channels`,
-            ),
-          );
-        }
+        this.logProgress(
+          `Publishing batch of ${formatCountLabel(channelItems.length, "notification")} to channels`,
+          flags,
+        );
 
         const response = await rest.request(
           "post",
@@ -387,21 +388,22 @@ export default class PushBatchPublish extends AblyBaseCommand {
         );
       } else {
         if (totalFailed > 0) {
-          this.log(
-            formatSuccess(
-              `Batch published: ${totalSucceeded} succeeded, ${totalFailed} failed out of ${formatCountLabel(total, "notification")}.`,
-            ),
-          );
           for (const detail of failedDetails) {
             this.logToStderr(detail);
           }
-        } else {
-          this.log(
-            formatSuccess(
-              `Batch of ${formatCountLabel(total, "notification")} published.`,
-            ),
-          );
         }
+      }
+
+      if (totalFailed > 0) {
+        this.logSuccessMessage(
+          `Batch published: ${totalSucceeded} succeeded, ${totalFailed} failed out of ${formatCountLabel(total, "notification")}.`,
+          flags,
+        );
+      } else {
+        this.logSuccessMessage(
+          `Batch of ${formatCountLabel(total, "notification")} published.`,
+          flags,
+        );
       }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushBatchPublish");

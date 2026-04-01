@@ -16,6 +16,7 @@ import {
   standardFlagTests,
   standardControlApiErrorTests,
 } from "../../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../../helpers/ndjson.js";
 
 describe("auth:keys:get command", () => {
   const mockKeyId = "testkey";
@@ -124,7 +125,8 @@ describe("auth:keys:get command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("key");
       expect(result.key).toHaveProperty("id", mockKeyId);
@@ -215,7 +217,7 @@ describe("auth:keys:get command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result.key).toHaveProperty("envKeyOverride");
       expect(result.key.envKeyOverride).toHaveProperty(
         "keyName",

@@ -5,10 +5,7 @@ import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import {
   formatLabel,
-  formatListening,
-  formatProgress,
   formatResource,
-  formatSuccess,
   formatTimestamp,
 } from "../../../utils/output.js";
 
@@ -54,9 +51,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         "connecting",
         "Connecting to Ably...",
       );
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress("Connecting to Ably"));
-      }
+      this.logProgress("Connecting to Ably", flags);
 
       // Create Chat client
       this.chatClient = await this.createChatClient(flags);
@@ -135,14 +130,11 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
         "Subscribed to occupancy updates",
       );
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(
-            `Subscribed to occupancy in room: ${formatResource(this.roomName)}.`,
-          ),
-        );
-        this.log(formatListening("Listening for occupancy updates."));
-      }
+      this.logSuccessMessage(
+        `Subscribed to occupancy in room: ${formatResource(this.roomName)}.`,
+        flags,
+      );
+      this.logListening("Listening for occupancy updates.", flags);
 
       // Wait until the user interrupts or the optional duration elapses
       await Promise.race([

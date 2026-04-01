@@ -132,8 +132,9 @@ export default class AccountsCurrent extends ControlBaseCommand {
           flags,
         );
       } else {
-        this.warn(
+        this.logWarning(
           "Unable to verify account information. Your access token may have expired.",
+          flags,
         );
         this.log(
           chalk.yellow(
@@ -232,7 +233,7 @@ export default class AccountsCurrent extends ControlBaseCommand {
           flags,
         );
       } else {
-        this.warn(errorMessage(error));
+        this.logWarning(errorMessage(error), flags);
         this.log(
           `${formatLabel("Info")} Your access token may have expired or is invalid.`,
         );

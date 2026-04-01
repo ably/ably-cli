@@ -3,11 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
-import {
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 
 export default class PushConfigSetApns extends ControlBaseCommand {
   static override description = "Configure APNs push notifications for an app";
@@ -76,13 +72,10 @@ export default class PushConfigSetApns extends ControlBaseCommand {
             );
           }
 
-          if (!this.shouldOutputJson(flags)) {
-            this.log(
-              formatProgress(
-                `Uploading APNs P12 certificate for app ${formatResource(appId)}`,
-              ),
-            );
-          }
+          this.logProgress(
+            `Uploading APNs P12 certificate for app ${formatResource(appId)}`,
+            flags,
+          );
 
           const certificateData = fs.readFileSync(certPath);
 
@@ -101,10 +94,9 @@ export default class PushConfigSetApns extends ControlBaseCommand {
               flags,
             );
           } else {
-            this.log(
-              formatSuccess(
-                `APNs P12 certificate uploaded for app ${formatResource(appId)}.`,
-              ),
+            this.logSuccessMessage(
+              `APNs P12 certificate uploaded for app ${formatResource(appId)}.`,
+              flags,
             );
           }
         } else if (flags["key-file"]) {
@@ -139,13 +131,10 @@ export default class PushConfigSetApns extends ControlBaseCommand {
             );
           }
 
-          if (!this.shouldOutputJson(flags)) {
-            this.log(
-              formatProgress(
-                `Configuring APNs P8 key for app ${formatResource(appId)}`,
-              ),
-            );
-          }
+          this.logProgress(
+            `Configuring APNs P8 key for app ${formatResource(appId)}`,
+            flags,
+          );
 
           const keyContents = fs.readFileSync(keyPath, "utf8");
 
@@ -161,10 +150,9 @@ export default class PushConfigSetApns extends ControlBaseCommand {
           if (this.shouldOutputJson(flags)) {
             this.logJsonResult({ config: { appId, method: "p8" } }, flags);
           } else {
-            this.log(
-              formatSuccess(
-                `APNs P8 key configured for app ${formatResource(appId)}.`,
-              ),
+            this.logSuccessMessage(
+              `APNs P8 key configured for app ${formatResource(appId)}.`,
+              flags,
             );
           }
         }

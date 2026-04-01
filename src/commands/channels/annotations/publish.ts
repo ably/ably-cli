@@ -7,12 +7,7 @@ import {
   extractSummarizationType,
   validateAnnotationParams,
 } from "../../../utils/annotations.js";
-import {
-  formatLabel,
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 
 export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
   static override args = {
@@ -81,13 +76,10 @@ export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
 
       const channel = rest.channels.get(channelName);
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Publishing annotation on message ${formatResource(serial)} in channel ${formatResource(channelName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Publishing annotation on message ${formatResource(serial)} in channel ${formatResource(channelName)}`,
+        flags,
+      );
 
       const annotation: Ably.OutboundAnnotation = { type };
       if (flags.name !== undefined) annotation.name = flags.name;
@@ -136,37 +128,12 @@ export default class ChannelsAnnotationsPublish extends AblyBaseCommand {
           },
           flags,
         );
-      } else {
-        this.log(
-          formatSuccess(
-            `Annotation published on message ${formatResource(serial)} in channel ${formatResource(channelName)}.`,
-          ),
-        );
-        this.log(`  ${formatLabel("Type")} ${formatResource(type)}`);
-        if (flags.name !== undefined) {
-          this.log(`  ${formatLabel("Name")} ${formatResource(flags.name)}`);
-        }
-
-        if (flags.count !== undefined) {
-          this.log(
-            `  ${formatLabel("Count")} ${formatResource(String(flags.count))}`,
-          );
-        }
-
-        if (annotation.data !== undefined) {
-          const displayData =
-            typeof annotation.data === "string"
-              ? annotation.data
-              : JSON.stringify(annotation.data, null, 2);
-          this.log(`  ${formatLabel("Data")} ${formatResource(displayData)}`);
-        }
-
-        if (flags.encoding !== undefined) {
-          this.log(
-            `  ${formatLabel("Encoding")} ${formatResource(flags.encoding)}`,
-          );
-        }
       }
+
+      this.logSuccessMessage(
+        `Annotation published on message ${formatResource(serial)} in channel ${formatResource(channelName)}.`,
+        flags,
+      );
     } catch (error) {
       this.fail(error, flags, "annotationPublish", {
         channel: channelName,

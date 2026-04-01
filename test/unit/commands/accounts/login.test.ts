@@ -11,6 +11,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../helpers/standard-tests.js";
+import { parseNdjsonLines } from "../../../helpers/ndjson.js";
 
 describe("accounts:login command", () => {
   const mockAccessToken = "test_access_token_12345";
@@ -48,14 +49,16 @@ describe("accounts:login command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("account");
-      expect(result.account).toHaveProperty("id", mockAccountId);
-      expect(result.account).toHaveProperty("name", "Test Account");
-      expect(result.account.user).toHaveProperty("email", "test@example.com");
+      const account = result.account as Record<string, unknown>;
+      expect(account).toHaveProperty("id", mockAccountId);
+      expect(account).toHaveProperty("name", "Test Account");
+      const user = account.user as Record<string, unknown>;
+      expect(user).toHaveProperty("email", "test@example.com");
 
       // Verify config was updated correctly via mock
       const mock = getMockConfigManager();
@@ -87,11 +90,12 @@ describe("accounts:login command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", true);
-      expect(result.account).toHaveProperty("alias", customAlias);
+      const account = result.account as Record<string, unknown>;
+      expect(account).toHaveProperty("alias", customAlias);
 
       // Verify config was written with custom alias via mock
       const mock = getMockConfigManager();
@@ -129,7 +133,7 @@ describe("accounts:login command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", true);
@@ -175,7 +179,7 @@ describe("accounts:login command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", true);
@@ -203,7 +207,7 @@ describe("accounts:login command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "error")!;
       expect(result).toHaveProperty("type", "error");
       expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", false);
@@ -219,7 +223,7 @@ describe("accounts:login command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "error")!;
       expect(result).toHaveProperty("type", "error");
       expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", false);
@@ -238,7 +242,7 @@ describe("accounts:login command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "error")!;
       expect(result).toHaveProperty("type", "error");
       expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", false);
@@ -276,11 +280,12 @@ describe("accounts:login command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "accounts:login");
       expect(result).toHaveProperty("success", true);
-      expect(result.account).toHaveProperty("id", mockAccountId);
+      const account = result.account as Record<string, unknown>;
+      expect(account).toHaveProperty("id", mockAccountId);
 
       // Verify config was written correctly via mock
       const mock = getMockConfigManager();

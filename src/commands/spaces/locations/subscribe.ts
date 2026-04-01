@@ -3,11 +3,7 @@ import { Args } from "@oclif/core";
 
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
-import {
-  formatListening,
-  formatProgress,
-  formatTimestamp,
-} from "../../../utils/output.js";
+import { formatTimestamp } from "../../../utils/output.js";
 import { formatLocationUpdateBlock } from "../../../utils/spaces-output.js";
 
 export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
@@ -39,15 +35,9 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
     const { space_name: spaceName } = args;
 
     try {
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress("Subscribing to location updates"));
-      }
+      this.logProgress("Subscribing to location updates", flags);
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
-
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatListening("Listening for location updates."));
-      }
 
       this.logCliEvent(
         flags,
@@ -99,6 +89,8 @@ export default class SpacesLocationsSubscribe extends SpacesBaseCommand {
       };
 
       this.space!.locations.subscribe("update", locationHandler);
+
+      this.logListening("Listening for location updates.", flags);
 
       this.logCliEvent(
         flags,

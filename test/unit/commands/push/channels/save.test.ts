@@ -25,7 +25,7 @@ describe("push:channels:save command", () => {
     it("should save subscription with device ID", async () => {
       const mock = getMockAblyRest();
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "push:channels:save",
           "--channel",
@@ -36,8 +36,8 @@ describe("push:channels:save command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Subscribed");
-      expect(stdout).toContain("my-channel");
+      expect(stderr).toContain("Subscribed");
+      expect(stderr).toContain("my-channel");
       expect(mock.push.admin.channelSubscriptions.save).toHaveBeenCalledWith(
         expect.objectContaining({
           channel: "my-channel",
@@ -49,7 +49,7 @@ describe("push:channels:save command", () => {
     it("should save subscription with client ID", async () => {
       const mock = getMockAblyRest();
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "push:channels:save",
           "--channel",
@@ -60,7 +60,7 @@ describe("push:channels:save command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Subscribed");
+      expect(stderr).toContain("Subscribed");
       expect(mock.push.admin.channelSubscriptions.save).toHaveBeenCalledWith(
         expect.objectContaining({
           channel: "my-channel",
@@ -91,7 +91,13 @@ describe("push:channels:save command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      // Parse NDJSON output — find the result record
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const result = records.find((r) => r.type === "result");
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("subscription");

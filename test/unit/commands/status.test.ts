@@ -22,9 +22,9 @@ describe("status command", () => {
         .get("/status/up.json")
         .reply(200, { status: true });
 
-      const { stdout } = await runCommand(["status"], import.meta.url);
+      const { stdout, stderr } = await runCommand(["status"], import.meta.url);
 
-      expect(stdout).toContain("operational");
+      expect(stderr).toContain("operational");
       expect(stdout).toContain("No incidents currently reported");
       expect(stdout).toContain("https://status.ably.com");
     });
@@ -36,10 +36,10 @@ describe("status command", () => {
         .get("/status/up.json")
         .reply(200, { status: false });
 
-      const { stdout } = await runCommand(["status"], import.meta.url);
+      const { stdout, stderr } = await runCommand(["status"], import.meta.url);
 
-      expect(stdout).toContain("Incident detected");
-      expect(stdout).toContain("open incidents");
+      expect(stderr).toContain("Incident detected");
+      expect(stderr).toContain("open incidents");
       expect(stdout).toContain("https://status.ably.com");
     });
   });

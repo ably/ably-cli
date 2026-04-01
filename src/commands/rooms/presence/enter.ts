@@ -4,9 +4,6 @@ import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { isJsonData } from "../../../utils/json-formatter.js";
 import {
-  formatSuccess,
-  formatListening,
-  formatProgress,
   formatResource,
   formatTimestamp,
   formatEventType,
@@ -151,13 +148,10 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
 
       await currentRoom.attach();
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Entering presence in room: ${formatResource(this.roomName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Entering presence in room: ${formatResource(this.roomName)}`,
+        flags,
+      );
 
       this.logCliEvent(flags, "presence", "entering", "Entering presence", {
         room: this.roomName,
@@ -185,10 +179,9 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
           flags,
         );
       } else {
-        this.log(
-          formatSuccess(
-            `Entered presence in room: ${formatResource(this.roomName)}.`,
-          ),
+        this.logSuccessMessage(
+          `Entered presence in room: ${formatResource(this.roomName)}.`,
+          flags,
         );
         this.log(
           `${formatLabel("Client ID")} ${formatClientId(this.chatClient.clientId ?? "unknown")}`,
@@ -199,20 +192,13 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
         if (this.data !== null) {
           this.log(`${formatLabel("Data")} ${JSON.stringify(this.data)}`);
         }
-        this.log(
-          formatListening(
-            flags["show-others"]
-              ? "Listening for presence events."
-              : "Holding presence.",
-          ),
-        );
       }
 
-      this.logJsonStatus(
-        "holding",
-        "Holding presence. Press Ctrl+C to exit.",
-        flags,
-      );
+      if (flags["show-others"]) {
+        this.logListening("Listening for presence events.", flags);
+      } else {
+        this.logHolding("Holding presence. Press Ctrl+C to exit.", flags);
+      }
 
       // Wait until the user interrupts or the optional duration elapses
       const waitPromises: Promise<unknown>[] = [
@@ -224,6 +210,40 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       this.fail(error, flags, "roomPresenceEnter", {
         room: this.roomName,
       });
+    } finally {
+      this.logCliEvent(
+        flags,
+        "presence",
+        "finallyBlockReached",
+        "Reached finally block for cleanup.",
+      );
+
+      if (!this.cleanupInProgress && !this.shouldOutputJson(flags)) {
+        this.logCliEvent(
+          flags,
+          "presence",
+          "implicitCleanupInFinally",
+          "Performing cleanup in finally (no prior signal or natural end).",
+        );
+      } else {
+        this.logCliEvent(
+          flags,
+          "presence",
+          "explicitCleanupOrJsonMode",
+          "Cleanup already in progress or JSON output mode",
+        );
+      }
+
+      if (this.cleanupInProgress) {
+        this.logSuccessMessage("Graceful shutdown complete.", flags);
+      } else if (!this.shouldOutputJson(flags)) {
+        this.logCliEvent(
+          flags,
+          "presence",
+          "completedNormally",
+          "Command completed normally",
+        );
+      }
     }
   }
 }

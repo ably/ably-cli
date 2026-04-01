@@ -3,10 +3,7 @@ import * as Ably from "ably";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import {
-  formatListening,
-  formatProgress,
   formatResource,
-  formatSuccess,
   formatMessageTimestamp,
   formatPresenceOutput,
 } from "../../../utils/output.js";
@@ -71,13 +68,10 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
         { channel: channelName },
       );
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Subscribing to presence events on channel: ${formatResource(channelName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Subscribing to presence events on channel: ${formatResource(channelName)}`,
+        flags,
+      );
 
       await channel.presence.subscribe(
         (presenceMessage: Ably.PresenceMessage) => {
@@ -117,13 +111,12 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
         },
       );
 
+      this.logSuccessMessage(
+        `Subscribed to presence on channel: ${formatResource(channelName)}.`,
+        flags,
+      );
+      this.logListening("Listening for presence events.", flags);
       if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(
-            `Subscribed to presence on channel: ${formatResource(channelName)}.`,
-          ),
-        );
-        this.log(formatListening("Listening for presence events."));
         this.log("");
       }
 

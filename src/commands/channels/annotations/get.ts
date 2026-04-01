@@ -9,7 +9,6 @@ import {
   formatIndex,
   formatLimitWarning,
   formatMessageTimestamp,
-  formatProgress,
   formatResource,
   formatTimestamp,
 } from "../../../utils/output.js";
@@ -56,13 +55,10 @@ export default class ChannelsAnnotationsGet extends AblyBaseCommand {
 
       const channel = rest.channels.get(channelName);
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Getting annotations for message ${formatResource(serial)} in channel ${formatResource(channelName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Getting annotations for message ${formatResource(serial)} in channel ${formatResource(channelName)}`,
+        flags,
+      );
 
       const params: Ably.GetAnnotationsParams = { limit: flags.limit };
 
@@ -122,7 +118,7 @@ export default class ChannelsAnnotationsGet extends AblyBaseCommand {
           flags.limit,
           "annotations",
         );
-        if (warning) this.log(warning);
+        if (warning) this.logToStderr(warning);
       }
     } catch (error) {
       this.fail(error, flags, "annotationGet", {

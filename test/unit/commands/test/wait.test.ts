@@ -12,22 +12,22 @@ describe("test:wait command", () => {
 
   describe("functionality", () => {
     it("should wait for the specified duration and complete", async () => {
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["test:wait", "--duration", "1"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Waiting for 1 seconds");
-      expect(stdout).toContain("Wait completed successfully");
+      expect(stderr).toContain("Waiting for 1 seconds");
+      expect(stderr).toContain("Wait completed successfully");
     }, 5000);
 
     it("should accept -d as alias for --duration", async () => {
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["test:wait", "-d", "1"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Waiting for 1 seconds");
+      expect(stderr).toContain("Waiting for 1 seconds");
     }, 5000);
   });
 

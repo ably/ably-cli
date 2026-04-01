@@ -125,7 +125,7 @@ export default class RoomsList extends ChatBaseCommand {
         rooms.length,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
-        this.log(paginationWarning);
+        this.logToStderr(paginationWarning);
       }
 
       // Output rooms based on format
@@ -161,7 +161,7 @@ export default class RoomsList extends ChatBaseCommand {
             flags.limit,
             "rooms",
           );
-          if (warning) this.log(`\n${warning}`);
+          if (warning) this.logToStderr(`\n${warning}`);
         }
       }
     } catch (error) {

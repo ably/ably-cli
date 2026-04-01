@@ -1,12 +1,7 @@
 import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import {
-  formatLabel,
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../utils/output.js";
+import { formatLabel, formatResource } from "../../utils/output.js";
 
 export default class AppsCreateCommand extends ControlBaseCommand {
   static description = "Create a new app";
@@ -35,9 +30,7 @@ export default class AppsCreateCommand extends ControlBaseCommand {
 
     try {
       const controlApi = this.createControlApi(flags);
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress(`Creating app ${formatResource(flags.name)}`));
-      }
+      this.logProgress(`Creating app ${formatResource(flags.name)}`, flags);
 
       const app = await controlApi.createApp({
         name: flags.name,
@@ -60,12 +53,14 @@ export default class AppsCreateCommand extends ControlBaseCommand {
           },
           flags,
         );
-      } else {
-        this.log(
-          formatSuccess(
-            `App created: ${formatResource(app.name)} (${app.id}).`,
-          ),
-        );
+      }
+
+      this.logSuccessMessage(
+        `App created: ${formatResource(app.name)} (${app.id}).`,
+        flags,
+      );
+
+      if (!this.shouldOutputJson(flags)) {
         this.log(`${formatLabel("App ID")} ${app.id}`);
         this.log(`${formatLabel("Name")} ${app.name}`);
         this.log(`${formatLabel("Status")} ${app.status}`);
@@ -79,11 +74,10 @@ export default class AppsCreateCommand extends ControlBaseCommand {
       this.configManager.setCurrentApp(app.id);
       this.configManager.storeAppInfo(app.id, { appName: app.name });
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          `\nAutomatically switched to app: ${formatResource(app.name)} (${app.id})`,
-        );
-      }
+      this.logSuccessMessage(
+        `Automatically switched to app ${formatResource(app.name)} (${app.id}).`,
+        flags,
+      );
     } catch (error) {
       this.fail(error, flags, "appCreate");
     }

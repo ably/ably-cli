@@ -40,7 +40,7 @@ export default class AskCommand extends ControlBaseCommand {
         ? null
         : ora("Thinking...").start();
     if (isInteractive && !this.shouldOutputJson(flags)) {
-      this.log("Thinking...");
+      this.logProgress("Thinking", flags);
     }
 
     try {
@@ -58,10 +58,9 @@ export default class AskCommand extends ControlBaseCommand {
           response = await controlApi.askHelp(args.question, conversation);
         } else {
           if (spinner) spinner.stop();
-          this.log(
-            chalk.yellow(
-              "No previous conversation found. Starting a new conversation.",
-            ),
+          this.logWarning(
+            "No previous conversation found. Starting a new conversation.",
+            flags,
           );
           response = await controlApi.askHelp(args.question);
         }

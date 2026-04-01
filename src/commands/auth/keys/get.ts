@@ -5,9 +5,7 @@ import { formatCapabilities } from "../../../utils/key-display.js";
 import {
   formatHeading,
   formatLabel,
-  formatProgress,
   formatResource,
-  formatWarning,
 } from "../../../utils/output.js";
 
 export default class KeysGetCommand extends ControlBaseCommand {
@@ -67,9 +65,7 @@ export default class KeysGetCommand extends ControlBaseCommand {
     await this.showAuthInfoIfNeeded(flags);
 
     try {
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress("Fetching key details"));
-      }
+      this.logProgress("Fetching key details", flags);
 
       const controlApi = this.createControlApi(flags);
       const key = await controlApi.getKey(appId, keyIdentifier);
@@ -125,11 +121,10 @@ export default class KeysGetCommand extends ControlBaseCommand {
 
         if (hasEnvOverride) {
           this.logToStderr("");
-          this.logToStderr(
-            formatWarning(
-              `ABLY_API_KEY environment variable is set to a different key (${envKeyPrefix}). ` +
-                `The env var overrides this key for product API commands.`,
-            ),
+          this.logWarning(
+            `ABLY_API_KEY environment variable is set to a different key (${envKeyPrefix}). ` +
+              `The env var overrides this key for product API commands.`,
+            flags,
           );
         }
       }

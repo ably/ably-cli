@@ -1,11 +1,8 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import {
-  formatLabel,
-  formatResource,
-  formatSuccess,
-} from "../../utils/output.js";
+import { forceFlag } from "../../flags.js";
+import { formatLabel, formatResource } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class IntegrationsDeleteCommand extends ControlBaseCommand {
@@ -31,12 +28,7 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
       description: "The app ID or name (defaults to current app)",
       required: false,
     }),
-    force: Flags.boolean({
-      char: "f",
-      default: false,
-      description: "Force deletion without confirmation",
-      required: false,
-    }),
+    ...forceFlag,
   };
 
   async run(): Promise<void> {
@@ -52,9 +44,7 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
       // In JSON mode, require --force to prevent accidental destructive actions
       if (!flags.force && this.shouldOutputJson(flags)) {
         this.fail(
-          new Error(
-            "The --force flag is required when using --json to confirm deletion",
-          ),
+          "The --force flag is required when using --json to confirm deletion",
           flags,
           "integrationDelete",
         );
@@ -78,7 +68,7 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
         );
 
         if (!confirmed) {
-          this.log("Deletion cancelled");
+          this.logWarning("Deletion cancelled.", flags);
           return;
         }
       }
@@ -99,16 +89,16 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
           flags,
         );
       } else {
-        this.log(
-          formatSuccess(
-            `Integration rule deleted: ${formatResource(integration.id)}.`,
-          ),
-        );
         this.log(`${formatLabel("ID")} ${integration.id}`);
         this.log(`${formatLabel("App ID")} ${integration.appId}`);
         this.log(`${formatLabel("Type")} ${integration.ruleType}`);
         this.log(`${formatLabel("Source Type")} ${integration.source.type}`);
       }
+
+      this.logSuccessMessage(
+        `Integration rule deleted: ${formatResource(integration.id)}.`,
+        flags,
+      );
     } catch (error) {
       this.fail(error, flags, "integrationDelete");
     }

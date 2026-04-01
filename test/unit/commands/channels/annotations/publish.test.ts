@@ -6,6 +6,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../../helpers/ndjson.js";
 
 describe("channels:annotations:publish command", () => {
   beforeEach(() => {
@@ -29,7 +30,7 @@ describe("channels:annotations:publish command", () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "channels:annotations:publish",
           "test-channel",
@@ -46,7 +47,7 @@ describe("channels:annotations:publish command", () => {
           type: "reactions:flag.v1",
         },
       );
-      expect(stdout).toContain("Annotation published");
+      expect(stderr).toContain("Annotation published");
     });
 
     it("should pass --name flag to annotation", async () => {
@@ -166,7 +167,7 @@ describe("channels:annotations:publish command", () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "channels:annotations:publish",
           "test-channel",
@@ -180,14 +181,14 @@ describe("channels:annotations:publish command", () => {
         "serial-001",
         { type: "reactions:total.v1" },
       );
-      expect(stdout).toContain("Annotation published");
+      expect(stderr).toContain("Annotation published");
     });
 
     it("should succeed with distinct.v1 type and --name", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "channels:annotations:publish",
           "test-channel",
@@ -203,14 +204,14 @@ describe("channels:annotations:publish command", () => {
         type: "reactions:distinct.v1",
         name: "thumbsup",
       });
-      expect(stdout).toContain("Annotation published");
+      expect(stderr).toContain("Annotation published");
     });
 
     it("should succeed with unique.v1 type and --name", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "channels:annotations:publish",
           "test-channel",
@@ -226,14 +227,14 @@ describe("channels:annotations:publish command", () => {
         type: "reactions:unique.v1",
         name: "thumbsup",
       });
-      expect(stdout).toContain("Annotation published");
+      expect(stderr).toContain("Annotation published");
     });
 
     it("should succeed with multiple.v1 type and --name only (count defaults to 1)", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "channels:annotations:publish",
           "test-channel",
@@ -249,7 +250,7 @@ describe("channels:annotations:publish command", () => {
         type: "reactions:multiple.v1",
         name: "thumbsup",
       });
-      expect(stdout).toContain("Annotation published");
+      expect(stderr).toContain("Annotation published");
     });
 
     it("should output JSON when --json flag is used", async () => {
@@ -264,7 +265,8 @@ describe("channels:annotations:publish command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "channels:annotations:publish");
       expect(result).toHaveProperty("success", true);
@@ -285,7 +287,7 @@ describe("channels:annotations:publish command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result.annotation).not.toHaveProperty("name");
       expect(result.annotation).not.toHaveProperty("count");
       expect(result.annotation).not.toHaveProperty("data");
@@ -312,7 +314,7 @@ describe("channels:annotations:publish command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result.annotation).toHaveProperty("name", "thumbsup");
       expect(result.annotation).toHaveProperty("count", 3);
       expect(result.annotation).toHaveProperty("data", "test-data");
@@ -333,12 +335,12 @@ describe("channels:annotations:publish command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result.annotation.data).toEqual({ foo: "bar" });
     });
 
-    it("should show data and encoding in non-JSON output when provided", async () => {
-      const { stdout } = await runCommand(
+    it("should show success message in non-JSON output when data and encoding are provided", async () => {
+      const { stderr } = await runCommand(
         [
           "channels:annotations:publish",
           "test-channel",
@@ -352,10 +354,9 @@ describe("channels:annotations:publish command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Data");
-      expect(stdout).toContain("test-data");
-      expect(stdout).toContain("Encoding");
-      expect(stdout).toContain("utf8");
+      expect(stderr).toContain("Annotation published");
+      expect(stderr).toContain("serial-001");
+      expect(stderr).toContain("test-channel");
     });
   });
 

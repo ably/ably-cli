@@ -7,8 +7,6 @@ import {
   formatDeviceState,
   formatHeading,
   formatLabel,
-  formatProgress,
-  formatSuccess,
   formatCountLabel,
   formatLimitWarning,
 } from "../../../utils/output.js";
@@ -54,9 +52,7 @@ export default class PushDevicesList extends AblyBaseCommand {
       const rest = await this.createAblyRestClient(flags as BaseFlags);
       if (!rest) return;
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress("Fetching device registrations"));
-      }
+      this.logProgress("Fetching device registrations", flags);
 
       const params: Record<string, string | number> = {
         limit: flags.limit,
@@ -77,7 +73,7 @@ export default class PushDevicesList extends AblyBaseCommand {
         devices.length,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
-        this.log(paginationWarning);
+        this.logToStderr(paginationWarning);
       }
 
       if (this.shouldOutputJson(flags)) {
@@ -91,10 +87,9 @@ export default class PushDevicesList extends AblyBaseCommand {
         return;
       }
 
-      this.log(
-        formatSuccess(
-          `Found ${formatCountLabel(devices.length, "device registration")}.`,
-        ),
+      this.logSuccessMessage(
+        `Found ${formatCountLabel(devices.length, "device registration")}.`,
+        flags,
       );
       this.log("");
 
@@ -130,7 +125,7 @@ export default class PushDevicesList extends AblyBaseCommand {
           flags.limit,
           "device registrations",
         );
-        if (limitWarning) this.log(limitWarning);
+        if (limitWarning) this.logToStderr(limitWarning);
       }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushDeviceList");

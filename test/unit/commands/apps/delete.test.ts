@@ -59,12 +59,12 @@ describe("apps:delete command", () => {
       // Mock the app deletion endpoint
       nockControl().delete(`/v1/apps/${appId}`).reply(204);
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["apps:delete", appId, "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("App deleted successfully");
+      expect(stderr).toContain("App deleted successfully");
     });
 
     it("should output JSON format when --json flag is used", async () => {
@@ -103,13 +103,19 @@ describe("apps:delete command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      // Parse NDJSON output — find the result record
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const result = records.find((r) => r.type === "result");
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "apps:delete");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("app");
-      expect(result.app).toHaveProperty("id", appId);
-      expect(result.app).toHaveProperty("name", mockAppName);
+      expect(result!.app).toHaveProperty("id", appId);
+      expect(result!.app).toHaveProperty("name", mockAppName);
     });
 
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
@@ -162,12 +168,12 @@ describe("apps:delete command", () => {
         .delete(`/v1/apps/${appId}`)
         .reply(204);
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["apps:delete", appId, "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("App deleted successfully");
+      expect(stderr).toContain("App deleted successfully");
     });
   });
 
@@ -305,7 +311,13 @@ describe("apps:delete command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      // Parse NDJSON output — find the error record
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const result = records.find((r) => r.type === "error");
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("type", "error");
       expect(result).toHaveProperty("command", "apps:delete");
       expect(result).toHaveProperty("success", false);
@@ -442,12 +454,12 @@ describe("apps:delete command", () => {
         // Mock the app deletion endpoint
         nockControl().delete(`/v1/apps/${appId}`).reply(204);
 
-        const { stdout } = await runCommand(
+        const { stderr } = await runCommand(
           ["apps:delete", "--force"],
           import.meta.url,
         );
 
-        expect(stdout).toContain("App deleted successfully");
+        expect(stderr).toContain("App deleted successfully");
       } finally {
         // Restore original environment variable
         if (originalAppId) {

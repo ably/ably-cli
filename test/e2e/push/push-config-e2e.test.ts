@@ -17,6 +17,7 @@ import {
   resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
+import { parseNdjsonLines } from "../../helpers/ndjson.js";
 import { resolve } from "node:path";
 
 describe("Push Config E2E Tests", () => {
@@ -51,8 +52,10 @@ describe("Push Config E2E Tests", () => {
       },
     );
 
-    const result = JSON.parse(createResult.stdout);
-    testAppId = result.app.id;
+    const result = parseNdjsonLines(createResult.stdout).find(
+      (r) => r.type === "result",
+    )!;
+    testAppId = (result.app as Record<string, unknown>).id as string;
     console.log(`Created test app for push config: ${testAppId}`);
   });
 
@@ -97,7 +100,9 @@ describe("Push Config E2E Tests", () => {
         );
 
         expect(result.exitCode).toBe(0);
-        const output = JSON.parse(result.stdout);
+        const output = parseNdjsonLines(result.stdout).find(
+          (r) => r.type === "result",
+        )!;
         expect(output).toHaveProperty("success", true);
         expect(output).toHaveProperty("appId", testAppId);
         expect(output.apns).toHaveProperty("configured", false);
@@ -166,7 +171,9 @@ describe("Push Config E2E Tests", () => {
         );
 
         expect(setResult.exitCode).toBe(0);
-        const setOutput = JSON.parse(setResult.stdout);
+        const setOutput = parseNdjsonLines(setResult.stdout).find(
+          (r) => r.type === "result",
+        )!;
         expect(setOutput).toHaveProperty("success", true);
         expect(setOutput).toHaveProperty("method", "p8");
 
@@ -181,7 +188,9 @@ describe("Push Config E2E Tests", () => {
         );
 
         expect(showResult.exitCode).toBe(0);
-        const showOutput = JSON.parse(showResult.stdout);
+        const showOutput = parseNdjsonLines(showResult.stdout).find(
+          (r) => r.type === "result",
+        )!;
         expect(showOutput.apns).toHaveProperty("configured", true);
         expect(showOutput.apns).toHaveProperty("hasP8Key", true);
         expect(showOutput.apns).toHaveProperty("useSandbox", true);
@@ -234,7 +243,9 @@ describe("Push Config E2E Tests", () => {
       );
 
       expect(clearResult.exitCode).toBe(0);
-      const clearOutput = JSON.parse(clearResult.stdout);
+      const clearOutput = parseNdjsonLines(clearResult.stdout).find(
+        (r) => r.type === "result",
+      )!;
       expect(clearOutput).toHaveProperty("success", true);
       expect(clearOutput).toHaveProperty("cleared", "apns");
 
@@ -249,7 +260,9 @@ describe("Push Config E2E Tests", () => {
       );
 
       expect(showResult.exitCode).toBe(0);
-      const showOutput = JSON.parse(showResult.stdout);
+      const showOutput = parseNdjsonLines(showResult.stdout).find(
+        (r) => r.type === "result",
+      )!;
       expect(showOutput.apns).toHaveProperty("configured", false);
       expect(showOutput.apns).toHaveProperty("hasP8Key", false);
     });
@@ -286,7 +299,9 @@ describe("Push Config E2E Tests", () => {
         );
 
         expect(setResult.exitCode).toBe(0);
-        const setOutput = JSON.parse(setResult.stdout);
+        const setOutput = parseNdjsonLines(setResult.stdout).find(
+          (r) => r.type === "result",
+        )!;
         expect(setOutput).toHaveProperty("success", true);
 
         // 2. Verify config was set
@@ -300,7 +315,9 @@ describe("Push Config E2E Tests", () => {
         );
 
         expect(showResult.exitCode).toBe(0);
-        const showOutput = JSON.parse(showResult.stdout);
+        const showOutput = parseNdjsonLines(showResult.stdout).find(
+          (r) => r.type === "result",
+        )!;
         expect(showOutput.fcm).toHaveProperty("configured", true);
       },
     );
@@ -338,7 +355,9 @@ describe("Push Config E2E Tests", () => {
       );
 
       expect(clearResult.exitCode).toBe(0);
-      const clearOutput = JSON.parse(clearResult.stdout);
+      const clearOutput = parseNdjsonLines(clearResult.stdout).find(
+        (r) => r.type === "result",
+      )!;
       expect(clearOutput).toHaveProperty("success", true);
       expect(clearOutput).toHaveProperty("cleared", "fcm");
 
@@ -353,7 +372,9 @@ describe("Push Config E2E Tests", () => {
       );
 
       expect(showResult.exitCode).toBe(0);
-      const showOutput = JSON.parse(showResult.stdout);
+      const showOutput = parseNdjsonLines(showResult.stdout).find(
+        (r) => r.type === "result",
+      )!;
       expect(showOutput.fcm).toHaveProperty("configured", false);
     });
   });

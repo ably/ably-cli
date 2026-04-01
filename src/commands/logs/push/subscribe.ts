@@ -10,9 +10,7 @@ import {
 } from "../../../flags.js";
 import { formatMessageData } from "../../../utils/json-formatter.js";
 import {
-  formatListening,
   formatResource,
-  formatSuccess,
   formatTimestamp,
   formatMessageTimestamp,
 } from "../../../utils/output.js";
@@ -149,12 +147,14 @@ export default class LogsPushSubscribe extends AblyBaseCommand {
       });
 
       if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(`Subscribed to ${formatResource(channelName)}.`),
-        );
-        this.log(formatListening("Listening for push logs."));
         this.log("");
       }
+
+      this.logSuccessMessage(
+        `Subscribed to ${formatResource(channelName)}.`,
+        flags,
+      );
+      this.logListening("Listening for push logs.", flags);
 
       this.logCliEvent(
         flags,

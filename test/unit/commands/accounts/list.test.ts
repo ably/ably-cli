@@ -6,6 +6,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 
 describe("accounts:list command", () => {
   beforeEach(() => {
@@ -33,7 +34,7 @@ describe("accounts:list command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("accounts");
       expect(result.accounts).toEqual([]);
@@ -61,7 +62,7 @@ describe("accounts:list command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("accounts");
       expect(result.accounts.length).toBeGreaterThan(0);

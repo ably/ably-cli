@@ -10,6 +10,7 @@ import {
   standardFlagTests,
   standardControlApiErrorTests,
 } from "../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 
 describe("support:ask command", () => {
   afterEach(() => {
@@ -62,7 +63,7 @@ describe("support:ask command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "support:ask");
       expect(result).toHaveProperty("success", true);

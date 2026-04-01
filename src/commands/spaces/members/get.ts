@@ -7,9 +7,7 @@ import {
   formatCountLabel,
   formatHeading,
   formatIndex,
-  formatProgress,
   formatResource,
-  formatWarning,
 } from "../../../utils/output.js";
 import {
   formatMemberBlock,
@@ -46,13 +44,10 @@ export default class SpacesMembersGet extends SpacesBaseCommand {
         setupConnectionLogging: false,
       });
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Fetching members for space ${formatResource(spaceName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Fetching members for space ${formatResource(spaceName)}`,
+        flags,
+      );
 
       const members: SpaceMember[] = await this.space!.members.getAll();
 
@@ -64,7 +59,7 @@ export default class SpacesMembersGet extends SpacesBaseCommand {
           flags,
         );
       } else if (members.length === 0) {
-        this.logToStderr(formatWarning("No members currently in this space."));
+        this.logWarning("No members currently in this space.", flags);
       } else {
         this.log(
           `\n${formatHeading("Current members")} (${formatCountLabel(members.length, "member")}):\n`,

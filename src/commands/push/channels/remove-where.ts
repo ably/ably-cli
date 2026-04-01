@@ -3,11 +3,7 @@ import { Flags } from "@oclif/core";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { forceFlag, productApiFlags } from "../../../flags.js";
 import { BaseFlags } from "../../../types/cli.js";
-import {
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class PushChannelsRemoveWhere extends AblyBaseCommand {
@@ -48,6 +44,15 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
       if (flags["device-id"]) params.deviceId = flags["device-id"];
       if (flags["client-id"]) params.clientId = flags["client-id"];
 
+      // In JSON mode, require --force to prevent accidental destructive actions
+      if (!flags.force && this.shouldOutputJson(flags)) {
+        this.fail(
+          "The --force flag is required when using --json to confirm removal",
+          flags,
+          "pushChannelRemoveWhere",
+        );
+      }
+
       if (!flags.force && !this.shouldOutputJson(flags)) {
         const filterDesc = Object.entries(params)
           .map(([k, v]) => `${k}=${v}`)
@@ -58,18 +63,15 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
         );
 
         if (!confirmed) {
-          this.log("Operation cancelled.");
+          this.logWarning("Operation cancelled.", flags);
           return;
         }
       }
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Removing matching subscriptions from channel ${formatResource(flags.channel)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Removing matching subscriptions from channel ${formatResource(flags.channel)}`,
+        flags,
+      );
 
       await rest.push.admin.channelSubscriptions.removeWhere(params);
 
@@ -79,7 +81,7 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
           flags,
         );
       } else {
-        this.log(formatSuccess("Matching subscriptions removed."));
+        this.logSuccessMessage("Matching subscriptions removed.", flags);
       }
     } catch (error) {
       this.fail(error, flags as BaseFlags, "pushChannelRemoveWhere");

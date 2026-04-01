@@ -1,6 +1,7 @@
-import { Args, Flags } from "@oclif/core";
+import { Args } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import { forceFlag } from "../../flags.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class AccountsLogout extends ControlBaseCommand {
@@ -23,11 +24,7 @@ export default class AccountsLogout extends ControlBaseCommand {
 
   static override flags = {
     ...ControlBaseCommand.globalFlags,
-    force: Flags.boolean({
-      char: "f",
-      default: false,
-      description: "Force logout without confirmation",
-    }),
+    ...forceFlag,
   };
 
   public async run(): Promise<void> {
@@ -58,11 +55,20 @@ export default class AccountsLogout extends ControlBaseCommand {
       );
     }
 
-    // Get confirmation unless force flag is used or in JSON mode
+    // In JSON mode, require --force to prevent accidental destructive actions
+    if (!flags.force && this.shouldOutputJson(flags)) {
+      this.fail(
+        "The --force flag is required when using --json to confirm logout",
+        flags,
+        "accountLogout",
+      );
+    }
+
+    // Get confirmation unless force flag is used
     if (!flags.force && !this.shouldOutputJson(flags)) {
       const confirmed = await this.confirmLogout(targetAlias);
       if (!confirmed) {
-        this.log("Logout canceled.");
+        this.logWarning("Logout canceled.", flags);
         return;
       }
     }
@@ -87,8 +93,6 @@ export default class AccountsLogout extends ControlBaseCommand {
           flags,
         );
       } else {
-        this.log(`Successfully logged out from account ${targetAlias}.`);
-
         // Suggest switching to another account if there are any left
         if (remainingAccounts.length > 0) {
           this.log(
@@ -100,6 +104,11 @@ export default class AccountsLogout extends ControlBaseCommand {
           );
         }
       }
+
+      this.logSuccessMessage(
+        `Successfully logged out from account ${targetAlias}.`,
+        flags,
+      );
     } else {
       this.fail(
         `Failed to log out from account ${targetAlias}.`,

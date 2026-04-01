@@ -1,12 +1,9 @@
 import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { forceFlag } from "../../../flags.js";
 import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
-import {
-  formatLabel,
-  formatResource,
-  formatSuccess,
-} from "../../../utils/output.js";
+import { formatLabel, formatResource } from "../../../utils/output.js";
 import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class RulesDeleteCommand extends ControlBaseCommand {
@@ -33,12 +30,7 @@ export default class RulesDeleteCommand extends ControlBaseCommand {
       description: "The app ID or name (defaults to current app)",
       required: false,
     }),
-    force: Flags.boolean({
-      char: "f",
-      default: false,
-      description: "Force deletion without confirmation",
-      required: false,
-    }),
+    ...forceFlag,
   };
 
   async run(): Promise<void> {
@@ -58,7 +50,16 @@ export default class RulesDeleteCommand extends ControlBaseCommand {
         });
       }
 
-      // If not using force flag or JSON mode, prompt for confirmation
+      // In JSON mode, require --force to prevent accidental destructive actions
+      if (!flags.force && this.shouldOutputJson(flags)) {
+        this.fail(
+          "The --force flag is required when using --json to confirm deletion",
+          flags,
+          "ruleDelete",
+        );
+      }
+
+      // If not using force flag, prompt for confirmation
       if (!flags.force && !this.shouldOutputJson(flags)) {
         this.log(`\nYou are about to delete the following rule:`);
         this.log(`${formatLabel("ID")} ${formatResource(namespace.id)}`);
@@ -77,7 +78,7 @@ export default class RulesDeleteCommand extends ControlBaseCommand {
         if (!confirmed) {
           // This branch is only reachable when !shouldOutputJson (see outer condition),
           // so only human-readable output is needed here.
-          this.log("Deletion cancelled");
+          this.logWarning("Deletion cancelled.", flags);
           return;
         }
       }
@@ -95,11 +96,12 @@ export default class RulesDeleteCommand extends ControlBaseCommand {
           },
           flags,
         );
-      } else {
-        this.log(
-          formatSuccess(`Rule ${formatResource(namespace.id)} deleted.`),
-        );
       }
+
+      this.logSuccessMessage(
+        `Channel rule ${formatResource(namespace.id)} deleted.`,
+        flags,
+      );
     } catch (error) {
       this.fail(error, flags, "ruleDelete", { appId });
     }

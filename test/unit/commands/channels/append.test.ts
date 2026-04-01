@@ -28,7 +28,7 @@ describe("channels:append command", () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "channels:append",
           "test-channel",
@@ -44,7 +44,7 @@ describe("channels:append command", () => {
         serial: "serial-001",
         data: "appended",
       });
-      expect(stdout).toContain("Appended");
+      expect(stderr).toContain("Appended");
     });
 
     it("should append with plain text", async () => {
@@ -173,7 +173,13 @@ describe("channels:append command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      // Parse NDJSON output — find the result record
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const result = records.find((r) => r.type === "result");
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "channels:append");
       expect(result).toHaveProperty("success", true);
@@ -191,12 +197,12 @@ describe("channels:append command", () => {
       const channel = mock.channels._getChannel("test-channel");
       channel.appendMessage.mockResolvedValue({ versionSerial: null });
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["channels:append", "test-channel", "serial-001", '{"data":"hello"}'],
         import.meta.url,
       );
 
-      expect(stdout).toContain("superseded");
+      expect(stderr).toContain("superseded");
     });
 
     it("should display version serial in human-readable output", async () => {

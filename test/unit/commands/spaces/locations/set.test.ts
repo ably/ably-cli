@@ -73,7 +73,7 @@ describe("spaces:locations:set command", () => {
 
       const location = { x: 10, y: 20, sectionId: "main" };
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "spaces:locations:set",
           "test-space",
@@ -85,21 +85,21 @@ describe("spaces:locations:set command", () => {
 
       expect(space.enter).toHaveBeenCalled();
       expect(space.locations.set).toHaveBeenCalledWith(location);
-      expect(stdout).toContain("Location set");
-      expect(stdout).toContain("test-space");
+      expect(stderr).toContain("Location set");
+      expect(stderr).toContain("test-space");
     });
 
     it("should display hold message", async () => {
       const spacesMock = getMockAblySpaces();
       spacesMock._getSpace("test-space");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["spaces:locations:set", "test-space", "--location", '{"x":1}'],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Holding location.");
-      expect(stdout).toContain("Press Ctrl+C to exit.");
+      expect(stderr).toContain("Holding location.");
+      expect(stderr).toContain("Press Ctrl+C to exit.");
     });
   });
 
@@ -127,9 +127,10 @@ describe("spaces:locations:set command", () => {
       expect(result!.success).toBe(true);
       expect(result!.location).toEqual(location);
 
-      const status = records.find((r) => r.type === "status");
+      const status = records.find(
+        (r) => r.type === "status" && r.status === "holding",
+      );
       expect(status).toBeDefined();
-      expect(status).toHaveProperty("status", "holding");
       expect(status!.message).toContain("Holding location");
     });
 

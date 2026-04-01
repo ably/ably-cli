@@ -47,13 +47,13 @@ describe("auth:keys:switch command", () => {
           },
         ]);
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["auth:keys:switch", `${appId}.${mockKeyId}`],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Switched to key");
-      expect(stdout).toContain(`${appId}.${mockKeyId}`);
+      expect(stderr).toContain("Switched to key");
+      expect(stderr).toContain(`${appId}.${mockKeyId}`);
     });
 
     it("should output JSON when --json flag is used", async () => {
@@ -79,8 +79,14 @@ describe("auth:keys:switch command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("type", "result");
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line: string) => JSON.parse(line));
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "result",
+      ) as Record<string, unknown>;
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("command", "auth:keys:switch");
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("key");

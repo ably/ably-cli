@@ -9,6 +9,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 
 function createMockSpaceChannelItems() {
   return [
@@ -111,7 +112,7 @@ describe("spaces:list command", () => {
         import.meta.url,
       );
 
-      const json = JSON.parse(stdout);
+      const json = parseJsonOutput(stdout);
       expect(json).toHaveProperty("spaces");
       expect(json).toHaveProperty("total");
       expect(json).toHaveProperty("hasMore");
@@ -171,7 +172,7 @@ describe("spaces:list command", () => {
       statusCode: 200,
     });
 
-    const { stdout } = await runCommand(
+    const { stdout, stderr } = await runCommand(
       ["spaces:list", "--limit", "10"],
       import.meta.url,
     );
@@ -181,7 +182,7 @@ describe("spaces:list command", () => {
     expect(stdout).toContain("space2");
     expect(stdout).toContain("2 active spaces");
     // Pagination warning for multi-page fetch
-    expect(stdout).toContain("pages");
+    expect(stderr).toContain("pages");
   });
 
   describe("error handling", () => {

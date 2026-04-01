@@ -1,11 +1,7 @@
 import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import {
-  formatLabel,
-  formatResource,
-  formatSuccess,
-} from "../../utils/output.js";
+import { formatLabel, formatResource } from "../../utils/output.js";
 
 // Interface for basic integration data structure
 interface IntegrationData {
@@ -137,8 +133,9 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
         }
 
         default: {
-          this.log(
-            `Note: Using default target for ${flags["rule-type"]}. In a real implementation, more target options would be required.`,
+          this.logWarning(
+            `Using default target for ${flags["rule-type"]}. In a real implementation, more target options would be required.`,
+            flags,
           );
           integrationData.target = { enveloped: true, format: "json" };
         }
@@ -161,11 +158,6 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
           flags,
         );
       } else {
-        this.log(
-          formatSuccess(
-            `Integration rule created: ${formatResource(createdIntegration.id)}.`,
-          ),
-        );
         this.log(`${formatLabel("ID")} ${createdIntegration.id}`);
         this.log(`${formatLabel("App ID")} ${createdIntegration.appId}`);
         this.log(`${formatLabel("Type")} ${createdIntegration.ruleType}`);
@@ -184,6 +176,11 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
           `${formatLabel("Target")} ${this.formatJsonOutput(createdIntegration.target as Record<string, unknown>, flags)}`,
         );
       }
+
+      this.logSuccessMessage(
+        `Integration rule created: ${formatResource(createdIntegration.id)}.`,
+        flags,
+      );
     } catch (error) {
       this.fail(error, flags, "integrationCreate");
     }

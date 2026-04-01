@@ -5,11 +5,7 @@ import * as path from "node:path";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
 import { BaseFlags } from "../../../types/cli.js";
-import {
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 
 export default class PushDevicesSave extends AblyBaseCommand {
   static override description = "Register or update a push device";
@@ -181,13 +177,10 @@ export default class PushDevicesSave extends AblyBaseCommand {
         }
       }
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Saving device registration ${formatResource(typeof deviceData.id === "string" ? deviceData.id : "")}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Saving device registration ${formatResource(typeof deviceData.id === "string" ? deviceData.id : "")}`,
+        flags,
+      );
 
       const result = await rest.push.admin.deviceRegistrations.save(
         deviceData as never,
@@ -196,10 +189,9 @@ export default class PushDevicesSave extends AblyBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult({ device: result }, flags);
       } else {
-        this.log(
-          formatSuccess(
-            `Device registration saved for ${formatResource(typeof deviceData.id === "string" ? deviceData.id : "")}.`,
-          ),
+        this.logSuccessMessage(
+          `Device registration saved for ${formatResource(typeof deviceData.id === "string" ? deviceData.id : "")}.`,
+          flags,
         );
       }
     } catch (error) {

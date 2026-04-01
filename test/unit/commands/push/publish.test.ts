@@ -6,6 +6,7 @@ import {
   standardArgValidationTests,
   standardFlagTests,
 } from "../../../helpers/standard-tests.js";
+import { parseJsonOutput } from "../../../helpers/ndjson.js";
 
 describe("push:publish command", () => {
   beforeEach(() => {
@@ -40,7 +41,7 @@ describe("push:publish command", () => {
     it("should publish to a device", async () => {
       const mock = getMockAblyRest();
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "push:publish",
           "--device-id",
@@ -53,7 +54,7 @@ describe("push:publish command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("published");
+      expect(stderr).toContain("published");
       expect(mock.push.admin.publish).toHaveBeenCalledWith(
         { deviceId: "dev-1" },
         expect.objectContaining({
@@ -68,12 +69,12 @@ describe("push:publish command", () => {
     it("should publish to a client", async () => {
       const mock = getMockAblyRest();
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["push:publish", "--client-id", "client-1", "--title", "Hi"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("published");
+      expect(stderr).toContain("published");
       expect(mock.push.admin.publish).toHaveBeenCalledWith(
         { clientId: "client-1" },
         expect.objectContaining({
@@ -87,12 +88,12 @@ describe("push:publish command", () => {
       const payload =
         '{"notification":{"title":"Custom"},"data":{"key":"val"}}';
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["push:publish", "--device-id", "dev-1", "--payload", payload],
         import.meta.url,
       );
 
-      expect(stdout).toContain("published");
+      expect(stderr).toContain("published");
       expect(mock.push.admin.publish).toHaveBeenCalledWith(
         { deviceId: "dev-1" },
         expect.objectContaining({
@@ -106,7 +107,7 @@ describe("push:publish command", () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("my-channel");
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "push:publish",
           "--channel",
@@ -120,7 +121,7 @@ describe("push:publish command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("published");
+      expect(stderr).toContain("published");
       expect(channel.publish).toHaveBeenCalledWith(
         expect.objectContaining({
           extras: {
@@ -168,8 +169,8 @@ describe("push:publish command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("type", "result");
+      const result = parseJsonOutput(stdout);
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("notification");
       expect(result.notification).toHaveProperty("published", true);
@@ -177,11 +178,19 @@ describe("push:publish command", () => {
 
     it("should output JSON with channel when publishing via channel", async () => {
       const { stdout } = await runCommand(
-        ["push:publish", "--channel", "my-channel", "--title", "Hi", "--json"],
+        [
+          "push:publish",
+          "--channel",
+          "my-channel",
+          "--title",
+          "Hi",
+          "--json",
+          "--force",
+        ],
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("notification");
       expect(result.notification).toHaveProperty("published", true);
       expect(result.notification).toHaveProperty("channel", "my-channel");

@@ -16,6 +16,7 @@ import {
   standardFlagTests,
   standardControlApiErrorTests,
 } from "../../../../helpers/standard-tests.js";
+import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
 
 describe("auth:keys:revoke command", () => {
   const mockKeyId = "testkey";
@@ -84,7 +85,7 @@ describe("auth:keys:revoke command", () => {
       );
 
       // The JSON output should be parseable
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "auth:keys:revoke");
       expect(result).toHaveProperty("success", true);

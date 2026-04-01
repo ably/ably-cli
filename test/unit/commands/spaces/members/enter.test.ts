@@ -28,7 +28,7 @@ describe("spaces:members:enter command", () => {
 
       const profile = { name: "User", status: "active" };
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "spaces:members:enter",
           "test-space",
@@ -39,8 +39,8 @@ describe("spaces:members:enter command", () => {
       );
 
       expect(space.enter).toHaveBeenCalledWith(profile);
-      expect(stdout).toContain("Entered space");
-      expect(stdout).toContain("test-space");
+      expect(stderr).toContain("Entered space");
+      expect(stderr).toContain("test-space");
     });
 
     it("should enter without profile when not provided", async () => {
@@ -85,9 +85,10 @@ describe("spaces:members:enter command", () => {
       expect(member).toHaveProperty("location", null);
       expect(member).toHaveProperty("lastEvent");
 
-      const status = records.find((r) => r.type === "status");
+      const status = records.find(
+        (r) => r.type === "status" && r.status === "holding",
+      );
       expect(status).toBeDefined();
-      expect(status).toHaveProperty("status", "holding");
       expect(status!.message).toContain("Holding presence");
     });
 

@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
+import { parseJsonOutput } from "../../../../helpers/ndjson.js";
 import {
   mockAppResolution,
   controlApiCleanup,
@@ -50,7 +51,7 @@ describe("auth:keys:current command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "auth:keys:current");
       expect(result).toHaveProperty("success", true);

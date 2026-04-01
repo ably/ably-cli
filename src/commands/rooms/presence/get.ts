@@ -11,9 +11,7 @@ import {
   formatLabel,
   formatLimitWarning,
   formatMessageTimestamp,
-  formatProgress,
   formatResource,
-  formatWarning,
 } from "../../../utils/output.js";
 import {
   buildPaginationNext,
@@ -61,13 +59,10 @@ export default class RoomsPresenceGet extends AblyBaseCommand {
       const { room: roomName } = args;
       const channelName = chatChannelName(roomName);
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Fetching presence members for room: ${formatResource(roomName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Fetching presence members for room: ${formatResource(roomName)}`,
+        flags,
+      );
 
       this.logCliEvent(
         flags,
@@ -100,7 +95,7 @@ export default class RoomsPresenceGet extends AblyBaseCommand {
         items.length,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
-        this.log(paginationWarning);
+        this.logToStderr(paginationWarning);
       }
 
       if (this.shouldOutputJson(flags)) {
@@ -123,7 +118,7 @@ export default class RoomsPresenceGet extends AblyBaseCommand {
           flags,
         );
       } else if (items.length === 0) {
-        this.log(formatWarning("No members currently present in this room."));
+        this.logWarning("No members currently present in this room.", flags);
       } else {
         this.log(
           `\n${formatHeading(`Presence members in room: ${formatResource(roomName)}`)} (${formatCountLabel(items.length, "member")}):\n`,
@@ -153,7 +148,7 @@ export default class RoomsPresenceGet extends AblyBaseCommand {
             flags.limit,
             "members",
           );
-          if (warning) this.log(warning);
+          if (warning) this.logToStderr(warning);
         }
       }
     } catch (error) {

@@ -12,6 +12,7 @@ import {
   standardControlApiErrorTests,
 } from "../../../../helpers/standard-tests.js";
 import { mockNamespace } from "../../../../fixtures/control-api.js";
+import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
 
 describe("apps:rules:update command", () => {
   const mockRuleId = "chat";
@@ -43,13 +44,13 @@ describe("apps:rules:update command", () => {
         .patch(`/v1/apps/${appId}/namespaces/${mockRuleId}`)
         .reply(200, mockNamespace({ id: mockRuleId, persisted: true }));
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["apps:rules:update", mockRuleId, "--persisted"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("updated");
-      expect(stdout).toContain("Persisted: ✓ Yes");
+      expect(stderr).toContain("updated");
+      expect(stdout).toContain("Persisted:");
     });
 
     it("should update a rule with mutable-messages flag and auto-enable persistence", async () => {
@@ -64,12 +65,12 @@ describe("apps:rules:update command", () => {
         })
         .reply(200, mockNamespace({ id: mockRuleId, persisted: true }));
 
-      const { stdout, stderr } = await runCommand(
+      const { stderr } = await runCommand(
         ["apps:rules:update", mockRuleId, "--mutable-messages"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("updated");
+      expect(stderr).toContain("updated");
       expect(stderr).toContain("persistence is automatically enabled");
     });
 
@@ -127,7 +128,7 @@ describe("apps:rules:update command", () => {
         })
         .reply(200, mockNamespace({ id: mockRuleId }));
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         [
           "apps:rules:update",
           mockRuleId,
@@ -137,7 +138,7 @@ describe("apps:rules:update command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("updated");
+      expect(stderr).toContain("updated");
       expect(stdout).toContain("Persisted: No");
     });
 
@@ -151,13 +152,13 @@ describe("apps:rules:update command", () => {
         .patch(`/v1/apps/${appId}/namespaces/${mockRuleId}`)
         .reply(200, mockNamespace({ id: mockRuleId, pushEnabled: true }));
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["apps:rules:update", mockRuleId, "--push-enabled"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("updated");
-      expect(stdout).toContain("Push Enabled: ✓ Yes");
+      expect(stderr).toContain("updated");
+      expect(stdout).toContain("Push Enabled:");
     });
 
     it("should output JSON format when --json flag is used", async () => {
@@ -175,11 +176,12 @@ describe("apps:rules:update command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("rule");
-      expect(result.rule).toHaveProperty("id", mockRuleId);
-      expect(result.rule).toHaveProperty("persisted", true);
+      const rule = result.rule as Record<string, unknown>;
+      expect(rule).toHaveProperty("id", mockRuleId);
+      expect(rule).toHaveProperty("persisted", true);
     });
 
     it("should include mutableMessages in JSON output when updating", async () => {
@@ -197,9 +199,15 @@ describe("apps:rules:update command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line: string) => JSON.parse(line));
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "result",
+      );
       expect(result).toHaveProperty("success", true);
-      expect(result.rule).toHaveProperty("persisted", true);
+      expect(result!.rule).toHaveProperty("persisted", true);
     });
   });
 

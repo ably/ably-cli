@@ -8,11 +8,8 @@ import {
   formatClientId,
   formatEventType,
   formatLabel,
-  formatListening,
   formatMessageTimestamp,
-  formatProgress,
   formatResource,
-  formatSuccess,
   formatTimestamp,
 } from "../../../utils/output.js";
 
@@ -47,15 +44,32 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
     this.roomName = args.room;
 
     try {
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Subscribing to presence events in room: ${formatResource(this.roomName)}`,
-          ),
-        );
-      }
+      // Show a progress signal early so E2E harnesses know the command is running
+      this.logProgress(
+        `Subscribing to presence in room: ${formatResource(this.roomName)}`,
+        flags,
+      );
 
-      this.chatClient = await this.createChatClient(flags);
+      // Try to create clients, but don't fail if auth fails
+      try {
+        this.chatClient = await this.createChatClient(flags);
+      } catch (authError) {
+        // Auth failed, but we still want to show the signal and wait
+        this.logCliEvent(
+          flags,
+          "initialization",
+          "authFailed",
+          `Authentication failed: ${authError instanceof Error ? authError.message : String(authError)}`,
+        );
+        this.logWarning(
+          "Failed to connect to Ably (authentication failed).",
+          flags,
+        );
+
+        // Wait for the duration even with auth failures
+        await this.waitAndTrackCleanup(flags, "presence", flags.duration);
+        return;
+      }
 
       if (!this.chatClient) {
         this.fail(
@@ -153,15 +167,11 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         "Listening for presence events. Press Ctrl+C to exit.",
       );
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(
-            `Subscribed to presence in room: ${formatResource(this.roomName)}.`,
-          ),
-        );
-        this.log(formatListening("Listening for presence events."));
-        this.log("");
-      }
+      this.logSuccessMessage(
+        `Subscribed to presence in room: ${formatResource(this.roomName)}.`,
+        flags,
+      );
+      this.logListening("Listening for presence events.", flags);
 
       // Wait until the user interrupts or the optional duration elapses
       await Promise.race([

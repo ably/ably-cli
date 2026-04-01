@@ -7,9 +7,7 @@ import {
   formatCountLabel,
   formatHeading,
   formatIndex,
-  formatProgress,
   formatResource,
-  formatWarning,
 } from "../../../utils/output.js";
 import {
   formatLockBlock,
@@ -70,13 +68,10 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
     spaceName: string,
     lockId: string,
   ): void {
-    if (!this.shouldOutputJson(flags)) {
-      this.log(
-        formatProgress(
-          `Fetching lock ${formatResource(lockId)} from space ${formatResource(spaceName)}`,
-        ),
-      );
-    }
+    this.logProgress(
+      `Fetching lock ${formatResource(lockId)} from space ${formatResource(spaceName)}`,
+      flags,
+    );
 
     const lock = this.space!.locks.get(lockId);
 
@@ -84,10 +79,9 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult({ lock: null }, flags);
       } else {
-        this.logToStderr(
-          formatWarning(
-            `Lock ${formatResource(lockId)} not found in space ${formatResource(spaceName)}.`,
-          ),
+        this.logWarning(
+          `Lock ${formatResource(lockId)} not found in space ${formatResource(spaceName)}.`,
+          flags,
         );
       }
 
@@ -105,11 +99,10 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
     flags: Record<string, unknown>,
     spaceName: string,
   ): Promise<void> {
-    if (!this.shouldOutputJson(flags)) {
-      this.log(
-        formatProgress(`Fetching locks for space ${formatResource(spaceName)}`),
-      );
-    }
+    this.logProgress(
+      `Fetching locks for space ${formatResource(spaceName)}`,
+      flags,
+    );
 
     const locks: Lock[] = await this.space!.locks.getAll();
 
@@ -121,9 +114,7 @@ export default class SpacesLocksGet extends SpacesBaseCommand {
         flags,
       );
     } else if (locks.length === 0) {
-      this.logToStderr(
-        formatWarning("No locks are currently active in this space."),
-      );
+      this.logWarning("No locks are currently active in this space.", flags);
     } else {
       this.log(
         `\n${formatHeading("Current locks")} (${formatCountLabel(locks.length, "lock")}):\n`,

@@ -26,12 +26,12 @@ describe("push:channels:remove-where command", () => {
     it("should remove matching subscriptions with --force", async () => {
       const mock = getMockAblyRest();
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         ["push:channels:remove-where", "--channel", "my-channel", "--force"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("removed");
+      expect(stderr).toContain("removed");
       expect(
         mock.push.admin.channelSubscriptions.removeWhere,
       ).toHaveBeenCalledWith(
@@ -60,8 +60,14 @@ describe("push:channels:remove-where command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
-      expect(result).toHaveProperty("type", "result");
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line: string) => JSON.parse(line));
+      const result = records.find(
+        (r: Record<string, unknown>) => r.type === "result",
+      );
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("subscriptions");
       expect(result.subscriptions).toHaveProperty("removed", true);

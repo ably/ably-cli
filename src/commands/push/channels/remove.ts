@@ -3,11 +3,7 @@ import { Flags } from "@oclif/core";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { forceFlag, productApiFlags } from "../../../flags.js";
 import { BaseFlags } from "../../../types/cli.js";
-import {
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class PushChannelsRemove extends AblyBaseCommand {
@@ -55,24 +51,30 @@ export default class PushChannelsRemove extends AblyBaseCommand {
         ? `device ${flags["device-id"]}`
         : `client ${flags["client-id"]}`;
 
+      // In JSON mode, require --force to prevent accidental destructive actions
+      if (!flags.force && this.shouldOutputJson(flags)) {
+        this.fail(
+          "The --force flag is required when using --json to confirm removal",
+          flags,
+          "pushChannelRemove",
+        );
+      }
+
       if (!flags.force && !this.shouldOutputJson(flags)) {
         const confirmed = await promptForConfirmation(
           `Are you sure you want to unsubscribe ${target} from channel ${flags.channel}?`,
         );
 
         if (!confirmed) {
-          this.log("Operation cancelled.");
+          this.logWarning("Operation cancelled.", flags);
           return;
         }
       }
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Removing subscription from channel ${formatResource(flags.channel)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Removing subscription from channel ${formatResource(flags.channel)}`,
+        flags,
+      );
 
       const subscription: Record<string, string> = {
         channel: flags.channel,
@@ -94,10 +96,9 @@ export default class PushChannelsRemove extends AblyBaseCommand {
           flags,
         );
       } else {
-        this.log(
-          formatSuccess(
-            `Subscription removed from channel ${formatResource(flags.channel)}.`,
-          ),
+        this.logSuccessMessage(
+          `Subscription removed from channel ${formatResource(flags.channel)}.`,
+          flags,
         );
       }
     } catch (error) {

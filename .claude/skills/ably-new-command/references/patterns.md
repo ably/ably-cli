@@ -44,15 +44,11 @@ async run(): Promise<void> {
   // Returns a cleanup function, but cleanup is handled automatically by base command.
   this.setupChannelStateLogging(channel, flags);
 
-  if (!this.shouldOutputJson(flags)) {
-    this.log(formatProgress("Attaching to channel: " + formatResource(args.channel)));
-  }
+  this.logProgress("Attaching to channel: " + formatResource(args.channel), flags);
 
   channel.once("attached", () => {
-    if (!this.shouldOutputJson(flags)) {
-      this.log(formatSuccess("Attached to channel: " + formatResource(args.channel) + "."));
-      this.log(formatListening("Listening for events."));
-    }
+    this.logSuccessMessage("Attached to channel: " + formatResource(args.channel) + ".", flags);
+    this.logListening("Listening for events.", flags);
   });
 
   let sequenceCounter = 0;
@@ -115,9 +111,7 @@ async run(): Promise<void> {
 
   const channel = rest.channels.get(args.channel);
 
-  if (!this.shouldOutputJson(flags)) {
-    this.log(formatProgress("Publishing to channel: " + formatResource(args.channel)));
-  }
+  this.logProgress("Publishing to channel: " + formatResource(args.channel), flags);
 
   try {
     const message: Partial<Ably.Message> = {
@@ -131,9 +125,9 @@ async run(): Promise<void> {
       // Nest data under a domain key. Don't use "success" as a data key
       // for batch summaries — it overrides the envelope's success field. Use "allSucceeded".
       this.logJsonResult({ message: { channel: args.channel, name: message.name, data: message.data } }, flags);
-    } else {
-      this.log(formatSuccess("Message published to channel: " + formatResource(args.channel) + "."));
     }
+
+    this.logSuccessMessage("Message published to channel: " + formatResource(args.channel) + ".", flags);
   } catch (error) {
     this.fail(error, flags, "publish", { channel: args.channel });
   }
@@ -179,17 +173,15 @@ async run(): Promise<void> {
     // NO room.attach() — update/delete/annotate are REST calls
     const room = await chatClient.rooms.get(args.room);
 
-    if (!this.shouldOutputJson(flags)) {
-      this.log(formatProgress("Updating message " + formatResource(args.serial) + " in room " + formatResource(args.room)));
-    }
+    this.logProgress("Updating message " + formatResource(args.serial) + " in room " + formatResource(args.room), flags);
 
     const result = await room.messages.update(args.serial, updateParams, details);
 
     if (this.shouldOutputJson(flags)) {
       this.logJsonResult({ room: args.room, serial: args.serial, versionSerial: result.version.serial }, flags);
-    } else {
-      this.log(formatSuccess(`Message ${formatResource(args.serial)} updated in room ${formatResource(args.room)}.`));
     }
+
+    this.logSuccessMessage(`Message ${formatResource(args.serial)} updated in room ${formatResource(args.room)}.`, flags);
   } catch (error) {
     this.fail(error, flags, "roomMessageUpdate", { room: args.room, serial: args.serial });
   }
@@ -227,15 +219,18 @@ async run(): Promise<void> {
     const { items: messages, hasMore, pagesConsumed } = await collectPaginatedResults(history, flags.limit);
 
     const paginationWarning = formatPaginationLog(pagesConsumed, messages.length);
-    if (paginationWarning && !this.shouldOutputJson(flags)) {
-      this.log(paginationWarning);
+    if (paginationWarning) {
+      this.logToStderr(paginationWarning);
     }
 
     if (this.shouldOutputJson(flags)) {
       // Plural domain key for collections, optional metadata alongside
       this.logJsonResult({ messages, hasMore, total: messages.length }, flags);
-    } else {
-      this.log(formatSuccess(`Found ${messages.length} messages.`));
+    }
+
+    this.logSuccessMessage(`Found ${messages.length} messages.`, flags);
+
+    if (!this.shouldOutputJson(flags)) {
       // Display each message using multi-line labeled blocks
 
       if (hasMore) {
@@ -328,9 +323,7 @@ async run(): Promise<void> {
     }
   }
 
-  if (!this.shouldOutputJson(flags)) {
-    this.log(formatProgress("Entering presence on channel: " + formatResource(args.channel)));
-  }
+  this.logProgress("Entering presence on channel: " + formatResource(args.channel), flags);
 
   // Optionally subscribe to other members' events before entering
   if (flags["show-others"]) {
@@ -342,10 +335,8 @@ async run(): Promise<void> {
 
   await channel.presence.enter(presenceData);
 
-  if (!this.shouldOutputJson(flags)) {
-    this.log(formatSuccess("Entered presence on channel: " + formatResource(args.channel) + "."));
-    this.log(formatListening("Present on channel."));
-  }
+  this.logSuccessMessage("Entered presence on channel: " + formatResource(args.channel) + ".", flags);
+  this.logListening("Present on channel.", flags);
 
   await this.waitAndTrackCleanup(flags, "presence", flags.duration);
 }
@@ -434,8 +425,8 @@ async run(): Promise<void> {
     const { items, hasMore, pagesConsumed } = await collectPaginatedResults(firstPage, flags.limit);
 
     const paginationWarning = formatPaginationLog(pagesConsumed, items.length);
-    if (paginationWarning && !this.shouldOutputJson(flags)) {
-      this.log(paginationWarning);
+    if (paginationWarning) {
+      this.logToStderr(paginationWarning);
     }
 
     if (this.shouldOutputJson(flags)) {
@@ -486,8 +477,11 @@ async run(): Promise<void> {
     if (this.shouldOutputJson(flags)) {
       // Singular domain key for single-item results
       this.logJsonResult({ resource: result }, flags);
-    } else {
-      this.log(formatSuccess("Resource created: " + formatResource(result.id) + "."));
+    }
+
+    this.logSuccessMessage("Resource created: " + formatResource(result.id) + ".", flags);
+
+    if (!this.shouldOutputJson(flags)) {
       // Display additional fields using formatLabel
       this.log(`${formatLabel("Status")} ${result.status}`);
       this.log(`${formatLabel("Created")} ${new Date(result.createdAt).toISOString()}`);
@@ -669,7 +663,7 @@ Commands must behave strictly according to their documented purpose — no unint
 
 **Set / enter / acquire commands** — hold state until Ctrl+C / `--duration`:
 - Enter space (manual: `enterSpace: false` + `space.enter()` + `markAsEntered()`), perform operation, output confirmation, then hold with `waitAndTrackCleanup`
-- Emit `formatListening("Holding <thing>.")` (human) and `logJsonStatus("holding", ...)` (JSON)
+- Emit `this.logHolding("Holding <thing>. Press Ctrl+C to exit.", flags)` — in non-JSON mode this shows dim text on stderr; in JSON mode it emits `status: "holding"`
 - **NOT subscribe** to other events — that is what subscribe commands are for
 
 **Side-effect rules:**
@@ -706,8 +700,7 @@ await this.space!.enter();
 this.markAsEntered();
 await this.space!.locations.set(location);
 // output result...
-this.log(formatListening("Holding location."));
-this.logJsonStatus("holding", "Holding location. Press Ctrl+C to exit.", flags);
+this.logHolding("Holding location. Press Ctrl+C to exit.", flags);
 await this.waitAndTrackCleanup(flags, "location", flags.duration);
 ```
 
@@ -752,22 +745,21 @@ this.logJsonResult({ channels: items, total, hasMore }, flags);       // channel
 
 Metadata fields (`total`, `timestamp`, `hasMore`, `appId`) may sit alongside the collection key since they describe the result, not the domain objects.
 
-### Hold status for long-running commands (logJsonStatus)
+### Hold status for long-running commands (logHolding)
 
-Long-running commands that hold state (e.g. `spaces members enter`, `spaces locations set`, `spaces locks acquire`, `spaces cursors set`) must emit a status line after the result so JSON consumers know the command is alive and waiting:
+Long-running commands that hold state (e.g. `spaces members enter`, `spaces locations set`, `spaces locks acquire`, `spaces cursors set`) must call `this.logHolding(...)` after the result so JSON consumers know the command is alive and waiting. For passive subscribe/stream commands, use `this.logListening(...)` instead.
 
 ```typescript
 // After the result output:
 if (this.shouldOutputJson(flags)) {
   this.logJsonResult({ member: formatMemberOutput(self!) }, flags);
 } else {
-  this.log(formatSuccess(`Entered space: ${formatResource(spaceName)}.`));
+  this.logSuccessMessage(`Entered space: ${formatResource(spaceName)}.`, flags);
   // ... labels ...
-  this.log(formatListening("Holding presence."));
 }
 
-// logJsonStatus has built-in shouldOutputJson guard — no outer if needed
-this.logJsonStatus("holding", "Holding presence. Press Ctrl+C to exit.", flags);
+// logHolding: in non-JSON mode emits dim text on stderr; in JSON mode emits status: "holding"
+this.logHolding("Holding presence. Press Ctrl+C to exit.", flags);
 
 await this.waitAndTrackCleanup(flags, "member", flags.duration);
 ```
@@ -777,6 +769,16 @@ This emits two NDJSON lines in `--json` mode:
 {"type":"result","command":"spaces:members:enter","success":true,"member":{...}}
 {"type":"status","command":"spaces:members:enter","status":"holding","message":"Holding presence. Press Ctrl+C to exit."}
 ```
+
+**Behavior matrix for logging helpers:**
+
+| Helper | Non-JSON | JSON |
+|--------|----------|------|
+| `logProgress` | stderr | silent (no-op) |
+| `logSuccessMessage` | stderr | silent (no-op) |
+| `logWarning` | stderr | stdout (status: "warning") |
+| `logListening` | stderr | stdout (status: "listening") |
+| `logHolding` | stderr | stdout (status: "holding") |
 
 ### Choosing the domain key name
 

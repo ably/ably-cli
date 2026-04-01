@@ -4,9 +4,7 @@ import { Args } from "@oclif/core";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
-  formatListening,
   formatMessageTimestamp,
-  formatProgress,
   formatTimestamp,
 } from "../../../utils/output.js";
 import {
@@ -50,15 +48,9 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
 
     try {
       // Always show the readiness signal first, before attempting auth
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatProgress("Subscribing to member updates"));
-      }
+      this.logProgress("Subscribing to member updates", flags);
 
       await this.initializeSpace(flags, spaceName, { enterSpace: false });
-
-      if (!this.shouldOutputJson(flags)) {
-        this.log(formatListening("Listening for member events."));
-      }
 
       // Subscribe to member presence events
       this.logCliEvent(
@@ -124,6 +116,8 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
 
       // Subscribe using the listener
       this.space!.members.subscribe("update", memberListener);
+
+      this.logListening("Listening for member events.", flags);
 
       this.logCliEvent(
         flags,

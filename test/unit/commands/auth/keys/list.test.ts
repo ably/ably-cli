@@ -7,6 +7,7 @@ import {
   getControlApiContext,
 } from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
+import { parseJsonOutput } from "../../../../helpers/ndjson.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -151,7 +152,7 @@ describe("auth:keys:list command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "auth:keys:list");
       expect(result).toHaveProperty("success", true);

@@ -5,11 +5,7 @@ import { errorMessage, extractErrorInfo } from "../../../utils/errors.js";
 import { productApiFlags, clientIdFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { interpolateMessage } from "../../../utils/message.js";
-import {
-  formatProgress,
-  formatSuccess,
-  formatResource,
-} from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 
 // Define interfaces for the message send command
 interface MessageToSend {
@@ -152,9 +148,10 @@ export default class MessagesSend extends ChatBaseCommand {
         `Sending ${count} messages with ${delay}ms delay...`,
         { count, delay },
       );
-      if (count > 1 && !this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(`Sending ${count} messages with ${delay}ms delay`),
+      if (count > 1) {
+        this.logProgress(
+          `Sending ${count} messages with ${delay}ms delay`,
+          flags,
         );
       }
 
@@ -181,8 +178,9 @@ export default class MessagesSend extends ChatBaseCommand {
               );
             }, 2000)
           : setInterval(() => {
-              this.log(
-                `Progress: ${sentCount}/${count} messages sent (${errorCount} errors)`,
+              this.logProgress(
+                `${sentCount}/${count} messages sent (${errorCount} errors)`,
+                flags,
               );
             }, 1000);
 
@@ -220,13 +218,6 @@ export default class MessagesSend extends ChatBaseCommand {
                 `Message ${i + 1} sent`,
                 { index: i + 1 },
               );
-
-              if (
-                !this.shouldSuppressOutput(flags) &&
-                !this.shouldOutputJson(flags)
-              ) {
-                // Logged implicitly by progress interval
-              }
             })
             .catch((error: unknown) => {
               errorCount++;
@@ -245,12 +236,6 @@ export default class MessagesSend extends ChatBaseCommand {
                 `Error sending message ${i + 1}: ${errorMsg}`,
                 { error: errorMsg, index: i + 1 },
               );
-              if (
-                !this.shouldSuppressOutput(flags) &&
-                !this.shouldOutputJson(flags)
-              ) {
-                // Logged implicitly by progress interval
-              }
             });
 
           // Delay before sending next message if not the last one
@@ -306,12 +291,12 @@ export default class MessagesSend extends ChatBaseCommand {
                 "\r" + " ".repeat(process.stdout.columns) + "\r",
               );
             }
-            this.log(
-              formatSuccess(
-                `${sentCount}/${count} messages sent to room ${formatResource(args.room)} (${errorCount} errors).`,
-              ),
-            );
           }
+
+          this.logSuccessMessage(
+            `${sentCount}/${count} messages sent to room ${formatResource(args.room)} (${errorCount} errors).`,
+            flags,
+          );
         }
       } else {
         // Single message
@@ -358,12 +343,14 @@ export default class MessagesSend extends ChatBaseCommand {
                 },
                 flags,
               );
-            } else {
-              this.log(
-                formatSuccess(
-                  `Message sent to room ${formatResource(args.room)}.`,
-                ),
-              );
+            }
+
+            this.logSuccessMessage(
+              `Message sent to room ${formatResource(args.room)}.`,
+              flags,
+            );
+
+            if (!this.shouldOutputJson(flags)) {
               this.log(`  Serial: ${formatResource(sentMessage.serial)}`);
             }
           }

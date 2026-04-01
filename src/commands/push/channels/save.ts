@@ -3,11 +3,7 @@ import { Flags } from "@oclif/core";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
 import { BaseFlags } from "../../../types/cli.js";
-import {
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../../utils/output.js";
+import { formatResource } from "../../../utils/output.js";
 
 export default class PushChannelsSave extends AblyBaseCommand {
   static override description =
@@ -50,13 +46,10 @@ export default class PushChannelsSave extends AblyBaseCommand {
       const rest = await this.createAblyRestClient(flags as BaseFlags);
       if (!rest) return;
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Subscribing to channel ${formatResource(flags.channel)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Subscribing to channel ${formatResource(flags.channel)}`,
+        flags,
+      );
 
       const subscription: Record<string, string> = {
         channel: flags.channel,
@@ -66,16 +59,16 @@ export default class PushChannelsSave extends AblyBaseCommand {
 
       await rest.push.admin.channelSubscriptions.save(subscription as never);
 
+      const target = flags["device-id"]
+        ? `device ${formatResource(flags["device-id"])}`
+        : `client ${formatResource(flags["client-id"]!)}`;
+
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult({ subscription }, flags);
       } else {
-        const target = flags["device-id"]
-          ? `device ${formatResource(flags["device-id"])}`
-          : `client ${formatResource(flags["client-id"]!)}`;
-        this.log(
-          formatSuccess(
-            `Subscribed ${target} to channel ${formatResource(flags.channel)}.`,
-          ),
+        this.logSuccessMessage(
+          `Subscribed ${target} to channel ${formatResource(flags.channel)}.`,
+          flags,
         );
       }
     } catch (error) {

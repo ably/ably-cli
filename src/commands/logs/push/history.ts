@@ -77,7 +77,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
         true,
       );
       if (paginationWarning && !this.shouldOutputJson(flags)) {
-        this.log(paginationWarning);
+        this.logToStderr(paginationWarning);
       }
 
       // Output results based on format
@@ -172,7 +172,7 @@ export default class LogsPushHistory extends AblyBaseCommand {
             flags.limit,
             "logs",
           );
-          if (warning) this.log(warning);
+          if (warning) this.logToStderr(warning);
         }
       }
     } catch (error) {

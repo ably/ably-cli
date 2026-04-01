@@ -5,6 +5,7 @@ import {
   controlApiCleanup,
 } from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
+import { parseJsonOutput } from "../../../../helpers/ndjson.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -97,7 +98,7 @@ describe("apps:rules:list command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("rules");
       expect(result.rules).toHaveLength(1);
@@ -117,7 +118,7 @@ describe("apps:rules:list command", () => {
         import.meta.url,
       );
 
-      const result = JSON.parse(stdout);
+      const result = parseJsonOutput(stdout);
       expect(result).toHaveProperty("success", true);
       expect(result.rules).toHaveLength(2);
     });

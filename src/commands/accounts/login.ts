@@ -8,11 +8,7 @@ import { endpointFlag } from "../../flags.js";
 import { ControlApi } from "../../services/control-api.js";
 import { errorMessage } from "../../utils/errors.js";
 import { displayLogo } from "../../utils/logo.js";
-import {
-  formatProgress,
-  formatResource,
-  formatSuccess,
-} from "../../utils/output.js";
+import { formatResource } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 // Moved function definition outside the class
@@ -100,9 +96,7 @@ export default class AccountsLogin extends ControlBaseCommand {
 
       // Prompt the user to get a token
       if (!flags["no-browser"]) {
-        if (!this.shouldOutputJson(flags)) {
-          this.log(formatProgress("Opening browser to get an access token"));
-        }
+        this.logProgress("Opening browser to get an access token", flags);
 
         await this.openBrowser(obtainTokenPath);
       } else if (!this.shouldOutputJson(flags)) {
@@ -232,8 +226,10 @@ export default class AccountsLogin extends ControlBaseCommand {
             const appName = await this.promptForAppName();
 
             try {
-              this.log(
-                `\n${formatProgress(`Creating app ${formatResource(appName)}`)}`,
+              this.log(""); // blank line before progress
+              this.logProgress(
+                `Creating app ${formatResource(appName)}`,
+                flags,
               );
 
               const app = await controlApi.createApp({
@@ -248,7 +244,7 @@ export default class AccountsLogin extends ControlBaseCommand {
               this.configManager.setCurrentApp(app.id);
               this.configManager.storeAppInfo(app.id, { appName: app.name });
 
-              this.log(formatSuccess("App created successfully."));
+              this.logSuccessMessage("App created successfully.", flags);
             } catch (createError) {
               this.warn(
                 `Failed to create app: ${createError instanceof Error ? createError.message : String(createError)}`,
@@ -348,36 +344,30 @@ export default class AccountsLogin extends ControlBaseCommand {
 
         this.logJsonResult({ account: accountData }, flags);
       } else {
-        this.log(
-          `Successfully logged in to ${formatResource(account.name)} (account ID: ${chalk.greenBright(account.id)})`,
-        );
         if (alias !== "default") {
           this.log(`Account stored with alias: ${alias}`);
         }
 
         this.log(`Account ${formatResource(alias)} is now the current account`);
+      }
 
-        if (selectedApp) {
-          const message = isAutoSelected
-            ? formatSuccess(
-                `Automatically selected app: ${formatResource(selectedApp.name)} (${selectedApp.id}).`,
-              )
-            : formatSuccess(
-                `Selected app: ${formatResource(selectedApp.name)} (${selectedApp.id}).`,
-              );
-          this.log(message);
-        }
+      this.logSuccessMessage(
+        `Successfully logged in to ${formatResource(account.name)} (account ID: ${chalk.greenBright(account.id)}).`,
+        flags,
+      );
 
-        if (selectedKey) {
-          const keyMessage = isKeyAutoSelected
-            ? formatSuccess(
-                `Automatically selected API key: ${formatResource(selectedKey.name || "Unnamed key")} (${selectedKey.id}).`,
-              )
-            : formatSuccess(
-                `Selected API key: ${formatResource(selectedKey.name || "Unnamed key")} (${selectedKey.id}).`,
-              );
-          this.log(keyMessage);
-        }
+      if (selectedApp) {
+        const message = isAutoSelected
+          ? `Automatically selected app: ${formatResource(selectedApp.name)} (${selectedApp.id}).`
+          : `Selected app: ${formatResource(selectedApp.name)} (${selectedApp.id}).`;
+        this.logSuccessMessage(message, flags);
+      }
+
+      if (selectedKey) {
+        const keyMessage = isKeyAutoSelected
+          ? `Automatically selected API key: ${formatResource(selectedKey.name || "Unnamed key")} (${selectedKey.id}).`
+          : `Selected API key: ${formatResource(selectedKey.name || "Unnamed key")} (${selectedKey.id}).`;
+        this.logSuccessMessage(keyMessage, flags);
       }
     } catch (error) {
       this.fail(error, flags, "accountLogin");

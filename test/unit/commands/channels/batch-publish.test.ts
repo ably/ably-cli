@@ -61,7 +61,7 @@ describe("channels:batch-publish command", () => {
     it("should publish to multiple channels using --channels flag", async () => {
       const mock = getMockAblyRest();
 
-      const { stdout } = await runCommand(
+      const { stderr } = await runCommand(
         [
           "channels:batch-publish",
           "--channels",
@@ -71,8 +71,8 @@ describe("channels:batch-publish command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Sending batch publish request");
-      expect(stdout).toContain("Batch publish successful");
+      expect(stderr).toContain("Sending batch publish request");
+      expect(stderr).toContain("Batch publish successful");
       expect(mock.request).toHaveBeenCalledWith(
         "post",
         "/messages",
@@ -88,7 +88,7 @@ describe("channels:batch-publish command", () => {
     it("should publish using --channels-json flag", async () => {
       const mock = getMockAblyRest();
 
-      const { stdout, error } = await runCommand(
+      const { stderr, error } = await runCommand(
         [
           "channels:batch-publish",
           "--channels-json",
@@ -99,8 +99,8 @@ describe("channels:batch-publish command", () => {
       );
 
       expect(error).toBeUndefined();
-      expect(stdout).toContain("Sending batch publish request");
-      expect(stdout).toContain("Batch publish successful");
+      expect(stderr).toContain("Sending batch publish request");
+      expect(stderr).toContain("Batch publish successful");
       expect(mock.request).toHaveBeenCalledWith(
         "post",
         "/messages",
@@ -203,8 +203,13 @@ describe("channels:batch-publish command", () => {
 
       expect(error).toBeUndefined();
 
-      // In JSON mode, progress messages are suppressed by JSON guard
-      const result = JSON.parse(stdout);
+      // Parse NDJSON output — find the result record
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const result = records.find((r) => r.type === "result");
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("success", true);
       expect(result).toHaveProperty("publish");
       expect(result.publish).toHaveProperty("channels");
@@ -241,7 +246,7 @@ describe("channels:batch-publish command", () => {
         },
       });
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         [
           "channels:batch-publish",
           "--channels",
@@ -253,9 +258,9 @@ describe("channels:batch-publish command", () => {
 
       expect(stdout).toContain("partially successful");
       // Verify successful channel output (resource() uses cyan, not quotes)
-      expect(stdout).toContain("Published to channel");
-      expect(stdout).toContain("channel1");
-      expect(stdout).toContain("msg-1");
+      expect(stderr).toContain("Published to channel");
+      expect(stderr).toContain("channel1");
+      expect(stderr).toContain("msg-1");
       // Verify failed channel output with error message and code
       expect(stdout).toContain("Failed to publish to channel");
       expect(stdout).toContain("channel2");
@@ -322,8 +327,14 @@ describe("channels:batch-publish command", () => {
       // In JSON mode, errors are output as JSON and the command exits with code 1
       expect(error).toBeDefined();
 
-      // In JSON mode, progress messages are suppressed by JSON guard
-      const result = JSON.parse(stdout);
+      // Parse NDJSON output — find the error record
+      const records = stdout
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => JSON.parse(line));
+      const result = records.find((r) => r.success === false);
+      expect(result).toBeDefined();
       expect(result).toHaveProperty("success", false);
       expect(result).toHaveProperty("error");
       expect(result.error.message).toContain("Network error");

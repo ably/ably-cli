@@ -217,11 +217,13 @@ describe("Spaces E2E Tests", () => {
           );
 
           // Check for success - either exit code 0 or successful output (even if process was killed after success)
+          // Status messages go to stderr
+          const allOutput = setLocationResult.stdout + setLocationResult.stderr;
           const isLocationSetSuccessful =
             setLocationResult.exitCode === 0 ||
-            setLocationResult.stdout.includes("Location set in space:");
+            allOutput.includes("Location set in space:");
           expect(isLocationSetSuccessful).toBe(true);
-          expect(setLocationResult.stdout).toContain("Location set in space:");
+          expect(allOutput).toContain("Location set in space:");
 
           // Wait for location update to be received by client1
           let locationUpdateReceived = false;

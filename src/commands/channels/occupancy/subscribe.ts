@@ -3,10 +3,7 @@ import * as Ably from "ably";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import {
-  formatListening,
-  formatProgress,
   formatResource,
-  formatSuccess,
   formatTimestamp,
   formatMessageTimestamp,
   formatLabel,
@@ -78,13 +75,10 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
         { channel: channelName },
       );
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatProgress(
-            `Subscribing to occupancy events on channel: ${formatResource(channelName)}`,
-          ),
-        );
-      }
+      this.logProgress(
+        `Subscribing to occupancy events on channel: ${formatResource(channelName)}`,
+        flags,
+      );
 
       await channel.subscribe(occupancyEventName, (message: Ably.Message) => {
         const timestamp = formatMessageTimestamp(message.timestamp);
@@ -138,14 +132,11 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
         }
       });
 
-      if (!this.shouldOutputJson(flags)) {
-        this.log(
-          formatSuccess(
-            `Subscribed to occupancy on channel: ${formatResource(channelName)}.`,
-          ),
-        );
-        this.log(formatListening("Listening for occupancy events."));
-      }
+      this.logSuccessMessage(
+        `Subscribed to occupancy on channel: ${formatResource(channelName)}.`,
+        flags,
+      );
+      this.logListening("Listening for occupancy events.", flags);
 
       this.logCliEvent(
         flags,
