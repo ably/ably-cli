@@ -77,7 +77,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
         currentRoom,
         flags,
         {
-          roomName: this.roomName!,
+          roomName: this.roomName,
           listeningMessage: undefined,
         },
       );

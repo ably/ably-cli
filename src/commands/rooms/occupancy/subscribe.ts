@@ -95,7 +95,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
 
       // Subscribe to room status changes
       const { failurePromise } = this.setupRoomStatusHandler(room, flags, {
-        roomName: this.roomName!,
+        roomName: this.roomName,
       });
 
       // Attach to the room
@@ -138,7 +138,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
       if (!this.shouldOutputJson(flags)) {
         this.log(
           formatSuccess(
-            `Subscribed to occupancy in room: ${formatResource(this.roomName!)}.`,
+            `Subscribed to occupancy in room: ${formatResource(this.roomName)}.`,
           ),
         );
         this.log(formatListening("Listening for occupancy updates."));
