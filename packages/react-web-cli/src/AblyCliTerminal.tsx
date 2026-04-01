@@ -6,10 +6,11 @@ import React, {
   useImperativeHandle,
   forwardRef,
 } from "react";
-import { Terminal } from "@xterm/xterm";
-import { FitAddon } from "@xterm/addon-fit";
+import type { Terminal } from "@xterm/xterm";
+import type { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
-import TerminalOverlay, { OverlayVariant } from "./TerminalOverlay";
+import type { OverlayVariant } from "./TerminalOverlay";
+import TerminalOverlay from "./TerminalOverlay";
 import {
   drawBox,
   clearBox,
@@ -39,8 +40,8 @@ import type {
   AblyCliGlobals,
   WebSocketMessageData,
 } from "./types";
+import type { HandshakeFilterState } from "./terminal-shared";
 import {
-  HandshakeFilterState,
   createHandshakeFilterState,
   filterDockerHandshake,
   createTerminal,

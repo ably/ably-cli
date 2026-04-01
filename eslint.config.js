@@ -170,6 +170,11 @@ export default [
       "@typescript-eslint/no-unsafe-argument": "error",
       "@typescript-eslint/no-unsafe-return": "error",
       "@typescript-eslint/no-base-to-string": "error",
+      "@typescript-eslint/no-deprecated": "warn",
+      "@typescript-eslint/no-useless-constructor": "error",
+      "@typescript-eslint/unified-signatures": "error",
+      "@typescript-eslint/return-await": "error",
+      "@typescript-eslint/consistent-type-imports": "error",
       "no-console": ["error", { allow: ["warn", "error"] }],
       "no-control-regex": "off", // Terminal escape sequences use control chars
       "n/no-missing-import": "off", // TSX imports are handled by TypeScript
