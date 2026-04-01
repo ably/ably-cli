@@ -19,7 +19,7 @@ describe("auth:issue-jwt-token command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Generated Ably JWT Token");
+      expect(stdout).toContain("Ably JWT token generated.");
       expect(stdout).toContain("Token:");
       expect(stdout).toContain("Type: JWT");
       expect(stdout).toContain(`App ID: ${appId}`);
@@ -134,7 +134,7 @@ describe("auth:issue-jwt-token command", () => {
       );
 
       // Should only output the token string (no "Generated" message)
-      expect(stdout).not.toContain("Generated Ably JWT Token");
+      expect(stdout).not.toContain("Ably JWT token generated.");
       expect(stdout.trim().split(".")).toHaveLength(3); // JWT has 3 parts
     });
 
@@ -219,7 +219,7 @@ describe("auth:issue-jwt-token command", () => {
       );
 
       // When no app is configured, command should not produce token output
-      expect(stdout).not.toContain("Generated Ably JWT Token");
+      expect(stdout).not.toContain("Ably JWT token generated.");
     });
   });
 
