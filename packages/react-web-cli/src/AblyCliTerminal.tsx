@@ -1550,7 +1550,7 @@ const AblyCliTerminalInner = (
 
               // Append any text before the control message
               if (ctrlIndex > currentPos) {
-                regularOutput += filteredData.substring(currentPos, ctrlIndex);
+                regularOutput += filteredData.slice(currentPos, ctrlIndex);
               }
 
               // Find the end of the control message (either newline or end of string)
@@ -1560,7 +1560,7 @@ const AblyCliTerminalInner = (
               if (messageEnd === -1) messageEnd = filteredData.length;
 
               // Extract the control message
-              const ctrlLine = filteredData.substring(ctrlIndex, messageEnd);
+              const ctrlLine = filteredData.slice(ctrlIndex, messageEnd);
 
               try {
                 const jsonString = ctrlLine.slice("ABLY_CTRL:".length);

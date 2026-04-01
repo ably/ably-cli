@@ -149,7 +149,6 @@ export default [
       "unicorn/prefer-module": "off",
       "unicorn/no-negated-condition": "off",
       "unicorn/filename-case": "off",
-      "unicorn/prefer-string-slice": "off",
       "unicorn/prefer-code-point": "off",
       "unicorn/prevent-abbreviations": "off",
       "unicorn/no-array-reduce": "off",
