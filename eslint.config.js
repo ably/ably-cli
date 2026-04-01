@@ -147,7 +147,6 @@ export default [
       ...tsPlugin.configs.recommended.rules,
       // Custom overrides for this package
       "unicorn/prefer-module": "off",
-      "unicorn/no-negated-condition": "off",
       "unicorn/filename-case": "off",
       "unicorn/prevent-abbreviations": "off",
       "unicorn/no-array-reduce": "off",

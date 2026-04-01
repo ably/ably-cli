@@ -733,7 +733,9 @@ const AblyCliTerminalInner = (
         `⚠️ DIAGNOSTIC: handlePtyData called. isSessionActive: ${isSessionActiveReference.current}, data: "${sanitizedData}"`,
       );
 
-      if (!isSessionActiveReference.current) {
+      if (isSessionActiveReference.current) {
+        debugLog(`⚠️ DIAGNOSTIC: Session already active, not buffering data`);
+      } else {
         ptyBuffer.current += data;
 
         debugLog(
@@ -784,8 +786,6 @@ const AblyCliTerminalInner = (
 
           clearPtyBuffer();
         }
-      } else {
-        debugLog(`⚠️ DIAGNOSTIC: Session already active, not buffering data`);
       }
     },
     [
@@ -1419,10 +1419,7 @@ const AblyCliTerminalInner = (
     setShowManualReconnectPrompt(false);
 
     // Only clear buffer for new sessions, not when resuming
-    if (!sessionId) {
-      clearPtyBuffer(); // Clear buffer for new session prompt detection
-      debugLog(`⚠️ DIAGNOSTIC: Cleared PTY buffer for new session`);
-    } else {
+    if (sessionId) {
       debugLog(
         `⚠️ DIAGNOSTIC: Skipping PTY buffer clear for resumed session ${sessionId}`,
       );
@@ -1436,6 +1433,9 @@ const AblyCliTerminalInner = (
           `⚠️ DIAGNOSTIC: Resumed session but not active - checking for existing prompt`,
         );
       }
+    } else {
+      clearPtyBuffer(); // Clear buffer for new session prompt detection
+      debugLog(`⚠️ DIAGNOSTIC: Cleared PTY buffer for new session`);
     }
 
     debugLog(
