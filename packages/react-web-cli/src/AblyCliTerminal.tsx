@@ -34,7 +34,11 @@ import { useTerminalVisibility } from "./use-terminal-visibility.js";
 import { SplitSquareHorizontal, X } from "lucide-react";
 import { hashCredentials } from "./utils/crypto";
 import { getConnectionMessage } from "./connection-messages";
-import type { ControlMessage, AblyCliGlobals } from "./types";
+import type {
+  ControlMessage,
+  AblyCliGlobals,
+  WebSocketMessageData,
+} from "./types";
 import {
   HandshakeFilterState,
   createHandshakeFilterState,
@@ -1502,7 +1506,9 @@ const AblyCliTerminalInner = (
         `⚠️ DIAGNOSTIC: handleWebSocketMessage called with event.data type: ${typeof event.data}`,
       );
       try {
-        const data = await messageDataToUint8Array(event.data);
+        const data = await messageDataToUint8Array(
+          event.data as WebSocketMessageData,
+        );
 
         const message = parseControlMessage(data);
         if (message) {
@@ -1564,7 +1570,7 @@ const AblyCliTerminalInner = (
 
               try {
                 const jsonString = ctrlLine.slice("ABLY_CTRL:".length);
-                const message_ = JSON.parse(jsonString);
+                const message_ = JSON.parse(jsonString) as ControlMessage;
                 debugLog(
                   `⚠️ DIAGNOSTIC: Found text-based control message:`,
                   message_,
@@ -2608,7 +2614,10 @@ const AblyCliTerminalInner = (
       let apiKeyForHash: string | undefined;
       let accessTokenForHash: string | undefined;
       try {
-        const parsedConfig = JSON.parse(signedConfig);
+        const parsedConfig = JSON.parse(signedConfig) as {
+          apiKey?: string;
+          accessToken?: string;
+        };
         apiKeyForHash = parsedConfig.apiKey;
         accessTokenForHash = parsedConfig.accessToken;
       } catch {
@@ -2926,7 +2935,9 @@ const AblyCliTerminalInner = (
     newSocket.addEventListener("message", (event) => {
       void (async () => {
         try {
-          const data = await messageDataToUint8Array(event.data);
+          const data = await messageDataToUint8Array(
+            event.data as WebSocketMessageData,
+          );
 
           const message = parseControlMessage(data);
           if (message) {
