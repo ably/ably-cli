@@ -9,11 +9,7 @@ import {
 } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { vi, describe, test, expect, beforeEach, afterEach } from "vitest";
-import {
-  getAttempts,
-  getMaxAttempts,
-  isMaxAttemptsReached,
-} from "./global-reconnect";
+import "./global-reconnect";
 
 // Mock the GlobalReconnect module AT THE TOP LEVEL using a factory function.
 vi.mock("./global-reconnect", () => ({
@@ -121,8 +117,6 @@ vi.mock("@xterm/addon-fit", () => ({
 import * as GlobalReconnect from "./global-reconnect";
 import { AblyCliTerminal } from "./AblyCliTerminal"; // Import now
 import type { AblyCliTerminalHandle } from "./AblyCliTerminal";
-import * as TerminalBoxModule from "./terminal-box"; // Import to access mocked colours if needed for assertions
-
 // Mock use-terminal-visibility
 vi.mock("./use-terminal-visibility", () => ({
   useTerminalVisibility: () => true,
@@ -130,8 +124,8 @@ vi.mock("./use-terminal-visibility", () => ({
 
 // Mock lucide-react icons to simple stubs to avoid SVG complexity in tests
 vi.mock("lucide-react", () => ({
-  SplitSquareHorizontal: (properties: any) => null,
-  X: (properties: any) => null,
+  SplitSquareHorizontal: (_properties: any) => null,
+  X: (_properties: any) => null,
 }));
 
 // Mock the crypto utility
@@ -1009,19 +1003,22 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
       expectedHash,
     );
 
-    // Spy on console.log before rendering to catch all logs
+    // Enable debug logging so debugLog() calls actually reach console.log
+    (globalThis as any).ABLY_CLI_DEBUG = true;
     const consoleLogSpy = vi.spyOn(console, "log");
 
     // Render component with resumeOnReload enabled so it reads the stored sessionId
-    const { container } = renderTerminal({ resumeOnReload: true });
+    renderTerminal({ resumeOnReload: true });
 
     // Wait for the session to be restored
     await waitFor(() => {
       expect(consoleLogSpy).toHaveBeenCalledWith(
+        "[AblyCLITerminal DEBUG]",
         "[AblyCLITerminal] Restored session with matching credentials for domain:",
         "web-cli-terminal.ably-dev.com",
       );
     });
+    (globalThis as any).ABLY_CLI_DEBUG = false;
 
     // Wait for the WebSocket to reconnect with the restored sessionId
     // The component may create multiple connections as it loads the sessionId
@@ -1887,7 +1884,8 @@ describe("AblyCliTerminal - Credential Validation", () => {
       expectedHash,
     );
 
-    // Spy on console.log before rendering
+    // Enable debug logging so debugLog() calls actually reach console.log
+    (globalThis as any).ABLY_CLI_DEBUG = true;
     const consoleLogSpy = vi.spyOn(console, "log");
 
     // Render with matching credentials (default config has test-key:test-token)
@@ -1896,10 +1894,12 @@ describe("AblyCliTerminal - Credential Validation", () => {
     // Wait for the session to be restored
     await waitFor(() => {
       expect(consoleLogSpy).toHaveBeenCalledWith(
+        "[AblyCLITerminal DEBUG]",
         "[AblyCLITerminal] Restored session with matching credentials for domain:",
         "web-cli-terminal.ably-dev.com",
       );
     });
+    (globalThis as any).ABLY_CLI_DEBUG = false;
 
     // Wait for WebSocket to send auth with sessionId
     await waitFor(

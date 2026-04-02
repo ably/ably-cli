@@ -6,16 +6,16 @@ import React, {
   useImperativeHandle,
   forwardRef,
 } from "react";
-import { Terminal } from "@xterm/xterm";
-import { FitAddon } from "@xterm/addon-fit";
+import type { Terminal } from "@xterm/xterm";
+import type { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
-import TerminalOverlay, { OverlayVariant } from "./TerminalOverlay";
+import type { OverlayVariant } from "./TerminalOverlay";
+import TerminalOverlay from "./TerminalOverlay";
 import {
   drawBox,
   clearBox,
   updateLine,
   colour as boxColour,
-  colour,
   type TerminalBox,
 } from "./terminal-box";
 import {
@@ -35,20 +35,23 @@ import { useTerminalVisibility } from "./use-terminal-visibility.js";
 import { SplitSquareHorizontal, X } from "lucide-react";
 import { hashCredentials } from "./utils/crypto";
 import { getConnectionMessage } from "./connection-messages";
+import type {
+  ControlMessage,
+  AblyCliGlobals,
+  WebSocketMessageData,
+} from "./types";
+import type { HandshakeFilterState } from "./terminal-shared";
 import {
-  HandshakeFilterState,
   createHandshakeFilterState,
   filterDockerHandshake,
   createTerminal,
   createFitAddon,
-  safeFit,
   createAuthPayload,
   parseControlMessage,
   messageDataToUint8Array,
   clearConnectingMessage,
   showConnectingMessage,
   debugLog as sharedDebugLog,
-  CONTROL_MESSAGE_PREFIX,
   MAX_PTY_BUFFER_LENGTH,
   TERMINAL_PROMPT_PATTERN,
 } from "./terminal-shared";
@@ -56,7 +59,7 @@ import {
 /**
  * Simple debounce utility function to prevent rapid successive calls
  */
-function debounce<T extends (...arguments_: any[]) => any>(
+function debounce<T extends (...arguments_: unknown[]) => void>(
   function_: T,
   wait: number,
 ): (...arguments_: Parameters<T>) => void {
@@ -80,9 +83,6 @@ export type ConnectionStatus =
   | "disconnected"
   | "reconnecting"
   | "error";
-
-// Prompts that indicate the terminal is ready for input
-const TERMINAL_PROMPT_IDENTIFIER = "ably> "; // Basic prompt
 
 // Shared CLI installation tip
 const CLI_INSTALL_TIP = {
@@ -154,15 +154,16 @@ if (globalThis.window !== undefined) {
       "cliDebug",
     );
     if (urlFlag === "true") {
-      (globalThis as any).ABLY_CLI_DEBUG = true;
+      (globalThis as typeof globalThis & AblyCliGlobals).ABLY_CLI_DEBUG = true;
     }
   } catch {
     /* ignore URL parsing errors in non-browser env */
   }
 }
 
-// Import isHijackMetaChunk from shared module for backward compatibility
-import { isHijackMetaChunk } from "./terminal-shared";
+// Static spinner frames — hoisted to module scope so the array identity is
+// stable between renders and doesn't trigger exhaustive-deps warnings.
+const spinnerFrames = ["●  ", " ● ", "  ●", " ● "];
 
 const AblyCliTerminalInner = (
   {
@@ -300,6 +301,7 @@ const AblyCliTerminalInner = (
         }
       }
     }, 50);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resumeOnReload is a stable prop; updateSecondaryConnectionStatus is defined later in the component (hoisting constraint) but has [] deps
   }, []);
 
   // Imperative handle for external control of split operations
@@ -451,6 +453,7 @@ const AblyCliTerminalInner = (
       // If there's no secondary terminal, just close everything (same as handleCloseSplit)
       handleCloseSplit();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- isSecondarySessionActive, secondarySessionId, updateSessionActive, updateSecondaryConnectionStatus are all defined later in the component (hoisting constraint); values are current at call time via closures
   }, [handleCloseSplit, resumeOnReload]);
 
   /** Close the secondary pane and return to single-pane mode */
@@ -499,13 +502,15 @@ const AblyCliTerminalInner = (
         }
       }
     }, 50);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateSecondaryConnectionStatus has [] deps but is defined later (hoisting constraint)
   }, [resumeOnReload]);
 
   // Track the current sessionId received from the server (if any)
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [credentialHash, setCredentialHash] = useState<string | null>(null);
   const [credentialsInitialized, setCredentialsInitialized] = useState(false);
-  const [sessionIdInitialized, setSessionIdInitialized] = useState(false);
+  const credentialsInitializedRef = useRef(false);
+  credentialsInitializedRef.current = credentialsInitialized;
 
   // Track the second terminal's sessionId
   const [secondarySessionId, setSecondarySessionId] = useState<string | null>(
@@ -551,27 +556,12 @@ const AblyCliTerminalInner = (
   // Keep a ref for sessionId to use in closures
   const sessionIdReference = useRef<string | null>(sessionId);
 
-  // Use block-based spinner where empty dots are invisible in most monospace fonts
-  const spinnerFrames = ["●  ", " ● ", "  ●", " ● "];
   const spinnerIntervalReference = useRef<ReturnType<
     typeof setInterval
   > | null>(null);
   const spinnerIndexReference = useRef<number>(0);
   const spinnerPrefixReference = useRef<string>("");
   const statusBoxReference = useRef<TerminalBox | null>(null);
-
-  // ANSI colour / style helpers
-  const colour = {
-    reset: "\u001B[0m",
-    bold: "\u001B[1m",
-    dim: "\u001B[2m",
-    red: "\u001B[31m",
-    green: "\u001B[32m",
-    yellow: "\u001B[33m",
-    blue: "\u001B[34m",
-    magenta: "\u001B[35m",
-    cyan: "\u001B[36m",
-  } as const;
 
   const clearStatusDisplay = useCallback(() => {
     if (spinnerIntervalReference.current) {
@@ -617,11 +607,9 @@ const AblyCliTerminalInner = (
       connectionStatusReference.current = status;
 
       // Only report status changes from the primary terminal
-      if (
-        typeof (globalThis as any).setWindowTestFlagOnStatusChange ===
-        "function"
-      ) {
-        (globalThis as any).setWindowTestFlagOnStatusChange(status);
+      const g = globalThis as typeof globalThis & AblyCliGlobals;
+      if (typeof g.setWindowTestFlagOnStatusChange === "function") {
+        g.setWindowTestFlagOnStatusChange(status);
       }
 
       if (onConnectionStatusChange) {
@@ -756,7 +744,9 @@ const AblyCliTerminalInner = (
         `⚠️ DIAGNOSTIC: handlePtyData called. isSessionActive: ${isSessionActiveReference.current}, data: "${sanitizedData}"`,
       );
 
-      if (!isSessionActiveReference.current) {
+      if (isSessionActiveReference.current) {
+        debugLog(`⚠️ DIAGNOSTIC: Session already active, not buffering data`);
+      } else {
         ptyBuffer.current += data;
 
         debugLog(
@@ -807,18 +797,9 @@ const AblyCliTerminalInner = (
 
           clearPtyBuffer();
         }
-      } else {
-        debugLog(`⚠️ DIAGNOSTIC: Session already active, not buffering data`);
       }
     },
-    [
-      updateConnectionStatusAndExpose,
-      updateSessionActive,
-      clearPtyBuffer,
-      clearStatusDisplay,
-      clearInstallInstructionsTimer,
-      activateSessionAndSendCommand,
-    ],
+    [clearPtyBuffer, clearStatusDisplay, activateSessionAndSendCommand],
   );
 
   // Secondary terminal instance references
@@ -833,9 +814,7 @@ const AblyCliTerminalInner = (
   const secondaryTermCleanupReference = useRef<() => void>(() => {});
 
   // Secondary terminal state
-  const [secondarySocket, setSecondarySocket] = useState<WebSocket | null>(
-    null,
-  );
+  const [, setSecondarySocket] = useState<WebSocket | null>(null);
   const [isSecondarySessionActive, setIsSecondarySessionActive] =
     useState(false);
   const [secondaryOverlay, setSecondaryOverlay] = useState<null | {
@@ -847,20 +826,15 @@ const AblyCliTerminalInner = (
   // Secondary terminal refs - need their own copies for event handlers
   const secondaryConnectionStatusReference =
     useRef<ConnectionStatus>("initial");
-  const [secondaryConnectionStatus, setSecondaryConnectionStatus] =
+  const [, setSecondaryConnectionStatus] =
     useState<ConnectionStatus>("initial");
-  const secondarySpinnerPrefixReference = useRef<string>("");
   const secondarySpinnerIndexReference = useRef<number>(0);
   const secondaryStatusBoxReference = useRef<TerminalBox | null>(null);
   const secondarySpinnerIntervalReference = useRef<ReturnType<
     typeof setInterval
   > | null>(null);
   const secondaryShowManualReconnectPromptReference = useRef<boolean>(false);
-  const [
-    secondaryShowManualReconnectPrompt,
-    setSecondaryShowManualReconnectPrompt,
-  ] = useState(false);
-  const secondaryReconnectScheduledThisCycleReference = useRef<boolean>(false);
+  const [, setSecondaryShowManualReconnectPrompt] = useState(false);
 
   // Secondary terminal: pending initial command and timeout refs
   const pendingSecondaryInitialCommandReference = useRef<string | null>(null);
@@ -869,15 +843,11 @@ const AblyCliTerminalInner = (
 
   // Extracted control message handler to avoid duplication
   const handleControlMessage = useCallback(
-    (message: any) => {
+    (message: ControlMessage) => {
       if (message.type === "hello" && typeof message.sessionId === "string") {
         debugLog(
           `⚠️ DIAGNOSTIC: Received hello message with sessionId=${message.sessionId}`,
         );
-        const wasReconnecting =
-          connectionStatusReference.current === "reconnecting";
-        const wasConnecting =
-          connectionStatusReference.current === "connecting";
         setSessionId(message.sessionId);
         if (onSessionId) onSessionId(message.sessionId);
         debugLog(
@@ -1064,16 +1034,17 @@ const AblyCliTerminalInner = (
       sessionId,
       onSessionId,
       clearStatusDisplay,
-      updateSessionActive,
       updateConnectionStatusAndExpose,
-      clearPtyBuffer,
       resumeOnReload,
       websocketUrl,
       credentialHash,
       onSessionEnd,
-      grSuccessfulConnectionReset,
+      activateSessionAndSendCommand,
+      clearPromptDetectionTimeout,
     ],
   );
+  const handleControlMessageRef = useRef(handleControlMessage);
+  handleControlMessageRef.current = handleControlMessage;
 
   // Function to clear the secondary terminal overlay and status displays
   const clearSecondaryStatusDisplay = useCallback(() => {
@@ -1127,6 +1098,7 @@ const AblyCliTerminalInner = (
         }
       }, 50);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateSecondaryConnectionStatus has [] deps but is defined later (hoisting constraint)
   }, [clearSecondaryPromptDetectionTimeout]);
 
   const handleSecondaryPtyData = useCallback(
@@ -1303,7 +1275,7 @@ const AblyCliTerminalInner = (
       "⚠️ DIAGNOSTIC: connectWebSocket called - start of connection process",
     );
     debugLog(
-      `⚠️ DIAGNOSTIC: Current sessionId: ${sessionId}, credentialsInitialized: ${credentialsInitialized}`,
+      `⚠️ DIAGNOSTIC: Current sessionId: ${sessionId}, credentialsInitialized: ${credentialsInitializedRef.current}`,
     );
 
     // Skip attempt if terminal not visible to avoid unnecessary server load
@@ -1320,7 +1292,7 @@ const AblyCliTerminalInner = (
       socketReference.current &&
       socketReference.current.readyState === WebSocket.OPEN
     ) {
-      if ((globalThis as any).ABLY_CLI_DEBUG)
+      if ((globalThis as typeof globalThis & AblyCliGlobals).ABLY_CLI_DEBUG)
         console.warn(
           "[AblyCLITerminal] connectWebSocket already open/connecting – skip",
         );
@@ -1382,7 +1354,8 @@ const AblyCliTerminalInner = (
       `⚠️ DIAGNOSTIC: New WebSocket created with ID: ${Math.random().toString(36).slice(2, 10)}`,
     );
 
-    (globalThis as any).ablyCliSocket = newSocket; // For E2E tests
+    (globalThis as typeof globalThis & AblyCliGlobals).ablyCliSocket =
+      newSocket;
     socketReference.current = newSocket; // Use ref for listeners
     setSocket(newSocket); // Trigger effect to add listeners
 
@@ -1439,7 +1412,6 @@ const AblyCliTerminalInner = (
     clearConnectionTimeout,
     connectionStartTime,
     clearInstallInstructionsTimer,
-    term,
   ]);
 
   const socketReference = useRef<WebSocket | null>(null); // Ref to hold the current socket for cleanup
@@ -1453,10 +1425,7 @@ const AblyCliTerminalInner = (
     setShowManualReconnectPrompt(false);
 
     // Only clear buffer for new sessions, not when resuming
-    if (!sessionId) {
-      clearPtyBuffer(); // Clear buffer for new session prompt detection
-      debugLog(`⚠️ DIAGNOSTIC: Cleared PTY buffer for new session`);
-    } else {
+    if (sessionId) {
       debugLog(
         `⚠️ DIAGNOSTIC: Skipping PTY buffer clear for resumed session ${sessionId}`,
       );
@@ -1470,6 +1439,9 @@ const AblyCliTerminalInner = (
           `⚠️ DIAGNOSTIC: Resumed session but not active - checking for existing prompt`,
         );
       }
+    } else {
+      clearPtyBuffer(); // Clear buffer for new session prompt detection
+      debugLog(`⚠️ DIAGNOSTIC: Cleared PTY buffer for new session`);
     }
 
     debugLog(
@@ -1518,14 +1490,10 @@ const AblyCliTerminalInner = (
     // persistence handled by dedicated useEffect
     debugLog("WebSocket OPEN handler completed. sessionId:", sessionId);
   }, [
-    clearAnimationMessages,
     initialCommand,
-    updateConnectionStatusAndExpose,
     clearPtyBuffer,
     sessionId,
-    resumeOnReload,
     clearConnectionTimeout,
-    credentialHash,
     signedConfig,
     signature,
   ]);
@@ -1536,14 +1504,16 @@ const AblyCliTerminalInner = (
         `⚠️ DIAGNOSTIC: handleWebSocketMessage called with event.data type: ${typeof event.data}`,
       );
       try {
-        const data = await messageDataToUint8Array(event.data);
+        const data = await messageDataToUint8Array(
+          event.data as WebSocketMessageData,
+        );
 
         const message = parseControlMessage(data);
         if (message) {
           // Handle control messages
 
           // Handle control messages using the extracted handler
-          handleControlMessage(message);
+          handleControlMessageRef.current(message);
           return;
         }
 
@@ -1584,7 +1554,7 @@ const AblyCliTerminalInner = (
 
               // Append any text before the control message
               if (ctrlIndex > currentPos) {
-                regularOutput += filteredData.substring(currentPos, ctrlIndex);
+                regularOutput += filteredData.slice(currentPos, ctrlIndex);
               }
 
               // Find the end of the control message (either newline or end of string)
@@ -1594,18 +1564,18 @@ const AblyCliTerminalInner = (
               if (messageEnd === -1) messageEnd = filteredData.length;
 
               // Extract the control message
-              const ctrlLine = filteredData.substring(ctrlIndex, messageEnd);
+              const ctrlLine = filteredData.slice(ctrlIndex, messageEnd);
 
               try {
                 const jsonString = ctrlLine.slice("ABLY_CTRL:".length);
-                const message_ = JSON.parse(jsonString);
+                const message_ = JSON.parse(jsonString) as ControlMessage;
                 debugLog(
                   `⚠️ DIAGNOSTIC: Found text-based control message:`,
                   message_,
                 );
 
                 // Process the control message using the extracted handler
-                handleControlMessage(message_);
+                handleControlMessageRef.current(message_);
               } catch (error) {
                 console.warn(
                   "[WebSocket] Failed to parse text-based control message:",
@@ -1655,15 +1625,7 @@ const AblyCliTerminalInner = (
         console.error("[AblyCLITerminal] Error processing message:", error);
       }
     },
-    [
-      handlePtyData,
-      onSessionEnd,
-      updateConnectionStatusAndExpose,
-      updateSessionActive,
-      credentialHash,
-      resumeOnReload,
-      sessionId,
-    ],
+    [handlePtyData],
   );
 
   const handleWebSocketError = useCallback(
@@ -1692,7 +1654,7 @@ const AblyCliTerminalInner = (
             message = getConnectionMessage("maxReconnects");
           } else if (grIsCancelledState()) {
             message = getConnectionMessage("reconnectCancelled");
-          } else if ((event as any).isTimeout) {
+          } else if ((event as Event & { isTimeout?: boolean }).isTimeout) {
             message = getConnectionMessage("connectionTimeout");
           } else {
             message = getConnectionMessage("connectionFailed");
@@ -1721,7 +1683,7 @@ const AblyCliTerminalInner = (
         // Immediately enter "reconnecting" state so countdown / spinner UI is active
         updateConnectionStatusAndExpose("reconnecting");
 
-        console.log(
+        debugLog(
           "[AblyCLITerminal handleWebSocketError] Entered reconnection branch. isCancelled=",
           grIsCancelledState(),
           "maxReached=",
@@ -1739,16 +1701,16 @@ const AblyCliTerminalInner = (
 
         startConnectingAnimation(true);
         grIncrement();
-        console.log(
+        debugLog(
           "[AblyCLITerminal handleWebSocketError] grIncrement done. Attempts now:",
           grGetAttempts(),
         );
 
         if (connectWebSocketReference.current) {
-          console.log(
+          debugLog(
             "[AblyCLITerminal handleWebSocketError] Scheduling reconnect...",
           );
-          grScheduleReconnect(connectWebSocketReference.current!, websocketUrl);
+          grScheduleReconnect(connectWebSocketReference.current, websocketUrl);
         } else {
           console.error(
             "[AblyCLITerminal handleWebSocketError] connectWebSocketRef.current is null, cannot schedule reconnect!",
@@ -1935,7 +1897,7 @@ const AblyCliTerminalInner = (
         );
 
         if (connectWebSocketReference.current) {
-          grScheduleReconnect(connectWebSocketReference.current!, websocketUrl);
+          grScheduleReconnect(connectWebSocketReference.current, websocketUrl);
         } else {
           console.error(
             "[AblyCLITerminal handleWebSocketClose] connectWebSocketRef.current is null, cannot schedule reconnect!",
@@ -2079,7 +2041,7 @@ const AblyCliTerminalInner = (
         // Enhanced logging for special keys
         const bytes = [...data]
           .map((char) => {
-            const code = char.charCodeAt(0);
+            const code = char.codePointAt(0)!;
             if (code < 32 || code > 126) {
               return `\\x${code.toString(16).padStart(2, "0")}`;
             }
@@ -2251,8 +2213,8 @@ const AblyCliTerminalInner = (
           }
         } else if (
           data.length === 1 &&
-          data.charCodeAt(0) >= 32 &&
-          data.charCodeAt(0) <= 126
+          data.codePointAt(0)! >= 32 &&
+          data.codePointAt(0)! <= 126
         ) {
           // Regular printable character
           currentInputLine =
@@ -2365,11 +2327,15 @@ const AblyCliTerminalInner = (
     // Initial connection on mount - do NOT connect here, let the dedicated connection effects handle it
     // This prevents duplicate connections from multiple effects running in the same render cycle
 
+    // Capture ref value for cleanup — React warns if we read .current
+    // inside the cleanup function because it may have changed by then.
+    const termCleanup = termCleanupReference.current;
+
     // Cleanup terminal on unmount
     return () => {
       // Execute resize listener cleanup if it exists
-      if (termCleanupReference.current) {
-        termCleanupReference.current();
+      if (termCleanup) {
+        termCleanup();
       }
 
       if (term.current) {
@@ -2389,7 +2355,8 @@ const AblyCliTerminalInner = (
       grResetState(); // Ensure global state is clean
       clearConnectionTimeout(); // Clear any pending connection timeout
     };
-  }, []); // Empty deps - this effect only runs once on mount to initialize the terminal
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only initialization; adding deps would destroy/recreate the terminal on every state change
+  }, []);
 
   // Single unified effect for initial connection (handles both mount and visibility changes)
   // When resumeOnReload is enabled, waits for credentialsInitialized to ensure sessionId restoration completes first
@@ -2414,12 +2381,13 @@ const AblyCliTerminalInner = (
     componentConnectionStatus,
     clearPtyBuffer,
     connectWebSocket,
-    // resumeOnReload is intentionally omitted - it's a prop that doesn't change during component lifecycle
+    resumeOnReload,
   ]);
 
   useEffect(() => {
     // Expose a debug function to get current component state for Playwright
-    (globalThis as any).getAblyCliTerminalReactState = () => ({
+    const g = globalThis as typeof globalThis & AblyCliGlobals;
+    g.getAblyCliTerminalReactState = () => ({
       componentConnectionStatus,
       isSessionActive,
       connectionHelpMessage,
@@ -2432,7 +2400,7 @@ const AblyCliTerminalInner = (
     });
 
     // Expose a function to get terminal buffer content for testing
-    (globalThis as any).getTerminalBufferText = () => {
+    g.getTerminalBufferText = () => {
       if (!term.current) return "";
       const buffer = term.current.buffer.active;
       let text = "";
@@ -2446,7 +2414,7 @@ const AblyCliTerminalInner = (
     };
 
     // Expose terminal buffer info for debugging
-    (globalThis as any).getTerminalBufferInfo = () => {
+    g.getTerminalBufferInfo = () => {
       if (!term.current) return { exists: false };
       const buffer = term.current.buffer.active;
       return {
@@ -2460,9 +2428,10 @@ const AblyCliTerminalInner = (
     };
 
     return () => {
-      delete (globalThis as any).getAblyCliTerminalReactState;
-      delete (globalThis as any).getTerminalBufferText;
-      delete (globalThis as any).getTerminalBufferInfo;
+      const g2 = globalThis as typeof globalThis & AblyCliGlobals;
+      delete g2.getAblyCliTerminalReactState;
+      delete g2.getTerminalBufferText;
+      delete g2.getTerminalBufferInfo;
     };
   }, [
     componentConnectionStatus,
@@ -2480,8 +2449,11 @@ const AblyCliTerminalInner = (
       debugLog(
         "[AblyCLITerminal] New socket detected, attaching event listeners.",
       );
+      const messageListener = (event: MessageEvent) => {
+        void handleWebSocketMessage(event);
+      };
       socket.addEventListener("open", handleWebSocketOpen);
-      socket.addEventListener("message", handleWebSocketMessage);
+      socket.addEventListener("message", messageListener);
       socket.addEventListener("close", handleWebSocketClose);
       socket.addEventListener("error", handleWebSocketError);
 
@@ -2491,7 +2463,7 @@ const AblyCliTerminalInner = (
           "[AblyCLITerminal] Cleaning up WebSocket event listeners for old socket.",
         );
         socket.removeEventListener("open", handleWebSocketOpen);
-        socket.removeEventListener("message", handleWebSocketMessage);
+        socket.removeEventListener("message", messageListener);
         socket.removeEventListener("close", handleWebSocketClose);
         socket.removeEventListener("error", handleWebSocketError);
       };
@@ -2601,8 +2573,7 @@ const AblyCliTerminalInner = (
     }, INACTIVITY_TIMEOUT_MS);
   }, [
     INACTIVITY_TIMEOUT_MS,
-    grCancelReconnect,
-    grResetState,
+    clearInactivityTimer,
     updateConnectionStatusAndExpose,
   ]);
 
@@ -2637,7 +2608,10 @@ const AblyCliTerminalInner = (
       let apiKeyForHash: string | undefined;
       let accessTokenForHash: string | undefined;
       try {
-        const parsedConfig = JSON.parse(signedConfig);
+        const parsedConfig = JSON.parse(signedConfig) as {
+          apiKey?: string;
+          accessToken?: string;
+        };
         apiKeyForHash = parsedConfig.apiKey;
         accessTokenForHash = parsedConfig.accessToken;
       } catch {
@@ -2669,7 +2643,7 @@ const AblyCliTerminalInner = (
         `ably.cli.credentialHash.${urlDomain}`,
       );
 
-      console.log("[AblyCLITerminal] Credential validation:", {
+      debugLog("[AblyCLITerminal] Credential validation:", {
         urlDomain,
         storedSessionId,
         storedHash,
@@ -2683,7 +2657,7 @@ const AblyCliTerminalInner = (
           `⚠️ DIAGNOSTIC: Restoring sessionId ${storedSessionId} from sessionStorage`,
         );
         setSessionId(storedSessionId);
-        console.log(
+        debugLog(
           "[AblyCLITerminal] Restored session with matching credentials for domain:",
           urlDomain,
         );
@@ -2697,20 +2671,19 @@ const AblyCliTerminalInner = (
         globalThis.sessionStorage.removeItem(
           `ably.cli.credentialHash.${urlDomain}`,
         );
-        console.log(
+        debugLog(
           "[AblyCLITerminal] Cleared session due to credential mismatch for domain:",
           urlDomain,
         );
       }
 
       setCredentialsInitialized(true);
-      setSessionIdInitialized(true);
       debugLog(
         `⚠️ DIAGNOSTIC: Credentials initialized, restored sessionId: ${storedSessionId || "none"}`,
       );
     };
 
-    initializeSession();
+    void initializeSession();
   }, [signedConfig, resumeOnReload, websocketUrl]);
 
   // Store credential hash when it becomes available if we already have a sessionId
@@ -2883,7 +2856,7 @@ const AblyCliTerminalInner = (
     }
 
     debugLog("[AblyCLITerminal] Creating secondary WebSocket instance");
-    console.log(
+    debugLog(
       "[AblyCLITerminal] Secondary WebSocket connecting to:",
       websocketUrl,
     );
@@ -2953,85 +2926,50 @@ const AblyCliTerminalInner = (
     });
 
     // WebSocket message handler with binary framing support
-    newSocket.addEventListener("message", async (event) => {
-      try {
-        const data = await messageDataToUint8Array(event.data);
+    newSocket.addEventListener("message", (event) => {
+      void (async () => {
+        try {
+          const data = await messageDataToUint8Array(
+            event.data as WebSocketMessageData,
+          );
 
-        const message = parseControlMessage(data);
-        if (message) {
-          // Handle control messages
-          if (
-            message.type === "hello" &&
-            typeof message.sessionId === "string"
-          ) {
-            debugLog(
-              `[Secondary] Received hello. sessionId=${message.sessionId}`,
-            );
-            const previousSessionId = secondarySessionId;
-            setSecondarySessionId(message.sessionId);
-
-            // Persist to session storage if enabled
-            if (resumeOnReload && globalThis.window !== undefined) {
-              globalThis.sessionStorage.setItem(
-                "ably.cli.secondarySessionId",
-                message.sessionId,
-              );
-            }
-
-            // Clear the "Connecting..." message and status box
-            if (secondaryTerm.current) {
-              clearConnectingMessage(secondaryTerm.current);
-              secondaryTerm.current.focus();
-            }
-            clearSecondaryStatusDisplay();
-
-            // Check if this is a resumed session
-            const isResumedSession =
-              previousSessionId !== null &&
-              previousSessionId === message.sessionId;
-
-            if (isResumedSession) {
-              // For resumed sessions, activate immediately without waiting for prompt
+          const message = parseControlMessage(data);
+          if (message) {
+            // Handle control messages
+            if (
+              message.type === "hello" &&
+              typeof message.sessionId === "string"
+            ) {
               debugLog(
-                `[Secondary] Resumed existing session ${message.sessionId} - activating immediately`,
+                `[Secondary] Received hello. sessionId=${message.sessionId}`,
               );
-              updateSecondaryConnectionStatus("connected");
+              const previousSessionId = secondarySessionId;
+              setSecondarySessionId(message.sessionId);
 
-              if (!isSecondarySessionActive) {
-                activateSecondarySessionAndSendCommand();
+              // Persist to session storage if enabled
+              if (resumeOnReload && globalThis.window !== undefined) {
+                globalThis.sessionStorage.setItem(
+                  "ably.cli.secondarySessionId",
+                  message.sessionId,
+                );
               }
-            } else {
-              // For new sessions, wait for prompt detection
-              debugLog(
-                `[Secondary] New session ${message.sessionId} - waiting for prompt before activating`,
-              );
-              updateSecondaryConnectionStatus("connected");
-            }
 
-            return;
-          }
-          if (message.type === "status") {
-            debugLog(
-              `[Secondary] Received server status message: ${message.payload}`,
-            );
-
-            if (message.payload === "connected") {
-              // Clear any overlay when connected
-              clearSecondaryStatusDisplay();
-
-              // Clear the "Connecting..." message
+              // Clear the "Connecting..." message and status box
               if (secondaryTerm.current) {
                 clearConnectingMessage(secondaryTerm.current);
                 secondaryTerm.current.focus();
               }
+              clearSecondaryStatusDisplay();
 
-              // Check if we're resuming an existing session
-              const isResuming = secondarySessionId !== null;
+              // Check if this is a resumed session
+              const isResumedSession =
+                previousSessionId !== null &&
+                previousSessionId === message.sessionId;
 
-              if (isResuming) {
-                // For resumed sessions, activate immediately
+              if (isResumedSession) {
+                // For resumed sessions, activate immediately without waiting for prompt
                 debugLog(
-                  `[Secondary] Resuming session ${secondarySessionId} - activating immediately`,
+                  `[Secondary] Resumed existing session ${message.sessionId} - activating immediately`,
                 );
                 updateSecondaryConnectionStatus("connected");
 
@@ -3041,113 +2979,146 @@ const AblyCliTerminalInner = (
               } else {
                 // For new sessions, wait for prompt detection
                 debugLog(
-                  `[Secondary] New session - waiting for prompt before activating`,
+                  `[Secondary] New session ${message.sessionId} - waiting for prompt before activating`,
                 );
                 updateSecondaryConnectionStatus("connected");
-
-                // Start timeout fallback in case prompt is never detected
-                clearSecondaryPromptDetectionTimeout();
-                secondaryPromptDetectionTimeoutReference.current = setTimeout(
-                  () => {
-                    debugLog(
-                      `[Secondary] Prompt detection timeout - activating session anyway after ${PROMPT_DETECTION_TIMEOUT_MS}ms`,
-                    );
-                    if (!isSecondarySessionActive) {
-                      activateSecondarySessionAndSendCommand();
-                    }
-                  },
-                  PROMPT_DETECTION_TIMEOUT_MS,
-                );
               }
 
               return;
             }
-
-            // Handle error & disconnected
-            if (
-              message.payload === "error" ||
-              message.payload === "disconnected"
-            ) {
-              const reason =
-                message.reason ||
-                (message.payload === "error"
-                  ? "Server error"
-                  : "Server disconnected");
-              if (secondaryTerm.current)
-                secondaryTerm.current.writeln(
-                  `\r\n--- ${message.payload === "error" ? "Error" : "Session Ended (from server)"}: ${reason} ---`,
-                );
-              updateSecondaryConnectionStatus(
-                message.payload as ConnectionStatus,
+            if (message.type === "status") {
+              debugLog(
+                `[Secondary] Received server status message: ${message.payload}`,
               );
 
-              if (secondaryTerm.current && message.payload === "disconnected") {
-                const title = "ERROR: SERVER DISCONNECT";
-                const message1 = `Connection closed by server (${message.code})${message.reason ? `: ${message.reason}` : ""}.`;
-                const message2 = "";
-                const message3 = `Press ⏎ to try reconnecting manually.`;
+              if (message.payload === "connected") {
+                // Clear any overlay when connected
+                clearSecondaryStatusDisplay();
 
+                // Clear the "Connecting..." message
                 if (secondaryTerm.current) {
-                  secondaryStatusBoxReference.current = drawBox(
-                    secondaryTerm.current,
-                    boxColour.red,
-                    title,
-                    [message1, message2, message3],
-                    60,
-                  );
-                  setSecondaryOverlay({
-                    variant: "error",
-                    title,
-                    lines: [message1, message2, message3],
-                  });
+                  clearConnectingMessage(secondaryTerm.current);
+                  secondaryTerm.current.focus();
                 }
 
-                secondaryShowManualReconnectPromptReference.current = true;
-                setSecondaryShowManualReconnectPrompt(true);
+                // Check if we're resuming an existing session
+                const isResuming = secondarySessionId !== null;
+
+                if (isResuming) {
+                  // For resumed sessions, activate immediately
+                  debugLog(
+                    `[Secondary] Resuming session ${secondarySessionId} - activating immediately`,
+                  );
+                  updateSecondaryConnectionStatus("connected");
+
+                  if (!isSecondarySessionActive) {
+                    activateSecondarySessionAndSendCommand();
+                  }
+                } else {
+                  // For new sessions, wait for prompt detection
+                  debugLog(
+                    `[Secondary] New session - waiting for prompt before activating`,
+                  );
+                  updateSecondaryConnectionStatus("connected");
+
+                  // Start timeout fallback in case prompt is never detected
+                  clearSecondaryPromptDetectionTimeout();
+                  secondaryPromptDetectionTimeoutReference.current = setTimeout(
+                    () => {
+                      debugLog(
+                        `[Secondary] Prompt detection timeout - activating session anyway after ${PROMPT_DETECTION_TIMEOUT_MS}ms`,
+                      );
+                      if (!isSecondarySessionActive) {
+                        activateSecondarySessionAndSendCommand();
+                      }
+                    },
+                    PROMPT_DETECTION_TIMEOUT_MS,
+                  );
+                }
+
+                return;
+              }
+
+              // Handle error & disconnected
+              if (
+                message.payload === "error" ||
+                message.payload === "disconnected"
+              ) {
+                const reason =
+                  message.reason ||
+                  (message.payload === "error"
+                    ? "Server error"
+                    : "Server disconnected");
+                if (secondaryTerm.current)
+                  secondaryTerm.current.writeln(
+                    `\r\n--- ${message.payload === "error" ? "Error" : "Session Ended (from server)"}: ${reason} ---`,
+                  );
+                updateSecondaryConnectionStatus(
+                  message.payload as ConnectionStatus,
+                );
+
+                if (
+                  secondaryTerm.current &&
+                  message.payload === "disconnected"
+                ) {
+                  const title = "ERROR: SERVER DISCONNECT";
+                  const message1 = `Connection closed by server (${message.code})${message.reason ? `: ${message.reason}` : ""}.`;
+                  const message2 = "";
+                  const message3 = `Press ⏎ to try reconnecting manually.`;
+
+                  if (secondaryTerm.current) {
+                    secondaryStatusBoxReference.current = drawBox(
+                      secondaryTerm.current,
+                      boxColour.red,
+                      title,
+                      [message1, message2, message3],
+                      60,
+                    );
+                    setSecondaryOverlay({
+                      variant: "error",
+                      title,
+                      lines: [message1, message2, message3],
+                    });
+                  }
+
+                  secondaryShowManualReconnectPromptReference.current = true;
+                  setSecondaryShowManualReconnectPrompt(true);
+                }
+                return;
               }
               return;
             }
+
             return;
           }
 
-          // Check for PTY stream/hijack meta-message
-          if (message.stream === true && typeof message.hijack === "boolean") {
-            debugLog(
-              "[AblyCLITerminal] [Secondary] Received PTY meta-message. Ignoring.",
-            );
-            return;
+          // Not a control message - process as PTY data
+          const dataString = new TextDecoder().decode(data);
+
+          // Filter Docker handshake JSON using the shared buffering logic
+          const filteredData = filterDockerHandshake(
+            dataString,
+            secondaryHandshakeFilterState.current,
+          );
+
+          // Only write if we have data after filtering
+          if (filteredData.length > 0) {
+            // Always write PTY data to terminal for the secondary terminal
+            // This ensures character echo works properly
+            if (secondaryTerm.current) {
+              secondaryTerm.current.write(filteredData);
+            }
+
+            // Call handleSecondaryPtyData for prompt detection
+            handleSecondaryPtyData(filteredData);
           }
-
-          // Control message was handled, return
-          return;
+        } catch (error) {
+          console.error(
+            "[AblyCLITerminal] [Secondary] Error processing message:",
+            error,
+          );
         }
-
-        // Not a control message - process as PTY data
-        const dataString = new TextDecoder().decode(data);
-
-        // Filter Docker handshake JSON using the shared buffering logic
-        const filteredData = filterDockerHandshake(
-          dataString,
-          secondaryHandshakeFilterState.current,
-        );
-
-        // Only write if we have data after filtering
-        if (filteredData.length > 0) {
-          // Always write PTY data to terminal for the secondary terminal
-          // This ensures character echo works properly
-          if (secondaryTerm.current) {
-            secondaryTerm.current.write(filteredData);
-          }
-
-          // Call handleSecondaryPtyData for prompt detection
-          handleSecondaryPtyData(filteredData);
-        }
-      } catch (error) {
-        console.error(
-          "[AblyCLITerminal] [Secondary] Error processing message:",
-          error,
-        );
-      }
+      })();
     });
 
     // WebSocket error handler
@@ -3241,6 +3212,7 @@ const AblyCliTerminalInner = (
     });
 
     return newSocket;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- callback is accessed via connectSecondaryWebSocketReference ref; missing deps include hoisted callbacks and state that would cause cascading recreations
   }, [
     websocketUrl,
     signedConfig,
@@ -3393,54 +3365,49 @@ const AblyCliTerminalInner = (
 
     // Handle data input in secondary terminal
     secondaryTerm.current.onData((data: string) => {
-      // Special handling for Enter key
-      if (data === "\r") {
-        const latestStatus = secondaryConnectionStatusReference.current;
+      // Special handling for Enter key when manual reconnect prompt is visible
+      if (
+        data === "\r" &&
+        secondaryShowManualReconnectPromptReference.current
+      ) {
+        debugLog(
+          "[AblyCLITerminal] Secondary terminal: Enter pressed for manual reconnect.",
+        );
 
-        // Manual prompt visible: attempt manual reconnect even if an old socket is open
-        if (secondaryShowManualReconnectPromptReference.current) {
-          debugLog(
-            "[AblyCLITerminal] Secondary terminal: Enter pressed for manual reconnect.",
-          );
+        // Clear overlay and status displays
+        clearSecondaryStatusDisplay();
+        secondaryShowManualReconnectPromptReference.current = false;
+        setSecondaryShowManualReconnectPrompt(false);
 
-          // Clear overlay and status displays
-          clearSecondaryStatusDisplay();
-          secondaryShowManualReconnectPromptReference.current = false;
-          setSecondaryShowManualReconnectPrompt(false);
-
-          // Forget previous session completely so no resume is attempted
-          if (!resumeOnReload) {
-            setSecondarySessionId(null);
-          }
-
-          // Ensure any lingering socket is fully closed before opening a new one
-          if (
-            secondarySocketReference.current &&
-            secondarySocketReference.current.readyState !== WebSocket.CLOSED
-          ) {
-            try {
-              secondarySocketReference.current.close(1000, "manual-reconnect");
-            } catch {
-              /* ignore */
-            }
-            secondarySocketReference.current = null; // Make sure the reference is cleared
-          }
-
-          // Give the browser a micro-task to mark socket CLOSED before reconnect
-          setTimeout(() => {
-            debugLog(
-              "[AblyCLITerminal] [Secondary] Starting fresh reconnect sequence",
-            );
-            secondaryPtyBuffer.current = ""; // Clear buffer
-            secondaryHandshakeFilterState.current =
-              createHandshakeFilterState(); // Reset handshake filter
-            connectSecondaryWebSocketReference.current?.();
-          }, 20);
-
-          return;
+        // Forget previous session completely so no resume is attempted
+        if (!resumeOnReload) {
+          setSecondarySessionId(null);
         }
 
-        // Handle other special cases like primary terminal if needed
+        // Ensure any lingering socket is fully closed before opening a new one
+        if (
+          secondarySocketReference.current &&
+          secondarySocketReference.current.readyState !== WebSocket.CLOSED
+        ) {
+          try {
+            secondarySocketReference.current.close(1000, "manual-reconnect");
+          } catch {
+            /* ignore */
+          }
+          secondarySocketReference.current = null; // Make sure the reference is cleared
+        }
+
+        // Give the browser a micro-task to mark socket CLOSED before reconnect
+        setTimeout(() => {
+          debugLog(
+            "[AblyCLITerminal] [Secondary] Starting fresh reconnect sequence",
+          );
+          secondaryPtyBuffer.current = ""; // Clear buffer
+          secondaryHandshakeFilterState.current = createHandshakeFilterState();
+          connectSecondaryWebSocketReference.current?.();
+        }, 20);
+
+        return;
       }
 
       // Track input line for autocomplete (simple tracking - reset on Enter)
@@ -3457,8 +3424,8 @@ const AblyCliTerminalInner = (
         }
       } else if (
         data.length === 1 &&
-        data.charCodeAt(0) >= 32 &&
-        data.charCodeAt(0) <= 126
+        data.codePointAt(0)! >= 32 &&
+        data.codePointAt(0)! <= 126
       ) {
         // Regular printable character
         secondaryCurrentInputLine =
@@ -3556,7 +3523,8 @@ const AblyCliTerminalInner = (
       setSecondarySessionId(null);
       setSecondaryOverlay(null);
     };
-  }, [isSplit]); // Only re-run when split mode changes, not when connectSecondaryWebSocket changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- secondary terminal init; adding state deps would re-init mid-session
+  }, [isSplit]);
 
   // Persist secondary sessionId to localStorage whenever it changes (if enabled)
   useEffect(() => {

@@ -172,6 +172,9 @@ importers:
       eslint-plugin-prettier:
         specifier: ^5.2.6
         version: 5.2.6(eslint-config-prettier@10.1.2(eslint@9.39.4(jiti@2.4.2)))(eslint@9.39.4(jiti@2.4.2))(prettier@3.5.3)
+      eslint-plugin-react-hooks:
+        specifier: ^5.2.0
+        version: 5.2.0(eslint@9.39.4(jiti@2.4.2))
       eslint-plugin-unicorn:
         specifier: ^58.0.0
         version: 58.0.0(eslint@9.39.4(jiti@2.4.2))
@@ -9318,6 +9321,10 @@ snapshots:
   eslint-plugin-react-hooks@5.2.0(eslint@9.34.0(jiti@2.4.2)):
     dependencies:
       eslint: 9.34.0(jiti@2.4.2)
+
+  eslint-plugin-react-hooks@5.2.0(eslint@9.39.4(jiti@2.4.2)):
+    dependencies:
+      eslint: 9.39.4(jiti@2.4.2)
 
   eslint-plugin-react-refresh@0.4.19(eslint@9.34.0(jiti@2.4.2)):
     dependencies:
