@@ -160,18 +160,24 @@ export default class TypingKeystroke extends ChatBaseCommand {
         }, KEYSTROKE_INTERVAL);
       }
 
-      this.logCliEvent(
-        flags,
-        "typing",
-        "listening",
-        "Maintaining typing status...",
-      );
+      // If auto-type is enabled, keep the command running to maintain typing state
+      if (flags["auto-type"]) {
+        this.logCliEvent(
+          flags,
+          "typing",
+          "listening",
+          "Maintaining typing status...",
+        );
 
-      // Wait until the user interrupts, duration elapses, or the room fails
-      await Promise.race([
-        this.waitAndTrackCleanup(flags, "typing", flags.duration),
-        failurePromise,
-      ]);
+        // Wait until the user interrupts, duration elapses, or the room fails
+        await Promise.race([
+          this.waitAndTrackCleanup(flags, "typing", flags.duration),
+          failurePromise,
+        ]);
+      } else {
+        // Suppress unhandled rejection if room fails during cleanup
+        failurePromise.catch(() => {});
+      }
     } catch (error) {
       this.fail(error, flags, "roomTypingKeystroke", { room: args.room });
     }

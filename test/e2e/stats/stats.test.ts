@@ -12,8 +12,6 @@ import {
   SHOULD_SKIP_E2E,
   forceExit,
   cleanupTrackedResources,
-  testOutputFiles,
-  testCommands,
   setupTestFailureHandler,
   resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
@@ -48,8 +46,6 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
 
     beforeEach(() => {
       resetTestTracking();
-      testOutputFiles.clear();
-      testCommands.length = 0;
     });
 
     afterEach(async () => {
