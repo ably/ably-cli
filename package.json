@@ -51,7 +51,7 @@
     "prepare": "[ -d .git ] && [ -d .githooks ] && git config core.hooksPath .githooks || true; pnpm run build && CI=true ABLY_INTERACTIVE=false oclif manifest",
     "postinstall": "[ \"$CI\" = \"true\" ] || (test -f ./dist/scripts/postinstall-welcome.js && node ./dist/scripts/postinstall-welcome.js || echo \"Skipping welcome script (not found)\")",
     "preversion": "pnpm run prepare",
-    "version": "oclif readme && git add README.md",
+    "generate-readme": "[ -f GENERATED_README.md ] || printf '<!-- toc -->\\n<!-- tocstop -->\\n<!-- usage -->\\n<!-- usagestop -->\\n<!-- commands -->\\n<!-- commandsstop -->\\n' > GENERATED_README.md && oclif readme --readme-path GENERATED_README.md",
     "validate": "./scripts/pre-push-validation.sh",
     "pre-commit": "pnpm validate",
     "ai-init": "echo 'AI Assistant Instructions:' && cat .claude/CLAUDE.md",

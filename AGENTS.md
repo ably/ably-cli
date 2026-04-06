@@ -6,7 +6,7 @@
 
 ```bash
 pnpm prepare        # 1. Build + update manifest
-pnpm exec oclif readme  # 2. Regenerate README.md from command metadata
+pnpm generate-readme  # 2. Regenerate command docs (gitignored)
 pnpm exec eslint .  # 3. Lint (MUST be 0 errors)
 pnpm test:unit      # 4. Test (at minimum)
 pnpm test:tty       # 5. TTY tests (local only, skip in CI)
