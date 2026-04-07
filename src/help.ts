@@ -33,19 +33,19 @@ export default class CustomHelp extends Help {
     this.configManager = createConfigManager();
   }
 
-  // Override formatHelpOutput to apply stripAnsi when necessary
+  // Override formatHelpOutput to apply interactive-mode transformations
   formatHelpOutput(output: string): string {
-    // Check if we're generating readme (passed as an option from oclif)
-    if (this.opts.stripAnsi || process.env.GENERATING_README === "true") {
-      output = stripAnsi(output);
-    }
-
     // Strip "ably" prefix when in interactive mode
     if (this.interactiveMode) {
       output = this.stripAblyPrefix(output);
     }
 
     return output;
+  }
+
+  // Check if ANSI codes should be stripped (oclif readme generation or while generating docs via GENERATING_DOC)
+  private shouldStripAnsi(): boolean {
+    return !!(this.opts.stripAnsi || process.env.GENERATING_DOC === "true");
   }
 
   // Helper to strip "ably" prefix from command examples in interactive mode
@@ -193,7 +193,10 @@ export default class CustomHelp extends Help {
     } else {
       output = this.formatStandardRoot();
     }
-    return output; // Let the overridden render handle stripping
+    if (this.shouldStripAnsi()) {
+      output = stripAnsi(output);
+    }
+    return output;
   }
 
   formatStandardRoot(): string {
@@ -488,7 +491,10 @@ export default class CustomHelp extends Help {
         }
       }
     }
-    return output; // Let the overridden render handle stripping
+    if (this.shouldStripAnsi()) {
+      output = stripAnsi(output);
+    }
+    return output;
   }
 
   // Re-add the check for web CLI mode command availability

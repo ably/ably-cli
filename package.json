@@ -51,7 +51,7 @@
     "prepare": "pnpm run build && CI=true ABLY_INTERACTIVE=false oclif manifest",
     "postinstall": "[ \"$CI\" = \"true\" ] || (test -f ./dist/scripts/postinstall-welcome.js && node ./dist/scripts/postinstall-welcome.js || echo \"Skipping welcome script (not found)\")",
     "preversion": "pnpm run prepare",
-    "generate-readme": "[ -f GENERATED_README.md ] || printf '<!-- toc -->\\n<!-- tocstop -->\\n<!-- usage -->\\n<!-- usagestop -->\\n<!-- commands -->\\n<!-- commandsstop -->\\n' > GENERATED_README.md && oclif readme --readme-path GENERATED_README.md",
+    "generate-doc": "rm -f GENERATED_DOC.md && printf '<!-- toc -->\\n<!-- tocstop -->\\n<!-- usage -->\\n<!-- usagestop -->\\n<!-- commands -->\\n<!-- commandsstop -->\\n' > GENERATED_DOC.md && (GENERATING_DOC=true NO_COLOR=1 oclif readme --readme-path GENERATED_DOC.md)",
     "validate": "./scripts/pre-push-validation.sh",
     "pre-commit": "pnpm validate",
     "ai-init": "echo 'AI Assistant Instructions:' && cat .claude/CLAUDE.md",
