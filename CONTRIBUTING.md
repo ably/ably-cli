@@ -8,7 +8,7 @@ All code changes, whether features or bug fixes, **MUST** follow the mandatory w
 
 In summary, this involves:
 
-1.  **Build:** Run `pnpm prepare` to compile and update manifests, then `pnpm exec oclif readme` to regenerate the README.
+1.  **Build:** Run `pnpm prepare` to compile and update manifests, then `pnpm generate-doc` to regenerate the command documentation.
 2.  **Lint:** Run `pnpm exec eslint .` and fix all errors/warnings.
 3.  **Test:** Run relevant tests (`pnpm test:unit`, `pnpm test:integration`, `pnpm test:e2e`, `pnpm test:playwright`, or specific files) and ensure they pass. For interactive mode changes, also run `pnpm run test:tty` (requires a real terminal, not run in CI). Add new tests or update existing ones as needed.
 4.  **Document:** Update all relevant documentation (`docs/`, `AGENTS.md`, `README.md`) to reflect your changes.
@@ -53,10 +53,10 @@ This allows testing CLI changes against local server modifications before deploy
 1. Make sure all checks are passing on main
 2. Create a new release branch, in the format `release/<version>` where the version is the SemVer version of the release. In that branch:
     - Update the `package.json` version to the new version.
-    - Run `pnpm exec oclif readme` to regenerate the README with updated command documentation.
+    - Run `pnpm generate-doc` to regenerate the command documentation.
     - Update the `CHANGELOG.md` with any user-affecting changes since the last release.
-    - Review the generated README.md changes to ensure they're correct.
-    - Stage all changes: `git add package.json README.md CHANGELOG.md`
+    - Review the generated `GENERATED_DOC.md` output locally to ensure updated commands documentation is correct.
+    - Stage all changes: `git add package.json CHANGELOG.md`
     - Commit all changes with a message like `chore: prepare release <version>`.
     - Update the `package.json` for `packages/react-web-cli`.
 3. Once the release branch is approved, merge it into main.

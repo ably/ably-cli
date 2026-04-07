@@ -1,8 +1,8 @@
 # Ably CLI
 
 [![npm version](https://badge.fury.io/js/@ably%2Fcli.svg)](https://badge.fury.io/js/@ably%2Fcli)
-[![Node](https://img.shields.io/node/v/@ably/cli)](https://nodejs.org)
-[![License](https://img.shields.io/npm/l/@ably/cli)](https://github.com/ably/ably-cli/blob/main/LICENSE)
+[![Node](https://img.shields.io/node/v/%40ably%2Fcli)](https://nodejs.org)
+[![License](https://img.shields.io/npm/l/%40ably%2Fcli)](https://github.com/ably/ably-cli/blob/main/LICENSE)
 
 The Ably CLI brings the full power of Ably to your terminal. You can use it to manage your Ably account and its resources, and to explore Ably's APIs and features.
 
@@ -15,7 +15,7 @@ The Ably CLI interacts with:
 
 ## Installation
 
-The Ably CLI is available as an NPM package, install using
+The Ably CLI is available as an NPM package. Install it using:
 
 ```shell
 npm install -g @ably/cli
@@ -29,9 +29,9 @@ For a list of all available commands, run:
 ably help
 ```
 
-Visit [Official Ably Documentation](https://ably.com/docs/platform/tools/cli) for CLI login, features and usage.
+Visit [the official Ably documentation](https://ably.com/docs/platform/tools/cli) for CLI login, features, and usage.
 
-# Contributing
+## Contributing
 
 Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for the development workflow, testing requirements, and release process.
 
