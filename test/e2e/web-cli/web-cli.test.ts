@@ -369,14 +369,19 @@ test.describe("Web CLI E2E Tests", () => {
     );
     await expect(drawer).toBeVisible({ timeout: 5000 });
 
+    // Wait for the terminal to stabilize after the drawer resize —
+    // without this, keystrokes race with xterm's resize/reflow and
+    // produce escape-code corruption (GGGGG…DDDDD… garbage).
+    await waitForTerminalStable(page, 1000);
+
     // Terminal should still be functional with drawer open
     await page.locator(terminalSelector).focus();
     await page.keyboard.type("help");
     await page.keyboard.press("Enter");
-    // Use a non-styled string from help output — bold headers like "COMMON COMMANDS"
-    // can be garbled by xterm escape codes when the terminal is resized in drawer mode
+    // The drawer terminal is smaller, so help output may be truncated.
+    // Match a string that appears in both full and compact help output.
     await expect(page.locator(terminalSelector)).toContainText(
-      "Subscribe to a channel",
+      "Display help for ably",
       {
         timeout: 10000,
       },
