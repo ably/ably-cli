@@ -24,7 +24,7 @@ $ npm install -g @ably/cli
 $ ably COMMAND
 running command...
 $ ably (--version)
-@ably/cli/0.17.0 darwin-arm64 node-v24.4.1
+@ably/cli/0.17.0 darwin-arm64 node-v22.14.0
 $ ably --help [COMMAND]
 USAGE
   $ ably COMMAND
@@ -325,7 +325,7 @@ USAGE
   $ ably accounts login [TOKEN] [-v] [--json | --pretty-json] [-a <value>] [--no-browser]
 
 ARGUMENTS
-  TOKEN  Access token (if not provided, will prompt for it)
+  [TOKEN]  Access token (if not provided, will prompt for it)
 
 FLAGS
   -a, --alias=<value>  Alias for this account (default account if not specified)
@@ -358,7 +358,7 @@ USAGE
   $ ably accounts logout [ALIAS] [-v] [--json | --pretty-json] [-f]
 
 ARGUMENTS
-  ALIAS  Alias of the account to log out from (defaults to current account)
+  [ALIAS]  Alias of the account to log out from (defaults to current account)
 
 FLAGS
   -f, --force        Skip confirmation prompt (required with --json)
@@ -390,7 +390,7 @@ USAGE
   $ ably accounts switch [ALIAS] [-v] [--json | --pretty-json]
 
 ARGUMENTS
-  ALIAS  Alias of the account to switch to
+  [ALIAS]  Alias of the account to switch to
 
 FLAGS
   -v, --verbose      Output verbose logs
@@ -513,12 +513,12 @@ USAGE
   $ ably apps delete [APPID] [-v] [--json | --pretty-json] [-f] [--app <value>]
 
 ARGUMENTS
-  APPID  App ID to delete (uses current app if not specified)
+  [APPID]  App ID to delete (uses current app if not specified)
 
 FLAGS
   -f, --force        Skip confirmation prompt (required with --json)
   -v, --verbose      Output verbose logs
-      --app=<value>  The app ID or name (defaults to current app)
+      --app=<value>  [env: ABLY_APP_ID] The app ID or name (defaults to current app)
       --json         Output in JSON format
       --pretty-json  Output in colorized JSON format
 
@@ -771,7 +771,7 @@ USAGE
   $ ably apps switch [APPID] [-v] [--json | --pretty-json]
 
 ARGUMENTS
-  APPID  ID of the app to switch to
+  [APPID]  ID of the app to switch to
 
 FLAGS
   -v, --verbose      Output verbose logs
@@ -862,7 +862,7 @@ USAGE
 
 FLAGS
   -v, --verbose             Output verbose logs
-      --app=<value>         The app ID or name (defaults to current app)
+      --app=<value>         [env: ABLY_APP_ID] The app ID or name (defaults to current app)
       --capability=<value>  [default: {"*":["*"]}] Capabilities JSON string (e.g. {"channel":["publish","subscribe"]})
       --client-id=<value>   Client ID to associate with the token. Use "none" to explicitly issue a token with no client
                             ID, otherwise a default will be generated.
@@ -907,7 +907,7 @@ USAGE
 
 FLAGS
   -v, --verbose             Output verbose logs
-      --app=<value>         The app ID or name (defaults to current app)
+      --app=<value>         [env: ABLY_APP_ID] The app ID or name (defaults to current app)
       --capability=<value>  [default: {"*":["*"]}] Capabilities JSON string (e.g. {"channel":["publish","subscribe"]})
       --client-id=<value>   Client ID to associate with the token. Use "none" to explicitly issue a token with no client
                             ID, otherwise a default will be generated.
@@ -985,7 +985,7 @@ USAGE
 
 FLAGS
   -v, --verbose               Output verbose logs
-      --app=<value>           The app ID or name (defaults to current app)
+      --app=<value>           [env: ABLY_APP_ID] The app ID or name (defaults to current app)
       --capabilities=<value>  [default: {"*":["*"]}] Capability object as a JSON string. Example:
                               '{"channel:*":["publish"]}'
       --json                  Output in JSON format
@@ -1027,7 +1027,7 @@ USAGE
 
 FLAGS
   -v, --verbose      Output verbose logs
-      --app=<value>  The app ID or name (defaults to current app)
+      --app=<value>  [env: ABLY_APP_ID] The app ID or name (defaults to current app)
       --json         Output in JSON format
       --pretty-json  Output in colorized JSON format
 
@@ -1059,7 +1059,7 @@ ARGUMENTS
 
 FLAGS
   -v, --verbose      Output verbose logs
-      --app=<value>  The app ID or name (defaults to current app)
+      --app=<value>  [env: ABLY_APP_ID] The app ID or name (defaults to current app)
       --json         Output in JSON format
       --pretty-json  Output in colorized JSON format
 
@@ -1088,7 +1088,7 @@ USAGE
 
 FLAGS
   -v, --verbose        Output verbose logs
-      --app=<value>    The app ID or name (defaults to current app)
+      --app=<value>    [env: ABLY_APP_ID] The app ID or name (defaults to current app)
       --json           Output in JSON format
       --limit=<value>  [default: 100] Maximum number of results to return
       --pretty-json    Output in colorized JSON format
@@ -1122,7 +1122,7 @@ ARGUMENTS
 FLAGS
   -f, --force        Skip confirmation prompt (required with --json)
   -v, --verbose      Output verbose logs
-      --app=<value>  The app ID or name (defaults to current app)
+      --app=<value>  [env: ABLY_APP_ID] The app ID or name (defaults to current app)
       --json         Output in JSON format
       --pretty-json  Output in colorized JSON format
 
@@ -1152,11 +1152,11 @@ USAGE
   $ ably auth keys switch [KEYNAMEORVALUE] [-v] [--json | --pretty-json] [--app <value>]
 
 ARGUMENTS
-  KEYNAMEORVALUE  Key name (APP_ID.KEY_ID) or full value of the key to switch to
+  [KEYNAMEORVALUE]  Key name (APP_ID.KEY_ID) or full value of the key to switch to
 
 FLAGS
   -v, --verbose      Output verbose logs
-      --app=<value>  The app ID or name (defaults to current app)
+      --app=<value>  [env: ABLY_APP_ID] The app ID or name (defaults to current app)
       --json         Output in JSON format
       --pretty-json  Output in colorized JSON format
 
@@ -1189,7 +1189,7 @@ ARGUMENTS
 
 FLAGS
   -v, --verbose               Output verbose logs
-      --app=<value>           The app ID or name (defaults to current app)
+      --app=<value>           [env: ABLY_APP_ID] The app ID or name (defaults to current app)
       --capabilities=<value>  New capabilities for the key (comma-separated list)
       --json                  Output in JSON format
       --name=<value>          New name for the key
@@ -1224,7 +1224,7 @@ ARGUMENTS
 FLAGS
   -c, --client-id=<value>  Client ID to revoke tokens for
   -v, --verbose            Output verbose logs
-      --app=<value>        The app ID or name (defaults to current app)
+      --app=<value>        [env: ABLY_APP_ID] The app ID or name (defaults to current app)
       --json               Output in JSON format
       --pretty-json        Output in colorized JSON format
 
@@ -1252,7 +1252,7 @@ USAGE
   $ ably autocomplete [SHELL] [-r]
 
 ARGUMENTS
-  SHELL  (zsh|bash|powershell) Shell type
+  [SHELL]  (zsh|bash|powershell) Shell type
 
 FLAGS
   -r, --refresh-cache  Refresh cache (ignores displaying instructions)
@@ -1272,7 +1272,7 @@ EXAMPLES
   $ ably autocomplete --refresh-cache
 ```
 
-_See code: [@oclif/plugin-autocomplete](https://github.com/oclif/plugin-autocomplete/blob/v3.2.30/src/commands/autocomplete/index.ts)_
+_See code: [@oclif/plugin-autocomplete](https://github.com/oclif/plugin-autocomplete/blob/v3.2.43/src/commands/autocomplete/index.ts)_
 
 ## `ably bench`
 
@@ -1641,7 +1641,7 @@ USAGE
     --spec <value>] [-e <value> | ] [-n <value> | ]
 
 ARGUMENTS
-  MESSAGE  The message to publish (JSON format or plain text, not needed if using --spec)
+  [MESSAGE]  The message to publish (JSON format or plain text, not needed if using --spec)
 
 FLAGS
   -e, --encoding=<value>       The encoding for the message (not used with --spec)
@@ -1769,7 +1769,7 @@ ARGUMENTS
 
 FLAGS
   -v, --verbose      Output verbose logs
-      --app=<value>  The app ID or name (defaults to current app)
+      --app=<value>  [env: ABLY_APP_ID] The app ID or name (defaults to current app)
       --json         Output in JSON format
       --pretty-json  Output in colorized JSON format
 
@@ -2332,7 +2332,7 @@ USAGE
   $ ably help [COMMANDS...]
 
 ARGUMENTS
-  COMMANDS...  Command to show help for
+  [COMMANDS...]  Command to show help for
 
 DESCRIPTION
   Display help for ably
@@ -2555,7 +2555,7 @@ USAGE
   $ ably login [TOKEN] [-v] [--json | --pretty-json] [-a <value>] [--no-browser]
 
 ARGUMENTS
-  TOKEN  Access token (if not provided, will prompt for it)
+  [TOKEN]  Access token (if not provided, will prompt for it)
 
 FLAGS
   -a, --alias=<value>  Alias for this account (default account if not specified)
@@ -2966,8 +2966,9 @@ USAGE
   $ ably push batch-publish [PAYLOAD] [-v] [--json | --pretty-json] [-f]
 
 ARGUMENTS
-  PAYLOAD  Batch payload as JSON array, filepath, or - for stdin. Each item must have either a "recipient" or "channels"
-           key. Items with "channels" are routed via channel batch publish with the payload wrapped in extras.push
+  [PAYLOAD]  Batch payload as JSON array, filepath, or - for stdin. Each item must have either a "recipient" or
+             "channels" key. Items with "channels" are routed via channel batch publish with the payload wrapped in
+             extras.push
 
 FLAGS
   -f, --force        Skip confirmation prompt (required with --json)
@@ -5067,7 +5068,7 @@ USAGE
 
 ARGUMENTS
   SPACE_NAME  Name of the space to get locks from
-  LOCKID      Lock ID to get (omit to get all locks)
+  [LOCKID]    Lock ID to get (omit to get all locks)
 
 FLAGS
   -v, --verbose      Output verbose logs
@@ -5458,7 +5459,7 @@ USAGE
     <value>] [--limit <value>] [--live] [--unit minute|hour|day|month]
 
 ARGUMENTS
-  ID  App ID to get stats for (uses default app if not provided)
+  [ID]  App ID to get stats for (uses default app if not provided)
 
 FLAGS
   -v, --verbose           Output verbose logs

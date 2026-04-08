@@ -181,7 +181,7 @@ export async function executeCommandWithRetry(
       await page.waitForFunction(
         ([selector, expected]) => {
           const terminal = document.querySelector(selector);
-          return terminal?.textContent?.includes(expected) || false;
+          return terminal?.textContent.includes(expected) || false;
         },
         [terminalSelector, expectedOutput],
         { timeout: 15000 },

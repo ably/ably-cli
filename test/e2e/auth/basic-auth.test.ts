@@ -68,9 +68,8 @@ describe("Authentication E2E", () => {
       expect(initialFiles).toHaveLength(0);
 
       // Create a config file by instantiating ConfigManager
-      const { TomlConfigManager } = await import(
-        "../../../src/services/config-manager.js"
-      );
+      const { TomlConfigManager } =
+        await import("../../../src/services/config-manager.js");
       const configManager = new TomlConfigManager();
 
       // Store test account
@@ -140,9 +139,8 @@ describe("Authentication E2E", () => {
     it("should create valid TOML config", async () => {
       setupTestFailureHandler("should create valid TOML config");
 
-      const { TomlConfigManager } = await import(
-        "../../../src/services/config-manager.js"
-      );
+      const { TomlConfigManager } =
+        await import("../../../src/services/config-manager.js");
       const configManager = new TomlConfigManager();
 
       // Store complex configuration
@@ -184,9 +182,8 @@ describe("Authentication E2E", () => {
         "should handle special characters in account data",
       );
 
-      const { TomlConfigManager } = await import(
-        "../../../src/services/config-manager.js"
-      );
+      const { TomlConfigManager } =
+        await import("../../../src/services/config-manager.js");
       const configManager = new TomlConfigManager();
 
       // Store account with special characters
@@ -218,9 +215,8 @@ describe("Authentication E2E", () => {
       expect(configPath).toContain(configPathSeparator);
 
       // Should be able to create and access files
-      const { TomlConfigManager } = await import(
-        "../../../src/services/config-manager.js"
-      );
+      const { TomlConfigManager } =
+        await import("../../../src/services/config-manager.js");
       const configManager = new TomlConfigManager();
 
       configManager.storeAccount("token", "platform-test", {
@@ -235,9 +231,8 @@ describe("Authentication E2E", () => {
     it("should handle different line endings", async () => {
       setupTestFailureHandler("should handle different line endings");
 
-      const { TomlConfigManager } = await import(
-        "../../../src/services/config-manager.js"
-      );
+      const { TomlConfigManager } =
+        await import("../../../src/services/config-manager.js");
       const configManager = new TomlConfigManager();
 
       configManager.storeAccount("token", "lineending-test", {
@@ -263,9 +258,8 @@ describe("Authentication E2E", () => {
       // Verify we're using the test config directory
       expect(process.env.ABLY_CLI_CONFIG_DIR).toBe(tempConfigDir);
 
-      const { TomlConfigManager } = await import(
-        "../../../src/services/config-manager.js"
-      );
+      const { TomlConfigManager } =
+        await import("../../../src/services/config-manager.js");
       const configManager = new TomlConfigManager();
 
       // Store test data

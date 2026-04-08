@@ -572,7 +572,7 @@ export async function executeCommandWithRetry(
           isSessionActive: state?.isSessionActive,
           connectionStatus: state?.componentConnectionStatus,
           terminalContent:
-            document.querySelector(".xterm")?.textContent?.slice(-300) ||
+            document.querySelector(".xterm")?.textContent.slice(-300) ||
             "No content",
         };
       });
