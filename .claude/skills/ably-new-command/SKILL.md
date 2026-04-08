@@ -434,7 +434,7 @@ If the new command shouldn't be available in the web CLI, add it to the appropri
 After creating command and test files, always run:
 ```bash
 pnpm prepare        # Build + update manifest
-pnpm exec oclif readme  # Regenerate README.md from command metadata
+pnpm generate-doc       # Regenerate command documentation
 pnpm exec eslint .  # Lint (must be 0 errors)
 pnpm test:unit      # Run tests
 ```
