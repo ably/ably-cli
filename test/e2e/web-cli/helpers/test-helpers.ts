@@ -113,9 +113,8 @@ export function buildTestUrl(params?: Record<string, string>): string {
 
 // Helper to track reload connections
 export async function reloadPageWithRateLimit(page: Page): Promise<void> {
-  const { incrementConnectionCount, waitForRateLimitIfNeeded } = await import(
-    "../test-rate-limiter"
-  );
+  const { incrementConnectionCount, waitForRateLimitIfNeeded } =
+    await import("../test-rate-limiter");
   const { waitForRateLimitLock } = await import("../rate-limit-lock");
 
   // ALWAYS wait for any ongoing rate limit pause before proceeding

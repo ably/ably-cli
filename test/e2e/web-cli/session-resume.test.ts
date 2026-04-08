@@ -398,7 +398,7 @@ test.describe("Session Resume E2E Tests", () => {
         isSessionActive: state?.isSessionActive,
         connectionStatus: state?.componentConnectionStatus,
         terminalContent:
-          document.querySelector(".xterm")?.textContent?.slice(-200) ||
+          document.querySelector(".xterm")?.textContent.slice(-200) ||
           "No content",
       };
     });
@@ -424,7 +424,7 @@ test.describe("Session Resume E2E Tests", () => {
             readyState: win.ablyCliSocket?.readyState,
           },
           terminalContent:
-            document.querySelector(".xterm")?.textContent?.slice(-500) ||
+            document.querySelector(".xterm")?.textContent.slice(-500) ||
             "No content",
           consoleLogs: (win.__consoleLogs || []).slice(-20),
         };
