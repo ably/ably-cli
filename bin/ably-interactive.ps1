@@ -5,7 +5,7 @@
 $ErrorActionPreference = "Stop"
 
 # Configuration
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ScriptDir = Split-Path -Parent (Resolve-Path $MyInvocation.MyCommand.Path).Path
 $AblyBin = Join-Path $ScriptDir "run.cmd"
 $AblyConfigDir = Join-Path $env:USERPROFILE ".ably"
 $HistoryFile = Join-Path $AblyConfigDir "history"
