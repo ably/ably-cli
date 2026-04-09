@@ -590,16 +590,16 @@ describe("AblyBaseCommand", function () {
     it("should use ABLY_API_KEY environment variable if available", async function () {
       const flags: BaseFlags = {};
 
-      // Reset relevant stubs — no config available
+      // Reset relevant stubs — no app in config, but getApiKey falls back to env var
       configManagerStub.getCurrentAppId.mockReturnValue();
-      configManagerStub.getApiKey.mockReturnValue();
+      configManagerStub.getApiKey.mockReturnValue("envApp.keyId:keySecret");
 
-      // Set environment variable
+      // Set environment variable (getApiKey reads this internally)
       process.env.ABLY_API_KEY = "envApp.keyId:keySecret";
 
       const result = await command.testEnsureAppAndKey(flags);
 
-      // Should return the env var directly without interactive selection
+      // Should extract appId from the key and return without interactive selection
       expect(result).not.toBeNull();
       expect(result?.appId).toBe("envApp");
       expect(result?.apiKey).toBe("envApp.keyId:keySecret");
