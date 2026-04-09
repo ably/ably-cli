@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+# post-checkout hook: set up worktrees after creation
+# Copies .env from the main worktree and runs pnpm install.
+#
+# Arguments: $1=prev HEAD, $2=new HEAD, $3=branch flag (1=branch checkout, 0=file checkout)
+
+# Only run on branch checkouts
+[ "$3" = "1" ] || exit 0
+
+# Detect if this is a worktree (not the main working tree)
+main_worktree="$(git worktree list --porcelain | head -1 | sed 's/^worktree //')"
+current_worktree="$(git rev-parse --show-toplevel)"
+
+[ "$main_worktree" != "$current_worktree" ] || exit 0
+
+# Copy .env from the main worktree if it exists and we don't already have one
+if [ -f "$main_worktree/.env" ] && [ ! -f "$current_worktree/.env" ]; then
+    cp "$main_worktree/.env" "$current_worktree/.env"
+    echo "post-checkout: copied .env from main worktree"
+fi
+
+# Run pnpm install if node_modules doesn't exist
+if [ ! -d "$current_worktree/node_modules" ]; then
+    echo "post-checkout: running pnpm install..."
+    cd "$current_worktree" && pnpm install
+fi

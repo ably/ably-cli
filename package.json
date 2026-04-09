@@ -48,7 +48,7 @@
     "test:coverage:report": "vitest run --coverage --reporter=html",
     "test:coverage:check": "vitest run --coverage",
     "prepack": "pnpm run build && ([ -f node_modules/.bin/oclif ] && node_modules/.bin/oclif manifest || echo 'Skipping oclif commands in production')",
-    "prepare": "pnpm run build && CI=true ABLY_INTERACTIVE=false oclif manifest",
+    "prepare": "[ -d .git ] && [ -d .githooks ] && git config core.hooksPath .githooks || true; pnpm run build && CI=true ABLY_INTERACTIVE=false oclif manifest",
     "postinstall": "[ \"$CI\" = \"true\" ] || (test -f ./dist/scripts/postinstall-welcome.js && node ./dist/scripts/postinstall-welcome.js || echo \"Skipping welcome script (not found)\")",
     "preversion": "pnpm run prepare",
     "version": "oclif readme && git add README.md",
