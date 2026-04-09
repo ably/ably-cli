@@ -24,6 +24,7 @@ import {
   cleanupRunners,
 } from "../../helpers/command-helpers.js";
 import type { CliRunner } from "../../helpers/cli-runner.js";
+import { parseNdjsonLines } from "../../helpers/ndjson.js";
 
 describe.skipIf(SHOULD_SKIP_E2E)(
   "Spaces Locations, Cursors, and Locks E2E Tests",
@@ -93,6 +94,19 @@ describe.skipIf(SHOULD_SKIP_E2E)(
             );
 
             expect(getResult.exitCode).toBe(0);
+
+            const records = parseNdjsonLines(getResult.stdout);
+            const resultRecord = records.find((r) => r.type === "result");
+            expect(resultRecord).toBeDefined();
+            expect(resultRecord!.success).toBe(true);
+            const locations = resultRecord!.locations as Array<{
+              connectionId: string;
+              location: unknown;
+            }>;
+            expect(locations).toBeDefined();
+            expect(locations.length).toBeGreaterThan(0);
+            expect(locations[0]).toHaveProperty("connectionId");
+            expect(locations[0]).toHaveProperty("location");
           } finally {
             if (locationRunner) {
               await cleanupRunners([locationRunner]);
@@ -172,6 +186,19 @@ describe.skipIf(SHOULD_SKIP_E2E)(
           );
 
           expect(getResult.exitCode).toBe(0);
+
+          const cursorRecords = parseNdjsonLines(getResult.stdout);
+          const cursorResult = cursorRecords.find((r) => r.type === "result");
+          expect(cursorResult).toBeDefined();
+          expect(cursorResult!.success).toBe(true);
+          const cursors = cursorResult!.cursors as Array<{
+            position: { x: number; y: number };
+          }>;
+          expect(cursors).toBeDefined();
+          expect(cursors.length).toBeGreaterThan(0);
+          expect(cursors[0].position).toBeDefined();
+          expect(typeof cursors[0].position.x).toBe("number");
+          expect(typeof cursors[0].position.y).toBe("number");
         } finally {
           const runners: CliRunner[] = [];
           if (subscriberRunner) runners.push(subscriberRunner);
@@ -224,6 +251,24 @@ describe.skipIf(SHOULD_SKIP_E2E)(
             );
 
             expect(getResult.exitCode).toBe(0);
+
+            const lockRecords = parseNdjsonLines(getResult.stdout);
+            const lockResult = lockRecords.find((r) => r.type === "result");
+            expect(lockResult).toBeDefined();
+            expect(lockResult!.success).toBe(true);
+            const locks = lockResult!.locks as Array<{
+              id: string;
+              status: string;
+              member: { clientId: string };
+              timestamp: string;
+            }>;
+            expect(locks).toBeDefined();
+            expect(locks.length).toBeGreaterThan(0);
+            expect(locks[0].id).toBe("test-lock-1");
+            expect(locks[0].status).toBe("locked");
+            expect(locks[0].member).toBeDefined();
+            expect(locks[0].member.clientId).toBe(clientId);
+            expect(locks[0].timestamp).toBeDefined();
           } finally {
             if (lockRunner) {
               await cleanupRunners([lockRunner]);

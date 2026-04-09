@@ -83,6 +83,14 @@ describe.skipIf(SHOULD_SKIP_CONTROL_E2E)("Integrations E2E Tests", () => {
     );
 
     expect(listResult.exitCode).toBe(0);
+
+    const listRecords = parseNdjsonLines(listResult.stdout);
+    const listRecord = listRecords.find((r) => r.type === "result");
+    expect(listRecord).toBeDefined();
+    expect(listRecord!.success).toBe(true);
+    expect(Array.isArray(listRecord!.integrations)).toBe(true);
+    expect(listRecord).toHaveProperty("appId");
+    expect(listRecord).toHaveProperty("total");
   });
 
   it(

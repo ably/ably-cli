@@ -16,6 +16,7 @@ import {
   resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
+import { parseNdjsonLines } from "../../helpers/ndjson.js";
 
 describe.skipIf(SHOULD_SKIP_E2E)("Rooms List E2E Tests", () => {
   beforeAll(() => {
@@ -45,6 +46,14 @@ describe.skipIf(SHOULD_SKIP_E2E)("Rooms List E2E Tests", () => {
 
       // Should succeed even if the list is empty
       expect(result.exitCode).toBe(0);
+
+      const records = parseNdjsonLines(result.stdout);
+      const resultRecord = records.find((r) => r.type === "result");
+      expect(resultRecord).toBeDefined();
+      expect(resultRecord!.success).toBe(true);
+      expect(Array.isArray(resultRecord!.rooms)).toBe(true);
+      expect(resultRecord).toHaveProperty("total");
+      expect(resultRecord).toHaveProperty("hasMore");
     });
 
     it("should list rooms with limit", async () => {
@@ -59,6 +68,14 @@ describe.skipIf(SHOULD_SKIP_E2E)("Rooms List E2E Tests", () => {
       );
 
       expect(result.exitCode).toBe(0);
+
+      const records = parseNdjsonLines(result.stdout);
+      const resultRecord = records.find((r) => r.type === "result");
+      expect(resultRecord).toBeDefined();
+      expect(resultRecord!.success).toBe(true);
+      expect(Array.isArray(resultRecord!.rooms)).toBe(true);
+      expect(resultRecord).toHaveProperty("total");
+      expect(resultRecord).toHaveProperty("hasMore");
     });
   });
 });
