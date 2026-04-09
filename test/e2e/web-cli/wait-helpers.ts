@@ -329,22 +329,47 @@ export async function waitForTerminalStable(
 }
 
 /**
- * Wait for session to be active with proper synchronization
+ * Wait for a specific connection state with proper timeout handling.
+ * When waiting for "connected", uses an active recovery loop that detects
+ * error/disconnected states and triggers manual reconnection via Enter key.
  */
-export async function waitForSessionActive(
+export async function waitForConnectionState(
   page: Page,
+  expectedState: string,
   timeout = 30000,
 ): Promise<void> {
   const effectiveTimeout = process.env.CI ? timeout * 2 : timeout;
 
   if (!process.env.CI || process.env.VERBOSE_TESTS) {
-    console.log("Waiting for session to become active...");
+    console.log(`Waiting for connection state: ${expectedState}`);
   }
 
-  // First wait for connected state with error recovery
+  // For non-connected states, use simple wait (no recovery needed)
+  if (expectedState !== "connected") {
+    await page.waitForFunction(
+      (state) => {
+        const win = window as Window & {
+          getAblyCliTerminalReactState?: () => {
+            componentConnectionStatus?: string;
+          };
+        };
+        const currentState = win.getAblyCliTerminalReactState?.();
+        return currentState?.componentConnectionStatus === state;
+      },
+      expectedState,
+      { timeout: effectiveTimeout },
+    );
+
+    if (!process.env.CI || process.env.VERBOSE_TESTS) {
+      console.log(`Connection state is now: ${expectedState}`);
+    }
+    return;
+  }
+
+  // For "connected" state, use active recovery loop
   const startTime = Date.now();
-  let manualReconnectAttempts = 0;
-  const maxManualReconnects = process.env.CI ? 5 : 3;
+  let reconnectAttempts = 0;
+  const maxReconnects = process.env.CI ? 5 : 3;
 
   while (Date.now() - startTime < effectiveTimeout) {
     const currentState = (await page.evaluate(() => {
@@ -363,62 +388,83 @@ export async function waitForSessionActive(
       | undefined;
 
     if (currentState?.componentConnectionStatus === "connected") {
-      break;
-    }
-
-    if (
-      currentState?.componentConnectionStatus === "disconnected" &&
-      currentState.showManualReconnectPrompt
-    ) {
-      if (manualReconnectAttempts < maxManualReconnects) {
-        if (!process.env.CI || process.env.VERBOSE_TESTS) {
-          console.log(
-            `[waitForSessionActive] Disconnected with reconnect prompt, pressing Enter (attempt ${manualReconnectAttempts + 1}/${maxManualReconnects})...`,
-          );
-        }
-        await page.keyboard.press("Enter");
-        manualReconnectAttempts++;
-        await page.waitForTimeout(process.env.CI ? 5000 : 2000);
-        continue;
-      } else {
-        throw new Error(
-          `[waitForSessionActive] Max manual reconnect attempts (${maxManualReconnects}) reached. State: ${currentState.componentConnectionStatus}`,
-        );
+      if (!process.env.CI || process.env.VERBOSE_TESTS) {
+        console.log(`Connection state is now: ${expectedState}`);
       }
+      return;
     }
 
     if (
       currentState?.componentConnectionStatus === "error" ||
       currentState?.componentConnectionStatus === "disconnected"
     ) {
-      if (!process.env.CI || process.env.VERBOSE_TESTS) {
-        console.log(
-          `[waitForSessionActive] Connection in "${currentState.componentConnectionStatus}" state, waiting for recovery...`,
-        );
+      // Wait briefly for auto-recovery or reconnect prompt
+      await page.waitForTimeout(3000);
+
+      // Re-check after waiting
+      const recheckState = (await page.evaluate(() => {
+        const win = window as Window & {
+          getAblyCliTerminalReactState?: () => {
+            componentConnectionStatus?: string;
+          };
+        };
+        return win.getAblyCliTerminalReactState?.();
+      })) as { componentConnectionStatus?: string } | undefined;
+
+      if (recheckState?.componentConnectionStatus === "connected") {
+        if (!process.env.CI || process.env.VERBOSE_TESTS) {
+          console.log(`Connection state is now: ${expectedState}`);
+        }
+        return;
       }
+
+      // Still stuck — attempt reconnect via Enter key
+      if (
+        reconnectAttempts < maxReconnects &&
+        (recheckState?.componentConnectionStatus === "disconnected" ||
+          recheckState?.componentConnectionStatus === "error")
+      ) {
+        if (!process.env.CI || process.env.VERBOSE_TESTS) {
+          console.log(
+            `[waitForConnectionState] Stuck in "${recheckState.componentConnectionStatus}", pressing Enter to reconnect (attempt ${reconnectAttempts + 1}/${maxReconnects})...`,
+          );
+        }
+        await page.keyboard.press("Enter");
+        reconnectAttempts++;
+        await page.waitForTimeout(process.env.CI ? 5000 : 2000);
+        continue;
+      }
+
       await page.waitForTimeout(2000);
       continue;
     }
 
-    // "connecting", "reconnecting", "initial", or undefined — transitional, keep waiting
+    // Transitional state (connecting, reconnecting, etc.) — keep polling
     await page.waitForTimeout(500);
   }
 
-  // Verify we actually reached connected state
-  const finalState = (await page.evaluate(() => {
-    const win = window as Window & {
-      getAblyCliTerminalReactState?: () => {
-        componentConnectionStatus?: string;
-      };
-    };
-    return win.getAblyCliTerminalReactState?.();
-  })) as { componentConnectionStatus?: string } | undefined;
+  throw new Error(
+    `[waitForConnectionState] Timed out waiting for "${expectedState}" after ${effectiveTimeout}ms`,
+  );
+}
 
-  if (finalState?.componentConnectionStatus !== "connected") {
-    throw new Error(
-      `[waitForSessionActive] Timed out waiting for connected state after ${effectiveTimeout}ms. Final state: ${finalState?.componentConnectionStatus || "unknown"}`,
-    );
+/**
+ * Wait for session to be active with proper synchronization.
+ * Delegates connection recovery to waitForConnectionState, then waits for
+ * session activation and a clean prompt.
+ */
+export async function waitForSessionActive(
+  page: Page,
+  timeout = 30000,
+): Promise<void> {
+  const effectiveTimeout = process.env.CI ? timeout * 2 : timeout;
+
+  if (!process.env.CI || process.env.VERBOSE_TESTS) {
+    console.log("Waiting for session to become active...");
   }
+
+  // First wait for connected state (with active error recovery)
+  await waitForConnectionState(page, "connected", timeout);
 
   if (!process.env.CI || process.env.VERBOSE_TESTS) {
     console.log("Connected state reached, waiting for session activation...");
@@ -478,39 +524,6 @@ export async function reloadAndWaitForTerminal(page: Page): Promise<void> {
   // Additional stabilization time for CI
   if (process.env.CI) {
     await page.waitForTimeout(2000);
-  }
-}
-
-/**
- * Wait for a specific connection state with proper timeout handling
- */
-export async function waitForConnectionState(
-  page: Page,
-  expectedState: string,
-  timeout = 30000,
-): Promise<void> {
-  const effectiveTimeout = process.env.CI ? timeout * 2 : timeout;
-
-  if (!process.env.CI || process.env.VERBOSE_TESTS) {
-    console.log(`Waiting for connection state: ${expectedState}`);
-  }
-
-  await page.waitForFunction(
-    (state) => {
-      const win = window as Window & {
-        getAblyCliTerminalReactState?: () => {
-          componentConnectionStatus?: string;
-        };
-      };
-      const currentState = win.getAblyCliTerminalReactState?.();
-      return currentState?.componentConnectionStatus === state;
-    },
-    expectedState,
-    { timeout: effectiveTimeout },
-  );
-
-  if (!process.env.CI || process.env.VERBOSE_TESTS) {
-    console.log(`Connection state is now: ${expectedState}`);
   }
 }
 
