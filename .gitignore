@@ -51,6 +51,7 @@ tsconfig.tsbuildinfo
 
 # Claude local settings
 .claude/*.local.json
+.claude/worktrees/
 
 # Playwright logs
 playwright-report/
