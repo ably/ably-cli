@@ -13,6 +13,7 @@ import { authenticateWebCli } from "./auth-helper.js";
 import { waitForRateLimitLock } from "./rate-limit-lock";
 import { getTerminalServerUrl } from "./helpers/ci-auth.js";
 import type { AblyCliWindow } from "./types";
+import { waitForConnectionState } from "./wait-helpers";
 
 const TERMINAL_SERVER_URL = getTerminalServerUrl();
 
@@ -73,6 +74,9 @@ test.describe("Web CLI Reconnection Diagnostic E2E Tests", () => {
       },
       { timeout: 30000 },
     );
+
+    // 4b. Wait for connection to be fully established
+    await waitForConnectionState(page, "connected", 30000);
 
     // 5. Verify exposed debugging functions
     const debugInfo = await page.evaluate(() => {
@@ -240,16 +244,7 @@ test.describe("Web CLI Reconnection Diagnostic E2E Tests", () => {
     await page.waitForTimeout(5000);
 
     // Wait for reconnection
-    await page.waitForFunction(
-      () => {
-        const state = (
-          window as unknown as AblyCliWindow
-        ).getAblyCliTerminalReactState?.();
-        return state?.componentConnectionStatus === "connected";
-      },
-      null,
-      { timeout: 90000 },
-    );
+    await waitForConnectionState(page, "connected", 90000);
 
     // Verify debugging functions still work after reconnection
     const postReconnectDebugInfo = await page.evaluate(() => {
