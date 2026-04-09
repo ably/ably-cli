@@ -10,7 +10,6 @@ import {
 import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
-  getUniqueChannelName,
   forceExit,
   cleanupTrackedResources,
   setupTestFailureHandler,
@@ -19,16 +18,14 @@ import {
 import { runCommand } from "../../helpers/command-helpers.js";
 import { parseNdjsonLines } from "../../helpers/ndjson.js";
 import {
-  checkMutableMessagesSupport,
+  SHOULD_SKIP_MUTABLE_TESTS,
+  setupMutableMessagesRule,
+  teardownMutableMessagesRule,
+  getMutableChannelName,
   publishAndGetSerial,
 } from "../../helpers/e2e-mutable-messages.js";
 
-// Check if the E2E test app supports mutable messages (required for update/append/delete)
-const mutableMessagesSupported = SHOULD_SKIP_E2E
-  ? false
-  : await checkMutableMessagesSupport();
-
-describe.skipIf(SHOULD_SKIP_E2E || !mutableMessagesSupported)(
+describe.skipIf(SHOULD_SKIP_E2E || SHOULD_SKIP_MUTABLE_TESTS)(
   "Channel Message Operations E2E Tests",
   () => {
     let channelName: string;
@@ -37,12 +34,16 @@ describe.skipIf(SHOULD_SKIP_E2E || !mutableMessagesSupported)(
     beforeAll(async () => {
       process.on("SIGINT", forceExit);
 
+      // Create channel rule with mutableMessages enabled
+      await setupMutableMessagesRule();
+
       // Publish a test message and get its serial for use in all tests
-      channelName = getUniqueChannelName("msg-ops");
+      channelName = getMutableChannelName("msg-ops");
       messageSerial = await publishAndGetSerial(channelName, "test-msg");
     });
 
-    afterAll(() => {
+    afterAll(async () => {
+      await teardownMutableMessagesRule();
       process.removeListener("SIGINT", forceExit);
     });
 
@@ -123,7 +124,7 @@ describe.skipIf(SHOULD_SKIP_E2E || !mutableMessagesSupported)(
         setupTestFailureHandler("should delete a message via channels delete");
 
         // Publish a fresh message to delete (so we don't conflict with update/append tests)
-        const deleteChannel = getUniqueChannelName("msg-delete");
+        const deleteChannel = getMutableChannelName("msg-delete");
         const serial = await publishAndGetSerial(deleteChannel, "to-delete");
 
         const result = await runCommand(
