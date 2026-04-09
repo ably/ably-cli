@@ -10,7 +10,6 @@ import {
 import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
-  getUniqueChannelName,
   forceExit,
   cleanupTrackedResources,
   setupTestFailureHandler,
@@ -25,7 +24,10 @@ import {
 import type { CliRunner } from "../../helpers/cli-runner.js";
 import { parseNdjsonLines } from "../../helpers/ndjson.js";
 import {
-  checkMutableMessagesSupport,
+  SHOULD_SKIP_MUTABLE_TESTS,
+  setupMutableMessagesRule,
+  teardownMutableMessagesRule,
+  getMutableChannelName,
   publishAndGetSerial,
 } from "../../helpers/e2e-mutable-messages.js";
 
@@ -34,12 +36,7 @@ function findResult(stdout: string): Record<string, unknown> {
   return records.find((r) => r.type === "result") ?? records.at(-1) ?? {};
 }
 
-// Check if the E2E test app supports mutable messages (required for annotations)
-const mutableMessagesSupported = SHOULD_SKIP_E2E
-  ? false
-  : await checkMutableMessagesSupport();
-
-describe.skipIf(SHOULD_SKIP_E2E || !mutableMessagesSupported)(
+describe.skipIf(SHOULD_SKIP_E2E || SHOULD_SKIP_MUTABLE_TESTS)(
   "Channel Annotations E2E Tests",
   () => {
     let channelName: string;
@@ -48,12 +45,16 @@ describe.skipIf(SHOULD_SKIP_E2E || !mutableMessagesSupported)(
     beforeAll(async () => {
       process.on("SIGINT", forceExit);
 
+      // Create channel rule with mutableMessages enabled
+      await setupMutableMessagesRule();
+
       // Publish a test message and get its serial for use in all tests
-      channelName = getUniqueChannelName("annotations");
+      channelName = getMutableChannelName("annotations");
       messageSerial = await publishAndGetSerial(channelName, "annotate-me");
     });
 
-    afterAll(() => {
+    afterAll(async () => {
+      await teardownMutableMessagesRule();
       process.removeListener("SIGINT", forceExit);
     });
 
