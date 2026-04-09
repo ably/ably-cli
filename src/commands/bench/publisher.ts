@@ -878,7 +878,6 @@ export default class BenchPublisher extends AblyBaseCommand {
       return { intervalId: null, progressDisplay: null };
     }
 
-    let intervalId: NodeJS.Timeout | null = null;
     const progressDisplay = new Table({
       colWidths: [20, 40],
       head: [chalk.white("Benchmark Progress"), chalk.white("status")],
@@ -901,7 +900,7 @@ export default class BenchPublisher extends AblyBaseCommand {
     }
     this.log(progressDisplay.toString());
     this.log("\n--- Logs (Last 10) ---");
-    intervalId = setInterval(() => {
+    const intervalId = setInterval(() => {
       this.updateProgressAndLogs(metrics, progressDisplay, messageCount);
     }, 500);
 

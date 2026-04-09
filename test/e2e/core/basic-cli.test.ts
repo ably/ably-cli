@@ -26,13 +26,13 @@ const _parseJsonFromOutput = (output: string): unknown => {
 
   const jsonStart = strippedOutput.indexOf("{");
   const arrayStart = strippedOutput.indexOf("[");
-  let startIndex = -1;
 
   if (jsonStart === -1 && arrayStart === -1) {
     console.error("No JSON start character ({ or [) found.");
     throw new Error(`No JSON object or array found in output.`);
   }
 
+  let startIndex: number;
   if (jsonStart !== -1 && arrayStart !== -1) {
     startIndex = Math.min(jsonStart, arrayStart); // Use the earlier starting character
   } else if (jsonStart === -1) {
@@ -46,7 +46,9 @@ const _parseJsonFromOutput = (output: string): unknown => {
     return JSON.parse(jsonString);
   } catch (error) {
     console.error("JSON parsing failed:", error);
-    throw new Error(`Failed to parse JSON from output substring.`);
+    throw new Error(`Failed to parse JSON from output substring.`, {
+      cause: error,
+    });
   }
 };
 

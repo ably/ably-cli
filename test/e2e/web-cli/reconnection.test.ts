@@ -59,7 +59,7 @@ async function _waitForPrompt(
 
     // Small delay to ensure terminal is fully ready
     await page.waitForTimeout(500);
-  } catch (_error) {
+  } catch (error) {
     console.error("Terminal did not become ready within timeout.");
 
     // Get debug information
@@ -96,6 +96,7 @@ async function _waitForPrompt(
 
     throw new Error(
       `Terminal not ready: ${debugInfo.reactState?.componentConnectionStatus || "unknown state"}`,
+      { cause: error },
     );
   }
 }

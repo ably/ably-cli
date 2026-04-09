@@ -247,9 +247,9 @@ export function formatPresenceOutput(
   const blocks: string[] = [];
 
   for (const msg of messages) {
-    const lines: string[] = [];
-
-    lines.push(formatTimestamp(new Date(msg.timestamp).toISOString()));
+    const lines: string[] = [
+      formatTimestamp(new Date(msg.timestamp).toISOString()),
+    ];
 
     if (msg.id) {
       lines.push(`${formatLabel("ID")} ${msg.id}`);

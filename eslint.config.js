@@ -71,15 +71,6 @@ export default [
       "unicorn/no-object-as-default-parameter": "off",
       "unicorn/import-style": "off",
       "unicorn/prefer-ternary": "off",
-      // New rules from unicorn v64 — disable for now, address in follow-up
-      "unicorn/no-array-sort": "off",
-      "unicorn/no-array-reverse": "off",
-      "unicorn/no-immediate-mutation": "off",
-      "unicorn/require-module-specifiers": "off",
-      "unicorn/consistent-function-scoping": "off",
-      // New rules from ESLint v10 / @eslint/js v10 — disable for now
-      "no-useless-assignment": "off",
-      "preserve-caught-error": "off",
       // Rules from .eslintrc.json
       "unicorn/no-process-exit": "off",
       "n/no-process-exit": "off",

@@ -8,6 +8,8 @@ import {
   standardFlagTests,
 } from "../../../../../helpers/standard-tests.js";
 
+const noop = () => {};
+
 describe("rooms:messages:reactions:subscribe command", () => {
   beforeEach(() => {
     getMockAblyChat();
@@ -37,7 +39,7 @@ describe("rooms:messages:reactions:subscribe command", () => {
       let reactionsCallback: ((event: unknown) => void) | null = null;
       room.messages.reactions.subscribe.mockImplementation((callback) => {
         reactionsCallback = callback;
-        return () => {}; // unsubscribe function
+        return noop; // unsubscribe function
       });
 
       const commandPromise = runCommand(
@@ -89,7 +91,7 @@ describe("rooms:messages:reactions:subscribe command", () => {
       let reactionsCallback: ((event: unknown) => void) | null = null;
       room.messages.reactions.subscribe.mockImplementation((callback) => {
         reactionsCallback = callback;
-        return () => {};
+        return noop;
       });
 
       const allRecords = await captureJsonLogs(async () => {

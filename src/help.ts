@@ -265,7 +265,7 @@ export default class CustomHelp extends Help {
     });
 
     // Convert to array and sort
-    const combined = [...uniqueEntries.values()].sort((a, b) => {
+    const combined = [...uniqueEntries.values()].toSorted((a, b) => {
       return a.id.localeCompare(b.id);
     });
 
@@ -326,13 +326,11 @@ export default class CustomHelp extends Help {
     lines.push(`${chalk.bold("COMMON COMMANDS")}`);
 
     const isAnonymousMode = process.env.ABLY_ANONYMOUS_USER_MODE === "true";
-    const commands = [];
-
     // Basic commands always available
-    commands.push(
+    const commands = [
       [`${cmdPrefix}channels publish [channel] [message]`, "Publish a message"],
       [`${cmdPrefix}channels subscribe [channel]`, "Subscribe to a channel"],
-    );
+    ];
 
     // Commands available only for authenticated users
     if (!isAnonymousMode) {

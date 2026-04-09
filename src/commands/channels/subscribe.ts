@@ -70,8 +70,6 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
     // Get all channel names from argv
     const channelNames = parseResult.argv as string[];
-    let channels: Ably.RealtimeChannel[] = [];
-
     try {
       // Create the Ably client
       this.client = await this.createAblyRealtimeClient(flags);
@@ -88,7 +86,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
       }
 
       // Setup channels with appropriate options
-      channels = channelNames.map((channelName: string) => {
+      const channels = channelNames.map((channelName: string) => {
         const channelOptions: Ably.ChannelOptions = {};
 
         // Configure encryption if cipher key is provided

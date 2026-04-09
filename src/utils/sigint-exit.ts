@@ -51,5 +51,3 @@ if (process.env.ABLY_INTERACTIVE_MODE === "true") {
     });
   });
 }
-
-export {};

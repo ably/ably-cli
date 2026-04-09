@@ -69,7 +69,7 @@ export function getOptimalTestOrder(
   _maxConnectionsPerMinute: number,
 ): string[] {
   // Sort tests by priority and connection count
-  const sorted = [...TEST_PROFILES].sort((a, b) => {
+  const sorted = TEST_PROFILES.toSorted((a, b) => {
     // Priority first
     const priorityOrder = { high: 0, medium: 1, low: 2 };
     const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
@@ -92,7 +92,7 @@ export function calculateTestBatches(
   let currentBatch: string[] = [];
   let currentBatchConnections = 0;
 
-  const sorted = [...TEST_PROFILES].sort((a, b) => {
+  const sorted = TEST_PROFILES.toSorted((a, b) => {
     const priorityOrder = { high: 0, medium: 1, low: 2 };
     return priorityOrder[a.priority] - priorityOrder[b.priority];
   });
@@ -145,7 +145,6 @@ export function estimateExecutionTime(
   retryDelayMs: number,
 ): number {
   let totalConnections = 0;
-  let totalTime = 0;
 
   for (const testFile of testFiles) {
     const profile = getTestProfile(testFile);
@@ -161,7 +160,7 @@ export function estimateExecutionTime(
   const windowsNeeded = Math.ceil(totalConnections / maxConnectionsPerMinute);
 
   // Base time: 30 seconds per test (rough average)
-  totalTime = testFiles.length * 30000;
+  let totalTime = testFiles.length * 30000;
 
   // Add rate limit delays between windows
   if (windowsNeeded > 1) {

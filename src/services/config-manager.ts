@@ -329,7 +329,9 @@ export class TomlConfigManager implements ConfigManager {
       // Write the config to disk
       fs.writeFileSync(this.configPath, tomlContent, { mode: 0o600 }); // Secure file permissions
     } catch (error) {
-      throw new Error(`Failed to save Ably config: ${String(error)}`);
+      throw new Error(`Failed to save Ably config: ${String(error)}`, {
+        cause: error,
+      });
     }
   }
 
@@ -523,7 +525,9 @@ export class TomlConfigManager implements ConfigManager {
           }
         }
       } catch (error) {
-        throw new Error(`Failed to load Ably config: ${String(error)}`);
+        throw new Error(`Failed to load Ably config: ${String(error)}`, {
+          cause: error,
+        });
       }
     }
   }

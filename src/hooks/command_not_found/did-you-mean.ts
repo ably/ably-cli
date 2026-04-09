@@ -105,9 +105,7 @@ const hook: Hook<"command_not_found"> = async function (opts) {
       process.env.SKIP_CONFIRMATION === "true" ||
       process.env.ABLY_CLI_NON_INTERACTIVE === "true";
 
-    // Variable to hold confirmation state
-    let confirmed = false;
-
+    let confirmed: boolean;
     if (skipConfirmation) {
       // Auto-confirm in test/non-interactive environment
       // Important: We still proceed to *try* running the command, but tests assert it *fails* correctly

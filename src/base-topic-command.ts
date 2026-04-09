@@ -113,11 +113,11 @@ export abstract class BaseTopicCommand extends InteractiveBaseCommand {
           }
 
           // Handle confirmation
-          let confirmed = false;
           const skipConfirmation =
             process.env.SKIP_CONFIRMATION === "true" ||
             process.env.ABLY_CLI_NON_INTERACTIVE === "true";
 
+          let confirmed: boolean;
           if (skipConfirmation) {
             confirmed = true;
           } else {
@@ -295,6 +295,6 @@ export abstract class BaseTopicCommand extends InteractiveBaseCommand {
       }
     }
 
-    return commands.sort((a, b) => a.id.localeCompare(b.id));
+    return commands.toSorted((a, b) => a.id.localeCompare(b.id));
   }
 }

@@ -38,8 +38,6 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsOccupancySubscribe);
-    let channel: Ably.RealtimeChannel | null = null;
-
     try {
       this.client = await this.createAblyRealtimeClient(flags);
       if (!this.client) return;
@@ -48,7 +46,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
       const channelName = args.channel;
 
       // Get channel with occupancy option enabled
-      channel = client.channels.get(channelName, {
+      const channel = client.channels.get(channelName, {
         params: {
           occupancy: "metrics",
         },

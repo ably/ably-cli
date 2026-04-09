@@ -49,8 +49,6 @@ export default class LogsSubscribe extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(LogsSubscribe);
-    let channel: Ably.RealtimeChannel | null = null;
-
     try {
       this.client = await this.createAblyRealtimeClient(flags);
       if (!this.client) return;
@@ -83,7 +81,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
         logsChannelName,
       );
 
-      channel = client.channels.get(logsChannelName, channelOptions);
+      const channel = client.channels.get(logsChannelName, channelOptions);
 
       // Set up channel state logging
       this.setupChannelStateLogging(channel, flags, {
