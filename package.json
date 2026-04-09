@@ -136,6 +136,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@eslint/compat": "^2.0.5",
     "@eslint/js": "^10.0.1",
     "@oclif/test": "^4.1.18",
     "@types/fast-levenshtein": "^0.0.4",

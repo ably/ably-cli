@@ -10,6 +10,7 @@ import eslint from "@eslint/js"; // Import base eslint config
 import vitest from '@vitest/eslint-plugin'
 import eslintPluginReact from "eslint-plugin-react"
 import eslintPluginReactHooks from "eslint-plugin-react-hooks"
+import { fixupPluginRules } from "@eslint/compat"
 
 export default [
   {
@@ -33,7 +34,7 @@ export default [
       "packages/react-web-cli/dist/index.mjs",
       "bin/", // Added from .eslintrc.cjs
       "playwright-report/**", // Ignore Playwright report files
-      "vitest.config.ts",
+      "**/vitest.config.ts",
       ".claude/worktrees/**",
       ".claude/skills/**"
     ], // Updated to match all ignorePatterns from .eslintrc.json
@@ -70,6 +71,15 @@ export default [
       "unicorn/no-object-as-default-parameter": "off",
       "unicorn/import-style": "off",
       "unicorn/prefer-ternary": "off",
+      // New rules from unicorn v64 — disable for now, address in follow-up
+      "unicorn/no-array-sort": "off",
+      "unicorn/no-array-reverse": "off",
+      "unicorn/no-immediate-mutation": "off",
+      "unicorn/require-module-specifiers": "off",
+      "unicorn/consistent-function-scoping": "off",
+      // New rules from ESLint v10 / @eslint/js v10 — disable for now
+      "no-useless-assignment": "off",
+      "preserve-caught-error": "off",
       // Rules from .eslintrc.json
       "unicorn/no-process-exit": "off",
       "n/no-process-exit": "off",
@@ -120,8 +130,8 @@ export default [
     // Configuration for React Web CLI package - TSX files
     files: ["packages/react-web-cli/**/*.{ts,tsx}"],
     plugins: {
-      react: eslintPluginReact,
-      "react-hooks": eslintPluginReactHooks,
+      react: fixupPluginRules(eslintPluginReact),
+      "react-hooks": fixupPluginRules(eslintPluginReactHooks),
       "@typescript-eslint": tsPlugin,
     },
     languageOptions: {
@@ -130,7 +140,8 @@ export default [
         ecmaFeatures: {
           jsx: true,
         },
-        project: "./packages/react-web-cli/tsconfig.json",
+        project: true,
+        tsconfigRootDir: import.meta.dirname,
       },
       globals: {
         ...globals.browser,

@@ -24,7 +24,7 @@ $ npm install -g @ably/cli
 $ ably COMMAND
 running command...
 $ ably (--version)
-@ably/cli/0.17.0 darwin-arm64 node-v22.14.0
+@ably/cli/0.17.0 darwin-arm64 node-v24.4.1
 $ ably --help [COMMAND]
 USAGE
   $ ably COMMAND
@@ -1272,7 +1272,7 @@ EXAMPLES
   $ ably autocomplete --refresh-cache
 ```
 
-_See code: [@oclif/plugin-autocomplete](https://github.com/oclif/plugin-autocomplete/blob/v3.2.43/src/commands/autocomplete/index.ts)_
+_See code: [@oclif/plugin-autocomplete](https://github.com/oclif/plugin-autocomplete/blob/v3.2.45/src/commands/autocomplete/index.ts)_
 
 ## `ably bench`
 
