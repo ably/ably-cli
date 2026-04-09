@@ -9,6 +9,7 @@ import eslintPluginPrettier from "eslint-plugin-prettier";
 import eslint from "@eslint/js"; // Import base eslint config
 import vitest from '@vitest/eslint-plugin'
 import eslintPluginReact from "eslint-plugin-react"
+import eslintPluginReactHooks from "eslint-plugin-react-hooks"
 
 export default [
   {
@@ -120,6 +121,7 @@ export default [
     files: ["packages/react-web-cli/**/*.{ts,tsx}"],
     plugins: {
       react: eslintPluginReact,
+      "react-hooks": eslintPluginReactHooks,
       "@typescript-eslint": tsPlugin,
     },
     languageOptions: {
@@ -143,25 +145,37 @@ export default [
       // React recommended rules
       ...eslintPluginReact.configs.recommended.rules,
       ...eslintPluginReact.configs["jsx-runtime"].rules,
-      // TypeScript rules
-      ...tsPlugin.configs.recommended.rules,
+      // TypeScript rules (type-checked for full safety)
+      ...tsPlugin.configs["recommended-type-checked"].rules,
+      // React hooks rules
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "error",
       // Custom overrides for this package
       "unicorn/prefer-module": "off",
-      "unicorn/no-negated-condition": "off",
       "unicorn/filename-case": "off",
-      "unicorn/prefer-string-slice": "off",
-      "unicorn/prefer-code-point": "off",
       "unicorn/prevent-abbreviations": "off",
       "unicorn/no-array-reduce": "off",
-      "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unsafe-assignment": "off",
-      "@typescript-eslint/no-unsafe-call": "off",
-      "@typescript-eslint/no-unsafe-member-access": "off",
-      "@typescript-eslint/no-unsafe-argument": "off",
-      "@typescript-eslint/no-unsafe-return": "off",
-      "@typescript-eslint/no-base-to-string": "off",
-      "no-console": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-unsafe-assignment": "error",
+      "@typescript-eslint/no-unsafe-call": "error",
+      "@typescript-eslint/no-unsafe-member-access": "error",
+      "@typescript-eslint/no-unsafe-argument": "error",
+      "@typescript-eslint/no-unsafe-return": "error",
+      "@typescript-eslint/no-base-to-string": "error",
+      "@typescript-eslint/no-deprecated": "warn",
+      "@typescript-eslint/no-useless-constructor": "error",
+      "@typescript-eslint/unified-signatures": "error",
+      "@typescript-eslint/return-await": "error",
+      "@typescript-eslint/consistent-type-imports": "error",
+      "no-console": ["error", { allow: ["warn", "error"] }],
       "no-control-regex": "off", // Terminal escape sequences use control chars
       "n/no-missing-import": "off", // TSX imports are handled by TypeScript
       "react/prop-types": "off", // Using TypeScript for prop validation
@@ -214,6 +228,16 @@ export default [
       ...vitest.configs.recommended.rules,
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-expressions": "off",
+      "@typescript-eslint/require-await": "off",
+      "@typescript-eslint/unbound-method": "off",
+      // Tests legitimately use `any` for mocking
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/no-base-to-string": "off",
+      "no-console": "off",
       "vitest/no-focused-tests": "error", // Equivalent to mocha/no-exclusive-tests
       "vitest/no-disabled-tests": "warn", // Equivalent to mocha/no-skipped-tests
     },

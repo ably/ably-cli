@@ -274,7 +274,7 @@ function stripHtml(string_: string): string {
 function getStringWidth(string_: string): number {
   let width = 0;
   for (let index = 0; index < string_.length; index++) {
-    const code = string_.charCodeAt(index);
+    const code = string_.codePointAt(index)!;
     // Check for emoji and wide characters
     if (
       code >= 0x1_f0_00 || // Emoji blocks
@@ -288,11 +288,13 @@ function getStringWidth(string_: string): number {
     ) {
       // Supplemental Symbols and Pictographs
       width += 2;
+      // Skip low surrogate for supplementary-plane characters (code point > 0xFFFF)
+      if (code > 0xff_ff) index++;
       // Skip next char if it's a combining character
       if (
         index + 1 < string_.length &&
-        string_.charCodeAt(index + 1) >= 0xfe_00 &&
-        string_.charCodeAt(index + 1) <= 0xfe_0f
+        string_.codePointAt(index + 1)! >= 0xfe_00 &&
+        string_.codePointAt(index + 1)! <= 0xfe_0f
       ) {
         index++;
       }

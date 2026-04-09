@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
+import type React from "react";
+import { useEffect, useState, useRef } from "react";
 
 /**
  * useTerminalVisibility detects whether the referenced element is currently visible to the user.
@@ -18,11 +19,11 @@ export function useTerminalVisibility(
   useEffect(() => {
     function recompute(intersecting: boolean | null = null) {
       const isIntersecting =
-        intersecting != null ? intersecting : lastIntersectionRef.current;
+        intersecting == null ? lastIntersectionRef.current : intersecting;
       const pageVisible =
-        typeof document !== "undefined"
-          ? document.visibilityState === "visible"
-          : true;
+        typeof document === "undefined"
+          ? true
+          : document.visibilityState === "visible";
       setVisible(isIntersecting && pageVisible);
     }
 

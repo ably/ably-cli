@@ -6,6 +6,12 @@
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
+import type {
+  ControlMessage,
+  TerminalWithConnectingState,
+  AblyCliGlobals,
+  WebSocketMessageData,
+} from "./types";
 
 // Constants
 export const MAX_PTY_BUFFER_LENGTH = 10000;
@@ -95,14 +101,6 @@ export function filterDockerHandshake(
 
   // Still accumulating - don't output anything yet
   return "";
-}
-
-/**
- * Checks if a string contains Docker handshake markers (legacy function for compatibility)
- * Note: This only works for complete chunks and is kept for backward compatibility
- */
-export function isHijackMetaChunk(txt: string): boolean {
-  return /"stream"\s*:\s*true/.test(txt) || /"hijack"\s*:\s*true/.test(txt);
 }
 
 /**
@@ -204,14 +202,17 @@ export function createAuthPayload(
     // Extract fields from signed config for server convenience
     // Server uses these to set environment variables like ABLY_ANONYMOUS_USER_MODE
     try {
-      const parsedConfig = JSON.parse(signedConfig);
+      const parsedConfig = JSON.parse(signedConfig) as {
+        apiKey?: string;
+        accessToken?: string;
+      };
       if (parsedConfig.apiKey) {
         payload.apiKey = parsedConfig.apiKey;
       }
       if (parsedConfig.accessToken) {
         payload.accessToken = parsedConfig.accessToken;
       }
-      console.log("[createAuthPayload] Using signed config auth", {
+      debugLog("[createAuthPayload] Using signed config auth", {
         hasApiKey: !!payload.apiKey,
         hasAccessToken: !!payload.accessToken,
       });
@@ -224,13 +225,13 @@ export function createAuthPayload(
 
   // Check for CI auth token in window object
   // This will be injected during test execution
-  const win = globalThis as any;
+  const win = globalThis as typeof globalThis & AblyCliGlobals;
   if (win.__ABLY_CLI_CI_AUTH_TOKEN__) {
     const ciToken: string = win.__ABLY_CLI_CI_AUTH_TOKEN__;
     payload.ciAuthToken = ciToken;
     // Debug logging in CI
     if (win.__ABLY_CLI_CI_MODE__ === "true") {
-      console.log("[CI Auth] Including CI auth token in payload", {
+      debugLog("[CI Auth] Including CI auth token in payload", {
         tokenLength: ciToken.length,
         testGroup: win.__ABLY_CLI_TEST_GROUP__ || "unknown",
         runId: win.__ABLY_CLI_RUN_ID__ || "unknown",
@@ -248,7 +249,7 @@ export function createAuthPayload(
 /**
  * Parses control messages from WebSocket data
  */
-export function parseControlMessage(data: Uint8Array): any {
+export function parseControlMessage(data: Uint8Array): ControlMessage | null {
   const prefixBytes = new TextEncoder().encode(CONTROL_MESSAGE_PREFIX);
 
   // Check if this is a control message
@@ -262,7 +263,7 @@ export function parseControlMessage(data: Uint8Array): any {
   try {
     const jsonBytes = data.slice(prefixBytes.length);
     const jsonStr = new TextDecoder().decode(jsonBytes);
-    return JSON.parse(jsonStr);
+    return JSON.parse(jsonStr) as ControlMessage;
   } catch (error) {
     console.error("Failed to parse control message:", error);
     return null;
@@ -272,7 +273,9 @@ export function parseControlMessage(data: Uint8Array): any {
 /**
  * Converts various WebSocket message data types to Uint8Array
  */
-export async function messageDataToUint8Array(data: any): Promise<Uint8Array> {
+export async function messageDataToUint8Array(
+  data: WebSocketMessageData,
+): Promise<Uint8Array> {
   if (typeof data === "string") {
     return new TextEncoder().encode(data);
   } else if (data instanceof Blob) {
@@ -290,15 +293,12 @@ export async function messageDataToUint8Array(data: any): Promise<Uint8Array> {
  * Clears the "Connecting..." message from terminal
  */
 export function clearConnectingMessage(term: Terminal): void {
-  const termAny = term as any;
-  if (termAny._connectingLine !== undefined) {
+  const termExt = term as Terminal & TerminalWithConnectingState;
+  if (termExt._connectingLine !== undefined) {
     try {
       const currentY = term.buffer.active.cursorY;
       const currentX = term.buffer.active.cursorX;
-      const connectingLine = termAny._connectingLine;
-      const bufferLength = term.buffer.active.length;
-      const baseY = term.buffer.active.baseY;
-      const viewportY = term.buffer.active.viewportY;
+      const connectingLine = termExt._connectingLine;
 
       // Move to the connecting line and clear it
       term.write(`\u001B[${connectingLine + 1};1H`); // Move to line
@@ -307,8 +307,8 @@ export function clearConnectingMessage(term: Terminal): void {
       // Move cursor back to previous position
       term.write(`\u001B[${currentY + 1};${currentX + 1}H`);
 
-      delete termAny._connectingLine;
-      delete termAny._connectingMessageLength;
+      delete termExt._connectingLine;
+      delete termExt._connectingMessageLength;
     } catch (error) {
       console.warn("Could not clear connecting message:", error);
     }
@@ -324,16 +324,13 @@ export function showConnectingMessage(
 ): void {
   try {
     const cursorY = term.buffer.active.cursorY;
-    const cursorX = term.buffer.active.cursorX;
-    const bufferLength = term.buffer.active.length;
-    const baseY = term.buffer.active.baseY;
-    const viewportY = term.buffer.active.viewportY;
 
     term.writeln(message);
 
     // Store line number for later clearing
-    (term as any)._connectingLine = cursorY;
-    (term as any)._connectingMessageLength = message.length;
+    (term as Terminal & TerminalWithConnectingState)._connectingLine = cursorY;
+    (term as Terminal & TerminalWithConnectingState)._connectingMessageLength =
+      message.length;
   } catch (error) {
     console.error(`[showConnectingMessage] Error:`, error);
     // If buffer is not ready, just write without tracking line number
@@ -345,7 +342,11 @@ export function showConnectingMessage(
  * Debug logging helper
  */
 export function debugLog(...args: unknown[]): void {
-  if (typeof globalThis !== "undefined" && (globalThis as any).ABLY_CLI_DEBUG) {
+  if (
+    typeof globalThis !== "undefined" &&
+    (globalThis as typeof globalThis & AblyCliGlobals).ABLY_CLI_DEBUG
+  ) {
+    // eslint-disable-next-line no-console -- deliberate debug output gate
     console.log("[AblyCLITerminal DEBUG]", ...args);
   }
 }
