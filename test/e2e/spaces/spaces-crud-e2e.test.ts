@@ -23,6 +23,7 @@ import {
   cleanupRunners,
 } from "../../helpers/command-helpers.js";
 import type { CliRunner } from "../../helpers/cli-runner.js";
+import { parseNdjsonLines } from "../../helpers/ndjson.js";
 
 describe.skipIf(SHOULD_SKIP_E2E)("Spaces CRUD E2E Tests", () => {
   beforeAll(() => {
@@ -59,6 +60,14 @@ describe.skipIf(SHOULD_SKIP_E2E)("Spaces CRUD E2E Tests", () => {
       );
 
       expect(result.exitCode).toBe(0);
+
+      const records = parseNdjsonLines(result.stdout);
+      const resultRecord = records.find((r) => r.type === "result");
+      expect(resultRecord).toBeDefined();
+      expect(resultRecord!.success).toBe(true);
+      const space = resultRecord!.space as { name: string };
+      expect(space).toBeDefined();
+      expect(space.name).toBe(spaceName);
     });
   });
 
@@ -73,6 +82,14 @@ describe.skipIf(SHOULD_SKIP_E2E)("Spaces CRUD E2E Tests", () => {
 
       // Should succeed even if the list is empty
       expect(result.exitCode).toBe(0);
+
+      const records = parseNdjsonLines(result.stdout);
+      const resultRecord = records.find((r) => r.type === "result");
+      expect(resultRecord).toBeDefined();
+      expect(resultRecord!.success).toBe(true);
+      expect(Array.isArray(resultRecord!.spaces)).toBe(true);
+      expect(resultRecord).toHaveProperty("total");
+      expect(resultRecord).toHaveProperty("hasMore");
     });
   });
 
@@ -112,6 +129,20 @@ describe.skipIf(SHOULD_SKIP_E2E)("Spaces CRUD E2E Tests", () => {
         );
 
         expect(result.exitCode).toBe(0);
+
+        const records = parseNdjsonLines(result.stdout);
+        const resultRecord = records.find((r) => r.type === "result");
+        expect(resultRecord).toBeDefined();
+        expect(resultRecord!.success).toBe(true);
+        const space = resultRecord!.space as {
+          name: string;
+          members: Array<{ clientId: string }>;
+        };
+        expect(space).toBeDefined();
+        expect(space.name).toBe(spaceName);
+        expect(Array.isArray(space.members)).toBe(true);
+        expect(space.members.length).toBeGreaterThan(0);
+        expect(space.members[0].clientId).toBe(clientId);
       } finally {
         if (member) {
           await cleanupRunners([member]);

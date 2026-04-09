@@ -22,6 +22,7 @@ import {
   cleanupRunners,
 } from "../../helpers/command-helpers.js";
 import type { CliRunner } from "../../helpers/cli-runner.js";
+import { parseNdjsonLines } from "../../helpers/ndjson.js";
 
 describe.skipIf(SHOULD_SKIP_E2E)("Logs E2E Tests", () => {
   beforeAll(() => {
@@ -51,6 +52,13 @@ describe.skipIf(SHOULD_SKIP_E2E)("Logs E2E Tests", () => {
 
       // Should succeed even if empty
       expect(result.exitCode).toBe(0);
+
+      const records = parseNdjsonLines(result.stdout);
+      const resultRecord = records.find((r) => r.type === "result");
+      expect(resultRecord).toBeDefined();
+      expect(resultRecord!.success).toBe(true);
+      expect(Array.isArray(resultRecord!.messages)).toBe(true);
+      expect(resultRecord).toHaveProperty("hasMore");
     });
   });
 
@@ -163,6 +171,13 @@ describe.skipIf(SHOULD_SKIP_E2E)("Logs E2E Tests", () => {
       );
 
       expect(result.exitCode).toBe(0);
+
+      const records = parseNdjsonLines(result.stdout);
+      const resultRecord = records.find((r) => r.type === "result");
+      expect(resultRecord).toBeDefined();
+      expect(resultRecord!.success).toBe(true);
+      expect(Array.isArray(resultRecord!.messages)).toBe(true);
+      expect(resultRecord).toHaveProperty("hasMore");
     });
   });
 
@@ -177,6 +192,13 @@ describe.skipIf(SHOULD_SKIP_E2E)("Logs E2E Tests", () => {
 
       // Should succeed even if empty
       expect(result.exitCode).toBe(0);
+
+      const records = parseNdjsonLines(result.stdout);
+      const resultRecord = records.find((r) => r.type === "result");
+      expect(resultRecord).toBeDefined();
+      expect(resultRecord!.success).toBe(true);
+      expect(Array.isArray(resultRecord!.messages)).toBe(true);
+      expect(resultRecord).toHaveProperty("hasMore");
     });
 
     it("should subscribe to push logs", { timeout: 60000 }, async () => {

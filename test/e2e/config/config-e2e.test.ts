@@ -58,6 +58,15 @@ describe("Config E2E Tests", () => {
 
       // Same as above — just verify it doesn't crash
       expect([0, 1]).toContain(result.exitCode);
+
+      // Validate JSON structure — both success and error produce valid JSON
+      const lines = result.stdout
+        .trim()
+        .split("\n")
+        .filter((l) => l.trim().startsWith("{"));
+      expect(lines.length).toBeGreaterThan(0);
+      const json = JSON.parse(lines[0]);
+      expect(json).toHaveProperty("type");
     });
   });
 

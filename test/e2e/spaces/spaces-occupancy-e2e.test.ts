@@ -23,6 +23,7 @@ import {
   cleanupRunners,
 } from "../../helpers/command-helpers.js";
 import type { CliRunner } from "../../helpers/cli-runner.js";
+import { parseNdjsonLines } from "../../helpers/ndjson.js";
 
 describe.skipIf(SHOULD_SKIP_E2E)("Spaces Occupancy E2E Tests", () => {
   beforeAll(() => {
@@ -85,6 +86,20 @@ describe.skipIf(SHOULD_SKIP_E2E)("Spaces Occupancy E2E Tests", () => {
         );
 
         expect(result.exitCode).toBe(0);
+
+        const records = parseNdjsonLines(result.stdout);
+        const resultRecord = records.find((r) => r.type === "result");
+        expect(resultRecord).toBeDefined();
+        expect(resultRecord!.success).toBe(true);
+        const occupancy = resultRecord!.occupancy as {
+          spaceName: string;
+          metrics: { connections: number; presenceMembers: number };
+        };
+        expect(occupancy).toBeDefined();
+        expect(occupancy.spaceName).toBe(spaceName);
+        expect(occupancy.metrics).toBeDefined();
+        expect(typeof occupancy.metrics.connections).toBe("number");
+        expect(typeof occupancy.metrics.presenceMembers).toBe("number");
       } finally {
         if (memberRunner) {
           await cleanupRunners([memberRunner]);
