@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "declaration": true,
+    "sourceMap": true,
     "module": "NodeNext",
     "outDir": "./dist",
     "strict": true,
