@@ -158,10 +158,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
             );
           });
         }, KEYSTROKE_INTERVAL);
-      }
 
-      // If auto-type is enabled, keep the command running to maintain typing state
-      if (flags["auto-type"]) {
         this.logCliEvent(
           flags,
           "typing",
@@ -175,7 +172,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
           failurePromise,
         ]);
       } else {
-        // Suppress unhandled rejection if room fails during cleanup
+        // Suppress unhandled rejection — failurePromise exists from setupRoomStatusHandler
         failurePromise.catch(() => {});
       }
     } catch (error) {
