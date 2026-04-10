@@ -196,9 +196,7 @@ describe("push:publish command", () => {
       expect(result.notification).toHaveProperty("published", true);
       expect(result.notification).toHaveProperty("channel", "my-channel");
     });
-  });
 
-  describe("--message flag (realtime message data)", () => {
     it("should include string message data when publishing via channel", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("my-channel");
@@ -259,18 +257,6 @@ describe("push:publish command", () => {
       );
     });
 
-    it("should fail when --message is used without --channel", async () => {
-      const { error } = await runCommand(
-        ["push:publish", "--message", "hello", "--title", "Hi"],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
-      expect(error?.message).toContain(
-        "--message can only be used with --channel",
-      );
-    });
-
     it("should ignore --message when direct recipient overrides --channel", async () => {
       const mock = getMockAblyRest();
 
@@ -316,11 +302,23 @@ describe("push:publish command", () => {
       expect(result).toHaveProperty("notification");
       expect(result.notification).toHaveProperty("published", true);
       expect(result.notification).toHaveProperty("channel", "my-channel");
-      expect(result.notification).toHaveProperty("messageData", true);
+      expect(result.notification).toHaveProperty("messageData", "hello");
     });
   });
 
   describe("error handling", () => {
+    it("should fail when --message is used without --channel", async () => {
+      const { error } = await runCommand(
+        ["push:publish", "--message", "hello", "--title", "Hi"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain(
+        "--message can only be used with --channel",
+      );
+    });
+
     it("should handle API errors", async () => {
       const mock = getMockAblyRest();
       mock.push.admin.publish.mockRejectedValue(new Error("Publish failed"));

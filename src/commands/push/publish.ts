@@ -296,7 +296,7 @@ export default class PushPublish extends AblyBaseCommand {
               notification: {
                 published: true,
                 channel: channelName,
-                ...(flags.message ? { messageData: true } : {}),
+                ...(flags.message ? { messageData: publishMessage.data } : {}),
               },
             },
             flags,
