@@ -36,10 +36,8 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(KeysRevokeCommand);
 
-    let keyId = args.keyName;
-
     const parsed = parseKeyIdentifier(args.keyName);
-    keyId = parsed.keyId;
+    const keyId = parsed.keyId;
 
     const appId = parsed.appId ?? (await this.requireAppId(flags));
 

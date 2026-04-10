@@ -56,7 +56,7 @@ export default class AppsList extends ControlBaseCommand {
         this.log(`Found ${apps.length} apps:\n`);
 
         // Sort apps so current app is first, then alphabetically by name
-        const sortedApps = [...apps].sort((a, b) => {
+        const sortedApps = apps.toSorted((a, b) => {
           // Current app first
           if (a.id === currentAppId) return -1;
           if (b.id === currentAppId) return 1;

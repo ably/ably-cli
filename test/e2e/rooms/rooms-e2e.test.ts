@@ -225,6 +225,7 @@ describe("Rooms E2E Tests", () => {
             // Re-throw with additional context
             throw new Error(
               `Test failed: ${error instanceof Error ? error.message : String(error)}`,
+              { cause: error },
             );
           }
         } finally {
@@ -356,6 +357,7 @@ describe("Rooms E2E Tests", () => {
           // Re-throw with additional context
           throw new Error(
             `Test failed: ${error instanceof Error ? error.message : String(error)}`,
+            { cause: error },
           );
         } finally {
           if (subscribeRunner) {

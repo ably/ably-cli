@@ -77,7 +77,6 @@ export default class BenchSubscriber extends AblyBaseCommand {
     if (!this.realtime) return; // Exit if client setup failed
 
     const client = this.realtime;
-    let channel: Ably.RealtimeChannel | null = null;
     const metrics: TestMetrics = {
       endToEndLatencies: [],
       lastMessageTime: 0,
@@ -90,7 +89,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
     };
 
     try {
-      channel = this.handleChannel(client, args.channel, flags);
+      const channel = this.handleChannel(client, args.channel, flags);
 
       // Show initial status
       this.logProgress(

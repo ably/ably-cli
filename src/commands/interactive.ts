@@ -167,17 +167,15 @@ export default class Interactive extends Command {
         console.log(chalk.bold("COMMON COMMANDS"));
 
         const isAnonymousMode = this.isAnonymousWebMode();
-        const commands = [];
-
         // Basic commands always available
-        commands.push(
+        const commands = [
           ["help", "Show help for any command"],
           [
             "channels publish [channel] [message]",
             "Publish a message to a channel",
           ],
           ["channels subscribe [channel]", "Subscribe to a channel"],
-        );
+        ];
 
         // Commands available only for authenticated users
         if (!isAnonymousMode) {
@@ -884,7 +882,7 @@ export default class Interactive extends Command {
       }
     }
 
-    return [...new Set(subcommands)].sort();
+    return [...new Set(subcommands)].toSorted();
   }
 
   private getFlagsForCommandSync(commandPath: string[]): string[] {
@@ -956,7 +954,7 @@ export default class Interactive extends Command {
       flags.push("--version", "-v");
     }
 
-    const uniqueFlags = [...new Set(flags)].sort();
+    const uniqueFlags = [...new Set(flags)].toSorted();
 
     // Cache for next time
     if (!this._flagsCache) {

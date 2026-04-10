@@ -50,10 +50,8 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
       );
     }
 
-    let keyId = args.keyName;
-
     const parsed = parseKeyIdentifier(args.keyName);
-    keyId = parsed.keyId;
+    const keyId = parsed.keyId;
 
     const appId = parsed.appId ?? (await this.requireAppId(flags));
 

@@ -159,10 +159,8 @@ export async function createTempOutputFile(): Promise<string> {
  * Get process environment with E2E test settings
  */
 function getProcessEnv(): NodeJS.ProcessEnv {
-  const childEnv = { ...process.env };
-  childEnv.ABLY_API_KEY = E2E_API_KEY;
-  delete childEnv.ABLY_CLI_TEST_MODE;
-  return childEnv;
+  const { ABLY_CLI_TEST_MODE: _, ...rest } = process.env;
+  return { ...rest, ABLY_API_KEY: E2E_API_KEY };
 }
 
 /**
@@ -174,9 +172,8 @@ export async function runBackgroundProcessAndGetOutput(
 ): Promise<{ stdout: string; stderr: string; exitCode: number | null }> {
   const _obfuscatedCommand = obfuscateSensitiveData(command);
   // Construct environment for child process
-  const childEnv = { ...process.env };
-  childEnv.ABLY_API_KEY = E2E_API_KEY;
-  delete childEnv.ABLY_CLI_TEST_MODE;
+  const { ABLY_CLI_TEST_MODE: _testMode, ...restEnv } = process.env;
+  const childEnv = { ...restEnv, ABLY_API_KEY: E2E_API_KEY };
 
   return new Promise((resolve, reject) => {
     let stdout = "";
@@ -314,7 +311,7 @@ async function attemptProcessStart(
   // and adds negligible overhead because the underlying `Set` will ignore duplicates.
   trackTestOutputFile(outputPath);
 
-  let processId: string | null = null;
+  let processId: string;
   let childProcess: ChildProcess | null = null;
   const controller = new AbortController();
   const signal = controller.signal;
@@ -535,6 +532,7 @@ async function attemptProcessStart(
       // This will likely lead to readiness timeout or ENOENT later.
       throw new Error(
         `Failed to create output stream for ${outputPath}: ${errorMessage}`,
+        { cause: error },
       );
     }
 

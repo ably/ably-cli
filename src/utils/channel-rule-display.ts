@@ -37,12 +37,10 @@ export function formatChannelRuleDetails(
     showTimestamps = true,
   } = options;
   const bool = bold ? boolFieldBold : boolField;
-  const lines: string[] = [];
-
-  lines.push(
+  const lines: string[] = [
     `${indent}${formatLabel("Persisted")} ${bool(rule.persisted)}`,
     `${indent}${formatLabel("Push Enabled")} ${bool(rule.pushEnabled)}`,
-  );
+  ];
 
   if (rule.mutableMessages !== undefined) {
     lines.push(

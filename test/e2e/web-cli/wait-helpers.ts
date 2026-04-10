@@ -671,6 +671,7 @@ export async function executeCommandWithRetry(
       } else {
         throw new Error(
           `Failed to execute command after ${retries} attempts: ${command}`,
+          { cause: error },
         );
       }
     }

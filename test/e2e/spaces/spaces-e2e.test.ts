@@ -67,7 +67,7 @@ describe("Spaces E2E Tests", () => {
         if (SHOULD_SKIP_E2E) return;
 
         let membersProcess: ChildProcess | null = null;
-        let outputPath: string = "";
+        let outputPath: string;
 
         try {
           // Create output file for members monitoring
@@ -147,7 +147,7 @@ describe("Spaces E2E Tests", () => {
         let locationsProcess: ChildProcess | null = null;
         let client1SpaceProcess: ChildProcess | null = null;
         let client2SpaceProcess: ChildProcess | null = null;
-        let outputPath: string = "";
+        let outputPath: string;
 
         try {
           // Create output file for locations monitoring
@@ -306,7 +306,7 @@ describe("Spaces E2E Tests", () => {
         let client1SpaceProcess: ChildProcess | null = null;
         let client2SpaceProcess: ChildProcess | null = null;
         let cursorSetProcess: ChildProcess | null = null;
-        let outputPath: string = "";
+        let outputPath: string;
 
         try {
           // Create output file for cursors monitoring
@@ -428,6 +428,7 @@ describe("Spaces E2E Tests", () => {
           // Re-throw with additional context
           throw new Error(
             `Test failed: ${error instanceof Error ? error.message : String(error)}`,
+            { cause: error },
           );
         } finally {
           if (cursorSetProcess) {
@@ -461,7 +462,7 @@ describe("Spaces E2E Tests", () => {
         let locksProcess: ChildProcess | null = null;
         let client1SpaceProcess: ChildProcess | null = null;
         let client2SpaceProcess: ChildProcess | null = null;
-        let outputPath: string = "";
+        let outputPath: string;
 
         try {
           // Create output file for locks monitoring

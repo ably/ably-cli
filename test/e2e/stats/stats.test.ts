@@ -736,8 +736,10 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
 
           // Both should have the same number of JSON objects (or both empty)
           // Verify that both have consistent structure (either both empty or both have same keys)
-          const keys1 = json1.length > 0 ? Object.keys(json1[0]).sort() : [];
-          const keys2 = json2.length > 0 ? Object.keys(json2[0]).sort() : [];
+          const keys1 =
+            json1.length > 0 ? Object.keys(json1[0]).toSorted() : [];
+          const keys2 =
+            json2.length > 0 ? Object.keys(json2[0]).toSorted() : [];
           expect(keys1).toEqual(keys2);
         },
       );

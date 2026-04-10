@@ -498,7 +498,7 @@ export class ControlApi {
     const formData = new FormData();
     formData.append(
       "p12File",
-      new Blob([certBuffer], { type: "application/x-pkcs12" }),
+      new Blob([new Uint8Array(certBuffer)], { type: "application/x-pkcs12" }),
       "certificate.p12",
     );
     formData.append("p12Pass", options.password ?? "");
