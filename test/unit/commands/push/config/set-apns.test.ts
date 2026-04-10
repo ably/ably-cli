@@ -17,6 +17,7 @@ import { parseJsonOutput } from "../../../../helpers/ndjson.js";
 describe("push:config:set-apns command", () => {
   let appId: string;
   const p8FixturePath = resolve("test/fixtures/push/test-apns-key.p8");
+  const p12FixturePath = resolve("test/fixtures/push/test-apns-cert.p12");
 
   beforeEach(() => {
     const ctx = getControlApiContext();
@@ -67,7 +68,7 @@ describe("push:config:set-apns command", () => {
         .reply(200, { id: "cert-123" });
 
       const { stderr } = await runCommand(
-        ["push:config:set-apns", "--certificate", p8FixturePath],
+        ["push:config:set-apns", "--certificate", p12FixturePath],
         import.meta.url,
       );
 
@@ -107,7 +108,7 @@ describe("push:config:set-apns command", () => {
         .reply(200, { id: "cert-123" });
 
       const { stdout } = await runCommand(
-        ["push:config:set-apns", "--certificate", p8FixturePath, "--json"],
+        ["push:config:set-apns", "--certificate", p12FixturePath, "--json"],
         import.meta.url,
       );
 
@@ -206,7 +207,7 @@ describe("push:config:set-apns command", () => {
         .reply(200, { id: appId, apnsUseSandboxEndpoint: true });
 
       const { stderr } = await runCommand(
-        ["push:config:set-apns", "--certificate", p8FixturePath, "--sandbox"],
+        ["push:config:set-apns", "--certificate", p12FixturePath, "--sandbox"],
         import.meta.url,
       );
 
@@ -220,6 +221,84 @@ describe("push:config:set-apns command", () => {
       );
 
       expect(error).toBeDefined();
+    });
+  });
+
+  describe("file extension validation", () => {
+    it("should reject certificate files without .p12 or .pfx extension", async () => {
+      const { error } = await runCommand(
+        ["push:config:set-apns", "--certificate", "/etc/passwd"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Invalid certificate file type");
+      expect(error?.message).toContain(".p12 or .pfx");
+    });
+
+    it("should reject key files without .p8 extension", async () => {
+      const { error } = await runCommand(
+        [
+          "push:config:set-apns",
+          "--key-file",
+          "/some/file.txt",
+          "--key-id",
+          "KEY123",
+          "--team-id",
+          "TEAM456",
+          "--topic",
+          "com.example.app",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Invalid key file type");
+      expect(error?.message).toContain(".p8");
+    });
+
+    it("should accept .pfx certificate files", async () => {
+      nockControl()
+        .post(`/v1/apps/${appId}/pkcs12`)
+        .reply(200, { id: "cert-123" });
+
+      // The file won't exist, but extension validation should pass
+      const { error } = await runCommand(
+        ["push:config:set-apns", "--certificate", "/nonexistent/cert.pfx"],
+        import.meta.url,
+      );
+
+      // Should fail with "not found", not "invalid file type"
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("not found");
+    });
+  });
+
+  describe("web CLI restrictions", () => {
+    let originalWebCliMode: string | undefined;
+
+    beforeEach(() => {
+      originalWebCliMode = process.env.ABLY_WEB_CLI_MODE;
+    });
+
+    afterEach(() => {
+      if (originalWebCliMode === undefined) {
+        delete process.env.ABLY_WEB_CLI_MODE;
+      } else {
+        process.env.ABLY_WEB_CLI_MODE = originalWebCliMode;
+      }
+    });
+
+    it("should be restricted in web CLI mode", async () => {
+      process.env.ABLY_WEB_CLI_MODE = "true";
+
+      const { error } = await runCommand(
+        ["push:config:set-apns", "--certificate", p12FixturePath],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("not available in the web CLI");
     });
   });
 

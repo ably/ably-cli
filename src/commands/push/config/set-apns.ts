@@ -64,6 +64,15 @@ export default class PushConfigSetApns extends ControlBaseCommand {
 
         if (flags.certificate) {
           const certPath = path.resolve(flags.certificate);
+          const certExt = path.extname(certPath).toLowerCase();
+          if (certExt !== ".p12" && certExt !== ".pfx") {
+            this.fail(
+              `Invalid certificate file type: expected a .p12 or .pfx file, got "${certExt || "(no extension)"}".`,
+              flags,
+              "pushConfigSetApns",
+            );
+          }
+
           if (!fs.existsSync(certPath)) {
             this.fail(
               `Certificate file not found: ${certPath}`,
@@ -123,6 +132,15 @@ export default class PushConfigSetApns extends ControlBaseCommand {
           }
 
           const keyPath = path.resolve(flags["key-file"]);
+          const keyExt = path.extname(keyPath).toLowerCase();
+          if (keyExt !== ".p8") {
+            this.fail(
+              `Invalid key file type: expected a .p8 file, got "${keyExt || "(no extension)"}".`,
+              flags,
+              "pushConfigSetApns",
+            );
+          }
+
           if (!fs.existsSync(keyPath)) {
             this.fail(
               `Key file not found: ${keyPath}`,

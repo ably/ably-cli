@@ -429,6 +429,8 @@ If the new command shouldn't be available in the web CLI, add it to the appropri
 - `WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS` — for commands that expose account/app data
 - `INTERACTIVE_UNSUITABLE_COMMANDS` — for commands that don't work in interactive mode
 
+**Security rule:** Any command that reads or uploads files from the filesystem (e.g., certificate uploads, key file imports) **must** be added to `WEB_CLI_RESTRICTED_COMMANDS`. The web CLI runs on a server — file-reading commands would read from the server's filesystem, not the user's local machine, which could expose server contents. There is no file upload mechanism in the web CLI to transfer local files.
+
 ## Step 6: Validate
 
 After creating command and test files, always run:
