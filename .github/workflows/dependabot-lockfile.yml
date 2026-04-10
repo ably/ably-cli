@@ -39,7 +39,7 @@ jobs:
           node-version: "22.x"
 
       - name: Regenerate lockfile
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --no-frozen-lockfile --ignore-scripts
 
       - name: Commit and push if lockfile changed
         run: |
