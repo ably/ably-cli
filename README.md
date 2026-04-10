@@ -3581,9 +3581,9 @@ Publish a push notification to a device, client, or channel
 ```
 USAGE
   $ ably push publish [-v] [--json | --pretty-json] [--device-id <value> | --client-id <value> | --recipient
-    <value>] [--channel <value>] [--title <value>] [--body <value>] [--sound <value>] [--icon <value>] [--badge <value>]
-    [--data <value>] [--collapse-key <value>] [--ttl <value>] [--payload <value>] [--apns <value>] [--fcm <value>]
-    [--web <value>] [-f]
+    <value>] [--channel <value>] [--message <value>] [--title <value>] [--body <value>] [--sound <value>] [--icon
+    <value>] [--badge <value>] [--data <value>] [--collapse-key <value>] [--ttl <value>] [--payload <value>] [--apns
+    <value>] [--fcm <value>] [--web <value>] [-f]
 
 FLAGS
   -f, --force                 Skip confirmation prompt (required with --json)
@@ -3600,6 +3600,8 @@ FLAGS
       --fcm=<value>           FCM-specific override as JSON
       --icon=<value>          Notification icon
       --json                  Output in JSON format
+      --message=<value>       Realtime message data to include alongside the push notification (only applies when
+                              publishing via --channel)
       --payload=<value>       Full notification payload as JSON (overrides convenience flags)
       --pretty-json           Output in colorized JSON format
       --recipient=<value>     Raw recipient JSON for advanced targeting
@@ -3631,6 +3633,10 @@ EXAMPLES
   $ ably push publish --channel my-channel --payload '{"notification":{"title":"Hello","body":"World"},"data":{"key":"value"}}'
 
   $ ably push publish --channel my-channel --payload ./notification.json
+
+  $ ably push publish --channel my-channel --title Hello --body World --message 'Hello from push'
+
+  $ ably push publish --channel my-channel --title Hello --body World --message '{"event":"push","text":"Hello"}'
 
   $ ably push publish --recipient '{"transportType":"apns","deviceToken":"token123"}' --title Hello --body World
 
