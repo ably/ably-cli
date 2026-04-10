@@ -84,13 +84,20 @@ describe("push:config:set-fcm command", () => {
     });
 
     it("should fail when service account file is not valid JSON", async () => {
-      const invalidPath = resolve("test/fixtures/push/test-apns-key.p8");
-      const { error } = await runCommand(
-        ["push:config:set-fcm", "--service-account", invalidPath],
-        import.meta.url,
-      );
-
-      expect(error).toBeDefined();
+      const tempDir = mkdtempSync(join(tmpdir(), "ably-cli-test-"));
+      const tempPath = join(tempDir, "invalid.json");
+      writeFileSync(tempPath, "not valid json content");
+      try {
+        const { error } = await runCommand(
+          ["push:config:set-fcm", "--service-account", tempPath],
+          import.meta.url,
+        );
+        expect(error).toBeDefined();
+        expect(error?.message).toContain("not valid JSON");
+      } finally {
+        unlinkSync(tempPath);
+        rmdirSync(tempDir);
+      }
     });
 
     it("should require service-account flag", async () => {
@@ -135,6 +142,47 @@ describe("push:config:set-fcm command", () => {
         unlinkSync(tempPath);
         rmdirSync(tempDir);
       }
+    });
+  });
+
+  describe("file extension validation", () => {
+    it("should reject service account files without .json extension", async () => {
+      const { error } = await runCommand(
+        ["push:config:set-fcm", "--service-account", "/etc/passwd"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Invalid service account file type");
+      expect(error?.message).toContain(".json");
+    });
+  });
+
+  describe("web CLI restrictions", () => {
+    let originalWebCliMode: string | undefined;
+
+    beforeEach(() => {
+      originalWebCliMode = process.env.ABLY_WEB_CLI_MODE;
+    });
+
+    afterEach(() => {
+      if (originalWebCliMode === undefined) {
+        delete process.env.ABLY_WEB_CLI_MODE;
+      } else {
+        process.env.ABLY_WEB_CLI_MODE = originalWebCliMode;
+      }
+    });
+
+    it("should be restricted in web CLI mode", async () => {
+      process.env.ABLY_WEB_CLI_MODE = "true";
+
+      const { error } = await runCommand(
+        ["push:config:set-fcm", "--service-account", fcmFixturePath],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("not available in the web CLI");
     });
   });
 

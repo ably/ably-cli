@@ -177,6 +177,36 @@ describe("push:config:show command", () => {
     });
   });
 
+  describe("--control-host web CLI restriction", () => {
+    let originalWebCliMode: string | undefined;
+
+    beforeEach(() => {
+      originalWebCliMode = process.env.ABLY_WEB_CLI_MODE;
+    });
+
+    afterEach(() => {
+      if (originalWebCliMode === undefined) {
+        delete process.env.ABLY_WEB_CLI_MODE;
+      } else {
+        process.env.ABLY_WEB_CLI_MODE = originalWebCliMode;
+      }
+    });
+
+    it("should reject --control-host in web CLI mode", async () => {
+      process.env.ABLY_WEB_CLI_MODE = "true";
+
+      const { error } = await runCommand(
+        ["push:config:show", "--control-host", "attacker.com"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain(
+        "--control-host flag is not available in web CLI mode",
+      );
+    });
+  });
+
   describe("error handling", () => {
     standardControlApiErrorTests({
       commandArgs: ["push:config:show"],

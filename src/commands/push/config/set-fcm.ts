@@ -33,6 +33,14 @@ export default class PushConfigSetFcm extends ControlBaseCommand {
       async (controlApi) => {
         const appId = await this.requireAppId(flags);
         const filePath = path.resolve(flags["service-account"]);
+        const ext = path.extname(filePath).toLowerCase();
+        if (ext !== ".json") {
+          this.fail(
+            `Invalid service account file type: expected a .json file, got "${ext || "(no extension)"}".`,
+            flags,
+            "pushConfigSetFcm",
+          );
+        }
 
         if (!fs.existsSync(filePath)) {
           this.fail(
