@@ -57,6 +57,10 @@ export const WEB_CLI_RESTRICTED_COMMANDS = [
 
   // config only applicable to local env
   "config*",
+
+  // File-reading commands can expose server filesystem contents in web CLI mode
+  "push:config:set-apns",
+  "push:config:set-fcm",
 ];
 
 /* Additional restricted commands when running in anonymous web CLI mode */
