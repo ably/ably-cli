@@ -746,6 +746,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     let appId = flags.app || this.configManager.getCurrentAppId();
     let apiKey = this.configManager.getApiKey(appId);
 
+    // When apiKey comes from ABLY_API_KEY env var but appId is missing, extract it from the key
+    if (apiKey && !appId) {
+      appId = apiKey.split(".")[0] || "";
+    }
+
     // If we have both, return them
     if (appId && apiKey) {
       return { apiKey, appId };

@@ -17,6 +17,8 @@ import { onTestFailed } from "vitest";
 export const E2E_API_KEY = process.env.E2E_ABLY_API_KEY;
 export const SHOULD_SKIP_E2E =
   !E2E_API_KEY || process.env.SKIP_E2E_TESTS === "true";
+export const E2E_ACCESS_TOKEN = process.env.E2E_ABLY_ACCESS_TOKEN;
+export const SHOULD_SKIP_CONTROL_E2E = SHOULD_SKIP_E2E || !E2E_ACCESS_TOKEN;
 
 // Store active background processes and temp files for cleanup
 const activeProcesses: Map<string, ChildProcess> = new Map();
