@@ -23,6 +23,8 @@ export default class PushPublish extends AblyBaseCommand {
     '<%= config.bin %> <%= command.id %> --channel my-channel --title Hello --body World --data \'{"key":"value"}\'',
     '<%= config.bin %> <%= command.id %> --channel my-channel --payload \'{"notification":{"title":"Hello","body":"World"},"data":{"key":"value"}}\'',
     "<%= config.bin %> <%= command.id %> --channel my-channel --payload ./notification.json",
+    "<%= config.bin %> <%= command.id %> --channel my-channel --title Hello --body World --message 'Hello from push'",
+    '<%= config.bin %> <%= command.id %> --channel my-channel --title Hello --body World --message \'{"event":"push","text":"Hello"}\'',
     '<%= config.bin %> <%= command.id %> --recipient \'{"transportType":"apns","deviceToken":"token123"}\' --title Hello --body World',
     "<%= config.bin %> <%= command.id %> --device-id device-123 --title Hello --body World --json",
   ];
@@ -44,6 +46,10 @@ export default class PushPublish extends AblyBaseCommand {
     channel: Flags.string({
       description:
         "Target channel name (publishes push notification via the channel using extras.push; ignored if --device-id, --client-id, or --recipient is also provided)",
+    }),
+    message: Flags.string({
+      description:
+        "Realtime message data to include alongside the push notification (only applies when publishing via --channel)",
     }),
     title: Flags.string({
       description: "Notification title",
@@ -91,6 +97,14 @@ export default class PushPublish extends AblyBaseCommand {
     const hasDirectRecipient =
       flags["device-id"] || flags["client-id"] || flags.recipient;
 
+    if (flags.message && !flags.channel) {
+      this.fail(
+        "--message can only be used with --channel (realtime message data is not applicable when publishing directly to a device or client)",
+        flags as BaseFlags,
+        "pushPublish",
+      );
+    }
+
     if (!hasDirectRecipient && !flags.channel) {
       this.fail(
         "A target is required: --device-id, --client-id, --recipient, or --channel",
@@ -104,6 +118,12 @@ export default class PushPublish extends AblyBaseCommand {
         "--channel is ignored when --device-id, --client-id, or --recipient is provided.",
         flags as BaseFlags,
       );
+      if (flags.message) {
+        this.logWarning(
+          "--message is ignored when --device-id, --client-id, or --recipient is provided.",
+          flags as BaseFlags,
+        );
+      }
     }
 
     try {
@@ -257,13 +277,28 @@ export default class PushPublish extends AblyBaseCommand {
           }
         }
 
-        await rest.channels
-          .get(channelName)
-          .publish({ extras: { push: payload } });
+        const publishMessage: Record<string, unknown> = {
+          extras: { push: payload },
+        };
+        if (flags.message) {
+          try {
+            publishMessage.data = JSON.parse(flags.message);
+          } catch {
+            publishMessage.data = flags.message;
+          }
+        }
+
+        await rest.channels.get(channelName).publish(publishMessage);
 
         if (this.shouldOutputJson(flags)) {
           this.logJsonResult(
-            { notification: { published: true, channel: channelName } },
+            {
+              notification: {
+                published: true,
+                channel: channelName,
+                ...(flags.message ? { messageData: publishMessage.data } : {}),
+              },
+            },
             flags,
           );
         }
