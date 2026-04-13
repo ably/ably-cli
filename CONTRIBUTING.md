@@ -53,9 +53,7 @@ This allows testing CLI changes against local server modifications before deploy
 1. Make sure all checks are passing on main
 2. Create a new release branch, in the format `release/<version>` where the version is the SemVer version of the release. In that branch:
     - Update the `package.json` version to the new version.
-    - Run `pnpm generate-doc` to regenerate the command documentation.
     - Update the `CHANGELOG.md` with any user-affecting changes since the last release.
-    - Review the generated `GENERATED_DOC.md` output locally to ensure updated commands documentation is correct.
     - Stage all changes: `git add package.json CHANGELOG.md`
     - Commit all changes with a message like `chore: prepare release <version>`.
     - Update the `package.json` for `packages/react-web-cli`.
