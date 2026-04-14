@@ -100,9 +100,16 @@ describe("Push Config E2E Tests", () => {
           (r) => r.type === "result",
         )!;
         expect(output).toHaveProperty("success", true);
-        expect(output).toHaveProperty("appId", testAppId);
-        expect(output.apns).toHaveProperty("configured", false);
-        expect(output.fcm).toHaveProperty("configured", false);
+        const config = output.config as Record<string, unknown>;
+        expect(config).toHaveProperty("appId", testAppId);
+        expect(config.apns as Record<string, unknown>).toHaveProperty(
+          "configured",
+          false,
+        );
+        expect(config.fcm as Record<string, unknown>).toHaveProperty(
+          "configured",
+          false,
+        );
       },
     );
 
@@ -171,7 +178,8 @@ describe("Push Config E2E Tests", () => {
           (r) => r.type === "result",
         )!;
         expect(setOutput).toHaveProperty("success", true);
-        expect(setOutput).toHaveProperty("method", "p8");
+        const setConfig = setOutput.config as Record<string, unknown>;
+        expect(setConfig).toHaveProperty("method", "p8");
 
         // 2. Verify config was set by showing it
         const showResult = await runCommand(
@@ -187,16 +195,15 @@ describe("Push Config E2E Tests", () => {
         const showOutput = parseNdjsonLines(showResult.stdout).find(
           (r) => r.type === "result",
         )!;
-        expect(showOutput.apns).toHaveProperty("configured", true);
-        expect(showOutput.apns).toHaveProperty("hasP8Key", true);
-        expect(showOutput.apns).toHaveProperty("useSandbox", true);
-        expect(showOutput.apns).toHaveProperty("authType", "token");
-        expect(showOutput.apns).toHaveProperty("keyId", "ABC123DEFG");
-        expect(showOutput.apns).toHaveProperty("teamId", "TEAM123456");
-        expect(showOutput.apns).toHaveProperty(
-          "bundleId",
-          "com.example.pushtest",
-        );
+        const showConfig = showOutput.config as Record<string, unknown>;
+        const apns = showConfig.apns as Record<string, unknown>;
+        expect(apns).toHaveProperty("configured", true);
+        expect(apns).toHaveProperty("hasP8Key", true);
+        expect(apns).toHaveProperty("useSandbox", true);
+        expect(apns).toHaveProperty("authType", "token");
+        expect(apns).toHaveProperty("keyId", "ABC123DEFG");
+        expect(apns).toHaveProperty("teamId", "TEAM123456");
+        expect(apns).toHaveProperty("bundleId", "com.example.pushtest");
       },
     );
 
@@ -243,7 +250,8 @@ describe("Push Config E2E Tests", () => {
         (r) => r.type === "result",
       )!;
       expect(clearOutput).toHaveProperty("success", true);
-      expect(clearOutput).toHaveProperty("cleared", "apns");
+      const clearConfig = clearOutput.config as Record<string, unknown>;
+      expect(clearConfig).toHaveProperty("cleared", "apns");
 
       // 3. Verify config was cleared
       const showResult = await runCommand(
@@ -259,8 +267,10 @@ describe("Push Config E2E Tests", () => {
       const showOutput = parseNdjsonLines(showResult.stdout).find(
         (r) => r.type === "result",
       )!;
-      expect(showOutput.apns).toHaveProperty("configured", false);
-      expect(showOutput.apns).toHaveProperty("hasP8Key", false);
+      const showConfig = showOutput.config as Record<string, unknown>;
+      const apns = showConfig.apns as Record<string, unknown>;
+      expect(apns).toHaveProperty("configured", false);
+      expect(apns).toHaveProperty("hasP8Key", false);
     });
   });
 
@@ -314,7 +324,11 @@ describe("Push Config E2E Tests", () => {
         const showOutput = parseNdjsonLines(showResult.stdout).find(
           (r) => r.type === "result",
         )!;
-        expect(showOutput.fcm).toHaveProperty("configured", true);
+        const showConfig = showOutput.config as Record<string, unknown>;
+        expect(showConfig.fcm as Record<string, unknown>).toHaveProperty(
+          "configured",
+          true,
+        );
       },
     );
 
@@ -355,7 +369,8 @@ describe("Push Config E2E Tests", () => {
         (r) => r.type === "result",
       )!;
       expect(clearOutput).toHaveProperty("success", true);
-      expect(clearOutput).toHaveProperty("cleared", "fcm");
+      const clearConfig = clearOutput.config as Record<string, unknown>;
+      expect(clearConfig).toHaveProperty("cleared", "fcm");
 
       // 3. Verify config was cleared
       const showResult = await runCommand(
@@ -371,7 +386,11 @@ describe("Push Config E2E Tests", () => {
       const showOutput = parseNdjsonLines(showResult.stdout).find(
         (r) => r.type === "result",
       )!;
-      expect(showOutput.fcm).toHaveProperty("configured", false);
+      const showConfig = showOutput.config as Record<string, unknown>;
+      expect(showConfig.fcm as Record<string, unknown>).toHaveProperty(
+        "configured",
+        false,
+      );
     });
   });
 

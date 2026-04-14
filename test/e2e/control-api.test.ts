@@ -165,7 +165,7 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
         const keyData = {
           name: `Test Key ${Date.now()}`,
           capability: {
-            "*": ["*"],
+            "[*]*": ["*"],
           },
         };
 
@@ -271,9 +271,7 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
           },
           target: {
             url: "https://httpbin.org/post",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: [{ name: "Content-Type", value: "application/json" }],
           },
         };
 
@@ -310,6 +308,7 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
 
       it("should update an integration rule", async () => {
         const updateData = {
+          ruleType: "http",
           source: {
             channelFilter: "updated-channel",
             type: "channel.message",
@@ -373,11 +372,12 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
       });
 
       it("should get a specific namespace", async () => {
-        const namespace = await controlApi.getNamespace(
-          testAppId,
-          testNamespaceId,
-        );
+        // Individual namespace GET endpoint is no longer available;
+        // verify by listing and filtering instead.
+        const namespaces = await controlApi.listNamespaces(testAppId);
+        const namespace = namespaces.find((ns) => ns.id === testNamespaceId);
 
+        expect(namespace).toBeDefined();
         expect(namespace).toHaveProperty("id", testNamespaceId);
         expect(namespace).toHaveProperty("appId", testAppId);
       });

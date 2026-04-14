@@ -182,12 +182,14 @@ describe("Control API E2E Workflow Tests", () => {
         );
 
         expect(listResult.exitCode).toBe(0);
-        const listOutput = JSON.parse(listResult.stdout);
+        const listOutput = parseNdjsonLines(listResult.stdout).find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
         expect(listOutput).toHaveProperty("apps");
         expect(Array.isArray(listOutput.apps)).toBe(true);
 
-        const foundApp = listOutput.apps.find(
-          (app: { id: string }) => app.id === appId,
+        const foundApp = (listOutput.apps as Array<{ id: string }>).find(
+          (app) => app.id === appId,
         );
         expect(foundApp).toBeDefined();
 
@@ -265,9 +267,19 @@ describe("Control API E2E Workflow Tests", () => {
 
       if (shouldSkip) return;
 
-      const keyName = `Test Key ${Date.now()}`;
+      const keyName = `Test-Key-${Date.now()}`;
       const createResult = await runCommand(
-        ["auth", "keys", "create", keyName, "--app", testAppId, "--json"],
+        [
+          "auth",
+          "keys",
+          "create",
+          keyName,
+          "--app",
+          testAppId,
+          "--capabilities",
+          '{"[*]*":["*"]}',
+          "--json",
+        ],
         {
           env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
         },
@@ -297,10 +309,12 @@ describe("Control API E2E Workflow Tests", () => {
         },
       );
 
-      const result = JSON.parse(listResult.stdout);
+      const result = parseNdjsonLines(listResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
       expect(result).toHaveProperty("success", true);
       expect(Array.isArray(result.keys)).toBe(true);
-      expect(result.keys.length).toBeGreaterThan(0);
+      expect((result.keys as unknown[]).length).toBeGreaterThan(0);
     });
   });
 
@@ -364,11 +378,22 @@ describe("Control API E2E Workflow Tests", () => {
         },
       );
 
-      const result = JSON.parse(createResult.stdout);
+      const result = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
       expect(result).toHaveProperty("success", true);
-      expect(result.queue).toHaveProperty("name", queueName);
-      expect(result.queue).toHaveProperty("maxLength", 5000);
-      expect(result.queue).toHaveProperty("ttl", 1800);
+      expect(result.queue as Record<string, unknown>).toHaveProperty(
+        "name",
+        queueName,
+      );
+      expect(result.queue as Record<string, unknown>).toHaveProperty(
+        "maxLength",
+        5000,
+      );
+      expect(result.queue as Record<string, unknown>).toHaveProperty(
+        "ttl",
+        1800,
+      );
     });
 
     it("should list queues", async () => {
@@ -383,7 +408,9 @@ describe("Control API E2E Workflow Tests", () => {
         },
       );
 
-      const result = JSON.parse(listResult.stdout);
+      const result = parseNdjsonLines(listResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
       expect(result).toHaveProperty("success", true);
       expect(Array.isArray(result.queues)).toBe(true);
     });
@@ -479,11 +506,17 @@ describe("Control API E2E Workflow Tests", () => {
         },
       );
 
-      const result = JSON.parse(createResult.stdout);
+      const result = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
       expect(result).toHaveProperty("success", true);
-      expect(result.rule).toHaveProperty("ruleType", "http");
-      expect(result.rule).toHaveProperty("source");
-      expect(result.rule.source).toHaveProperty("channelFilter", "e2e-test-*");
+      const integration = result.integration as Record<string, unknown>;
+      expect(integration).toHaveProperty("ruleType", "http");
+      expect(integration).toHaveProperty("source");
+      expect(integration.source as Record<string, unknown>).toHaveProperty(
+        "channelFilter",
+        "e2e-test-*",
+      );
     });
 
     it("should list integration rules", async () => {
@@ -498,10 +531,12 @@ describe("Control API E2E Workflow Tests", () => {
         },
       );
 
-      const result = JSON.parse(listResult.stdout);
+      const result = parseNdjsonLines(listResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
       expect(result).toHaveProperty("success", true);
-      expect(Array.isArray(result.rules)).toBe(true);
-      expect(result.rules.length).toBeGreaterThan(0);
+      expect(Array.isArray(result.integrations)).toBe(true);
+      expect((result.integrations as unknown[]).length).toBeGreaterThan(0);
     });
   });
 
@@ -569,15 +604,18 @@ describe("Control API E2E Workflow Tests", () => {
         );
 
         expect(createResult.stderr).toBe("");
-        const createOutput = JSON.parse(createResult.stdout);
+        const createOutput = parseNdjsonLines(createResult.stdout).find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
         expect(createOutput).toHaveProperty("rule");
-        expect(createOutput.rule).toHaveProperty("id");
-        expect(createOutput.rule).toHaveProperty("name", ruleName);
-        expect(createOutput.rule).toHaveProperty("persisted", true);
-        expect(createOutput.rule).toHaveProperty("pushEnabled", true);
-        expect(createOutput.rule).toHaveProperty("authenticated", true);
+        const rule = createOutput.rule as Record<string, unknown>;
+        expect(rule).toHaveProperty("id");
+        expect(rule).toHaveProperty("name", ruleName);
+        expect(rule).toHaveProperty("persisted", true);
+        expect(rule).toHaveProperty("pushEnabled", true);
+        expect(rule).toHaveProperty("authenticated", true);
 
-        const namespaceId = createOutput.rule.id;
+        const namespaceId = rule.id as string;
         createdResources.namespaces.push(namespaceId);
 
         // 2. List rules and verify our rule is included
@@ -589,12 +627,14 @@ describe("Control API E2E Workflow Tests", () => {
         );
 
         expect(listResult.stderr).toBe("");
-        const listOutput = JSON.parse(listResult.stdout);
+        const listOutput = parseNdjsonLines(listResult.stdout).find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
         expect(listOutput).toHaveProperty("rules");
         expect(Array.isArray(listOutput.rules)).toBe(true);
 
-        const foundRule = listOutput.rules.find(
-          (ns: { id: string }) => ns.id === namespaceId,
+        const foundRule = (listOutput.rules as Array<{ id: string }>).find(
+          (ns) => ns.id === namespaceId,
         );
         expect(foundRule).toBeDefined();
         expect(foundRule).toHaveProperty("persisted", true);
@@ -627,12 +667,15 @@ describe("Control API E2E Workflow Tests", () => {
       );
 
       expect(createResult.stderr).toBe("");
-      const createOutput = JSON.parse(createResult.stdout);
+      const createOutput = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
       expect(createOutput).toHaveProperty("success", true);
-      expect(createOutput.rule).toHaveProperty("persisted", true);
-      expect(createOutput.rule).toHaveProperty("pushEnabled", false);
+      const createRule = createOutput.rule as Record<string, unknown>;
+      expect(createRule).toHaveProperty("persisted", true);
+      expect(createRule).toHaveProperty("pushEnabled", false);
 
-      const namespaceId = createOutput.rule.id;
+      const namespaceId = createRule.id as string;
       createdResources.namespaces.push(namespaceId);
 
       // 2. Update rule - enable push, disable persisted
@@ -654,16 +697,19 @@ describe("Control API E2E Workflow Tests", () => {
       );
 
       expect(updateResult.stderr).toBe("");
-      const updateOutput = JSON.parse(updateResult.stdout);
+      const updateOutput = parseNdjsonLines(updateResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
       expect(updateOutput).toHaveProperty("success", true);
-      expect(updateOutput.rule).toHaveProperty("id", namespaceId);
-      expect(updateOutput.rule).toHaveProperty("pushEnabled", true);
-      expect(updateOutput.rule).toHaveProperty("persisted", false);
+      const updatedRule = updateOutput.rule as Record<string, unknown>;
+      expect(updatedRule).toHaveProperty("id", namespaceId);
+      expect(updatedRule).toHaveProperty("pushEnabled", true);
+      expect(updatedRule).toHaveProperty("persisted", false);
 
       // Verify null batchingInterval/conflationInterval don't cause errors
       // These fields may be null in the response
-      expect(updateOutput.rule).toHaveProperty("batchingInterval");
-      expect(updateOutput.rule).toHaveProperty("conflationInterval");
+      expect(updatedRule).toHaveProperty("batchingInterval");
+      expect(updatedRule).toHaveProperty("conflationInterval");
     });
 
     it("should delete a rule through CLI", { timeout: 20000 }, async () => {
@@ -682,9 +728,12 @@ describe("Control API E2E Workflow Tests", () => {
       );
 
       expect(createResult.stderr).toBe("");
-      const createOutput = JSON.parse(createResult.stdout);
+      const createOutput = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
       expect(createOutput).toHaveProperty("success", true);
-      const namespaceId = createOutput.rule.id;
+      const namespaceId = (createOutput.rule as Record<string, unknown>)
+        .id as string;
       createdResources.namespaces.push(namespaceId);
 
       // 2. Delete rule with --force
@@ -705,9 +754,11 @@ describe("Control API E2E Workflow Tests", () => {
         },
       );
 
-      const listOutput = JSON.parse(listResult.stdout);
-      const deletedRule = listOutput.rules.find(
-        (ns: { id: string }) => ns.id === namespaceId,
+      const listOutput = parseNdjsonLines(listResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
+      const deletedRule = (listOutput.rules as Array<{ id: string }>).find(
+        (ns) => ns.id === namespaceId,
       );
       expect(deletedRule).toBeUndefined();
     });
@@ -775,7 +826,7 @@ describe("Control API E2E Workflow Tests", () => {
 
         const timestamp = Date.now();
         const appName = `E2E Complete Workflow ${timestamp}`;
-        const keyName = `E2E Workflow Key ${timestamp}`;
+        const keyName = `E2E-Workflow-Key-${timestamp}`;
         const queueName = `e2e-workflow-queue-${timestamp}`;
 
         // 1. Create app
@@ -794,7 +845,17 @@ describe("Control API E2E Workflow Tests", () => {
 
         // 2. Create API key
         const createKeyResult = await runCommand(
-          ["auth", "keys", "create", keyName, "--app", appId, "--json"],
+          [
+            "auth",
+            "keys",
+            "create",
+            keyName,
+            "--app",
+            appId,
+            "--capabilities",
+            '{"[*]*":["*"]}',
+            "--json",
+          ],
           {
             env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
           },
@@ -814,8 +875,11 @@ describe("Control API E2E Workflow Tests", () => {
           },
         );
 
-        const queueOutput = JSON.parse(createQueueResult.stdout);
-        expect(queueOutput).toHaveProperty("name", queueName);
+        const queueOutput = parseNdjsonLines(createQueueResult.stdout).find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
+        const queue = queueOutput.queue as Record<string, unknown>;
+        expect(queue).toHaveProperty("name", queueName);
         createdResources.queues.push(queueName);
 
         // 4. Create integration
@@ -840,8 +904,12 @@ describe("Control API E2E Workflow Tests", () => {
           },
         );
 
-        const integrationOutput = JSON.parse(createIntegrationResult.stdout);
-        const ruleId = integrationOutput.id;
+        const integrationOutput = parseNdjsonLines(
+          createIntegrationResult.stdout,
+        ).find((r) => r.type === "result") as Record<string, unknown>;
+        const ruleId = (
+          integrationOutput.integration as Record<string, unknown>
+        ).id as string;
         createdResources.rules.push(ruleId);
 
         // 5. Verify all resources exist by listing them
@@ -849,9 +917,13 @@ describe("Control API E2E Workflow Tests", () => {
           env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
         });
 
-        const appsOutput = JSON.parse(listAppsResult.stdout);
+        const appsOutput = parseNdjsonLines(listAppsResult.stdout).find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
         expect(
-          appsOutput.apps.find((app: { id: string }) => app.id === appId),
+          (appsOutput.apps as Array<{ id: string }>).find(
+            (app) => app.id === appId,
+          ),
         ).toBeDefined();
 
         const listKeysResult = await runCommand(
@@ -861,9 +933,13 @@ describe("Control API E2E Workflow Tests", () => {
           },
         );
 
-        const keysOutput = JSON.parse(listKeysResult.stdout);
+        const keysOutput = parseNdjsonLines(listKeysResult.stdout).find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
         expect(
-          keysOutput.keys.find((key: { id: string }) => key.id === keyId),
+          (keysOutput.keys as Array<{ id: string }>).find(
+            (key) => key.id === keyId,
+          ),
         ).toBeDefined();
 
         const listQueuesResult = await runCommand(
@@ -873,10 +949,12 @@ describe("Control API E2E Workflow Tests", () => {
           },
         );
 
-        const queuesOutput = JSON.parse(listQueuesResult.stdout);
+        const queuesOutput = parseNdjsonLines(listQueuesResult.stdout).find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
         expect(
-          queuesOutput.queues.find(
-            (queue: { name: string }) => queue.name === queueName,
+          (queuesOutput.queues as Array<{ name: string }>).find(
+            (q) => q.name === queueName,
           ),
         ).toBeDefined();
 
@@ -887,10 +965,12 @@ describe("Control API E2E Workflow Tests", () => {
           },
         );
 
-        const integrationsOutput = JSON.parse(listIntegrationsResult.stdout);
+        const integrationsOutput = parseNdjsonLines(
+          listIntegrationsResult.stdout,
+        ).find((r) => r.type === "result") as Record<string, unknown>;
         expect(
-          integrationsOutput.rules.find(
-            (rule: { id: string }) => rule.id === ruleId,
+          (integrationsOutput.integrations as Array<{ id: string }>).find(
+            (rule) => rule.id === ruleId,
           ),
         ).toBeDefined();
       },

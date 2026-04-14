@@ -384,7 +384,14 @@ export class ControlApi {
   }
 
   async getNamespace(appId: string, namespaceId: string): Promise<Namespace> {
-    return this.request<Namespace>(`/apps/${appId}/namespaces/${namespaceId}`);
+    // Individual namespace GET endpoint is no longer available;
+    // list all namespaces and filter by ID instead.
+    const namespaces = await this.listNamespaces(appId);
+    const namespace = namespaces.find((ns) => ns.id === namespaceId);
+    if (!namespace) {
+      throw new Error(`Namespace with ID "${namespaceId}" not found`);
+    }
+    return namespace;
   }
 
   async getRule(appId: string, ruleId: string): Promise<Rule> {

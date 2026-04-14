@@ -79,7 +79,7 @@ describe.skipIf(SHOULD_SKIP_E2E || SHOULD_SKIP_MUTABLE_TESTS)(
             "publish",
             channelName,
             messageSerial,
-            "reactions:like.v1",
+            "reactions:flag.v1",
             "--json",
           ],
           {
@@ -101,7 +101,7 @@ describe.skipIf(SHOULD_SKIP_E2E || SHOULD_SKIP_MUTABLE_TESTS)(
         };
         expect(annotation.channel).toBe(channelName);
         expect(annotation.serial).toBe(messageSerial);
-        expect(annotation.type).toBe("reactions:like.v1");
+        expect(annotation.type).toBe("reactions:flag.v1");
       },
     );
 
@@ -250,7 +250,7 @@ describe.skipIf(SHOULD_SKIP_E2E || SHOULD_SKIP_MUTABLE_TESTS)(
               "publish",
               channelName,
               messageSerial,
-              "reactions:subscribe-test.v1",
+              "reactions:total.v1",
               "--json",
             ],
             {
@@ -261,7 +261,7 @@ describe.skipIf(SHOULD_SKIP_E2E || SHOULD_SKIP_MUTABLE_TESTS)(
           expect(publishResult.exitCode).toBe(0);
 
           // Wait for the annotation event to appear in subscriber output
-          await waitForOutput(subscriber, "subscribe-test", 15000);
+          await waitForOutput(subscriber, "total.v1", 15000);
         } finally {
           if (subscriber) {
             await cleanupRunners([subscriber]);
