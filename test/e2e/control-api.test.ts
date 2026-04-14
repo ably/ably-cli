@@ -271,6 +271,7 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
           },
           target: {
             url: "https://httpbin.org/post",
+            format: "json",
             headers: [{ name: "Content-Type", value: "application/json" }],
           },
         };
@@ -309,12 +310,14 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
       it("should update an integration rule", async () => {
         const updateData = {
           ruleType: "http",
+          requestMode: "single",
           source: {
             channelFilter: "updated-channel",
             type: "channel.message",
           },
           target: {
             url: "https://httpbin.org/put",
+            format: "json",
           },
         };
 
@@ -387,7 +390,7 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
           persisted: false,
           pushEnabled: true,
           batchingEnabled: true,
-          batchingInterval: 5000,
+          batchingInterval: 500,
         };
 
         const updatedNamespace = await controlApi.updateNamespace(
@@ -400,7 +403,7 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
         expect(updatedNamespace).toHaveProperty("persisted", false);
         expect(updatedNamespace).toHaveProperty("pushEnabled", true);
         expect(updatedNamespace).toHaveProperty("batchingEnabled", true);
-        expect(updatedNamespace).toHaveProperty("batchingInterval", 5000);
+        expect(updatedNamespace).toHaveProperty("batchingInterval", 500);
       });
 
       it("should delete a namespace", async () => {

@@ -609,8 +609,7 @@ describe("Control API E2E Workflow Tests", () => {
         ) as Record<string, unknown>;
         expect(createOutput).toHaveProperty("rule");
         const rule = createOutput.rule as Record<string, unknown>;
-        expect(rule).toHaveProperty("id");
-        expect(rule).toHaveProperty("name", ruleName);
+        expect(rule).toHaveProperty("id", ruleName);
         expect(rule).toHaveProperty("persisted", true);
         expect(rule).toHaveProperty("pushEnabled", true);
         expect(rule).toHaveProperty("authenticated", true);
