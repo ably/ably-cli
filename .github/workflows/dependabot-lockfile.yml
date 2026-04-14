@@ -59,6 +59,7 @@ jobs:
         id: build
         continue-on-error: true
         run: |
+          set -o pipefail
           pnpm install --frozen-lockfile
           pnpm run build 2>&1 | tee /tmp/build-output.txt
 
@@ -66,7 +67,20 @@ jobs:
         id: lint
         if: steps.build.outcome == 'success'
         continue-on-error: true
-        run: pnpm exec eslint . 2>&1 | tee /tmp/lint-output.txt
+        run: |
+          set -o pipefail
+          pnpm exec eslint . 2>&1 | tee /tmp/lint-output.txt
+
+      - name: Capture error output
+        id: errors
+        if: steps.build.outcome == 'failure' || steps.lint.outcome == 'failure'
+        run: |
+          echo "build_output<<ENDOFOUTPUT" >> "$GITHUB_OUTPUT"
+          cat /tmp/build-output.txt 2>/dev/null || echo "Build succeeded"
+          echo "ENDOFOUTPUT" >> "$GITHUB_OUTPUT"
+          echo "lint_output<<ENDOFOUTPUT" >> "$GITHUB_OUTPUT"
+          cat /tmp/lint-output.txt 2>/dev/null || echo "Lint succeeded"
+          echo "ENDOFOUTPUT" >> "$GITHUB_OUTPUT"
 
       - name: Fix issues with Claude
         if: steps.build.outcome == 'failure' || steps.lint.outcome == 'failure'
@@ -83,10 +97,10 @@ jobs:
             ## Errors
 
             Build output (if failed):
-            $(cat /tmp/build-output.txt 2>/dev/null || echo "Build succeeded")
+            ${{ steps.errors.outputs.build_output }}
 
             Lint output (if failed):
-            $(cat /tmp/lint-output.txt 2>/dev/null || echo "Lint succeeded")
+            ${{ steps.errors.outputs.lint_output }}
 
             ## Instructions
 
