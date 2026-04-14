@@ -18,7 +18,7 @@ jobs:
     env:
       NO_COLOR: 1
       E2E_ABLY_API_KEY: ${{ secrets.E2E_ABLY_API_KEY }}
-      E2E_ABLY_ACCESS_TOKEN: ${{ secrets.E2E_ABLY_ACCESS_TOKEN }}
+      E2E_ABLY_ACCESS_TOKEN: ${{ secrets.E2E_ABLY_ABLY_ACCESS_TOKEN }}
       TERMINAL_SERVER_SIGNING_SECRET: ${{ secrets.TERMINAL_SERVER_SIGNING_SECRET }}
       E2E_TESTS: true
 
@@ -69,7 +69,7 @@ jobs:
         run: |
           echo "ABLY_API_KEY=${{ secrets.E2E_ABLY_API_KEY }}" > .env.test
           echo "E2E_ABLY_API_KEY=${{ secrets.E2E_ABLY_API_KEY }}" >> .env.test
-          echo "E2E_ABLY_ACCESS_TOKEN=${{ secrets.E2E_ABLY_ACCESS_TOKEN }}" >> .env.test
+          echo "E2E_ABLY_ACCESS_TOKEN=${{ secrets.E2E_ABLY_ABLY_ACCESS_TOKEN }}" >> .env.test
           echo "TERMINAL_SERVER_SIGNING_SECRET=${{ secrets.TERMINAL_SERVER_SIGNING_SECRET }}" >> .env.test
 
       - name: Run All E2E CLI Tests

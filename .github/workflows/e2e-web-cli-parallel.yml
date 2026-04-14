@@ -85,7 +85,7 @@ jobs:
     env:
       NO_COLOR: 1
       E2E_ABLY_API_KEY: ${{ secrets.E2E_ABLY_API_KEY }}
-      E2E_ABLY_ACCESS_TOKEN: ${{ secrets.E2E_ABLY_ACCESS_TOKEN }}
+      E2E_ABLY_ACCESS_TOKEN: ${{ secrets.E2E_ABLY_ABLY_ACCESS_TOKEN }}
       TERMINAL_SERVER_SIGNING_SECRET: ${{ secrets.TERMINAL_SERVER_SIGNING_SECRET }}
       E2E_TESTS: true
       HEADLESS: true
@@ -150,7 +150,7 @@ jobs:
     env:
       NO_COLOR: 1
       E2E_ABLY_API_KEY: ${{ secrets.E2E_ABLY_API_KEY }}
-      E2E_ABLY_ACCESS_TOKEN: ${{ secrets.E2E_ABLY_ACCESS_TOKEN }}
+      E2E_ABLY_ACCESS_TOKEN: ${{ secrets.E2E_ABLY_ABLY_ACCESS_TOKEN }}
       TERMINAL_SERVER_SIGNING_SECRET: ${{ secrets.TERMINAL_SERVER_SIGNING_SECRET }}
       E2E_TESTS: true
       HEADLESS: true
@@ -216,7 +216,7 @@ jobs:
     env:
       NO_COLOR: 1
       E2E_ABLY_API_KEY: ${{ secrets.E2E_ABLY_API_KEY }}
-      E2E_ABLY_ACCESS_TOKEN: ${{ secrets.E2E_ABLY_ACCESS_TOKEN }}
+      E2E_ABLY_ACCESS_TOKEN: ${{ secrets.E2E_ABLY_ABLY_ACCESS_TOKEN }}
       TERMINAL_SERVER_SIGNING_SECRET: ${{ secrets.TERMINAL_SERVER_SIGNING_SECRET }}
       E2E_TESTS: true
       HEADLESS: true
@@ -282,7 +282,7 @@ jobs:
     env:
       NO_COLOR: 1
       E2E_ABLY_API_KEY: ${{ secrets.E2E_ABLY_API_KEY }}
-      E2E_ABLY_ACCESS_TOKEN: ${{ secrets.E2E_ABLY_ACCESS_TOKEN }}
+      E2E_ABLY_ACCESS_TOKEN: ${{ secrets.E2E_ABLY_ABLY_ACCESS_TOKEN }}
       # Terminal Server Signing Secret is intentionally not set
       # Rate limit test should NOT use terminal server signing secret.
       E2E_TESTS: true
