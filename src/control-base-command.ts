@@ -3,6 +3,7 @@ import { controlApiFlags } from "./flags.js";
 import { ControlApi, App } from "./services/control-api.js";
 import { BaseFlags } from "./types/cli.js";
 import { errorMessage } from "./utils/errors.js";
+import isWebCliMode from "./utils/web-mode.js";
 
 export abstract class ControlBaseCommand extends AblyBaseCommand {
   // Control API commands get core + hidden control API flags
@@ -30,6 +31,14 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
     if (!accessToken) {
       this.fail(
         `No access token provided. Please set the ABLY_ACCESS_TOKEN environment variable or configure an account with "ably accounts login".`,
+        flags,
+        "auth",
+      );
+    }
+
+    if (isWebCliMode() && flags["control-host"]) {
+      this.fail(
+        "The --control-host flag is not available in web CLI mode.",
         flags,
         "auth",
       );
