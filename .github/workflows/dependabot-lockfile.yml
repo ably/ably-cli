@@ -15,11 +15,18 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Generate App Token
+        id: generate-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.CI_APP_ID }}
+          private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
+
       - name: Checkout Dependabot branch
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-          token: ${{ secrets.CI_PAT }}
+          token: ${{ steps.generate-token.outputs.token }}
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v5
