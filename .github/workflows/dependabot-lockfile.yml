@@ -75,12 +75,14 @@ jobs:
         id: errors
         if: steps.build.outcome == 'failure' || steps.lint.outcome == 'failure'
         run: |
-          echo "build_output<<ENDOFOUTPUT" >> "$GITHUB_OUTPUT"
-          cat /tmp/build-output.txt 2>/dev/null || echo "Build succeeded"
-          echo "ENDOFOUTPUT" >> "$GITHUB_OUTPUT"
-          echo "lint_output<<ENDOFOUTPUT" >> "$GITHUB_OUTPUT"
-          cat /tmp/lint-output.txt 2>/dev/null || echo "Lint succeeded"
-          echo "ENDOFOUTPUT" >> "$GITHUB_OUTPUT"
+          {
+            echo "build_output<<ENDOFOUTPUT"
+            cat /tmp/build-output.txt 2>/dev/null || echo "Build succeeded"
+            echo "ENDOFOUTPUT"
+            echo "lint_output<<ENDOFOUTPUT"
+            cat /tmp/lint-output.txt 2>/dev/null || echo "Lint succeeded"
+            echo "ENDOFOUTPUT"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Fix issues with Claude
         if: steps.build.outcome == 'failure' || steps.lint.outcome == 'failure'
