@@ -3,6 +3,7 @@ import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
+import { resolveCurrentKeyName } from "../../../utils/key-parsing.js";
 import {
   formatHeading,
   formatLabel,
@@ -51,12 +52,7 @@ export default class KeysListCommand extends ControlBaseCommand {
 
       // Get the current key name for highlighting (app_id.key_Id)
       const currentKeyId = this.configManager.getKeyId(appId);
-      const currentKeyName =
-        currentKeyId && currentKeyId.includes(".")
-          ? currentKeyId
-          : currentKeyId
-            ? `${appId}.${currentKeyId}`
-            : undefined;
+      const currentKeyName = resolveCurrentKeyName(appId, currentKeyId);
 
       if (this.shouldOutputJson(flags)) {
         // Add a "current" flag to the key if it's the currently selected one

@@ -2,6 +2,7 @@ import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import { resolveCurrentKeyName } from "../../../utils/key-parsing.js";
 import { formatLabel } from "../../../utils/output.js";
 
 export default class KeysCurrentCommand extends ControlBaseCommand {
@@ -50,9 +51,7 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
     const appName = this.configManager.getAppName(appId) || appId;
 
     // Format the full key name (app_id.key_id)
-    const keyName = keyId.includes(".")
-      ? keyId
-      : `${appId}.${keyId.split(".")[1] ?? keyId}`;
+    const keyName = resolveCurrentKeyName(appId, keyId) ?? keyId;
 
     if (this.shouldOutputJson(flags)) {
       this.logJsonResult(

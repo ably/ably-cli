@@ -11,7 +11,7 @@ export default class AuthKeys extends BaseTopicCommand {
     '$ ably auth keys create --name "My New Key"',
     "$ ably auth keys get KEY_ID",
     "$ ably auth keys revoke KEY_ID",
-    "$ ably auth keys update KEY_ID",
+    '$ ably auth keys update KEY_ID --name "New Name"',
     "$ ably auth keys switch KEY_ID",
   ];
 }
