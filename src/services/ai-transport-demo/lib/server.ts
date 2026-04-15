@@ -10,19 +10,26 @@ import { createServer, type Server, type IncomingMessage, type ServerResponse } 
 import { EventEmitter } from "node:events";
 import getPort from "get-port";
 import type * as Ably from "ably";
+import { symbols } from "../ui/theme.js";
 
 export interface DemoServerOptions {
   /** The Ably channel to enter presence on. */
   channel: Ably.RealtimeChannel;
-  /** Callback when a user message is received via HTTP POST. */
-  onMessage: (body: MessageRequestBody) => void;
+  /** Callback when an AIT SDK POST request is received. */
+  onRequest: (body: AitRequestBody) => void;
 }
 
-export interface MessageRequestBody {
-  /** The user's message text. */
-  message: string;
-  /** Optional client ID. */
+/**
+ * The request body format sent by the AIT client transport's send().
+ * Contains turnId, clientId, messages (MessageWithHeaders[]), history, etc.
+ */
+export interface AitRequestBody {
+  turnId: string;
   clientId?: string;
+  messages: Array<{ message: { id: string; role: string; content: string } }>;
+  history?: unknown[];
+  parent?: string | null;
+  forkOf?: string;
 }
 
 export interface DemoServer {
@@ -49,7 +56,7 @@ export class DemoServerEvents extends EventEmitter {
 export async function createDemoServer(
   options: DemoServerOptions,
 ): Promise<DemoServer> {
-  const { channel, onMessage } = options;
+  const { channel, onRequest } = options;
   const events = new DemoServerEvents();
 
   // Find an available port
@@ -77,9 +84,13 @@ export async function createDemoServer(
         });
         req.on("end", () => {
           try {
-            const parsed = JSON.parse(body) as MessageRequestBody;
-            events.emitLog(`Received message: "${truncate(parsed.message, 50)}"`);
-            onMessage(parsed);
+            const parsed = JSON.parse(body) as AitRequestBody;
+            const firstMsg = parsed.messages?.[0]?.message;
+            const preview = firstMsg?.content
+              ? truncate(firstMsg.content, 50)
+              : "(no content)";
+            events.emitLog(`${symbols.incoming} Received: "${preview}"`);
+            onRequest(parsed);
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ ok: true }));
           } catch {

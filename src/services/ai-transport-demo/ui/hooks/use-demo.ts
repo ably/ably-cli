@@ -1,0 +1,96 @@
+/**
+ * React hook that connects the DemoOrchestrator to UI state.
+ * Manages conversation messages, streaming status, and server/client state.
+ */
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import type { ConversationMessage } from "../ClientPanel.js";
+import type { DemoOrchestrator } from "../../lib/orchestrator.js";
+import type { DemoMessage } from "../../lib/codec.js";
+
+interface UseDemoResult {
+  messages: ConversationMessage[];
+  isStreaming: boolean;
+  serverPort: number | null;
+  serverRunning: boolean;
+  clientConnected: boolean;
+  sendMessage: (text: string) => void;
+  cancelStream: () => void;
+}
+
+export function useDemo(orchestrator: DemoOrchestrator | null): UseDemoResult {
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [serverPort, setServerPort] = useState<number | null>(null);
+  const [serverRunning, setServerRunning] = useState(false);
+  const [clientConnected, setClientConnected] = useState(false);
+
+  const orchestratorRef = useRef(orchestrator);
+  orchestratorRef.current = orchestrator;
+
+  useEffect(() => {
+    if (!orchestrator) return;
+
+    const onServerReady = (data: { port: number }) => {
+      setServerPort(data.port);
+      setServerRunning(true);
+    };
+
+    const onClientConnected = () => {
+      setClientConnected(true);
+    };
+
+    // The orchestrator emits the full message list from the AIT client transport
+    const onMessages = (msgs: DemoMessage[]) => {
+      setMessages(
+        msgs.map((m) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+        })),
+      );
+    };
+
+    const onTurnEnd = () => {
+      setIsStreaming(false);
+    };
+
+    const onError = () => {
+      setIsStreaming(false);
+    };
+
+    orchestrator.on("serverReady", onServerReady);
+    orchestrator.on("clientConnected", onClientConnected);
+    orchestrator.on("messages", onMessages);
+    orchestrator.on("turnEnd", onTurnEnd);
+    orchestrator.on("error", onError);
+
+    return () => {
+      orchestrator.off("serverReady", onServerReady);
+      orchestrator.off("clientConnected", onClientConnected);
+      orchestrator.off("messages", onMessages);
+      orchestrator.off("turnEnd", onTurnEnd);
+      orchestrator.off("error", onError);
+    };
+  }, [orchestrator]);
+
+  const sendMessage = useCallback((text: string) => {
+    if (!orchestratorRef.current) return;
+    setIsStreaming(true);
+    orchestratorRef.current.sendMessage(text);
+  }, []);
+
+  const cancelStream = useCallback(() => {
+    orchestratorRef.current?.cancelActiveTurn();
+  }, []);
+
+  return {
+    messages,
+    isStreaming,
+    serverPort,
+    serverRunning,
+    clientConnected,
+    sendMessage,
+    cancelStream,
+  };
+}

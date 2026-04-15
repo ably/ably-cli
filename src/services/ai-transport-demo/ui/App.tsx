@@ -8,28 +8,23 @@
 
 import React, { useState, useEffect } from "react";
 import { Box, Text, useApp, useInput, useStdout } from "ink";
-import { ClientPanel, type ConversationMessage } from "./ClientPanel.js";
+import { ClientPanel } from "./ClientPanel.js";
 import { ServerPanel } from "./ServerPanel.js";
 import { DebugPanel } from "./DebugPanel.js";
 import { InputBar } from "./InputBar.js";
 import { useScrollableLog } from "./hooks/use-scrollable-log.js";
+import { useDemo } from "./hooks/use-demo.js";
 import { colors } from "./theme.js";
+import type { DemoOrchestrator } from "../lib/orchestrator.js";
 
 export interface AppProps {
   role: "both" | "client" | "server";
   feature: string;
   channelName: string;
-  onSendMessage?: (text: string) => void;
-  onCancel?: () => void;
+  orchestrator: DemoOrchestrator | null;
 }
 
-export function App({
-  role,
-  feature,
-  channelName,
-  onSendMessage,
-  onCancel,
-}: AppProps) {
+export function App({ role, feature, channelName, orchestrator }: AppProps) {
   const { exit } = useApp();
   const { stdout } = useStdout();
   const [dims, setDims] = useState({
@@ -38,12 +33,69 @@ export function App({
   });
 
   const [debugExpanded, setDebugExpanded] = useState(false);
-  const [isStreaming] = useState(false);
-  const [messages] = useState<ConversationMessage[]>([]);
+  const [mutableMessagesError, setMutableMessagesError] = useState(false);
+
+  const {
+    messages,
+    isStreaming,
+    serverPort,
+    serverRunning,
+    clientConnected,
+    sendMessage,
+    cancelStream,
+  } = useDemo(orchestrator);
 
   const serverLog = useScrollableLog();
   const debugLog = useScrollableLog();
 
+  // Wire orchestrator events to log panels, then start server/client.
+  // Starting happens inside useEffect so event listeners are attached first
+  // and no events are missed.
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    if (!orchestrator) return;
+
+    const onServerLog = (msg: string) => serverLog.addEntry(msg);
+    const onDebugLog = (msg: string) => debugLog.addEntry(msg);
+
+    const onMutableRequired = () => setMutableMessagesError(true);
+
+    orchestrator.on("serverLog", onServerLog);
+    orchestrator.on("debugLog", onDebugLog);
+    orchestrator.on("mutableMessagesRequired", onMutableRequired);
+
+    return () => {
+      orchestrator.off("serverLog", onServerLog);
+      orchestrator.off("debugLog", onDebugLog);
+      orchestrator.off("mutableMessagesRequired", onMutableRequired);
+    };
+  }, [orchestrator, serverLog.addEntry, debugLog.addEntry]);
+
+  // Start server and client after listeners are attached
+  useEffect(() => {
+    if (!orchestrator || started) return;
+    setStarted(true);
+
+    const startup = async () => {
+      const runServer = role === "both" || role === "server";
+      const runClient = role === "both" || role === "client";
+
+      if (runServer) {
+        await orchestrator.startServer();
+      }
+
+      if (runClient) {
+        await orchestrator.startClient();
+      }
+    };
+
+    startup().catch((error: unknown) => {
+      debugLog.addEntry(`Startup error: ${String(error)}`);
+    });
+  }, [orchestrator, role, started, debugLog]);
+
+  // Track terminal resize
   useEffect(() => {
     const onResize = () => {
       setDims({
@@ -58,6 +110,7 @@ export function App({
     };
   }, [stdout]);
 
+  // Keyboard handling
   useInput((input, key) => {
     if (input === "d" && key.ctrl) {
       exit();
@@ -65,7 +118,7 @@ export function App({
     }
 
     if (input === "c" && key.ctrl && isStreaming) {
-      onCancel?.();
+      cancelStream();
       return;
     }
 
@@ -74,17 +127,50 @@ export function App({
     }
   });
 
-  const handleSendMessage = (text: string) => {
-    onSendMessage?.(text);
-  };
-
   const showClient = role === "both" || role === "client";
   const showServer = role === "both" || role === "server";
 
   const clientWidth = showServer ? Math.floor(dims.width * 0.6) : dims.width;
-
-  // Debug: 2 lines always visible, 8 when expanded
   const debugLines = debugExpanded ? 8 : 2;
+
+  // Server status for client panel
+  const serverStatus = clientConnected
+    ? "connected"
+    : orchestrator
+      ? "connecting"
+      : "not-found";
+
+  // Show mutable messages setup instructions if the error is triggered
+  if (mutableMessagesError) {
+    return (
+      <Box flexDirection="column" paddingX={1}>
+        <Text bold color={colors.error}>
+          Setup Required: Mutable Messages
+        </Text>
+        <Text>
+          AI Transport requires <Text bold>mutable messages</Text> on the{" "}
+          <Text color={colors.primary}>ai-demo</Text> namespace.
+        </Text>
+        <Text> </Text>
+        <Text>To set this up, either:</Text>
+        <Text>
+          {"  "}1.{" "}
+          <Text color={colors.primary}>
+            ably apps rules create --name ai-demo --mutable-messages
+          </Text>
+        </Text>
+        <Text>
+          {"  "}2. Dashboard: App {">"} Settings {">"} Rules {">"} add ai-demo
+          with Mutable messages
+        </Text>
+        <Text> </Text>
+        <Text color={colors.dim}>
+          Docs: https://ably.com/docs/channels/options/mutable-messages | Press
+          Ctrl+D to exit
+        </Text>
+      </Box>
+    );
+  }
 
   return (
     <Box flexDirection="row" height={dims.height} width={dims.width}>
@@ -92,7 +178,7 @@ export function App({
       {showClient && (
         <Box
           flexDirection="column"
-          borderStyle="round"
+          borderStyle="single"
           borderColor={colors.activeBorder}
           width={clientWidth}
         >
@@ -111,12 +197,12 @@ export function App({
           <Box flexDirection="column" flexGrow={1} paddingX={1} marginTop={1}>
             <ClientPanel
               messages={messages}
-              serverStatus="connected"
+              serverStatus={serverStatus}
               isStreaming={isStreaming}
             />
           </Box>
 
-          {/* Debug events — always visible, 2 lines default */}
+          {/* Debug events — always visible */}
           <Box
             flexDirection="column"
             paddingX={1}
@@ -144,7 +230,11 @@ export function App({
             borderRight={false}
             borderColor={colors.border}
           >
-            <InputBar onSubmit={handleSendMessage} isStreaming={isStreaming} />
+            <InputBar
+              onSubmit={sendMessage}
+              isStreaming={isStreaming}
+              disabled={!clientConnected}
+            />
           </Box>
         </Box>
       )}
@@ -154,22 +244,17 @@ export function App({
         <Box
           flexDirection="column"
           flexGrow={1}
-          borderStyle="round"
+          borderStyle="single"
           borderColor={colors.border}
         >
-          {/* Server log — fills the panel */}
           <Box flexDirection="column" flexGrow={1} paddingX={1}>
             <ServerPanel
               entries={serverLog.entries}
-              isRunning={false}
+              port={serverPort ?? undefined}
+              isRunning={serverRunning}
               maxVisible={dims.height - 4}
             />
           </Box>
-
-          {/* Future: server controls bar would go here */}
-          {/* <Box paddingX={1} borderStyle="single" borderTop ...>
-               Restart │ Disconnect │ Kill stream
-             </Box> */}
         </Box>
       )}
     </Box>
