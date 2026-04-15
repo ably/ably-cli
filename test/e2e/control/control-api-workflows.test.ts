@@ -368,7 +368,7 @@ describe("Control API E2E Workflow Tests", () => {
           "--max-length",
           "5000",
           "--ttl",
-          "1800",
+          "60",
           "--region",
           "eu-west-1-a",
           "--json",
@@ -390,10 +390,7 @@ describe("Control API E2E Workflow Tests", () => {
         "maxLength",
         5000,
       );
-      expect(result.queue as Record<string, unknown>).toHaveProperty(
-        "ttl",
-        1800,
-      );
+      expect(result.queue as Record<string, unknown>).toHaveProperty("ttl", 60);
     });
 
     it("should list queues", async () => {
@@ -421,16 +418,22 @@ describe("Control API E2E Workflow Tests", () => {
       if (shouldSkip) return;
 
       const queueName = `test-delete-queue-${Date.now()}`;
-      // First create a queue
-      await runCommand(
+      // First create a queue and capture its ID
+      const createResult = await runCommand(
         ["queues", "create", queueName, "--app", testAppId, "--json"],
         {
           env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
         },
       );
 
+      const createOutput = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
+      const queueId = (createOutput.queue as Record<string, unknown>)
+        .id as string;
+
       const deleteResult = await runCommand(
-        ["queues", "delete", queueName, "--app", testAppId, "--force"],
+        ["queues", "delete", queueId, "--app", testAppId, "--force"],
         {
           env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
         },

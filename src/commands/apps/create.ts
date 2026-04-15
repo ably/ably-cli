@@ -73,14 +73,16 @@ export default class AppsCreateCommand extends ControlBaseCommand {
         this.log(`${formatLabel("Updated")} ${this.formatDate(app.modified)}`);
       }
 
-      // Automatically switch to the newly created app
-      this.configManager.setCurrentApp(app.id);
-      this.configManager.storeAppInfo(app.id, { appName: app.name });
+      // Automatically switch to the newly created app if a local account exists
+      if (this.configManager.getCurrentAccount()) {
+        this.configManager.setCurrentApp(app.id);
+        this.configManager.storeAppInfo(app.id, { appName: app.name });
 
-      this.logSuccessMessage(
-        `Automatically switched to app ${formatResource(app.name)} (${app.id}).`,
-        flags,
-      );
+        this.logSuccessMessage(
+          `Automatically switched to app ${formatResource(app.name)} (${app.id}).`,
+          flags,
+        );
+      }
     } catch (error) {
       this.fail(error, flags, "appCreate");
     }

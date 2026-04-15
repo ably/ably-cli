@@ -226,7 +226,7 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
         const queueData = {
           name: testQueueName,
           maxLength: 1000,
-          ttl: 3600,
+          ttl: 60,
           region: "us-east-1-a",
         };
 
@@ -236,7 +236,7 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
         expect(queue).toHaveProperty("name", testQueueName);
         expect(queue).toHaveProperty("appId", testAppId);
         expect(queue).toHaveProperty("maxLength", 1000);
-        expect(queue).toHaveProperty("ttl", 3600);
+        expect(queue).toHaveProperty("ttl", 60);
         expect(queue).toHaveProperty("region", "us-east-1-a");
 
         createdResources.queues.push(testQueueName);
