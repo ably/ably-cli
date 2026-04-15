@@ -22,7 +22,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
   };
 
   static override description =
-    "Enter presence in a chat room and remain present until terminated.";
+    "Enter presence in a chat room and remain present until terminated";
 
   static override examples = [
     "$ ably rooms presence enter my-room",

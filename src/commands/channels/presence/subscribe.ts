@@ -21,7 +21,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
 
   static override examples = [
     "$ ably channels presence subscribe my-channel",
-    '$ ably channels presence subscribe my-channel --client-id "filter123"',
+    '$ ably channels presence subscribe my-channel --client-id "my-client"',
     "$ ably channels presence subscribe my-channel --json",
     "$ ably channels presence subscribe my-channel --pretty-json",
     "$ ably channels presence subscribe my-channel --duration 30",

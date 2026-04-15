@@ -73,7 +73,10 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
       const existingRule = await controlApi.getRule(appId, args.ruleId);
 
       // Prepare update data - explicitly typed
-      const updatePayload: Partial<Omit<PartialRuleData, "status">> = {
+      const updatePayload: Partial<PartialRuleData> = {
+        ...(flags.status && {
+          status: flags.status === "enabled" ? "enabled" : "disabled",
+        }),
         ...(flags["request-mode"] && { requestMode: flags["request-mode"] }),
         ...(flags.source && {
           source: JSON.parse(flags.source) as Record<string, unknown>,
