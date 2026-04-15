@@ -5,22 +5,24 @@ on:
     branches: [main]
 
 permissions:
+  actions: read
   contents: write
   pull-requests: write
 
 jobs:
   fix-dependabot:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
       - name: Check if Dependabot PR
         id: guard
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
-          PR_AUTHOR=$(gh pr view ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --json author --jq '.author.login')
-          if [[ "$PR_AUTHOR" != "app/dependabot" ]]; then
+          if [[ "$PR_AUTHOR" != "dependabot[bot]" ]]; then
             echo "Not a Dependabot PR (author: $PR_AUTHOR), nothing to do."
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
@@ -28,11 +30,7 @@ jobs:
 
           # Prevent infinite loops: count how many times this workflow has already
           # run successfully on this branch (max 2 attempts: initial + one retry)
-          RUN_COUNT=$(gh run list \
-            --workflow dependabot-lockfile.yml \
-            --branch "${{ github.event.pull_request.head.ref }}" \
-            --json conclusion \
-            --jq '[.[] | select(.conclusion == "success")] | length')
+          RUN_COUNT=$(gh api "repos/${{ github.repository }}/actions/workflows/dependabot-lockfile.yml/runs?branch=$HEAD_REF&status=success" --jq '.total_count')
           if [[ "$RUN_COUNT" -ge 2 ]]; then
             echo "Already ran $RUN_COUNT times on this branch, skipping to prevent loop."
             echo "skip=true" >> "$GITHUB_OUTPUT"
@@ -130,8 +128,8 @@ jobs:
           fi
 
       - name: Capture error output
-        id: errors
         if: steps.needs-fix.outputs.needed == 'true'
+        id: errors
         run: |
           {
             echo "build_output<<ENDOFOUTPUT"
@@ -184,7 +182,7 @@ jobs:
 
             1. Diagnose why the build/lint/tests fail after the dependency bump
             2. Make the MINIMUM changes needed to fix it — do not refactor unrelated code
-            3. Run `pnpm run build`, `pnpm exec eslint .`, and `pnpm test:unit` to verify your fixes
+            3. Run `pnpm run build`, `pnpm exec eslint .`, `pnpm test:unit`, and `pnpm --filter @ably/react-web-cli test` to verify your fixes
             4. Commit your changes with a descriptive message
             5. Push to the current branch
 
