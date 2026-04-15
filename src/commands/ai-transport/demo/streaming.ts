@@ -100,22 +100,75 @@ export default class StreamingDemo extends ControlBaseCommand {
       },
     });
 
-    // Catch unhandled errors from the Ably SDK (e.g., mutable messages 93002)
-    // that are thrown from WebSocket message handlers outside our try/catch.
-    // We emit the event on the orchestrator so the TUI shows the setup screen.
+    // The AIT SDK encoder has a known issue where it floods stderr with
+    // NACK errors and PromiseRejectionHandledWarnings when mutableMessages
+    // is not enabled. We suppress these so the TUI error panel can present
+    // a clean message. All suppression is removed in the finally block.
     const orchestratorRef = this.orchestrator;
+    let mutableErrorDetected = false;
+
+    // 1. Catch uncaught exceptions from the SDK's WebSocket handler
     const unhandledHandler = (error: Error) => {
       const msg = String(error);
       if (msg.includes("93002") || msg.includes("mutableMessages")) {
-        orchestratorRef?.emit("mutableMessagesRequired");
+        if (!mutableErrorDetected) {
+          mutableErrorDetected = true;
+          orchestratorRef?.emit("mutableMessagesRequired");
+        }
+
         return;
       }
 
-      // For other errors, log to stderr but don't crash the TUI
+      if (msg.includes("80017") || msg.includes("Connection closed")) {
+        // Expected after we close the connection on mutable messages error
+        return;
+      }
+
       process.stderr.write(`Unhandled error: ${msg}\n`);
     };
 
+    // 2. Intercept console.error to suppress [AblySDK Error] NACK spam
+    const originalConsoleError = console.error;
+    const originalConsoleLog = console.log;
+    const suppressedConsole = (...args: unknown[]) => {
+      const msg = args.map(String).join(" ");
+      if (
+        mutableErrorDetected &&
+        (msg.includes("93002") ||
+          msg.includes("mutableMessages") ||
+          msg.includes("onNack") ||
+          msg.includes("80017") ||
+          msg.includes("failQueuedMessages"))
+      ) {
+        return; // Suppress
+      }
+
+      originalConsoleError(...args);
+    };
+
+    console.error = suppressedConsole;
+    console.log = (...args: unknown[]) => {
+      const msg = args.map(String).join(" ");
+      if (mutableErrorDetected && msg.includes("Ably:")) {
+        return; // Suppress SDK log output after error detected
+      }
+
+      originalConsoleLog(...args);
+    };
+
+    // 3. Suppress PromiseRejectionHandledWarning from the encoder's
+    //    fire-and-forget pattern
+    const warningHandler = (warning: Error) => {
+      if (warning.name === "PromiseRejectionHandledWarning") {
+        return; // Suppress
+      }
+
+      process.emit("warning", warning);
+    };
+
     process.on("uncaughtException", unhandledHandler);
+    process.removeAllListeners("warning");
+    process.on("warning", warningHandler);
 
     // Bypass Ink's CI detection (CI_* env vars trigger is-in-ci)
     const prevCi = process.env.CI;
@@ -138,7 +191,11 @@ export default class StreamingDemo extends ControlBaseCommand {
 
       await waitUntilExit();
     } finally {
+      // Restore all suppression
       process.off("uncaughtException", unhandledHandler);
+      process.removeAllListeners("warning");
+      console.error = originalConsoleError;
+      console.log = originalConsoleLog;
 
       if (prevCi === undefined) {
         delete process.env.CI;
