@@ -18,6 +18,7 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
     "$ ably apps rules update chat --persisted",
     "$ ably apps rules update chat --mutable-messages",
     "$ ably apps rules update events --push-enabled=false",
+    "$ ably apps rules update events --no-push-enabled",
     '$ ably apps rules update notifications --persisted --push-enabled --app "My App"',
     "$ ably apps rules update chat --persisted --json",
   ];

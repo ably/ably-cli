@@ -8,7 +8,7 @@ export default class LogsConnectionLifecycleIndexCommand extends BaseTopicComman
     "Stream logs from [meta]connection.lifecycle meta channel";
 
   static override examples = [
-    "ably logs connection-lifecycle subscribe",
-    "ably logs connection-lifecycle subscribe --rewind 10",
+    "$ ably logs connection-lifecycle subscribe",
+    "$ ably logs connection-lifecycle subscribe --rewind 10",
   ];
 }

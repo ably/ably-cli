@@ -14,9 +14,8 @@ export default class KeysCreateCommand extends ControlBaseCommand {
     `$ ably auth keys create --name "My New Key" --capabilities '{"channel1":["publish","subscribe"],"channel2":["history"]}'`,
     `$ ably auth keys create --name "My New Key" --json`,
     `$ ably auth keys create --name "My New Key" --pretty-json`,
-    `$ ably auth keys create --app <appId> --name "MyKey" --capabilities '{"channel:*":["publish"]}'`,
-    `$ ably auth keys create --app <appId> --name "MyOtherKey" --capabilities '{"channel:chat-*":["subscribe"],"channel:updates":["publish"]}' --ttl 86400`,
-    `$ ably auth keys create --name "My New Key" --capabilities '{"channel1":["publish","subscribe"],"channel2":["history"]}'`,
+    `$ ably auth keys create --app APP_ID --name "MyKey" --capabilities '{"channel:*":["publish"]}'`,
+    `$ ably auth keys create --app APP_ID --name "MyOtherKey" --capabilities '{"channel:chat-*":["subscribe"],"channel:updates":["publish"]}'`,
   ];
 
   static flags = {
