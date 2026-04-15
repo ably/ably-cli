@@ -26,9 +26,9 @@ describe("server", () => {
   describe("createDemoServer", () => {
     it("should start a server on an available port", async () => {
       const channel = createMockChannel();
-      const onMessage = vi.fn();
+      const onRequest = vi.fn();
 
-      server = await createDemoServer({ channel, onMessage });
+      server = await createDemoServer({ channel, onRequest });
 
       expect(server.port).toBeGreaterThan(0);
       expect(server.url).toBe(`http://localhost:${server.port}`);
@@ -36,56 +36,65 @@ describe("server", () => {
 
     it("should enter presence with the endpoint URL", async () => {
       const channel = createMockChannel();
-      const onMessage = vi.fn();
+      const onRequest = vi.fn();
 
-      server = await createDemoServer({ channel, onMessage });
+      server = await createDemoServer({ channel, onRequest });
 
       expect(channel.presence.enter).toHaveBeenCalledWith({
         endpoint: server.url,
       });
     });
 
-    it("should handle POST requests with JSON body", async () => {
+    it("should handle POST requests with AIT SDK format", async () => {
       const channel = createMockChannel();
-      const onMessage = vi.fn();
+      const onRequest = vi.fn();
 
-      server = await createDemoServer({ channel, onMessage });
+      server = await createDemoServer({ channel, onRequest });
+
+      const aitBody = {
+        turnId: "turn-1",
+        clientId: "user-1",
+        messages: [{ message: { id: "m1", role: "user", content: "Hello" } }],
+      };
 
       const response = await fetch(server.url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: "Hello" }),
+        body: JSON.stringify(aitBody),
       });
 
       expect(response.status).toBe(200);
       const data = await response.json();
       expect(data).toEqual({ ok: true });
-      expect(onMessage).toHaveBeenCalledWith({ message: "Hello" });
+      expect(onRequest).toHaveBeenCalledWith(aitBody);
     });
 
     it("should handle POST to /api/chat endpoint", async () => {
       const channel = createMockChannel();
-      const onMessage = vi.fn();
+      const onRequest = vi.fn();
 
-      server = await createDemoServer({ channel, onMessage });
+      server = await createDemoServer({ channel, onRequest });
+
+      const aitBody = {
+        turnId: "turn-2",
+        messages: [{ message: { id: "m2", role: "user", content: "Hi" } }],
+      };
 
       const response = await fetch(`${server.url}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: "Hello from /api/chat" }),
+        body: JSON.stringify(aitBody),
       });
 
       expect(response.status).toBe(200);
-      expect(onMessage).toHaveBeenCalledWith({
-        message: "Hello from /api/chat",
-      });
+      expect(onRequest).toHaveBeenCalledWith(aitBody);
     });
 
     it("should return 400 for invalid JSON", async () => {
       const channel = createMockChannel();
-      const onMessage = vi.fn();
+      const onRequest = vi.fn();
 
-      server = await createDemoServer({ channel, onMessage });
+      server = await createDemoServer({ channel, onRequest });
 
       const response = await fetch(server.url, {
         method: "POST",
@@ -94,14 +103,14 @@ describe("server", () => {
       });
 
       expect(response.status).toBe(400);
-      expect(onMessage).not.toHaveBeenCalled();
+      expect(onRequest).not.toHaveBeenCalled();
     });
 
     it("should return 404 for unknown routes", async () => {
       const channel = createMockChannel();
-      const onMessage = vi.fn();
+      const onRequest = vi.fn();
 
-      server = await createDemoServer({ channel, onMessage });
+      server = await createDemoServer({ channel, onRequest });
 
       const response = await fetch(`${server.url}/unknown`);
 
@@ -110,10 +119,10 @@ describe("server", () => {
 
     it("should emit log events", async () => {
       const channel = createMockChannel();
-      const onMessage = vi.fn();
+      const onRequest = vi.fn();
       const logs: string[] = [];
 
-      server = await createDemoServer({ channel, onMessage });
+      server = await createDemoServer({ channel, onRequest });
       server.events.on("log", (msg: string) => logs.push(msg));
 
       await fetch(server.url, {
@@ -122,14 +131,14 @@ describe("server", () => {
         body: JSON.stringify({ message: "Test" }),
       });
 
-      expect(logs.some((l) => l.includes("Received message"))).toBe(true);
+      expect(logs.some((l) => l.includes("Received"))).toBe(true);
     });
 
     it("should leave presence and stop on close", async () => {
       const channel = createMockChannel();
-      const onMessage = vi.fn();
+      const onRequest = vi.fn();
 
-      server = await createDemoServer({ channel, onMessage });
+      server = await createDemoServer({ channel, onRequest });
       await server.close();
 
       expect(channel.presence.leave).toHaveBeenCalled();
@@ -147,9 +156,9 @@ describe("server", () => {
     it("should continue if presence enter fails", async () => {
       const channel = createMockChannel();
       channel.presence.enter.mockRejectedValue(new Error("presence error"));
-      const onMessage = vi.fn();
+      const onRequest = vi.fn();
 
-      server = await createDemoServer({ channel, onMessage });
+      server = await createDemoServer({ channel, onRequest });
 
       // Server should still be running despite presence failure
       expect(server.port).toBeGreaterThan(0);
