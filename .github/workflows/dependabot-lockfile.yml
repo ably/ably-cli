@@ -194,6 +194,12 @@ jobs:
             sleep "$POLL_INTERVAL"
           done
 
+          # Fail explicitly if we timed out without ever receiving check data
+          if [[ $elapsed -ge $MAX_POLL_TIME && -z "$ci_checks" ]]; then
+            echo "::error::Timed out waiting for CI checks — no check data received"
+            exit 1
+          fi
+
           # Collect failures (exclude cancelled and skipped — only actual failures)
           failed_checks=$(echo "$ci_checks" | jq -c 'select(.conclusion == "failure")' 2>/dev/null)
           failed_count=0
@@ -232,14 +238,16 @@ jobs:
           "
           done
 
-          # Write outputs
+          # Write outputs using randomised delimiters to avoid collision with log content
+          delim_summary="EOF_$(openssl rand -hex 16)"
+          delim_logs="EOF_$(openssl rand -hex 16)"
           {
-            echo "failure_summary<<ENDOFFAILURES"
+            echo "failure_summary<<${delim_summary}"
             echo "Failed checks: $(echo "$failed_names" | tr '\n' ', ' | sed 's/, $//')"
-            echo "ENDOFFAILURES"
-            echo "failure_logs<<ENDOFLOGS"
+            echo "${delim_summary}"
+            echo "failure_logs<<${delim_logs}"
             echo "$failure_logs"
-            echo "ENDOFLOGS"
+            echo "${delim_logs}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Checkout Dependabot branch
