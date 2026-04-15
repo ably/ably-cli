@@ -47,6 +47,20 @@ describe("auth:keys:current command", () => {
       expect(result).toHaveProperty("key");
       expect(result.key).toHaveProperty("value");
     });
+
+    it("should output only the raw key value with --value-only", async () => {
+      const mockConfig = getMockConfigManager();
+      const apiKey = mockConfig.getApiKey()!;
+      const { stdout } = await runCommand(
+        ["auth:keys:current", "--value-only"],
+        import.meta.url,
+      );
+
+      // Should be just the key, nothing else
+      expect(stdout.trim()).toBe(apiKey);
+      expect(stdout).not.toContain("Account");
+      expect(stdout).not.toContain("App");
+    });
   });
 
   standardHelpTests("auth:keys:current", import.meta.url);

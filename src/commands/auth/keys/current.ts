@@ -11,7 +11,7 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
     "$ ably auth keys current",
     "$ ably auth keys current --app APP_ID",
     "$ ably auth keys current --json",
-    "$ ably auth keys current --pretty-json",
+    "$ ABLY_API_KEY=$(ably auth keys current --value-only) node my-script.js",
   ];
 
   static flags = {
@@ -19,6 +19,10 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
     app: Flags.string({
       description: "The app ID (defaults to current app)",
       env: "ABLY_APP_ID",
+    }),
+    "value-only": Flags.boolean({
+      description:
+        "Output only the raw API key value, useful for scripting and environment variables",
     }),
   };
 
@@ -50,6 +54,12 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
         flags,
         "KeyCurrent",
       );
+    }
+
+    // --value-only: output just the raw API key string, nothing else
+    if (flags["value-only"]) {
+      this.log(apiKey);
+      return;
     }
 
     // Extract the key ID (part before the colon)
