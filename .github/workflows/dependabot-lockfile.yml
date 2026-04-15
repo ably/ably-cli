@@ -6,13 +6,21 @@ on:
 
 permissions:
   actions: read
+  checks: read
   contents: write
   pull-requests: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
-  fix-dependabot:
+  regen-lockfile:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
+    outputs:
+      skip: ${{ steps.guard.outputs.skip }}
+      head_sha: ${{ steps.get-sha.outputs.sha }}
 
     steps:
       - name: Check if Dependabot PR
@@ -89,74 +97,201 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Try building
+      - name: Get HEAD SHA
         if: steps.guard.outputs.skip != 'true'
-        id: build
-        continue-on-error: true
-        run: |
-          set -o pipefail
-          pnpm install --frozen-lockfile
-          pnpm run build 2>&1 | tee /tmp/build-output.txt
+        id: get-sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      - name: Try linting
-        if: steps.guard.outputs.skip != 'true' && steps.build.outcome == 'success'
-        id: lint
-        continue-on-error: true
-        run: |
-          set -o pipefail
-          pnpm exec eslint . 2>&1 | tee /tmp/lint-output.txt
+  fix-failures:
+    needs: regen-lockfile
+    if: needs.regen-lockfile.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
 
-      - name: Try testing
-        if: steps.guard.outputs.skip != 'true' && steps.build.outcome == 'success'
-        id: test
-        continue-on-error: true
-        run: |
-          set -o pipefail
-          failed=0
-          pnpm test:unit 2>&1 | tee /tmp/test-output.txt || failed=1
-          pnpm --filter @ably/react-web-cli test 2>&1 | tee -a /tmp/test-output.txt || failed=1
-          exit $failed
+    steps:
+      - name: Generate App Token
+        id: generate-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.CI_APP_ID }}
+          private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
 
-      - name: Check if fixes needed
-        if: steps.guard.outputs.skip != 'true'
-        id: needs-fix
+      - name: Wait for CI checks to complete
+        id: wait-for-checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ needs.regen-lockfile.outputs.head_sha }}
+          REPO: ${{ github.repository }}
         run: |
-          if [[ "${{ steps.build.outcome }}" == "failure" || "${{ steps.lint.outcome }}" == "failure" || "${{ steps.test.outcome }}" == "failure" ]]; then
-            echo "needed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "needed=false" >> "$GITHUB_OUTPUT"
+          # Default output so downstream steps have a defined value even if this step fails
+          echo "failed_count=0" >> "$GITHUB_OUTPUT"
+
+          POLL_INTERVAL=30
+          MAX_POLL_TIME=1500  # 25 minutes
+          INITIAL_WAIT=60
+
+          # Checks to skip: our own workflow jobs, Vercel (prefix match), PR tooling
+          # NOTE: keep in sync — if you rename jobs in other workflows, update here
+          SKIP_PATTERN="^(regen-lockfile|fix-failures|Vercel.*|claude-review|generate-overview|Generate PR Overview)$"
+
+          # Expected CI checks and their source workflows:
+          #   test      -> test.yml (unit + lint + integration)
+          #   e2e-cli   -> e2e-tests.yml (CLI E2E)
+          #   audit     -> audit.yml (security audit)
+          #   setup     -> e2e-web-cli-parallel.yml (Web CLI E2E build prep)
+          EXPECTED_CHECKS=("test" "e2e-cli" "setup" "audit")
+          MIN_EXPECTED=3
+
+          echo "Waiting for CI checks on SHA: $HEAD_SHA"
+          echo "SHA source: regen-lockfile job output (may be a new commit if lockfile was pushed)"
+          echo "Initial wait of ${INITIAL_WAIT}s for checks to be queued..."
+          sleep "$INITIAL_WAIT"
+
+          start_time=$(date +%s)
+
+          while true; do
+            elapsed=$(( $(date +%s) - start_time ))
+            if [[ $elapsed -ge $MAX_POLL_TIME ]]; then
+              echo "::warning::Timed out after ${MAX_POLL_TIME}s waiting for checks"
+              if [[ -n "$ci_checks" ]]; then
+                still_pending=$(echo "$ci_checks" | jq -c 'select(.status != "completed")' | jq -r '.name' 2>/dev/null || true)
+                if [[ -n "$still_pending" ]]; then
+                  echo "::warning::Still pending at timeout: ${still_pending}"
+                fi
+              fi
+              break
+            fi
+
+            # Fetch all check runs for this SHA (handles pagination)
+            all_checks=$(gh api "repos/${REPO}/commits/${HEAD_SHA}/check-runs" \
+              --paginate \
+              --jq '.check_runs[] | {name: .name, status: .status, conclusion: .conclusion, details_url: .details_url}' \
+              2>/dev/null) || {
+              echo "::warning::API call failed (elapsed: ${elapsed}s), retrying in 10s..."
+              sleep 10
+              continue
+            }
+
+            # Filter out non-CI checks
+            ci_checks=$(echo "$all_checks" | jq -c "select(.name | test(\"${SKIP_PATTERN}\") | not)" 2>/dev/null)
+
+            if [[ -z "$ci_checks" ]]; then
+              echo "No CI checks found yet (elapsed: ${elapsed}s), waiting..."
+              sleep "$POLL_INTERVAL"
+              continue
+            fi
+
+            # Count how many expected checks have appeared
+            appeared=0
+            for check_name in "${EXPECTED_CHECKS[@]}"; do
+              if echo "$ci_checks" | jq -e "select(.name == \"${check_name}\")" > /dev/null 2>&1; then
+                appeared=$((appeared + 1))
+              fi
+            done
+
+            if [[ $appeared -lt $MIN_EXPECTED && $elapsed -lt 300 ]]; then
+              echo "Only ${appeared}/${MIN_EXPECTED} expected checks appeared (elapsed: ${elapsed}s), waiting..."
+              sleep "$POLL_INTERVAL"
+              continue
+            fi
+
+            # Check if all CI checks are completed
+            total=$(echo "$ci_checks" | jq -s 'length')
+            pending=$(echo "$ci_checks" | jq -c 'select(.status != "completed")' | jq -s 'length')
+
+            echo "Check status: $((total - pending))/${total} completed (elapsed: ${elapsed}s)"
+
+            if [[ "$pending" -eq 0 && "$total" -gt 0 ]]; then
+              echo "All CI checks completed."
+              break
+            fi
+
+            sleep "$POLL_INTERVAL"
+          done
+
+          # Fail explicitly if we timed out without ever receiving check data
+          if [[ $elapsed -ge $MAX_POLL_TIME && -z "$ci_checks" ]]; then
+            echo "::error::Timed out waiting for CI checks — no check data received"
+            exit 1
           fi
 
-      - name: Capture error output
-        if: steps.needs-fix.outputs.needed == 'true'
-        id: errors
-        run: |
+          # Collect failures (include cancelled — usually means an upstream job failed)
+          failed_checks=$(echo "$ci_checks" | jq -c 'select(.conclusion == "failure" or .conclusion == "cancelled")' 2>/dev/null)
+          failed_count=0
+          if [[ -n "$failed_checks" ]]; then
+            failed_count=$(echo "$failed_checks" | jq -s 'length')
+          fi
+
+          echo "failed_count=${failed_count}" >> "$GITHUB_OUTPUT"
+
+          if [[ "$failed_count" -eq 0 ]]; then
+            echo "All checks passed! Nothing to fix."
+            exit 0
+          fi
+
+          echo "Found ${failed_count} failed check(s)"
+
+          # List failed check names
+          failed_names=$(echo "$failed_checks" | jq -r '.name' | sort)
+          echo "Failed: ${failed_names}"
+
+          # Extract unique workflow run IDs from details_url
+          # URL format: https://github.com/{owner}/{repo}/actions/runs/{run_id}/job/{job_id}
+          run_ids=$(echo "$failed_checks" | jq -r '.details_url' | sed -n 's|.*/runs/\([0-9]*\)/.*|\1|p' | sort -u)
+
+          # Fetch failed logs for each workflow run
+          failure_logs=""
+          for run_id in $run_ids; do
+            run_name=$(gh api "repos/${REPO}/actions/runs/${run_id}" --jq '.name' 2>/dev/null || echo "unknown")
+            run_url="https://github.com/${REPO}/actions/runs/${run_id}"
+            echo "Fetching failed logs for: ${run_name} (run ${run_id})..."
+            logs=$(gh run view "$run_id" --repo "$REPO" --log-failed 2>&1 | tail -n 500) || logs="Failed to fetch logs. View manually: ${run_url}"
+
+            failure_logs="${failure_logs}
+          === Failed workflow: ${run_name} (run ${run_id}) ===
+          URL: ${run_url}
+          ${logs}
+
+          "
+          done
+
+          # Write outputs using randomised delimiters to avoid collision with log content
+          delim_summary="EOF_$(openssl rand -hex 16)"
+          delim_logs="EOF_$(openssl rand -hex 16)"
           {
-            echo "build_output<<ENDOFOUTPUT"
-            if [ -f /tmp/build-output.txt ]; then
-              tail -n 200 /tmp/build-output.txt
-            else
-              echo "No build output captured"
-            fi
-            echo "ENDOFOUTPUT"
-            echo "lint_output<<ENDOFOUTPUT"
-            if [ -f /tmp/lint-output.txt ]; then
-              tail -n 200 /tmp/lint-output.txt
-            else
-              echo "Lint was not run"
-            fi
-            echo "ENDOFOUTPUT"
-            echo "test_output<<ENDOFOUTPUT"
-            if [ -f /tmp/test-output.txt ]; then
-              tail -n 200 /tmp/test-output.txt
-            else
-              echo "Tests were not run"
-            fi
-            echo "ENDOFOUTPUT"
+            echo "failure_summary<<${delim_summary}"
+            echo "Failed checks: $(echo "$failed_names" | tr '\n' ', ' | sed 's/, $//')"
+            echo "${delim_summary}"
+            echo "failure_logs<<${delim_logs}"
+            echo "$failure_logs"
+            echo "${delim_logs}"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Fix issues with Claude
-        if: steps.needs-fix.outputs.needed == 'true'
+      - name: Checkout Dependabot branch
+        if: steps.wait-for-checks.outputs.failed_count > 0
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ steps.generate-token.outputs.token }}
+
+      - name: Set up pnpm
+        if: steps.wait-for-checks.outputs.failed_count > 0
+        uses: pnpm/action-setup@v5
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        if: steps.wait-for-checks.outputs.failed_count > 0
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22.x"
+
+      - name: Install dependencies
+        if: steps.wait-for-checks.outputs.failed_count > 0
+        run: pnpm install --frozen-lockfile
+
+      - name: Fix failures with Claude
+        if: steps.wait-for-checks.outputs.failed_count > 0
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -164,24 +299,21 @@ jobs:
           allowed_bots: "dependabot[bot]"
           prompt: |
             This is a Dependabot PR that bumps dependencies. The lockfile has been
-            regenerated but the build, lint, or tests are failing.
+            regenerated, but CI checks are failing.
 
             Read .claude/CLAUDE.md for project context.
 
-            ## Errors
+            ## Failed Checks
 
-            Build output (if failed):
-            ${{ steps.errors.outputs.build_output }}
+            ${{ steps.wait-for-checks.outputs.failure_summary }}
 
-            Lint output (if failed):
-            ${{ steps.errors.outputs.lint_output }}
+            ## Failure Logs
 
-            Test output (if failed):
-            ${{ steps.errors.outputs.test_output }}
+            ${{ steps.wait-for-checks.outputs.failure_logs }}
 
             ## Instructions
 
-            1. Diagnose why the build/lint/tests fail after the dependency bump
+            1. Analyze ALL the failure logs above to understand what broke
             2. Make the MINIMUM changes needed to fix it — do not refactor unrelated code
             3. Run `pnpm run build`, `pnpm exec eslint .`, `pnpm test:unit`, and `pnpm --filter @ably/react-web-cli test` to verify your fixes
             4. Commit your changes with a descriptive message
