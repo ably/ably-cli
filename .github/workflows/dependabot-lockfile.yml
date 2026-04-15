@@ -29,9 +29,9 @@ jobs:
           fi
 
           # Prevent infinite loops: count how many times this workflow has already
-          # run successfully on this branch (max 2 attempts: initial + one retry)
+          # run successfully on this branch (max 20 attempts)
           RUN_COUNT=$(gh api "repos/${{ github.repository }}/actions/workflows/dependabot-lockfile.yml/runs?branch=$HEAD_REF&status=success" --jq '.total_count')
-          if [[ "$RUN_COUNT" -ge 2 ]]; then
+          if [[ "$RUN_COUNT" -ge 20 ]]; then
             echo "Already ran $RUN_COUNT times on this branch, skipping to prevent loop."
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
