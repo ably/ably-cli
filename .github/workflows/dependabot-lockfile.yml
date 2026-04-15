@@ -161,6 +161,7 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ steps.generate-token.outputs.token }}
+          allowed_bots: "dependabot[bot]"
           prompt: |
             This is a Dependabot PR that bumps dependencies. The lockfile has been
             regenerated but the build, lint, or tests are failing.
