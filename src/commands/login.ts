@@ -3,14 +3,13 @@ import { Command } from "@oclif/core";
 import AccountsLogin from "./accounts/login.js";
 
 export default class Login extends Command {
-  static override args = AccountsLogin.args;
-
   static override description =
     'Log in to your Ably account (alias for "ably accounts login")';
 
   static override examples = [
     "<%= config.bin %> <%= command.id %>",
     "<%= config.bin %> <%= command.id %> --alias mycompany",
+    "<%= config.bin %> <%= command.id %> --json",
   ];
 
   static override flags = AccountsLogin.flags;

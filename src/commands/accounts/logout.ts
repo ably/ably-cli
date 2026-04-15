@@ -2,6 +2,7 @@ import { Args } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { forceFlag } from "../../flags.js";
+import { OAuthClient } from "../../services/oauth-client.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class AccountsLogout extends ControlBaseCommand {
@@ -70,6 +71,35 @@ export default class AccountsLogout extends ControlBaseCommand {
       if (!confirmed) {
         this.logWarning("Logout canceled.", flags);
         return;
+      }
+    }
+
+    // Revoke OAuth tokens if this is an OAuth account
+    if (this.configManager.getAuthMethod(targetAlias) === "oauth") {
+      const oauthTokens = this.configManager.getOAuthTokens(targetAlias);
+      if (oauthTokens) {
+        const targetAccount = this.configManager.getCurrentAccount();
+        const oauthHost = flags["control-host"] || targetAccount?.controlHost;
+        const oauthClient = new OAuthClient({
+          controlHost: oauthHost,
+        });
+        // Best-effort revocation with timeout -- don't block logout
+        const revokeWithTimeout = (token: string, timeoutMs = 5000) =>
+          Promise.race([
+            oauthClient.revokeToken(token),
+            new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+          ]);
+        await Promise.all([
+          revokeWithTimeout(oauthTokens.accessToken),
+          revokeWithTimeout(oauthTokens.refreshToken),
+        ]).catch((error) => {
+          this.logCliEvent(
+            flags,
+            "accountLogout",
+            "revocationFailed",
+            `OAuth token revocation failed: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        });
       }
     }
 
