@@ -74,9 +74,26 @@ jobs:
           set -o pipefail
           pnpm exec eslint . 2>&1 | tee /tmp/lint-output.txt
 
+      - name: Try testing
+        id: test
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          pnpm test:unit 2>&1 | tee /tmp/test-output.txt
+
+      - name: Check if fixes needed
+        id: needs-fix
+        run: |
+          if [[ "${{ steps.build.outcome }}" == "failure" || "${{ steps.lint.outcome }}" == "failure" || "${{ steps.test.outcome }}" == "failure" ]]; then
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Capture error output
         id: errors
-        if: steps.build.outcome == 'failure' || steps.lint.outcome == 'failure'
+        if: steps.needs-fix.outputs.needed == 'true'
         run: |
           {
             echo "build_output<<ENDOFOUTPUT"
@@ -93,17 +110,24 @@ jobs:
               echo "Lint was not run"
             fi
             echo "ENDOFOUTPUT"
+            echo "test_output<<ENDOFOUTPUT"
+            if [ -f /tmp/test-output.txt ]; then
+              tail -n 200 /tmp/test-output.txt
+            else
+              echo "Tests were not run"
+            fi
+            echo "ENDOFOUTPUT"
           } >> "$GITHUB_OUTPUT"
 
       - name: Fix issues with Claude
-        if: steps.build.outcome == 'failure' || steps.lint.outcome == 'failure'
+        if: steps.needs-fix.outputs.needed == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ steps.generate-token.outputs.token }}
           direct_prompt: |
             This is a Dependabot PR that bumps dependencies. The lockfile has been
-            regenerated but the build or lint is failing.
+            regenerated but the build, lint, or tests are failing.
 
             Read .claude/CLAUDE.md for project context.
 
@@ -115,11 +139,14 @@ jobs:
             Lint output (if failed):
             ${{ steps.errors.outputs.lint_output }}
 
+            Test output (if failed):
+            ${{ steps.errors.outputs.test_output }}
+
             ## Instructions
 
-            1. Diagnose why the build/lint fails after the dependency bump
+            1. Diagnose why the build/lint/tests fail after the dependency bump
             2. Make the MINIMUM changes needed to fix it — do not refactor unrelated code
-            3. Run `pnpm run build` and `pnpm exec eslint .` to verify your fixes
+            3. Run `pnpm run build`, `pnpm exec eslint .`, and `pnpm test:unit` to verify your fixes
             4. Commit your changes with a descriptive message
             5. Push to the current branch
 
