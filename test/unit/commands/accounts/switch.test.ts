@@ -137,6 +137,78 @@ describe("accounts:switch command", () => {
     });
   });
 
+  describe("OAuth account switching", () => {
+    it("should switch between local OAuth accounts", async () => {
+      const mock = getMockConfigManager();
+
+      // Store an OAuth account
+      mock.storeOAuthTokens(
+        "oauth-acct",
+        {
+          accessToken: "oauth_token_123",
+          refreshToken: "refresh_token_123",
+          expiresAt: Date.now() + 3600000,
+          userEmail: "oauth@example.com",
+        },
+        {
+          accountId: "oauth-account-id",
+          accountName: "OAuth Account",
+        },
+      );
+
+      nockControl()
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: "oauth-account-id", name: "OAuth Account" },
+          user: { email: "oauth@example.com" },
+        });
+
+      const { stderr } = await runCommand(
+        ["accounts:switch", "oauth-acct"],
+        import.meta.url,
+      );
+
+      expect(stderr).toContain("Switched to account");
+      expect(mock.getCurrentAccountAlias()).toBe("oauth-acct");
+      expect(mock.getAuthMethod("oauth-acct")).toBe("oauth");
+    });
+
+    it("should return JSON with account info when switching OAuth account with --json", async () => {
+      const mock = getMockConfigManager();
+
+      mock.storeOAuthTokens(
+        "oauth-json",
+        {
+          accessToken: "oauth_token_json",
+          refreshToken: "refresh_token_json",
+          expiresAt: Date.now() + 3600000,
+          userEmail: "json@example.com",
+        },
+        {
+          accountId: "json-account-id",
+          accountName: "JSON Account",
+        },
+      );
+
+      nockControl()
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: "json-account-id", name: "JSON Account" },
+          user: { email: "json@example.com" },
+        });
+
+      const { stdout } = await runCommand(
+        ["accounts:switch", "oauth-json", "--json"],
+        import.meta.url,
+      );
+
+      const result = parseJsonOutput(stdout);
+      expect(result).toHaveProperty("success", true);
+      expect(result.account.alias).toBe("oauth-json");
+      expect(result.account.id).toBe("json-account-id");
+    });
+  });
+
   standardHelpTests("accounts:switch", import.meta.url);
   standardArgValidationTests("accounts:switch", import.meta.url);
   standardFlagTests("accounts:switch", import.meta.url, ["--json"]);
