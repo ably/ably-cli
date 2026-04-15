@@ -5,17 +5,42 @@ on:
     branches: [main]
 
 permissions:
+  actions: read
   contents: write
   pull-requests: write
 
 jobs:
   fix-dependabot:
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
+      - name: Check if Dependabot PR
+        id: guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if [[ "$PR_AUTHOR" != "dependabot[bot]" ]]; then
+            echo "Not a Dependabot PR (author: $PR_AUTHOR), nothing to do."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Prevent infinite loops: count how many times this workflow has already
+          # run successfully on this branch (max 2 attempts: initial + one retry)
+          RUN_COUNT=$(gh api "repos/${{ github.repository }}/actions/workflows/dependabot-lockfile.yml/runs?branch=$HEAD_REF&status=success" --jq '.total_count')
+          if [[ "$RUN_COUNT" -ge 2 ]]; then
+            echo "Already ran $RUN_COUNT times on this branch, skipping to prevent loop."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
       - name: Generate App Token
+        if: steps.guard.outputs.skip != 'true'
         id: generate-token
         uses: actions/create-github-app-token@v3
         with:
@@ -23,30 +48,36 @@ jobs:
           private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
 
       - name: Checkout Dependabot branch
+        if: steps.guard.outputs.skip != 'true'
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           token: ${{ steps.generate-token.outputs.token }}
 
       - name: Set up pnpm
+        if: steps.guard.outputs.skip != 'true'
         uses: pnpm/action-setup@v5
         with:
           version: 10
 
       - name: Set up Node.js
+        if: steps.guard.outputs.skip != 'true'
         uses: actions/setup-node@v6
         with:
           node-version: "22.x"
 
       - name: Configure git identity
+        if: steps.guard.outputs.skip != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Regenerate lockfile
+        if: steps.guard.outputs.skip != 'true'
         run: pnpm install --no-frozen-lockfile --ignore-scripts
 
       - name: Commit lockfile changes
+        if: steps.guard.outputs.skip != 'true'
         id: lockfile
         run: |
           if git diff --quiet pnpm-lock.yaml; then
@@ -59,6 +90,7 @@ jobs:
           fi
 
       - name: Try building
+        if: steps.guard.outputs.skip != 'true'
         id: build
         continue-on-error: true
         run: |
@@ -67,22 +99,25 @@ jobs:
           pnpm run build 2>&1 | tee /tmp/build-output.txt
 
       - name: Try linting
+        if: steps.guard.outputs.skip != 'true' && steps.build.outcome == 'success'
         id: lint
-        if: steps.build.outcome == 'success'
         continue-on-error: true
         run: |
           set -o pipefail
           pnpm exec eslint . 2>&1 | tee /tmp/lint-output.txt
 
       - name: Try testing
+        if: steps.guard.outputs.skip != 'true' && steps.build.outcome == 'success'
         id: test
-        if: steps.build.outcome == 'success'
         continue-on-error: true
         run: |
-          set -o pipefail
-          pnpm test:unit 2>&1 | tee /tmp/test-output.txt
+          failed=0
+          pnpm test:unit 2>&1 | tee /tmp/test-output.txt || failed=1
+          pnpm --filter @ably/react-web-cli test 2>&1 | tee -a /tmp/test-output.txt || failed=1
+          exit $failed
 
       - name: Check if fixes needed
+        if: steps.guard.outputs.skip != 'true'
         id: needs-fix
         run: |
           if [[ "${{ steps.build.outcome }}" == "failure" || "${{ steps.lint.outcome }}" == "failure" || "${{ steps.test.outcome }}" == "failure" ]]; then
@@ -146,7 +181,7 @@ jobs:
 
             1. Diagnose why the build/lint/tests fail after the dependency bump
             2. Make the MINIMUM changes needed to fix it — do not refactor unrelated code
-            3. Run `pnpm run build`, `pnpm exec eslint .`, and `pnpm test:unit` to verify your fixes
+            3. Run `pnpm run build`, `pnpm exec eslint .`, `pnpm test:unit`, and `pnpm --filter @ably/react-web-cli test` to verify your fixes
             4. Commit your changes with a descriptive message
             5. Push to the current branch
 
