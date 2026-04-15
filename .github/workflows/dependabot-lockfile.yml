@@ -38,6 +38,11 @@ jobs:
         with:
           node-version: "22.x"
 
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Regenerate lockfile
         run: pnpm install --no-frozen-lockfile --ignore-scripts
 
@@ -47,8 +52,6 @@ jobs:
           if git diff --quiet pnpm-lock.yaml; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add pnpm-lock.yaml
             git commit -m "fix(deps): regenerate pnpm-lock.yaml"
             git push
@@ -77,10 +80,18 @@ jobs:
         run: |
           {
             echo "build_output<<ENDOFOUTPUT"
-            cat /tmp/build-output.txt 2>/dev/null || echo "Build succeeded"
+            if [ -f /tmp/build-output.txt ]; then
+              tail -n 200 /tmp/build-output.txt
+            else
+              echo "No build output captured"
+            fi
             echo "ENDOFOUTPUT"
             echo "lint_output<<ENDOFOUTPUT"
-            cat /tmp/lint-output.txt 2>/dev/null || echo "Lint succeeded"
+            if [ -f /tmp/lint-output.txt ]; then
+              tail -n 200 /tmp/lint-output.txt
+            else
+              echo "Lint was not run"
+            fi
             echo "ENDOFOUTPUT"
           } >> "$GITHUB_OUTPUT"
 
