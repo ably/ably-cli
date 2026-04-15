@@ -1,11 +1,14 @@
 import fetch, { type RequestInit } from "node-fetch";
 import { CommandError } from "../errors/command-error.js";
 import { getAgentName, getCliVersion } from "../utils/version.js";
+import isTestMode from "../utils/test-mode.js";
+import type { TokenRefreshMiddleware } from "./token-refresh-middleware.js";
 
 export interface ControlApiOptions {
   accessToken: string;
   controlHost?: string;
   logErrors?: boolean;
+  tokenRefreshMiddleware?: TokenRefreshMiddleware;
 }
 
 export interface App {
@@ -177,13 +180,31 @@ export interface MeResponse {
   user: { email: string };
 }
 
+export interface AccountSummary {
+  id: string;
+  name: string;
+}
+
 export class ControlApi {
   private accessToken: string;
   private controlHost: string;
+  private logErrors: boolean;
+  private tokenRefreshMiddleware?: TokenRefreshMiddleware;
 
   constructor(options: ControlApiOptions) {
     this.accessToken = options.accessToken;
     this.controlHost = options.controlHost || "control.ably.net";
+    this.tokenRefreshMiddleware = options.tokenRefreshMiddleware;
+    // Explicit options.logErrors overrides env var; otherwise suppress in CI/test
+    if (options.logErrors === undefined) {
+      const suppressErrors =
+        process.env.SUPPRESS_CONTROL_API_ERRORS === "true" ||
+        process.env.CI === "true" ||
+        isTestMode();
+      this.logErrors = !suppressErrors;
+    } else {
+      this.logErrors = options.logErrors;
+    }
   }
 
   // Ask a question to the Ably AI agent
@@ -378,6 +399,20 @@ export class ControlApi {
     return matchingKey;
   }
 
+  // Get all accounts for the authenticated user
+  async getAccounts(): Promise<AccountSummary[]> {
+    try {
+      return await this.request<AccountSummary[]>("/me/accounts");
+    } catch (error: unknown) {
+      // Graceful degradation: fall back to single account from /me if endpoint not available
+      if (error instanceof CommandError && error.statusCode === 404) {
+        const me = await this.getMe();
+        return [{ id: me.account.id, name: me.account.name }];
+      }
+      throw error;
+    }
+  }
+
   // Get user and account info
   async getMe(): Promise<MeResponse> {
     return this.request<MeResponse>("/me");
@@ -525,6 +560,12 @@ export class ControlApi {
     method = "GET",
     body?: unknown,
   ): Promise<T> {
+    // If we have a token refresh middleware, get a valid token before each request
+    if (this.tokenRefreshMiddleware) {
+      this.accessToken =
+        await this.tokenRefreshMiddleware.getValidAccessToken();
+    }
+
     const url = this.controlHost.includes("local")
       ? `http://${this.controlHost}/api/v1${path}`
       : `https://${this.controlHost}/v1${path}`;

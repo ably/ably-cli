@@ -1,6 +1,8 @@
 import { AblyBaseCommand } from "./base-command.js";
 import { controlApiFlags } from "./flags.js";
 import { ControlApi, App } from "./services/control-api.js";
+import { OAuthClient } from "./services/oauth-client.js";
+import { TokenRefreshMiddleware } from "./services/token-refresh-middleware.js";
 import { BaseFlags } from "./types/cli.js";
 import { errorMessage } from "./utils/errors.js";
 import isWebCliMode from "./utils/web-mode.js";
@@ -14,6 +16,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
    */
   protected createControlApi(flags: BaseFlags): ControlApi {
     let accessToken = process.env.ABLY_ACCESS_TOKEN;
+    let tokenRefreshMiddleware: TokenRefreshMiddleware | undefined;
 
     if (!accessToken) {
       const account = this.configManager.getCurrentAccount();
@@ -25,7 +28,19 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
         );
       }
 
-      accessToken = account.accessToken;
+      accessToken = this.configManager.getAccessToken();
+
+      // Set up token refresh middleware for OAuth accounts
+      if (this.configManager.getAuthMethod() === "oauth") {
+        const oauthHost = flags["control-host"] || account.controlHost;
+        const oauthClient = new OAuthClient({
+          controlHost: oauthHost,
+        });
+        tokenRefreshMiddleware = new TokenRefreshMiddleware(
+          this.configManager,
+          oauthClient,
+        );
+      }
     }
 
     if (!accessToken) {
@@ -47,6 +62,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
     return new ControlApi({
       accessToken,
       controlHost: flags["control-host"],
+      tokenRefreshMiddleware,
     });
   }
 
