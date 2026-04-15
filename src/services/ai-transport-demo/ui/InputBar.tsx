@@ -1,5 +1,5 @@
 /**
- * Text input bar at the bottom of the TUI.
+ * Text input — sits inside the client panel, Claude Code-style.
  */
 
 import React, { useState } from "react";
@@ -11,14 +11,12 @@ interface InputBarProps {
   onSubmit: (text: string) => void;
   isStreaming: boolean;
   disabled?: boolean;
-  placeholder?: string;
 }
 
 export function InputBar({
   onSubmit,
   isStreaming,
   disabled = false,
-  placeholder = "Type a message...",
 }: InputBarProps) {
   const [value, setValue] = useState("");
 
@@ -32,27 +30,25 @@ export function InputBar({
   return (
     <Box flexDirection="column">
       <Box>
-        <Text color={colors.primary} bold>
-          {">"}{" "}
+        <Text color={colors.success} bold>
+          {"❯ "}
         </Text>
         {disabled ? (
-          <Text color={colors.dim}>{placeholder}</Text>
+          <Text color={colors.dim}>Waiting for server...</Text>
         ) : (
           <TextInput
             value={value}
             onChange={setValue}
             onSubmit={handleSubmit}
-            placeholder={placeholder}
+            placeholder="Type a message..."
           />
         )}
       </Box>
-      <Box>
-        <Text color={colors.dim}>
-          {isStreaming
-            ? "Ctrl+C cancel stream │ Ctrl+D quit"
-            : "Enter send │ Tab debug │ Ctrl+D quit"}
-        </Text>
-      </Box>
+      <Text color={colors.dim}>
+        {isStreaming
+          ? "  Ctrl+C cancel │ Ctrl+D quit"
+          : "  Enter send │ Tab debug │ Ctrl+D quit"}
+      </Text>
     </Box>
   );
 }

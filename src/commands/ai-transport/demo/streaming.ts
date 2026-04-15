@@ -1,11 +1,9 @@
 import React from "react";
 import { Flags } from "@oclif/core";
-import { render } from "ink";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { productApiFlags } from "../../../flags.js";
 import isTestMode from "../../../utils/test-mode.js";
-import { App } from "../../../services/ai-transport-demo/ui/App.js";
 
 export default class StreamingDemo extends ControlBaseCommand {
   static override description =
@@ -70,15 +68,35 @@ export default class StreamingDemo extends ControlBaseCommand {
       return;
     }
 
-    // Render the TUI
-    const { waitUntilExit } = render(
-      React.createElement(App, {
-        role,
-        feature: "streaming",
-        channelName,
-      }),
-    );
+    // Ink's is-in-ci detects any env var starting with CI_ and suppresses
+    // interactive output. CI_BYPASS_SECRET or similar vars trigger this even
+    // on dev machines. We must set CI=0 before importing ink so the module-level
+    // check evaluates to false.
+    const prevCi = process.env.CI;
+    process.env.CI = "0";
 
-    await waitUntilExit();
+    try {
+      // Dynamic import so CI=0 is set before ink's is-in-ci evaluates
+      const { render } = await import("ink");
+      const { App } = await import(
+        "../../../services/ai-transport-demo/ui/App.js"
+      );
+
+      const { waitUntilExit } = render(
+        React.createElement(App, {
+          role,
+          feature: "streaming",
+          channelName,
+        }),
+      );
+
+      await waitUntilExit();
+    } finally {
+      if (prevCi === undefined) {
+        delete process.env.CI;
+      } else {
+        process.env.CI = prevCi;
+      }
+    }
   }
 }

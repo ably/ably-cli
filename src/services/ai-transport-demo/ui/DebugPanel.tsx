@@ -1,5 +1,6 @@
 /**
- * Collapsible debug console showing transport-level events.
+ * Debug console showing transport-level events.
+ * Always shows at least a few lines; Tab toggles between compact and expanded.
  */
 
 import React from "react";
@@ -10,39 +11,33 @@ import { colors } from "./theme.js";
 interface DebugPanelProps {
   entries: LogEntry[];
   expanded: boolean;
-  maxVisible?: number;
+  /** Number of lines to show (2 compact, 8 expanded) */
+  visibleLines?: number;
 }
 
 export function DebugPanel({
   entries,
   expanded,
-  maxVisible = 6,
+  visibleLines = 2,
 }: DebugPanelProps) {
-  if (!expanded) {
-    return (
-      <Box>
-        <Text color={colors.dim}>
-          🔍 Debug ({entries.length} events) — Tab to expand
-        </Text>
-      </Box>
-    );
-  }
-
-  const visible = entries.slice(-maxVisible);
+  const visible = entries.slice(-visibleLines);
+  const hiddenCount = Math.max(0, entries.length - visibleLines);
 
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="single"
-      borderColor={colors.dim}
-      paddingX={1}
-    >
-      <Text bold color={colors.dim}>
-        🔍 Debug — Tab to collapse
+    <Box flexDirection="column">
+      <Text color={colors.dim}>
+        🔍 Debug{" "}
+        {hiddenCount > 0 && !expanded && (
+          <Text color={colors.dim}>({hiddenCount} more) </Text>
+        )}
+        <Text color={colors.dim}>— Tab {expanded ? "less" : "more"}</Text>
       </Text>
-      {visible.length === 0 && <Text color={colors.dim}>No events yet.</Text>}
+      {visible.length === 0 && (
+        <Text color={colors.dim}> Waiting for events...</Text>
+      )}
       {visible.map((entry, i) => (
         <Text key={i} wrap="truncate" color={colors.dim}>
+          {"  "}
           {entry.timestamp} {entry.message}
         </Text>
       ))}

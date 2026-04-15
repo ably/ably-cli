@@ -1,11 +1,12 @@
 /**
  * Root Ink component for AI Transport demos.
  *
- * Renders the split-pane TUI with client (left) and server (right) panels,
- * a debug console, and an input bar.
+ * Two clear panels side by side:
+ * - Client (left): conversation + debug events + input — all inside one border
+ * - Server (right): activity log, with space for future controls at the bottom
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Text, useApp, useInput, useStdout } from "ink";
 import { ClientPanel, type ConversationMessage } from "./ClientPanel.js";
 import { ServerPanel } from "./ServerPanel.js";
@@ -15,15 +16,10 @@ import { useScrollableLog } from "./hooks/use-scrollable-log.js";
 import { colors } from "./theme.js";
 
 export interface AppProps {
-  /** Which role the demo is running as. */
   role: "both" | "client" | "server";
-  /** The demo feature name. */
   feature: string;
-  /** The Ably channel name. */
   channelName: string;
-  /** Callback when user submits a message. */
   onSendMessage?: (text: string) => void;
-  /** Callback when user requests cancel (Ctrl+C). */
   onCancel?: () => void;
 }
 
@@ -36,22 +32,32 @@ export function App({
 }: AppProps) {
   const { exit } = useApp();
   const { stdout } = useStdout();
-  const terminalHeight = stdout?.rows ?? 24;
-  const terminalWidth = stdout?.columns ?? 80;
+  const [dims, setDims] = useState({
+    width: stdout?.columns ?? 80,
+    height: stdout?.rows ?? 24,
+  });
 
   const [debugExpanded, setDebugExpanded] = useState(false);
   const [isStreaming] = useState(false);
-
-  // Placeholder conversation messages
   const [messages] = useState<ConversationMessage[]>([]);
 
-  // Server log
   const serverLog = useScrollableLog();
-
-  // Debug log
   const debugLog = useScrollableLog();
 
-  // Keyboard handling
+  useEffect(() => {
+    const onResize = () => {
+      setDims({
+        width: stdout?.columns ?? 80,
+        height: stdout?.rows ?? 24,
+      });
+    };
+
+    stdout?.on("resize", onResize);
+    return () => {
+      stdout?.off("resize", onResize);
+    };
+  }, [stdout]);
+
   useInput((input, key) => {
     if (input === "d" && key.ctrl) {
       exit();
@@ -75,66 +81,104 @@ export function App({
   const showClient = role === "both" || role === "client";
   const showServer = role === "both" || role === "server";
 
-  // Calculate panel heights
-  const debugHeight = debugExpanded ? 8 : 1;
-  const inputHeight = 2;
-  const mainHeight = terminalHeight - debugHeight - inputHeight - 2;
+  const clientWidth = showServer ? Math.floor(dims.width * 0.6) : dims.width;
+
+  // Debug: 2 lines always visible, 8 when expanded
+  const debugLines = debugExpanded ? 8 : 2;
 
   return (
-    <Box flexDirection="column" height={terminalHeight}>
-      {/* Main panels */}
-      <Box flexDirection="row" height={mainHeight}>
-        {showClient && (
-          <Box
-            flexDirection="column"
-            flexGrow={showServer ? 2 : 1}
-            borderStyle="single"
-            borderColor={colors.activeBorder}
-            paddingX={1}
-            width={showServer ? Math.floor(terminalWidth * 0.6) : undefined}
-          >
+    <Box flexDirection="row" height={dims.height} width={dims.width}>
+      {/* ── Client panel ── */}
+      {showClient && (
+        <Box
+          flexDirection="column"
+          borderStyle="round"
+          borderColor={colors.activeBorder}
+          width={clientWidth}
+        >
+          {/* Header */}
+          <Box paddingX={1}>
+            <Text bold>
+              💬 AI Transport Demo:{" "}
+              <Text color={colors.primary}>{formatFeatureName(feature)}</Text>
+            </Text>
+          </Box>
+          <Box paddingX={1}>
+            <Text color={colors.dim}>Channel: {channelName}</Text>
+          </Box>
+
+          {/* Conversation area — fills available space */}
+          <Box flexDirection="column" flexGrow={1} paddingX={1} marginTop={1}>
             <ClientPanel
-              feature={feature}
-              channelName={channelName}
               messages={messages}
               serverStatus="connected"
-              maxVisible={mainHeight - 4}
+              isStreaming={isStreaming}
             />
           </Box>
-        )}
 
-        {showServer && (
+          {/* Debug events — always visible, 2 lines default */}
           <Box
             flexDirection="column"
-            flexGrow={1}
-            borderStyle="single"
-            borderColor={colors.border}
             paddingX={1}
+            borderStyle="single"
+            borderTop
+            borderBottom={false}
+            borderLeft={false}
+            borderRight={false}
+            borderColor={colors.border}
           >
+            <DebugPanel
+              entries={debugLog.entries}
+              expanded={debugExpanded}
+              visibleLines={debugLines}
+            />
+          </Box>
+
+          {/* Input — part of the client panel */}
+          <Box
+            paddingX={1}
+            borderStyle="single"
+            borderTop
+            borderBottom={false}
+            borderLeft={false}
+            borderRight={false}
+            borderColor={colors.border}
+          >
+            <InputBar onSubmit={handleSendMessage} isStreaming={isStreaming} />
+          </Box>
+        </Box>
+      )}
+
+      {/* ── Server panel ── */}
+      {showServer && (
+        <Box
+          flexDirection="column"
+          flexGrow={1}
+          borderStyle="round"
+          borderColor={colors.border}
+        >
+          {/* Server log — fills the panel */}
+          <Box flexDirection="column" flexGrow={1} paddingX={1}>
             <ServerPanel
               entries={serverLog.entries}
               isRunning={false}
-              maxVisible={mainHeight - 3}
+              maxVisible={dims.height - 4}
             />
           </Box>
-        )}
-      </Box>
 
-      {/* Debug panel (client side only in both mode) */}
-      {showClient && (
-        <DebugPanel entries={debugLog.entries} expanded={debugExpanded} />
-      )}
-
-      {/* Input bar (only when client is shown) */}
-      {showClient ? (
-        <InputBar onSubmit={handleSendMessage} isStreaming={isStreaming} />
-      ) : (
-        <Box>
-          <Text color={colors.dim}>
-            Server mode — no input. Ctrl+D to quit.
-          </Text>
+          {/* Future: server controls bar would go here */}
+          {/* <Box paddingX={1} borderStyle="single" borderTop ...>
+               Restart │ Disconnect │ Kill stream
+             </Box> */}
         </Box>
       )}
     </Box>
   );
+}
+
+function formatFeatureName(feature: string): string {
+  return feature
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
