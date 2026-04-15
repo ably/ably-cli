@@ -1,4 +1,4 @@
-name: Fix Dependabot Lockfile
+name: Fix Dependabot PRs
 
 on:
   pull_request_target:
@@ -6,13 +6,13 @@ on:
 
 permissions:
   contents: write
-  pull-requests: read
+  pull-requests: write
 
 jobs:
-  fix-lockfile:
+  fix-dependabot:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Generate App Token
@@ -38,14 +38,95 @@ jobs:
         with:
           node-version: "22.x"
 
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Regenerate lockfile
         run: pnpm install --no-frozen-lockfile --ignore-scripts
 
-      - name: Commit and push if lockfile changed
+      - name: Commit lockfile changes
+        id: lockfile
         run: |
-          git diff --exit-code pnpm-lock.yaml && exit 0
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add pnpm-lock.yaml
-          git commit -m "fix(deps): regenerate pnpm-lock.yaml"
-          git push
+          if git diff --quiet pnpm-lock.yaml; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git add pnpm-lock.yaml
+            git commit -m "fix(deps): regenerate pnpm-lock.yaml"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Try building
+        id: build
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          pnpm install --frozen-lockfile
+          pnpm run build 2>&1 | tee /tmp/build-output.txt
+
+      - name: Try linting
+        id: lint
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          pnpm exec eslint . 2>&1 | tee /tmp/lint-output.txt
+
+      - name: Capture error output
+        id: errors
+        if: steps.build.outcome == 'failure' || steps.lint.outcome == 'failure'
+        run: |
+          {
+            echo "build_output<<ENDOFOUTPUT"
+            if [ -f /tmp/build-output.txt ]; then
+              tail -n 200 /tmp/build-output.txt
+            else
+              echo "No build output captured"
+            fi
+            echo "ENDOFOUTPUT"
+            echo "lint_output<<ENDOFOUTPUT"
+            if [ -f /tmp/lint-output.txt ]; then
+              tail -n 200 /tmp/lint-output.txt
+            else
+              echo "Lint was not run"
+            fi
+            echo "ENDOFOUTPUT"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Fix issues with Claude
+        if: steps.build.outcome == 'failure' || steps.lint.outcome == 'failure'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ steps.generate-token.outputs.token }}
+          direct_prompt: |
+            This is a Dependabot PR that bumps dependencies. The lockfile has been
+            regenerated but the build or lint is failing.
+
+            Read .claude/CLAUDE.md for project context.
+
+            ## Errors
+
+            Build output (if failed):
+            ${{ steps.errors.outputs.build_output }}
+
+            Lint output (if failed):
+            ${{ steps.errors.outputs.lint_output }}
+
+            ## Instructions
+
+            1. Diagnose why the build/lint fails after the dependency bump
+            2. Make the MINIMUM changes needed to fix it — do not refactor unrelated code
+            3. Run `pnpm run build` and `pnpm exec eslint .` to verify your fixes
+            4. Commit your changes with a descriptive message
+            5. Push to the current branch
+
+            If the fix requires significant code changes beyond simple type/import
+            adjustments, leave a PR comment explaining what's needed instead of
+            attempting a risky fix.
+          claude_args: |
+            --max-turns 30
+            --model claude-sonnet-4-6
+            --allowedTools "Bash,Read,Write,Edit,Glob,Grep"
