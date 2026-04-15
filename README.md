@@ -24,7 +24,7 @@ $ npm install -g @ably/cli
 $ ably COMMAND
 running command...
 $ ably (--version)
-@ably/cli/0.17.0 darwin-arm64 node-v24.4.1
+@ably/cli/0.17.0 darwin-arm64 node-v22.14.0
 $ ably --help [COMMAND]
 USAGE
   $ ably COMMAND
@@ -76,6 +76,9 @@ $ ably-interactive
 * [`ably accounts login [TOKEN]`](#ably-accounts-login-token)
 * [`ably accounts logout [ALIAS]`](#ably-accounts-logout-alias)
 * [`ably accounts switch [ALIAS]`](#ably-accounts-switch-alias)
+* [`ably ai-transport`](#ably-ai-transport)
+* [`ably ai-transport demo`](#ably-ai-transport-demo)
+* [`ably ai-transport demo streaming`](#ably-ai-transport-demo-streaming)
 * [`ably apps`](#ably-apps)
 * [`ably apps create`](#ably-apps-create)
 * [`ably apps current`](#ably-apps-current)
@@ -381,6 +384,81 @@ EXAMPLES
 ```
 
 _See code: [src/commands/accounts/switch.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/accounts/switch.ts)_
+
+## `ably ai-transport`
+
+Interact with Ably AI Transport
+
+```
+USAGE
+  $ ably ai-transport
+
+DESCRIPTION
+  Interact with Ably AI Transport
+
+EXAMPLES
+  $ ably ai-transport demo streaming
+
+  $ ably ai-transport demo barge-in
+
+COMMANDS
+  ably ai-transport demo  Interactive demos of AI Transport features
+```
+
+_See code: [src/commands/ai-transport/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/ai-transport/index.ts)_
+
+## `ably ai-transport demo`
+
+Interactive demos of AI Transport features
+
+```
+USAGE
+  $ ably ai-transport demo
+
+DESCRIPTION
+  Interactive demos of AI Transport features
+
+EXAMPLES
+  $ ably ai-transport demo streaming
+
+  $ ably ai-transport demo barge-in
+
+  $ ably ai-transport demo cancel
+```
+
+_See code: [src/commands/ai-transport/demo/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/ai-transport/demo/index.ts)_
+
+## `ably ai-transport demo streaming`
+
+Demo AI Transport token streaming in a split-pane TUI
+
+```
+USAGE
+  $ ably ai-transport demo streaming [-v] [--json | --pretty-json] [--role both|client|server] [--channel <value>] [--endpoint
+    <value>] [--auth-endpoint <value>]
+
+FLAGS
+  -v, --verbose                Output verbose logs
+      --auth-endpoint=<value>  Auth endpoint returning JWT tokens (client-only, for external servers)
+      --channel=<value>        Channel name to use (auto-generated if not provided)
+      --endpoint=<value>       Server HTTP endpoint for sending messages (client-only, skips presence discovery)
+      --json                   Output in JSON format
+      --pretty-json            Output in colorized JSON format
+      --role=<option>          [default: both] Run as both client and server, or just one side
+                               <options: both|client|server>
+
+DESCRIPTION
+  Demo AI Transport token streaming in a split-pane TUI
+
+EXAMPLES
+  $ ably ai-transport demo streaming
+
+  $ ably ai-transport demo streaming --role client --channel my-session
+
+  $ ably ai-transport demo streaming --role server
+```
+
+_See code: [src/commands/ai-transport/demo/streaming.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/ai-transport/demo/streaming.ts)_
 
 ## `ably apps`
 
@@ -1421,8 +1499,8 @@ Delete an annotation from a channel message
 
 ```
 USAGE
-  $ ably channels annotations delete CHANNEL SERIAL TYPE [-v] [--json | --pretty-json] [--client-id <value>] [--count <value>]
-    [-n <value>]
+  $ ably channels annotations delete CHANNEL SERIAL TYPE [-v] [--json | --pretty-json] [--client-id <value>] [-n
+  <value>]
 
 ARGUMENTS
   CHANNEL  The channel name
@@ -1434,7 +1512,6 @@ FLAGS
   -v, --verbose            Output verbose logs
       --client-id=<value>  Overrides any default client ID when using API authentication. Use "none" to explicitly set
                            no client ID. Not applicable when using token authentication.
-      --count=<value>      The annotation count (for multiple.v1 types)
       --json               Output in JSON format
       --pretty-json        Output in colorized JSON format
 
@@ -1444,7 +1521,7 @@ DESCRIPTION
 EXAMPLES
   $ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --name thumbsup
 
-  $ ably channels annotations delete my-channel "01234567890:0" "reactions:multiple.v1" --name thumbsup --count 2
+  $ ably channels annotations delete my-channel "01234567890:0" "reactions:multiple.v1" --name thumbsup
 
   $ ably channels annotations delete my-channel "01234567890:0" "reactions:flag.v1" --json
 
@@ -1468,7 +1545,7 @@ ARGUMENTS
 FLAGS
   -v, --verbose        Output verbose logs
       --json           Output in JSON format
-      --limit=<value>  [default: 50] Maximum number of results to return (default: 50)
+      --limit=<value>  [default: 100] Maximum number of results to return (default: 100)
       --pretty-json    Output in colorized JSON format
 
 DESCRIPTION
