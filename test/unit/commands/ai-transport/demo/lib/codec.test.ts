@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   DemoCodec,
   type DemoMessage,
-} from "../../../../../../src/commands/ai-transport/demo/lib/codec.js";
-import type { FakeLLMEvent } from "../../../../../../src/commands/ai-transport/demo/lib/fake-llm.js";
+} from "../../../../../../src/services/ai-transport-demo/lib/codec.js";
+import type { FakeLLMEvent } from "../../../../../../src/services/ai-transport-demo/lib/fake-llm.js";
 
 describe("DemoCodec", () => {
   describe("isTerminal", () => {

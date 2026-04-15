@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { discoverServer } from "../../../../../../src/commands/ai-transport/demo/lib/client-discovery.js";
+import { discoverServer } from "../../../../../../src/services/ai-transport-demo/lib/client-discovery.js";
 
 function createMockChannel(opts?: {
   presenceMembers?: Array<{ data: unknown; clientId?: string; action?: string }>;

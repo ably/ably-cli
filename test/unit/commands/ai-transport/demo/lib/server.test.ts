@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   createDemoServer,
   type DemoServer,
-} from "../../../../../../src/commands/ai-transport/demo/lib/server.js";
+} from "../../../../../../src/services/ai-transport-demo/lib/server.js";
 
 function createMockChannel() {
   return {

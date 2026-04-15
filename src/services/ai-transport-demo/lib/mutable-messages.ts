@@ -12,7 +12,7 @@
  *   Works with just an API key.
  */
 
-import type { ControlApi, Namespace } from "../../../../services/control-api.js";
+import type { ControlApi, Namespace } from "../../control-api.js";
 import type * as Ably from "ably";
 
 /** Error code returned when mutable messages is not enabled. */

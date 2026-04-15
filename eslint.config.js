@@ -109,6 +109,38 @@ export default [
     },
   },
   {
+    // Configuration for AI Transport demo TUI - TSX files
+    files: ["src/services/ai-transport-demo/ui/**/*.{ts,tsx}"],
+    plugins: {
+      react: eslintPluginReact,
+      "@typescript-eslint": tsPlugin,
+    },
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+        project: "./tsconfig.json",
+      },
+    },
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
+    rules: {
+      ...eslintPluginReact.configs.recommended.rules,
+      ...eslintPluginReact.configs["jsx-runtime"].rules,
+      ...tsPlugin.configs.recommended.rules,
+      "unicorn/filename-case": "off",
+      "unicorn/prevent-abbreviations": "off",
+      "n/no-missing-import": "off",
+      "react/prop-types": "off",
+      "react/react-in-jsx-scope": "off",
+    },
+  },
+  {
     // Configuration for React Web CLI package - TSX files
     files: ["packages/react-web-cli/**/*.{ts,tsx}"],
     plugins: {

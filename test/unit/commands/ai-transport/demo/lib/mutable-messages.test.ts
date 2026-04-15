@@ -4,7 +4,7 @@ import {
   checkViaControlApi,
   checkViaDataPlane,
   enableMutableMessages,
-} from "../../../../../../src/commands/ai-transport/demo/lib/mutable-messages.js";
+} from "../../../../../../src/services/ai-transport-demo/lib/mutable-messages.js";
 import type { ControlApi } from "../../../../../../src/services/control-api.js";
 
 function createMockControlApi(

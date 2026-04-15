@@ -1,7 +1,11 @@
+import React from "react";
 import { Flags } from "@oclif/core";
+import { render } from "ink";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { productApiFlags } from "../../../flags.js";
+import isTestMode from "../../../utils/test-mode.js";
+import { App } from "../../../services/ai-transport-demo/ui/App.js";
 
 export default class StreamingDemo extends ControlBaseCommand {
   static override description =
@@ -52,9 +56,29 @@ export default class StreamingDemo extends ControlBaseCommand {
       );
     }
 
-    this.log(
-      "AI Transport Streaming Demo (coming soon). " +
-        `Role: ${flags.role}, Channel: ${flags.channel ?? "(auto)"}`,
+    const role = (flags.role ?? "both") as "both" | "client" | "server";
+    const channelName =
+      flags.channel ??
+      `ai-demo:streaming-${Math.random().toString(36).slice(2, 6)}`;
+
+    // In test mode, just output a marker and return (Ink can't render in tests)
+    if (isTestMode()) {
+      this.log(
+        `AI Transport Streaming Demo (coming soon). ` +
+          `Role: ${role}, Channel: ${channelName}`,
+      );
+      return;
+    }
+
+    // Render the TUI
+    const { waitUntilExit } = render(
+      React.createElement(App, {
+        role,
+        feature: "streaming",
+        channelName,
+      }),
     );
+
+    await waitUntilExit();
   }
 }

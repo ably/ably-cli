@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   createFakeLLMStream,
   type FakeLLMEvent,
-} from "../../../../../../src/commands/ai-transport/demo/lib/fake-llm.js";
+} from "../../../../../../src/services/ai-transport-demo/lib/fake-llm.js";
 
 async function collectEvents(
   stream: ReadableStream<FakeLLMEvent>,
