@@ -298,31 +298,181 @@ jobs:
           github_token: ${{ steps.generate-token.outputs.token }}
           allowed_bots: "dependabot[bot]"
           prompt: |
-            This is a Dependabot PR that bumps dependencies. The lockfile has been
-            regenerated, but CI checks are failing.
+            You are fixing a Dependabot PR where CI checks are failing after a dependency
+            bump. The lockfile has already been regenerated. Your job is to understand what
+            changed, fix the code to work with the new dependency version, and verify the fix.
 
             Read .claude/CLAUDE.md for project context.
 
-            ## Failed Checks
+            ## CRITICAL RULES
+
+            1. **NEVER revert or downgrade the dependency bump.** The goal is to update our
+               code to work with the new version, not to undo the update. Do not modify
+               package.json to revert version changes. Do not run `pnpm add` to install an
+               older version. The dependency update is intentional — fix our code instead.
+            2. **Fix forward.** Adapt imports, types, configs, API calls, and test code to
+               match the new dependency version's API.
+            3. **If the fix is too complex** (would require architectural changes, design
+               decisions between multiple valid approaches, or changes where you're not
+               confident in the correctness), stop early and post a PR comment explaining
+               what a human needs to do. Do NOT attempt risky or speculative fixes.
+
+            ## Step 1: Understand the update
+
+            Parse the PR title and body to identify:
+            - Package name(s) being updated
+            - Old version → new version
+            - Whether this is a patch, minor, or major bump
+            - Scope: runtime dependency, devDependency, build tool, or type definitions
+              (check package.json — is it in `dependencies`, `devDependencies`, or `peerDependencies`?)
+
+            Dependabot title patterns:
+            - `chore(deps): bump PACKAGE from X to Y in /PATH`
+            - `chore(deps-dev): bump PACKAGE from X to Y in /PATH`
+            - `chore(deps): bump the GROUP group across N directories with M updates`
+
+            For group bumps, also read the PR body for individual package details.
+
+            ## Step 2: Research what changed
+
+            For each updated package, find out what changed between versions. Check in order:
+            1. GitHub Releases page for the package repo
+            2. CHANGELOG.md in the package repo
+            3. npm package page (npmjs.com/package/PACKAGE)
+            4. Web search for "PACKAGE changelog X to Y" or "PACKAGE migration guide vX to vY"
+
+            For each notable change found (deprecation, behavior change, renamed/removed API,
+            changed default, new required config, peer dependency change):
+            1. Grep this repository to check if we use the affected API/feature
+            2. Note specific files and line numbers where we're affected
+            3. Determine the migration path (renamed method, new import path, config change, etc.)
+
+            This cross-referencing is critical. Do NOT just summarize the changelog — verify
+            each notable change against our actual codebase.
+
+            ## Step 2b: Check migration concerns
+
+            Proactively check each of these where applicable:
+
+            **Peer dependencies**: Does the new version require peer dep updates we haven't
+            made? Check for version conflicts in `pnpm install` output or `pnpm why`.
+
+            **Type changes**: Do updated types break existing usage? Removed/renamed exports,
+            changed function signatures, narrowed types. This is especially relevant for
+            `@types/*` packages and TypeScript-first libraries.
+
+            **Config files**: Does the package have a config file in our repo (e.g., tsconfig,
+            eslint config, vitest config, oclif config in package.json)? Have config options
+            changed between versions?
+
+            **Module format**: Has the package changed its ESM/CJS module format? This repo
+            uses ESM (`"type": "module"` in package.json).
+
+            **React/bundler compatibility**: For React ecosystem packages, check for duplicate
+            React instances (a common cause of "Cannot read properties of null (reading
+            'useState')"). Use `pnpm why react` to check for multiple React versions. Fix
+            with `overrides` in package.json if needed.
+
+            **Monorepo impact**: This is a pnpm workspace monorepo with packages at
+            `packages/react-web-cli` and `examples/web-cli`. Check if the updated dependency
+            is used in multiple workspace packages and whether they all need updates.
+
+            ## Step 3: Analyse the CI failures
 
             ${{ steps.wait-for-checks.outputs.failure_summary }}
 
-            ## Failure Logs
-
             ${{ steps.wait-for-checks.outputs.failure_logs }}
 
-            ## Instructions
+            Cross-reference the failure logs with what you learned in Step 2. For each failure:
+            - Identify the root cause (type error, missing export, changed behavior, etc.)
+            - Map it to a specific change in the new dependency version
+            - Determine the fix
 
-            1. Analyze ALL the failure logs above to understand what broke
-            2. Make the MINIMUM changes needed to fix it — do not refactor unrelated code
-            3. Run `pnpm run build`, `pnpm exec eslint .`, `pnpm test:unit`, and `pnpm --filter @ably/react-web-cli test` to verify your fixes
-            4. Commit your changes with a descriptive message
-            5. Push to the current branch
+            ## Step 4: Assess complexity and decide
 
-            If the fix requires significant code changes beyond simple type/import
-            adjustments, leave a PR comment explaining what's needed instead of
-            attempting a risky fix.
+            Before making changes, assess the total scope:
+
+            **Fix it yourself** if:
+            - Type/import updates (renamed exports, changed signatures)
+            - Config file adjustments (new required options, renamed keys)
+            - API migrations with clear 1:1 mappings from changelog
+            - Test updates to match new behavior
+            - Peer dependency adjustments in package.json (adding resolutions/overrides)
+            - React/bundler duplicate-instance fixes (adding overrides to deduplicate)
+
+            **Stop and comment** if:
+            - The migration requires architectural changes or design decisions
+            - Multiple valid approaches exist and a human should choose
+            - The changelog is unclear about the migration path
+            - You're not confident the fix is correct
+
+            If stopping: post a detailed PR comment using `gh pr comment` explaining:
+            - What broke and why (with specific file:line references)
+            - What the new version changed (with links to changelog/migration guide)
+            - What a human needs to do to fix it
+            - Your recommended approach if you have one
+            Then exit without making code changes.
+
+            ## Step 5: Fix the code
+
+            If proceeding with the fix:
+
+            1. Make the minimum changes needed — do not refactor unrelated code
+            2. Fix ALL failures, not just the first one. The CI logs may show multiple
+               distinct issues
+            3. Verify your changes:
+               ```bash
+               pnpm run build
+               pnpm exec eslint .
+               pnpm test:unit
+               pnpm --filter @ably/react-web-cli test
+               ```
+            4. If verification reveals new issues, fix those too. Iterate until clean.
+            5. Commit your changes with a descriptive message explaining what was migrated
+               and why (reference the dependency version change)
+            6. Push to the current branch
+
+            ## Step 6: Post assessment comment
+
+            After fixing (or deciding to stop), post a comment on the PR using
+            `gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }}`
+            with this structure:
+
+            ```
+            ## Dependabot Fix Assessment
+
+            **Package**: `name` `old` → `new` (patch/minor/major)
+            **Scope**: runtime / devDependency / build tool / type definitions
+            **Workspace**: root / packages/react-web-cli / examples/web-cli
+
+            ### What changed upstream
+            - [Key changes between versions relevant to this repo]
+            - [Link to changelog/release notes]
+
+            ### Migration concerns checked
+            - Peer dependencies: OK / [issue found]
+            - Type changes: OK / [issue found]
+            - Config files: OK / [issue found]
+            - Module format: OK / [issue found]
+            - React compatibility: OK / [issue found]
+            - Monorepo impact: OK / [issue found]
+
+            ### What broke
+            - [Failed check]: [root cause] — [file:line if applicable]
+
+            ### What was fixed
+            - [Description of each change made, or "No code changes — see below"]
+
+            ### Verification
+            - Build: ✅/❌
+            - Lint: ✅/❌
+            - Unit tests: ✅/❌
+            - Web CLI tests: ✅/❌
+
+            ### Notes for reviewer
+            - [Anything the reviewer should pay attention to, or "None"]
+            ```
           claude_args: |
-            --max-turns 30
+            --max-turns 50
             --model claude-sonnet-4-6
-            --allowedTools "Bash,Read,Write,Edit,Glob,Grep"
+            --allowedTools "Bash,Read,Write,Edit,Glob,Grep,WebSearch,WebFetch"
