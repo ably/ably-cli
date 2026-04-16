@@ -40,10 +40,10 @@ export default class AccountsCurrent extends ControlBaseCommand {
 
     // Verify the account by making an API call to get up-to-date information
     try {
-      const { accessToken } = currentAccount;
+      const accessToken = this.configManager.getAccessToken();
 
       const controlApi = new ControlApi({
-        accessToken,
+        accessToken: accessToken ?? "",
         controlHost: flags["control-host"],
       });
 
