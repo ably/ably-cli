@@ -41,6 +41,7 @@ export function App({ role, feature, channelName, orchestrator }: AppProps) {
     serverPort,
     serverRunning,
     clientConnected,
+    serverStatus,
     sendMessage,
     cancelStream,
   } = useDemo(orchestrator);
@@ -134,42 +135,8 @@ export function App({ role, feature, channelName, orchestrator }: AppProps) {
   const debugLines = debugExpanded ? 8 : 2;
 
   // Server status for client panel
-  const serverStatus = clientConnected
-    ? "connected"
-    : orchestrator
-      ? "connecting"
-      : "not-found";
-
-  // Show mutable messages setup instructions if the error is triggered
   if (mutableMessagesError) {
-    return (
-      <Box flexDirection="column" paddingX={1}>
-        <Text bold color={colors.error}>
-          Setup Required: Mutable Messages
-        </Text>
-        <Text>
-          AI Transport requires <Text bold>mutable messages</Text> on the{" "}
-          <Text color={colors.primary}>ai-demo</Text> namespace.
-        </Text>
-        <Text> </Text>
-        <Text>To set this up, either:</Text>
-        <Text>
-          {"  "}1.{" "}
-          <Text color={colors.primary}>
-            ably apps rules create --name ai-demo --mutable-messages
-          </Text>
-        </Text>
-        <Text>
-          {"  "}2. Dashboard: App {">"} Settings {">"} Rules {">"} add ai-demo
-          with Mutable messages
-        </Text>
-        <Text> </Text>
-        <Text color={colors.dim}>
-          Docs: https://ably.com/docs/channels/options/mutable-messages | Press
-          Ctrl+D to exit
-        </Text>
-      </Box>
-    );
+    return <MutableMessagesError />;
   }
 
   return (
@@ -247,16 +214,68 @@ export function App({ role, feature, channelName, orchestrator }: AppProps) {
           borderStyle="single"
           borderColor={colors.border}
         >
+          {/* Show channel info in server-only mode */}
+          {!showClient && (
+            <Box paddingX={1} flexDirection="column">
+              <Text bold>{formatFeatureName(feature)} Demo — Server</Text>
+              <Text color={colors.dim}>Channel: {channelName}</Text>
+              <Text color={colors.dim}>
+                Connect a client: ably ai-transport demo {feature} --role client
+                --channel {channelName}
+              </Text>
+            </Box>
+          )}
           <Box flexDirection="column" flexGrow={1} paddingX={1}>
             <ServerPanel
               entries={serverLog.entries}
               port={serverPort ?? undefined}
               isRunning={serverRunning}
-              maxVisible={dims.height - 4}
+              maxVisible={dims.height - (showClient ? 4 : 8)}
             />
           </Box>
         </Box>
       )}
+    </Box>
+  );
+}
+
+/**
+ * Renders the mutable messages error and exits after the frame is painted.
+ * useEffect fires after React commits the render, so exit() is called
+ * once the message is visible on screen.
+ */
+function MutableMessagesError() {
+  const { exit } = useApp();
+
+  useEffect(() => {
+    exit();
+  }, [exit]);
+
+  return (
+    <Box flexDirection="column" paddingX={1}>
+      <Text bold color={colors.error}>
+        Setup Required: Mutable Messages
+      </Text>
+      <Text>
+        AI Transport requires <Text bold>mutable messages</Text> on the{" "}
+        <Text color={colors.primary}>ai-demo</Text> namespace.
+      </Text>
+      <Text> </Text>
+      <Text>To set this up, either:</Text>
+      <Text>
+        {"  "}1.{" "}
+        <Text color={colors.primary}>
+          ably apps rules create --name ai-demo --mutable-messages
+        </Text>
+      </Text>
+      <Text>
+        {"  "}2. Dashboard: App {">"} Settings {">"} Rules {">"} add ai-demo
+        with Mutable messages
+      </Text>
+      <Text> </Text>
+      <Text color={colors.dim}>
+        Docs: https://ably.com/docs/channels/options/mutable-messages
+      </Text>
     </Box>
   );
 }

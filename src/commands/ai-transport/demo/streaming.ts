@@ -40,6 +40,9 @@ export default class StreamingDemo extends ControlBaseCommand {
 
   private orchestrator: DemoOrchestrator | null = null;
   private ablyClient: import("ably").Realtime | null = null;
+  private origStdoutWrite: typeof process.stdout.write | null = null;
+  private origStderrWrite: typeof process.stderr.write | null = null;
+  private unhandledHandler: ((error: Error) => void) | null = null;
 
   async run(): Promise<void> {
     const { flags } = await this.parse(StreamingDemo);
@@ -100,10 +103,11 @@ export default class StreamingDemo extends ControlBaseCommand {
       },
     });
 
-    // The AIT SDK encoder has a known issue where it floods stderr with
-    // NACK errors and PromiseRejectionHandledWarnings when mutableMessages
-    // is not enabled. We suppress these so the TUI error panel can present
-    // a clean message. All suppression is removed in the finally block.
+    // The AIT SDK encoder floods stderr/stdout with NACK errors and
+    // PromiseRejectionHandledWarnings when mutableMessages is not enabled.
+    // The SDK's logger captures console.log/warn at module load time in
+    // closures, so overriding console.* doesn't work. We must intercept
+    // at the process.stdout/stderr.write level.
     const orchestratorRef = this.orchestrator;
     let mutableErrorDetected = false;
 
@@ -120,55 +124,43 @@ export default class StreamingDemo extends ControlBaseCommand {
       }
 
       if (msg.includes("80017") || msg.includes("Connection closed")) {
-        // Expected after we close the connection on mutable messages error
         return;
       }
 
-      process.stderr.write(`Unhandled error: ${msg}\n`);
+      this.origStderrWrite?.call(process.stderr, `Unhandled error: ${msg}\n`);
     };
 
-    // 2. Intercept console.error to suppress [AblySDK Error] NACK spam
-    const originalConsoleError = console.error;
-    const originalConsoleLog = console.log;
-    const suppressedConsole = (...args: unknown[]) => {
-      const msg = args.map(String).join(" ");
-      if (
-        mutableErrorDetected &&
-        (msg.includes("93002") ||
-          msg.includes("mutableMessages") ||
-          msg.includes("onNack") ||
-          msg.includes("80017") ||
-          msg.includes("failQueuedMessages"))
-      ) {
-        return; // Suppress
-      }
+    // 2. Intercept process.stdout.write and process.stderr.write to
+    //    suppress [AblySDK Error] NACK spam and PromiseRejectionHandledWarning.
+    //    This is the only reliable way since the SDK captures console.*
+    //    references at module load time.
+    const origStdoutWrite = process.stdout.write;
+    const origStderrWrite = process.stderr.write;
+    this.origStdoutWrite = origStdoutWrite;
+    this.origStderrWrite = origStderrWrite;
+    this.unhandledHandler = unhandledHandler;
 
-      originalConsoleError(...args);
-    };
+    const isSuppressable = (str: string): boolean =>
+      mutableErrorDetected &&
+      (str.includes("93002") ||
+        str.includes("mutableMessages") ||
+        str.includes("onNack") ||
+        str.includes("80017") ||
+        str.includes("failQueuedMessages") ||
+        str.includes("PromiseRejectionHandledWarning") ||
+        str.includes("AblySDK Error"));
 
-    console.error = suppressedConsole;
-    console.log = (...args: unknown[]) => {
-      const msg = args.map(String).join(" ");
-      if (mutableErrorDetected && msg.includes("Ably:")) {
-        return; // Suppress SDK log output after error detected
-      }
+    process.stdout.write = ((chunk: unknown, ...args: unknown[]) => {
+      if (typeof chunk === "string" && isSuppressable(chunk)) return true;
+      return origStdoutWrite.apply(process.stdout, [chunk, ...args] as never);
+    }) as typeof process.stdout.write;
 
-      originalConsoleLog(...args);
-    };
-
-    // 3. Suppress PromiseRejectionHandledWarning from the encoder's
-    //    fire-and-forget pattern
-    const warningHandler = (warning: Error) => {
-      if (warning.name === "PromiseRejectionHandledWarning") {
-        return; // Suppress
-      }
-
-      process.emit("warning", warning);
-    };
+    process.stderr.write = ((chunk: unknown, ...args: unknown[]) => {
+      if (typeof chunk === "string" && isSuppressable(chunk)) return true;
+      return origStderrWrite.apply(process.stderr, [chunk, ...args] as never);
+    }) as typeof process.stderr.write;
 
     process.on("uncaughtException", unhandledHandler);
-    process.removeAllListeners("warning");
-    process.on("warning", warningHandler);
 
     // Bypass Ink's CI detection (CI_* env vars trigger is-in-ci)
     const prevCi = process.env.CI;
@@ -191,12 +183,8 @@ export default class StreamingDemo extends ControlBaseCommand {
 
       await waitUntilExit();
     } finally {
-      // Restore all suppression
-      process.off("uncaughtException", unhandledHandler);
-      process.removeAllListeners("warning");
-      console.error = originalConsoleError;
-      console.log = originalConsoleLog;
-
+      // Only restore CI env here — stdout/stderr interceptors are restored
+      // in the class finally() after Ably client is fully closed
       if (prevCi === undefined) {
         delete process.env.CI;
       } else {
@@ -206,6 +194,8 @@ export default class StreamingDemo extends ControlBaseCommand {
   }
 
   async finally(error: Error | undefined): Promise<void> {
+    // Close orchestrator and Ably client while interceptors are still active
+    // so any SDK cleanup output is suppressed
     if (this.orchestrator) {
       await this.orchestrator.close();
       this.orchestrator = null;
@@ -214,6 +204,26 @@ export default class StreamingDemo extends ControlBaseCommand {
     if (this.ablyClient) {
       this.ablyClient.close();
       this.ablyClient = null;
+    }
+
+    // Small delay to let any final SDK async cleanup complete while
+    // interceptors are still active
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    // Now restore stdout/stderr and uncaughtException handler
+    if (this.origStdoutWrite) {
+      process.stdout.write = this.origStdoutWrite;
+      this.origStdoutWrite = null;
+    }
+
+    if (this.origStderrWrite) {
+      process.stderr.write = this.origStderrWrite;
+      this.origStderrWrite = null;
+    }
+
+    if (this.unhandledHandler) {
+      process.off("uncaughtException", this.unhandledHandler);
+      this.unhandledHandler = null;
     }
 
     await super.finally(error);

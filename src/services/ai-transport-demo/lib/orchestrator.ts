@@ -52,6 +52,7 @@ export interface DemoOrchestrator extends EventEmitter {
   on(event: "messages", listener: (msgs: DemoMessage[]) => void): this;
   on(event: "serverReady", listener: (data: { port: number }) => void): this;
   on(event: "clientConnected", listener: () => void): this;
+  on(event: "serverNotFound", listener: () => void): this;
   on(event: "turnEnd", listener: (data: { turnId: string; reason: string }) => void): this;
   on(event: "mutableMessagesRequired", listener: () => void): this;
   on(event: "error", listener: (error: Error) => void): this;
@@ -196,7 +197,8 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
       });
 
       if (!discovered) {
-        emitter.emit("debugLog", "No server found");
+        emitter.emit("debugLog", "No server found within timeout");
+        emitter.emit("serverNotFound");
         return;
       }
 

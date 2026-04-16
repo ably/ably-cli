@@ -8,12 +8,15 @@ import type { ConversationMessage } from "../ClientPanel.js";
 import type { DemoOrchestrator } from "../../lib/orchestrator.js";
 import type { DemoMessage } from "../../lib/codec.js";
 
+type ServerStatus = "connecting" | "connected" | "not-found";
+
 interface UseDemoResult {
   messages: ConversationMessage[];
   isStreaming: boolean;
   serverPort: number | null;
   serverRunning: boolean;
   clientConnected: boolean;
+  serverStatus: ServerStatus;
   sendMessage: (text: string) => void;
   cancelStream: () => void;
 }
@@ -24,6 +27,7 @@ export function useDemo(orchestrator: DemoOrchestrator | null): UseDemoResult {
   const [serverPort, setServerPort] = useState<number | null>(null);
   const [serverRunning, setServerRunning] = useState(false);
   const [clientConnected, setClientConnected] = useState(false);
+  const [serverStatus, setServerStatus] = useState<ServerStatus>("connecting");
 
   const orchestratorRef = useRef(orchestrator);
   orchestratorRef.current = orchestrator;
@@ -38,6 +42,11 @@ export function useDemo(orchestrator: DemoOrchestrator | null): UseDemoResult {
 
     const onClientConnected = () => {
       setClientConnected(true);
+      setServerStatus("connected");
+    };
+
+    const onServerNotFound = () => {
+      setServerStatus("not-found");
     };
 
     // The orchestrator emits the full message list from the AIT client transport
@@ -61,6 +70,7 @@ export function useDemo(orchestrator: DemoOrchestrator | null): UseDemoResult {
 
     orchestrator.on("serverReady", onServerReady);
     orchestrator.on("clientConnected", onClientConnected);
+    orchestrator.on("serverNotFound", onServerNotFound);
     orchestrator.on("messages", onMessages);
     orchestrator.on("turnEnd", onTurnEnd);
     orchestrator.on("error", onError);
@@ -68,6 +78,7 @@ export function useDemo(orchestrator: DemoOrchestrator | null): UseDemoResult {
     return () => {
       orchestrator.off("serverReady", onServerReady);
       orchestrator.off("clientConnected", onClientConnected);
+      orchestrator.off("serverNotFound", onServerNotFound);
       orchestrator.off("messages", onMessages);
       orchestrator.off("turnEnd", onTurnEnd);
       orchestrator.off("error", onError);
@@ -90,6 +101,7 @@ export function useDemo(orchestrator: DemoOrchestrator | null): UseDemoResult {
     serverPort,
     serverRunning,
     clientConnected,
+    serverStatus,
     sendMessage,
     cancelStream,
   };
