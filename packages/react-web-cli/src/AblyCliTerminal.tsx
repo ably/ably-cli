@@ -534,7 +534,7 @@ const AblyCliTerminalInner = (
   // Determine if terminal is visible (drawer open & tab visible)
   const isVisible = useTerminalVisibility(rootReference);
   const term = useRef<Terminal | null>(null);
-  const fitAddon = useRef<FitAddon>();
+  const fitAddon = useRef<FitAddon | undefined>(undefined);
   const ptyBuffer = useRef("");
   const handshakeFilterState = useRef<HandshakeFilterState>(
     createHandshakeFilterState(),
@@ -805,7 +805,7 @@ const AblyCliTerminalInner = (
   // Secondary terminal instance references
   const secondaryRootReference = useRef<HTMLDivElement>(null);
   const secondaryTerm = useRef<Terminal | null>(null);
-  const secondaryFitAddon = useRef<FitAddon>();
+  const secondaryFitAddon = useRef<FitAddon | undefined>(undefined);
   const secondarySocketReference = useRef<WebSocket | null>(null);
   const secondaryPtyBuffer = useRef("");
   const secondaryHandshakeFilterState = useRef<HandshakeFilterState>(
