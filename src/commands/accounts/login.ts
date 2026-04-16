@@ -121,20 +121,18 @@ export default class AccountsLogin extends ControlBaseCommand {
         alias = slugifyAccountName(selectedAccountInfo.name);
       }
 
-      // Store OAuth tokens (include user email from /me response)
+      // Store OAuth tokens (include user email from /me response).
+      // Pass controlHost so the session key is scoped per endpoint — otherwise
+      // the same email on prod and a staging deployment would collide.
       this.configManager.storeOAuthTokens(
         alias,
         { ...oauthTokens, userEmail: user.email },
         {
           accountId: selectedAccountInfo.id,
           accountName: selectedAccountInfo.name,
+          controlHost: flags["control-host"],
         },
       );
-
-      // Persist control host so other commands (like switch) can use it
-      if (flags["control-host"]) {
-        this.configManager.setAccountControlHost(alias, flags["control-host"]);
-      }
 
       // Switch to this account
       this.configManager.switchAccount(alias);
@@ -158,70 +156,81 @@ export default class AccountsLogin extends ControlBaseCommand {
           this.configManager.storeAppInfo(selectedApp.id, {
             appName: selectedApp.name,
           });
-        } else if (apps.length > 1 && !this.shouldOutputJson(flags)) {
-          // Prompt user to select an app when multiple exist
-          this.log("\nSelect an app to use:");
+        } else if (apps.length > 1) {
+          if (this.shouldOutputJson(flags)) {
+            this.logWarning(
+              "Multiple apps found; cannot auto-select in JSON mode. Run 'ably apps switch' in a terminal to choose one.",
+              flags,
+            );
+          } else {
+            this.log("\nSelect an app to use:");
 
-          selectedApp = await this.interactiveHelper.selectApp(controlApi);
+            selectedApp = await this.interactiveHelper.selectApp(controlApi);
 
-          if (selectedApp) {
-            this.configManager.setCurrentApp(selectedApp.id);
-            this.configManager.storeAppInfo(selectedApp.id, {
-              appName: selectedApp.name,
-            });
-          }
-        } else if (apps.length === 0 && !this.shouldOutputJson(flags)) {
-          // No apps exist - offer to create one
-          this.log("\nNo apps found in your account.");
-
-          const shouldCreateApp = await promptForConfirmation(
-            "Would you like to create your first app now?",
-          );
-
-          if (shouldCreateApp) {
-            const appName = await this.promptForAppName();
-
-            try {
-              this.log(""); // blank line before progress
-              this.logProgress(
-                `Creating app ${formatResource(appName)}`,
-                flags,
-              );
-
-              const app = await controlApi.createApp({
-                name: appName,
-                tlsOnly: true,
+            if (selectedApp) {
+              this.configManager.setCurrentApp(selectedApp.id);
+              this.configManager.storeAppInfo(selectedApp.id, {
+                appName: selectedApp.name,
               });
+            }
+          }
+        } else if (apps.length === 0) {
+          if (this.shouldOutputJson(flags)) {
+            this.logWarning(
+              "No apps found in this account. Run 'ably apps create' to create one.",
+              flags,
+            );
+          } else {
+            this.log("\nNo apps found in your account.");
 
-              selectedApp = app;
-              isAutoSelected = true;
+            const shouldCreateApp = await promptForConfirmation(
+              "Would you like to create your first app now?",
+            );
 
-              this.configManager.setCurrentApp(app.id);
-              this.configManager.storeAppInfo(app.id, { appName: app.name });
+            if (shouldCreateApp) {
+              const appName = await this.promptForAppName();
 
-              this.logSuccessMessage("App created successfully.", flags);
-            } catch (createError) {
-              this.warn(
-                `Failed to create app: ${createError instanceof Error ? createError.message : String(createError)}`,
-              );
+              try {
+                this.log(""); // blank line before progress
+                this.logProgress(
+                  `Creating app ${formatResource(appName)}`,
+                  flags,
+                );
+
+                const app = await controlApi.createApp({
+                  name: appName,
+                  tlsOnly: true,
+                });
+
+                selectedApp = app;
+                isAutoSelected = true;
+
+                this.configManager.setCurrentApp(app.id);
+                this.configManager.storeAppInfo(app.id, { appName: app.name });
+
+                this.logSuccessMessage("App created successfully.", flags);
+              } catch (createError) {
+                this.logWarning(
+                  `Failed to create app: ${createError instanceof Error ? createError.message : String(createError)}`,
+                  flags,
+                );
+              }
             }
           }
         }
       } catch (error) {
-        if (!this.shouldOutputJson(flags)) {
-          this.warn(`Could not fetch apps: ${errorMessage(error)}`);
-        }
+        this.logWarning(`Could not fetch apps: ${errorMessage(error)}`, flags);
       }
 
       // If we have a selected app, also handle API key selection
       let selectedKey = null;
       let isKeyAutoSelected = false;
-      if (selectedApp && !this.shouldOutputJson(flags)) {
+      if (selectedApp) {
         try {
           const keys = await controlApi.listKeys(selectedApp.id);
 
           if (keys.length === 1) {
-            // Auto-select the only key
+            // Auto-select the only key (safe in both modes)
             selectedKey = keys[0]!;
             isKeyAutoSelected = true;
             this.configManager.storeAppKey(selectedApp.id, selectedKey.key, {
@@ -229,23 +238,35 @@ export default class AccountsLogin extends ControlBaseCommand {
               keyName: selectedKey.name || "Unnamed key",
             });
           } else if (keys.length > 1) {
-            this.log("\nSelect an API key to use:");
+            if (this.shouldOutputJson(flags)) {
+              this.logWarning(
+                "Multiple API keys found; cannot auto-select in JSON mode. Run 'ably auth keys switch' in a terminal to choose one.",
+                flags,
+              );
+            } else {
+              this.log("\nSelect an API key to use:");
 
-            selectedKey = await this.interactiveHelper.selectKey(
-              controlApi,
-              selectedApp.id,
-            );
+              selectedKey = await this.interactiveHelper.selectKey(
+                controlApi,
+                selectedApp.id,
+              );
 
-            if (selectedKey) {
-              this.configManager.storeAppKey(selectedApp.id, selectedKey.key, {
-                keyId: selectedKey.id,
-                keyName: selectedKey.name || "Unnamed key",
-              });
+              if (selectedKey) {
+                this.configManager.storeAppKey(
+                  selectedApp.id,
+                  selectedKey.key,
+                  {
+                    keyId: selectedKey.id,
+                    keyName: selectedKey.name || "Unnamed key",
+                  },
+                );
+              }
             }
           }
         } catch (keyError) {
-          this.warn(
+          this.logWarning(
             `Could not fetch API keys: ${keyError instanceof Error ? keyError.message : String(keyError)}`,
+            flags,
           );
         }
       }

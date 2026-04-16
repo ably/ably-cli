@@ -1,5 +1,6 @@
 import type { ConfigManager } from "./config-manager.js";
-import type { OAuthClient } from "./oauth-client.js";
+import type { OAuthClient, OAuthTokens } from "./oauth-client.js";
+import { OAuthRefreshExpiredError } from "./oauth-client.js";
 
 export class TokenExpiredError extends Error {
   constructor(message: string) {
@@ -56,9 +57,24 @@ export class TokenRefreshMiddleware {
       );
     }
 
-    const newTokens = await this.oauthClient.refreshAccessToken(
-      tokens.refreshToken,
-    );
+    let newTokens: OAuthTokens;
+    try {
+      newTokens = await this.oauthClient.refreshAccessToken(
+        tokens.refreshToken,
+      );
+    } catch (error) {
+      // invalid_grant typically means another CLI invocation already rotated
+      // this refresh token, or the session was revoked server-side. Clear
+      // the dead session so subsequent commands short-circuit to "please
+      // re-login" immediately instead of re-attempting refresh.
+      if (error instanceof OAuthRefreshExpiredError) {
+        this.configManager.clearOAuthSession();
+        throw new TokenExpiredError(
+          "OAuth session expired (the refresh token is no longer valid, possibly because another CLI invocation refreshed concurrently). Please run 'ably login' again.",
+        );
+      }
+      throw error;
+    }
     const alias = this.configManager.getCurrentAccountAlias() || "default";
     this.configManager.storeOAuthTokens(alias, newTokens);
     return newTokens.accessToken;

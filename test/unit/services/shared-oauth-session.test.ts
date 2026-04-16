@@ -32,8 +32,12 @@ describe("Shared OAuth session", () => {
     );
 
     const config = mock.getConfig();
-    expect(config.accounts["alias-a"].oauthSessionKey).toBe("user@example.com");
-    expect(config.accounts["alias-b"].oauthSessionKey).toBe("user@example.com");
+    expect(config.accounts["alias-a"].oauthSessionKey).toBe(
+      "user@example.com::ably.com",
+    );
+    expect(config.accounts["alias-b"].oauthSessionKey).toBe(
+      "user@example.com::ably.com",
+    );
     // Only one session entry
     expect(Object.keys(config.oauthSessions!)).toHaveLength(1);
   });
@@ -101,10 +105,10 @@ describe("Shared OAuth session", () => {
     const config = mock.getConfig();
     expect(Object.keys(config.oauthSessions!)).toHaveLength(2);
     expect(config.accounts["alias-a"].oauthSessionKey).toBe(
-      "user1@example.com",
+      "user1@example.com::ably.com",
     );
     expect(config.accounts["alias-b"].oauthSessionKey).toBe(
-      "user2@example.com",
+      "user2@example.com::ably.com",
     );
 
     // Refreshing alias-a should NOT affect alias-b
@@ -192,7 +196,7 @@ describe("Shared OAuth session", () => {
 
     // Session should still exist for alias-b
     const config = mock.getConfig();
-    expect(config.oauthSessions?.["user@example.com"]).toBeDefined();
+    expect(config.oauthSessions?.["user@example.com::ably.com"]).toBeDefined();
     expect(mock.getOAuthTokens("alias-b")?.refreshToken).toBe("rt");
   });
 

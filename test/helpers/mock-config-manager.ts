@@ -26,6 +26,13 @@ import type {
   ConfigManager,
 } from "../../src/services/config-manager.js";
 
+// Kept in sync with DEFAULT_OAUTH_CONTROL_HOST in src/services/oauth-client.ts.
+// Duplicated here because importing from oauth-client pulls node-fetch into
+// the vitest setup graph (via test/unit/setup.ts → mock-config-manager),
+// which installs node-fetch's global agent *before* nock is set up per test
+// and breaks interception for commands that make HTTPS requests.
+const DEFAULT_OAUTH_CONTROL_HOST = "ably.com";
+
 /**
  * Type for test configuration values.
  */
@@ -517,15 +524,37 @@ export class MockConfigManager implements ConfigManager {
     accountInfo?: {
       accountId?: string;
       accountName?: string;
+      controlHost?: string;
     },
   ): void {
     const userEmail =
       tokens.userEmail ?? this.config.accounts[alias]?.userEmail ?? "";
-    const sessionKey = userEmail.toLowerCase() || alias;
+    const controlHost =
+      accountInfo?.controlHost ??
+      this.config.accounts[alias]?.controlHost ??
+      DEFAULT_OAUTH_CONTROL_HOST;
+    const emailPart = userEmail.toLowerCase() || alias;
+    const sessionKey = `${emailPart}::${controlHost.toLowerCase()}`;
 
     // Create/update the shared OAuth session
     if (!this.config.oauthSessions) {
       this.config.oauthSessions = {};
+    }
+
+    // Clean up the previous session entry if this account's key is changing
+    const previousSessionKey = this.config.accounts[alias]?.oauthSessionKey;
+    if (
+      previousSessionKey &&
+      previousSessionKey !== sessionKey &&
+      this.config.oauthSessions[previousSessionKey]
+    ) {
+      const stillReferenced = Object.entries(this.config.accounts).some(
+        ([otherAlias, acc]) =>
+          otherAlias !== alias && acc.oauthSessionKey === previousSessionKey,
+      );
+      if (!stillReferenced) {
+        delete this.config.oauthSessions[previousSessionKey];
+      }
     }
 
     this.config.oauthSessions[sessionKey] = {
@@ -546,6 +575,8 @@ export class MockConfigManager implements ConfigManager {
         "",
       apps: this.config.accounts[alias]?.apps || {},
       authMethod: "oauth",
+      controlHost:
+        accountInfo?.controlHost ?? this.config.accounts[alias]?.controlHost,
       currentAppId: this.config.accounts[alias]?.currentAppId,
       oauthSessionKey: sessionKey,
       userEmail,
@@ -613,6 +644,31 @@ export class MockConfigManager implements ConfigManager {
       .map(([a]) => a);
   }
 
+  public clearOAuthSession(alias?: string): void {
+    const targetAlias = alias ?? this.config.current?.account;
+    if (!targetAlias) return;
+    const account = this.config.accounts[targetAlias];
+    if (!account) return;
+
+    const sessionKey = account.oauthSessionKey;
+    if (sessionKey && this.config.oauthSessions?.[sessionKey]) {
+      const stillReferenced = Object.entries(this.config.accounts).some(
+        ([otherAlias, acc]) =>
+          otherAlias !== targetAlias && acc.oauthSessionKey === sessionKey,
+      );
+      if (!stillReferenced) {
+        delete this.config.oauthSessions[sessionKey];
+        if (Object.keys(this.config.oauthSessions).length === 0) {
+          delete this.config.oauthSessions;
+        }
+      }
+    }
+
+    delete account.oauthSessionKey;
+    delete account.accessToken;
+    delete account.accessTokenExpiresAt;
+  }
+
   public switchAccount(alias: string): boolean {
     if (!this.config.accounts[alias]) {
       return false;
@@ -624,11 +680,6 @@ export class MockConfigManager implements ConfigManager {
 
     this.config.current.account = alias;
     return true;
-  }
-
-  public setAccountControlHost(alias: string, controlHost: string): void {
-    if (!this.config.accounts[alias]) return;
-    this.config.accounts[alias].controlHost = controlHost;
   }
 }
 

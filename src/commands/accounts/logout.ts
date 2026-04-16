@@ -90,7 +90,9 @@ export default class AccountsLogout extends ControlBaseCommand {
           const oauthClient = new OAuthClient({
             controlHost: oauthHost,
           });
-          // Best-effort revocation with timeout -- don't block logout
+          // Best-effort revocation with timeout -- don't block logout.
+          // revokeToken() swallows its own errors and always resolves, so we
+          // don't need a .catch() here.
           const revokeWithTimeout = (token: string, timeoutMs = 5000) =>
             Promise.race([
               oauthClient.revokeToken(token),
@@ -99,14 +101,7 @@ export default class AccountsLogout extends ControlBaseCommand {
           await Promise.all([
             revokeWithTimeout(oauthTokens.accessToken),
             revokeWithTimeout(oauthTokens.refreshToken),
-          ]).catch((error) => {
-            this.logCliEvent(
-              flags,
-              "accountLogout",
-              "revocationFailed",
-              `OAuth token revocation failed: ${error instanceof Error ? error.message : String(error)}`,
-            );
-          });
+          ]);
         }
       }
     }

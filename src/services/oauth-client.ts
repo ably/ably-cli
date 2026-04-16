@@ -1,5 +1,27 @@
 import fetch from "node-fetch";
 
+/**
+ * Default OAuth control host. Shared with config-manager so the session-key
+ * scope matches the host actually used for token exchange.
+ */
+export const DEFAULT_OAUTH_CONTROL_HOST = "ably.com";
+
+/**
+ * Thrown by refreshAccessToken when the server rejects the refresh token
+ * (OAuth error "invalid_grant"). This happens when:
+ *   - the refresh token was revoked (e.g. by logout)
+ *   - it was rotated by a concurrent refresh (single-use refresh tokens)
+ *   - the session has otherwise expired server-side
+ * Callers should treat this as "session ended, re-login required" rather
+ * than a transient network failure.
+ */
+export class OAuthRefreshExpiredError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "OAuthRefreshExpiredError";
+  }
+}
+
 export interface OAuthTokens {
   accessToken: string;
   expiresAt: number;
@@ -168,7 +190,11 @@ export class OAuthClient {
   }
 
   /**
-   * Revoke a token (access or refresh)
+   * Revoke a token (access or refresh).
+   *
+   * Contract: must never reject. Callers (e.g. accounts logout) rely on this
+   * being best-effort so logout cannot be blocked by a network failure.
+   * Any errors are swallowed inside the try/catch below.
    */
   async revokeToken(token: string): Promise<void> {
     const params = new URLSearchParams({
@@ -197,7 +223,9 @@ export class OAuthClient {
 
   // --- Private helpers ---
 
-  private getOAuthConfig(controlHost = "ably.com"): OAuthConfig {
+  private getOAuthConfig(
+    controlHost = DEFAULT_OAUTH_CONTROL_HOST,
+  ): OAuthConfig {
     const host = controlHost;
     const scheme = host.includes("local") ? "http" : "https";
     return {
@@ -228,6 +256,23 @@ export class OAuthClient {
 
     if (!response.ok) {
       const errorBody = await response.text();
+      // Detect invalid_grant on refresh: the refresh token is gone (revoked,
+      // rotated by a concurrent refresh, or otherwise expired). Surface this
+      // as a typed error so callers can prompt the user to re-login instead
+      // of showing a raw HTTP error body.
+      if (params.grant_type === "refresh_token") {
+        let oauthError: string | undefined;
+        try {
+          oauthError = (JSON.parse(errorBody) as { error?: string }).error;
+        } catch {
+          // Non-JSON body — fall through to generic error.
+        }
+        if (oauthError === "invalid_grant") {
+          throw new OAuthRefreshExpiredError(
+            "OAuth refresh token is no longer valid. Please run 'ably login' again.",
+          );
+        }
+      }
       throw new Error(
         `${operationName} failed (${response.status}): ${errorBody}`,
       );
