@@ -211,12 +211,12 @@ describe("accounts:logout command", () => {
             accountName: "Test Account",
             userEmail: "test@example.com",
             authMethod: "oauth",
-            oauthSessionKey: "test@example.com",
+            oauthSessionKey: "test@example.com::ably.com",
             accessTokenExpiresAt: Date.now() + 3600000,
           },
         },
         oauthSessions: {
-          "test@example.com": {
+          "test@example.com::ably.com": {
             accessToken: "oauth_access_token",
             refreshToken: "oauth_refresh_token",
             accessTokenExpiresAt: Date.now() + 3600000,
@@ -253,12 +253,12 @@ describe("accounts:logout command", () => {
             accountName: "Test Account",
             userEmail: "test@example.com",
             authMethod: "oauth",
-            oauthSessionKey: "test@example.com",
+            oauthSessionKey: "test@example.com::ably.com",
             accessTokenExpiresAt: Date.now() + 3600000,
           },
         },
         oauthSessions: {
-          "test@example.com": {
+          "test@example.com::ably.com": {
             accessToken: "oauth_access_token",
             refreshToken: "oauth_refresh_token",
             accessTokenExpiresAt: Date.now() + 3600000,

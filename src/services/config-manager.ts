@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { parse, stringify } from "smol-toml";
 import isTestMode from "../utils/test-mode.js";
+import { DEFAULT_OAUTH_CONTROL_HOST } from "./oauth-client.js";
 
 // Updated to include key and app metadata
 export interface AppConfig {
@@ -73,7 +74,6 @@ export interface ConfigManager {
   ): void;
   switchAccount(alias: string): boolean;
   removeAccount(alias: string): boolean;
-  setAccountControlHost(alias: string, controlHost: string): void;
 
   // OAuth management
   storeOAuthTokens(
@@ -89,6 +89,7 @@ export interface ConfigManager {
     accountInfo?: {
       accountId?: string;
       accountName?: string;
+      controlHost?: string;
     },
   ): void;
   getOAuthTokens(alias?: string):
@@ -101,6 +102,7 @@ export interface ConfigManager {
   isAccessTokenExpired(): boolean;
   getAuthMethod(alias?: string): "oauth" | undefined;
   getAliasesForOAuthSession(alias: string): string[];
+  clearOAuthSession(alias?: string): void;
 
   // App management
   getApiKey(appId?: string): string | undefined;
@@ -548,7 +550,7 @@ export class TomlConfigManager implements ConfigManager {
     this.saveConfig();
   }
 
-  // Store OAuth tokens, shared across aliases with the same userEmail
+  // Store OAuth tokens, shared across aliases with the same userEmail + controlHost
   public storeOAuthTokens(
     alias: string,
     tokens: {
@@ -562,15 +564,40 @@ export class TomlConfigManager implements ConfigManager {
     accountInfo?: {
       accountId?: string;
       accountName?: string;
+      controlHost?: string;
     },
   ): void {
     const userEmail =
       tokens.userEmail ?? this.config.accounts[alias]?.userEmail ?? "";
-    const sessionKey = userEmail.toLowerCase() || alias;
+    const controlHost =
+      accountInfo?.controlHost ??
+      this.config.accounts[alias]?.controlHost ??
+      DEFAULT_OAUTH_CONTROL_HOST;
+    const emailPart = userEmail.toLowerCase() || alias;
+    // Scope the session key by control host so the same email on prod and a
+    // staging deployment don't silently overwrite each other's refresh tokens.
+    const sessionKey = `${emailPart}::${controlHost.toLowerCase()}`;
 
     // Create/update the shared OAuth session
     if (!this.config.oauthSessions) {
       this.config.oauthSessions = {};
+    }
+
+    // Clean up the previous session entry if this account's key is changing
+    // (e.g. migration from a pre-controlHost key format).
+    const previousSessionKey = this.config.accounts[alias]?.oauthSessionKey;
+    if (
+      previousSessionKey &&
+      previousSessionKey !== sessionKey &&
+      this.config.oauthSessions[previousSessionKey]
+    ) {
+      const stillReferenced = Object.entries(this.config.accounts).some(
+        ([otherAlias, acc]) =>
+          otherAlias !== alias && acc.oauthSessionKey === previousSessionKey,
+      );
+      if (!stillReferenced) {
+        delete this.config.oauthSessions[previousSessionKey];
+      }
     }
 
     this.config.oauthSessions[sessionKey] = {
@@ -591,6 +618,8 @@ export class TomlConfigManager implements ConfigManager {
         "",
       apps: this.config.accounts[alias]?.apps || {},
       authMethod: "oauth",
+      controlHost:
+        accountInfo?.controlHost ?? this.config.accounts[alias]?.controlHost,
       currentAppId: this.config.accounts[alias]?.currentAppId,
       oauthSessionKey: sessionKey,
       userEmail,
@@ -667,9 +696,34 @@ export class TomlConfigManager implements ConfigManager {
     return true;
   }
 
-  public setAccountControlHost(alias: string, controlHost: string): void {
-    if (!this.config.accounts[alias]) return;
-    this.config.accounts[alias].controlHost = controlHost;
+  // Clear OAuth session(s) for an alias without removing the account itself.
+  // Used when a refresh token has been invalidated server-side — subsequent
+  // commands should surface "please re-login" immediately rather than
+  // re-attempting refresh against a dead token.
+  public clearOAuthSession(alias?: string): void {
+    const targetAlias = alias ?? this.config.current?.account;
+    if (!targetAlias) return;
+    const account = this.config.accounts[targetAlias];
+    if (!account) return;
+
+    const sessionKey = account.oauthSessionKey;
+    if (sessionKey && this.config.oauthSessions?.[sessionKey]) {
+      const stillReferenced = Object.entries(this.config.accounts).some(
+        ([otherAlias, acc]) =>
+          otherAlias !== targetAlias && acc.oauthSessionKey === sessionKey,
+      );
+      if (!stillReferenced) {
+        delete this.config.oauthSessions[sessionKey];
+        if (Object.keys(this.config.oauthSessions).length === 0) {
+          delete this.config.oauthSessions;
+        }
+      }
+    }
+
+    delete account.oauthSessionKey;
+    delete account.accessToken;
+    delete account.accessTokenExpiresAt;
+
     this.saveConfig();
   }
 

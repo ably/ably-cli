@@ -213,7 +213,9 @@ export default class AccountsSwitch extends ControlBaseCommand {
     const currentAccount = this.configManager.getCurrentAccount();
     const newAlias = slugifyAccountName(remoteAccount.name);
 
-    // Store the new alias with the same OAuth tokens but different account info
+    // Store the new alias with the same OAuth tokens but different account info.
+    // Carry over the source account's controlHost so the shared session key
+    // resolves correctly (email + host scope).
     this.configManager.storeOAuthTokens(
       newAlias,
       {
@@ -223,16 +225,9 @@ export default class AccountsSwitch extends ControlBaseCommand {
       {
         accountId: remoteAccount.id,
         accountName: remoteAccount.name,
+        controlHost: currentAccount?.controlHost,
       },
     );
-
-    // Carry over control host from the source account
-    if (currentAccount?.controlHost) {
-      this.configManager.setAccountControlHost(
-        newAlias,
-        currentAccount.controlHost,
-      );
-    }
 
     this.configManager.switchAccount(newAlias);
 
