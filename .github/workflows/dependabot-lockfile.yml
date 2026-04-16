@@ -312,10 +312,10 @@ jobs:
                older version. The dependency update is intentional — fix our code instead.
             2. **Fix forward.** Adapt imports, types, configs, API calls, and test code to
                match the new dependency version's API.
-            3. **If the fix is too large** (would require architectural changes, rewrites of
-               more than ~50 lines across ~5 files, or changes you're uncertain about), stop
-               early and post a PR comment explaining what a human needs to do. Do NOT
-               attempt risky or speculative fixes.
+            3. **If the fix is too complex** (would require architectural changes, design
+               decisions between multiple valid approaches, or changes where you're not
+               confident in the correctness), stop early and post a PR comment explaining
+               what a human needs to do. Do NOT attempt risky or speculative fixes.
 
             ## Step 1: Understand the update
 
@@ -363,7 +363,6 @@ jobs:
             - The migration requires architectural changes or design decisions
             - Multiple valid approaches exist and a human should choose
             - The changelog is unclear about the migration path
-            - More than ~50 lines across ~5 files would need to change
             - You're not confident the fix is correct
 
             If stopping: post a detailed PR comment using `gh pr comment` explaining:
