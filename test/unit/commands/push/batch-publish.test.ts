@@ -61,6 +61,206 @@ describe("push:batch-publish command", () => {
       );
     });
 
+    it("should include string message data when channel item has a message field", async () => {
+      const mock = getMockAblyRest();
+      const payload = JSON.stringify([
+        {
+          channels: ["my-channel"],
+          payload: { notification: { title: "Hello" } },
+          message: "Hello from push",
+        },
+      ]);
+
+      await runCommand(
+        ["push:batch-publish", payload, "--force"],
+        import.meta.url,
+      );
+
+      expect(mock.request).toHaveBeenCalledWith("post", "/messages", 2, null, [
+        expect.objectContaining({
+          channels: ["my-channel"],
+          messages: expect.objectContaining({
+            data: "Hello from push",
+            extras: expect.objectContaining({ push: expect.anything() }),
+          }),
+        }),
+      ]);
+    });
+
+    it("should extract name and data from message object — case 1 (both present, others ignored)", async () => {
+      const mock = getMockAblyRest();
+      const payload = JSON.stringify([
+        {
+          channels: ["my-channel"],
+          payload: { notification: { title: "Hello" } },
+          message: { name: "smth", data: "hey there!", ignored: true },
+        },
+      ]);
+
+      await runCommand(
+        ["push:batch-publish", payload, "--force"],
+        import.meta.url,
+      );
+
+      expect(mock.request).toHaveBeenCalledWith("post", "/messages", 2, null, [
+        expect.objectContaining({
+          messages: expect.objectContaining({
+            name: "smth",
+            data: "hey there!",
+            extras: expect.objectContaining({ push: expect.anything() }),
+          }),
+        }),
+      ]);
+    });
+
+    it("should put remaining fields into data when name present but data absent — case 2", async () => {
+      const mock = getMockAblyRest();
+      const payload = JSON.stringify([
+        {
+          channels: ["my-channel"],
+          payload: { notification: { title: "Hello" } },
+          message: { name: "evt", foo: "bar" },
+        },
+      ]);
+
+      await runCommand(
+        ["push:batch-publish", payload, "--force"],
+        import.meta.url,
+      );
+
+      expect(mock.request).toHaveBeenCalledWith("post", "/messages", 2, null, [
+        expect.objectContaining({
+          messages: expect.objectContaining({
+            name: "evt",
+            data: { foo: "bar" },
+          }),
+        }),
+      ]);
+    });
+
+    it("should preserve non-push extras from message alongside extras.push", async () => {
+      const mock = getMockAblyRest();
+      const payload = JSON.stringify([
+        {
+          channels: ["my-channel"],
+          payload: { notification: { title: "Hello" } },
+          message: { data: "hi", extras: { foo: "bar" } },
+        },
+      ]);
+
+      await runCommand(
+        ["push:batch-publish", payload, "--force"],
+        import.meta.url,
+      );
+
+      expect(mock.request).toHaveBeenCalledWith("post", "/messages", 2, null, [
+        expect.objectContaining({
+          messages: expect.objectContaining({
+            data: "hi",
+            extras: { foo: "bar", push: expect.anything() },
+          }),
+        }),
+      ]);
+    });
+
+    it("should fail when message.extras.push is provided in a channel item", async () => {
+      const mock = getMockAblyRest();
+      const payload = JSON.stringify([
+        {
+          channels: ["my-channel"],
+          payload: { notification: { title: "Hello" } },
+          message: {
+            name: "smth",
+            data: "hey there!",
+            extras: { push: { notification: { title: "Override" } } },
+          },
+        },
+      ]);
+
+      const { error } = await runCommand(
+        ["push:batch-publish", payload, "--force"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("message must not include extras.push");
+      expect(
+        mock.request.mock.calls.some(
+          ([method, path]) => method === "post" && path === "/messages",
+        ),
+      ).toBe(false);
+    });
+
+    it("should set plain object without reserved keys as data", async () => {
+      const mock = getMockAblyRest();
+      const payload = JSON.stringify([
+        {
+          channels: ["my-channel"],
+          payload: { notification: { title: "Hello" } },
+          message: { foo: "bar" },
+        },
+      ]);
+
+      await runCommand(
+        ["push:batch-publish", payload, "--force"],
+        import.meta.url,
+      );
+
+      expect(mock.request).toHaveBeenCalledWith("post", "/messages", 2, null, [
+        expect.objectContaining({
+          messages: expect.objectContaining({
+            data: { foo: "bar" },
+          }),
+        }),
+      ]);
+    });
+
+    it("should strip message field from recipient items and warn", async () => {
+      const mock = getMockAblyRest();
+      const payload = JSON.stringify([
+        {
+          recipient: { deviceId: "dev-1" },
+          payload: { notification: { title: "Hello" } },
+          message: "should be ignored",
+        },
+      ]);
+
+      const { stderr } = await runCommand(
+        ["push:batch-publish", payload, "--force"],
+        import.meta.url,
+      );
+
+      expect(stderr).toContain('"message" is not applicable');
+      expect(mock.request).toHaveBeenCalledWith(
+        "post",
+        "/push/batch/publish",
+        2,
+        null,
+        [expect.not.objectContaining({ message: expect.anything() })],
+      );
+    });
+
+    it("should omit data field when channel item has no message field", async () => {
+      const mock = getMockAblyRest();
+      const payload = JSON.stringify([
+        {
+          channels: ["my-channel"],
+          payload: { notification: { title: "Hello" } },
+        },
+      ]);
+
+      await runCommand(
+        ["push:batch-publish", payload, "--force"],
+        import.meta.url,
+      );
+
+      expect(mock.request).toHaveBeenCalledWith("post", "/messages", 2, null, [
+        expect.objectContaining({
+          messages: expect.not.objectContaining({ data: expect.anything() }),
+        }),
+      ]);
+    });
+
     it("should output JSON when requested", async () => {
       getMockAblyRest();
       const payload =
