@@ -74,32 +74,40 @@ export default class AccountsLogout extends ControlBaseCommand {
       }
     }
 
-    // Revoke OAuth tokens if this is an OAuth account
+    // Revoke OAuth tokens if this is an OAuth account and no other aliases share the session
     if (this.configManager.getAuthMethod(targetAlias) === "oauth") {
       const oauthTokens = this.configManager.getOAuthTokens(targetAlias);
       if (oauthTokens) {
-        const targetAccount = this.configManager.getCurrentAccount();
-        const oauthHost = flags["control-host"] || targetAccount?.controlHost;
-        const oauthClient = new OAuthClient({
-          controlHost: oauthHost,
-        });
-        // Best-effort revocation with timeout -- don't block logout
-        const revokeWithTimeout = (token: string, timeoutMs = 5000) =>
-          Promise.race([
-            oauthClient.revokeToken(token),
-            new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
-          ]);
-        await Promise.all([
-          revokeWithTimeout(oauthTokens.accessToken),
-          revokeWithTimeout(oauthTokens.refreshToken),
-        ]).catch((error) => {
-          this.logCliEvent(
-            flags,
-            "accountLogout",
-            "revocationFailed",
-            `OAuth token revocation failed: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        });
+        const sharingAliases =
+          this.configManager.getAliasesForOAuthSession(targetAlias);
+        const isLastAlias = sharingAliases.length <= 1;
+
+        if (isLastAlias) {
+          const targetAccount = this.configManager
+            .listAccounts()
+            .find((a) => a.alias === targetAlias)?.account;
+          const oauthHost = flags["control-host"] || targetAccount?.controlHost;
+          const oauthClient = new OAuthClient({
+            controlHost: oauthHost,
+          });
+          // Best-effort revocation with timeout -- don't block logout
+          const revokeWithTimeout = (token: string, timeoutMs = 5000) =>
+            Promise.race([
+              oauthClient.revokeToken(token),
+              new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+            ]);
+          await Promise.all([
+            revokeWithTimeout(oauthTokens.accessToken),
+            revokeWithTimeout(oauthTokens.refreshToken),
+          ]).catch((error) => {
+            this.logCliEvent(
+              flags,
+              "accountLogout",
+              "revocationFailed",
+              `OAuth token revocation failed: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          });
+        }
       }
     }
 
