@@ -323,18 +323,59 @@ jobs:
             - Package name(s) being updated
             - Old version → new version
             - Whether this is a patch, minor, or major bump
+            - Scope: runtime dependency, devDependency, build tool, or type definitions
+              (check package.json — is it in `dependencies`, `devDependencies`, or `peerDependencies`?)
+
+            Dependabot title patterns:
+            - `chore(deps): bump PACKAGE from X to Y in /PATH`
+            - `chore(deps-dev): bump PACKAGE from X to Y in /PATH`
+            - `chore(deps): bump the GROUP group across N directories with M updates`
+
+            For group bumps, also read the PR body for individual package details.
 
             ## Step 2: Research what changed
 
-            For each updated package, find out what changed between versions:
-            1. Check the package's GitHub releases page or CHANGELOG
-            2. Search for migration guides if it's a major bump
-            3. Look for breaking changes, renamed APIs, removed features, changed defaults
+            For each updated package, find out what changed between versions. Check in order:
+            1. GitHub Releases page for the package repo
+            2. CHANGELOG.md in the package repo
+            3. npm package page (npmjs.com/package/PACKAGE)
+            4. Web search for "PACKAGE changelog X to Y" or "PACKAGE migration guide vX to vY"
 
-            For each notable change found:
+            For each notable change found (deprecation, behavior change, renamed/removed API,
+            changed default, new required config, peer dependency change):
             1. Grep this repository to check if we use the affected API/feature
             2. Note specific files and line numbers where we're affected
             3. Determine the migration path (renamed method, new import path, config change, etc.)
+
+            This cross-referencing is critical. Do NOT just summarize the changelog — verify
+            each notable change against our actual codebase.
+
+            ## Step 2b: Check migration concerns
+
+            Proactively check each of these where applicable:
+
+            **Peer dependencies**: Does the new version require peer dep updates we haven't
+            made? Check for version conflicts in `pnpm install` output or `pnpm why`.
+
+            **Type changes**: Do updated types break existing usage? Removed/renamed exports,
+            changed function signatures, narrowed types. This is especially relevant for
+            `@types/*` packages and TypeScript-first libraries.
+
+            **Config files**: Does the package have a config file in our repo (e.g., tsconfig,
+            eslint config, vitest config, oclif config in package.json)? Have config options
+            changed between versions?
+
+            **Module format**: Has the package changed its ESM/CJS module format? This repo
+            uses ESM (`"type": "module"` in package.json).
+
+            **React/bundler compatibility**: For React ecosystem packages, check for duplicate
+            React instances (a common cause of "Cannot read properties of null (reading
+            'useState')"). Use `pnpm why react` to check for multiple React versions. Fix
+            with `overrides` in package.json if needed.
+
+            **Monorepo impact**: This is a pnpm workspace monorepo with packages at
+            `packages/react-web-cli` and `examples/web-cli`. Check if the updated dependency
+            is used in multiple workspace packages and whether they all need updates.
 
             ## Step 3: Analyse the CI failures
 
@@ -401,9 +442,20 @@ jobs:
             ## Dependabot Fix Assessment
 
             **Package**: `name` `old` → `new` (patch/minor/major)
+            **Scope**: runtime / devDependency / build tool / type definitions
+            **Workspace**: root / packages/react-web-cli / examples/web-cli
 
             ### What changed upstream
             - [Key changes between versions relevant to this repo]
+            - [Link to changelog/release notes]
+
+            ### Migration concerns checked
+            - Peer dependencies: OK / [issue found]
+            - Type changes: OK / [issue found]
+            - Config files: OK / [issue found]
+            - Module format: OK / [issue found]
+            - React compatibility: OK / [issue found]
+            - Monorepo impact: OK / [issue found]
 
             ### What broke
             - [Failed check]: [root cause] — [file:line if applicable]
