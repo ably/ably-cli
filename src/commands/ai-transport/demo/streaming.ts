@@ -64,6 +64,20 @@ export default class StreamingDemo extends ControlBaseCommand {
     }
 
     const role = (flags.role ?? "both") as "both" | "client" | "server";
+
+    // Channel must include a namespace (colon separator) because AI Transport
+    // requires mutable messages, which is configured per-namespace via rules.
+    // Without a namespace, we can't guide the user to create the right rule.
+    if (flags.channel && !flags.channel.includes(":")) {
+      this.fail(
+        `Channel name must include a namespace (e.g. "my-namespace:${flags.channel}"). ` +
+          `AI Transport requires mutable messages, which is enabled per-namespace via rules. ` +
+          `If you don't have a namespace, omit --channel and the demo will use "ai-demo:" by default.`,
+        flags,
+        "aiTransportDemo",
+      );
+    }
+
     const channelName =
       flags.channel ??
       `ai-demo:streaming-${Math.random().toString(36).slice(2, 6)}`;

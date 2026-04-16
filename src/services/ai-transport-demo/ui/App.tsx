@@ -136,7 +136,8 @@ export function App({ role, feature, channelName, orchestrator }: AppProps) {
 
   // Server status for client panel
   if (mutableMessagesError) {
-    return <MutableMessagesError />;
+    const namespace = channelName.split(":")[0] || "ai-demo";
+    return <MutableMessagesError namespace={namespace} />;
   }
 
   return (
@@ -244,7 +245,7 @@ export function App({ role, feature, channelName, orchestrator }: AppProps) {
  * useEffect fires after React commits the render, so exit() is called
  * once the message is visible on screen.
  */
-function MutableMessagesError() {
+function MutableMessagesError({ namespace }: { namespace: string }) {
   const { exit } = useApp();
 
   useEffect(() => {
@@ -258,18 +259,18 @@ function MutableMessagesError() {
       </Text>
       <Text>
         AI Transport requires <Text bold>mutable messages</Text> on the{" "}
-        <Text color={colors.primary}>ai-demo</Text> namespace.
+        <Text color={colors.primary}>{namespace}</Text> namespace.
       </Text>
       <Text> </Text>
       <Text>To set this up, either:</Text>
       <Text>
         {"  "}1.{" "}
         <Text color={colors.primary}>
-          ably apps rules create --name ai-demo --mutable-messages
+          ably apps rules create --name {namespace} --mutable-messages
         </Text>
       </Text>
       <Text>
-        {"  "}2. Dashboard: App {">"} Settings {">"} Rules {">"} add ai-demo
+        {"  "}2. Dashboard: App {">"} Settings {">"} Rules {">"} add {namespace}{" "}
         with Mutable messages
       </Text>
       <Text> </Text>

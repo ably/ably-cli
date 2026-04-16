@@ -37,13 +37,22 @@ describe("ai-transport:demo:streaming command", () => {
       expect(stdout).toContain("Role: client");
     });
 
-    it("should accept channel flag", async () => {
+    it("should accept channel flag with namespace", async () => {
       const { stdout } = await runCommand(
-        ["ai-transport:demo:streaming", "--channel", "test-channel"],
+        ["ai-transport:demo:streaming", "--channel", "my-ns:test-channel"],
         import.meta.url,
       );
 
-      expect(stdout).toContain("Channel: test-channel");
+      expect(stdout).toContain("Channel: my-ns:test-channel");
+    });
+
+    it("should reject channel without namespace", async () => {
+      const { error } = await runCommand(
+        ["ai-transport:demo:streaming", "--channel", "no-namespace"],
+        import.meta.url,
+      );
+
+      expect(error?.message).toContain("must include a namespace");
     });
   });
 
