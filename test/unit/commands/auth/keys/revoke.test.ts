@@ -37,7 +37,7 @@ describe("auth:keys:revoke command", () => {
 
       // Mock revoke key
       nockControl()
-        .delete(`/v1/apps/${appId}/keys/${mockKeyId}`)
+        .post(`/v1/apps/${appId}/keys/${mockKeyId}/revoke`)
         .reply(200, {});
 
       const { stdout } = await runCommand(
@@ -59,7 +59,7 @@ describe("auth:keys:revoke command", () => {
       ]);
 
       nockControl()
-        .delete(`/v1/apps/${appId}/keys/${mockKeyId}`)
+        .post(`/v1/apps/${appId}/keys/${mockKeyId}/revoke`)
         .reply(200, {});
 
       const { stdout } = await runCommand(
@@ -76,7 +76,7 @@ describe("auth:keys:revoke command", () => {
       mockKeysList(appId, [buildMockKey(appId, mockKeyId)]);
 
       nockControl()
-        .delete(`/v1/apps/${appId}/keys/${mockKeyId}`)
+        .post(`/v1/apps/${appId}/keys/${mockKeyId}/revoke`)
         .reply(200, {});
 
       const { stdout } = await runCommand(

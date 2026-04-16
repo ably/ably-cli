@@ -423,7 +423,7 @@ export class ControlApi {
 
   // Revoke a key
   async revokeKey(appId: string, keyId: string): Promise<void> {
-    return this.request<void>(`/apps/${appId}/keys/${keyId}`, "DELETE");
+    return this.request<void>(`/apps/${appId}/keys/${keyId}/revoke`, "POST");
   }
 
   // Update an app
@@ -588,6 +588,11 @@ export class ControlApi {
       return {} as T;
     }
 
-    return (await response.json()) as T;
+    const text = await response.text();
+    if (!text) {
+      return {} as T;
+    }
+
+    return JSON.parse(text) as T;
   }
 }
