@@ -296,7 +296,7 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ steps.generate-token.outputs.token }}
-          allowed_bots: "dependabot[bot]"
+          allowed_bots: "dependabot[bot],ci-lockfile-regen[bot]"
           prompt: |
             You are fixing a Dependabot PR where CI checks are failing after a dependency
             bump. The lockfile has already been regenerated. Your job is to understand what
