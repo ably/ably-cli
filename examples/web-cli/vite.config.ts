@@ -74,6 +74,11 @@ function apiSignPlugin(): Plugin {
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), tsconfigPaths(), tailwindcss(), apiSignPlugin()],
+  resolve: {
+    // Force single React instance to prevent "Cannot read properties of null (reading 'useState')"
+    // when @ably/react-web-cli (devDep React 18) coexists with this app (React 19).
+    dedupe: ["react", "react-dom"],
+  },
   server: {
     host: true,
     https: undefined,
