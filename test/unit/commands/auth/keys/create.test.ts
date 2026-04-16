@@ -63,6 +63,44 @@ describe("auth:keys:create command", () => {
       expect(stdout).toContain(mockKeyId);
     });
 
+    it("should create a key with comma-separated capabilities", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
+      nockControl()
+        .post(`/v1/apps/${appId}/keys`, {
+          name: mockKeyName,
+          capability: { "*": ["publish", "subscribe"] },
+        })
+        .reply(201, {
+          id: mockKeyId,
+          appId,
+          name: mockKeyName,
+          key: `${appId}.${mockKeyId}:${mockKeySecret}`,
+          capability: { "*": ["publish", "subscribe"] },
+          created: Date.now(),
+          modified: Date.now(),
+          status: "enabled",
+          revocable: true,
+        });
+
+      const { stdout, stderr } = await runCommand(
+        [
+          "auth:keys:create",
+          "--name",
+          `"${mockKeyName}"`,
+          "--app",
+          appId,
+          "--capabilities",
+          "publish,subscribe",
+        ],
+        import.meta.url,
+      );
+
+      expect(stderr).toContain("Key created:");
+      expect(stdout).toContain("publish");
+      expect(stdout).toContain("subscribe");
+    });
+
     it("should create a key with custom capabilities", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       mockAppResolution(appId);
@@ -236,10 +274,6 @@ describe("auth:keys:create command", () => {
     it("should handle invalid capabilities JSON", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       mockAppResolution(appId);
-      // Mock the key creation endpoint with invalid capabilities
-      nockControl().post(`/v1/apps/${appId}/keys`).reply(400, {
-        error: "Invalid capabilities format",
-      });
 
       const { error } = await runCommand(
         [
@@ -249,12 +283,37 @@ describe("auth:keys:create command", () => {
           "--app",
           appId,
           "--capabilities",
-          "invalid-json",
+          "{invalid-json",
         ],
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Invalid capabilities/);
+      expect(error?.message).toMatch(
+        /Invalid capabilities JSON format\. Please provide a valid JSON string\./,
+      );
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
+
+    it("should handle empty capabilities", async () => {
+      const appId = getMockConfigManager().getRegisteredAppId();
+      mockAppResolution(appId);
+
+      const { error } = await runCommand(
+        [
+          "auth:keys:create",
+          "--name",
+          `"${mockKeyName}"`,
+          "--app",
+          appId,
+          "--capabilities",
+          ",,",
+        ],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(
+        /Capabilities must contain at least one non-empty capability\./,
+      );
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
   });

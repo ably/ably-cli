@@ -2,6 +2,7 @@ import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
+import { resolveCurrentKeyName } from "../../../utils/key-parsing.js";
 import {
   formatHeading,
   formatLabel,
@@ -74,11 +75,7 @@ export default class KeysGetCommand extends ControlBaseCommand {
 
       // Check if env var overrides the current key
       const currentKeyId = this.configManager.getKeyId(appId);
-      const currentKeyName = currentKeyId?.includes(".")
-        ? currentKeyId
-        : currentKeyId
-          ? `${appId}.${currentKeyId}`
-          : undefined;
+      const currentKeyName = resolveCurrentKeyName(appId, currentKeyId);
       const envKey = process.env.ABLY_API_KEY;
       const envKeyPrefix = envKey ? envKey.split(":")[0] : undefined;
       const hasEnvOverride =

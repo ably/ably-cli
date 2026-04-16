@@ -89,6 +89,43 @@ describe("auth:keys:update command", () => {
       expect(stdout).toContain("* → subscribe");
     });
 
+    it("should update key capabilities with JSON object", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      mockKeysList(appId, [
+        buildMockKey(appId, mockKeyId, {
+          capability: { "*": ["publish", "subscribe"] },
+        }),
+      ]);
+
+      nockControl()
+        .patch(`/v1/apps/${appId}/keys/${mockKeyId}`)
+        .reply(200, {
+          id: mockKeyId,
+          appId,
+          name: "Test Key",
+          key: `${appId}.${mockKeyId}:secret`,
+          capability: {
+            channel1: ["publish"],
+            channel2: ["subscribe"],
+          },
+          created: Date.now(),
+          modified: Date.now(),
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "auth:keys:update",
+          `${appId}.${mockKeyId}`,
+          "--capabilities",
+          '{"channel1":["publish"],"channel2":["subscribe"]}',
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
+      expect(stdout).toContain("After:");
+    });
+
     it("should output JSON with nested key data when --json flag is used", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       mockKeysList(appId, [

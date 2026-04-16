@@ -2,7 +2,10 @@ import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatCapabilityInline } from "../../../utils/key-display.js";
-import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
+import {
+  parseCapabilities,
+  parseKeyIdentifier,
+} from "../../../utils/key-parsing.js";
 import { formatLabel, formatResource } from "../../../utils/output.js";
 
 export default class KeysUpdateCommand extends ControlBaseCommand {
@@ -19,6 +22,7 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
     '$ ably auth keys update APP_ID.KEY_ID --name "New Name"',
     '$ ably auth keys update KEY_ID --app APP_ID --capabilities "publish,subscribe"',
     '$ ably auth keys update APP_ID.KEY_ID --name "New Name" --capabilities "publish,subscribe"',
+    `$ ably auth keys update APP_ID.KEY_ID --name "New Name" --capabilities '{"channel1":["publish"],"channel2":["subscribe"]}'`,
     '$ ably auth keys update APP_ID.KEY_ID --name "New Name" --json',
   ];
 
@@ -29,7 +33,8 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
       env: "ABLY_APP_ID",
     }),
     capabilities: Flags.string({
-      description: "New capabilities for the key (comma-separated list)",
+      description:
+        "New capabilities as JSON object (per-channel) or comma-separated list (all channels)",
       required: false,
     }),
     name: Flags.string({
@@ -71,21 +76,10 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
       }
 
       if (flags.capabilities) {
-        // Parse the capabilities string into the expected format
-        // The expected format is a Record<string, string[]> (channel => permissions)
         try {
-          // Split by commas to get individual capabilities
-          const capabilityArray = flags.capabilities
-            .split(",")
-            .map((cap) => cap.trim());
-          // Create capability object with "*" channel and array of capabilities
-          updateData.capability = {
-            "*": capabilityArray,
-          };
+          updateData.capability = parseCapabilities(flags.capabilities);
         } catch (error) {
-          this.fail(error, flags, "keyUpdate", {
-            context: "parsing capabilities",
-          });
+          this.fail(error, flags, "keyUpdate");
         }
       }
 

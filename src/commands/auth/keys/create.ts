@@ -2,6 +2,7 @@ import { Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
+import { parseCapabilities } from "../../../utils/key-parsing.js";
 import { formatLabel, formatResource } from "../../../utils/output.js";
 
 export default class KeysCreateCommand extends ControlBaseCommand {
@@ -12,6 +13,7 @@ export default class KeysCreateCommand extends ControlBaseCommand {
     `$ ably auth keys create --name "My New Key" --app APP_ID`,
     `$ ably auth keys create --name "My New Key" --capabilities '{"*":["*"]}'`,
     `$ ably auth keys create --name "My New Key" --capabilities '{"channel1":["publish","subscribe"],"channel2":["history"]}'`,
+    `$ ably auth keys create --name "My New Key" --capabilities "publish,subscribe"`,
     `$ ably auth keys create --name "My New Key" --json`,
     `$ ably auth keys create --name "My New Key" --pretty-json`,
     `$ ably auth keys create --app APP_ID --name "MyKey" --capabilities '{"channel:*":["publish"]}'`,
@@ -26,7 +28,8 @@ export default class KeysCreateCommand extends ControlBaseCommand {
     }),
     capabilities: Flags.string({
       default: '{"*":["*"]}',
-      description: `Capability object as a JSON string. Example: '{"channel:*":["publish"]}'`,
+      description:
+        "Capabilities as JSON object (per-channel) or comma-separated list (all channels)",
     }),
     name: Flags.string({
       description: "Name of the key",
@@ -41,13 +44,9 @@ export default class KeysCreateCommand extends ControlBaseCommand {
 
     let capabilities: Record<string, string[]>;
     try {
-      capabilities = JSON.parse(flags.capabilities) as Record<string, string[]>;
-    } catch {
-      this.fail(
-        "Invalid capabilities JSON format. Please provide a valid JSON string.",
-        flags,
-        "keyCreate",
-      );
+      capabilities = parseCapabilities(flags.capabilities);
+    } catch (error) {
+      this.fail(error, flags, "keyCreate");
     }
 
     try {
