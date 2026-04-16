@@ -539,9 +539,11 @@ export class MockConfigManager implements ConfigManager {
     this.config.accounts[alias] = {
       ...this.config.accounts[alias],
       accountId:
-        accountInfo?.accountId ?? this.config.accounts[alias]?.accountId,
+        accountInfo?.accountId ?? this.config.accounts[alias]?.accountId ?? "",
       accountName:
-        accountInfo?.accountName ?? this.config.accounts[alias]?.accountName,
+        accountInfo?.accountName ??
+        this.config.accounts[alias]?.accountName ??
+        "",
       apps: this.config.accounts[alias]?.apps || {},
       authMethod: "oauth",
       currentAppId: this.config.accounts[alias]?.currentAppId,
