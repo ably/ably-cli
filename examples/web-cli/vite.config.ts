@@ -74,6 +74,14 @@ function apiSignPlugin(): Plugin {
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), tsconfigPaths(), tailwindcss(), apiSignPlugin()],
+  resolve: {
+    // Force a single React instance across workspace packages.
+    // packages/react-web-cli installs react@19 in its own node_modules
+    // (it is a devDependency there), so without deduplication Vite would
+    // bundle two copies of React, causing "Cannot read properties of null
+    // (reading 'useState')" at runtime.
+    dedupe: ["react", "react-dom", "react/jsx-runtime"],
+  },
   server: {
     host: true,
     https: undefined,

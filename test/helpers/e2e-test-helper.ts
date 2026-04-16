@@ -426,10 +426,12 @@ async function attemptProcessStart(
           // Note: We need to be careful about false positives. The channel subscribe command
           // outputs legitimate error messages like "✗ Failed to attach to channel" during
           // normal operation when testing error scenarios.
+          // Note: Do NOT use bare "401" or "403" here — those strings appear inside randomly
+          // generated UUIDs used as channel names (e.g. "d4802e98-99ec-403b-b8b8-...") and
+          // cause spurious failures. Auth errors are caught by "authentication failed" and the
+          // hasGenericError check below (which fires when "Error:" appears with context).
           const criticalErrors = [
             "authentication failed",
-            "401",
-            "403",
             "Command failed",
             "ENOENT",
             "Cannot find module",
