@@ -30,9 +30,14 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
 
       accessToken = this.configManager.getAccessToken();
 
-      // Set up token refresh middleware for OAuth accounts
+      // Set up token refresh middleware for OAuth accounts.
+      // The OAuth issuer is an immutable property of the token — only the host
+      // that minted it can refresh it. Prefer the stored controlHost so a
+      // --control-host override (intended for control-plane routing) does not
+      // silently direct refresh traffic at the wrong authorization server,
+      // which would return invalid_grant and wipe a valid session.
       if (this.configManager.getAuthMethod() === "oauth") {
-        const oauthHost = flags["control-host"] || account.controlHost;
+        const oauthHost = account.controlHost ?? flags["control-host"];
         const oauthClient = new OAuthClient({
           controlHost: oauthHost,
         });

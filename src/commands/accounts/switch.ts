@@ -6,7 +6,7 @@ import { ControlBaseCommand } from "../../control-base-command.js";
 import { endpointFlag } from "../../flags.js";
 import { ControlApi, type AccountSummary } from "../../services/control-api.js";
 import { formatResource } from "../../utils/output.js";
-import { slugifyAccountName } from "../../utils/slugify.js";
+import { pickUniqueAlias, slugifyAccountName } from "../../utils/slugify.js";
 
 export default class AccountsSwitch extends ControlBaseCommand {
   static override args = {
@@ -211,7 +211,21 @@ export default class AccountsSwitch extends ControlBaseCommand {
     }
 
     const currentAccount = this.configManager.getCurrentAccount();
-    const newAlias = slugifyAccountName(remoteAccount.name);
+    // Pick a non-colliding alias — two different remote accounts whose names
+    // slugify identically (e.g. "Acme Prod" / "Acme-Prod") must not silently
+    // rebind an existing alias to a different accountId.
+    const picked = pickUniqueAlias(
+      slugifyAccountName(remoteAccount.name),
+      remoteAccount.id,
+      this.configManager.listAccounts(),
+    );
+    const newAlias = picked.alias;
+    if (picked.collidedWith) {
+      this.logWarning(
+        `Alias "${picked.collidedWith.alias}" is already used by a different account (${picked.collidedWith.accountId}); storing this account as "${newAlias}" instead.`,
+        flags,
+      );
+    }
 
     // Store the new alias with the same OAuth tokens but different account info.
     // Carry over the source account's controlHost so the shared session key
@@ -230,6 +244,12 @@ export default class AccountsSwitch extends ControlBaseCommand {
     );
 
     this.configManager.switchAccount(newAlias);
+
+    // Store custom endpoint if provided — parity with switchToLocalAccount so
+    // the flag is not silently dropped when the user picks a remote account.
+    if (flags.endpoint) {
+      this.configManager.storeEndpoint(flags.endpoint as string);
+    }
 
     this.log(
       `Switched to account: ${formatResource(remoteAccount.name)} (${remoteAccount.id})`,

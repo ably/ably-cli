@@ -146,6 +146,7 @@ export interface ConfigManager {
   // Config file
   getConfigPath(): string;
   saveConfig(): void;
+  reloadConfig(): void;
 }
 
 // Type declaration for test mocks available on globalThis
@@ -409,6 +410,14 @@ export class TomlConfigManager implements ConfigManager {
     }
   }
 
+  // Re-read config from disk, discarding in-memory state. Used by the token
+  // refresh path to detect whether a concurrent CLI invocation has rotated
+  // tokens since we loaded them — otherwise we could clobber valid peer
+  // tokens with our stale snapshot.
+  public reloadConfig(): void {
+    this.loadConfig();
+  }
+
   // Set current app for the current account
   public setCurrentApp(appId: string): void {
     const currentAccount = this.getCurrentAccount();
@@ -624,6 +633,13 @@ export class TomlConfigManager implements ConfigManager {
       oauthSessionKey: sessionKey,
       userEmail,
     };
+
+    // Purge legacy pre-OAuth fields that the spread above may have carried
+    // over. They are inert for OAuth accounts but leave a stale plaintext
+    // token in the on-disk config.
+    delete this.config.accounts[alias].accessToken;
+    delete this.config.accounts[alias].accessTokenExpiresAt;
+    delete this.config.accounts[alias].tokenId;
 
     if (!this.config.current || !this.config.current.account) {
       this.config.current = { account: alias };

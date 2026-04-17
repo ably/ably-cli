@@ -86,18 +86,32 @@ export default class AccountsLogout extends ControlBaseCommand {
           const targetAccount = this.configManager
             .listAccounts()
             .find((a) => a.alias === targetAlias)?.account;
-          const oauthHost = flags["control-host"] || targetAccount?.controlHost;
+          // Revoke against the host that minted the token. A --control-host
+          // override here would send the token to a server that never issued
+          // it — a no-op revocation that silently leaves the real token live.
+          const oauthHost = targetAccount?.controlHost ?? flags["control-host"];
           const oauthClient = new OAuthClient({
             controlHost: oauthHost,
           });
           // Best-effort revocation with timeout -- don't block logout.
           // revokeToken() swallows its own errors and always resolves, so we
           // don't need a .catch() here.
-          const revokeWithTimeout = (token: string, timeoutMs = 5000) =>
-            Promise.race([
+          //
+          // We keep the timer handle and clear it once the race settles,
+          // otherwise a fast revocation leaves the timeout pending and the
+          // process hangs ~5s after printing "Successfully logged out".
+          const revokeWithTimeout = (token: string, timeoutMs = 5000) => {
+            let timer: NodeJS.Timeout | undefined;
+            const timeoutPromise = new Promise<void>((resolve) => {
+              timer = setTimeout(resolve, timeoutMs);
+            });
+            return Promise.race([
               oauthClient.revokeToken(token),
-              new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
-            ]);
+              timeoutPromise,
+            ]).finally(() => {
+              if (timer) clearTimeout(timer);
+            });
+          };
           await Promise.all([
             revokeWithTimeout(oauthTokens.accessToken),
             revokeWithTimeout(oauthTokens.refreshToken),

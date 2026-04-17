@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { OAuthRefreshExpiredError } from "../../../src/services/oauth-client.js";
 import {
   TokenRefreshMiddleware,
   TokenExpiredError,
@@ -6,11 +7,13 @@ import {
 
 function createMockConfigManager(overrides: Record<string, unknown> = {}) {
   return {
+    clearOAuthSession: vi.fn(),
     getAccessToken: vi.fn().mockReturnValue("current_access_token"),
     getAuthMethod: vi.fn(),
     getCurrentAccountAlias: vi.fn().mockReturnValue("default"),
     getOAuthTokens: vi.fn(),
     isAccessTokenExpired: vi.fn().mockReturnValue(false),
+    reloadConfig: vi.fn(),
     storeOAuthTokens: vi.fn(),
     ...overrides,
   };
@@ -182,6 +185,87 @@ describe("TokenRefreshMiddleware", () => {
       await expect(middleware.getValidAccessToken()).rejects.toThrow(
         "Token refresh failed (401): invalid_grant",
       );
+    });
+  });
+
+  describe("invalid_grant race with concurrent refresh", () => {
+    it("clears session when on-disk refresh token still matches the consumed one", async () => {
+      const consumed = "consumed_refresh_token";
+      const getOAuthTokens = vi.fn().mockReturnValue({
+        accessToken: "expired_access",
+        refreshToken: consumed,
+        expiresAt: Date.now() - 1000,
+      });
+      const configManager = createMockConfigManager({
+        getAuthMethod: vi.fn().mockReturnValue("oauth"),
+        getAccessToken: vi.fn().mockReturnValue("expired_access"),
+        isAccessTokenExpired: vi.fn().mockReturnValue(true),
+        getOAuthTokens,
+        getCurrentAccountAlias: vi.fn().mockReturnValue("default"),
+      });
+      const oauthClient = createMockOAuthClient({
+        refreshAccessToken: vi
+          .fn()
+          .mockRejectedValue(
+            new OAuthRefreshExpiredError("refresh token invalid"),
+          ),
+      });
+
+      const middleware = new TokenRefreshMiddleware(
+        configManager as never,
+        oauthClient as never,
+      );
+
+      await expect(middleware.getValidAccessToken()).rejects.toThrow(
+        TokenExpiredError,
+      );
+      expect(configManager.reloadConfig).toHaveBeenCalled();
+      expect(configManager.clearOAuthSession).toHaveBeenCalled();
+    });
+
+    it("does NOT clear session when a peer rotated the refresh token on disk", async () => {
+      const consumed = "stale_refresh_token";
+      const peerRotated = "fresh_refresh_token_from_peer";
+      // First call (before refresh): returns the consumed token.
+      // Second call (after reload): returns the peer's fresh token.
+      const getOAuthTokens = vi
+        .fn()
+        .mockReturnValueOnce({
+          accessToken: "expired_access",
+          refreshToken: consumed,
+          expiresAt: Date.now() - 1000,
+        })
+        .mockReturnValueOnce({
+          accessToken: "peer_fresh_access",
+          refreshToken: peerRotated,
+          expiresAt: Date.now() + 3600_000,
+        });
+      const configManager = createMockConfigManager({
+        getAuthMethod: vi.fn().mockReturnValue("oauth"),
+        getAccessToken: vi.fn().mockReturnValue("expired_access"),
+        isAccessTokenExpired: vi.fn().mockReturnValue(true),
+        getOAuthTokens,
+        getCurrentAccountAlias: vi.fn().mockReturnValue("default"),
+      });
+      const oauthClient = createMockOAuthClient({
+        refreshAccessToken: vi
+          .fn()
+          .mockRejectedValue(
+            new OAuthRefreshExpiredError("refresh token invalid"),
+          ),
+      });
+
+      const middleware = new TokenRefreshMiddleware(
+        configManager as never,
+        oauthClient as never,
+      );
+
+      await expect(middleware.getValidAccessToken()).rejects.toThrow(
+        TokenExpiredError,
+      );
+      expect(configManager.reloadConfig).toHaveBeenCalled();
+      // Critical: must NOT clear — peer's session is valid.
+      expect(configManager.clearOAuthSession).not.toHaveBeenCalled();
     });
   });
 });

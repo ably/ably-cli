@@ -13,7 +13,7 @@ import { displayLogo } from "../../utils/logo.js";
 import openUrl from "../../utils/open-url.js";
 import { formatResource } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
-import { slugifyAccountName } from "../../utils/slugify.js";
+import { pickUniqueAlias, slugifyAccountName } from "../../utils/slugify.js";
 
 function validateAndGetAlias(
   input: string,
@@ -109,16 +109,38 @@ export default class AccountsLogin extends ControlBaseCommand {
           await this.interactiveHelper.selectAccountFromApi(accounts);
         selectedAccountInfo = picked ?? accounts[0]!;
       } else {
-        // Multiple accounts in JSON mode: use first
+        // Multiple accounts in JSON mode: auto-select the first but surface a
+        // warning so scripted callers can detect drift and choose explicitly.
         selectedAccountInfo = accounts[0]!;
+        this.logWarning(
+          `Multiple accounts found (${accounts.length}); auto-selected ${selectedAccountInfo.name} (${selectedAccountInfo.id}). Run 'ably accounts login' in a terminal to choose, or use --alias to pin a specific account.`,
+          flags,
+        );
       }
 
       // Resolve alias AFTER account selection so we can default to account name
       let { alias } = flags;
       if (!alias && !this.shouldOutputJson(flags)) {
-        alias = await this.resolveAlias(selectedAccountInfo.name);
+        alias = await this.resolveAlias(
+          selectedAccountInfo.name,
+          selectedAccountInfo.id,
+        );
       } else if (!alias) {
-        alias = slugifyAccountName(selectedAccountInfo.name);
+        // JSON / non-interactive: auto-suffix on collision with a different
+        // account so we never silently rebind an alias that already points
+        // somewhere else.
+        const picked = pickUniqueAlias(
+          slugifyAccountName(selectedAccountInfo.name),
+          selectedAccountInfo.id,
+          this.configManager.listAccounts(),
+        );
+        alias = picked.alias;
+        if (picked.collidedWith) {
+          this.logWarning(
+            `Alias "${picked.collidedWith.alias}" is already used by a different account (${picked.collidedWith.accountId}); storing this login as "${alias}" instead.`,
+            flags,
+          );
+        }
       }
 
       // Store OAuth tokens (include user email from /me response).
@@ -404,25 +426,29 @@ export default class AccountsLogin extends ControlBaseCommand {
     }
   }
 
-  private async resolveAlias(accountName: string): Promise<string> {
+  private async resolveAlias(
+    accountName: string,
+    accountId: string,
+  ): Promise<string> {
     const defaultAlias = slugifyAccountName(accountName);
     const existingAccounts = this.configManager.listAccounts();
-    const aliasExists = existingAccounts.some((a) => a.alias === defaultAlias);
+    const existing = existingAccounts.find((a) => a.alias === defaultAlias);
 
-    if (aliasExists) {
-      this.log(
-        `\nAn account with alias "${defaultAlias}" already exists and will be overwritten.`,
-      );
-      const shouldCustomize = await promptForConfirmation(
-        "Would you like to use a different alias?",
-      );
-      if (shouldCustomize) {
-        return this.promptForAlias(defaultAlias);
-      }
+    // No collision, or the alias already points at the same account
+    // (legitimate re-login) — reuse without prompting.
+    if (!existing || existing.account.accountId === accountId) {
       return defaultAlias;
     }
 
-    // New account — use the derived alias without prompting
+    this.log(
+      `\nAn account with alias "${defaultAlias}" already exists (account ID: ${existing.account.accountId}) and would be overwritten.`,
+    );
+    const shouldCustomize = await promptForConfirmation(
+      "Would you like to use a different alias?",
+    );
+    if (shouldCustomize) {
+      return this.promptForAlias(defaultAlias);
+    }
     return defaultAlias;
   }
 
