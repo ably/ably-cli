@@ -257,6 +257,29 @@ describe("push:publish command", () => {
       );
     });
 
+    it("should unwrap the inner value when --message has a top-level data key", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("my-channel");
+
+      await runCommand(
+        [
+          "push:publish",
+          "--channel",
+          "my-channel",
+          "--title",
+          "Hi",
+          "--message",
+          '{"data":"extracted"}',
+          "--force",
+        ],
+        import.meta.url,
+      );
+
+      expect(channel.publish).toHaveBeenCalledWith(
+        expect.objectContaining({ data: "extracted" }),
+      );
+    });
+
     it("should ignore --message when direct recipient overrides --channel", async () => {
       const mock = getMockAblyRest();
 
