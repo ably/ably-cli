@@ -362,7 +362,7 @@ describe("ControlApi", function () {
 
       // Set up nock to intercept request
       nock(`https://${controlHost}`)
-        .delete(`/v1/apps/${appId}/keys/${keyId}`)
+        .post(`/v1/apps/${appId}/keys/${keyId}/revoke`)
         .reply(500, { message: "Failed to revoke key" });
 
       // Intercept any calls to /me
