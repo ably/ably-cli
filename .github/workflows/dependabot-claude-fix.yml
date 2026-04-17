@@ -1,0 +1,477 @@
+name: Fix Dependabot PRs
+
+# Fires after any of the listed CI workflows finishes on a PR. Gates on:
+#   1. The triggering workflow ran on a pull_request event.
+#   2. The PR author is dependabot[bot].
+#   3. Every CI workflow expected to run for this PR (based on on.pull_request.paths)
+#      has completed for this HEAD SHA — so Claude sees the full failure set at once.
+# Exits early (0) on any of these not being satisfied, so a new workflow_run event
+# from a later-completing upstream workflow can re-evaluate.
+#
+# Concurrency is keyed on HEAD SHA: near-simultaneous completions still only produce
+# one surviving Claude run per SHA, but subsequent pushes (Claude's own fix, or a
+# fresh dependabot commit) get their own lane.
+
+on:
+  workflow_run:
+    workflows:
+      - "Run Tests"
+      - "E2E Tests"
+      - "Web CLI E2E Tests (Parallel)"
+      - "Security Audit"
+    types: [completed]
+
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: dependabot-claude-fix-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: true
+
+jobs:
+  gate-and-fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # Only consider PRs from the same repo (dependabot qualifies).
+    # Forks would have an empty pull_requests array.
+    if: >
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.pull_requests[0] != null
+
+    steps:
+      - name: Identify PR and check author
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUM: ${{ github.event.workflow_run.pull_requests[0].number }}
+        run: |
+          set -euo pipefail
+          PR_JSON=$(gh api "repos/$REPO/pulls/$PR_NUM")
+          AUTHOR=$(jq -r '.user.login' <<< "$PR_JSON")
+          HEAD_REF=$(jq -r '.head.ref' <<< "$PR_JSON")
+
+          echo "PR #$PR_NUM author: $AUTHOR"
+          echo "PR head ref: $HEAD_REF"
+
+          if [[ "$AUTHOR" != "dependabot[bot]" ]]; then
+            echo "Not a dependabot PR, exiting."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "pr_number=$PR_NUM" >> "$GITHUB_OUTPUT"
+          echo "head_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
+
+      - name: Loop-prevention guard
+        id: loop-guard
+        if: steps.pr.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_REF: ${{ steps.pr.outputs.head_ref }}
+        run: |
+          set -euo pipefail
+          # Cap how many times this workflow has already completed successfully on
+          # this branch, to avoid runaway loops if Claude's fixes keep triggering
+          # new CI failures.
+          RUN_COUNT=$(gh api \
+            "repos/$REPO/actions/workflows/dependabot-claude-fix.yml/runs?branch=$HEAD_REF&status=success" \
+            --jq '.total_count')
+          echo "Prior successful runs on $HEAD_REF: $RUN_COUNT"
+
+          if [[ "$RUN_COUNT" -ge 20 ]]; then
+            echo "Hit loop cap (20). Skipping to avoid runaway iteration."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compute expected workflows for this PR
+        id: expected
+        if: steps.pr.outputs.skip != 'true' && steps.loop-guard.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUM: ${{ steps.pr.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+          # Fetch the PR's changed files (handles pagination for large diffs).
+          CHANGED=$(gh api "repos/$REPO/pulls/$PR_NUM/files" --paginate --jq '.[].filename')
+          echo "Changed files in PR:"
+          printf '  %s\n' $CHANGED
+
+          # Minimal path-filter matcher covering the patterns this repo actually uses
+          # in on.pull_request.paths:
+          #   - "PATH/**"  → file must start with "PATH/"
+          #   - exact path → file must equal pattern
+          # Keep this in sync if any monitored workflow adopts more exotic globs.
+          matches_pattern() {
+            local file="$1" pattern="$2"
+            if [[ "$pattern" == *"/**" ]]; then
+              [[ "$file" == "${pattern%/**}/"* ]]
+            else
+              [[ "$file" == "$pattern" ]]
+            fi
+          }
+
+          any_changed_matches() {
+            local patterns=("$@") file pat
+            while IFS= read -r file; do
+              [[ -z "$file" ]] && continue
+              for pat in "${patterns[@]}"; do
+                matches_pattern "$file" "$pat" && return 0
+              done
+            done <<< "$CHANGED"
+            return 1
+          }
+
+          EXPECTED=()
+
+          # Run Tests (test.yml) — paths-filtered.
+          # Keep this list in sync with .github/workflows/test.yml on.pull_request.paths.
+          RUN_TESTS_PATHS=(
+            "src/**"
+            "test/**"
+            "package.json"
+            "pnpm-lock.yaml"
+            "tsconfig.json"
+            "scripts/**"
+            "examples/**"
+            ".github/workflows/test.yml"
+            ".claude/**"
+          )
+          if any_changed_matches "${RUN_TESTS_PATHS[@]}"; then
+            EXPECTED+=("Run Tests")
+          fi
+
+          # These three have no paths filter — always expected on PRs to main.
+          EXPECTED+=("E2E Tests")
+          EXPECTED+=("Web CLI E2E Tests (Parallel)")
+          EXPECTED+=("Security Audit")
+
+          echo "Expected workflows for this PR:"
+          printf '  %s\n' "${EXPECTED[@]}"
+
+          # Emit as newline-delimited output.
+          {
+            echo "list<<EOF_EXPECTED"
+            printf '%s\n' "${EXPECTED[@]}"
+            echo "EOF_EXPECTED"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Gate — are all expected workflows complete for this SHA?
+        id: gate
+        if: steps.pr.outputs.skip != 'true' && steps.loop-guard.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          EXPECTED: ${{ steps.expected.outputs.list }}
+        run: |
+          set -euo pipefail
+          # Default output so downstream `if:` checks don't fail on unset.
+          echo "proceed=false" >> "$GITHUB_OUTPUT"
+
+          # All workflow runs for this SHA on the PR event.
+          RUNS_JSON=$(gh api \
+            "repos/$REPO/actions/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100" \
+            --paginate \
+            --jq '[.workflow_runs[] | {name, status, conclusion, id, html_url}]')
+
+          all_complete=true
+          failed_runs='[]'
+
+          while IFS= read -r wf; do
+            [[ -z "$wf" ]] && continue
+            # Most recent run matching this workflow name (runs are already ordered newest-first).
+            run=$(jq -c --arg n "$wf" '[.[] | select(.name == $n)] | first' <<< "$RUNS_JSON")
+
+            if [[ "$run" == "null" || -z "$run" ]]; then
+              echo "  [$wf] no run yet for SHA $HEAD_SHA — still queuing, waiting."
+              all_complete=false
+              continue
+            fi
+
+            status=$(jq -r '.status' <<< "$run")
+            conclusion=$(jq -r '.conclusion' <<< "$run")
+            echo "  [$wf] status=$status conclusion=$conclusion"
+
+            if [[ "$status" != "completed" ]]; then
+              all_complete=false
+              continue
+            fi
+
+            if [[ "$conclusion" == "failure" || "$conclusion" == "cancelled" ]]; then
+              failed_runs=$(jq --argjson r "$run" '. += [$r]' <<< "$failed_runs")
+            fi
+          done <<< "$EXPECTED"
+
+          if [[ "$all_complete" != "true" ]]; then
+            echo "Not all expected workflows have completed yet. Next workflow_run event will re-gate."
+            exit 0
+          fi
+
+          failed_count=$(jq 'length' <<< "$failed_runs")
+          echo "All expected workflows complete. Failed: $failed_count"
+
+          if [[ "$failed_count" -eq 0 ]]; then
+            echo "All passed — nothing to fix."
+            exit 0
+          fi
+
+          echo "proceed=true" >> "$GITHUB_OUTPUT"
+
+          failed_names=$(jq -r '[.[].name] | sort | join(", ")' <<< "$failed_runs")
+          echo "Failing: $failed_names"
+
+          # Pull the failed logs for each run so Claude sees the actual error output.
+          failure_logs=""
+          while IFS= read -r run_id; do
+            [[ -z "$run_id" ]] && continue
+            run_name=$(jq -r --arg i "$run_id" '.[] | select((.id | tostring) == $i) | .name' <<< "$failed_runs")
+            run_url=$(jq -r --arg i "$run_id" '.[] | select((.id | tostring) == $i) | .html_url' <<< "$failed_runs")
+            echo "Fetching failed logs for $run_name (run $run_id)..."
+            logs=$(gh run view "$run_id" --repo "$REPO" --log-failed 2>&1 | tail -n 500) || logs="Failed to fetch logs. View manually: $run_url"
+
+            failure_logs="${failure_logs}
+          === Failed workflow: ${run_name} (run ${run_id}) ===
+          URL: ${run_url}
+          ${logs}
+
+          "
+          done < <(jq -r '.[].id' <<< "$failed_runs")
+
+          # Random delimiters so the log body can't collide with the heredoc marker.
+          delim_s="EOF_$(openssl rand -hex 16)"
+          delim_l="EOF_$(openssl rand -hex 16)"
+          {
+            echo "failure_summary<<${delim_s}"
+            echo "Failed checks: $failed_names"
+            echo "${delim_s}"
+            echo "failure_logs<<${delim_l}"
+            echo "$failure_logs"
+            echo "${delim_l}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Generate App Token
+        if: steps.gate.outputs.proceed == 'true'
+        id: generate-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.CI_APP_ID }}
+          private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
+
+      - name: Checkout Dependabot branch
+        if: steps.gate.outputs.proceed == 'true'
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.pr.outputs.head_ref }}
+          token: ${{ steps.generate-token.outputs.token }}
+
+      - name: Set up pnpm
+        if: steps.gate.outputs.proceed == 'true'
+        uses: pnpm/action-setup@v5
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        if: steps.gate.outputs.proceed == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22.x"
+
+      - name: Install dependencies
+        if: steps.gate.outputs.proceed == 'true'
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Fix failures with Claude
+        if: steps.gate.outputs.proceed == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ steps.generate-token.outputs.token }}
+          allowed_bots: "dependabot[bot],ci-lockfile-regen[bot]"
+          prompt: |
+            You are fixing a Dependabot PR where CI checks are failing after a dependency
+            bump. The lockfile has already been regenerated. Your job is to understand what
+            changed, fix the code to work with the new dependency version, and verify the fix.
+
+            Read .claude/CLAUDE.md for project context.
+
+            ## CRITICAL RULES
+
+            1. **NEVER revert or downgrade the dependency bump.** The goal is to update our
+               code to work with the new version, not to undo the update. Do not modify
+               package.json to revert version changes. Do not run `pnpm add` to install an
+               older version. The dependency update is intentional — fix our code instead.
+            2. **Fix forward.** Adapt imports, types, configs, API calls, and test code to
+               match the new dependency version's API.
+            3. **If the fix is too complex** (would require architectural changes, design
+               decisions between multiple valid approaches, or changes where you're not
+               confident in the correctness), stop early and post a PR comment explaining
+               what a human needs to do. Do NOT attempt risky or speculative fixes.
+
+            ## Step 1: Understand the update
+
+            Parse the PR title and body to identify:
+            - Package name(s) being updated
+            - Old version → new version
+            - Whether this is a patch, minor, or major bump
+            - Scope: runtime dependency, devDependency, build tool, or type definitions
+              (check package.json — is it in `dependencies`, `devDependencies`, or `peerDependencies`?)
+
+            Dependabot title patterns:
+            - `chore(deps): bump PACKAGE from X to Y in /PATH`
+            - `chore(deps-dev): bump PACKAGE from X to Y in /PATH`
+            - `chore(deps): bump the GROUP group across N directories with M updates`
+
+            For group bumps, also read the PR body for individual package details.
+
+            ## Step 2: Research what changed
+
+            For each updated package, find out what changed between versions. Check in order:
+            1. GitHub Releases page for the package repo
+            2. CHANGELOG.md in the package repo
+            3. npm package page (npmjs.com/package/PACKAGE)
+            4. Web search for "PACKAGE changelog X to Y" or "PACKAGE migration guide vX to vY"
+
+            For each notable change found (deprecation, behavior change, renamed/removed API,
+            changed default, new required config, peer dependency change):
+            1. Grep this repository to check if we use the affected API/feature
+            2. Note specific files and line numbers where we're affected
+            3. Determine the migration path (renamed method, new import path, config change, etc.)
+
+            This cross-referencing is critical. Do NOT just summarize the changelog — verify
+            each notable change against our actual codebase.
+
+            ## Step 2b: Check migration concerns
+
+            Proactively check each of these where applicable:
+
+            **Peer dependencies**: Does the new version require peer dep updates we haven't
+            made? Check for version conflicts in `pnpm install` output or `pnpm why`.
+
+            **Type changes**: Do updated types break existing usage? Removed/renamed exports,
+            changed function signatures, narrowed types. This is especially relevant for
+            `@types/*` packages and TypeScript-first libraries.
+
+            **Config files**: Does the package have a config file in our repo (e.g., tsconfig,
+            eslint config, vitest config, oclif config in package.json)? Have config options
+            changed between versions?
+
+            **Module format**: Has the package changed its ESM/CJS module format? This repo
+            uses ESM (`"type": "module"` in package.json).
+
+            **React/bundler compatibility**: For React ecosystem packages, check for duplicate
+            React instances (a common cause of "Cannot read properties of null (reading
+            'useState')"). Use `pnpm why react` to check for multiple React versions. Fix
+            with `overrides` in package.json if needed.
+
+            **Monorepo impact**: This is a pnpm workspace monorepo with packages at
+            `packages/react-web-cli` and `examples/web-cli`. Check if the updated dependency
+            is used in multiple workspace packages and whether they all need updates.
+
+            ## Step 3: Analyse the CI failures
+
+            ${{ steps.gate.outputs.failure_summary }}
+
+            ${{ steps.gate.outputs.failure_logs }}
+
+            Cross-reference the failure logs with what you learned in Step 2. For each failure:
+            - Identify the root cause (type error, missing export, changed behavior, etc.)
+            - Map it to a specific change in the new dependency version
+            - Determine the fix
+
+            ## Step 4: Assess complexity and decide
+
+            Before making changes, assess the total scope:
+
+            **Fix it yourself** if:
+            - Type/import updates (renamed exports, changed signatures)
+            - Config file adjustments (new required options, renamed keys)
+            - API migrations with clear 1:1 mappings from changelog
+            - Test updates to match new behavior
+            - Peer dependency adjustments in package.json (adding resolutions/overrides)
+            - React/bundler duplicate-instance fixes (adding overrides to deduplicate)
+
+            **Stop and comment** if:
+            - The migration requires architectural changes or design decisions
+            - Multiple valid approaches exist and a human should choose
+            - The changelog is unclear about the migration path
+            - You're not confident the fix is correct
+
+            If stopping: post a detailed PR comment using `gh pr comment` explaining:
+            - What broke and why (with specific file:line references)
+            - What the new version changed (with links to changelog/migration guide)
+            - What a human needs to do to fix it
+            - Your recommended approach if you have one
+            Then exit without making code changes.
+
+            ## Step 5: Fix the code
+
+            If proceeding with the fix:
+
+            1. Make the minimum changes needed — do not refactor unrelated code
+            2. Fix ALL failures, not just the first one. The CI logs may show multiple
+               distinct issues
+            3. Verify your changes:
+               ```bash
+               pnpm run build
+               pnpm exec eslint .
+               pnpm test:unit
+               pnpm --filter @ably/react-web-cli test
+               ```
+            4. If verification reveals new issues, fix those too. Iterate until clean.
+            5. Commit your changes with a descriptive message explaining what was migrated
+               and why (reference the dependency version change)
+            6. Push to the current branch
+
+            ## Step 6: Post assessment comment
+
+            After fixing (or deciding to stop), post a comment on the PR using
+            `gh pr comment ${{ steps.pr.outputs.pr_number }} --repo ${{ github.repository }}`
+            with this structure:
+
+            ```
+            ## Dependabot Fix Assessment
+
+            **Package**: `name` `old` → `new` (patch/minor/major)
+            **Scope**: runtime / devDependency / build tool / type definitions
+            **Workspace**: root / packages/react-web-cli / examples/web-cli
+
+            ### What changed upstream
+            - [Key changes between versions relevant to this repo]
+            - [Link to changelog/release notes]
+
+            ### Migration concerns checked
+            - Peer dependencies: OK / [issue found]
+            - Type changes: OK / [issue found]
+            - Config files: OK / [issue found]
+            - Module format: OK / [issue found]
+            - React compatibility: OK / [issue found]
+            - Monorepo impact: OK / [issue found]
+
+            ### What broke
+            - [Failed check]: [root cause] — [file:line if applicable]
+
+            ### What was fixed
+            - [Description of each change made, or "No code changes — see below"]
+
+            ### Verification
+            - Build: ✅/❌
+            - Lint: ✅/❌
+            - Unit tests: ✅/❌
+            - Web CLI tests: ✅/❌
+
+            ### Notes for reviewer
+            - [Anything the reviewer should pay attention to, or "None"]
+            ```
+          claude_args: |
+            --max-turns 50
+            --model claude-sonnet-4-6
+            --allowedTools "Bash,Read,Write,Edit,Glob,Grep,WebSearch,WebFetch"
