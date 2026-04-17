@@ -57,18 +57,29 @@ export class TokenRefreshMiddleware {
       );
     }
 
+    const consumedRefreshToken = tokens.refreshToken;
     let newTokens: OAuthTokens;
     try {
-      newTokens = await this.oauthClient.refreshAccessToken(
-        tokens.refreshToken,
-      );
+      newTokens =
+        await this.oauthClient.refreshAccessToken(consumedRefreshToken);
     } catch (error) {
       // invalid_grant typically means another CLI invocation already rotated
-      // this refresh token, or the session was revoked server-side. Clear
-      // the dead session so subsequent commands short-circuit to "please
-      // re-login" immediately instead of re-attempting refresh.
+      // this refresh token, or the session was revoked server-side. Before
+      // clearing the session, reload the on-disk config: a concurrent peer
+      // may have just rotated the token and persisted a fresh refresh token.
+      // Clobbering that by saving our stale in-memory view would destroy a
+      // valid session, turning a single-process failure into a fleet-wide
+      // "please re-login" for every invocation.
       if (error instanceof OAuthRefreshExpiredError) {
-        this.configManager.clearOAuthSession();
+        this.configManager.reloadConfig();
+        const onDisk = this.configManager.getOAuthTokens();
+        // Only clear when disk still holds the refresh token we just tried
+        // (or the session is already gone). A different refresh token on
+        // disk means a peer rotated it successfully — their session is
+        // valid and must be preserved.
+        if (!onDisk || onDisk.refreshToken === consumedRefreshToken) {
+          this.configManager.clearOAuthSession();
+        }
         throw new TokenExpiredError(
           "OAuth session expired (the refresh token is no longer valid, possibly because another CLI invocation refreshed concurrently). Please run 'ably login' again.",
         );

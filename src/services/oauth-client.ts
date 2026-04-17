@@ -62,6 +62,8 @@ export class OAuthClient {
 
   /**
    * Request a device code from the OAuth server (RFC 8628 step 1).
+   * A 15s abort timeout prevents a silently hung endpoint from blocking
+   * `ably login` indefinitely.
    */
   async requestDeviceCode(): Promise<DeviceCodeResponse> {
     const params = new URLSearchParams({
@@ -69,11 +71,19 @@ export class OAuthClient {
       scope: this.config.scopes.join(" "),
     });
 
-    const response = await fetch(this.config.deviceCodeEndpoint, {
-      body: params.toString(),
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      method: "POST",
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
+    let response;
+    try {
+      response = await fetch(this.config.deviceCodeEndpoint, {
+        body: params.toString(),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        method: "POST",
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!response.ok) {
       const errorBody = await response.text();
@@ -115,6 +125,11 @@ export class OAuthClient {
       }
 
       let response;
+      const controller = new AbortController();
+      // Per-poll 15s timeout — without this a single hung fetch would block
+      // the outer `while (Date.now() < deadline)` guard and spin the spinner
+      // forever with no error.
+      const timeout = setTimeout(() => controller.abort(), 15_000);
       try {
         const params = new URLSearchParams({
           client_id: this.config.clientId,
@@ -126,6 +141,7 @@ export class OAuthClient {
           body: params.toString(),
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           method: "POST",
+          signal: controller.signal,
         });
         networkRetries = 0;
       } catch {
@@ -136,6 +152,8 @@ export class OAuthClient {
           );
         }
         continue;
+      } finally {
+        clearTimeout(timeout);
       }
 
       if (response.ok) {
@@ -202,18 +220,22 @@ export class OAuthClient {
       token,
     });
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10_000);
       await fetch(this.config.revocationEndpoint, {
         body: params.toString(),
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         method: "POST",
         signal: controller.signal,
       });
-      clearTimeout(timeout);
     } catch {
       // Best-effort revocation -- don't block on failure
+    } finally {
+      // Always clear the timer, even on fetch rejection, or the pending
+      // setTimeout keeps the event loop alive for up to 10s after the
+      // command has otherwise finished.
+      clearTimeout(timeout);
     }
   }
 
@@ -246,13 +268,19 @@ export class OAuthClient {
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15_000);
-    const response = await fetch(this.config.tokenEndpoint, {
-      body: body.toString(),
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      method: "POST",
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
+    let response;
+    try {
+      response = await fetch(this.config.tokenEndpoint, {
+        body: body.toString(),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        method: "POST",
+        signal: controller.signal,
+      });
+    } finally {
+      // Always clear the timer — on network/TLS failure the exception
+      // propagates past clearTimeout and the setTimeout stays pending.
+      clearTimeout(timeout);
+    }
 
     if (!response.ok) {
       const errorBody = await response.text();

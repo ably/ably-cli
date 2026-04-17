@@ -389,6 +389,10 @@ export class MockConfigManager implements ConfigManager {
     // No-op for in-memory implementation
   }
 
+  public reloadConfig(): void {
+    // No-op: in-memory mock has no on-disk state to reload.
+  }
+
   public setCurrentApp(appId: string): void {
     const currentAccount = this.getCurrentAccount();
     const currentAlias = this.getCurrentAccountAlias();
@@ -581,6 +585,13 @@ export class MockConfigManager implements ConfigManager {
       oauthSessionKey: sessionKey,
       userEmail,
     };
+
+    // Purge legacy pre-OAuth fields that the spread above may have carried
+    // over. They are inert for OAuth accounts but leave a stale plaintext
+    // token in the on-disk config.
+    delete this.config.accounts[alias].accessToken;
+    delete this.config.accounts[alias].accessTokenExpiresAt;
+    delete this.config.accounts[alias].tokenId;
 
     if (!this.config.current || !this.config.current.account) {
       this.config.current = { account: alias };
