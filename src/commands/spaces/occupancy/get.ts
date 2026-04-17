@@ -14,7 +14,7 @@ interface OccupancyMetrics {
 
 export default class SpacesOccupancyGet extends SpacesBaseCommand {
   static override args = {
-    space_name: Args.string({
+    spaceName: Args.string({
       description: "Space name to get occupancy for",
       required: true,
     }),
@@ -39,7 +39,7 @@ export default class SpacesOccupancyGet extends SpacesBaseCommand {
       const client = await this.createAblyRestClient(flags);
       if (!client) return;
 
-      const spaceName = args.space_name;
+      const spaceName = args.spaceName;
       const channelName = `${spaceName}${SPACE_CHANNEL_TAG}`;
 
       const channelDetails = await client.request(
@@ -99,7 +99,7 @@ export default class SpacesOccupancyGet extends SpacesBaseCommand {
       }
     } catch (error) {
       this.fail(error, flags, "spacesOccupancyGet", {
-        spaceName: args.space_name,
+        spaceName: args.spaceName,
       });
     }
   }

@@ -15,7 +15,7 @@ const SPACE_CHANNEL_TAG = "::$space";
 
 export default class SpacesOccupancySubscribe extends SpacesBaseCommand {
   static override args = {
-    space_name: Args.string({
+    spaceName: Args.string({
       description: "Space name to subscribe to occupancy events",
       required: true,
     }),
@@ -43,7 +43,7 @@ export default class SpacesOccupancySubscribe extends SpacesBaseCommand {
       this.client = await this.createAblyRealtimeClient(flags);
       if (!this.client) return;
 
-      const spaceName = args.space_name;
+      const spaceName = args.spaceName;
       const channelName = `${spaceName}${SPACE_CHANNEL_TAG}`;
       const occupancyEventName = "[meta]occupancy";
 
@@ -144,7 +144,7 @@ export default class SpacesOccupancySubscribe extends SpacesBaseCommand {
       await this.waitAndTrackCleanup(flags, "spacesOccupancy", flags.duration);
     } catch (error) {
       this.fail(error, flags, "spacesOccupancySubscribe", {
-        spaceName: args.space_name,
+        spaceName: args.spaceName,
       });
     }
   }

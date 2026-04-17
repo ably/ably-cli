@@ -22,7 +22,7 @@ import {
 
 export default class ChannelsHistory extends AblyBaseCommand {
   static override args = {
-    channel: Args.string({
+    channelName: Args.string({
       description: "Channel name to retrieve history for",
       required: true,
     }),
@@ -62,7 +62,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsHistory);
-    const channelName = args.channel;
+    const channelName = args.channelName;
     let client: Ably.Rest | null;
 
     try {

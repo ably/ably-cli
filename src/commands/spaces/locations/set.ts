@@ -10,7 +10,7 @@ import {
 
 export default class SpacesLocationsSet extends SpacesBaseCommand {
   static override args = {
-    space_name: Args.string({
+    spaceName: Args.string({
       description: "Name of the space to set location in",
       required: true,
     }),
@@ -36,7 +36,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocationsSet);
-    const { space_name: spaceName } = args;
+    const { spaceName } = args;
 
     const location = this.parseJsonFlag(flags.location, "location", flags);
 

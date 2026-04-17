@@ -6,7 +6,7 @@ import { formatResource } from "../../utils/output.js";
 
 export default class SpacesCreate extends SpacesBaseCommand {
   static override args = {
-    space_name: Args.string({
+    spaceName: Args.string({
       description: "Name of the space to initialize",
       required: true,
     }),
@@ -27,7 +27,7 @@ export default class SpacesCreate extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCreate);
-    const spaceName = args.space_name;
+    const spaceName = args.spaceName;
 
     try {
       this.logProgress(

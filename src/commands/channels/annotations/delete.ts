@@ -11,15 +11,15 @@ import { formatResource } from "../../../utils/output.js";
 
 export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
   static override args = {
-    channel: Args.string({
+    channelName: Args.string({
       description: "The channel name",
       required: true,
     }),
-    serial: Args.string({
+    messageSerial: Args.string({
       description: "The serial of the message to remove annotation from",
       required: true,
     }),
-    type: Args.string({
+    annotationType: Args.string({
       description:
         "The annotation type (e.g., reactions:flag.v1, reactions:multiple.v1)",
       required: true,
@@ -47,9 +47,9 @@ export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsAnnotationsDelete);
-    const channelName = args.channel;
-    const serial = args.serial;
-    const type = args.type;
+    const channelName = args.channelName;
+    const serial = args.messageSerial;
+    const type = args.annotationType;
 
     let client: Ably.Realtime | null = null;
 

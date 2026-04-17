@@ -9,6 +9,11 @@ import {
 import { displayLogo } from "./utils/logo.js";
 import { formatReleaseStatus } from "./utils/version.js";
 
+/** Convert camelCase arg name to snake_case so oclif's toUpperCase() produces UPPER_SNAKE_CASE */
+function camelToSnake(name: string): string {
+  return name.replaceAll(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+}
+
 import {
   WEB_CLI_RESTRICTED_COMMANDS,
   WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS,
@@ -390,8 +395,23 @@ export default class CustomHelp extends Help {
     // Capture the original colon-separated command ID before super.formatCommand
     // mutates it (oclif replaces ":" with the topicSeparator, which is " ")
     const originalCommandId = command.id;
-    // Use super's formatCommand
-    output = super.formatCommand(command);
+
+    // Temporarily patch arg names: camelCase → snake_case
+    // so oclif's toUpperCase() produces UPPER_SNAKE_CASE (e.g., lockId → LOCK_ID)
+    const originalArgNames: { arg: { name: string }; name: string }[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mock/test commands may have undefined args
+    for (const arg of Object.values(command.args ?? {})) {
+      originalArgNames.push({ arg, name: arg.name });
+      arg.name = camelToSnake(arg.name);
+    }
+
+    try {
+      output = super.formatCommand(command);
+    } finally {
+      for (const { arg, name } of originalArgNames) {
+        arg.name = name;
+      }
+    }
 
     // In interactive mode, remove the 'ably' prefix from usage examples
     if (process.env.ABLY_INTERACTIVE_MODE === "true") {

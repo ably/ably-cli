@@ -7,7 +7,7 @@ import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class IntegrationsDeleteCommand extends ControlBaseCommand {
   static args = {
-    integrationId: Args.string({
+    ruleId: Args.string({
       description: "The integration ID to delete",
       required: true,
     }),
@@ -39,7 +39,7 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
     try {
       const controlApi = this.createControlApi(flags);
       // Get integration details for confirmation
-      const integration = await controlApi.getRule(appId, args.integrationId);
+      const integration = await controlApi.getRule(appId, args.ruleId);
 
       // In JSON mode, require --force to prevent accidental destructive actions
       if (!flags.force && this.shouldOutputJson(flags)) {
@@ -73,7 +73,7 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
         }
       }
 
-      await controlApi.deleteRule(appId, args.integrationId);
+      await controlApi.deleteRule(appId, args.ruleId);
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(

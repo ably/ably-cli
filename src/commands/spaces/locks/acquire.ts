@@ -12,7 +12,7 @@ import {
 
 export default class SpacesLocksAcquire extends SpacesBaseCommand {
   static override args = {
-    space_name: Args.string({
+    spaceName: Args.string({
       description: "Name of the space to acquire lock in",
       required: true,
     }),
@@ -67,7 +67,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksAcquire);
-    const { space_name: spaceName } = args;
+    const { spaceName } = args;
     this.lockId = args.lockId;
     const { lockId } = this;
 

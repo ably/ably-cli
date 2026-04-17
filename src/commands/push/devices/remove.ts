@@ -8,7 +8,7 @@ import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class PushDevicesRemove extends AblyBaseCommand {
   static override args = {
-    "device-id": Args.string({
+    deviceId: Args.string({
       description: "The device ID to remove",
       required: true,
     }),
@@ -29,7 +29,7 @@ export default class PushDevicesRemove extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(PushDevicesRemove);
-    const deviceId = args["device-id"];
+    const deviceId = args.deviceId;
 
     try {
       const rest = await this.createAblyRestClient(flags as BaseFlags);

@@ -14,7 +14,7 @@ import {
 
 export default class SpacesLocksSubscribe extends SpacesBaseCommand {
   static override args = {
-    space_name: Args.string({
+    spaceName: Args.string({
       description: "Name of the space to subscribe to locks for",
       required: true,
     }),
@@ -39,7 +39,7 @@ export default class SpacesLocksSubscribe extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesLocksSubscribe);
-    const { space_name: spaceName } = args;
+    const { spaceName } = args;
 
     try {
       this.logProgress("Subscribing to lock events", flags);

@@ -6,7 +6,7 @@ import { formatLabel, formatResource } from "../../../utils/output.js";
 
 export default class RoomsOccupancyGet extends ChatBaseCommand {
   static override args = {
-    room: Args.string({
+    roomName: Args.string({
       description: "Room to get occupancy for",
       required: true,
     }),
@@ -43,7 +43,7 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
         );
       }
 
-      const { room: roomName } = args;
+      const { roomName } = args;
 
       this.room = await this.chatClient.rooms.get(roomName);
 
@@ -70,7 +70,7 @@ export default class RoomsOccupancyGet extends ChatBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags, "roomOccupancyGet", { room: args.room });
+      this.fail(error, flags, "roomOccupancyGet", { room: args.roomName });
     }
   }
 }

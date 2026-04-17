@@ -7,7 +7,7 @@ import { formatResource } from "../../utils/output.js";
 
 export default class AccountsSwitch extends ControlBaseCommand {
   static override args = {
-    alias: Args.string({
+    accountAlias: Args.string({
       description: "Alias of the account to switch to",
       required: false,
     }),
@@ -49,8 +49,8 @@ export default class AccountsSwitch extends ControlBaseCommand {
     }
 
     // If alias is provided, switch directly
-    if (args.alias) {
-      await this.switchToAccount(args.alias, accounts, flags);
+    if (args.accountAlias) {
+      await this.switchToAccount(args.accountAlias, accounts, flags);
       return;
     }
 

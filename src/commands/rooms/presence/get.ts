@@ -24,7 +24,7 @@ const chatChannelName = (roomName: string) => `${roomName}::$chat`;
 
 export default class RoomsPresenceGet extends AblyBaseCommand {
   static override args = {
-    room: Args.string({
+    roomName: Args.string({
       description: "Room to get presence members for",
       required: true,
     }),
@@ -56,7 +56,7 @@ export default class RoomsPresenceGet extends AblyBaseCommand {
       const client = await this.createAblyRestClient(flags);
       if (!client) return;
 
-      const { room: roomName } = args;
+      const { roomName } = args;
       const channelName = chatChannelName(roomName);
 
       this.logProgress(
@@ -153,7 +153,7 @@ export default class RoomsPresenceGet extends AblyBaseCommand {
       }
     } catch (error) {
       this.fail(error, flags, "roomPresenceGet", {
-        room: args.room,
+        room: args.roomName,
       });
     }
   }

@@ -23,7 +23,7 @@ import { parseTimestamp } from "../../../utils/time.js";
 
 export default class MessagesHistory extends ChatBaseCommand {
   static override args = {
-    room: Args.string({
+    roomName: Args.string({
       description: "The room to get message history from",
       required: true,
     }),
@@ -80,14 +80,14 @@ export default class MessagesHistory extends ChatBaseCommand {
         );
       }
 
-      const room = await chatClient.rooms.get(args.room);
+      const room = await chatClient.rooms.get(args.roomName);
 
       if (!this.shouldSuppressOutput(flags)) {
         if (this.shouldOutputJson(flags)) {
           this.logJsonEvent(
             {
               limit: flags.limit,
-              room: args.room,
+              room: args.roomName,
               status: "fetching",
             },
             flags,
@@ -95,7 +95,7 @@ export default class MessagesHistory extends ChatBaseCommand {
         }
 
         this.logProgress(
-          `Fetching ${flags.limit} most recent messages from room ${formatResource(args.room)}`,
+          `Fetching ${flags.limit} most recent messages from room ${formatResource(args.roomName)}`,
           flags,
         );
       }
@@ -132,7 +132,7 @@ export default class MessagesHistory extends ChatBaseCommand {
           "--start must be earlier than or equal to --end",
           flags,
           "roomMessageHistory",
-          { room: args.room },
+          { room: args.roomName },
         );
       }
 
@@ -168,7 +168,7 @@ export default class MessagesHistory extends ChatBaseCommand {
               metadata: message.metadata,
             })),
             ...(next && { next }),
-            room: args.room,
+            room: args.roomName,
           },
           flags,
         );
@@ -214,7 +214,7 @@ export default class MessagesHistory extends ChatBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "roomMessageHistory", { room: args.room });
+      this.fail(error, flags, "roomMessageHistory", { room: args.roomName });
     }
   }
 }

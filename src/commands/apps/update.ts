@@ -5,7 +5,7 @@ import { formatLabel, formatResource } from "../../utils/output.js";
 
 export default class AppsUpdateCommand extends ControlBaseCommand {
   static args = {
-    id: Args.string({
+    appId: Args.string({
       description: "App ID to update",
       required: true,
     }),
@@ -44,13 +44,13 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
         "At least one update parameter (--name or --tls-only) must be provided",
         flags,
         "appUpdate",
-        { appId: args.id },
+        { appId: args.appId },
       );
     }
 
     try {
       const controlApi = this.createControlApi(flags);
-      this.logProgress(`Updating app ${formatResource(args.id)}`, flags);
+      this.logProgress(`Updating app ${formatResource(args.appId)}`, flags);
 
       const updateData: { name?: string; tlsOnly?: boolean } = {};
 
@@ -62,7 +62,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
         updateData.tlsOnly = flags["tls-only"];
       }
 
-      const app = await controlApi.updateApp(args.id, updateData);
+      const app = await controlApi.updateApp(args.appId, updateData);
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
@@ -101,7 +101,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
       this.logSuccessMessage("App updated successfully.", flags);
     } catch (error) {
       this.fail(error, flags, "appUpdate", {
-        appId: args.id,
+        appId: args.appId,
       });
     }
   }

@@ -6,7 +6,7 @@ import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class AccountsLogout extends ControlBaseCommand {
   static override args = {
-    alias: Args.string({
+    accountAlias: Args.string({
       description:
         "Alias of the account to log out from (defaults to current account)",
       required: false,
@@ -32,7 +32,7 @@ export default class AccountsLogout extends ControlBaseCommand {
 
     // Determine which account to log out from
     const targetAlias =
-      args.alias || this.configManager.getCurrentAccountAlias();
+      args.accountAlias || this.configManager.getCurrentAccountAlias();
 
     if (!targetAlias) {
       this.fail(

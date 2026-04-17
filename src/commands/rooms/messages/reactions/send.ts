@@ -9,7 +9,7 @@ import { REACTION_TYPE_MAP } from "../../../../utils/chat-constants.js";
 
 export default class MessagesReactionsSend extends ChatBaseCommand {
   static override args = {
-    room: Args.string({
+    roomName: Args.string({
       description: "The room where the message is located",
       required: true,
     }),
@@ -50,7 +50,7 @@ export default class MessagesReactionsSend extends ChatBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesReactionsSend);
-    const { room, messageSerial, reaction } = args;
+    const { roomName: room, messageSerial, reaction } = args;
 
     try {
       // Validate count for Multiple type

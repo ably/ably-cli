@@ -8,7 +8,7 @@ import { formatResource } from "../../../utils/output.js";
 
 export default class RoomsReactionsSend extends ChatBaseCommand {
   static override args = {
-    room: Args.string({
+    roomName: Args.string({
       description: "The room to send the reaction to",
       required: true,
     }),
@@ -42,7 +42,7 @@ export default class RoomsReactionsSend extends ChatBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsReactionsSend);
-    const { room: roomName, emoji } = args;
+    const { roomName, emoji } = args;
 
     try {
       // Parse metadata if provided

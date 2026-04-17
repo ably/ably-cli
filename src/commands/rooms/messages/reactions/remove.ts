@@ -8,7 +8,7 @@ import { REACTION_TYPE_MAP } from "../../../../utils/chat-constants.js";
 
 export default class MessagesReactionsRemove extends ChatBaseCommand {
   static override args = {
-    room: Args.string({
+    roomName: Args.string({
       description: "The room where the message is located",
       required: true,
     }),
@@ -43,7 +43,7 @@ export default class MessagesReactionsRemove extends ChatBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesReactionsRemove);
-    const { room, messageSerial, reaction } = args;
+    const { roomName: room, messageSerial, reaction } = args;
 
     try {
       // Create Chat client

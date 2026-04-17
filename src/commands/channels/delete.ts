@@ -7,11 +7,11 @@ import { formatResource } from "../../utils/output.js";
 
 export default class ChannelsDelete extends AblyBaseCommand {
   static override args = {
-    channel: Args.string({
+    channelName: Args.string({
       description: "The channel name",
       required: true,
     }),
-    serial: Args.string({
+    messageSerial: Args.string({
       description: "The serial of the message to delete",
       required: true,
     }),
@@ -36,8 +36,8 @@ export default class ChannelsDelete extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsDelete);
-    const channelName = args.channel;
-    const serial = args.serial;
+    const channelName = args.channelName;
+    const serial = args.messageSerial;
 
     try {
       const rest = await this.createAblyRestClient(flags);

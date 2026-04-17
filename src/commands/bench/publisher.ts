@@ -38,7 +38,7 @@ interface PublisherFlags {
 }
 
 interface PublisherArgs {
-  channel: string;
+  channelName: string;
 }
 
 // Interface for message payload
@@ -54,7 +54,7 @@ interface BenchmarkPayload {
 
 export default class BenchPublisher extends AblyBaseCommand {
   static override args = {
-    channel: Args.string({
+    channelName: Args.string({
       description: "The channel name to publish to",
       required: true,
     }),
@@ -162,7 +162,9 @@ export default class BenchPublisher extends AblyBaseCommand {
     };
 
     try {
-      channel = client.channels.get(args.channel, { params: { rewind: "1" } });
+      channel = client.channels.get(args.channelName, {
+        params: { rewind: "1" },
+      });
 
       // Set up channel state logging
       this.setupChannelStateLogging(channel, flags, {
@@ -174,7 +176,7 @@ export default class BenchPublisher extends AblyBaseCommand {
         metrics,
         messageTracking,
         flags,
-        args.channel,
+        args.channelName,
       );
 
       await this.enterPresence(
@@ -496,7 +498,7 @@ export default class BenchPublisher extends AblyBaseCommand {
 
     const summaryData = {
       actualRateMsgsPerSec: avgRate,
-      channel: args.channel,
+      channel: args.channelName,
       echoLatencyAvgMs: avgEchoLatency,
       echoLatencyP50Ms: echoP50,
       echoLatencyP90Ms: echoP90,
@@ -536,7 +538,7 @@ export default class BenchPublisher extends AblyBaseCommand {
       });
       summaryTable.push(
         ["Test ID", testId],
-        ["Channel", args.channel],
+        ["Channel", args.channelName],
         ["Transport", flags.transport],
         ["Messages sent", `${metrics.messagesSent}/${messageCount}`],
         [

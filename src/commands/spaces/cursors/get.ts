@@ -16,7 +16,7 @@ import {
 
 export default class SpacesCursorsGet extends SpacesBaseCommand {
   static override args = {
-    space_name: Args.string({
+    spaceName: Args.string({
       description: "Name of the space to get cursors from",
       required: true,
     }),
@@ -36,7 +36,7 @@ export default class SpacesCursorsGet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsGet);
-    const { space_name: spaceName } = args;
+    const { spaceName } = args;
 
     try {
       await this.initializeSpace(flags, spaceName, {
