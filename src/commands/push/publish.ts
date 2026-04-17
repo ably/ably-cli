@@ -5,6 +5,7 @@ import * as path from "node:path";
 import { AblyBaseCommand } from "../../base-command.js";
 import { forceFlag, productApiFlags } from "../../flags.js";
 import { BaseFlags } from "../../types/cli.js";
+import { prepareMessageFromInput } from "../../utils/message.js";
 import { formatResource } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
@@ -25,6 +26,7 @@ export default class PushPublish extends AblyBaseCommand {
     "<%= config.bin %> <%= command.id %> --channel my-channel --payload ./notification.json",
     "<%= config.bin %> <%= command.id %> --channel my-channel --title Hello --body World --message 'Hello from push'",
     '<%= config.bin %> <%= command.id %> --channel my-channel --title Hello --body World --message \'{"event":"push","text":"Hello"}\'',
+    '<%= config.bin %> <%= command.id %> --channel my-channel --title Hello --body World --message \'{"name":"alert","data":"Server down"}\'',
     '<%= config.bin %> <%= command.id %> --recipient \'{"transportType":"apns","deviceToken":"token123"}\' --title Hello --body World',
     "<%= config.bin %> <%= command.id %> --device-id device-123 --title Hello --body World --json",
   ];
@@ -49,7 +51,7 @@ export default class PushPublish extends AblyBaseCommand {
     }),
     message: Flags.string({
       description:
-        "Realtime message data to include alongside the push notification (only applies when publishing via --channel)",
+        'Realtime message to include alongside the push notification. Accepts plain text, JSON data, or a full message object ({"name":...,"data":...,"extras":...}). Only applies when publishing via --channel.',
     }),
     title: Flags.string({
       description: "Notification title",
@@ -277,16 +279,31 @@ export default class PushPublish extends AblyBaseCommand {
           }
         }
 
-        const publishMessage: Record<string, unknown> = {
-          extras: { push: payload },
-        };
+        const publishMessage: Record<string, unknown> = {};
+        let userExtras: Record<string, unknown> | undefined;
+
         if (flags.message) {
-          try {
-            publishMessage.data = JSON.parse(flags.message);
-          } catch {
-            publishMessage.data = flags.message;
+          const parsed = prepareMessageFromInput(flags.message, flags);
+          if (
+            parsed.extras &&
+            (parsed.extras as Record<string, unknown>).push !== undefined
+          ) {
+            this.fail(
+              "--message must not include extras.push; use the push flags (--title/--body/--payload/etc.) to specify push content",
+              flags as BaseFlags,
+              "pushPublish",
+            );
+          }
+          if (parsed.name !== undefined) publishMessage.name = parsed.name;
+          if (parsed.data !== undefined) publishMessage.data = parsed.data;
+          if (parsed.extras) {
+            userExtras = parsed.extras as Record<string, unknown>;
           }
         }
+
+        publishMessage.extras = userExtras
+          ? { ...userExtras, push: payload }
+          : { push: payload };
 
         await rest.channels.get(channelName).publish(publishMessage);
 
@@ -296,7 +313,12 @@ export default class PushPublish extends AblyBaseCommand {
               notification: {
                 published: true,
                 channel: channelName,
-                ...(flags.message ? { messageData: publishMessage.data } : {}),
+                ...(publishMessage.data === undefined
+                  ? {}
+                  : { messageData: publishMessage.data }),
+                ...(publishMessage.name === undefined
+                  ? {}
+                  : { messageName: publishMessage.name }),
               },
             },
             flags,
