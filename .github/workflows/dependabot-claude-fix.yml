@@ -23,7 +23,7 @@ on:
 
 permissions:
   actions: read
-  checks: read
+  checks: write
   contents: write
   pull-requests: write
 
@@ -258,6 +258,32 @@ jobs:
             echo "${delim_l}"
           } >> "$GITHUB_OUTPUT"
 
+      # Create a check run on the PR's HEAD SHA so the fix job is visible in
+      # the PR checks list. workflow_run-triggered runs are otherwise attached
+      # to the default branch, not the PR, so nothing shows up in the PR UI
+      # until we emit an explicit check run.
+      - name: Open in-progress check on PR head SHA
+        id: check-run
+        if: steps.gate.outputs.proceed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          FAILED_SUMMARY: ${{ steps.gate.outputs.failure_summary }}
+        run: |
+          set -euo pipefail
+          CHECK_ID=$(gh api -X POST "repos/$REPO/check-runs" \
+            -f name="Fix Dependabot PRs" \
+            -f head_sha="$HEAD_SHA" \
+            -f status=in_progress \
+            -f details_url="$RUN_URL" \
+            -f "output[title]=Analysing CI failures and preparing fix" \
+            -f "output[summary]=${FAILED_SUMMARY:-Gathering failure logs...}" \
+            --jq '.id')
+          echo "id=$CHECK_ID" >> "$GITHUB_OUTPUT"
+          echo "Opened check run $CHECK_ID on $HEAD_SHA"
+
       - name: Generate App Token
         if: steps.gate.outputs.proceed == 'true'
         id: generate-token
@@ -290,6 +316,7 @@ jobs:
         run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Fix failures with Claude
+        id: claude
         if: steps.gate.outputs.proceed == 'true'
         uses: anthropics/claude-code-action@v1
         with:
@@ -475,3 +502,51 @@ jobs:
             --max-turns 50
             --model claude-sonnet-4-6
             --allowedTools "Bash,Read,Write,Edit,Glob,Grep,WebSearch,WebFetch"
+
+      # Close out the check run we opened above. Runs even if a prior step
+      # failed or the job was cancelled, so the PR's checks list never shows
+      # a perpetually-in-progress row.
+      - name: Close check run
+        if: always() && steps.check-run.outputs.id != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          CHECK_ID: ${{ steps.check-run.outputs.id }}
+          CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          case "$CLAUDE_OUTCOME" in
+            success)
+              CONCLUSION=success
+              TITLE="Claude finished"
+              SUMMARY="See the PR comment for the fix assessment, or the [run logs]($RUN_URL) for full detail."
+              ;;
+            failure)
+              CONCLUSION=failure
+              TITLE="Fix step errored"
+              SUMMARY="The Claude step failed. Check the [run logs]($RUN_URL)."
+              ;;
+            cancelled)
+              CONCLUSION=cancelled
+              TITLE="Cancelled"
+              SUMMARY="The fix run was cancelled, usually because a newer workflow_run event superseded it."
+              ;;
+            *)
+              # Any other state (e.g. skipped because the Claude step's own
+              # `if:` evaluated to false) shouldn't really happen once the
+              # gate proceeded, but emit a neutral conclusion to keep the
+              # check row meaningful.
+              CONCLUSION=neutral
+              TITLE="No fix applied"
+              SUMMARY="Gate opened but the Claude step did not run. See [run logs]($RUN_URL)."
+              ;;
+          esac
+
+          gh api -X PATCH "repos/$REPO/check-runs/$CHECK_ID" \
+            -f status=completed \
+            -f conclusion="$CONCLUSION" \
+            -f "output[title]=$TITLE" \
+            -f "output[summary]=$SUMMARY" \
+            > /dev/null
+          echo "Closed check $CHECK_ID with conclusion=$CONCLUSION"
