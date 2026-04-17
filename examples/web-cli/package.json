@@ -33,7 +33,7 @@
     "postcss": "^8.5.9",
     "tailwindcss": "^4.2.2",
     "typescript": "~5.9.3",
-    "typescript-eslint": "^8.58.1",
+    "typescript-eslint": "^8.58.2",
     "vite": "^8.0.8",
     "vite-tsconfig-paths": "^6.1.1"
   }
