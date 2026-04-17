@@ -288,7 +288,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.wait-for-checks.outputs.failed_count > 0
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Fix failures with Claude
         if: steps.wait-for-checks.outputs.failed_count > 0
