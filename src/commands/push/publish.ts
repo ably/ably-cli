@@ -26,7 +26,7 @@ export default class PushPublish extends AblyBaseCommand {
     "<%= config.bin %> <%= command.id %> --channel my-channel --payload ./notification.json",
     "<%= config.bin %> <%= command.id %> --channel my-channel --title Hello --body World --message 'Hello from push'",
     '<%= config.bin %> <%= command.id %> --channel my-channel --title Hello --body World --message \'{"event":"push","text":"Hello"}\'',
-    '<%= config.bin %> <%= command.id %> --channel my-channel --title Hello --body World --message \'{"name":"alert","data":"Server down"}\'',
+    '<%= config.bin %> <%= command.id %> --channel my-channel --title Hello --body World --message \'{"name":"greeting","data":"Welcome back"}\'',
     '<%= config.bin %> <%= command.id %> --recipient \'{"transportType":"apns","deviceToken":"token123"}\' --title Hello --body World',
     "<%= config.bin %> <%= command.id %> --device-id device-123 --title Hello --body World --json",
   ];
