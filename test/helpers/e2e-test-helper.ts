@@ -425,11 +425,13 @@ async function attemptProcessStart(
           // Also check for common error patterns that indicate immediate failure
           // Note: We need to be careful about false positives. The channel subscribe command
           // outputs legitimate error messages like "✗ Failed to attach to channel" during
-          // normal operation when testing error scenarios.
-          const criticalErrors = [
+          // normal operation when testing error scenarios. Numeric HTTP status codes use
+          // word boundaries so they don't false-match substrings inside random UUIDs
+          // (e.g. a channel name like "subscribe-test-...ee745401c274" contains "401").
+          const criticalErrors: (string | RegExp)[] = [
             "authentication failed",
-            "401",
-            "403",
+            /\b401\b/,
+            /\b403\b/,
             "Command failed",
             "ENOENT",
             "Cannot find module",
@@ -440,8 +442,10 @@ async function attemptProcessStart(
           ];
 
           // Check for critical errors that indicate the process can't continue
-          const hasCriticalError = criticalErrors.some((error) =>
-            output.includes(error),
+          const hasCriticalError = criticalErrors.some((pattern) =>
+            typeof pattern === "string"
+              ? output.includes(pattern)
+              : pattern.test(output),
           );
 
           // For generic "Error:" or "error:", only fail if we haven't seen the ready signal yet
