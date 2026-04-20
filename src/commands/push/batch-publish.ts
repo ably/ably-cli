@@ -7,6 +7,7 @@ import { CommandError } from "../../errors/command-error.js";
 import { forceFlag, productApiFlags } from "../../flags.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 import { BaseFlags } from "../../types/cli.js";
+import { prepareMessageFromInput } from "../../utils/message.js";
 import { formatCountLabel, formatResource } from "../../utils/output.js";
 
 interface BatchResponseItem {
@@ -45,6 +46,11 @@ export default class PushBatchPublish extends AblyBaseCommand {
         '<%= config.bin %> <%= command.id %> \'[{"channels":["my-channel"],"payload":{"notification":{"title":"Hello","body":"World"}}}]\' --force',
     },
     {
+      description: "Publish to a channel with an accompanying realtime message",
+      command:
+        '<%= config.bin %> <%= command.id %> \'[{"channels":["my-channel"],"payload":{"notification":{"title":"Hello","body":"World"}},"message":"Hello from push"}]\' --force',
+    },
+    {
       description: "Publish to multiple channels in one batch item",
       command:
         '<%= config.bin %> <%= command.id %> \'[{"channels":["channel-1","channel-2"],"payload":{"notification":{"title":"Alert","body":"Message"}}}]\' --force',
@@ -73,7 +79,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
   static override args = {
     payload: Args.string({
       description:
-        'Batch payload as JSON array, filepath, or - for stdin. Each item must have either a "recipient" or "channels" key. Items with "channels" are routed via channel batch publish with the payload wrapped in extras.push',
+        'Batch payload as JSON array, filepath, or - for stdin. Each item must have either a "recipient" or "channels" key. Items with "channels" are routed via channel batch publish with the payload wrapped in extras.push. Channel items may include an optional "message" field with realtime message data (string or JSON) to publish alongside the push notification.',
     }),
   };
 
@@ -246,7 +252,18 @@ export default class PushBatchPublish extends AblyBaseCommand {
           "/push/batch/publish",
           2,
           null,
-          recipientItems.map(({ entry }) => entry),
+          recipientItems.map(({ entry, originalIndex }) => {
+            if (entry.message !== undefined) {
+              this.logWarning(
+                `Item at index ${originalIndex}: "message" is not applicable for recipient-based push and will be ignored`,
+                flags as BaseFlags,
+              );
+              const sanitized = { ...entry };
+              delete sanitized.message;
+              return sanitized;
+            }
+            return entry;
+          }),
         );
 
         if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -292,12 +309,45 @@ export default class PushBatchPublish extends AblyBaseCommand {
 
       // Channel-based push: route to /messages with extras.push
       if (channelItems.length > 0) {
-        const channelBatchSpecs = channelItems.map(({ entry }) => ({
-          channels: entry.channels,
-          messages: {
-            extras: { push: entry.payload },
+        const channelBatchSpecs = channelItems.map(
+          ({ entry, originalIndex }) => {
+            let extras: Record<string, unknown> = { push: entry.payload };
+            const messageObj: Record<string, unknown> = {};
+
+            if (entry.message !== undefined) {
+              const parsed = prepareMessageFromInput(
+                JSON.stringify(entry.message),
+                {},
+              );
+              const parsedExtras = parsed.extras as
+                | Record<string, unknown>
+                | undefined;
+
+              if (
+                parsedExtras &&
+                Object.prototype.hasOwnProperty.call(parsedExtras, "push")
+              ) {
+                this.fail(
+                  `Item at index ${originalIndex}: message must not include extras.push; use the payload field to specify push content`,
+                  flags as BaseFlags,
+                  "pushBatchPublish",
+                );
+              }
+
+              if (parsed.name !== undefined) messageObj.name = parsed.name;
+              if (parsed.data !== undefined) messageObj.data = parsed.data;
+              if (parsedExtras) {
+                extras = { ...parsedExtras, push: entry.payload };
+              }
+            }
+
+            messageObj.extras = extras;
+            return {
+              channels: entry.channels,
+              messages: messageObj,
+            };
           },
-        }));
+        );
 
         if (!flags.force && this.shouldOutputJson(flags)) {
           this.fail(
