@@ -4,7 +4,7 @@ import inquirer from "inquirer";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { endpointFlag } from "../../flags.js";
-import { ControlApi, type AccountSummary } from "../../services/control-api.js";
+import { type AccountSummary } from "../../services/control-api.js";
 import { formatResource } from "../../utils/output.js";
 import { pickUniqueAlias, slugifyAccountName } from "../../utils/slugify.js";
 
@@ -93,19 +93,11 @@ export default class AccountsSwitch extends ControlBaseCommand {
   ): Promise<boolean> {
     const currentAlias = this.configManager.getCurrentAccountAlias();
 
-    // Try to fetch remote accounts using the current token
+    // Try to fetch remote accounts using the current token.
     let remoteAccounts: AccountSummary[] = [];
-    const accessToken = this.configManager.getAccessToken();
-    if (accessToken) {
+    if (this.configManager.getAccessToken()) {
       try {
-        const currentAccount = this.configManager.getCurrentAccount();
-        const controlHost =
-          (flags["control-host"] as string | undefined) ||
-          currentAccount?.controlHost;
-        const controlApi = new ControlApi({
-          accessToken,
-          controlHost,
-        });
+        const controlApi = this.createControlApi(flags);
         remoteAccounts = await controlApi.getAccounts();
       } catch {
         // Couldn't fetch remote accounts — fall back to local only
@@ -291,21 +283,9 @@ export default class AccountsSwitch extends ControlBaseCommand {
       this.configManager.storeEndpoint(flags.endpoint as string);
     }
 
-    // Verify the account is valid by making an API call
+    // Verify the account is valid by making an API call.
     try {
-      const accessToken = this.configManager.getAccessToken();
-      if (!accessToken) {
-        this.fail(
-          "No access token found for this account. Please log in again.",
-          flags,
-          "accountSwitch",
-        );
-      }
-
-      const controlApi = new ControlApi({
-        accessToken,
-        controlHost: flags["control-host"] as string | undefined,
-      });
+      const controlApi = this.createControlApi(flags);
 
       const { account, user } = await controlApi.getMe();
 
