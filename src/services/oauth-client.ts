@@ -167,44 +167,37 @@ export class OAuthClient {
         return this.parseTokenResponse(data);
       }
 
-      // Handle rate limiting before attempting to parse the error body. An
-      // OAuth-compliant server would return error=slow_down, but the current
-      // website reuses the Control API error envelope for 429s, so we bail
-      // out to backoff on status alone and don't depend on a specific shape.
-      if (response.status === 429) {
-        currentInterval = Math.min(currentInterval * 2, 30);
-        // Best-effort consume body so the socket can be released even if the
-        // server wrote one; failures here are irrelevant.
-        try {
-          await response.text();
-        } catch {
-          // ignore
+      const { code, description } = await parseOAuthError(response);
+
+      switch (code) {
+        case "authorization_pending": {
+          continue;
         }
-        continue;
+        case "slow_down": {
+          currentInterval += 5;
+          continue;
+        }
+        case "rate_limited": {
+          // Honour server-supplied Retry-After; fall back to exponential
+          // backoff capped at 30s if the header is missing or unparseable.
+          const retryAfter = Number(response.headers.get("retry-after"));
+          currentInterval =
+            Number.isFinite(retryAfter) && retryAfter > 0
+              ? Math.min(retryAfter, 60)
+              : Math.min(currentInterval * 2, 30);
+          continue;
+        }
+        case "expired_token": {
+          throw new Error("Device code expired");
+        }
+        case "access_denied": {
+          throw new Error("Authorization denied");
+        }
+        default: {
+          const reason = description ?? code ?? `HTTP ${response.status}`;
+          throw new Error(`Token polling failed: ${reason}`);
+        }
       }
-
-      const { code: errorCode, message: errorMessage } =
-        await parsePollingError(response);
-
-      if (errorCode === "authorization_pending") {
-        continue;
-      }
-
-      if (errorCode === "slow_down") {
-        currentInterval += 5;
-        continue;
-      }
-
-      if (errorCode === "expired_token") {
-        throw new Error("Device code expired");
-      }
-
-      if (errorCode === "access_denied") {
-        throw new Error("Authorization denied");
-      }
-
-      const reason = errorMessage ?? errorCode ?? `HTTP ${response.status}`;
-      throw new Error(`Token polling failed: ${reason}`);
     }
 
     throw new Error("Device code expired");
@@ -328,27 +321,17 @@ export class OAuthClient {
     }
 
     if (!response.ok) {
-      const errorBody = await response.text();
+      const { code, description } = await parseOAuthError(response);
       // Detect invalid_grant on refresh: the refresh token is gone (revoked,
       // rotated by a concurrent refresh, or otherwise expired). Surface this
-      // as a typed error so callers can prompt the user to re-login instead
-      // of showing a raw HTTP error body.
-      if (params.grant_type === "refresh_token") {
-        let oauthError: string | undefined;
-        try {
-          oauthError = (JSON.parse(errorBody) as { error?: string }).error;
-        } catch {
-          // Non-JSON body — fall through to generic error.
-        }
-        if (oauthError === "invalid_grant") {
-          throw new OAuthRefreshExpiredError(
-            "OAuth refresh token is no longer valid. Please run 'ably login' again.",
-          );
-        }
+      // as a typed error so callers can prompt the user to re-login.
+      if (params.grant_type === "refresh_token" && code === "invalid_grant") {
+        throw new OAuthRefreshExpiredError(
+          "OAuth refresh token is no longer valid. Please run 'ably login' again.",
+        );
       }
-      throw new Error(
-        `${operationName} failed (${response.status}): ${errorBody}`,
-      );
+      const reason = description ?? code ?? `HTTP ${response.status}`;
+      throw new Error(`${operationName} failed: ${reason}`);
     }
 
     const data = (await response.json()) as Record<string, unknown>;
@@ -393,53 +376,23 @@ export class OAuthClient {
 }
 
 /**
- * Extract an error code + human message from a polling-endpoint error body.
- *
- * The OAuth-compliant shape per RFC 6749 §5.2 is `{error: "slow_down"}` with
- * an optional `error_description`. The website currently does NOT use this
- * shape for non-OAuth-specific failures (rate limits, 404s, etc.); it reuses
- * the Control API envelope `{error: {message, statusCode}}`. Observed in
- * practice: `statusCode` is a string (e.g. "429") and there is no `code`
- * field — but we still read `code` defensively in case the website is later
- * brought into line with the Control API's documented shape
- * `{error: {code, message, statusCode}}`.
- *
- * Never throws — parse failures degrade to undefined.
+ * Parse an RFC 6749 §5.2 OAuth error body: `{error: "<code>",
+ * error_description?: "<human>"}`. Never throws — a non-JSON or unexpected
+ * body degrades to `{}` so callers fall through to their HTTP-status fallback.
  */
-async function parsePollingError(
+async function parseOAuthError(
   response: FetchResponse,
-): Promise<{ code?: string; message?: string }> {
-  let errorData: Record<string, unknown>;
+): Promise<{ code?: string; description?: string }> {
   try {
-    errorData = (await response.json()) as Record<string, unknown>;
+    const data = (await response.json()) as Record<string, unknown>;
+    return {
+      code: typeof data.error === "string" ? data.error : undefined,
+      description:
+        typeof data.error_description === "string"
+          ? data.error_description
+          : undefined,
+    };
   } catch {
     return {};
   }
-
-  const raw = errorData.error;
-  if (typeof raw === "string") {
-    return {
-      code: raw,
-      message:
-        typeof errorData.error_description === "string"
-          ? errorData.error_description
-          : undefined,
-    };
-  }
-
-  if (raw && typeof raw === "object") {
-    const nested = raw as Record<string, unknown>;
-    const stringify = (v: unknown) =>
-      typeof v === "string" ? v : typeof v === "number" ? String(v) : undefined;
-    // Prefer `code` if the website ever emits it, then fall back to
-    // `statusCode` (what it actually emits today).
-    const code = stringify(nested.code) ?? stringify(nested.statusCode);
-    const message =
-      typeof nested.message === "string" ? nested.message : undefined;
-    return { code, message };
-  }
-
-  const topLevelMessage =
-    typeof errorData.message === "string" ? errorData.message : undefined;
-  return { message: topLevelMessage };
 }

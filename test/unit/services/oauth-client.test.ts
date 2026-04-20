@@ -255,14 +255,42 @@ describe("OAuthClient", () => {
       expect(tokens.expiresAt).toBeGreaterThan(Date.now());
     });
 
-    it("throws on non-200 response with status and body", async () => {
+    it("throws OAuthRefreshExpiredError on invalid_grant", async () => {
       const client = new OAuthClient();
 
-      nock("https://ably.com").post("/oauth/token").reply(401, "invalid_grant");
+      nock("https://ably.com").post("/oauth/token").reply(400, {
+        error: "invalid_grant",
+        error_description: "The refresh token is invalid.",
+      });
 
       await expect(
         client.refreshAccessToken("bad_refresh_token"),
-      ).rejects.toThrow("Token refresh failed (401): invalid_grant");
+      ).rejects.toThrow(/OAuth refresh token is no longer valid/);
+    });
+
+    it("surfaces error_description on other OAuth errors", async () => {
+      const client = new OAuthClient();
+
+      nock("https://ably.com").post("/oauth/token").reply(400, {
+        error: "invalid_request",
+        error_description: "The refresh_token parameter is missing.",
+      });
+
+      await expect(
+        client.refreshAccessToken("bad_refresh_token"),
+      ).rejects.toThrow(
+        /Token refresh failed: The refresh_token parameter is missing\./,
+      );
+    });
+
+    it("falls back to HTTP status when body is unparseable", async () => {
+      const client = new OAuthClient();
+
+      nock("https://ably.com").post("/oauth/token").reply(500, "upstream down");
+
+      await expect(
+        client.refreshAccessToken("bad_refresh_token"),
+      ).rejects.toThrow(/Token refresh failed: HTTP 500/);
     });
 
     it("sends correct form-encoded body", async () => {
@@ -370,18 +398,20 @@ describe("OAuthClient", () => {
   });
 
   describe("pollForToken error handling", () => {
-    it("backs off on HTTP 429 and eventually succeeds", async () => {
+    it("backs off on rate_limited (429) and eventually succeeds", async () => {
       const client = new OAuthClient();
 
-      // First call: 429 with the Control-API envelope the website actually
-      // returns (no `code`, `statusCode` is a string).
-      nock("https://ably.com")
-        .post("/oauth/token")
-        .reply(429, {
-          error: { message: "Too many requests.", statusCode: "429" },
-        });
+      // First call: 429 with RFC 6749 §5.2 flat body + Retry-After header,
+      // matching what the website now emits (see website PR #7962).
+      nock("https://ably.com").post("/oauth/token").reply(
+        429,
+        {
+          error: "rate_limited",
+          error_description: "Rate limit exceeded. Retry after 1 second.",
+        },
+        { "Retry-After": "1" },
+      );
 
-      // Second call: success
       nock("https://ably.com").post("/oauth/token").reply(200, {
         access_token: "at_after_429",
         expires_in: 3600,
@@ -393,56 +423,41 @@ describe("OAuthClient", () => {
       expect(tokens.accessToken).toBe("at_after_429");
     }, 15_000);
 
-    it("surfaces the message from the Control-API-style envelope", async () => {
-      // Mirrors the real shape observed at https://ably.com/oauth/token:
-      // {error: {message, statusCode: "<string>"}}. No `code` field.
+    it("surfaces error_description on unknown error codes", async () => {
       const client = new OAuthClient();
 
-      nock("https://ably.com")
-        .post("/oauth/token")
-        .reply(404, {
-          error: {
-            message: "This resource could not be found.",
-            statusCode: "404",
-          },
-        });
+      nock("https://ably.com").post("/oauth/token").reply(400, {
+        error: "invalid_request",
+        error_description: "The device_code parameter is malformed.",
+      });
 
       await expect(client.pollForToken("dc_obj", 0.01, 10)).rejects.toThrow(
-        /Token polling failed: This resource could not be found\./,
+        /Token polling failed: The device_code parameter is malformed\./,
       );
     });
 
-    it("surfaces a message when the envelope includes a `code` field", async () => {
-      // Defensive: if the website is ever brought in line with the documented
-      // Control API shape (`{error: {code, message, statusCode}}`), we should
-      // still extract the message.
+    it("falls back to the error code when no description is provided", async () => {
       const client = new OAuthClient();
 
       nock("https://ably.com")
         .post("/oauth/token")
-        .reply(400, {
-          error: {
-            code: "40000",
-            message: "Invalid device code",
-            statusCode: 400,
-          },
-        });
+        .reply(400, { error: "invalid_request" });
 
       await expect(client.pollForToken("dc_obj", 0.01, 10)).rejects.toThrow(
-        /Token polling failed: Invalid device code/,
+        /Token polling failed: invalid_request/,
       );
     });
 
-    it("does not render [object Object] when error is an unknown object", async () => {
+    it("falls back to HTTP status when the body is not parseable", async () => {
       const client = new OAuthClient();
 
       nock("https://ably.com")
         .post("/oauth/token")
-        .reply(400, { error: { something: "weird" } });
+        .reply(500, "<html>upstream error</html>");
 
-      await expect(
-        client.pollForToken("dc_obj2", 0.01, 10),
-      ).rejects.not.toThrow(/\[object Object\]/);
+      await expect(client.pollForToken("dc_obj", 0.01, 10)).rejects.toThrow(
+        /Token polling failed: HTTP 500/,
+      );
     });
   });
 });
