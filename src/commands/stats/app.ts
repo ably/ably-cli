@@ -7,7 +7,7 @@ import { formatResource } from "../../utils/output.js";
 
 export default class StatsAppCommand extends StatsBaseCommand {
   static args = {
-    id: Args.string({
+    appId: Args.string({
       description: "App ID to get stats for (uses default app if not provided)",
       required: false,
     }),
@@ -49,7 +49,7 @@ export default class StatsAppCommand extends StatsBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(StatsAppCommand);
 
-    this.appId = args.id || this.configManager.getCurrentAppId() || "";
+    this.appId = args.appId || this.configManager.getCurrentAppId() || "";
     if (!this.appId) {
       this.fail(
         'No app ID provided and no default app selected. Please specify an app ID or select a default app with "ably apps switch".',

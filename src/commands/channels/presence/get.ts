@@ -20,7 +20,7 @@ import {
 
 export default class ChannelsPresenceGet extends AblyBaseCommand {
   static override args = {
-    channel: Args.string({
+    channelName: Args.string({
       description: "Channel name to get presence members for",
       required: true,
     }),
@@ -51,7 +51,7 @@ export default class ChannelsPresenceGet extends AblyBaseCommand {
       const client = await this.createAblyRestClient(flags);
       if (!client) return;
 
-      const channelName = args.channel;
+      const channelName = args.channelName;
 
       this.logProgress(
         `Fetching presence members for channel: ${formatResource(channelName)}`,
@@ -148,7 +148,7 @@ export default class ChannelsPresenceGet extends AblyBaseCommand {
       }
     } catch (error) {
       this.fail(error, flags, "presenceGet", {
-        channel: args.channel,
+        channel: args.channelName,
       });
     }
   }

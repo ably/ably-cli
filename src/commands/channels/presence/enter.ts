@@ -15,7 +15,7 @@ import {
 
 export default class ChannelsPresenceEnter extends AblyBaseCommand {
   static override args = {
-    channel: Args.string({
+    channelName: Args.string({
       description: "Channel to enter presence on",
       required: true,
     }),
@@ -64,7 +64,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
       if (!this.client) return;
 
       const client = this.client;
-      const { channel: channelName } = args;
+      const { channelName } = args;
 
       // Parse data if provided
       let data: unknown = undefined;
@@ -205,7 +205,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
       await this.waitAndTrackCleanup(flags, "presence", flags.duration);
     } catch (error) {
       this.fail(error, flags, "presenceEnter", {
-        channel: args.channel,
+        channel: args.channelName,
       });
     }
   }

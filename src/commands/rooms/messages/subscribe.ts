@@ -27,7 +27,7 @@ interface ChatMessage {
 
 export default class MessagesSubscribe extends ChatBaseCommand {
   static override args = {
-    rooms: Args.string({
+    roomNames: Args.string({
       description: "Room name(s) to subscribe to messages from",
       multiple: false,
       required: true,

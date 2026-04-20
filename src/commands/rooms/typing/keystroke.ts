@@ -16,7 +16,7 @@ const KEYSTROKE_INTERVAL = 450; // ms
 
 export default class TypingKeystroke extends ChatBaseCommand {
   static override args = {
-    room: Args.string({
+    roomName: Args.string({
       description: "The room to start typing in",
       required: true,
     }),
@@ -70,7 +70,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
         );
       }
 
-      const { room: roomName } = args;
+      const { roomName } = args;
 
       // Set up connection state logging
       this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
@@ -173,7 +173,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
         failurePromise,
       ]);
     } catch (error) {
-      this.fail(error, flags, "roomTypingKeystroke", { room: args.room });
+      this.fail(error, flags, "roomTypingKeystroke", { room: args.roomName });
     }
   }
 }

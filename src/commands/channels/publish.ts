@@ -11,7 +11,7 @@ import { formatResource } from "../../utils/output.js";
 
 export default class ChannelsPublish extends AblyBaseCommand {
   static override args = {
-    channel: Args.string({
+    channelName: Args.string({
       description: "The channel name to publish to",
       required: true,
     }),
@@ -119,15 +119,15 @@ export default class ChannelsPublish extends AblyBaseCommand {
         results,
         allSucceeded: errors === 0 && published === total,
         total,
-        channel: args.channel,
+        channel: args.channelName,
       },
     };
     const eventType =
       total > 1 ? "multiPublishComplete" : "singlePublishComplete";
     const eventMessage =
       total > 1
-        ? `Published ${total} messages to channel ${String(args.channel)}`
-        : `Published message to channel ${String(args.channel)}`;
+        ? `Published ${total} messages to channel ${String(args.channelName)}`
+        : `Published message to channel ${String(args.channelName)}`;
     this.logCliEvent(flags, "publish", eventType, eventMessage, finalResult);
 
     if (!this.shouldSuppressOutput(flags)) {
@@ -135,12 +135,12 @@ export default class ChannelsPublish extends AblyBaseCommand {
         this.logJsonResult(finalResult, flags);
       } else if (total > 1) {
         this.logSuccessMessage(
-          `${published}/${total} messages published to channel: ${formatResource(args.channel as string)}${errors > 0 ? ` (${chalk.red(errors)} errors)` : ""}.`,
+          `${published}/${total} messages published to channel: ${formatResource(args.channelName as string)}${errors > 0 ? ` (${chalk.red(errors)} errors)` : ""}.`,
           flags,
         );
       } else if (errors === 0) {
         this.logSuccessMessage(
-          `Message published to channel: ${formatResource(args.channel as string)}.`,
+          `Message published to channel: ${formatResource(args.channelName as string)}.`,
           flags,
         );
         const rawSerial = results[0]?.serial;
@@ -223,11 +223,11 @@ export default class ChannelsPublish extends AblyBaseCommand {
           flags,
           "publish",
           "messagePublished",
-          `Message ${messageIndex} published to channel ${String(args.channel)}`,
+          `Message ${messageIndex} published to channel ${String(args.channelName)}`,
           {
             index: messageIndex,
             message,
-            channel: args.channel,
+            channel: args.channelName,
             ...(serial === undefined ? {} : { serial }),
           },
         );
@@ -236,7 +236,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
           count > 1 // Only show individual success messages when publishing multiple messages
         ) {
           this.logSuccessMessage(
-            `Message ${messageIndex} published to channel: ${formatResource(args.channel as string)}.`,
+            `Message ${messageIndex} published to channel: ${formatResource(args.channelName as string)}.`,
             flags,
           );
         }
@@ -316,14 +316,14 @@ export default class ChannelsPublish extends AblyBaseCommand {
         "transportSelected",
         "Using Realtime transport",
       );
-      const channel = client.channels.get(args.channel as string);
+      const channel = client.channels.get(args.channelName as string);
 
       channel.on((stateChange: Ably.ChannelStateChange) => {
         this.logCliEvent(
           flags,
           "channel",
           stateChange.current,
-          `Channel '${String(args.channel)}' state changed to ${stateChange.current}`,
+          `Channel '${String(args.channelName)}' state changed to ${stateChange.current}`,
           { reason: stateChange.reason },
         );
       });
@@ -347,7 +347,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
       if (!rest) {
         return;
       }
-      const channel = rest.channels.get(args.channel as string);
+      const channel = rest.channels.get(args.channelName as string);
 
       this.logCliEvent(
         flags,

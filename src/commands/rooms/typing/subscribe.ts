@@ -8,7 +8,7 @@ import { formatResource } from "../../../utils/output.js";
 
 export default class TypingSubscribe extends ChatBaseCommand {
   static override args = {
-    room: Args.string({
+    roomName: Args.string({
       description: "The room to subscribe to typing indicators from",
       required: true,
     }),
@@ -46,7 +46,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
         );
       }
 
-      const { room: roomName } = args;
+      const { roomName } = args;
 
       // Set up connection state logging
       this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
@@ -162,7 +162,7 @@ export default class TypingSubscribe extends ChatBaseCommand {
         failurePromise,
       ]);
     } catch (error) {
-      this.fail(error, flags, "roomTypingSubscribe", { room: args.room });
+      this.fail(error, flags, "roomTypingSubscribe", { room: args.roomName });
     }
   }
 }

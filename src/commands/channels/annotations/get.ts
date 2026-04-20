@@ -16,11 +16,11 @@ import type { AnnotationDisplayFields } from "../../../utils/output.js";
 
 export default class ChannelsAnnotationsGet extends AblyBaseCommand {
   static override args = {
-    channel: Args.string({
+    channelName: Args.string({
       description: "The channel name",
       required: true,
     }),
-    serial: Args.string({
+    messageSerial: Args.string({
       description: "The serial of the message to get annotations for",
       required: true,
     }),
@@ -46,8 +46,8 @@ export default class ChannelsAnnotationsGet extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsAnnotationsGet);
-    const channelName = args.channel;
-    const serial = args.serial;
+    const channelName = args.channelName;
+    const serial = args.messageSerial;
 
     try {
       const rest = await this.createAblyRestClient(flags);

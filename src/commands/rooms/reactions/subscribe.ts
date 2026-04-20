@@ -13,7 +13,7 @@ import {
 
 export default class RoomsReactionsSubscribe extends ChatBaseCommand {
   static override args = {
-    room: Args.string({
+    roomName: Args.string({
       description: "Room to subscribe to reactions in",
       required: true,
     }),
@@ -50,7 +50,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         );
       }
 
-      const { room: roomName } = args;
+      const { roomName } = args;
 
       // Set up connection state logging
       this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
@@ -167,7 +167,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
         failurePromise,
       ]);
     } catch (error) {
-      this.fail(error, flags, "roomReactionSubscribe", { room: args.room });
+      this.fail(error, flags, "roomReactionSubscribe", { room: args.roomName });
     }
   }
 }

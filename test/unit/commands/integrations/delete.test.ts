@@ -112,7 +112,7 @@ describe("integrations:delete command", () => {
       },
     });
 
-    it("should require ruleId argument", async () => {
+    it("should require integrationId argument", async () => {
       const { error } = await runCommand(
         ["integrations:delete", "--force"],
         import.meta.url,
@@ -278,6 +278,6 @@ describe("integrations:delete command", () => {
 
   standardHelpTests("integrations:delete", import.meta.url);
   standardArgValidationTests("integrations:delete", import.meta.url, {
-    requiredArgs: ["ruleId"],
+    requiredArgs: ["integrationId"],
   });
 });

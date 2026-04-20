@@ -7,11 +7,11 @@ import { formatResource } from "../../../utils/output.js";
 
 export default class MessagesDelete extends ChatBaseCommand {
   static override args = {
-    room: Args.string({
+    roomName: Args.string({
       description: "The room containing the message to delete",
       required: true,
     }),
-    serial: Args.string({
+    messageSerial: Args.string({
       description: "The serial of the message to delete",
       required: true,
     }),
@@ -47,13 +47,13 @@ export default class MessagesDelete extends ChatBaseCommand {
         );
       }
 
-      const room = await chatClient.rooms.get(args.room);
+      const room = await chatClient.rooms.get(args.roomName);
 
       this.logProgress(
         "Deleting message " +
-          formatResource(args.serial) +
+          formatResource(args.messageSerial) +
           " in room " +
-          formatResource(args.room),
+          formatResource(args.roomName),
         flags,
       );
 
@@ -66,26 +66,26 @@ export default class MessagesDelete extends ChatBaseCommand {
         flags,
         "roomMessageDelete",
         "deleting",
-        `Deleting message ${args.serial} from room ${args.room}`,
-        { room: args.room, serial: args.serial },
+        `Deleting message ${args.messageSerial} from room ${args.roomName}`,
+        { room: args.roomName, serial: args.messageSerial },
       );
 
-      const result = await room.messages.delete(args.serial, details);
+      const result = await room.messages.delete(args.messageSerial, details);
 
       this.logCliEvent(
         flags,
         "roomMessageDelete",
         "messageDeleted",
-        `Message ${args.serial} deleted from room ${args.room}`,
-        { room: args.room, serial: args.serial },
+        `Message ${args.messageSerial} deleted from room ${args.roomName}`,
+        { room: args.roomName, serial: args.messageSerial },
       );
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
             message: {
-              room: args.room,
-              serial: args.serial,
+              room: args.roomName,
+              serial: args.messageSerial,
               versionSerial: result.version.serial,
             },
           },
@@ -96,13 +96,13 @@ export default class MessagesDelete extends ChatBaseCommand {
       }
 
       this.logSuccessMessage(
-        `Message ${formatResource(args.serial)} deleted from room ${formatResource(args.room)}.`,
+        `Message ${formatResource(args.messageSerial)} deleted from room ${formatResource(args.roomName)}.`,
         flags,
       );
     } catch (error) {
       this.fail(error, flags, "roomMessageDelete", {
-        room: args.room,
-        serial: args.serial,
+        room: args.roomName,
+        serial: args.messageSerial,
       });
     }
   }

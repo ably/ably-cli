@@ -17,7 +17,7 @@ import type { AnnotationDisplayFields } from "../../../utils/output.js";
 
 export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
   static override args = {
-    channel: Args.string({
+    channelName: Args.string({
       description: "The channel name to subscribe to annotations on",
       required: true,
     }),
@@ -47,7 +47,7 @@ export default class ChannelsAnnotationsSubscribe extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsAnnotationsSubscribe);
-    const channelName = args.channel;
+    const channelName = args.channelName;
 
     try {
       this.client = await this.createAblyRealtimeClient(flags);

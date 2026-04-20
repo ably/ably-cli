@@ -11,7 +11,7 @@ import {
 
 export default class PushDevicesGet extends AblyBaseCommand {
   static override args = {
-    "device-id": Args.string({
+    deviceId: Args.string({
       description: "The device ID to retrieve",
       required: true,
     }),
@@ -30,7 +30,7 @@ export default class PushDevicesGet extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(PushDevicesGet);
-    const deviceId = args["device-id"];
+    const deviceId = args.deviceId;
 
     try {
       const rest = await this.createAblyRestClient(flags as BaseFlags);

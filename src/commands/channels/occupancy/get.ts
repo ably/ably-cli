@@ -18,7 +18,7 @@ interface OccupancyMetrics {
 
 export default class ChannelsOccupancyGet extends AblyBaseCommand {
   static override args = {
-    channel: Args.string({
+    channelName: Args.string({
       description: "Channel name to get occupancy for",
       required: true,
     }),
@@ -47,7 +47,7 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
         return;
       }
 
-      const channelName = args.channel;
+      const channelName = args.channelName;
 
       // Use the REST API to get channel details with occupancy
       const channelDetails = await client.request(
@@ -130,7 +130,7 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
       }
     } catch (error) {
       this.fail(error, flags, "occupancyGet", {
-        channel: args.channel,
+        channel: args.channelName,
       });
     }
   }

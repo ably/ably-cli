@@ -15,7 +15,7 @@ import {
 
 export default class RoomsPresenceSubscribe extends ChatBaseCommand {
   static override args = {
-    room: Args.string({
+    roomName: Args.string({
       description: "Room to subscribe to presence for",
       required: true,
     }),
@@ -41,7 +41,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsPresenceSubscribe);
-    this.roomName = args.room;
+    this.roomName = args.roomName;
 
     try {
       // Show a progress signal early so E2E harnesses know the command is running

@@ -12,11 +12,11 @@ import { formatResource } from "../../../utils/output.js";
 
 export default class MessagesUpdate extends ChatBaseCommand {
   static override args = {
-    room: Args.string({
+    roomName: Args.string({
       description: "The room containing the message to update",
       required: true,
     }),
-    serial: Args.string({
+    messageSerial: Args.string({
       description: "The serial of the message to update",
       required: true,
     }),
@@ -126,13 +126,13 @@ export default class MessagesUpdate extends ChatBaseCommand {
         );
       }
 
-      const room = await chatClient.rooms.get(args.room);
+      const room = await chatClient.rooms.get(args.roomName);
 
       this.logProgress(
         "Updating message " +
-          formatResource(args.serial) +
+          formatResource(args.messageSerial) +
           " in room " +
-          formatResource(args.room),
+          formatResource(args.roomName),
         flags,
       );
 
@@ -152,12 +152,12 @@ export default class MessagesUpdate extends ChatBaseCommand {
         flags,
         "roomMessageUpdate",
         "updating",
-        `Updating message ${args.serial} in room ${args.room}`,
-        { room: args.room, serial: args.serial },
+        `Updating message ${args.messageSerial} in room ${args.roomName}`,
+        { room: args.roomName, serial: args.messageSerial },
       );
 
       const result = await room.messages.update(
-        args.serial,
+        args.messageSerial,
         updateParams,
         details,
       );
@@ -166,16 +166,16 @@ export default class MessagesUpdate extends ChatBaseCommand {
         flags,
         "roomMessageUpdate",
         "messageUpdated",
-        `Message ${args.serial} updated in room ${args.room}`,
-        { room: args.room, serial: args.serial },
+        `Message ${args.messageSerial} updated in room ${args.roomName}`,
+        { room: args.roomName, serial: args.messageSerial },
       );
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
           {
             message: {
-              room: args.room,
-              serial: args.serial,
+              room: args.roomName,
+              serial: args.messageSerial,
               updatedText: result.text,
               versionSerial: result.version.serial,
             },
@@ -187,13 +187,13 @@ export default class MessagesUpdate extends ChatBaseCommand {
       }
 
       this.logSuccessMessage(
-        `Message ${formatResource(args.serial)} updated in room ${formatResource(args.room)}.`,
+        `Message ${formatResource(args.messageSerial)} updated in room ${formatResource(args.roomName)}.`,
         flags,
       );
     } catch (error) {
       this.fail(error, flags, "roomMessageUpdate", {
-        room: args.room,
-        serial: args.serial,
+        room: args.roomName,
+        serial: args.messageSerial,
       });
     }
   }

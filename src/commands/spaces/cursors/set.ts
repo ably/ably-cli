@@ -7,7 +7,7 @@ import { formatResource, formatLabel } from "../../../utils/output.js";
 
 export default class SpacesCursorsSet extends SpacesBaseCommand {
   static override args = {
-    space_name: Args.string({
+    spaceName: Args.string({
       description: "Name of the space to set cursor in",
       required: true,
     }),
@@ -62,7 +62,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesCursorsSet);
-    const { space_name: spaceName } = args;
+    const { spaceName } = args;
 
     try {
       // Validate and parse cursor data - either x/y flags or --data JSON

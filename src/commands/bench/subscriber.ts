@@ -21,7 +21,7 @@ interface TestMetrics {
 
 export default class BenchSubscriber extends AblyBaseCommand {
   static override args = {
-    channel: Args.string({
+    channelName: Args.string({
       description: "The channel name to subscribe to",
       required: true,
     }),
@@ -89,11 +89,11 @@ export default class BenchSubscriber extends AblyBaseCommand {
     };
 
     try {
-      const channel = this.handleChannel(client, args.channel, flags);
+      const channel = this.handleChannel(client, args.channelName, flags);
 
       // Show initial status
       this.logProgress(
-        `Attaching to channel: ${formatResource(args.channel)}`,
+        `Attaching to channel: ${formatResource(args.channelName)}`,
         flags,
       );
 
@@ -108,13 +108,13 @@ export default class BenchSubscriber extends AblyBaseCommand {
         flags,
         "benchmark",
         "subscriberReady",
-        `Subscriber ready on channel: ${args.channel}`,
-        { channel: args.channel },
+        `Subscriber ready on channel: ${args.channelName}`,
+        { channel: args.channelName },
       );
 
       // Show success message
       this.logSuccessMessage(
-        `Subscribed to channel: ${formatResource(args.channel)}. Waiting for benchmark messages.`,
+        `Subscribed to channel: ${formatResource(args.channelName)}. Waiting for benchmark messages.`,
         flags,
       );
 

@@ -12,7 +12,7 @@ import {
 
 export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
   static override args = {
-    channel: Args.string({
+    channelName: Args.string({
       description: "Channel name to subscribe to occupancy events",
       required: true,
     }),
@@ -43,7 +43,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
       if (!this.client) return;
 
       const client = this.client;
-      const channelName = args.channel;
+      const channelName = args.channelName;
 
       // Get channel with occupancy option enabled
       const channel = client.channels.get(channelName, {
@@ -147,7 +147,7 @@ export default class ChannelsOccupancySubscribe extends AblyBaseCommand {
       await this.waitAndTrackCleanup(flags, "occupancy", flags.duration);
     } catch (error) {
       this.fail(error, flags, "occupancySubscribe", {
-        channel: args.channel,
+        channel: args.channelName,
       });
     }
   }

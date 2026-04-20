@@ -209,7 +209,7 @@ describe("spaces commands", () => {
       expect(stdout).toContain("Acquire a lock");
       expect(stdout).toContain("USAGE");
       expect(stdout).toContain("SPACE_NAME");
-      expect(stdout).toContain("LOCKID");
+      expect(stdout).toContain("LOCK_ID");
     });
 
     it("should acquire lock with --data flag", async () => {

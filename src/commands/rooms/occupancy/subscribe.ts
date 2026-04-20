@@ -16,7 +16,7 @@ export interface OccupancyMetrics {
 
 export default class RoomsOccupancySubscribe extends ChatBaseCommand {
   static override args = {
-    room: Args.string({
+    roomName: Args.string({
       description: "Room to subscribe to occupancy for",
       required: true,
     }),
@@ -42,7 +42,7 @@ export default class RoomsOccupancySubscribe extends ChatBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsOccupancySubscribe);
-    this.roomName = args.room; // Store for cleanup
+    this.roomName = args.roomName; // Store for cleanup
 
     try {
       this.logCliEvent(

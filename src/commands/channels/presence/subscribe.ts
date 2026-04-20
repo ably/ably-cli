@@ -11,7 +11,7 @@ import type { PresenceDisplayFields } from "../../../utils/output.js";
 
 export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
   static override args = {
-    channel: Args.string({
+    channelName: Args.string({
       description: "Channel name to subscribe to presence events",
       required: true,
     }),
@@ -43,7 +43,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
       if (!this.client) return;
 
       const client = this.client;
-      const channelName = args.channel;
+      const channelName = args.channelName;
 
       const channel = client.channels.get(channelName);
 
@@ -129,7 +129,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
       await this.waitAndTrackCleanup(flags, "presence", flags.duration);
     } catch (error) {
       this.fail(error, flags, "presenceSubscribe", {
-        channel: args.channel,
+        channel: args.channelName,
       });
     }
   }

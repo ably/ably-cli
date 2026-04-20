@@ -15,7 +15,7 @@ import {
 
 export default class RoomsPresenceEnter extends ChatBaseCommand {
   static override args = {
-    room: Args.string({
+    roomName: Args.string({
       description: "Room to enter presence on",
       required: true,
     }),
@@ -61,7 +61,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(RoomsPresenceEnter);
-    this.roomName = args.room;
+    this.roomName = args.roomName;
 
     if (flags.data) {
       const parsed = this.parseJsonFlag(flags.data, "data", flags);

@@ -6,7 +6,7 @@ import { formatResource } from "../../utils/output.js";
 
 export default class ChannelsInspect extends AblyBaseCommand {
   static override args = {
-    channel: Args.string({
+    channelName: Args.string({
       description: "The name of the channel to inspect in the Ably dashboard",
       required: true,
     }),
@@ -52,7 +52,7 @@ export default class ChannelsInspect extends AblyBaseCommand {
     if (dashboardHost && !/^https?:\/\//i.test(dashboardHost)) {
       dashboardHost = `https://${dashboardHost}`;
     }
-    const url = `${dashboardHost}/accounts/${accountId}/apps/${appId}/channels/${encodeURIComponent(args.channel)}`;
+    const url = `${dashboardHost}/accounts/${accountId}/apps/${appId}/channels/${encodeURIComponent(args.channelName)}`;
 
     if (this.shouldOutputJson(flags)) {
       this.logJsonResult({ channel: { url } }, flags);

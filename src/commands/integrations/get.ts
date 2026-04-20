@@ -5,8 +5,8 @@ import { formatHeading, formatLabel } from "../../utils/output.js";
 
 export default class IntegrationsGetCommand extends ControlBaseCommand {
   static args = {
-    ruleId: Args.string({
-      description: "The rule ID to get",
+    integrationId: Args.string({
+      description: "The integration ID to get",
       required: true,
     }),
   };
@@ -38,7 +38,7 @@ export default class IntegrationsGetCommand extends ControlBaseCommand {
 
     try {
       const controlApi = this.createControlApi(flags);
-      const rule = await controlApi.getRule(appId, args.ruleId);
+      const rule = await controlApi.getRule(appId, args.integrationId);
 
       if (this.shouldOutputJson(flags)) {
         const ruleClone = structuredClone(rule) as unknown as Record<

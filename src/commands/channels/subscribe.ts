@@ -17,7 +17,7 @@ import type { MessageDisplayFields } from "../../utils/output.js";
 
 export default class ChannelsSubscribe extends AblyBaseCommand {
   static override args = {
-    channels: Args.string({
+    channelNames: Args.string({
       description: "Channel name(s) to subscribe to",
       multiple: false,
       required: true,

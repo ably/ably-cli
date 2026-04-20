@@ -31,7 +31,7 @@ interface MessageResult {
 
 export default class MessagesSend extends ChatBaseCommand {
   static override args = {
-    room: Args.string({
+    roomName: Args.string({
       description: "The room to send the message to",
       required: true,
     }),
@@ -123,7 +123,7 @@ export default class MessagesSend extends ChatBaseCommand {
         );
       }
 
-      const room = await this.chatClient.rooms.get(args.room);
+      const room = await this.chatClient.rooms.get(args.roomName);
 
       const count = flags.count;
       let { delay } = flags;
@@ -207,7 +207,7 @@ export default class MessagesSend extends ChatBaseCommand {
               const result: MessageResult = {
                 index: i + 1,
                 message: messageToSend,
-                room: args.room,
+                room: args.roomName,
                 success: true,
               };
               results.push(result);
@@ -225,7 +225,7 @@ export default class MessagesSend extends ChatBaseCommand {
               const result: MessageResult = {
                 error: extractErrorInfo(error),
                 index: i + 1,
-                room: args.room,
+                room: args.roomName,
                 success: false,
               };
               results.push(result);
@@ -294,7 +294,7 @@ export default class MessagesSend extends ChatBaseCommand {
           }
 
           this.logSuccessMessage(
-            `${sentCount}/${count} messages sent to room ${formatResource(args.room)} (${errorCount} errors).`,
+            `${sentCount}/${count} messages sent to room ${formatResource(args.roomName)} (${errorCount} errors).`,
             flags,
           );
         }
@@ -319,7 +319,7 @@ export default class MessagesSend extends ChatBaseCommand {
           const sentMessage = await room.messages.send(messageToSend);
           const result: MessageResult = {
             message: messageToSend,
-            room: args.room,
+            room: args.roomName,
             serial: sentMessage.serial,
             success: true,
           };
@@ -337,7 +337,7 @@ export default class MessagesSend extends ChatBaseCommand {
                 {
                   message: {
                     ...messageToSend,
-                    room: args.room,
+                    room: args.roomName,
                     serial: sentMessage.serial,
                   },
                 },
@@ -346,7 +346,7 @@ export default class MessagesSend extends ChatBaseCommand {
             }
 
             this.logSuccessMessage(
-              `Message sent to room ${formatResource(args.room)}.`,
+              `Message sent to room ${formatResource(args.roomName)}.`,
               flags,
             );
 
@@ -356,7 +356,7 @@ export default class MessagesSend extends ChatBaseCommand {
           }
         } catch (error) {
           this.fail(error, flags, "roomMessageSend", {
-            room: args.room,
+            room: args.roomName,
           });
         }
       }
