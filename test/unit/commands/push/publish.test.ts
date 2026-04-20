@@ -257,6 +257,29 @@ describe("push:publish command", () => {
       );
     });
 
+    it("should unwrap the inner value when --message has a top-level data key", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("my-channel");
+
+      await runCommand(
+        [
+          "push:publish",
+          "--channel",
+          "my-channel",
+          "--title",
+          "Hi",
+          "--message",
+          '{"data":"extracted"}',
+          "--force",
+        ],
+        import.meta.url,
+      );
+
+      expect(channel.publish).toHaveBeenCalledWith(
+        expect.objectContaining({ data: "extracted" }),
+      );
+    });
+
     it("should ignore --message when direct recipient overrides --channel", async () => {
       const mock = getMockAblyRest();
 
@@ -304,6 +327,86 @@ describe("push:publish command", () => {
       expect(result.notification).toHaveProperty("channel", "my-channel");
       expect(result.notification).toHaveProperty("messageData", "hello");
     });
+
+    it("should set message name and data when --message is a full message object", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("my-channel");
+
+      await runCommand(
+        [
+          "push:publish",
+          "--channel",
+          "my-channel",
+          "--title",
+          "Hi",
+          "--message",
+          '{"name":"alert","data":"Server down"}',
+          "--force",
+        ],
+        import.meta.url,
+      );
+
+      expect(channel.publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "alert",
+          data: "Server down",
+          extras: expect.objectContaining({
+            push: expect.objectContaining({
+              notification: expect.objectContaining({ title: "Hi" }),
+            }),
+          }),
+        }),
+      );
+    });
+
+    it("should merge user-provided extras with push extras", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("my-channel");
+
+      await runCommand(
+        [
+          "push:publish",
+          "--channel",
+          "my-channel",
+          "--title",
+          "Hi",
+          "--message",
+          '{"data":"payload","extras":{"headers":{"x-trace":"abc"}}}',
+          "--force",
+        ],
+        import.meta.url,
+      );
+
+      const call = channel.publish.mock.calls[0][0];
+      expect(call.data).toBe("payload");
+      expect(call.extras).toEqual({
+        headers: { "x-trace": "abc" },
+        push: expect.objectContaining({
+          notification: expect.objectContaining({ title: "Hi" }),
+        }),
+      });
+    });
+
+    it("should include messageName and messageData in JSON output for full message object", async () => {
+      const { stdout } = await runCommand(
+        [
+          "push:publish",
+          "--channel",
+          "my-channel",
+          "--title",
+          "Hi",
+          "--message",
+          '{"name":"alert","data":"hi"}',
+          "--json",
+          "--force",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseJsonOutput(stdout);
+      expect(result.notification).toHaveProperty("messageName", "alert");
+      expect(result.notification).toHaveProperty("messageData", "hi");
+    });
   });
 
   describe("error handling", () => {
@@ -317,6 +420,31 @@ describe("push:publish command", () => {
       expect(error?.message).toContain(
         "--message can only be used with --channel",
       );
+    });
+
+    it("should fail when --message includes extras.push", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("my-channel");
+
+      const { error } = await runCommand(
+        [
+          "push:publish",
+          "--channel",
+          "my-channel",
+          "--title",
+          "Hi",
+          "--message",
+          '{"extras":{"push":{"notification":{"title":"x"}}}}',
+          "--force",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain(
+        "--message must not include extras.push",
+      );
+      expect(channel.publish).not.toHaveBeenCalled();
     });
 
     it("should handle API errors", async () => {
