@@ -108,11 +108,13 @@ export class OAuthClient {
   /**
    * Poll for token completion (RFC 8628 step 2).
    * Sleeps between requests, respects slow_down, and throws on expiry/denial.
+   * Accepts an optional AbortSignal for prompt cancellation.
    */
   async pollForToken(
     deviceCode: string,
     interval: number,
     expiresIn: number,
+    signal?: AbortSignal,
   ): Promise<OAuthTokens> {
     const deadline = Date.now() + expiresIn * 1000;
     let currentInterval = interval;
@@ -120,11 +122,14 @@ export class OAuthClient {
     const maxNetworkRetries = 3;
 
     while (Date.now() < deadline) {
+      if (signal?.aborted) {
+        throw new Error("Polling aborted");
+      }
       // Apply ±20% jitter so concurrent clients don't fall into lockstep and
       // hit the authorization server in synchronized bursts, which trips the
       // shared rate limit long before any individual client is misbehaving.
       const jitterFactor = 0.9 + Math.random() * 0.2;
-      await this.sleep(currentInterval * 1000 * jitterFactor);
+      await this.sleep(currentInterval * 1000 * jitterFactor, signal);
 
       if (Date.now() >= deadline) {
         throw new Error("Device code expired");
@@ -136,6 +141,14 @@ export class OAuthClient {
       // the outer `while (Date.now() < deadline)` guard and spin the spinner
       // forever with no error.
       const timeout = setTimeout(() => controller.abort(), 15_000);
+      const onExternalAbort = () => controller.abort();
+      if (signal) {
+        if (signal.aborted) {
+          controller.abort();
+        } else {
+          signal.addEventListener("abort", onExternalAbort);
+        }
+      }
       try {
         const params = new URLSearchParams({
           client_id: this.config.clientId,
@@ -151,6 +164,9 @@ export class OAuthClient {
         });
         networkRetries = 0;
       } catch {
+        if (signal?.aborted) {
+          throw new Error("Polling aborted");
+        }
         networkRetries++;
         if (networkRetries >= maxNetworkRetries) {
           throw new Error(
@@ -160,6 +176,7 @@ export class OAuthClient {
         continue;
       } finally {
         clearTimeout(timeout);
+        signal?.removeEventListener("abort", onExternalAbort);
       }
 
       if (response.ok) {
@@ -370,8 +387,22 @@ export class OAuthClient {
     };
   }
 
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  private sleep(ms: number, signal?: AbortSignal): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (signal?.aborted) {
+        reject(new Error("Sleep aborted"));
+        return;
+      }
+      const timer = setTimeout(() => {
+        signal?.removeEventListener("abort", onAbort);
+        resolve();
+      }, ms);
+      const onAbort = () => {
+        clearTimeout(timer);
+        reject(new Error("Sleep aborted"));
+      };
+      signal?.addEventListener("abort", onAbort, { once: true });
+    });
   }
 }
 
