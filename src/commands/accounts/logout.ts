@@ -89,32 +89,44 @@ export default class AccountsLogout extends ControlBaseCommand {
           // Revoke against the host that minted the token. A --control-host
           // override here would send the token to a server that never issued
           // it — a no-op revocation that silently leaves the real token live.
-          const oauthHost = targetAccount?.controlHost ?? flags["control-host"];
+          const oauthHost = targetAccount?.oauthHost ?? flags["oauth-host"];
           const oauthClient = new OAuthClient({
-            controlHost: oauthHost,
+            oauthHost,
           });
-          // Best-effort revocation with timeout -- don't block logout.
-          // revokeToken() swallows its own errors and always resolves, so we
-          // don't need a .catch() here.
-          //
-          // We keep the timer handle and clear it once the race settles,
-          // otherwise a fast revocation leaves the timeout pending and the
-          // process hangs ~5s after printing "Successfully logged out".
-          const revokeWithTimeout = (token: string, timeoutMs = 5000) => {
-            let timer: NodeJS.Timeout | undefined;
-            const timeoutPromise = new Promise<void>((resolve) => {
-              timer = setTimeout(resolve, timeoutMs);
-            });
-            return Promise.race([
-              oauthClient.revokeToken(token),
-              timeoutPromise,
-            ]).finally(() => {
-              if (timer) clearTimeout(timer);
-            });
+          // Abortable best-effort revocation. The external AbortController
+          // cancels the in-flight fetch when the timer fires (unlike the old
+          // Promise.race which let the request complete in the background),
+          // and surfacing the reason lets us warn the user that revocation
+          // did not complete so they know the token may still be live until
+          // its natural expiry.
+          const revokeWithTimeout = async (
+            token: string,
+            label: string,
+            timeoutMs = 5000,
+          ): Promise<void> => {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+              await oauthClient.revokeToken(token, {
+                signal: controller.signal,
+              });
+            } catch (error) {
+              const reason = controller.signal.aborted
+                ? `timed out after ${timeoutMs}ms`
+                : error instanceof Error
+                  ? error.message
+                  : String(error);
+              this.logWarning(
+                `Failed to revoke ${label} token (${reason}); it may remain valid until its natural expiry.`,
+                flags,
+              );
+            } finally {
+              clearTimeout(timer);
+            }
           };
           await Promise.all([
-            revokeWithTimeout(oauthTokens.accessToken),
-            revokeWithTimeout(oauthTokens.refreshToken),
+            revokeWithTimeout(oauthTokens.accessToken, "access"),
+            revokeWithTimeout(oauthTokens.refreshToken, "refresh"),
           ]);
         }
       }

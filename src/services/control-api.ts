@@ -559,9 +559,15 @@ export class ControlApi {
         await this.tokenRefreshMiddleware.getValidAccessToken();
     }
 
-    const url = this.controlHost.includes("local")
-      ? `http://${this.controlHost}/api/v1${path}`
-      : `https://${this.controlHost}/v1${path}`;
+    // The dedicated Control API service (control.ably.net) serves at `/v1/`.
+    // The website itself (ably.com and Heroku review apps) proxies the
+    // Control API at `/api/v1/`. Match hosts whose first label starts with
+    // "control" so both `control.` and `control-*.` variants route correctly,
+    // case insensitively so ABLY_CONTROL_HOST values aren't locale-sensitive.
+    const isControlService = /^control[-.]/i.test(this.controlHost);
+    const scheme = this.controlHost.includes("local") ? "http" : "https";
+    const prefix = isControlService ? "/v1" : "/api/v1";
+    const url = `${scheme}://${this.controlHost}${prefix}${path}`;
 
     const isFormData = body instanceof FormData;
     const options: RequestInit = {

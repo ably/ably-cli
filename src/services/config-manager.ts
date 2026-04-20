@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { parse, stringify } from "smol-toml";
 import isTestMode from "../utils/test-mode.js";
-import { DEFAULT_OAUTH_CONTROL_HOST } from "./oauth-client.js";
+import { DEFAULT_OAUTH_HOST } from "./oauth-client.js";
 
 // Updated to include key and app metadata
 export interface AppConfig {
@@ -28,6 +28,10 @@ export interface AccountConfig {
   controlHost?: string;
   currentAppId?: string;
   endpoint?: string;
+  // OAuth authorization server host (ably.com or a review-app override).
+  // Kept separate from controlHost so the session key and token-refresh
+  // traffic always targets the host that actually minted the tokens.
+  oauthHost?: string;
   oauthSessionKey?: string;
   tokenId?: string;
   userEmail: string;
@@ -90,6 +94,7 @@ export interface ConfigManager {
       accountId?: string;
       accountName?: string;
       controlHost?: string;
+      oauthHost?: string;
     },
   ): void;
   getOAuthTokens(alias?: string):
@@ -559,7 +564,7 @@ export class TomlConfigManager implements ConfigManager {
     this.saveConfig();
   }
 
-  // Store OAuth tokens, shared across aliases with the same userEmail + controlHost
+  // Store OAuth tokens, shared across aliases with the same userEmail + oauthHost
   public storeOAuthTokens(
     alias: string,
     tokens: {
@@ -574,18 +579,20 @@ export class TomlConfigManager implements ConfigManager {
       accountId?: string;
       accountName?: string;
       controlHost?: string;
+      oauthHost?: string;
     },
   ): void {
     const userEmail =
       tokens.userEmail ?? this.config.accounts[alias]?.userEmail ?? "";
-    const controlHost =
-      accountInfo?.controlHost ??
-      this.config.accounts[alias]?.controlHost ??
-      DEFAULT_OAUTH_CONTROL_HOST;
+    const oauthHost =
+      accountInfo?.oauthHost ??
+      this.config.accounts[alias]?.oauthHost ??
+      DEFAULT_OAUTH_HOST;
     const emailPart = userEmail.toLowerCase() || alias;
-    // Scope the session key by control host so the same email on prod and a
-    // staging deployment don't silently overwrite each other's refresh tokens.
-    const sessionKey = `${emailPart}::${controlHost.toLowerCase()}`;
+    // Scope the session key by OAuth host so the same email on prod and a
+    // review app don't silently overwrite each other's refresh tokens — the
+    // issuer is the host that actually minted them.
+    const sessionKey = `${emailPart}::${oauthHost.toLowerCase()}`;
 
     // Create/update the shared OAuth session
     if (!this.config.oauthSessions) {
@@ -593,7 +600,7 @@ export class TomlConfigManager implements ConfigManager {
     }
 
     // Clean up the previous session entry if this account's key is changing
-    // (e.g. migration from a pre-controlHost key format).
+    // (e.g. migration from a pre-oauthHost key format).
     const previousSessionKey = this.config.accounts[alias]?.oauthSessionKey;
     if (
       previousSessionKey &&
@@ -630,6 +637,8 @@ export class TomlConfigManager implements ConfigManager {
       controlHost:
         accountInfo?.controlHost ?? this.config.accounts[alias]?.controlHost,
       currentAppId: this.config.accounts[alias]?.currentAppId,
+      oauthHost:
+        accountInfo?.oauthHost ?? this.config.accounts[alias]?.oauthHost,
       oauthSessionKey: sessionKey,
       userEmail,
     };

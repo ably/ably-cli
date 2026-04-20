@@ -144,8 +144,10 @@ export default class AccountsLogin extends ControlBaseCommand {
       }
 
       // Store OAuth tokens (include user email from /me response).
-      // Pass controlHost so the session key is scoped per endpoint — otherwise
-      // the same email on prod and a staging deployment would collide.
+      // Pass oauthHost so the session key is scoped per authorization server
+      // — otherwise the same email on prod and a review deployment would
+      // collide. Also preserve controlHost so later commands talk to the same
+      // Control API deployment the user picked at login.
       this.configManager.storeOAuthTokens(
         alias,
         { ...oauthTokens, userEmail: user.email },
@@ -153,6 +155,7 @@ export default class AccountsLogin extends ControlBaseCommand {
           accountId: selectedAccountInfo.id,
           accountName: selectedAccountInfo.name,
           controlHost: flags["control-host"],
+          oauthHost: flags["oauth-host"],
         },
       );
 
@@ -374,7 +377,7 @@ export default class AccountsLogin extends ControlBaseCommand {
 
   private async oauthLogin(flags: BaseFlags): Promise<OAuthTokens> {
     const oauthClient = new OAuthClient({
-      controlHost: flags["control-host"],
+      oauthHost: flags["oauth-host"],
     });
 
     const deviceResponse = await oauthClient.requestDeviceCode();
@@ -418,10 +421,10 @@ export default class AccountsLogin extends ControlBaseCommand {
         deviceResponse.expiresIn,
       );
 
-      spinner?.succeed("Authentication successful!");
+      spinner?.succeed("Authentication successful.");
       return tokens;
     } catch (error) {
-      spinner?.fail("Authentication failed");
+      spinner?.fail("Authentication failed.");
       throw error;
     }
   }

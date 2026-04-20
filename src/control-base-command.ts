@@ -1,5 +1,5 @@
 import { AblyBaseCommand } from "./base-command.js";
-import { controlApiFlags } from "./flags.js";
+import { controlApiFlags, oauthHostFlag } from "./flags.js";
 import { ControlApi, App } from "./services/control-api.js";
 import { OAuthClient } from "./services/oauth-client.js";
 import { TokenRefreshMiddleware } from "./services/token-refresh-middleware.js";
@@ -8,8 +8,10 @@ import { errorMessage } from "./utils/errors.js";
 import isWebCliMode from "./utils/web-mode.js";
 
 export abstract class ControlBaseCommand extends AblyBaseCommand {
-  // Control API commands get core + hidden control API flags
-  static globalFlags = { ...controlApiFlags };
+  // Control API commands get core + hidden control API flags + oauth-host
+  // (so token refresh can target the authorization server that minted the
+  // token even when --control-host points elsewhere).
+  static globalFlags = { ...controlApiFlags, ...oauthHostFlag };
 
   /**
    * Create a Control API instance for making requests
@@ -32,14 +34,14 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
 
       // Set up token refresh middleware for OAuth accounts.
       // The OAuth issuer is an immutable property of the token — only the host
-      // that minted it can refresh it. Prefer the stored controlHost so a
+      // that minted it can refresh it. Prefer the stored oauthHost so a
       // --control-host override (intended for control-plane routing) does not
       // silently direct refresh traffic at the wrong authorization server,
       // which would return invalid_grant and wipe a valid session.
       if (this.configManager.getAuthMethod() === "oauth") {
-        const oauthHost = account.controlHost ?? flags["control-host"];
+        const oauthHost = account.oauthHost ?? flags["oauth-host"];
         const oauthClient = new OAuthClient({
-          controlHost: oauthHost,
+          oauthHost,
         });
         tokenRefreshMiddleware = new TokenRefreshMiddleware(
           this.configManager,

@@ -383,31 +383,43 @@ describe("accounts:login command", () => {
 
   standardFlagTests("accounts:login", import.meta.url, ["--json"]);
 
-  describe("custom control host", () => {
-    it("should use custom control host when --control-host flag is provided", async () => {
-      const customHost = "custom.ably.net";
-      mockOAuthDeviceFlow(customHost);
+  describe("custom hosts", () => {
+    it("routes OAuth to --oauth-host and Control API to --control-host independently", async () => {
+      // OAuth and Control API are distinct services; the CLI must target
+      // them separately. Using a `control.` prefix on the control host
+      // forces the /v1/ path; everything else uses /api/v1/.
+      const oauthHost = "oauth.custom.ably.net";
+      const controlHost = "control.custom.ably.net";
 
-      // Mock the /me endpoint on custom host
-      nock(`https://${customHost}`)
+      mockOAuthDeviceFlow(oauthHost);
+
+      // Mock the /me endpoint on the control host
+      nock(`https://${controlHost}`)
         .get("/v1/me")
         .reply(200, {
           account: { id: mockAccountId, name: "Test Account" },
           user: { email: "test@example.com" },
         });
 
-      // Mock the /me/accounts endpoint on custom host
-      nock(`https://${customHost}`)
+      // Mock the /me/accounts endpoint on the control host
+      nock(`https://${controlHost}`)
         .get("/v1/me/accounts")
         .reply(200, [{ id: mockAccountId, name: "Test Account" }]);
 
-      // Mock the apps list endpoint on custom host
-      nock(`https://${customHost}`)
+      // Mock the apps list endpoint on the control host
+      nock(`https://${controlHost}`)
         .get(`/v1/accounts/${mockAccountId}/apps`)
         .reply(200, []);
 
       const { stdout } = await runCommand(
-        ["accounts:login", "--control-host", customHost, "--json"],
+        [
+          "accounts:login",
+          "--oauth-host",
+          oauthHost,
+          "--control-host",
+          controlHost,
+          "--json",
+        ],
         import.meta.url,
       );
 

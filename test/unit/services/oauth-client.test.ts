@@ -33,7 +33,7 @@ describe("OAuthClient", () => {
     });
 
     it("host containing 'local' uses http scheme", async () => {
-      const client = new OAuthClient({ controlHost: "localhost:3000" });
+      const client = new OAuthClient({ oauthHost: "localhost:3000" });
 
       const scope = nock("http://localhost:3000")
         .post("/oauth/authorize_device")
@@ -330,17 +330,119 @@ describe("OAuthClient", () => {
       expect(scope.isDone()).toBe(true);
     });
 
-    it("does not throw on network error", async () => {
+    it("throws on network error so the caller can report it", async () => {
       const client = new OAuthClient();
 
       nock("https://ably.com")
         .post("/oauth/revoke")
         .replyWithError("Connection refused");
 
-      // Should not throw
+      await expect(client.revokeToken("token_to_revoke")).rejects.toThrow();
+    });
+
+    it("throws on non-2xx response", async () => {
+      const client = new OAuthClient();
+
+      nock("https://ably.com")
+        .post("/oauth/revoke")
+        .reply(500, "internal_error");
+
+      await expect(client.revokeToken("token_to_revoke")).rejects.toThrow(
+        /Token revocation failed \(500\)/,
+      );
+    });
+
+    it("rejects when external AbortSignal is aborted", async () => {
+      const client = new OAuthClient();
+
+      // Never responds — ensures the abort is what ends the request.
+      nock("https://ably.com").post("/oauth/revoke").delay(10_000).reply(200);
+
+      const controller = new AbortController();
+      const promise = client.revokeToken("token_to_revoke", {
+        signal: controller.signal,
+      });
+      // Abort after the fetch is in flight.
+      setTimeout(() => controller.abort(), 20);
+
+      await expect(promise).rejects.toThrow();
+    });
+  });
+
+  describe("pollForToken error handling", () => {
+    it("backs off on HTTP 429 and eventually succeeds", async () => {
+      const client = new OAuthClient();
+
+      // First call: 429 with the Control-API envelope the website actually
+      // returns (no `code`, `statusCode` is a string).
+      nock("https://ably.com")
+        .post("/oauth/token")
+        .reply(429, {
+          error: { message: "Too many requests.", statusCode: "429" },
+        });
+
+      // Second call: success
+      nock("https://ably.com").post("/oauth/token").reply(200, {
+        access_token: "at_after_429",
+        expires_in: 3600,
+        refresh_token: "rt_after_429",
+        token_type: "Bearer",
+      });
+
+      const tokens = await client.pollForToken("dc_429", 0.01, 30);
+      expect(tokens.accessToken).toBe("at_after_429");
+    }, 15_000);
+
+    it("surfaces the message from the Control-API-style envelope", async () => {
+      // Mirrors the real shape observed at https://ably.com/oauth/token:
+      // {error: {message, statusCode: "<string>"}}. No `code` field.
+      const client = new OAuthClient();
+
+      nock("https://ably.com")
+        .post("/oauth/token")
+        .reply(404, {
+          error: {
+            message: "This resource could not be found.",
+            statusCode: "404",
+          },
+        });
+
+      await expect(client.pollForToken("dc_obj", 0.01, 10)).rejects.toThrow(
+        /Token polling failed: This resource could not be found\./,
+      );
+    });
+
+    it("surfaces a message when the envelope includes a `code` field", async () => {
+      // Defensive: if the website is ever brought in line with the documented
+      // Control API shape (`{error: {code, message, statusCode}}`), we should
+      // still extract the message.
+      const client = new OAuthClient();
+
+      nock("https://ably.com")
+        .post("/oauth/token")
+        .reply(400, {
+          error: {
+            code: "40000",
+            message: "Invalid device code",
+            statusCode: 400,
+          },
+        });
+
+      await expect(client.pollForToken("dc_obj", 0.01, 10)).rejects.toThrow(
+        /Token polling failed: Invalid device code/,
+      );
+    });
+
+    it("does not render [object Object] when error is an unknown object", async () => {
+      const client = new OAuthClient();
+
+      nock("https://ably.com")
+        .post("/oauth/token")
+        .reply(400, { error: { something: "weird" } });
+
       await expect(
-        client.revokeToken("token_to_revoke"),
-      ).resolves.toBeUndefined();
+        client.pollForToken("dc_obj2", 0.01, 10),
+      ).rejects.not.toThrow(/\[object Object\]/);
     });
   });
 });
