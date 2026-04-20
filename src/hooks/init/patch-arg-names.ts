@@ -1,5 +1,7 @@
 import { Hook } from "@oclif/core";
 
+import { camelToSnake } from "../../help.js";
+
 /**
  * When generating docs (GENERATING_DOC=true), patch camelCase arg names to
  * snake_case so oclif's toUpperCase() produces UPPER_SNAKE_CASE in headings/TOC.
@@ -15,7 +17,7 @@ const hook: Hook<"init"> = async function ({ config }) {
 
   for (const command of config.commands) {
     for (const arg of Object.values(command.args)) {
-      arg.name = arg.name.replaceAll(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+      arg.name = camelToSnake(arg.name);
     }
   }
 };

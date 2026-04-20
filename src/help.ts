@@ -10,7 +10,7 @@ import { displayLogo } from "./utils/logo.js";
 import { formatReleaseStatus } from "./utils/version.js";
 
 /** Convert camelCase arg name to snake_case so oclif's toUpperCase() produces UPPER_SNAKE_CASE */
-function camelToSnake(name: string): string {
+export function camelToSnake(name: string): string {
   return name.replaceAll(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
 }
 

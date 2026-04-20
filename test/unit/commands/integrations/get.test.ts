@@ -213,7 +213,7 @@ describe("integrations:get command", () => {
   });
 
   describe("error handling", () => {
-    it("should require ruleId argument", async () => {
+    it("should require integrationId argument", async () => {
       const { error } = await runCommand(["integrations:get"], import.meta.url);
 
       expect(error).toBeDefined();
@@ -313,6 +313,6 @@ describe("integrations:get command", () => {
 
   standardHelpTests("integrations:get", import.meta.url);
   standardArgValidationTests("integrations:get", import.meta.url, {
-    requiredArgs: ["ruleId"],
+    requiredArgs: ["integrationId"],
   });
 });

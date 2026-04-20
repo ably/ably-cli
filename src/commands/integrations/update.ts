@@ -14,8 +14,8 @@ interface PartialRuleData {
 
 export default class IntegrationsUpdateCommand extends ControlBaseCommand {
   static args = {
-    ruleId: Args.string({
-      description: "The rule ID to update",
+    integrationId: Args.string({
+      description: "The integration ID to update",
       required: true,
     }),
   };
@@ -70,7 +70,7 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
     try {
       const controlApi = this.createControlApi(flags);
       // Get current rule to preserve existing fields
-      const existingRule = await controlApi.getRule(appId, args.ruleId);
+      const existingRule = await controlApi.getRule(appId, args.integrationId);
 
       // Prepare update data - explicitly typed
       const updatePayload: Partial<PartialRuleData> = {
@@ -105,7 +105,7 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
 
       const updatedRule = await controlApi.updateRule(
         appId,
-        args.ruleId,
+        args.integrationId,
         updatePayload,
       );
 

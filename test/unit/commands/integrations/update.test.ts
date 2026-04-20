@@ -264,7 +264,7 @@ describe("integrations:update command", () => {
       },
     });
 
-    it("should require ruleId argument", async () => {
+    it("should require integrationId argument", async () => {
       const { error } = await runCommand(
         ["integrations:update", "--channel-filter", "test:*"],
         import.meta.url,
@@ -410,6 +410,6 @@ describe("integrations:update command", () => {
 
   standardHelpTests("integrations:update", import.meta.url);
   standardArgValidationTests("integrations:update", import.meta.url, {
-    requiredArgs: ["ruleId"],
+    requiredArgs: ["integrationId"],
   });
 });
