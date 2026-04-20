@@ -334,8 +334,10 @@ describe("Did You Mean Hook - Interactive Mode", function () {
           context,
         });
 
-        // Wait for async restoration
-        await new Promise((resolve) => setTimeout(resolve, 30));
+        // Wait for async restoration — all state changes happen together in the hook's cleanup path
+        await vi.waitFor(() => {
+          expect(mockReadline.resume).toHaveBeenCalled();
+        });
 
         // Verify readline was paused during prompt
         expect(mockReadline.pause).toHaveBeenCalled();
@@ -346,9 +348,6 @@ describe("Did You Mean Hook - Interactive Mode", function () {
         lineListeners.forEach((listener, index) => {
           expect(mockReadline.on.mock.calls[index]).toEqual(["line", listener]);
         });
-
-        // Verify readline was resumed
-        expect(mockReadline.resume).toHaveBeenCalled();
 
         // Verify terminal state was restored
         expect(process.stdin.setRawMode).toHaveBeenCalledWith(false);

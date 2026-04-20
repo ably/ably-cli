@@ -100,7 +100,6 @@ describe("LogsConnectionLifecycleSubscribe", function () {
     const mock = getMockAblyRealtime();
     const channel = mock.channels._getChannel("[meta]connection.lifecycle");
 
-    // Capture the subscription callback
     let messageCallback: ((message: unknown) => void) | null = null;
     channel.subscribe.mockImplementation(
       (callback: (message: unknown) => void) => {
@@ -108,28 +107,29 @@ describe("LogsConnectionLifecycleSubscribe", function () {
       },
     );
 
-    // Simulate receiving a message
-    setTimeout(() => {
-      if (messageCallback) {
-        messageCallback({
-          name: "connection.opened",
-          data: {
-            connectionId: "test-connection-123",
-            transport: "websocket",
-            ipAddress: "192.168.1.1",
-          },
-          timestamp: Date.now(),
-          clientId: "test-client",
-          connectionId: "test-connection-123",
-          id: "msg-123",
-        });
-      }
-    }, 50);
-
-    const { stdout } = await runCommand(
+    const commandPromise = runCommand(
       ["logs:connection-lifecycle:subscribe"],
       import.meta.url,
     );
+
+    await vi.waitFor(() => {
+      expect(messageCallback).not.toBeNull();
+    });
+
+    messageCallback!({
+      name: "connection.opened",
+      data: {
+        connectionId: "test-connection-123",
+        transport: "websocket",
+        ipAddress: "192.168.1.1",
+      },
+      timestamp: Date.now(),
+      clientId: "test-client",
+      connectionId: "test-connection-123",
+      id: "msg-123",
+    });
+
+    const { stdout } = await commandPromise;
 
     expect(stdout).toContain("connection.opened");
   });
@@ -138,7 +138,6 @@ describe("LogsConnectionLifecycleSubscribe", function () {
     const mock = getMockAblyRealtime();
     const channel = mock.channels._getChannel("[meta]connection.lifecycle");
 
-    // Capture the subscription callback
     let messageCallback: ((message: unknown) => void) | null = null;
     channel.subscribe.mockImplementation(
       (callback: (message: unknown) => void) => {
@@ -146,26 +145,26 @@ describe("LogsConnectionLifecycleSubscribe", function () {
       },
     );
 
-    // Simulate receiving a message
-    setTimeout(() => {
-      if (messageCallback) {
-        messageCallback({
-          name: "connection.opened",
-          data: { connectionId: "test-connection-123" },
-          timestamp: Date.now(),
-          clientId: "test-client",
-          connectionId: "test-connection-123",
-          id: "msg-123",
-        });
-      }
-    }, 50);
-
-    const { stdout } = await runCommand(
+    const commandPromise = runCommand(
       ["logs:connection-lifecycle:subscribe", "--json"],
       import.meta.url,
     );
 
-    // Verify JSON output - the output contains the event name in JSON format
+    await vi.waitFor(() => {
+      expect(messageCallback).not.toBeNull();
+    });
+
+    messageCallback!({
+      name: "connection.opened",
+      data: { connectionId: "test-connection-123" },
+      timestamp: Date.now(),
+      clientId: "test-client",
+      connectionId: "test-connection-123",
+      id: "msg-123",
+    });
+
+    const { stdout } = await commandPromise;
+
     expect(stdout).toContain("connection.opened");
   });
 
@@ -173,7 +172,6 @@ describe("LogsConnectionLifecycleSubscribe", function () {
     const mock = getMockAblyRealtime();
     const channel = mock.channels._getChannel("[meta]connection.lifecycle");
 
-    // Capture the subscription callback
     let messageCallback: ((message: unknown) => void) | null = null;
     channel.subscribe.mockImplementation(
       (callback: (message: unknown) => void) => {
@@ -181,27 +179,28 @@ describe("LogsConnectionLifecycleSubscribe", function () {
       },
     );
 
-    // Simulate receiving a connection state change event
-    setTimeout(() => {
-      if (messageCallback) {
-        messageCallback({
-          name: "connection.connected",
-          data: {
-            connectionId: "test-connection-456",
-            transport: "websocket",
-          },
-          timestamp: Date.now(),
-          clientId: "test-client",
-          connectionId: "test-connection-456",
-          id: "msg-state-change",
-        });
-      }
-    }, 50);
-
-    const { stdout } = await runCommand(
+    const commandPromise = runCommand(
       ["logs:connection-lifecycle:subscribe"],
       import.meta.url,
     );
+
+    await vi.waitFor(() => {
+      expect(messageCallback).not.toBeNull();
+    });
+
+    messageCallback!({
+      name: "connection.connected",
+      data: {
+        connectionId: "test-connection-456",
+        transport: "websocket",
+      },
+      timestamp: Date.now(),
+      clientId: "test-client",
+      connectionId: "test-connection-456",
+      id: "msg-state-change",
+    });
+
+    const { stdout } = await commandPromise;
 
     expect(channel.subscribe).toHaveBeenCalled();
     expect(stdout).toContain("connection.connected");
@@ -211,7 +210,6 @@ describe("LogsConnectionLifecycleSubscribe", function () {
     const mock = getMockAblyRealtime();
     const channel = mock.channels._getChannel("[meta]connection.lifecycle");
 
-    // Capture the subscription callback
     let messageCallback: ((message: unknown) => void) | null = null;
     channel.subscribe.mockImplementation(
       (callback: (message: unknown) => void) => {
@@ -219,27 +217,28 @@ describe("LogsConnectionLifecycleSubscribe", function () {
       },
     );
 
-    // Simulate receiving different event types
-    setTimeout(() => {
-      if (messageCallback) {
-        messageCallback({
-          name: "connection.closed",
-          data: {
-            connectionId: "test-connection-123",
-            reason: "client closed",
-          },
-          timestamp: Date.now(),
-          clientId: "test-client",
-          connectionId: "test-connection-123",
-          id: "msg-456",
-        });
-      }
-    }, 50);
-
-    const { stdout } = await runCommand(
+    const commandPromise = runCommand(
       ["logs:connection-lifecycle:subscribe"],
       import.meta.url,
     );
+
+    await vi.waitFor(() => {
+      expect(messageCallback).not.toBeNull();
+    });
+
+    messageCallback!({
+      name: "connection.closed",
+      data: {
+        connectionId: "test-connection-123",
+        reason: "client closed",
+      },
+      timestamp: Date.now(),
+      clientId: "test-client",
+      connectionId: "test-connection-123",
+      id: "msg-456",
+    });
+
+    const { stdout } = await commandPromise;
 
     expect(stdout).toContain("connection.closed");
   });
@@ -248,7 +247,6 @@ describe("LogsConnectionLifecycleSubscribe", function () {
     const mock = getMockAblyRealtime();
     const channel = mock.channels._getChannel("[meta]connection.lifecycle");
 
-    // Capture the subscription callback
     let messageCallback: ((message: unknown) => void) | null = null;
     channel.subscribe.mockImplementation(
       (callback: (message: unknown) => void) => {
@@ -256,27 +254,28 @@ describe("LogsConnectionLifecycleSubscribe", function () {
       },
     );
 
-    // Simulate receiving a channel state change event
-    setTimeout(() => {
-      if (messageCallback) {
-        messageCallback({
-          name: "channel.attached",
-          data: {
-            channelName: "test-channel",
-            state: "attached",
-          },
-          timestamp: Date.now(),
-          clientId: "test-client",
-          connectionId: "test-connection-123",
-          id: "msg-channel-state",
-        });
-      }
-    }, 50);
-
-    const { stdout } = await runCommand(
+    const commandPromise = runCommand(
       ["logs:connection-lifecycle:subscribe"],
       import.meta.url,
     );
+
+    await vi.waitFor(() => {
+      expect(messageCallback).not.toBeNull();
+    });
+
+    messageCallback!({
+      name: "channel.attached",
+      data: {
+        channelName: "test-channel",
+        state: "attached",
+      },
+      timestamp: Date.now(),
+      clientId: "test-client",
+      connectionId: "test-connection-123",
+      id: "msg-channel-state",
+    });
+
+    const { stdout } = await commandPromise;
 
     expect(channel.subscribe).toHaveBeenCalled();
     expect(stdout).toContain("channel.attached");
