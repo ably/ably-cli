@@ -118,6 +118,12 @@ export default class AccountsLogin extends ControlBaseCommand {
         );
       }
 
+      if (!this.shouldOutputJson(flags)) {
+        this.log(
+          `\nUsing account ${formatResource(selectedAccountInfo.name)} (${selectedAccountInfo.id}).`,
+        );
+      }
+
       // Resolve alias AFTER account selection so we can default to account name
       let { alias } = flags;
       if (!alias && !this.shouldOutputJson(flags)) {
