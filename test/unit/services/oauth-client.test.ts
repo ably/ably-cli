@@ -460,4 +460,52 @@ describe("OAuthClient", () => {
       );
     });
   });
+
+  describe("pollForToken abort signal", () => {
+    it("rejects promptly when the signal is aborted mid-sleep", async () => {
+      const client = new OAuthClient();
+      const controller = new AbortController();
+
+      // A long interval (10s) guarantees we're in the sleep, not the fetch,
+      // when the signal fires.
+      const promise = client.pollForToken(
+        "dc_abort_sleep",
+        10,
+        60,
+        controller.signal,
+      );
+      setTimeout(() => controller.abort(), 20);
+
+      await expect(promise).rejects.toThrow(/aborted/i);
+    }, 2_000);
+
+    it("rejects promptly when the signal is aborted during a fetch", async () => {
+      const client = new OAuthClient();
+      const controller = new AbortController();
+
+      // The endpoint never responds, so without the abort the request would
+      // hit pollForToken's internal 15s fetch timeout instead.
+      nock("https://ably.com").post("/oauth/token").delay(10_000).reply(200);
+
+      const promise = client.pollForToken(
+        "dc_abort_fetch",
+        0.01,
+        60,
+        controller.signal,
+      );
+      setTimeout(() => controller.abort(), 100);
+
+      await expect(promise).rejects.toThrow(/aborted/i);
+    }, 5_000);
+
+    it("rejects immediately when the signal is already aborted", async () => {
+      const client = new OAuthClient();
+      const controller = new AbortController();
+      controller.abort();
+
+      await expect(
+        client.pollForToken("dc_pre_aborted", 1, 60, controller.signal),
+      ).rejects.toThrow(/aborted/i);
+    });
+  });
 });

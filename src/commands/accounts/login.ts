@@ -420,11 +420,25 @@ export default class AccountsLogin extends ControlBaseCommand {
       ? undefined
       : ora("Waiting for authorization...").start();
 
+    // Wire up SIGINT so Ctrl+C during polling aborts the fetch and exits
+    // cleanly. Without this, the unsettled top-level await in bin/run.js
+    // triggers a confusing "Detected unsettled top-level await" warning
+    // from Node when the user hits Ctrl+C.
+    const abortController = new AbortController();
+    const onSigint = () => {
+      abortController.abort();
+      spinner?.fail("Authentication cancelled.");
+      // Match the conventional exit code for SIGINT (128 + signal number).
+      this.exit(130);
+    };
+    process.once("SIGINT", onSigint);
+
     try {
       const tokens = await oauthClient.pollForToken(
         deviceResponse.deviceCode,
         deviceResponse.interval,
         deviceResponse.expiresIn,
+        abortController.signal,
       );
 
       spinner?.succeed("Authentication successful.");
@@ -432,6 +446,8 @@ export default class AccountsLogin extends ControlBaseCommand {
     } catch (error) {
       spinner?.fail("Authentication failed.");
       throw error;
+    } finally {
+      process.removeListener("SIGINT", onSigint);
     }
   }
 
