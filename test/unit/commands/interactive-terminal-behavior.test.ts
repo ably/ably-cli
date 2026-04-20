@@ -273,11 +273,10 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     // Simulate command execution
     rl.emit("line", "invalid command");
 
-    // Wait for async processing
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
     // Prompt should be called again after error
-    expect(promptStub).toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(promptStub).toHaveBeenCalled();
+    });
   });
 
   it("should handle special characters in autocomplete", async () => {
@@ -393,11 +392,10 @@ describe("Interactive Mode - Terminal Behavior Unit Tests", () => {
     // Simulate exit command
     rl.emit("line", "exit");
 
-    // Wait for async processing
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
     // Readline should be closed
-    expect(closeStub).toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(closeStub).toHaveBeenCalled();
+    });
 
     await vi.waitFor(() => {
       expect(exitStub).toHaveBeenCalled();

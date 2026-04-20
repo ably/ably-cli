@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { runCommand } from "@oclif/test";
 import { getMockAblySpaces } from "../../../../helpers/mock-ably-spaces.js";
 import { getMockAblyRealtime } from "../../../../helpers/mock-ably-realtime.js";
@@ -69,19 +69,18 @@ describe("spaces:locations:subscribe command", () => {
         import.meta.url,
       );
 
-      // Wait a tick for the subscribe to be set up
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await vi.waitFor(() => {
+        expect(locationHandler).toBeDefined();
+      });
 
-      if (locationHandler) {
-        locationHandler({
-          member: {
-            clientId: "user-1",
-            connectionId: "conn-1",
-          },
-          currentLocation: { room: "lobby" },
-          previousLocation: { room: "entrance" },
-        });
-      }
+      locationHandler!({
+        member: {
+          clientId: "user-1",
+          connectionId: "conn-1",
+        },
+        currentLocation: { room: "lobby" },
+        previousLocation: { room: "entrance" },
+      });
 
       const { stdout } = await runPromise;
 
@@ -109,18 +108,18 @@ describe("spaces:locations:subscribe command", () => {
         import.meta.url,
       );
 
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await vi.waitFor(() => {
+        expect(locationHandler).toBeDefined();
+      });
 
-      if (locationHandler) {
-        locationHandler({
-          member: {
-            clientId: "user-1",
-            connectionId: "conn-1",
-          },
-          currentLocation: { room: "lobby" },
-          previousLocation: null,
-        });
-      }
+      locationHandler!({
+        member: {
+          clientId: "user-1",
+          connectionId: "conn-1",
+        },
+        currentLocation: { room: "lobby" },
+        previousLocation: null,
+      });
 
       const { stdout } = await runPromise;
 
