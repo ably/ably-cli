@@ -228,8 +228,9 @@ export default class AccountsSwitch extends ControlBaseCommand {
     }
 
     // Store the new alias with the same OAuth tokens but different account info.
-    // Carry over the source account's controlHost so the shared session key
-    // resolves correctly (email + host scope).
+    // Carry over the source account's oauthHost (so the shared session key
+    // resolves correctly) and controlHost (so later Control API calls keep
+    // targeting the same deployment).
     this.configManager.storeOAuthTokens(
       newAlias,
       {
@@ -240,6 +241,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
         accountId: remoteAccount.id,
         accountName: remoteAccount.name,
         controlHost: currentAccount?.controlHost,
+        oauthHost: currentAccount?.oauthHost,
       },
     );
 

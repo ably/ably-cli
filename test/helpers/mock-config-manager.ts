@@ -26,12 +26,12 @@ import type {
   ConfigManager,
 } from "../../src/services/config-manager.js";
 
-// Kept in sync with DEFAULT_OAUTH_CONTROL_HOST in src/services/oauth-client.ts.
+// Kept in sync with DEFAULT_OAUTH_HOST in src/services/oauth-client.ts.
 // Duplicated here because importing from oauth-client pulls node-fetch into
 // the vitest setup graph (via test/unit/setup.ts → mock-config-manager),
 // which installs node-fetch's global agent *before* nock is set up per test
 // and breaks interception for commands that make HTTPS requests.
-const DEFAULT_OAUTH_CONTROL_HOST = "ably.com";
+const DEFAULT_OAUTH_HOST = "ably.com";
 
 /**
  * Type for test configuration values.
@@ -529,16 +529,17 @@ export class MockConfigManager implements ConfigManager {
       accountId?: string;
       accountName?: string;
       controlHost?: string;
+      oauthHost?: string;
     },
   ): void {
     const userEmail =
       tokens.userEmail ?? this.config.accounts[alias]?.userEmail ?? "";
-    const controlHost =
-      accountInfo?.controlHost ??
-      this.config.accounts[alias]?.controlHost ??
-      DEFAULT_OAUTH_CONTROL_HOST;
+    const oauthHost =
+      accountInfo?.oauthHost ??
+      this.config.accounts[alias]?.oauthHost ??
+      DEFAULT_OAUTH_HOST;
     const emailPart = userEmail.toLowerCase() || alias;
-    const sessionKey = `${emailPart}::${controlHost.toLowerCase()}`;
+    const sessionKey = `${emailPart}::${oauthHost.toLowerCase()}`;
 
     // Create/update the shared OAuth session
     if (!this.config.oauthSessions) {
@@ -582,6 +583,8 @@ export class MockConfigManager implements ConfigManager {
       controlHost:
         accountInfo?.controlHost ?? this.config.accounts[alias]?.controlHost,
       currentAppId: this.config.accounts[alias]?.currentAppId,
+      oauthHost:
+        accountInfo?.oauthHost ?? this.config.accounts[alias]?.oauthHost,
       oauthSessionKey: sessionKey,
       userEmail,
     };

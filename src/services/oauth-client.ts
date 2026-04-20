@@ -1,10 +1,12 @@
-import fetch from "node-fetch";
+import fetch, { type Response as FetchResponse } from "node-fetch";
 
 /**
- * Default OAuth control host. Shared with config-manager so the session-key
- * scope matches the host actually used for token exchange.
+ * Default OAuth authorization-server host. Shared with config-manager so the
+ * session-key scope matches the host that actually minted the tokens. Kept
+ * distinct from the Control API host (control.ably.net) — they are separate
+ * services that happen to share the ably.com brand.
  */
-export const DEFAULT_OAUTH_CONTROL_HOST = "ably.com";
+export const DEFAULT_OAUTH_HOST = "ably.com";
 
 /**
  * Thrown by refreshAccessToken when the server rejects the refresh token
@@ -41,7 +43,7 @@ export interface OAuthConfig {
 }
 
 export interface OAuthClientOptions {
-  controlHost?: string;
+  oauthHost?: string;
 }
 
 export interface DeviceCodeResponse {
@@ -57,7 +59,7 @@ export class OAuthClient {
   private config: OAuthConfig;
 
   constructor(options: OAuthClientOptions = {}) {
-    this.config = this.getOAuthConfig(options.controlHost);
+    this.config = this.getOAuthConfig(options.oauthHost);
   }
 
   /**
@@ -118,7 +120,11 @@ export class OAuthClient {
     const maxNetworkRetries = 3;
 
     while (Date.now() < deadline) {
-      await this.sleep(currentInterval * 1000);
+      // Apply ±20% jitter so concurrent clients don't fall into lockstep and
+      // hit the authorization server in synchronized bursts, which trips the
+      // shared rate limit long before any individual client is misbehaving.
+      const jitterFactor = 0.9 + Math.random() * 0.2;
+      await this.sleep(currentInterval * 1000 * jitterFactor);
 
       if (Date.now() >= deadline) {
         throw new Error("Device code expired");
@@ -161,32 +167,44 @@ export class OAuthClient {
         return this.parseTokenResponse(data);
       }
 
-      let error: string;
-      try {
-        const errorData = (await response.json()) as Record<string, unknown>;
-        error = errorData.error as string;
-      } catch {
-        throw new Error(`Token polling failed with status ${response.status}`);
-      }
-
-      if (error === "authorization_pending") {
+      // Handle rate limiting before attempting to parse the error body. An
+      // OAuth-compliant server would return error=slow_down, but the current
+      // website reuses the Control API error envelope for 429s, so we bail
+      // out to backoff on status alone and don't depend on a specific shape.
+      if (response.status === 429) {
+        currentInterval = Math.min(currentInterval * 2, 30);
+        // Best-effort consume body so the socket can be released even if the
+        // server wrote one; failures here are irrelevant.
+        try {
+          await response.text();
+        } catch {
+          // ignore
+        }
         continue;
       }
 
-      if (error === "slow_down") {
+      const { code: errorCode, message: errorMessage } =
+        await parsePollingError(response);
+
+      if (errorCode === "authorization_pending") {
+        continue;
+      }
+
+      if (errorCode === "slow_down") {
         currentInterval += 5;
         continue;
       }
 
-      if (error === "expired_token") {
+      if (errorCode === "expired_token") {
         throw new Error("Device code expired");
       }
 
-      if (error === "access_denied") {
+      if (errorCode === "access_denied") {
         throw new Error("Authorization denied");
       }
 
-      throw new Error(`Token polling failed: ${error}`);
+      const reason = errorMessage ?? errorCode ?? `HTTP ${response.status}`;
+      throw new Error(`Token polling failed: ${reason}`);
     }
 
     throw new Error("Device code expired");
@@ -210,32 +228,58 @@ export class OAuthClient {
   /**
    * Revoke a token (access or refresh).
    *
-   * Contract: must never reject. Callers (e.g. accounts logout) rely on this
-   * being best-effort so logout cannot be blocked by a network failure.
-   * Any errors are swallowed inside the try/catch below.
+   * Rejects on network failure, timeout, or non-2xx response. Callers that
+   * want best-effort behaviour (e.g. accounts logout) must catch the rejection
+   * themselves — surfacing it lets the caller distinguish a successful revoke
+   * from a timed-out one so it can warn the user.
+   *
+   * Pass an external `signal` to abort the in-flight fetch from the outside
+   * (the internal 10s timeout is still applied as a safety net).
    */
-  async revokeToken(token: string): Promise<void> {
+  async revokeToken(
+    token: string,
+    options: { signal?: AbortSignal; timeoutMs?: number } = {},
+  ): Promise<void> {
     const params = new URLSearchParams({
       client_id: this.config.clientId,
       token,
     });
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10_000);
+    const timeoutMs = options.timeoutMs ?? 10_000;
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    // Link the caller-supplied signal to our internal controller so aborting
+    // the outer signal also cancels the fetch.
+    const externalSignal = options.signal;
+    const onExternalAbort = () => controller.abort();
+    if (externalSignal) {
+      if (externalSignal.aborted) {
+        controller.abort();
+      } else {
+        externalSignal.addEventListener("abort", onExternalAbort);
+      }
+    }
+
     try {
-      await fetch(this.config.revocationEndpoint, {
+      const response = await fetch(this.config.revocationEndpoint, {
         body: params.toString(),
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         method: "POST",
         signal: controller.signal,
       });
-    } catch {
-      // Best-effort revocation -- don't block on failure
+      if (!response.ok) {
+        const errorBody = await response.text().catch(() => "");
+        throw new Error(
+          `Token revocation failed (${response.status})${errorBody ? `: ${errorBody}` : ""}`,
+        );
+      }
     } finally {
       // Always clear the timer, even on fetch rejection, or the pending
       // setTimeout keeps the event loop alive for up to 10s after the
       // command has otherwise finished.
       clearTimeout(timeout);
+      externalSignal?.removeEventListener("abort", onExternalAbort);
     }
   }
 
@@ -245,17 +289,18 @@ export class OAuthClient {
 
   // --- Private helpers ---
 
-  private getOAuthConfig(
-    controlHost = DEFAULT_OAUTH_CONTROL_HOST,
-  ): OAuthConfig {
-    const host = controlHost;
-    const scheme = host.includes("local") ? "http" : "https";
+  private getOAuthConfig(oauthHost = DEFAULT_OAUTH_HOST): OAuthConfig {
+    const scheme = oauthHost.includes("local") ? "http" : "https";
     return {
+      // Per RFC 8628 §3.1 and RFC 6749 §2.1, the device flow uses a public
+      // client — there is no client secret, and the client_id is not
+      // confidential. It is intentionally embedded in the binary; distributing
+      // it publicly does not weaken the security of the flow.
       clientId: "gb-I8-bZRnXs-gF83jOWKQrUxPPWp_ldTfQtgGP0EFg",
-      deviceCodeEndpoint: `${scheme}://${host}/oauth/authorize_device`,
-      revocationEndpoint: `${scheme}://${host}/oauth/revoke`,
+      deviceCodeEndpoint: `${scheme}://${oauthHost}/oauth/authorize_device`,
+      revocationEndpoint: `${scheme}://${oauthHost}/oauth/revoke`,
       scopes: ["full_access"],
-      tokenEndpoint: `${scheme}://${host}/oauth/token`,
+      tokenEndpoint: `${scheme}://${oauthHost}/oauth/token`,
     };
   }
 
@@ -345,4 +390,56 @@ export class OAuthClient {
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
+}
+
+/**
+ * Extract an error code + human message from a polling-endpoint error body.
+ *
+ * The OAuth-compliant shape per RFC 6749 §5.2 is `{error: "slow_down"}` with
+ * an optional `error_description`. The website currently does NOT use this
+ * shape for non-OAuth-specific failures (rate limits, 404s, etc.); it reuses
+ * the Control API envelope `{error: {message, statusCode}}`. Observed in
+ * practice: `statusCode` is a string (e.g. "429") and there is no `code`
+ * field — but we still read `code` defensively in case the website is later
+ * brought into line with the Control API's documented shape
+ * `{error: {code, message, statusCode}}`.
+ *
+ * Never throws — parse failures degrade to undefined.
+ */
+async function parsePollingError(
+  response: FetchResponse,
+): Promise<{ code?: string; message?: string }> {
+  let errorData: Record<string, unknown>;
+  try {
+    errorData = (await response.json()) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+
+  const raw = errorData.error;
+  if (typeof raw === "string") {
+    return {
+      code: raw,
+      message:
+        typeof errorData.error_description === "string"
+          ? errorData.error_description
+          : undefined,
+    };
+  }
+
+  if (raw && typeof raw === "object") {
+    const nested = raw as Record<string, unknown>;
+    const stringify = (v: unknown) =>
+      typeof v === "string" ? v : typeof v === "number" ? String(v) : undefined;
+    // Prefer `code` if the website ever emits it, then fall back to
+    // `statusCode` (what it actually emits today).
+    const code = stringify(nested.code) ?? stringify(nested.statusCode);
+    const message =
+      typeof nested.message === "string" ? nested.message : undefined;
+    return { code, message };
+  }
+
+  const topLevelMessage =
+    typeof errorData.message === "string" ? errorData.message : undefined;
+  return { message: topLevelMessage };
 }

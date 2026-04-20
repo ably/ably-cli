@@ -29,12 +29,12 @@ describe("ControlApi", function () {
     it("should use provided control host", function () {
       const customApi = new ControlApi({
         accessToken,
-        controlHost: "custom.control.host",
+        controlHost: "control.custom.host",
         logErrors: false,
       });
 
       // Set up nock to intercept request to custom host
-      const scope = nock("https://custom.control.host")
+      const scope = nock("https://control.custom.host")
         .get("/v1/me")
         .reply(200, { account: { id: "test-account-id" } });
 
