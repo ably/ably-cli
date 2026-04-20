@@ -41,4 +41,8 @@ describe("slugifyAccountName", () => {
   it("handles purely numeric name", () => {
     expect(slugifyAccountName("12345")).toBe("account-12345");
   });
+
+  it("maps unicode characters via the slugify charmap", () => {
+    expect(slugifyAccountName("André's Co")).toBe("andres-co");
+  });
 });
