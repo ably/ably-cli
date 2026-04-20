@@ -410,6 +410,8 @@ export class MockConfigManager implements ConfigManager {
     accountInfo: {
       accountId: string;
       accountName: string;
+      controlHost?: string;
+      oauthHost?: string;
       tokenId?: string;
       userEmail: string;
     } = {
@@ -423,6 +425,8 @@ export class MockConfigManager implements ConfigManager {
       accessToken,
       accountId: accountInfo.accountId,
       accountName: accountInfo.accountName,
+      controlHost: accountInfo.controlHost,
+      oauthHost: accountInfo.oauthHost,
       userEmail: accountInfo.userEmail,
       tokenId: accountInfo.tokenId,
       apps: existing?.apps || {},

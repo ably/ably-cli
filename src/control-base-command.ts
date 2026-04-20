@@ -19,9 +19,11 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
   protected createControlApi(flags: BaseFlags): ControlApi {
     let accessToken = process.env.ABLY_ACCESS_TOKEN;
     let tokenRefreshMiddleware: TokenRefreshMiddleware | undefined;
+    const account = accessToken
+      ? undefined
+      : this.configManager.getCurrentAccount();
 
     if (!accessToken) {
-      const account = this.configManager.getCurrentAccount();
       if (!account) {
         this.fail(
           `No access token provided. Please set the ABLY_ACCESS_TOKEN environment variable or configure an account with "ably accounts login".`,
@@ -66,9 +68,15 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
       );
     }
 
+    // Prefer the stored account host (what the user picked at login time) so
+    // later commands don't silently target the default control plane when the
+    // user originally logged in against a review / staging deployment. The
+    // flag still wins if explicitly passed, to allow one-off overrides.
+    const controlHost = flags["control-host"] ?? account?.controlHost;
+
     return new ControlApi({
       accessToken,
-      controlHost: flags["control-host"],
+      controlHost,
       tokenRefreshMiddleware,
     });
   }

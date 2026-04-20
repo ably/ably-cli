@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
+import nock from "nock";
 import {
   nockControl,
   controlApiCleanup,
@@ -171,6 +172,43 @@ describe("accounts:switch command", () => {
       expect(stderr).toContain("Switched to account");
       expect(mock.getCurrentAccountAlias()).toBe("oauth-acct");
       expect(mock.getAuthMethod("oauth-acct")).toBe("oauth");
+    });
+
+    it("hits the stored controlHost when the account was logged in against a custom host", async () => {
+      const mock = getMockConfigManager();
+      const customHost = "review-abc.herokuapp.com";
+
+      mock.storeOAuthTokens(
+        "custom-host-acct",
+        {
+          accessToken: "oauth_token_custom",
+          refreshToken: "refresh_token_custom",
+          expiresAt: Date.now() + 3_600_000,
+          userEmail: "custom@example.com",
+        },
+        {
+          accountId: "custom-account-id",
+          accountName: "Custom Host Account",
+          controlHost: customHost,
+          oauthHost: customHost,
+        },
+      );
+
+      const scope = nock(`https://${customHost}`)
+        .get("/api/v1/me")
+        .reply(200, {
+          account: { id: "custom-account-id", name: "Custom Host Account" },
+          user: { email: "custom@example.com" },
+        });
+
+      const { stderr } = await runCommand(
+        ["accounts:switch", "custom-host-acct"],
+        import.meta.url,
+      );
+
+      expect(stderr).toContain("Switched to account");
+      expect(stderr).not.toContain("Access token may have expired");
+      expect(scope.isDone()).toBe(true);
     });
 
     it("should return JSON with account info when switching OAuth account with --json", async () => {
