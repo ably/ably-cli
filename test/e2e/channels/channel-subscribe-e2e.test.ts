@@ -88,44 +88,38 @@ describe("Channel Subscribe E2E Tests", () => {
       `[Test Subscribe] Background subscriber process ${subscribeProcessInfo.processId} ready.`,
     );
 
-    try {
-      // Publish a message to the channel
-      console.log(
-        `[Test Subscribe] Publishing message to ${subscribeChannel}...`,
-      );
-      const testMessage = { text: "Subscribe E2E Test" };
-      await publishTestMessage(subscribeChannel, testMessage);
-      console.log(`[Test Subscribe] Message published.`);
+    // Publish a message to the channel
+    console.log(
+      `[Test Subscribe] Publishing message to ${subscribeChannel}...`,
+    );
+    const testMessage = { text: "Subscribe E2E Test" };
+    await publishTestMessage(subscribeChannel, testMessage);
+    console.log(`[Test Subscribe] Message published.`);
 
-      // Wait for the subscribe process to receive the message
-      console.log(
-        `[Test Subscribe] Waiting for message in output file ${outputPath}...`,
-      );
-      let messageReceived = false;
-      // Poll for a reasonable time after publishing
-      for (let i = 0; i < 50; i++) {
-        // ~7.5 seconds polling
-        const output = await readProcessOutput(outputPath);
-        if (output.includes("Subscribe E2E Test")) {
-          console.log(`[Test Subscribe] Message received in output.`);
-          messageReceived = true;
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 150));
+    // Wait for the subscribe process to receive the message
+    console.log(
+      `[Test Subscribe] Waiting for message in output file ${outputPath}...`,
+    );
+    let messageReceived = false;
+    // Poll for a reasonable time after publishing
+    for (let i = 0; i < 50; i++) {
+      // ~7.5 seconds polling
+      const output = await readProcessOutput(outputPath);
+      if (output.includes("Subscribe E2E Test")) {
+        console.log(`[Test Subscribe] Message received in output.`);
+        messageReceived = true;
+        break;
       }
-      if (!messageReceived) {
-        const finalOutput = await readProcessOutput(outputPath);
-        console.error(
-          `[Test Subscribe] FAILED TO FIND MESSAGE. Final output:\n${finalOutput}`,
-        );
-      }
-      expect(messageReceived).toBe(true);
-    } finally {
-      // Cleanup is handled by afterEach hook
-      console.log(
-        `[Test Subscribe] Test finished, cleanup will handle process ${subscribeProcessInfo.processId}`,
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    if (!messageReceived) {
+      const finalOutput = await readProcessOutput(outputPath);
+      console.error(
+        `[Test Subscribe] FAILED TO FIND MESSAGE. Final output:\n${finalOutput}`,
       );
     }
+    expect(messageReceived).toBe(true);
+    // Cleanup is handled by afterEach hook
   });
 
   // End-to-end: both subscriber AND publisher run through the CLI subprocess —
@@ -145,36 +139,30 @@ describe("Channel Subscribe E2E Tests", () => {
       { readySignal, timeoutMs: 15000 },
     );
 
-    try {
-      const messageText = `cli-to-cli-${Date.now()}`;
-      const publishResult = await runCommand([
-        "channels",
-        "publish",
-        subscribeChannel,
-        messageText,
-      ]);
-      expect(publishResult.exitCode).toBe(0);
+    const messageText = `cli-to-cli-${Date.now()}`;
+    const publishResult = await runCommand([
+      "channels",
+      "publish",
+      subscribeChannel,
+      messageText,
+    ]);
+    expect(publishResult.exitCode).toBe(0);
 
-      let messageReceived = false;
-      for (let i = 0; i < 50; i++) {
-        const output = await readProcessOutput(outputPath);
-        if (output.includes(messageText)) {
-          messageReceived = true;
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 150));
+    let messageReceived = false;
+    for (let i = 0; i < 50; i++) {
+      const output = await readProcessOutput(outputPath);
+      if (output.includes(messageText)) {
+        messageReceived = true;
+        break;
       }
-      if (!messageReceived) {
-        const finalOutput = await readProcessOutput(outputPath);
-        console.error(
-          `[Test CLI-to-CLI] FAILED. Final subscriber output:\n${finalOutput}`,
-        );
-      }
-      expect(messageReceived).toBe(true);
-    } finally {
-      console.log(
-        `[Test CLI-to-CLI] Test finished, cleanup will handle process ${subscribeProcessInfo.processId}`,
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    if (!messageReceived) {
+      const finalOutput = await readProcessOutput(outputPath);
+      console.error(
+        `[Test CLI-to-CLI] FAILED. Final subscriber output:\n${finalOutput}`,
       );
     }
+    expect(messageReceived).toBe(true);
   });
 });

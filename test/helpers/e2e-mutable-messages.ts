@@ -7,7 +7,12 @@ export { SHOULD_SKIP_CONTROL_E2E as SHOULD_SKIP_MUTABLE_TESTS } from "./e2e-test
 /** Namespace prefix for mutable message test channels. */
 export const MUTABLE_NAMESPACE = "e2e-mutable";
 
-/** Track whether the rule was created so teardown knows whether to clean up. */
+// The module-level ruleCreated flag and the shared MUTABLE_NAMESPACE channel
+// rule assume e2e files run serially. Vitest's e2e project sets
+// `fileParallelism: false` (see vitest.config.ts), so only one file uses this
+// helper at a time. If that config ever changes, switch to a per-caller
+// cleanup-token pattern to avoid one file's teardown deleting the rule while
+// another is still publishing.
 let ruleCreated = false;
 
 function getAppId(): string {
