@@ -6,9 +6,9 @@
  * - Server (right): activity log, with space for future controls at the bottom
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Box, Text, useApp, useInput, useStdout } from "ink";
-import { ClientPanel } from "./ClientPanel.js";
+import { ClientPanel, totalRenderedLines } from "./ClientPanel.js";
 import { ServerPanel } from "./ServerPanel.js";
 import { DebugPanel } from "./DebugPanel.js";
 import { InputBar } from "./InputBar.js";
@@ -34,6 +34,7 @@ export function App({ role, feature, channelName, orchestrator }: AppProps) {
 
   const [debugExpanded, setDebugExpanded] = useState(false);
   const [mutableMessagesError, setMutableMessagesError] = useState(false);
+  const [scrollOffsetLines, setScrollOffsetLines] = useState(0);
 
   const {
     messages,
@@ -48,6 +49,7 @@ export function App({ role, feature, channelName, orchestrator }: AppProps) {
 
   const serverLog = useScrollableLog();
   const debugLog = useScrollableLog();
+  const [serverStatusLine, setServerStatusLine] = useState<string | null>(null);
 
   // Wire orchestrator events to log panels, then start server/client.
   // Starting happens inside useEffect so event listeners are attached first
@@ -58,16 +60,20 @@ export function App({ role, feature, channelName, orchestrator }: AppProps) {
     if (!orchestrator) return;
 
     const onServerLog = (msg: string) => serverLog.addEntry(msg);
+    const onServerStatus = (status: string | null) =>
+      setServerStatusLine(status);
     const onDebugLog = (msg: string) => debugLog.addEntry(msg);
 
     const onMutableRequired = () => setMutableMessagesError(true);
 
     orchestrator.on("serverLog", onServerLog);
+    orchestrator.on("serverStatus", onServerStatus);
     orchestrator.on("debugLog", onDebugLog);
     orchestrator.on("mutableMessagesRequired", onMutableRequired);
 
     return () => {
       orchestrator.off("serverLog", onServerLog);
+      orchestrator.off("serverStatus", onServerStatus);
       orchestrator.off("debugLog", onDebugLog);
       orchestrator.off("mutableMessagesRequired", onMutableRequired);
     };
@@ -111,6 +117,32 @@ export function App({ role, feature, channelName, orchestrator }: AppProps) {
     };
   }, [stdout]);
 
+  const showClient = role === "both" || role === "client";
+  const showServer = role === "both" || role === "server";
+
+  const clientWidth = showServer ? Math.floor(dims.width * 0.6) : dims.width;
+  const debugLines = debugExpanded ? 8 : 2;
+
+  // Budget lines for the conversation area so it can't push the debug
+  // panel and input off the bottom of the terminal. The layout inside the
+  // client panel border is:
+  //   header (2)  +  marginTop (1)  +  conversation  +
+  //   debug border/header (2) + debug lines  +
+  //   input border/header (2) + input line (1)  +
+  //   outer border (2)
+  const conversationLines = Math.max(
+    3,
+    dims.height - (2 + 1 + 2 + debugLines + 2 + 1 + 2),
+  );
+  // Approximate usable width inside the conversation area (paddingX=1 on
+  // both sides + 2 for the outer border).
+  const conversationWidth = Math.max(10, clientWidth - 4);
+
+  // Total lines the conversation would render if unbounded. Used to
+  // maintain scroll position as new tokens arrive during streaming.
+  const totalLines = totalRenderedLines(messages, conversationWidth);
+  const maxScrollable = Math.max(0, totalLines - conversationLines);
+
   // Keyboard handling
   useInput((input, key) => {
     if (input === "d" && key.ctrl) {
@@ -125,14 +157,57 @@ export function App({ role, feature, channelName, orchestrator }: AppProps) {
 
     if (key.tab) {
       setDebugExpanded((prev) => !prev);
+      return;
+    }
+
+    // Scroll: page up/down step ~90% of a screen so there's a line of
+    // context overlap between pages. Home/End jump to top/live.
+    const pageStep = Math.max(1, Math.floor(conversationLines * 0.9));
+    if (key.pageUp) {
+      setScrollOffsetLines((prev) => Math.min(prev + pageStep, maxScrollable));
+      return;
+    }
+    if (key.pageDown) {
+      setScrollOffsetLines((prev) => Math.max(0, prev - pageStep));
+      return;
+    }
+    if (key.meta && key.upArrow) {
+      // Home
+      setScrollOffsetLines(maxScrollable);
+      return;
+    }
+    if (key.meta && key.downArrow) {
+      // End
+      setScrollOffsetLines(0);
+      return;
     }
   });
 
-  const showClient = role === "both" || role === "client";
-  const showServer = role === "both" || role === "server";
+  // When content grows while the user is scrolled up, bump the offset by
+  // the growth delta so their view stays anchored to the same absolute
+  // content rather than drifting with the stream.
+  const prevTotalLinesRef = useRef(totalLines);
+  useEffect(() => {
+    const delta = totalLines - prevTotalLinesRef.current;
+    if (delta > 0 && scrollOffsetLines > 0) {
+      setScrollOffsetLines((prev) => Math.min(prev + delta, maxScrollable));
+    }
+    prevTotalLinesRef.current = totalLines;
+  }, [totalLines, scrollOffsetLines, maxScrollable]);
 
-  const clientWidth = showServer ? Math.floor(dims.width * 0.6) : dims.width;
-  const debugLines = debugExpanded ? 8 : 2;
+  // Reset to follow mode whenever the user sends a new message. We detect
+  // a send by watching the message count; any growth of user messages
+  // means a new turn was kicked off from this client.
+  const prevMsgCountRef = useRef(messages.length);
+  useEffect(() => {
+    if (messages.length > prevMsgCountRef.current) {
+      const newest = messages.at(-1);
+      if (newest?.role === "user") {
+        setScrollOffsetLines(0);
+      }
+    }
+    prevMsgCountRef.current = messages.length;
+  }, [messages]);
 
   // Server status for client panel
   if (mutableMessagesError) {
@@ -161,12 +236,22 @@ export function App({ role, feature, channelName, orchestrator }: AppProps) {
             <Text color={colors.dim}>Channel: {channelName}</Text>
           </Box>
 
-          {/* Conversation area — fills available space */}
-          <Box flexDirection="column" flexGrow={1} paddingX={1} marginTop={1}>
+          {/* Conversation area — height-bounded so overflow doesn't push
+              the debug panel and input bar off the bottom. */}
+          <Box
+            flexDirection="column"
+            height={conversationLines}
+            paddingX={1}
+            marginTop={1}
+            overflow="hidden"
+          >
             <ClientPanel
               messages={messages}
               serverStatus={serverStatus}
               isStreaming={isStreaming}
+              maxLines={conversationLines}
+              contentWidth={conversationWidth}
+              scrollOffsetLines={scrollOffsetLines}
             />
           </Box>
 
@@ -229,6 +314,7 @@ export function App({ role, feature, channelName, orchestrator }: AppProps) {
           <Box flexDirection="column" flexGrow={1} paddingX={1}>
             <ServerPanel
               entries={serverLog.entries}
+              status={serverStatusLine}
               port={serverPort ?? undefined}
               isRunning={serverRunning}
               maxVisible={dims.height - (showClient ? 4 : 8)}

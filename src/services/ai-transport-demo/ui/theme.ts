@@ -41,10 +41,4 @@ export const symbols = {
   warn: "⚠",
   /** Feature highlight */
   feature: "⚡",
-  /** Debug toggle hint */
-  debug: "🔍",
-  /** Client panel */
-  client: "💬",
-  /** Server panel */
-  server: "🖥",
 } as const;

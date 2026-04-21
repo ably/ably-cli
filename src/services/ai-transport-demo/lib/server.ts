@@ -26,7 +26,10 @@ export interface DemoServerOptions {
 export interface AitRequestBody {
   turnId: string;
   clientId?: string;
-  messages: Array<{ message: { id: string; role: string; content: string } }>;
+  messages: Array<{
+    message: { id: string; role: string; content: string };
+    headers?: Record<string, string>;
+  }>;
   history?: unknown[];
   parent?: string | null;
   forkOf?: string;

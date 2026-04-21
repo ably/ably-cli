@@ -46,8 +46,8 @@ export function InputBar({
       </Box>
       <Text color={colors.dim}>
         {isStreaming
-          ? "  Ctrl+C cancel │ Ctrl+D quit"
-          : "  Enter send │ Tab debug │ Ctrl+D quit"}
+          ? "  Ctrl+C cancel │ PgUp/PgDn scroll │ Ctrl+D quit"
+          : "  Enter send │ Tab debug │ PgUp/PgDn scroll │ Ctrl+D quit"}
       </Text>
     </Box>
   );

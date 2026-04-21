@@ -49,13 +49,16 @@ export function useDemo(orchestrator: DemoOrchestrator | null): UseDemoResult {
       setServerStatus("not-found");
     };
 
-    // The orchestrator emits the full message list from the AIT client transport
-    const onMessages = (msgs: DemoMessage[]) => {
+    // The orchestrator emits the full message list from the AIT client
+    // transport. Progressive streaming updates include an optional `streaming`
+    // flag on the in-progress assistant message for the cursor indicator.
+    const onMessages = (msgs: Array<DemoMessage & { streaming?: boolean }>) => {
       setMessages(
         msgs.map((m) => ({
           id: m.id,
           role: m.role,
           content: m.content,
+          streaming: m.streaming,
         })),
       );
     };

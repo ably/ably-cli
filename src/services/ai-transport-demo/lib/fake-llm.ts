@@ -17,7 +17,7 @@ export interface FakeLLMOptions {
   feature: string;
   /** The user's message (for keyword matching). */
   userMessage: string;
-  /** Override the base delay between tokens in ms (default ~40ms). */
+  /** Override the base delay between tokens in ms (default 40ms). */
   baseDelayMs?: number;
   /** AbortSignal to cancel generation early. */
   signal?: AbortSignal;

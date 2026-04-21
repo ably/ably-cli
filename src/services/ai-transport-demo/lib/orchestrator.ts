@@ -14,7 +14,7 @@ import type {
   TurnLifecycleEvent,
 } from "@ably/ai-transport";
 
-import { DemoCodec, type DemoMessage } from "./codec.js";
+import { DemoCodec, setDecoderDebug, type DemoMessage } from "./codec.js";
 import { createFakeLLMStream, type FakeLLMEvent } from "./fake-llm.js";
 import {
   createDemoServer,
@@ -48,6 +48,7 @@ export interface DemoOrchestrator extends EventEmitter {
   close(): Promise<void>;
 
   on(event: "serverLog", listener: (message: string) => void): this;
+  on(event: "serverStatus", listener: (status: string | null) => void): this;
   on(event: "debugLog", listener: (message: string) => void): this;
   on(event: "messages", listener: (msgs: DemoMessage[]) => void): this;
   on(event: "serverReady", listener: (data: { port: number }) => void): this;
@@ -68,6 +69,26 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
   let serverEndpoint: string | null = explicitEndpoint ?? null;
   let activeTurnAbort: AbortController | null = null;
   let streaming = false;
+  let activeClientTurnId: string | null = null;
+
+  function emitMessages(): void {
+    if (!clientTransport) return;
+    const msgs = clientTransport.getMessages();
+    // When a turn is active, mark the last assistant message as streaming
+    // so the UI can show the cursor indicator.
+    const withStreamingFlag: Array<DemoMessage & { streaming?: boolean }> =
+      msgs.map((m, i) => {
+        if (
+          activeClientTurnId &&
+          i === msgs.length - 1 &&
+          m.role === "assistant"
+        ) {
+          return { ...m, streaming: true };
+        }
+        return m;
+      });
+    emitter.emit("messages", withStreamingFlag);
+  }
 
   // ── Server side ──
 
@@ -107,7 +128,8 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
     activeTurnAbort = abortController;
     streaming = true;
 
-    emitter.emit("serverLog", `→ turn:start ${turnId.slice(0, 8)}…`);
+    const shortTurnId = turnId.slice(0, 8);
+    emitter.emit("serverLog", `→ ${shortTurnId}… turn:start`);
 
     let turn: ReturnType<typeof serverTransport.newTurn> | null = null;
 
@@ -119,20 +141,49 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
 
       await turn.start();
 
-      // Note: we do NOT call turn.addMessages() here because the client
-      // transport already published the user message to the channel when
-      // it called send(). Re-publishing would cause a duplicate.
+      // Publish the user message(s) back to the channel via addMessages().
+      // The client transport's send() only inserts them optimistically into
+      // its local tree (with no serial) and sends them in the HTTP POST body
+      // — it does NOT publish them on the channel. Without addMessages the
+      // user message stays at null-serial, which sorts AFTER serial-bearing
+      // assistant messages in ConversationTree.flatten(). The client
+      // de-duplicates via its _ownMsgIds set using the x-ably-msg-id header.
+      if (body.messages && body.messages.length > 0) {
+        await turn.addMessages(
+          body.messages.map((m) => ({
+            message: m.message as DemoMessage,
+            headers: m.headers ?? {},
+          })),
+        );
+      }
 
-      // Stream fake LLM response through the encoder
+      // Stream fake LLM response through the encoder, counting tokens so
+      // we can surface periodic progress updates on the server log.
+      let tokenCount = 0;
       const llmStream = createFakeLLMStream({
         feature,
         userMessage,
         signal: abortController.signal,
       });
+      const progressStream = new TransformStream<FakeLLMEvent, FakeLLMEvent>({
+        transform(event, controller) {
+          if (event.type === "text-delta") {
+            tokenCount++;
+            // In-place status update — the UI renders this as a single
+            // line that overwrites itself, rather than appending to the log.
+            emitter.emit(
+              "serverStatus",
+              `${shortTurnId}… streaming: ${tokenCount} tokens`,
+            );
+          }
+          controller.enqueue(event);
+        },
+      });
 
-      emitter.emit("serverLog", "→ streaming response...");
-
-      const result = await turn.streamResponse(llmStream);
+      emitter.emit("serverLog", `→ ${shortTurnId}… streaming response`);
+      const result = await turn.streamResponse(
+        llmStream.pipeThrough(progressStream),
+      );
 
       try {
         await turn.end(result.reason);
@@ -140,9 +191,11 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
         // Connection may already be closing
       }
 
+      // Clear the in-place status and append the final log line
+      emitter.emit("serverStatus", null);
       emitter.emit(
         "serverLog",
-        `← turn:end ${turnId.slice(0, 8)}… (${result.reason})`,
+        `← ${shortTurnId}… turn:end ${tokenCount} tokens (${result.reason})`,
       );
       emitter.emit("turnEnd", { turnId, reason: result.reason });
     } catch (error: unknown) {
@@ -172,7 +225,7 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
           : String(error);
       emitter.emit(
         "serverLog",
-        `✗ turn ${turnId.slice(0, 8)}… failed: ${errorMsg}`,
+        `✗ ${shortTurnId}… failed: ${errorMsg}`,
       );
       emitter.emit(
         "error",
@@ -181,6 +234,7 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
     } finally {
       streaming = false;
       activeTurnAbort = null;
+      emitter.emit("serverStatus", null);
     }
   }
 
@@ -188,6 +242,9 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
 
   emitter.startClient = async () => {
     emitter.emit("debugLog", "Starting client...");
+
+    // Decoder debug is noisy — leave off for now
+    setDecoderDebug(null);
 
     // Discover server if no explicit endpoint
     if (!serverEndpoint) {
@@ -217,8 +274,7 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
 
     // Subscribe to message changes — emit the full message list on each update
     clientTransport.on("message", () => {
-      const msgs = clientTransport!.getMessages();
-      emitter.emit("messages", msgs);
+      emitMessages();
     });
 
     // Subscribe to turn lifecycle events
@@ -251,14 +307,26 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
       };
 
       const activeTurn = await clientTransport.send(userMsg);
+      activeClientTurnId = activeTurn.turnId;
 
-      // Consume the stream to drive the transport (messages arrive via 'message' event)
+      // The AIT client transport accumulates progressively and fires a
+      // `message` event on every decoded text-delta (see the on('message')
+      // handler in startClient). We just need to drain the stream so the
+      // transport's internal processing runs to completion.
       const reader = activeTurn.stream.getReader();
       while (true) {
         const { done } = await reader.read();
         if (done) break;
       }
+
+      activeClientTurnId = null;
+      emitMessages();
+      emitter.emit("turnEnd", {
+        turnId: activeTurn.turnId,
+        reason: "complete",
+      });
     } catch (error: unknown) {
+      activeClientTurnId = null;
       emitter.emit("debugLog", `Send failed: ${String(error)}`);
     }
   };

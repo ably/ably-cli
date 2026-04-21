@@ -10,6 +10,7 @@ import { colors, symbols } from "./theme.js";
 
 interface ServerPanelProps {
   entries: LogEntry[];
+  status: string | null;
   port?: number;
   isRunning: boolean;
   maxVisible?: number;
@@ -17,6 +18,7 @@ interface ServerPanelProps {
 
 export function ServerPanel({
   entries,
+  status,
   port,
   isRunning,
   maxVisible = 20,
@@ -29,7 +31,7 @@ export function ServerPanel({
       {/* Header */}
       <Box>
         <Text bold>
-          {symbols.server} Server
+          Server
           {port ? (
             <Text color={isRunning ? colors.success : colors.dim}>
               {" "}
@@ -43,7 +45,7 @@ export function ServerPanel({
 
       {/* Log entries */}
       <Box flexDirection="column" flexGrow={1} marginTop={1}>
-        {visible.length === 0 && (
+        {visible.length === 0 && !status && (
           <Text color={colors.dim}>Waiting for activity...</Text>
         )}
         {visible.map((entry, i) => (
@@ -52,6 +54,12 @@ export function ServerPanel({
             <Text>{colorizeLogMessage(entry.message)}</Text>
           </Text>
         ))}
+        {/* In-place status line — updates rather than appends */}
+        {status && (
+          <Text color={colors.event} wrap="truncate">
+            → {status}
+          </Text>
+        )}
       </Box>
     </Box>
   );

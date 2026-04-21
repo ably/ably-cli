@@ -141,7 +141,17 @@ export default class StreamingDemo extends ControlBaseCommand {
         return;
       }
 
-      this.origStderrWrite?.call(process.stderr, `Unhandled error: ${msg}\n`);
+      // Route rate limit and other SDK errors to the server log
+      // instead of dumping them to stderr
+      if (msg.includes("Rate limit") || msg.includes("rate limit")) {
+        orchestratorRef?.emit("serverLog", `⚠ Rate limit hit`);
+        return;
+      }
+
+      orchestratorRef?.emit(
+        "serverLog",
+        `⚠ ${msg.slice(0, 80)}`,
+      );
     };
 
     // 2. Intercept process.stdout.write and process.stderr.write to
@@ -155,14 +165,16 @@ export default class StreamingDemo extends ControlBaseCommand {
     this.unhandledHandler = unhandledHandler;
 
     const isSuppressable = (str: string): boolean =>
-      mutableErrorDetected &&
-      (str.includes("93002") ||
-        str.includes("mutableMessages") ||
-        str.includes("onNack") ||
-        str.includes("80017") ||
-        str.includes("failQueuedMessages") ||
-        str.includes("PromiseRejectionHandledWarning") ||
-        str.includes("AblySDK Error"));
+      (mutableErrorDetected &&
+        (str.includes("93002") ||
+          str.includes("mutableMessages") ||
+          str.includes("onNack") ||
+          str.includes("80017") ||
+          str.includes("failQueuedMessages") ||
+          str.includes("PromiseRejectionHandledWarning") ||
+          str.includes("AblySDK Error"))) ||
+      str.includes("Rate limit") ||
+      str.includes("rate limit");
 
     process.stdout.write = ((chunk: unknown, ...args: unknown[]) => {
       if (typeof chunk === "string" && isSuppressable(chunk)) return true;
