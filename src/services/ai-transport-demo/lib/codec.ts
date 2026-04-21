@@ -44,9 +44,12 @@ function createDemoEncoder(
   channel: ChannelWriter,
   options?: EncoderOptions,
 ): StreamEncoder<FakeLLMEvent, DemoMessage> {
-  const core = createEncoderCore(channel, {
-    clientId: options?.clientId,
-  });
+  // CRITICAL: forward ALL options (including extras.headers and onMessage)
+  // to the encoder core. The server transport passes transport-level headers
+  // via options.extras.headers (turn ID, role, parent, msg-id). Without these,
+  // the client's stream router can't correlate incoming events to active
+  // turns (it looks up turnId via HEADER_TURN_ID from message headers).
+  const core = createEncoderCore(channel, options);
   let activeStreamId: string | null = null;
 
   return {
@@ -117,12 +120,20 @@ function createDemoEncoder(
 
 // ── Decoder ──────────────────────────────────────────────────────
 
+/** Optional debug hook — set by orchestrator for tracing decoder calls */
+let decoderDebug: ((msg: string) => void) | null = null;
+export function setDecoderDebug(fn: ((msg: string) => void) | null): void {
+  decoderDebug = fn;
+}
+
 function createDemoDecoder(): StreamDecoder<FakeLLMEvent, DemoMessage> {
   const hooks: DecoderCoreHooks<FakeLLMEvent, DemoMessage> = {
     buildStartEvents(
       tracker: StreamTrackerState,
     ): DecoderOutput<FakeLLMEvent, DemoMessage>[] {
-      // Emit a text-delta for the initial data from startStream
+      decoderDebug?.(
+        `buildStart name=${tracker.name} accumulated=${tracker.accumulated?.length ?? 0}`,
+      );
       if (tracker.accumulated) {
         return [
           {
@@ -140,6 +151,7 @@ function createDemoDecoder(): StreamDecoder<FakeLLMEvent, DemoMessage> {
       tracker: StreamTrackerState,
       delta: string,
     ): DecoderOutput<FakeLLMEvent, DemoMessage>[] {
+      decoderDebug?.(`buildDelta delta=${delta.length} chars`);
       return [
         {
           kind: "event",
@@ -152,6 +164,9 @@ function createDemoDecoder(): StreamDecoder<FakeLLMEvent, DemoMessage> {
     buildEndEvents(
       tracker: StreamTrackerState,
     ): DecoderOutput<FakeLLMEvent, DemoMessage>[] {
+      decoderDebug?.(
+        `buildEnd acc=${tracker.accumulated?.length ?? 0} chars`,
+      );
       return [
         {
           kind: "event",
@@ -170,6 +185,7 @@ function createDemoDecoder(): StreamDecoder<FakeLLMEvent, DemoMessage> {
     },
 
     decodeDiscrete(payload): DecoderOutput<FakeLLMEvent, DemoMessage>[] {
+      decoderDebug?.(`decodeDiscrete name=${payload.name}`);
       if (payload.name === USER_MESSAGE_NAME) {
         const data = JSON.parse(payload.data as string) as DemoMessage;
         return [{ kind: "message", message: data }];
