@@ -138,10 +138,9 @@ export default class TypingKeystroke extends ChatBaseCommand {
           "Will automatically remain typing until terminated.",
           flags,
         );
-      } else {
-        this.logListening(
+      } else if (!this.shouldOutputJson(flags)) {
+        this.log(
           "Sent a single typing indicator. Use --auto-type to keep typing automatically.",
-          flags,
         );
       }
 
