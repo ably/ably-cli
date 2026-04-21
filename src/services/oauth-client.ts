@@ -30,8 +30,6 @@ export interface OAuthTokens {
   refreshToken: string;
   scope?: string;
   tokenType: string;
-  userEmail?: string;
-  userId?: string;
 }
 
 export interface OAuthConfig {
@@ -377,13 +375,6 @@ export class OAuthClient {
       refreshToken,
       scope: data.scope as string | undefined,
       tokenType: (data.token_type as string) || "Bearer",
-      userEmail: data.user_email as string | undefined,
-      userId:
-        typeof data.user_id === "string"
-          ? data.user_id
-          : typeof data.user_id === "number"
-            ? String(data.user_id)
-            : undefined,
     };
   }
 
