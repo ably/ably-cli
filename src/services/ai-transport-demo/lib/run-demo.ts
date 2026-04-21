@@ -91,8 +91,6 @@ export async function runDemo(
   const channelName =
     flags.channel ??
     `ai-demo:${feature}-${Math.random().toString(36).slice(2, 6)}`;
-  const clientId =
-    flags["client-id"] ?? `demo-${Math.random().toString(36).slice(2, 8)}`;
 
   // In test mode, output a marker and return (Ink can't render in tests)
   if (isTestMode()) {
@@ -108,6 +106,17 @@ export async function runDemo(
   if (!handles.ablyClient) {
     command.fail("Failed to create Ably client", "aiTransportDemo");
   }
+
+  // CRITICAL: the demo's clientId must match the Ably connection's clientId,
+  // otherwise the server transport's cancel({own: true}) filter cannot match
+  // turns. The filter compares the cancel publisher's connection clientId
+  // against the clientId the turn was registered with. If they differ —
+  // e.g. Ably connection uses `ably-cli-XYZ` (base command default) while
+  // the demo uses `demo-XYZ` — no turns match and cancel is silently a no-op.
+  const clientId =
+    handles.ablyClient.auth.clientId ??
+    flags["client-id"] ??
+    `demo-${Math.random().toString(36).slice(2, 8)}`;
 
   const channel = handles.ablyClient.channels.get(channelName);
 
