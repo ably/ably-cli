@@ -1,8 +1,13 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { discoverServer } from "../../../../../../src/services/ai-transport-demo/lib/client-discovery.js";
 
 function createMockChannel(opts?: {
-  presenceMembers?: Array<{ data: unknown; clientId?: string; action?: string }>;
+  presenceMembers?: Array<{
+    data: unknown;
+    clientId?: string;
+    action?: string;
+    timestamp?: number;
+  }>;
 }) {
   let subscribeCallback: ((msg: any) => void) | null = null;
 
@@ -26,15 +31,42 @@ function createMockChannel(opts?: {
       data: unknown;
       clientId?: string;
       action: string;
+      timestamp?: number;
     }) {
       subscribeCallback?.(member);
     },
   } as any;
 }
 
+/**
+ * Install a fake `fetch` that answers the HTTP liveness probe based on
+ * a map of endpoint→reachable. discoverServer uses OPTIONS requests to
+ * check each candidate endpoint.
+ */
+function installFetchMock(reachable: Record<string, boolean>) {
+  const fn = vi.fn(async (url: string | URL) => {
+    const key = String(url);
+    if (reachable[key]) {
+      return new Response(null, { status: 204 });
+    }
+    throw new Error(`ECONNREFUSED: ${key}`);
+  });
+  vi.stubGlobal("fetch", fn);
+  return fn;
+}
+
 describe("client-discovery", () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   describe("discoverServer", () => {
     it("should find server from existing presence members", async () => {
+      installFetchMock({ "http://localhost:12345": true });
       const channel = createMockChannel({
         presenceMembers: [
           {
@@ -53,6 +85,7 @@ describe("client-discovery", () => {
     });
 
     it("should find server when it enters after subscription", async () => {
+      installFetchMock({ "http://localhost:9999": true });
       const channel = createMockChannel({ presenceMembers: [] });
 
       // Start discovery, then simulate server entering
@@ -72,6 +105,64 @@ describe("client-discovery", () => {
       expect(result).toEqual({
         endpoint: "http://localhost:9999",
         clientId: "server-2",
+      });
+    });
+
+    it("should skip unreachable presence entries and pick a live one", async () => {
+      installFetchMock({
+        "http://localhost:57057": false, // stale entry
+        "http://localhost:58116": true, // live server
+      });
+      const channel = createMockChannel({
+        presenceMembers: [
+          {
+            data: { endpoint: "http://localhost:57057" },
+            clientId: "stale",
+            timestamp: 2000, // newer timestamp, but unreachable
+          },
+          {
+            data: { endpoint: "http://localhost:58116" },
+            clientId: "live",
+            timestamp: 1000, // older, but reachable
+          },
+        ],
+      });
+
+      const result = await discoverServer(channel, 1000);
+
+      expect(result).toEqual({
+        endpoint: "http://localhost:58116",
+        clientId: "live",
+      });
+    });
+
+    it("should wait for a reachable server when presence only has stale entries", async () => {
+      installFetchMock({
+        "http://localhost:57057": false, // stale
+        "http://localhost:58116": true, // new live server enters after
+      });
+      const channel = createMockChannel({
+        presenceMembers: [
+          {
+            data: { endpoint: "http://localhost:57057" },
+            clientId: "stale",
+          },
+        ],
+      });
+
+      const discoveryPromise = discoverServer(channel, 5000);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
+      channel._simulatePresenceEvent({
+        action: "enter",
+        data: { endpoint: "http://localhost:58116" },
+        clientId: "live",
+      });
+
+      const result = await discoveryPromise;
+      expect(result).toEqual({
+        endpoint: "http://localhost:58116",
+        clientId: "live",
       });
     });
 
@@ -114,6 +205,7 @@ describe("client-discovery", () => {
     });
 
     it("should call onLog callback", async () => {
+      installFetchMock({ "http://localhost:12345": true });
       const channel = createMockChannel({
         presenceMembers: [
           { data: { endpoint: "http://localhost:12345" } },
@@ -126,7 +218,7 @@ describe("client-discovery", () => {
       expect(logs.some((l) => l.includes("Searching for server"))).toBe(
         true,
       );
-      expect(logs.some((l) => l.includes("Found server"))).toBe(true);
+      expect(logs.some((l) => l.includes("live server"))).toBe(true);
     });
 
     it("should handle presence.get failure gracefully", async () => {

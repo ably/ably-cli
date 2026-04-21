@@ -32,46 +32,76 @@ export async function discoverServer(
 ): Promise<DiscoveredServer | null> {
   onLog?.("Searching for server via presence...");
 
-  // First, check if the server is already present
+  // Check current presence members. Ably does not immediately remove
+  // presence entries when a server crashes (unclean shutdown), so there
+  // can be stale entries lingering on the channel. We probe each
+  // candidate for liveness (HTTP OPTIONS) before accepting it, preferring
+  // the most recent entry first.
   try {
     const members = await channel.presence.get();
-    for (const member of members) {
-      const server = extractServerFromPresence(member);
-      if (server) {
-        onLog?.(`Found server at ${server.endpoint}`);
-        return server;
+    const candidates = members
+      .map((m) => ({
+        server: extractServerFromPresence(m),
+        timestamp: m.timestamp ?? 0,
+      }))
+      .filter(
+        (x): x is { server: DiscoveredServer; timestamp: number } =>
+          x.server !== null,
+      )
+      .sort((a, b) => b.timestamp - a.timestamp);
+
+    if (candidates.length > 0) {
+      onLog?.(
+        `Probing ${candidates.length} presence entry(s) for liveness...`,
+      );
+      for (const candidate of candidates) {
+        if (await isReachable(candidate.server.endpoint)) {
+          onLog?.(`Found live server at ${candidate.server.endpoint}`);
+          return candidate.server;
+        }
+        onLog?.(`Skipping unreachable entry: ${candidate.server.endpoint}`);
       }
     }
   } catch {
     // Channel might not be attached yet, fall through to subscribe
   }
 
-  // Subscribe to presence and wait for a server to appear
+  // No live server yet — subscribe to presence and wait for one to
+  // enter. Probe each entry as it arrives so late-arriving stale
+  // entries (e.g. history replay) don't take precedence over real
+  // live servers.
   return new Promise<DiscoveredServer | null>((resolve) => {
     let resolved = false;
+    let timeoutHandle: NodeJS.Timeout | undefined;
 
     const cleanup = () => {
       if (!resolved) {
         resolved = true;
+        if (timeoutHandle) clearTimeout(timeoutHandle);
         channel.presence.unsubscribe(onPresenceEvent);
       }
     };
 
-    const onPresenceEvent = (message: Ably.PresenceMessage) => {
-      if (message.action === "enter" || message.action === "present") {
-        const server = extractServerFromPresence(message);
-        if (server) {
-          onLog?.(`Found server at ${server.endpoint}`);
-          cleanup();
-          resolve(server);
-        }
+    const onPresenceEvent = async (message: Ably.PresenceMessage) => {
+      if (resolved) return;
+      if (message.action !== "enter" && message.action !== "present") {
+        return;
+      }
+      const server = extractServerFromPresence(message);
+      if (!server) return;
+      if (await isReachable(server.endpoint)) {
+        if (resolved) return;
+        onLog?.(`Found live server at ${server.endpoint}`);
+        cleanup();
+        resolve(server);
+      } else {
+        onLog?.(`Ignoring unreachable presence: ${server.endpoint}`);
       }
     };
 
     channel.presence.subscribe(onPresenceEvent);
 
-    // Timeout
-    setTimeout(() => {
+    timeoutHandle = setTimeout(() => {
       if (!resolved) {
         onLog?.("No server found within timeout");
         cleanup();
@@ -79,6 +109,30 @@ export async function discoverServer(
       }
     }, timeoutMs);
   });
+}
+
+/**
+ * Quickly probe whether an endpoint is actually reachable. Uses OPTIONS
+ * (the demo server responds with 204 + CORS headers) so the probe is
+ * cheap and side-effect free.
+ */
+async function isReachable(
+  endpoint: string,
+  probeTimeoutMs = 750,
+): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), probeTimeoutMs);
+    const res = await fetch(endpoint, {
+      method: "OPTIONS",
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    // Any non-5xx response means something is listening.
+    return res.status < 500;
+  } catch {
+    return false;
+  }
 }
 
 /**
