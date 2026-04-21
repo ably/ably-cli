@@ -70,24 +70,30 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
   let activeTurnAbort: AbortController | null = null;
   let streaming = false;
   let activeClientTurnId: string | null = null;
+  const interruptedMessageIds = new Set<string>();
 
   function emitMessages(): void {
     if (!clientTransport) return;
     const msgs = clientTransport.getMessages();
-    // When a turn is active, mark the last assistant message as streaming
-    // so the UI can show the cursor indicator.
-    const withStreamingFlag: Array<DemoMessage & { streaming?: boolean }> =
-      msgs.map((m, i) => {
-        if (
-          activeClientTurnId &&
-          i === msgs.length - 1 &&
-          m.role === "assistant"
-        ) {
-          return { ...m, streaming: true };
-        }
-        return m;
-      });
-    emitter.emit("messages", withStreamingFlag);
+    // Mark the last assistant message as streaming when a turn is in flight
+    // (for the cursor indicator). Mark any message in `interruptedMessageIds`
+    // as interrupted so the UI shows a barge-in indicator.
+    const withFlags: Array<
+      DemoMessage & { streaming?: boolean; interrupted?: boolean }
+    > = msgs.map((m, i) => {
+      const interrupted = interruptedMessageIds.has(m.id);
+      const streaming =
+        !!activeClientTurnId &&
+        i === msgs.length - 1 &&
+        m.role === "assistant" &&
+        !interrupted;
+      return {
+        ...m,
+        ...(streaming ? { streaming: true } : {}),
+        ...(interrupted ? { interrupted: true } : {}),
+      };
+    });
+    emitter.emit("messages", withFlags);
   }
 
   // ── Server side ──
@@ -295,6 +301,36 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
     if (!clientTransport) {
       emitter.emit("debugLog", "No client transport — cannot send");
       return;
+    }
+
+    // Barge-in: if a turn is already in flight, cancel it before starting
+    // the new one. Capture the currently-streaming assistant message so
+    // the UI can mark it as interrupted once the cancel lands.
+    if (activeClientTurnId) {
+      const interruptingTurnId = activeClientTurnId;
+      const liveMsgs = clientTransport.getMessages();
+      const lastMsg = liveMsgs.at(-1);
+      if (lastMsg && lastMsg.role === "assistant") {
+        interruptedMessageIds.add(lastMsg.id);
+      }
+
+      emitter.emit(
+        "debugLog",
+        `Barging in — cancelling ${interruptingTurnId.slice(0, 8)}…`,
+      );
+      try {
+        await clientTransport.cancel({ own: true });
+      } catch (cancelError: unknown) {
+        emitter.emit(
+          "debugLog",
+          `Cancel failed (continuing anyway): ${String(cancelError)}`,
+        );
+      }
+
+      activeClientTurnId = null;
+      // Push the interrupted state to the UI immediately, before the new
+      // turn starts streaming, so the user sees the transition cleanly.
+      emitMessages();
     }
 
     emitter.emit("debugLog", `Sending: "${text.slice(0, 40)}..."`);

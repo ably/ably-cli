@@ -9,9 +9,9 @@ import {
   type DemoCommandHost,
 } from "../../../services/ai-transport-demo/lib/run-demo.js";
 
-export default class StreamingDemo extends ControlBaseCommand {
+export default class BargeInDemo extends ControlBaseCommand {
   static override description =
-    "Demo AI Transport token streaming in a split-pane TUI";
+    "Demo AI Transport barge-in: interrupt a streaming response mid-flight";
 
   static override examples = [
     "<%= config.bin %> <%= command.id %>",
@@ -49,13 +49,13 @@ export default class StreamingDemo extends ControlBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(StreamingDemo);
+    const { flags } = await this.parse(BargeInDemo);
     const host: DemoCommandHost = {
       log: (msg) => this.log(msg),
       fail: (msg, component) => this.fail(msg, flags, component),
       createAblyRealtimeClient: () => this.createAblyRealtimeClient(flags),
     };
-    await runDemo(host, { feature: "streaming", flags }, this.handles);
+    await runDemo(host, { feature: "barge-in", flags }, this.handles);
   }
 
   async finally(error: Error | undefined): Promise<void> {

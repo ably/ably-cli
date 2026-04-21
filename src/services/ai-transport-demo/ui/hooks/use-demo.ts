@@ -50,15 +50,20 @@ export function useDemo(orchestrator: DemoOrchestrator | null): UseDemoResult {
     };
 
     // The orchestrator emits the full message list from the AIT client
-    // transport. Progressive streaming updates include an optional `streaming`
-    // flag on the in-progress assistant message for the cursor indicator.
-    const onMessages = (msgs: Array<DemoMessage & { streaming?: boolean }>) => {
+    // transport. Streaming updates include a `streaming` flag on the
+    // in-progress assistant message (cursor indicator); barge-in marks
+    // the interrupted message with `interrupted` so the UI can show a
+    // visual cue that the response was cut short.
+    const onMessages = (
+      msgs: Array<DemoMessage & { streaming?: boolean; interrupted?: boolean }>,
+    ) => {
       setMessages(
         msgs.map((m) => ({
           id: m.id,
           role: m.role,
           content: m.content,
           streaming: m.streaming,
+          interrupted: m.interrupted,
         })),
       );
     };

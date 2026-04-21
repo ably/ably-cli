@@ -78,6 +78,7 @@ $ ably-interactive
 * [`ably accounts switch [ALIAS]`](#ably-accounts-switch-alias)
 * [`ably ai-transport`](#ably-ai-transport)
 * [`ably ai-transport demo`](#ably-ai-transport-demo)
+* [`ably ai-transport demo barge-in`](#ably-ai-transport-demo-barge-in)
 * [`ably ai-transport demo streaming`](#ably-ai-transport-demo-streaming)
 * [`ably apps`](#ably-apps)
 * [`ably apps create`](#ably-apps-create)
@@ -428,19 +429,55 @@ EXAMPLES
 
 _See code: [src/commands/ai-transport/demo/index.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/ai-transport/demo/index.ts)_
 
+## `ably ai-transport demo barge-in`
+
+Demo AI Transport barge-in: interrupt a streaming response mid-flight
+
+```
+USAGE
+  $ ably ai-transport demo barge-in [-v] [--json | --pretty-json] [--client-id <value>] [--role both|client|server] [--channel
+    <value>] [--endpoint <value>] [--auth-endpoint <value>]
+
+FLAGS
+  -v, --verbose                Output verbose logs
+      --auth-endpoint=<value>  Auth endpoint returning JWT tokens (client-only, for external servers)
+      --channel=<value>        Channel name to use (auto-generated if not provided)
+      --client-id=<value>      Overrides any default client ID when using API authentication. Use "none" to explicitly
+                               set no client ID. Not applicable when using token authentication.
+      --endpoint=<value>       Server HTTP endpoint for sending messages (client-only, skips presence discovery)
+      --json                   Output in JSON format
+      --pretty-json            Output in colorized JSON format
+      --role=<option>          [default: both] Run as both client and server, or just one side
+                               <options: both|client|server>
+
+DESCRIPTION
+  Demo AI Transport barge-in: interrupt a streaming response mid-flight
+
+EXAMPLES
+  $ ably ai-transport demo barge-in
+
+  $ ably ai-transport demo barge-in --role client --channel my-session
+
+  $ ably ai-transport demo barge-in --role server
+```
+
+_See code: [src/commands/ai-transport/demo/barge-in.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/ai-transport/demo/barge-in.ts)_
+
 ## `ably ai-transport demo streaming`
 
 Demo AI Transport token streaming in a split-pane TUI
 
 ```
 USAGE
-  $ ably ai-transport demo streaming [-v] [--json | --pretty-json] [--role both|client|server] [--channel <value>] [--endpoint
-    <value>] [--auth-endpoint <value>]
+  $ ably ai-transport demo streaming [-v] [--json | --pretty-json] [--client-id <value>] [--role both|client|server] [--channel
+    <value>] [--endpoint <value>] [--auth-endpoint <value>]
 
 FLAGS
   -v, --verbose                Output verbose logs
       --auth-endpoint=<value>  Auth endpoint returning JWT tokens (client-only, for external servers)
       --channel=<value>        Channel name to use (auto-generated if not provided)
+      --client-id=<value>      Overrides any default client ID when using API authentication. Use "none" to explicitly
+                               set no client ID. Not applicable when using token authentication.
       --endpoint=<value>       Server HTTP endpoint for sending messages (client-only, skips presence discovery)
       --json                   Output in JSON format
       --pretty-json            Output in colorized JSON format
@@ -1094,13 +1131,14 @@ Show the current API key for the selected app
 
 ```
 USAGE
-  $ ably auth keys current [-v] [--json | --pretty-json] [--app <value>]
+  $ ably auth keys current [-v] [--json | --pretty-json] [--app <value>] [--value-only]
 
 FLAGS
   -v, --verbose      Output verbose logs
       --app=<value>  The app ID (defaults to current app)
       --json         Output in JSON format
       --pretty-json  Output in colorized JSON format
+      --value-only   Output only the raw API key value, useful for scripting and environment variables
 
 DESCRIPTION
   Show the current API key for the selected app
@@ -1112,7 +1150,7 @@ EXAMPLES
 
   $ ably auth keys current --json
 
-  $ ably auth keys current --pretty-json
+  $ ABLY_API_KEY=$(ably auth keys current --value-only) node my-script.js
 ```
 
 _See code: [src/commands/auth/keys/current.ts](https://github.com/ably/ably-cli/blob/v0.17.0/src/commands/auth/keys/current.ts)_

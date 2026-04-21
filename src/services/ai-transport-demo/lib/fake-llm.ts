@@ -11,6 +11,7 @@ import {
   shortStreamingResponses,
   longStreamingResponses,
 } from "./responses/streaming.js";
+import { bargeInResponses } from "./responses/barge-in.js";
 
 export interface FakeLLMOptions {
   /** Which demo feature is running (selects response bank). */
@@ -70,7 +71,8 @@ function getResponseBank(feature: string): string[] {
   switch (feature) {
     case "streaming":
       return streamingResponses;
-    // Future features will have their own banks
+    case "barge-in":
+      return bargeInResponses;
     default:
       return streamingResponses;
   }
@@ -80,6 +82,10 @@ function getShortResponseBank(feature: string): string[] {
   switch (feature) {
     case "streaming":
       return shortStreamingResponses;
+    // Barge-in intentionally has no "short" bank — the demo needs long
+    // responses so the user has time to interrupt mid-stream.
+    case "barge-in":
+      return bargeInResponses;
     default:
       return shortStreamingResponses;
   }
@@ -89,6 +95,8 @@ function getLongResponseBank(feature: string): string[] {
   switch (feature) {
     case "streaming":
       return longStreamingResponses;
+    case "barge-in":
+      return bargeInResponses;
     default:
       return longStreamingResponses;
   }
