@@ -67,7 +67,6 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
   let serverTransport: ServerTransport<FakeLLMEvent, DemoMessage> | null = null;
   let clientTransport: ClientTransport<FakeLLMEvent, DemoMessage> | null = null;
   let serverEndpoint: string | null = explicitEndpoint ?? null;
-  let activeTurnAbort: AbortController | null = null;
   let streaming = false;
   let activeClientTurnId: string | null = null;
   const interruptedMessageIds = new Set<string>();
@@ -130,8 +129,6 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
       body.messages?.[0]?.message?.content ?? "(empty message)";
     const turnId = body.turnId;
 
-    const abortController = new AbortController();
-    activeTurnAbort = abortController;
     streaming = true;
 
     const shortTurnId = turnId.slice(0, 8);
@@ -164,12 +161,16 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
       }
 
       // Stream fake LLM response through the encoder, counting tokens so
-      // we can surface periodic progress updates on the server log.
+      // we can surface periodic progress updates on the server log. The
+      // turn's abortSignal fires when the SDK receives a matching cancel
+      // event on the channel — wiring it straight into fake-llm stops
+      // token generation at the source on barge-in, rather than leaving
+      // the generator pumping into a dead pipe.
       let tokenCount = 0;
       const llmStream = createFakeLLMStream({
         feature,
         userMessage,
-        signal: abortController.signal,
+        signal: turn.abortSignal,
       });
       const progressStream = new TransformStream<FakeLLMEvent, FakeLLMEvent>({
         transform(event, controller) {
@@ -239,7 +240,6 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
       );
     } finally {
       streaming = false;
-      activeTurnAbort = null;
       emitter.emit("serverStatus", null);
     }
   }
@@ -368,24 +368,18 @@ export function createOrchestrator(options: OrchestratorOptions): DemoOrchestrat
   };
 
   emitter.cancelActiveTurn = async () => {
-    if (activeTurnAbort) {
-      activeTurnAbort.abort();
-      emitter.emit("debugLog", "Cancel signal sent (server-side)");
-    }
-
+    // Publishing the cancel from the client side is enough — the server
+    // subscribes to cancel events on the channel, aborts the turn, and
+    // fake-llm stops via the turn.abortSignal it was handed.
     if (clientTransport) {
       await clientTransport.cancel({ own: true });
-      emitter.emit("debugLog", "Cancel signal sent (client-side)");
+      emitter.emit("debugLog", "Cancel signal sent");
     }
   };
 
   emitter.isStreaming = () => streaming;
 
   emitter.close = async () => {
-    if (activeTurnAbort) {
-      activeTurnAbort.abort();
-    }
-
     if (clientTransport) {
       try {
         await clientTransport.close();
