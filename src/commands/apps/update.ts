@@ -5,8 +5,8 @@ import { formatLabel, formatResource } from "../../utils/output.js";
 
 export default class AppsUpdateCommand extends ControlBaseCommand {
   static args = {
-    appId: Args.string({
-      description: "App ID to update",
+    appNameOrId: Args.string({
+      description: "App name or ID to update",
       required: true,
     }),
   };
@@ -14,10 +14,9 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
   static description = "Update an app";
 
   static examples = [
-    '$ ably apps update app-id --name "Updated App Name"',
+    '$ ably apps update "My App" --name "Updated App Name"',
     "$ ably apps update app-id --tls-only",
-    '$ ably apps update app-id --name "Updated App Name" --json',
-    '$ ABLY_ACCESS_TOKEN="YOUR_ACCESS_TOKEN" ably apps update app-id --name "Updated App Name"',
+    '$ ably apps update "My App" --name "Updated App Name" --json',
   ];
 
   static flags = {
@@ -44,13 +43,15 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
         "At least one update parameter (--name or --tls-only) must be provided",
         flags,
         "appUpdate",
-        { appId: args.appId },
+        { appId: args.appNameOrId },
       );
     }
 
+    const appId = await this.resolveAppIdFromNameOrId(args.appNameOrId, flags);
+
     try {
       const controlApi = this.createControlApi(flags);
-      this.logProgress(`Updating app ${formatResource(args.appId)}`, flags);
+      this.logProgress(`Updating app ${formatResource(appId)}`, flags);
 
       const updateData: { name?: string; tlsOnly?: boolean } = {};
 
@@ -62,7 +63,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
         updateData.tlsOnly = flags["tls-only"];
       }
 
-      const app = await controlApi.updateApp(args.appId, updateData);
+      const app = await controlApi.updateApp(appId, updateData);
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
@@ -100,9 +101,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
 
       this.logSuccessMessage("App updated successfully.", flags);
     } catch (error) {
-      this.fail(error, flags, "appUpdate", {
-        appId: args.appId,
-      });
+      this.fail(error, flags, "appUpdate", { appId });
     }
   }
 }
