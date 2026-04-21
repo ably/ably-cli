@@ -27,7 +27,6 @@ describe("apps:rules:create command", () => {
   standardFlagTests("apps:rules:create", import.meta.url, [
     "--json",
     "--app",
-    "--name",
     "--persisted",
     "--push-enabled",
     "--mutable-messages",
@@ -41,7 +40,7 @@ describe("apps:rules:create command", () => {
         .reply(201, mockNamespace({ id: mockRuleId }));
 
       const { stderr } = await runCommand(
-        ["apps:rules:create", "--name", mockRuleName],
+        ["apps:rules:create", mockRuleName],
         import.meta.url,
       );
 
@@ -57,7 +56,7 @@ describe("apps:rules:create command", () => {
         .reply(201, mockNamespace({ id: mockRuleId, persisted: true }));
 
       const { stdout, stderr } = await runCommand(
-        ["apps:rules:create", "--name", mockRuleName, "--persisted"],
+        ["apps:rules:create", mockRuleName, "--persisted"],
         import.meta.url,
       );
 
@@ -82,7 +81,7 @@ describe("apps:rules:create command", () => {
         );
 
       const { stdout, stderr } = await runCommand(
-        ["apps:rules:create", "--name", mockRuleName, "--mutable-messages"],
+        ["apps:rules:create", mockRuleName, "--mutable-messages"],
         import.meta.url,
       );
 
@@ -101,7 +100,7 @@ describe("apps:rules:create command", () => {
         .reply(201, mockNamespace({ id: mockRuleId, pushEnabled: true }));
 
       const { stdout, stderr } = await runCommand(
-        ["apps:rules:create", "--name", mockRuleName, "--push-enabled"],
+        ["apps:rules:create", mockRuleName, "--push-enabled"],
         import.meta.url,
       );
 
@@ -116,7 +115,7 @@ describe("apps:rules:create command", () => {
         .reply(201, mockNamespace({ id: mockRuleId }));
 
       const { stdout } = await runCommand(
-        ["apps:rules:create", "--name", mockRuleName, "--json"],
+        ["apps:rules:create", mockRuleName, "--json"],
         import.meta.url,
       );
 
@@ -143,13 +142,7 @@ describe("apps:rules:create command", () => {
         );
 
       const { stdout } = await runCommand(
-        [
-          "apps:rules:create",
-          "--name",
-          mockRuleName,
-          "--mutable-messages",
-          "--json",
-        ],
+        ["apps:rules:create", mockRuleName, "--mutable-messages", "--json"],
         import.meta.url,
       );
 
@@ -168,7 +161,7 @@ describe("apps:rules:create command", () => {
 
   describe("error handling", () => {
     standardControlApiErrorTests({
-      commandArgs: ["apps:rules:create", "--name", mockRuleName],
+      commandArgs: ["apps:rules:create", mockRuleName],
       importMetaUrl: import.meta.url,
       setupNock: (scenario) => {
         const appId = getMockConfigManager().getCurrentAppId()!;
@@ -187,7 +180,7 @@ describe("apps:rules:create command", () => {
         .reply(400, { error: "Validation failed" });
 
       const { error } = await runCommand(
-        ["apps:rules:create", "--name", mockRuleName],
+        ["apps:rules:create", mockRuleName],
         import.meta.url,
       );
 

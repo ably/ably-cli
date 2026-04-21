@@ -9,7 +9,7 @@ export default class Push extends BaseTopicCommand {
   static override examples = [
     "<%= config.bin %> <%= command.id %> publish --device-id device1 --title Hello --body World",
     "<%= config.bin %> <%= command.id %> devices list",
-    "<%= config.bin %> <%= command.id %> channels list --channel my-channel",
+    '<%= config.bin %> <%= command.id %> channels list "my-channel"',
     "<%= config.bin %> <%= command.id %> config show",
   ];
 }

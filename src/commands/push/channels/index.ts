@@ -8,8 +8,8 @@ export default class PushChannels extends BaseTopicCommand {
     "Manage push notification channel subscriptions";
 
   static override examples = [
-    "<%= config.bin %> <%= command.id %> list --channel my-channel",
-    "<%= config.bin %> <%= command.id %> save --channel my-channel --device-id device-123",
+    '<%= config.bin %> <%= command.id %> list "my-channel"',
+    '<%= config.bin %> <%= command.id %> save "my-channel" --device-id device-123',
     "<%= config.bin %> <%= command.id %> list-channels",
   ];
 }

@@ -1,4 +1,4 @@
-import { Flags } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { forceFlag, productApiFlags } from "../../../flags.js";
@@ -10,18 +10,21 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
   static override description =
     "Remove push channel subscriptions matching filter criteria";
 
+  static override args = {
+    channelName: Args.string({
+      description: "Channel name to filter by",
+      required: true,
+    }),
+  };
+
   static override examples = [
-    "<%= config.bin %> <%= command.id %> --channel my-channel",
-    "<%= config.bin %> <%= command.id %> --channel my-channel --device-id device-123 --force",
-    "<%= config.bin %> <%= command.id %> --channel my-channel --json",
+    '<%= config.bin %> <%= command.id %> "my-channel"',
+    '<%= config.bin %> <%= command.id %> "my-channel" --device-id device-123 --force',
+    '<%= config.bin %> <%= command.id %> "my-channel" --json',
   ];
 
   static override flags = {
     ...productApiFlags,
-    channel: Flags.string({
-      description: "Channel name to filter by",
-      required: true,
-    }),
     "device-id": Flags.string({
       description: "Filter by device ID",
     }),
@@ -32,14 +35,14 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(PushChannelsRemoveWhere);
+    const { args, flags } = await this.parse(PushChannelsRemoveWhere);
 
     try {
       const rest = await this.createAblyRestClient(flags as BaseFlags);
       if (!rest) return;
 
       const params: Record<string, string> = {
-        channel: flags.channel,
+        channel: args.channelName,
       };
       if (flags["device-id"]) params.deviceId = flags["device-id"];
       if (flags["client-id"]) params.clientId = flags["client-id"];
@@ -69,7 +72,7 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
       }
 
       this.logProgress(
-        `Removing matching subscriptions from channel ${formatResource(flags.channel)}`,
+        `Removing matching subscriptions from channel ${formatResource(args.channelName)}`,
         flags,
       );
 

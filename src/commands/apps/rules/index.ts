@@ -8,8 +8,8 @@ export default class RulesIndexCommand extends BaseTopicCommand {
 
   static examples = [
     "$ ably apps rules list",
-    '$ ably apps rules create --name "chat" --persisted',
-    "$ ably apps rules update chat --push-enabled",
-    "$ ably apps rules delete chat",
+    '$ ably apps rules create "chat" --persisted',
+    '$ ably apps rules update "chat" --push-enabled',
+    '$ ably apps rules delete "chat"',
   ];
 }

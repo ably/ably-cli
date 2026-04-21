@@ -1,4 +1,4 @@
-import { Flags } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
@@ -20,18 +20,21 @@ import {
 export default class PushChannelsList extends AblyBaseCommand {
   static override description = "List push channel subscriptions";
 
+  static override args = {
+    channelName: Args.string({
+      description: "Channel name to list subscriptions for",
+      required: true,
+    }),
+  };
+
   static override examples = [
-    "<%= config.bin %> <%= command.id %> --channel my-channel",
-    "<%= config.bin %> <%= command.id %> --channel my-channel --device-id device-123",
-    "<%= config.bin %> <%= command.id %> --channel my-channel --json",
+    '<%= config.bin %> <%= command.id %> "my-channel"',
+    '<%= config.bin %> <%= command.id %> "my-channel" --device-id device-123',
+    '<%= config.bin %> <%= command.id %> "my-channel" --json',
   ];
 
   static override flags = {
     ...productApiFlags,
-    channel: Flags.string({
-      description: "Channel name to list subscriptions for",
-      required: true,
-    }),
     "device-id": Flags.string({
       description: "Filter by device ID",
     }),
@@ -46,19 +49,19 @@ export default class PushChannelsList extends AblyBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(PushChannelsList);
+    const { args, flags } = await this.parse(PushChannelsList);
 
     try {
       const rest = await this.createAblyRestClient(flags as BaseFlags);
       if (!rest) return;
 
       this.logProgress(
-        `Fetching subscriptions for channel ${formatResource(flags.channel)}`,
+        `Fetching subscriptions for channel ${formatResource(args.channelName)}`,
         flags,
       );
 
       const params: Record<string, string | number> = {
-        channel: flags.channel,
+        channel: args.channelName,
         limit: flags.limit,
       };
       if (flags["device-id"]) params.deviceId = flags["device-id"];
