@@ -526,7 +526,6 @@ export class MockConfigManager implements ConfigManager {
       refreshToken: string;
       expiresAt: number;
       scope?: string;
-      userId?: string;
       userEmail?: string;
     },
     accountInfo?: {

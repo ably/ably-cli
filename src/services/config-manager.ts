@@ -88,7 +88,6 @@ export interface ConfigManager {
       refreshToken: string;
       expiresAt: number;
       scope?: string;
-      userId?: string;
       userEmail?: string;
     },
     accountInfo?: {
@@ -565,7 +564,10 @@ export class TomlConfigManager implements ConfigManager {
     this.saveConfig();
   }
 
-  // Store OAuth tokens, shared across aliases with the same userEmail + oauthHost
+  // Store OAuth tokens, shared across aliases with the same userEmail + oauthHost.
+  // userEmail is supplied by callers from the /me response (fresh login) or from
+  // the previously-stored account metadata (token refresh, account switch) — it
+  // is never populated from the OAuth token response, which is RFC 6749 plain.
   public storeOAuthTokens(
     alias: string,
     tokens: {
@@ -573,7 +575,6 @@ export class TomlConfigManager implements ConfigManager {
       refreshToken: string;
       expiresAt: number;
       scope?: string;
-      userId?: string;
       userEmail?: string;
     },
     accountInfo?: {
