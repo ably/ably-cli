@@ -401,7 +401,7 @@ export default class AccountsLogin extends ControlBaseCommand {
     } else {
       this.log("");
       this.log(
-        `  Your authorization code: ${chalk.bold.cyan(deviceResponse.userCode)}`,
+        `  Your authorization code: ${formatResource(deviceResponse.userCode)}`,
       );
       this.log("");
       this.log(
