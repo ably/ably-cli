@@ -45,7 +45,7 @@ This is the Ably CLI npm package (`@ably/cli`), built with the [oclif framework]
 6. **NODE_ENV** - To check if the CLI is in test mode, use the `isTestMode()` helper function.
 7. **`process.exit`** - When creating a command, use `this.exit()` for consistent test mode handling.
 8. **`console.log` / `console.error`** - In commands, always use `this.log()` (stdout) for data/results and the logging helpers (`this.logProgress()`, `this.logSuccessMessage()`, `this.logListening()`, `this.logHolding()`, `this.logWarning()`) for status messages. `console.*` bypasses oclif and can't be captured by tests.
-9. **Use `Args.string()` for primary entity identifiers** - If the value is "what is being acted on" (name, ID, channel), it must be a positional `Args.string()`/`Args.boolean()`/`Args.integer()`, not a `Flags.string().`. primary entity identifier should always be represented as a camelCase.
+9. **Use `Args.string()` for primary entity identifiers** - If the value is "what is being acted on" (name, ID, channel), represent it as a positional `Args.string()`, not a `Flags.string()`. Primary entity identifiers should always use camelCase.
 
 ## Correct Practices
 

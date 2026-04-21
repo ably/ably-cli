@@ -340,7 +340,7 @@ describe("apps:create command", () => {
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
-    it("should require name parameter", async () => {
+    it("should require app name positional argument", async () => {
       const { error } = await runCommand(["apps:create"], import.meta.url);
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/Missing 1 required arg/);
