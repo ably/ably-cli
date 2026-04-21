@@ -19,7 +19,6 @@ describe("push:channels:list command", () => {
   standardArgValidationTests("push:channels:list", import.meta.url);
   standardFlagTests("push:channels:list", import.meta.url, [
     "--json",
-    "--channel",
     "--device-id",
     "--client-id",
     "--limit",
@@ -36,7 +35,7 @@ describe("push:channels:list command", () => {
       );
 
       const { stdout } = await runCommand(
-        ["push:channels:list", "--channel", "my-channel"],
+        ["push:channels:list", "my-channel"],
         import.meta.url,
       );
 
@@ -51,7 +50,7 @@ describe("push:channels:list command", () => {
       );
 
       const { stderr } = await runCommand(
-        ["push:channels:list", "--channel", "my-channel"],
+        ["push:channels:list", "my-channel"],
         import.meta.url,
       );
 
@@ -67,7 +66,7 @@ describe("push:channels:list command", () => {
       );
 
       const { stdout } = await runCommand(
-        ["push:channels:list", "--channel", "my-channel", "--json"],
+        ["push:channels:list", "my-channel", "--json"],
         import.meta.url,
       );
 
@@ -85,7 +84,7 @@ describe("push:channels:list command", () => {
   });
 
   describe("argument validation", () => {
-    it("should require --channel flag", async () => {
+    it("should require channel argument", async () => {
       const { error } = await runCommand(
         ["push:channels:list"],
         import.meta.url,
@@ -103,7 +102,7 @@ describe("push:channels:list command", () => {
       );
 
       const { error } = await runCommand(
-        ["push:channels:list", "--channel", "my-channel"],
+        ["push:channels:list", "my-channel"],
         import.meta.url,
       );
 

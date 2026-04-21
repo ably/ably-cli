@@ -157,7 +157,7 @@ describe("Control API E2E Workflow Tests", () => {
 
         // 1. Create app
         const createResult = await runBackgroundProcessAndGetOutput(
-          `ABLY_ACCESS_TOKEN=${process.env.E2E_ABLY_ACCESS_TOKEN} ${cliPath} apps create --name "${appName}" --json`,
+          `ABLY_ACCESS_TOKEN=${process.env.E2E_ABLY_ACCESS_TOKEN} ${cliPath} apps create "${appName}" --json`,
           30000,
         );
 
@@ -235,7 +235,7 @@ describe("Control API E2E Workflow Tests", () => {
       // Create a test app first
       const appName = `E2E Key Test App ${Date.now()}`;
       const createResult = await runCommand(
-        ["apps", "create", "--name", appName, "--json"],
+        ["apps", "create", appName, "--json"],
         {
           env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
         },
@@ -267,16 +267,7 @@ describe("Control API E2E Workflow Tests", () => {
 
       const keyName = `Test Key ${Date.now()}`;
       const createResult = await runCommand(
-        [
-          "auth",
-          "keys",
-          "create",
-          "--app",
-          testAppId,
-          "--name",
-          keyName,
-          "--json",
-        ],
+        ["auth", "keys", "create", keyName, "--app", testAppId, "--json"],
         {
           env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
         },
@@ -322,7 +313,7 @@ describe("Control API E2E Workflow Tests", () => {
       // Create a test app first
       const appName = `E2E Queue Test App ${Date.now()}`;
       const createResult = await runCommand(
-        ["apps", "create", "--name", appName, "--json"],
+        ["apps", "create", appName, "--json"],
         {
           env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
         },
@@ -357,10 +348,9 @@ describe("Control API E2E Workflow Tests", () => {
         [
           "queues",
           "create",
+          queueName,
           "--app",
           testAppId,
-          "--name",
-          queueName,
           "--max-length",
           "5000",
           "--ttl",
@@ -406,7 +396,7 @@ describe("Control API E2E Workflow Tests", () => {
       const queueName = `test-delete-queue-${Date.now()}`;
       // First create a queue
       await runCommand(
-        ["queues", "create", "--app", testAppId, "--name", queueName, "--json"],
+        ["queues", "create", queueName, "--app", testAppId, "--json"],
         {
           env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
         },
@@ -438,7 +428,7 @@ describe("Control API E2E Workflow Tests", () => {
       // Create a test app first
       const appName = `E2E Integration Test App ${Date.now()}`;
       const createResult = await runCommand(
-        ["apps", "create", "--name", appName, "--json"],
+        ["apps", "create", appName, "--json"],
         {
           env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
         },
@@ -524,7 +514,7 @@ describe("Control API E2E Workflow Tests", () => {
       // Create a test app first
       const appName = `E2E Rules Test App ${Date.now()}`;
       const createResult = await runCommand(
-        ["apps", "create", "--name", appName, "--json"],
+        ["apps", "create", appName, "--json"],
         {
           env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
         },
@@ -565,10 +555,9 @@ describe("Control API E2E Workflow Tests", () => {
             "apps",
             "rules",
             "create",
+            ruleName,
             "--app",
             testAppId,
-            "--name",
-            ruleName,
             "--persisted",
             "--push-enabled",
             "--authenticated",
@@ -626,10 +615,9 @@ describe("Control API E2E Workflow Tests", () => {
           "apps",
           "rules",
           "create",
+          ruleName,
           "--app",
           testAppId,
-          "--name",
-          ruleName,
           "--persisted",
           "--json",
         ],
@@ -687,16 +675,7 @@ describe("Control API E2E Workflow Tests", () => {
 
       // 1. Create rule
       const createResult = await runCommand(
-        [
-          "apps",
-          "rules",
-          "create",
-          "--app",
-          testAppId,
-          "--name",
-          ruleName,
-          "--json",
-        ],
+        ["apps", "rules", "create", ruleName, "--app", testAppId, "--json"],
         {
           env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
         },
@@ -801,7 +780,7 @@ describe("Control API E2E Workflow Tests", () => {
 
         // 1. Create app
         const createAppResult = await runCommand(
-          ["apps", "create", "--name", appName, "--json"],
+          ["apps", "create", appName, "--json"],
           {
             env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
           },
@@ -815,16 +794,7 @@ describe("Control API E2E Workflow Tests", () => {
 
         // 2. Create API key
         const createKeyResult = await runCommand(
-          [
-            "auth",
-            "keys",
-            "create",
-            "--app",
-            appId,
-            "--name",
-            keyName,
-            "--json",
-          ],
+          ["auth", "keys", "create", keyName, "--app", appId, "--json"],
           {
             env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
           },
@@ -838,7 +808,7 @@ describe("Control API E2E Workflow Tests", () => {
 
         // 3. Create queue
         const createQueueResult = await runCommand(
-          ["queues", "create", "--app", appId, "--name", queueName, "--json"],
+          ["queues", "create", queueName, "--app", appId, "--json"],
           {
             env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
           },

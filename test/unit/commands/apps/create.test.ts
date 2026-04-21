@@ -59,7 +59,6 @@ describe("apps:create command", () => {
 
       const { stdout, stderr } = await runCommand([
         "apps:create",
-        "--name",
         `"${mockAppName}"`,
       ]);
 
@@ -100,7 +99,7 @@ describe("apps:create command", () => {
         });
 
       const { stdout, stderr } = await runCommand(
-        ["apps:create", "--name", `"${mockAppName}"`, "--tls-only"],
+        ["apps:create", `"${mockAppName}"`, "--tls-only"],
         import.meta.url,
       );
 
@@ -137,7 +136,7 @@ describe("apps:create command", () => {
       nockControl().post(`/v1/accounts/${accountId}/apps`).reply(201, mockApp);
 
       const { stdout } = await runCommand(
-        ["apps:create", "--name", `"${mockAppName}"`, "--json"],
+        ["apps:create", `"${mockAppName}"`, "--json"],
         import.meta.url,
       );
 
@@ -195,7 +194,7 @@ describe("apps:create command", () => {
         });
 
       const { stderr } = await runCommand(
-        ["apps:create", "--name", mockAppName],
+        ["apps:create", mockAppName],
         import.meta.url,
       );
 
@@ -229,7 +228,7 @@ describe("apps:create command", () => {
       });
 
       const { stderr } = await runCommand(
-        ["apps:create", "--name", `"${mockAppName}"`],
+        ["apps:create", `"${mockAppName}"`],
         import.meta.url,
       );
 
@@ -247,9 +246,9 @@ describe("apps:create command", () => {
   standardHelpTests("apps:create", import.meta.url);
 
   describe("argument validation", () => {
-    it("should require --name flag", async () => {
+    it("should require app name argument", async () => {
       const { error } = await runCommand(["apps:create"], import.meta.url);
-      expect(error?.message).toMatch(/Missing required flag.*name/);
+      expect(error?.message).toMatch(/Missing 1 required arg/);
     });
   });
 
@@ -257,7 +256,7 @@ describe("apps:create command", () => {
 
   describe("error handling", () => {
     standardControlApiErrorTests({
-      commandArgs: ["apps:create", "--name", `"${mockAppName}"`],
+      commandArgs: ["apps:create", `"${mockAppName}"`],
       importMetaUrl: import.meta.url,
       setupNock: (scenario) => {
         if (scenario === "401") {
@@ -305,7 +304,7 @@ describe("apps:create command", () => {
         .reply(403, { error: "Forbidden" });
 
       const { error } = await runCommand(
-        ["apps:create", "--name", `"${mockAppName}"`],
+        ["apps:create", `"${mockAppName}"`],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -333,7 +332,7 @@ describe("apps:create command", () => {
         .reply(404, { error: "Not Found" });
 
       const { error } = await runCommand(
-        ["apps:create", "--name", `"${mockAppName}"`],
+        ["apps:create", `"${mockAppName}"`],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -344,8 +343,7 @@ describe("apps:create command", () => {
     it("should require name parameter", async () => {
       const { error } = await runCommand(["apps:create"], import.meta.url);
       expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Missing required flag.*name/);
-      expect(error?.oclif?.exit).toBeGreaterThan(0);
+      expect(error?.message).toMatch(/Missing 1 required arg/);
     });
 
     it("should handle validation errors from API", async () => {
@@ -369,7 +367,7 @@ describe("apps:create command", () => {
       });
 
       const { error } = await runCommand(
-        ["apps:create", "--name", `"${mockAppName}"`],
+        ["apps:create", `"${mockAppName}"`],
         import.meta.url,
       );
       expect(error).toBeDefined();

@@ -54,7 +54,7 @@ describe("auth:keys:create command", () => {
         });
 
       const { stdout, stderr } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
+        ["auth:keys:create", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
 
@@ -86,7 +86,6 @@ describe("auth:keys:create command", () => {
       const { stdout, stderr } = await runCommand(
         [
           "auth:keys:create",
-          "--name",
           `"${mockKeyName}"`,
           "--app",
           appId,
@@ -131,7 +130,6 @@ describe("auth:keys:create command", () => {
       const { stdout, stderr } = await runCommand(
         [
           "auth:keys:create",
-          "--name",
           `"${mockKeyName}"`,
           "--app",
           appId,
@@ -166,14 +164,7 @@ describe("auth:keys:create command", () => {
       nockControl().post(`/v1/apps/${appId}/keys`).reply(201, mockKey);
 
       const { stdout } = await runCommand(
-        [
-          "auth:keys:create",
-          "--name",
-          `"${mockKeyName}"`,
-          "--app",
-          appId,
-          "--json",
-        ],
+        ["auth:keys:create", `"${mockKeyName}"`, "--app", appId, "--json"],
         import.meta.url,
       );
 
@@ -226,7 +217,7 @@ describe("auth:keys:create command", () => {
         });
 
       const { stderr } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
+        ["auth:keys:create", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
 
@@ -239,7 +230,7 @@ describe("auth:keys:create command", () => {
   standardFlagTests("auth:keys:create", import.meta.url, ["--json"]);
 
   describe("argument validation", () => {
-    it("should require name parameter", async () => {
+    it("should require key name argument", async () => {
       const appId = getMockConfigManager().getRegisteredAppId();
       mockAppResolution(appId);
       const { error } = await runCommand(
@@ -247,7 +238,7 @@ describe("auth:keys:create command", () => {
         import.meta.url,
       );
       expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Missing required flag.*name/);
+      expect(error?.message).toMatch(/Missing 1 required arg/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -263,7 +254,7 @@ describe("auth:keys:create command", () => {
       nockControl().get(`/v1/accounts/${accountId}/apps`).reply(200, []);
 
       const { error } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`],
+        ["auth:keys:create", `"${mockKeyName}"`],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -278,7 +269,6 @@ describe("auth:keys:create command", () => {
       const { error } = await runCommand(
         [
           "auth:keys:create",
-          "--name",
           `"${mockKeyName}"`,
           "--app",
           appId,
@@ -301,7 +291,6 @@ describe("auth:keys:create command", () => {
       const { error } = await runCommand(
         [
           "auth:keys:create",
-          "--name",
           `"${mockKeyName}"`,
           "--app",
           appId,
@@ -328,7 +317,7 @@ describe("auth:keys:create command", () => {
         .reply(401, { error: "Unauthorized" });
 
       const { error } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
+        ["auth:keys:create", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -345,7 +334,7 @@ describe("auth:keys:create command", () => {
         .reply(403, { error: "Forbidden" });
 
       const { error } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
+        ["auth:keys:create", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -362,7 +351,7 @@ describe("auth:keys:create command", () => {
         .reply(404, { error: "App not found" });
 
       const { error } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
+        ["auth:keys:create", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -379,7 +368,7 @@ describe("auth:keys:create command", () => {
         .reply(500, { error: "Internal Server Error" });
 
       const { error } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
+        ["auth:keys:create", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -396,7 +385,7 @@ describe("auth:keys:create command", () => {
         .replyWithError("Network error");
 
       const { error } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
+        ["auth:keys:create", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -414,7 +403,7 @@ describe("auth:keys:create command", () => {
       });
 
       const { error } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
+        ["auth:keys:create", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -431,7 +420,7 @@ describe("auth:keys:create command", () => {
         .reply(429, { error: "Rate limit exceeded" });
 
       const { error } = await runCommand(
-        ["auth:keys:create", "--name", `"${mockKeyName}"`, "--app", appId],
+        ["auth:keys:create", `"${mockKeyName}"`, "--app", appId],
         import.meta.url,
       );
       expect(error).toBeDefined();
@@ -465,7 +454,6 @@ describe("auth:keys:create command", () => {
       const { stdout, stderr } = await runCommand(
         [
           "auth:keys:create",
-          "--name",
           `"${mockKeyName}"`,
           "--app",
           appId,
@@ -509,7 +497,6 @@ describe("auth:keys:create command", () => {
       const { stdout, stderr } = await runCommand(
         [
           "auth:keys:create",
-          "--name",
           `"${mockKeyName}"`,
           "--app",
           appId,

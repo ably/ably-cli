@@ -1,4 +1,4 @@
-import { Args, Flags } from "@oclif/core";
+import { Args } from "@oclif/core";
 
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
@@ -14,23 +14,23 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
       description: "Name of the space to set location in",
       required: true,
     }),
+    location: Args.string({
+      description: "Location data to set (JSON format)",
+      required: true,
+    }),
   };
 
   static override description = "Set location in a space";
 
   static override examples = [
-    '$ ably spaces locations set my-space --location \'{"x":10,"y":20}\'',
-    '$ ably spaces locations set my-space --location \'{"sectionId":"section1"}\'',
-    '$ ably spaces locations set my-space --location \'{"x":10,"y":20}\' --json',
+    '$ ably spaces locations set "my-space" \'{"x":10,"y":20}\'',
+    '$ ably spaces locations set "my-space" \'{"sectionId":"section1"}\'',
+    '$ ably spaces locations set "my-space" \'{"x":10,"y":20}\' --json',
   ];
 
   static override flags = {
     ...productApiFlags,
     ...clientIdFlag,
-    location: Flags.string({
-      description: "Location data to set (JSON format)",
-      required: true,
-    }),
     ...durationFlag,
   };
 
@@ -38,7 +38,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
     const { args, flags } = await this.parse(SpacesLocationsSet);
     const { spaceName } = args;
 
-    const location = this.parseJsonFlag(flags.location, "location", flags);
+    const location = this.parseJsonFlag(args.location, "location", flags);
 
     try {
       this.logProgress("Entering space", flags);

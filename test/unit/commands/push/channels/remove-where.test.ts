@@ -16,7 +16,6 @@ describe("push:channels:remove-where command", () => {
   standardArgValidationTests("push:channels:remove-where", import.meta.url);
   standardFlagTests("push:channels:remove-where", import.meta.url, [
     "--json",
-    "--channel",
     "--device-id",
     "--client-id",
     "--force",
@@ -27,7 +26,7 @@ describe("push:channels:remove-where command", () => {
       const mock = getMockAblyRest();
 
       const { stderr } = await runCommand(
-        ["push:channels:remove-where", "--channel", "my-channel", "--force"],
+        ["push:channels:remove-where", "my-channel", "--force"],
         import.meta.url,
       );
 
@@ -39,7 +38,7 @@ describe("push:channels:remove-where command", () => {
       );
     });
 
-    it("should require --channel flag", async () => {
+    it("should require channel argument", async () => {
       const { error } = await runCommand(
         ["push:channels:remove-where", "--force"],
         import.meta.url,
@@ -50,13 +49,7 @@ describe("push:channels:remove-where command", () => {
 
     it("should output JSON when requested", async () => {
       const { stdout } = await runCommand(
-        [
-          "push:channels:remove-where",
-          "--channel",
-          "my-channel",
-          "--force",
-          "--json",
-        ],
+        ["push:channels:remove-where", "my-channel", "--force", "--json"],
         import.meta.url,
       );
 
@@ -82,7 +75,7 @@ describe("push:channels:remove-where command", () => {
       );
 
       const { error } = await runCommand(
-        ["push:channels:remove-where", "--channel", "my-channel", "--force"],
+        ["push:channels:remove-where", "my-channel", "--force"],
         import.meta.url,
       );
 
