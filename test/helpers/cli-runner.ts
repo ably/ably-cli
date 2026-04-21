@@ -170,7 +170,11 @@ export class CliRunner extends EventTarget {
       // Running in E2E mode - use real Ably connections
       // Remove test mode to allow real Ably connections
       delete env.ABLY_CLI_TEST_MODE;
-      env.ABLY_API_KEY = process.env.E2E_ABLY_API_KEY;
+      // Only fall back to the full-access E2E key if the caller hasn't
+      // explicitly provided one (e.g. a scoped or revoked key under test).
+      if (!this.opts.env?.ABLY_API_KEY) {
+        env.ABLY_API_KEY = process.env.E2E_ABLY_API_KEY;
+      }
       env.ABLY_E2E_TEST = "true";
     }
 

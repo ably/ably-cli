@@ -22,6 +22,7 @@ import {
   setupTestFailureHandler,
   resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
+import { runCommand } from "../../helpers/command-helpers.js";
 import { ChildProcess } from "node:child_process";
 
 describe("Channel Subscribe E2E Tests", () => {
@@ -123,6 +124,56 @@ describe("Channel Subscribe E2E Tests", () => {
       // Cleanup is handled by afterEach hook
       console.log(
         `[Test Subscribe] Test finished, cleanup will handle process ${subscribeProcessInfo.processId}`,
+      );
+    }
+  });
+
+  // End-to-end: both subscriber AND publisher run through the CLI subprocess —
+  // not the SDK — so regressions in the CLI publish path surface here.
+  it("should deliver a CLI-published message to a CLI subscriber", async () => {
+    setupTestFailureHandler(
+      "should deliver a CLI-published message to a CLI subscriber",
+    );
+
+    if (SHOULD_SKIP_E2E) return;
+
+    const readySignal = "Subscribed to channel";
+
+    subscribeProcessInfo = await runLongRunningBackgroundProcess(
+      `bin/run.js channels subscribe ${subscribeChannel}`,
+      outputPath,
+      { readySignal, timeoutMs: 15000 },
+    );
+
+    try {
+      const messageText = `cli-to-cli-${Date.now()}`;
+      const publishResult = await runCommand([
+        "channels",
+        "publish",
+        subscribeChannel,
+        messageText,
+      ]);
+      expect(publishResult.exitCode).toBe(0);
+
+      let messageReceived = false;
+      for (let i = 0; i < 50; i++) {
+        const output = await readProcessOutput(outputPath);
+        if (output.includes(messageText)) {
+          messageReceived = true;
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+      if (!messageReceived) {
+        const finalOutput = await readProcessOutput(outputPath);
+        console.error(
+          `[Test CLI-to-CLI] FAILED. Final subscriber output:\n${finalOutput}`,
+        );
+      }
+      expect(messageReceived).toBe(true);
+    } finally {
+      console.log(
+        `[Test CLI-to-CLI] Test finished, cleanup will handle process ${subscribeProcessInfo.processId}`,
       );
     }
   });
