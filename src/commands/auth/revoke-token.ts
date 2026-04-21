@@ -3,7 +3,9 @@ import * as Ably from "ably";
 import * as https from "node:https";
 
 import { AblyBaseCommand } from "../../base-command.js";
-import { productApiFlags } from "../../flags.js";
+import { forceFlag, productApiFlags } from "../../flags.js";
+import { formatLabel, formatResource } from "../../utils/output.js";
+import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class RevokeTokenCommand extends AblyBaseCommand {
   static args = {
@@ -18,9 +20,10 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
 
   static examples = [
     "$ ably auth revoke-token TOKEN",
+    "$ ably auth revoke-token TOKEN --force",
     "$ ably auth revoke-token TOKEN --client-id clientid",
-    "$ ably auth revoke-token TOKEN --json",
-    "$ ably auth revoke-token TOKEN --pretty-json",
+    "$ ably auth revoke-token TOKEN --json --force",
+    "$ ably auth revoke-token TOKEN --pretty-json --force",
   ];
 
   static flags = {
@@ -32,8 +35,9 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
 
     "client-id": Flags.string({
       char: "c",
-      description: "Client ID to revoke tokens for",
+      description: "Revoke all tokens for given Client ID",
     }),
+    ...forceFlag,
   };
 
   // Property to store the Ably client
@@ -50,6 +54,38 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
 
     const { apiKey } = appAndKey;
     const { token } = args;
+
+    // JSON mode guard
+    if (!flags.force && this.shouldOutputJson(flags)) {
+      this.fail(
+        "The --force flag is required when using --json to confirm revocation",
+        flags,
+        "revokeToken",
+      );
+    }
+
+    // Interactive confirmation
+    if (!flags.force && !this.shouldOutputJson(flags)) {
+      this.log(`\nYou are about to revoke tokens matching:`);
+      if (flags["client-id"]) {
+        this.log(
+          `${formatLabel("Client ID")} ${formatResource(flags["client-id"])}`,
+        );
+      } else {
+        const truncatedToken =
+          token.length > 15 ? token.slice(0, 15) + "..." : token;
+        this.log(`${formatLabel("Token")} ${formatResource(truncatedToken)}`);
+      }
+
+      const confirmed = await promptForConfirmation(
+        "\nThis will permanently revoke this token and any applications using it need to be re-issued a new token. Are you sure?",
+      );
+
+      if (!confirmed) {
+        this.logWarning("Revocation cancelled.", flags);
+        return;
+      }
+    }
 
     try {
       // Create Ably Realtime client

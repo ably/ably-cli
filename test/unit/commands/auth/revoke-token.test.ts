@@ -42,7 +42,13 @@ describe("auth:revoke-token command", () => {
         .reply(200, {});
 
       const { stderr } = await runCommand(
-        ["auth:revoke-token", mockToken, "--client-id", mockClientId],
+        [
+          "auth:revoke-token",
+          mockToken,
+          "--client-id",
+          mockClientId,
+          "--force",
+        ],
         import.meta.url,
       );
 
@@ -60,7 +66,7 @@ describe("auth:revoke-token command", () => {
         .reply(200, {});
 
       const { stderr } = await runCommand(
-        ["auth:revoke-token", mockToken],
+        ["auth:revoke-token", mockToken, "--force"],
         import.meta.url,
       );
 
@@ -82,7 +88,14 @@ describe("auth:revoke-token command", () => {
         .reply(200, { issuedBefore: 1234567890 });
 
       const { stdout } = await runCommand(
-        ["auth:revoke-token", mockToken, "--client-id", mockClientId, "--json"],
+        [
+          "auth:revoke-token",
+          mockToken,
+          "--client-id",
+          mockClientId,
+          "--json",
+          "--force",
+        ],
         import.meta.url,
       );
 
@@ -105,7 +118,13 @@ describe("auth:revoke-token command", () => {
         .reply(404, "token_not_found");
 
       const { error } = await runCommand(
-        ["auth:revoke-token", mockToken, "--client-id", mockClientId],
+        [
+          "auth:revoke-token",
+          mockToken,
+          "--client-id",
+          mockClientId,
+          "--force",
+        ],
         import.meta.url,
       );
 
@@ -121,7 +140,13 @@ describe("auth:revoke-token command", () => {
         .reply(401, { error: { message: "Unauthorized" } });
 
       const { error } = await runCommand(
-        ["auth:revoke-token", mockToken, "--client-id", mockClientId],
+        [
+          "auth:revoke-token",
+          mockToken,
+          "--client-id",
+          mockClientId,
+          "--force",
+        ],
         import.meta.url,
       );
 
@@ -137,17 +162,78 @@ describe("auth:revoke-token command", () => {
         .reply(500, { error: "Internal Server Error" });
 
       const { error } = await runCommand(
-        ["auth:revoke-token", mockToken, "--client-id", mockClientId],
+        [
+          "auth:revoke-token",
+          mockToken,
+          "--client-id",
+          mockClientId,
+          "--force",
+        ],
         import.meta.url,
       );
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/500|error|revoking/i);
     });
+
+    it("should require --force in JSON mode", async () => {
+      const { stdout } = await runCommand(
+        ["auth:revoke-token", mockToken, "--client-id", mockClientId, "--json"],
+        import.meta.url,
+      );
+
+      const lines = parseNdjsonLines(stdout);
+      const errorLine = lines.find((r) => r.type === "error");
+      expect(errorLine).toBeDefined();
+      expect(errorLine!.error.message).toContain(
+        "The --force flag is required when using --json to confirm revocation",
+      );
+    });
+
+    it("should cancel when user declines confirmation", async () => {
+      const originalStdin = process.stdin;
+      const { Readable } = await import("node:stream");
+
+      function mockStdinAnswer(answer: string) {
+        const readable = new Readable({ read() {} });
+        Object.defineProperty(process, "stdin", {
+          value: readable,
+          writable: true,
+          configurable: true,
+        });
+        queueMicrotask(() => {
+          for (const chunk of [`${answer}\n`, null]) readable.push(chunk);
+        });
+      }
+
+      try {
+        mockStdinAnswer("n");
+
+        const revokeNock = nock("https://rest.ably.io")
+          .post(/\/keys\/.*\/revokeTokens/)
+          .reply(200, {});
+
+        const { stderr } = await runCommand(
+          ["auth:revoke-token", mockToken, "--client-id", mockClientId],
+          import.meta.url,
+        );
+
+        expect(stderr).toContain("Revocation cancelled");
+        expect(revokeNock.isDone()).toBe(false);
+      } finally {
+        Object.defineProperty(process, "stdin", {
+          value: originalStdin,
+          writable: true,
+          configurable: true,
+        });
+        nock.cleanAll();
+      }
+    });
   });
 
   standardFlagTests("auth:revoke-token", import.meta.url, [
     "--client-id",
     "--json",
+    "--force",
   ]);
 });
