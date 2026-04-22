@@ -24,7 +24,7 @@ I would like to explore an alternative route where the Ably CLI supports an inte
 There are some relevant Node.js projects we can draw inspiration from:
 
 - [Vorpal interactive CLI](https://vorpal.js.org/) with source code at https://github.com/dthree/vorpal
-- [Inquirer package](https://www.npmjs.com/package/inquirer) for common interactive command line user interface commands
+- Node.js built-in `node:readline` module for interactive prompts (confirmation, selection)
 
 [oclif](https://oclif.io/) does not appear to have any plugins to support an interactive/embedded CLI mode.
 However, a [REPL plugin](https://github.com/sisou/oclif-plugin-repl) exists, although that's unlikely to share much with the goals of interactive CLI.

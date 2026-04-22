@@ -45,4 +45,60 @@ describe("promptForConfirmation", () => {
     await promptForConfirmation("Are you sure?");
     expect(capturedQuery).toBe("Are you sure? [y/n]");
   });
+
+  describe("defaultValue parameter", () => {
+    it("returns true for empty input when defaultValue is true", async () => {
+      mockQuestion = (_query, callback) => callback("");
+      const result = await promptForConfirmation("Did you mean X?", true);
+      expect(result).toBe(true);
+    });
+
+    it("returns false for empty input when defaultValue is false", async () => {
+      mockQuestion = (_query, callback) => callback("");
+      const result = await promptForConfirmation("Delete this?", false);
+      expect(result).toBe(false);
+    });
+
+    it("explicit 'n' overrides defaultValue true", async () => {
+      mockQuestion = (_query, callback) => callback("n");
+      const result = await promptForConfirmation("Did you mean X?", true);
+      expect(result).toBe(false);
+    });
+
+    it("explicit 'y' overrides defaultValue false", async () => {
+      mockQuestion = (_query, callback) => callback("y");
+      const result = await promptForConfirmation("Delete this?", false);
+      expect(result).toBe(true);
+    });
+
+    it("appends [Y/n] suffix when defaultValue is true", async () => {
+      let capturedQuery = "";
+      mockQuestion = (query, callback) => {
+        capturedQuery = query;
+        callback("y");
+      };
+      await promptForConfirmation("Did you mean X?", true);
+      expect(capturedQuery).toBe("Did you mean X? [Y/n]");
+    });
+
+    it("appends [y/n] suffix when defaultValue is false", async () => {
+      let capturedQuery = "";
+      mockQuestion = (query, callback) => {
+        capturedQuery = query;
+        callback("n");
+      };
+      await promptForConfirmation("Delete this?", false);
+      expect(capturedQuery).toBe("Delete this? [y/n]");
+    });
+
+    it("does not double-append suffix when message already contains [Y/n]", async () => {
+      let capturedQuery = "";
+      mockQuestion = (query, callback) => {
+        capturedQuery = query;
+        callback("y");
+      };
+      await promptForConfirmation("Continue? [Y/n]", true);
+      expect(capturedQuery).toBe("Continue? [Y/n]");
+    });
+  });
 });
