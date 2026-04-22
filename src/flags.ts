@@ -72,6 +72,21 @@ export const clientIdFlag = {
 };
 
 /**
+ * Hidden oauth-host flag for overriding the OAuth authorization server host.
+ * Kept separate from --control-host because the OAuth server (ably.com) and
+ * the Control API (control.ably.net) are different services and may be
+ * overridden independently when targeting review/staging environments.
+ */
+export const oauthHostFlag = {
+  "oauth-host": Flags.string({
+    description:
+      "Override the host for the OAuth authorization server, which defaults to ably.com",
+    hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
+    env: "ABLY_OAUTH_HOST",
+  }),
+};
+
+/**
  * endpoint flag for login / accounts switch commands only.
  */
 export const endpointFlag = {

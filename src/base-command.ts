@@ -162,7 +162,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   constructor(argv: string[], config: CommandConfig) {
     super(argv, config);
     this.configManager = createConfigManager();
-    this.interactiveHelper = new InteractiveHelper(this.configManager);
+    this.interactiveHelper = new InteractiveHelper(this.configManager, {
+      log: this.log.bind(this),
+    });
     // Check if we're running in web CLI mode
     this.isWebCliMode = isWebCliMode();
   }
@@ -610,9 +612,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
         if (!appName) {
           try {
             // Get access token for control API
-            const currentAccount = this.configManager.getCurrentAccount();
             const accessToken =
-              process.env.ABLY_ACCESS_TOKEN || currentAccount?.accessToken;
+              process.env.ABLY_ACCESS_TOKEN ||
+              this.configManager.getAccessToken();
 
             if (accessToken) {
               const controlApi = new ControlApi({

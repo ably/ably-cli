@@ -2,7 +2,6 @@ import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { errorMessage } from "../../utils/errors.js";
-import { ControlApi } from "../../services/control-api.js";
 import { formatLabel } from "../../utils/output.js";
 
 export default class AccountsCurrent extends ControlBaseCommand {
@@ -38,14 +37,11 @@ export default class AccountsCurrent extends ControlBaseCommand {
       );
     }
 
-    // Verify the account by making an API call to get up-to-date information
+    // Verify the account by making an API call to get up-to-date information.
+    // Route through createControlApi so OAuth accounts get the same
+    // TokenRefreshMiddleware used by every other control command.
     try {
-      const { accessToken } = currentAccount;
-
-      const controlApi = new ControlApi({
-        accessToken,
-        controlHost: flags["control-host"],
-      });
+      const controlApi = this.createControlApi(flags);
 
       const { account, user } = await controlApi.getMe();
 

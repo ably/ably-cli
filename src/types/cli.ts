@@ -8,6 +8,7 @@ export interface BaseFlags {
   "client-id"?: string;
   "control-host"?: string;
   "dashboard-host"?: string;
+  "oauth-host"?: string;
   endpoint?: string;
   port?: number;
   tls?: string;
