@@ -32,15 +32,33 @@ export function promptForConfirmation(
       : `${message} ${suffix}`;
 
   return new Promise<boolean>((resolve) => {
+    let settled = false;
+
+    const finish = (result: boolean) => {
+      if (settled) return;
+      settled = true;
+      if (!rl.closed) {
+        rl.close();
+      }
+      resolve(result);
+    };
+
+    rl.on("SIGINT", () => {
+      finish(defaultValue);
+    });
+
+    rl.on("close", () => {
+      finish(defaultValue);
+    });
+
     rl.question(promptMessage, (answer) => {
-      rl.close();
       const response = answer.toLowerCase().trim();
       // Empty input → use default value
       if (response === "") {
-        resolve(defaultValue);
+        finish(defaultValue);
         return;
       }
-      resolve(response === "y" || response === "yes");
+      finish(response === "y" || response === "yes");
     });
   });
 }

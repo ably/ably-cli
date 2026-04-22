@@ -4,10 +4,12 @@ let mockQuestion: (query: string, callback: (answer: string) => void) => void;
 
 vi.mock("node:readline", () => ({
   createInterface: () => ({
+    closed: false,
     close: vi.fn(),
     question: (query: string, callback: (answer: string) => void) => {
       mockQuestion(query, callback);
     },
+    on: vi.fn(),
   }),
 }));
 
