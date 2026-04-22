@@ -28,8 +28,6 @@ updates:
     ignore:
       - dependency-name: "zod"
         update-types: ["version-update:semver-major"]
-      - dependency-name: "inquirer"
-        update-types: ["version-update:semver-major"]
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
     cooldown:

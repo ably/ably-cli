@@ -7,7 +7,12 @@ import {
   vi,
   MockedFunction,
 } from "vitest";
-import inquirer from "inquirer";
+
+vi.mock("../../../src/utils/prompt-selection.js", () => ({
+  promptForSelection: vi.fn(),
+}));
+
+import { promptForSelection } from "../../../src/utils/prompt-selection.js";
 import { InteractiveHelper } from "../../../src/services/interactive-helper.js";
 import { ConfigManager } from "../../../src/services/config-manager.js";
 import { ControlApi, App, Key } from "../../../src/services/control-api.js";
@@ -20,15 +25,14 @@ describe("InteractiveHelper", function () {
       ConfigManager["getCurrentAccountAlias"]
     >;
   };
-  let promptStub: ReturnType<typeof vi.fn>;
   let consoleLogSpy: ReturnType<typeof vi.fn>;
+
   beforeEach(function () {
     // Create stubs and spies
     configManagerStub = {
       listAccounts: vi.fn(),
       getCurrentAccountAlias: vi.fn(),
     };
-    promptStub = vi.spyOn(inquirer, "prompt");
     consoleLogSpy = vi.spyOn(console, "log");
 
     // Create fresh instance for each test
@@ -42,29 +46,6 @@ describe("InteractiveHelper", function () {
 
   afterEach(function () {
     vi.restoreAllMocks();
-  });
-
-  describe("#confirm", function () {
-    it("should return true when user confirms", async function () {
-      promptStub.mockResolvedValue({ confirmed: true });
-
-      const result = await interactiveHelper.confirm("Confirm this action?");
-
-      expect(result).toBe(true);
-      expect(promptStub).toHaveBeenCalledOnce();
-      expect(promptStub.mock.calls[0][0][0].message).toBe(
-        "Confirm this action?",
-      );
-    });
-
-    it("should return false when user denies", async function () {
-      promptStub.mockResolvedValue({ confirmed: false });
-
-      const result = await interactiveHelper.confirm("Confirm this action?");
-
-      expect(result).toBe(false);
-      expect(promptStub).toHaveBeenCalledOnce();
-    });
   });
 
   describe("#selectAccount", function () {
@@ -92,12 +73,12 @@ describe("InteractiveHelper", function () {
       configManagerStub.getCurrentAccountAlias.mockReturnValue("default");
 
       const selectedAccount = accounts[1];
-      promptStub.mockResolvedValue({ selectedAccount });
+      vi.mocked(promptForSelection).mockResolvedValue(selectedAccount);
 
       const result = await interactiveHelper.selectAccount();
 
       expect(result).toBe(selectedAccount);
-      expect(promptStub).toHaveBeenCalledOnce();
+      expect(promptForSelection).toHaveBeenCalledOnce();
       expect(configManagerStub.listAccounts).toHaveBeenCalledOnce();
       expect(configManagerStub.getCurrentAccountAlias).toHaveBeenCalledOnce();
     });
@@ -108,7 +89,7 @@ describe("InteractiveHelper", function () {
       const result = await interactiveHelper.selectAccount();
 
       expect(result).toBeNull();
-      expect(promptStub).not.toHaveBeenCalled();
+      expect(promptForSelection).not.toHaveBeenCalled();
       expect(
         consoleLogSpy.mock.calls.some((call) =>
           /No accounts configured/.test(call[0]),
@@ -163,14 +144,14 @@ describe("InteractiveHelper", function () {
       controlApiStub.listApps.mockResolvedValue(apps);
 
       const selectedApp = apps[1];
-      promptStub.mockResolvedValue({ selectedApp });
+      vi.mocked(promptForSelection).mockResolvedValue(selectedApp);
 
       const result = await interactiveHelper.selectApp(
         controlApiStub as unknown as ControlApi,
       );
 
       expect(result).toBe(selectedApp);
-      expect(promptStub).toHaveBeenCalledOnce();
+      expect(promptForSelection).toHaveBeenCalledOnce();
       expect(controlApiStub.listApps).toHaveBeenCalledOnce();
     });
 
@@ -182,7 +163,7 @@ describe("InteractiveHelper", function () {
       );
 
       expect(result).toBeNull();
-      expect(promptStub).not.toHaveBeenCalled();
+      expect(promptForSelection).not.toHaveBeenCalled();
       expect(
         consoleLogSpy.mock.calls.some((call) => /No apps found/.test(call[0])),
       ).toBe(true);
@@ -239,7 +220,7 @@ describe("InteractiveHelper", function () {
       controlApiStub.listKeys.mockResolvedValue(keys);
 
       const selectedKey = keys[1];
-      promptStub.mockResolvedValue({ selectedKey });
+      vi.mocked(promptForSelection).mockResolvedValue(selectedKey);
 
       const result = await interactiveHelper.selectKey(
         controlApiStub as unknown as ControlApi,
@@ -247,11 +228,11 @@ describe("InteractiveHelper", function () {
       );
 
       expect(result).toBe(selectedKey);
-      expect(promptStub).toHaveBeenCalledOnce();
+      expect(promptForSelection).toHaveBeenCalledOnce();
       expect(controlApiStub.listKeys).toHaveBeenCalledExactlyOnceWith("app1");
     });
 
-    it("should handle unnamed keys", async function () {
+    it("should pass correct choices including unnamed keys", async function () {
       const keys: Key[] = [
         {
           id: "key1",
@@ -278,15 +259,16 @@ describe("InteractiveHelper", function () {
       ];
 
       controlApiStub.listKeys.mockResolvedValue(keys);
-      promptStub.mockResolvedValue({ selectedKey: keys[0] });
+      vi.mocked(promptForSelection).mockResolvedValue(keys[0]);
 
       await interactiveHelper.selectKey(
         controlApiStub as unknown as ControlApi,
         "app1",
       );
 
-      // Check that the prompt choices include "Unnamed key" for the first key
-      const choices = promptStub.mock.calls[0][0][0].choices;
+      // Check that the choices passed to promptForSelection include "Unnamed key"
+      const callArgs = vi.mocked(promptForSelection).mock.calls[0];
+      const choices = callArgs[1] as Array<{ name: string }>;
       expect(choices[0].name).toContain("Unnamed key");
     });
 
@@ -299,7 +281,7 @@ describe("InteractiveHelper", function () {
       );
 
       expect(result).toBeNull();
-      expect(promptStub).not.toHaveBeenCalled();
+      expect(promptForSelection).not.toHaveBeenCalled();
       expect(
         consoleLogSpy.mock.calls.some((call) => /No keys found/.test(call[0])),
       ).toBe(true);

@@ -103,7 +103,7 @@ Flags are NOT global. Each command explicitly declares only the flags it needs v
 - **`durationFlag`** — `--duration` / `-D`. Use for long-running subscribe/stream commands that auto-exit after N seconds.
 - **`rewindFlag`** — `--rewind`. Use for subscribe commands that support message replay (default: 0).
 - **`timeRangeFlags`** — `--start`, `--end`. Use for history and stats commands. Parse with `parseTimestamp()` from `src/utils/time.ts`. Accepts ISO 8601, Unix ms, or relative (e.g., `"1h"`, `"30m"`, `"2d"`).
-- **`forceFlag`** — `--force` / `-f`. Use for destructive commands (delete, revoke) that require user confirmation. When `--force` is provided, skip the interactive prompt. When `--json` is used without `--force`, fail with an error requiring `--force`. Use `promptForConfirmation()` from `src/utils/prompt-confirmation.js` for the interactive prompt — do NOT use `interactiveHelper.confirm()` (inquirer-based, inconsistent UX).
+- **`forceFlag`** — `--force` / `-f`. Use for destructive commands (delete, revoke) that require user confirmation. When `--force` is provided, skip the interactive prompt. When `--json` is used without `--force`, fail with an error requiring `--force`. Use `promptForConfirmation()` from `src/utils/prompt-confirmation.js` for the interactive prompt.
 - **`endpointFlag`** — `--endpoint`. Hidden, only on `accounts login` and `accounts switch`.
 
 **When creating a new command:**

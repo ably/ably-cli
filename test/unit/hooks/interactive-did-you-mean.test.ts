@@ -7,10 +7,13 @@ import {
   vi,
   MockInstance,
 } from "vitest";
-// import { Config } from '@oclif/core'; // Unused
+
+vi.mock("../../../src/utils/prompt-confirmation.js", () => ({
+  promptForConfirmation: vi.fn().mockResolvedValue(true),
+}));
+
 import hook from "../../../src/hooks/command_not_found/did-you-mean.js";
-import inquirer from "inquirer";
-// import chalk from 'chalk'; // Unused
+import { promptForConfirmation } from "../../../src/utils/prompt-confirmation.js";
 
 describe("Did You Mean Hook - Interactive Mode", function () {
   let config: Record<string, unknown>;
@@ -19,7 +22,6 @@ describe("Did You Mean Hook - Interactive Mode", function () {
   let logStub: ReturnType<typeof vi.fn>;
   let consoleErrorStub: MockInstance<typeof console.error>;
   let consoleLogStub: MockInstance<typeof console.log>;
-  let inquirerStub: MockInstance<typeof inquirer.prompt>;
   let runCommandStub: ReturnType<typeof vi.fn>;
   let originalEnv: NodeJS.ProcessEnv;
 
@@ -55,10 +57,8 @@ describe("Did You Mean Hook - Interactive Mode", function () {
       }),
     };
 
-    // Mock inquirer to auto-confirm
-    inquirerStub = vi
-      .spyOn(inquirer, "prompt")
-      .mockResolvedValue({ confirmed: true });
+    // Reset promptForConfirmation mock to auto-confirm
+    vi.mocked(promptForConfirmation).mockResolvedValue(true);
   });
 
   afterEach(function () {
@@ -107,19 +107,6 @@ describe("Did You Mean Hook - Interactive Mode", function () {
         debug: vi.fn(),
       };
 
-      // Mock the global readline instance
-      const mockReadline = {
-        pause: vi.fn(),
-        resume: vi.fn(),
-        prompt: vi.fn(),
-        listeners: vi.fn().mockReturnValue([]),
-        removeAllListeners: vi.fn(),
-        on: vi.fn(),
-      };
-      (
-        globalThis as unknown as Record<string, unknown>
-      ).__ablyInteractiveReadline = mockReadline;
-
       await hook.call(context, {
         id: "channels:pubish",
         argv: [],
@@ -127,21 +114,12 @@ describe("Did You Mean Hook - Interactive Mode", function () {
         context,
       });
 
-      // Should show confirmation prompt
-      expect(inquirerStub).toHaveBeenCalled();
-      expect(inquirerStub.mock.calls[0][0][0].message).toContain(
-        "Did you mean",
-      );
-      expect(inquirerStub.mock.calls[0][0][0].message).toContain(
-        "channels publish",
-      );
-
-      // Should pause readline (resume happens asynchronously)
-      expect(mockReadline.pause).toHaveBeenCalled();
-
-      // Clean up
-      delete (globalThis as unknown as Record<string, unknown>)
-        .__ablyInteractiveReadline;
+      // Should show confirmation prompt via promptForConfirmation
+      expect(promptForConfirmation).toHaveBeenCalled();
+      const callArgs = vi.mocked(promptForConfirmation).mock.calls[0];
+      expect(callArgs[0]).toContain("Did you mean");
+      expect(callArgs[0]).toContain("channels publish");
+      expect(callArgs[1]).toBe(true); // defaultValue = true
     });
 
     it("should throw error instead of calling this.error when command fails", async function () {
@@ -153,19 +131,6 @@ describe("Did You Mean Hook - Interactive Mode", function () {
         exit: vi.fn(),
         debug: vi.fn(),
       };
-
-      // Mock the global readline instance
-      const mockReadline = {
-        pause: vi.fn(),
-        resume: vi.fn(),
-        prompt: vi.fn(),
-        listeners: vi.fn().mockReturnValue([]),
-        removeAllListeners: vi.fn(),
-        on: vi.fn(),
-      };
-      (
-        globalThis as unknown as Record<string, unknown>
-      ).__ablyInteractiveReadline = mockReadline;
 
       // Make runCommand fail
       runCommandStub.mockImplementation(() => {
@@ -186,15 +151,11 @@ describe("Did You Mean Hook - Interactive Mode", function () {
 
       // Should throw error with oclif exit code
       expect(thrownError).toBeDefined();
-      expect(thrownError.message).toContain("Missing required arg: channel");
+      expect(thrownError!.message).toContain("Missing required arg: channel");
       expect(
         (thrownError as unknown as { oclif?: { exit?: number } }).oclif?.exit,
       ).toBeDefined();
       expect(errorStub).not.toHaveBeenCalled();
-
-      // Clean up
-      delete (globalThis as unknown as Record<string, unknown>)
-        .__ablyInteractiveReadline;
     });
 
     it("should use console.log for help output in interactive mode", async function () {
@@ -206,19 +167,6 @@ describe("Did You Mean Hook - Interactive Mode", function () {
         exit: vi.fn(),
         debug: vi.fn(),
       };
-
-      // Mock the global readline instance
-      const mockReadline = {
-        pause: vi.fn(),
-        resume: vi.fn(),
-        prompt: vi.fn(),
-        listeners: vi.fn().mockReturnValue([]),
-        removeAllListeners: vi.fn(),
-        on: vi.fn(),
-      };
-      (
-        globalThis as unknown as Record<string, unknown>
-      ).__ablyInteractiveReadline = mockReadline;
 
       // Make runCommand fail with missing args
       const error = new Error(
@@ -253,10 +201,6 @@ describe("Did You Mean Hook - Interactive Mode", function () {
       expect(helpOutput).toContain("See more help with:");
       expect(helpOutput).toContain("channels publish --help");
       expect(helpOutput).not.toContain("ably channels publish --help");
-
-      // Clean up
-      delete (globalThis as unknown as Record<string, unknown>)
-        .__ablyInteractiveReadline;
     });
 
     it("should provide interactive-friendly error for unknown commands", async function () {
@@ -292,7 +236,7 @@ describe("Did You Mean Hook - Interactive Mode", function () {
   });
 
   describe("readline restoration", function () {
-    it("should properly restore readline state after inquirer prompt", async function () {
+    it("should properly restore readline state in interactive mode", async function () {
       const context = {
         config,
         warn: warnStub,
@@ -302,7 +246,7 @@ describe("Did You Mean Hook - Interactive Mode", function () {
         debug: vi.fn(),
       };
 
-      // Mock the global readline instance with more detailed state tracking
+      // Mock the global readline instance with detailed state tracking
       const lineListeners = [vi.fn(), vi.fn()];
       const mockReadline = {
         pause: vi.fn(),
@@ -334,7 +278,7 @@ describe("Did You Mean Hook - Interactive Mode", function () {
           context,
         });
 
-        // Wait for async restoration — all state changes happen together in the hook's cleanup path
+        // Wait for async restoration
         await vi.waitFor(() => {
           expect(mockReadline.resume).toHaveBeenCalled();
         });
@@ -346,7 +290,10 @@ describe("Did You Mean Hook - Interactive Mode", function () {
         expect(mockReadline.removeAllListeners).toHaveBeenCalledWith("line");
         expect(mockReadline.on.mock.calls.length).toBe(lineListeners.length);
         lineListeners.forEach((listener, index) => {
-          expect(mockReadline.on.mock.calls[index]).toEqual(["line", listener]);
+          expect(mockReadline.on.mock.calls[index]).toEqual([
+            "line",
+            listener,
+          ]);
         });
 
         // Verify terminal state was restored

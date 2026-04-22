@@ -1,8 +1,8 @@
 import chalk from "chalk";
-import inquirer from "inquirer";
 import pkg from "fast-levenshtein";
 import { InteractiveBaseCommand } from "./interactive-base-command.js";
-import { runInquirerWithReadlineRestore } from "./utils/readline-helper.js";
+import { promptForConfirmation } from "./utils/prompt-confirmation.js";
+import { runWithReadlineRestore } from "./utils/readline-helper.js";
 import { formatWarning } from "./utils/output.js";
 import * as readline from "node:readline";
 import {
@@ -121,25 +121,20 @@ export abstract class BaseTopicCommand extends InteractiveBaseCommand {
           if (skipConfirmation) {
             confirmed = true;
           } else {
-            // In interactive mode, we need to handle readline carefully
+            // In interactive mode, we need to protect the REPL's readline state
             const interactiveReadline = isInteractiveMode
               ? (globalThis as Record<string, unknown>)
                   .__ablyInteractiveReadline
               : null;
 
-            const result = await runInquirerWithReadlineRestore(
-              async () =>
-                inquirer.prompt<{ confirmed: boolean }>([
-                  {
-                    name: "confirmed",
-                    type: "confirm",
-                    message: `Did you mean ${chalk.green(displaySuggestion)}?`,
-                    default: true,
-                  },
-                ]),
+            confirmed = await runWithReadlineRestore(
+              () =>
+                promptForConfirmation(
+                  `Did you mean ${chalk.green(displaySuggestion)}?`,
+                  true,
+                ),
               interactiveReadline as readline.Interface | null,
             );
-            confirmed = result.confirmed;
           }
 
           if (confirmed) {

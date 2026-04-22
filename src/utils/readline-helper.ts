@@ -1,14 +1,24 @@
 import * as readline from "node:readline";
-// import inquirer from 'inquirer'; // Unused - kept for documentation
 
 /**
- * Helper function to safely run inquirer prompts in interactive mode
+ * Helper function to safely run prompt functions in interactive REPL mode
  * while preserving readline state and terminal settings.
  *
- * This prevents issues with arrow keys showing escape sequences (^[[A)
- * after inquirer prompts in interactive mode.
+ * When the interactive REPL is active, creating a new readline interface
+ * (e.g., via promptForConfirmation or promptForSelection) on the same stdin
+ * can interfere with the REPL's paused readline — causing issues like arrow
+ * keys showing escape sequences (^[[A) or lost line listeners.
+ *
+ * This wrapper:
+ * 1. Pauses the REPL's readline and removes its line listeners
+ * 2. Saves the terminal raw mode state
+ * 3. Runs the prompt function
+ * 4. Restores raw mode, line listeners, and resumes readline
+ * 5. Calls _refreshLine() to ensure proper terminal state
+ *
+ * In non-interactive mode (interactiveReadline is null), the prompt runs directly.
  */
-export async function runInquirerWithReadlineRestore<T>(
+export async function runWithReadlineRestore<T>(
   promptFn: () => Promise<T>,
   interactiveReadline: readline.Interface | null,
 ): Promise<T> {
@@ -27,11 +37,8 @@ export async function runInquirerWithReadlineRestore<T>(
   const isRaw = stdin.isRaw;
 
   try {
-    // Run the inquirer prompt
+    // Run the prompt function
     const result = await promptFn();
-
-    // Give inquirer time to clean up its terminal state
-    await new Promise((resolve) => setTimeout(resolve, 10));
 
     return result;
   } finally {
