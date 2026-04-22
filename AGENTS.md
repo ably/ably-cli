@@ -103,6 +103,7 @@ Flags are NOT global. Each command explicitly declares only the flags it needs v
 - **`durationFlag`** — `--duration` / `-D`. Use for long-running subscribe/stream commands that auto-exit after N seconds.
 - **`rewindFlag`** — `--rewind`. Use for subscribe commands that support message replay (default: 0).
 - **`timeRangeFlags`** — `--start`, `--end`. Use for history and stats commands. Parse with `parseTimestamp()` from `src/utils/time.ts`. Accepts ISO 8601, Unix ms, or relative (e.g., `"1h"`, `"30m"`, `"2d"`).
+- **`forceFlag`** — `--force` / `-f`. Use for destructive commands (delete, revoke) that require user confirmation. When `--force` is provided, skip the interactive prompt. When `--json` is used without `--force`, fail with an error requiring `--force`. Use `promptForConfirmation()` from `src/utils/prompt-confirmation.js` for the interactive prompt — do NOT use `interactiveHelper.confirm()` (inquirer-based, inconsistent UX).
 - **`endpointFlag`** — `--endpoint`. Hidden, only on `accounts login` and `accounts switch`.
 
 **When creating a new command:**
@@ -290,6 +291,10 @@ When adding COMMANDS sections in `src/help.ts`, use `chalk.bold()` for headers, 
 - `--direction`: `"Direction of message retrieval"` or `"Direction of log retrieval"`, options `["backwards", "forwards"]`.
 - Channels use "publish", Rooms use "send" (matches SDK terminology)
 - Command descriptions: imperative mood, sentence case, no trailing period (e.g., `"Subscribe to presence events on a channel"`)
+- **Destructive command confirmation pattern**: Commands that perform irreversible actions (delete, revoke) must use `...forceFlag` and `promptForConfirmation()`. The pattern:
+  1. If `--json` without `--force`: `this.fail("The --force flag is required when using --json to confirm <action>", flags, component)`
+  2. If no `--force` and not JSON: show what will be affected, then call `promptForConfirmation()` for yes/no
+  3. If `--force`: skip prompt, proceed directly
 
 ## Ably Knowledge
 
