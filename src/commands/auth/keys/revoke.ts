@@ -110,7 +110,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
           // Auto-remove in JSON mode — key is already revoked, can't be used
           this.configManager.removeApiKey(appId);
         } else {
-          const shouldRemove = await this.interactiveHelper.confirm(
+          const shouldRemove = await promptForConfirmation(
             "The revoked key was your current key for this app. Remove it from configuration?",
           );
 

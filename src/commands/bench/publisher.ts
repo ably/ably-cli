@@ -6,6 +6,7 @@ import Table from "cli-table3";
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
 import { errorMessage } from "../../utils/errors.js";
+import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 import type { BenchPresenceData } from "../../types/bench.js";
 
 interface TestMetrics {
@@ -388,7 +389,7 @@ export default class BenchPublisher extends AblyBaseCommand {
         `Found ${subscribers.length} subscribers present`,
       );
       if (subscribers.length === 0 && !this.shouldOutputJson(flags)) {
-        const shouldContinue = await this.interactiveHelper.confirm(
+        const shouldContinue = await promptForConfirmation(
           "No subscribers found. Continue anyway?",
         );
         if (!shouldContinue) {
