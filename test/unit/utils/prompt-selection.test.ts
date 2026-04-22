@@ -2,13 +2,22 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 let mockQuestion: (query: string, callback: (answer: string) => void) => void;
 let mockWrite: ReturnType<typeof vi.fn>;
+let mockOnHandlers: Record<string, (() => void)[]>;
+let mockClose: ReturnType<typeof vi.fn>;
 
 vi.mock("node:readline", () => ({
   createInterface: () => ({
-    close: vi.fn(),
+    closed: false,
+    close: () => mockClose(),
     write: (text: string) => mockWrite(text),
     question: (query: string, callback: (answer: string) => void) => {
       mockQuestion(query, callback);
+    },
+    on: (event: string, handler: () => void) => {
+      if (!mockOnHandlers[event]) {
+        mockOnHandlers[event] = [];
+      }
+      mockOnHandlers[event].push(handler);
     },
   }),
 }));
@@ -25,6 +34,8 @@ describe("promptForSelection", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     mockWrite = vi.fn();
+    mockClose = vi.fn();
+    mockOnHandlers = {};
   });
 
   it("returns the selected item for valid input", async () => {
@@ -51,6 +62,12 @@ describe("promptForSelection", () => {
     expect(result).toBeNull();
   });
 
+  it("returns null for empty choices array", async () => {
+    const result = await promptForSelection("Select:", []);
+    expect(result).toBeNull();
+    expect(mockWrite).not.toHaveBeenCalled();
+  });
+
   it("re-prompts on non-numeric input then accepts valid input", async () => {
     let callCount = 0;
     mockQuestion = (_query, callback) => {
@@ -63,6 +80,36 @@ describe("promptForSelection", () => {
     };
     const result = await promptForSelection("Select an app:", choices);
     expect(result).toEqual({ id: "app1", name: "App One" });
+    expect(callCount).toBe(2);
+  });
+
+  it("re-prompts on partially numeric input like '2abc'", async () => {
+    let callCount = 0;
+    mockQuestion = (_query, callback) => {
+      callCount++;
+      if (callCount === 1) {
+        callback("2abc");
+      } else {
+        callback("2");
+      }
+    };
+    const result = await promptForSelection("Select an app:", choices);
+    expect(result).toEqual({ id: "app2", name: "App Two" });
+    expect(callCount).toBe(2);
+  });
+
+  it("re-prompts on decimal input like '2.5'", async () => {
+    let callCount = 0;
+    mockQuestion = (_query, callback) => {
+      callCount++;
+      if (callCount === 1) {
+        callback("2.5");
+      } else {
+        callback("2");
+      }
+    };
+    const result = await promptForSelection("Select an app:", choices);
+    expect(result).toEqual({ id: "app2", name: "App Two" });
     expect(callCount).toBe(2);
   });
 
@@ -117,5 +164,27 @@ describe("promptForSelection", () => {
     mockQuestion = (_query, callback) => callback("  2  ");
     const result = await promptForSelection("Select:", choices);
     expect(result).toEqual({ id: "app2", name: "App Two" });
+  });
+
+  it("returns null on SIGINT", async () => {
+    mockQuestion = () => {
+      // Simulate SIGINT before answering
+      for (const handler of mockOnHandlers["SIGINT"] ?? []) {
+        handler();
+      }
+    };
+    const result = await promptForSelection("Select:", choices);
+    expect(result).toBeNull();
+  });
+
+  it("returns null on close", async () => {
+    mockQuestion = () => {
+      // Simulate close before answering
+      for (const handler of mockOnHandlers["close"] ?? []) {
+        handler();
+      }
+    };
+    const result = await promptForSelection("Select:", choices);
+    expect(result).toBeNull();
   });
 });

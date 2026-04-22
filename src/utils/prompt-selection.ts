@@ -4,7 +4,7 @@ import * as readline from "node:readline";
  * Prompts the user to select an item from a numbered list.
  * Displays choices as "[1] Choice one", "[2] Choice two", etc.
  * Re-prompts on invalid input (out-of-range, non-numeric).
- * Returns null if the user enters empty input or stdin closes.
+ * Returns null if the user enters empty input, stdin closes, or choices is empty.
  *
  * @param message - The prompt message displayed above the list
  * @param choices - Array of { name, value } pairs (same format as inquirer list choices)
@@ -14,6 +14,10 @@ export function promptForSelection<T>(
   message: string,
   choices: Array<{ name: string; value: T }>,
 ): Promise<T | null> {
+  if (choices.length === 0) {
+    return Promise.resolve(null);
+  }
+
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -26,21 +30,37 @@ export function promptForSelection<T>(
   }
 
   return new Promise<T | null>((resolve) => {
+    let settled = false;
+
+    const finish = (result: T | null) => {
+      if (settled) return;
+      settled = true;
+      if (!rl.closed) {
+        rl.close();
+      }
+      resolve(result);
+    };
+
+    rl.on("SIGINT", () => {
+      finish(null);
+    });
+
+    rl.on("close", () => {
+      finish(null);
+    });
+
     const ask = () => {
       rl.question("Enter selection: ", (answer) => {
         const trimmed = answer.trim();
 
         // Empty input → cancel
         if (trimmed === "") {
-          rl.close();
-          resolve(null);
+          finish(null);
           return;
         }
 
-        const num = Number.parseInt(trimmed, 10);
-
-        // Invalid number or out of range → re-prompt
-        if (Number.isNaN(num) || num < 1 || num > choices.length) {
+        // Require the entire input to be a base-10 integer string
+        if (!/^\d+$/.test(trimmed)) {
           rl.write(
             `Invalid selection. Enter a number between 1 and ${choices.length}.\n`,
           );
@@ -48,8 +68,18 @@ export function promptForSelection<T>(
           return;
         }
 
-        rl.close();
-        resolve(choices[num - 1]!.value);
+        const num = Number.parseInt(trimmed, 10);
+
+        // Out of range → re-prompt
+        if (num < 1 || num > choices.length) {
+          rl.write(
+            `Invalid selection. Enter a number between 1 and ${choices.length}.\n`,
+          );
+          ask();
+          return;
+        }
+
+        finish(choices[num - 1]!.value);
       });
     };
 
