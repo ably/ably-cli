@@ -10,11 +10,11 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
   static description = "Revoke tokens by client ID or revocation key";
 
   static examples = [
-    "$ ably auth revoke-token --client-id user@example.com",
-    "$ ably auth revoke-token --client-id user@example.com --force",
-    "$ ably auth revoke-token --revocation-key group1",
-    "$ ably auth revoke-token --client-id user@example.com --allow-reauth-margin",
-    "$ ably auth revoke-token --client-id user@example.com --json --force",
+    `$ ably auth revoke-token --client-id "userClientId"`,
+    `$ ably auth revoke-token --client-id "userClientId" --force`,
+    `$ ably auth revoke-token --revocation-key group1`,
+    `$ ably auth revoke-token --client-id "userClientId" --allow-reauth-margin`,
+    `$ ably auth revoke-token --client-id "userClientId" --json --force`,
   ];
 
   static flags = {
@@ -38,7 +38,7 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
     "allow-reauth-margin": Flags.boolean({
       default: false,
       description:
-        "Delay enforcement by 30s so connected clients can obtain a new token before disconnection",
+        "[default: false] Delay enforcement by 30s so connected clients can obtain a new token before disconnection.",
     }),
   };
 
@@ -64,15 +64,7 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
     const targetLabel = clientId ? "Client ID" : "Revocation Key";
     const targetValue = (clientId ?? revocationKey)!;
 
-    // Get app and key
-    const appAndKey = await this.ensureAppAndKey(flags);
-    if (!appAndKey) {
-      return;
-    }
-
-    const { apiKey } = appAndKey;
-
-    // JSON mode guard
+    // JSON mode guard — fail fast before config lookup
     if (!flags.force && this.shouldOutputJson(flags)) {
       this.fail(
         "The --force flag is required when using --json to confirm revocation",
@@ -81,10 +73,20 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
       );
     }
 
+    // Get app and key
+    const appAndKey = await this.ensureAppAndKey(flags);
+    if (!appAndKey) {
+      return;
+    }
+
+    const { apiKey } = appAndKey;
+
     // Interactive confirmation
     if (!flags.force && !this.shouldOutputJson(flags)) {
-      this.log(`\nYou are about to revoke all tokens matching:`);
-      this.log(`${formatLabel(targetLabel)} ${formatResource(targetValue)}`);
+      this.logToStderr(`\nYou are about to revoke all tokens matching:`);
+      this.logToStderr(
+        `${formatLabel(targetLabel)} ${formatResource(targetValue)}`,
+      );
 
       const confirmed = await promptForConfirmation(
         "\nThis will permanently revoke all matching tokens, and any applications using those tokens will need to be issued new tokens. Are you sure?",

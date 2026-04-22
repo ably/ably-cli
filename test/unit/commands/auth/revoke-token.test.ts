@@ -13,30 +13,12 @@ import { parseNdjsonLines } from "../../../helpers/ndjson.js";
 describe("auth:revoke-token command", () => {
   const mockClientId = "test-client-id";
   const mockRevocationKey = "group1";
-  const originalStdin = process.stdin;
-
-  function mockStdinAnswer(answer: string) {
-    const readable = new Readable({ read() {} });
-    Object.defineProperty(process, "stdin", {
-      value: readable,
-      writable: true,
-      configurable: true,
-    });
-    queueMicrotask(() => {
-      for (const chunk of [`${answer}\n`, null]) readable.push(chunk);
-    });
-  }
 
   beforeEach(() => {
     nock.cleanAll();
   });
 
   afterEach(() => {
-    Object.defineProperty(process, "stdin", {
-      value: originalStdin,
-      writable: true,
-      configurable: true,
-    });
     nock.cleanAll();
   });
 
@@ -217,6 +199,28 @@ describe("auth:revoke-token command", () => {
   });
 
   describe("confirmation prompt", () => {
+    const originalStdin = process.stdin;
+
+    function mockStdinAnswer(answer: string) {
+      const readable = new Readable({ read() {} });
+      Object.defineProperty(process, "stdin", {
+        value: readable,
+        writable: true,
+        configurable: true,
+      });
+      queueMicrotask(() => {
+        for (const chunk of [`${answer}\n`, null]) readable.push(chunk);
+      });
+    }
+
+    afterEach(() => {
+      Object.defineProperty(process, "stdin", {
+        value: originalStdin,
+        writable: true,
+        configurable: true,
+      });
+    });
+
     it("should require --force in JSON mode", async () => {
       const { stdout } = await runCommand(
         ["auth:revoke-token", "--client-id", mockClientId, "--json"],
