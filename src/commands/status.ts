@@ -7,7 +7,7 @@ import { AblyBaseCommand } from "../base-command.js";
 import { coreGlobalFlags } from "../flags.js";
 import { BaseFlags } from "../types/cli.js";
 import openUrl from "../utils/open-url.js";
-import { getCliVersion } from "../utils/version.js";
+import { getAgentName, getCliVersion } from "../utils/version.js";
 
 interface StatusResponse {
   status?: boolean;
@@ -46,7 +46,7 @@ export default class StatusCommand extends AblyBaseCommand {
     try {
       const response = await fetch("https://ably.com/status/up.json", {
         headers: {
-          "Ably-Agent": `ably-cli/${getCliVersion()}`,
+          "Ably-Agent": `${getAgentName()}/${getCliVersion()}`,
         },
       });
       const data = (await response.json()) as StatusResponse;

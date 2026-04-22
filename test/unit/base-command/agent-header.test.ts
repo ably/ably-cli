@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import { AblyBaseCommand } from "../../../src/base-command.js";
 import { getCliVersion } from "../../../src/utils/version.js";
@@ -18,22 +18,35 @@ class TestCommand extends AblyBaseCommand {
 }
 
 describe("Agent Header Unit Tests", function () {
-  beforeEach(function () {});
+  afterEach(function () {
+    delete process.env.ABLY_WEB_CLI_MODE;
+  });
 
   describe("Ably SDK Agent Header", function () {
-    it("should include agent header in client options", function () {
+    it("should tag CLI traffic with the ably-cli agent by default", function () {
       const mockConfig = { runHook: vi.fn() } as unknown as Config;
       const command = new TestCommand([], mockConfig);
 
-      const flags = {
+      const clientOptions = command.testGetClientOptions({
         "api-key": "test-key:secret",
-      };
+      });
 
-      const clientOptions = command.testGetClientOptions(flags);
-
-      expect(clientOptions.agents).toBeDefined();
       expect(clientOptions.agents).toEqual({
         "ably-cli": getCliVersion(),
+      });
+    });
+
+    it("should tag Web CLI traffic with the ably-web-cli agent", function () {
+      process.env.ABLY_WEB_CLI_MODE = "true";
+      const mockConfig = { runHook: vi.fn() } as unknown as Config;
+      const command = new TestCommand([], mockConfig);
+
+      const clientOptions = command.testGetClientOptions({
+        "api-key": "test-key:secret",
+      });
+
+      expect(clientOptions.agents).toEqual({
+        "ably-web-cli": getCliVersion(),
       });
     });
   });

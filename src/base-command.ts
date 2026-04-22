@@ -24,7 +24,7 @@ import {
   formatWarning,
 } from "./utils/output.js";
 import stripAnsi from "strip-ansi";
-import { getCliVersion } from "./utils/version.js";
+import { getAgentName, getCliVersion } from "./utils/version.js";
 import Spaces from "@ably/spaces";
 import { ChatClient } from "@ably/chat";
 import {
@@ -1099,10 +1099,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     // Set logLevel to highest ONLY when using custom handler to capture everything needed by it
     options.logLevel = 4;
 
-    // Add agent header to identify requests from the CLI
+    // Add agent header to identify requests from the CLI. Web CLI traffic is
+    // tagged separately so Ably can distinguish hosted vs local usage.
     (
       options as Ably.ClientOptions & { agents: Record<string, string> }
-    ).agents = { "ably-cli": getCliVersion() };
+    ).agents = { [getAgentName()]: getCliVersion() };
 
     return options;
   }
