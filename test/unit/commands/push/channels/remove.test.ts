@@ -16,7 +16,6 @@ describe("push:channels:remove command", () => {
   standardArgValidationTests("push:channels:remove", import.meta.url);
   standardFlagTests("push:channels:remove", import.meta.url, [
     "--json",
-    "--channel",
     "--device-id",
     "--client-id",
     "--force",
@@ -29,7 +28,6 @@ describe("push:channels:remove command", () => {
       const { stderr } = await runCommand(
         [
           "push:channels:remove",
-          "--channel",
           "my-channel",
           "--device-id",
           "dev-1",
@@ -49,7 +47,7 @@ describe("push:channels:remove command", () => {
 
     it("should require either device-id or client-id", async () => {
       const { error } = await runCommand(
-        ["push:channels:remove", "--channel", "my-channel", "--force"],
+        ["push:channels:remove", "my-channel", "--force"],
         import.meta.url,
       );
 
@@ -60,7 +58,6 @@ describe("push:channels:remove command", () => {
       const { stdout } = await runCommand(
         [
           "push:channels:remove",
-          "--channel",
           "my-channel",
           "--device-id",
           "dev-1",
@@ -94,7 +91,6 @@ describe("push:channels:remove command", () => {
       const { error } = await runCommand(
         [
           "push:channels:remove",
-          "--channel",
           "my-channel",
           "--device-id",
           "dev-1",

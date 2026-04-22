@@ -1,4 +1,4 @@
-import { Flags } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
@@ -8,16 +8,23 @@ import { formatLabel, formatResource } from "../../../utils/output.js";
 export default class KeysCreateCommand extends ControlBaseCommand {
   static description = "Create a new API key for an app";
 
+  static args = {
+    keyName: Args.string({
+      description: "Name of the key",
+      required: true,
+    }),
+  };
+
   static examples = [
-    `$ ably auth keys create --name "My New Key"`,
-    `$ ably auth keys create --name "My New Key" --app APP_ID`,
-    `$ ably auth keys create --name "My New Key" --capabilities '{"*":["*"]}'`,
-    `$ ably auth keys create --name "My New Key" --capabilities '{"channel1":["publish","subscribe"],"channel2":["history"]}'`,
-    `$ ably auth keys create --name "My New Key" --capabilities "publish,subscribe"`,
-    `$ ably auth keys create --name "My New Key" --json`,
-    `$ ably auth keys create --name "My New Key" --pretty-json`,
-    `$ ably auth keys create --app APP_ID --name "MyKey" --capabilities '{"channel:*":["publish"]}'`,
-    `$ ably auth keys create --app APP_ID --name "MyOtherKey" --capabilities '{"channel:chat-*":["subscribe"],"channel:updates":["publish"]}'`,
+    `$ ably auth keys create "My New Key"`,
+    `$ ably auth keys create "My New Key" --app APP_ID`,
+    `$ ably auth keys create "My New Key" --capabilities '{"*":["*"]}'`,
+    `$ ably auth keys create "My New Key" --capabilities '{"channel1":["publish","subscribe"],"channel2":["history"]}'`,
+    `$ ably auth keys create "My New Key" --capabilities "publish,subscribe"`,
+    `$ ably auth keys create "My New Key" --json`,
+    `$ ably auth keys create "My New Key" --pretty-json`,
+    `$ ably auth keys create "MyKey" --app APP_ID --capabilities '{"channel:*":["publish"]}'`,
+    `$ ably auth keys create "MyOtherKey" --app APP_ID --capabilities '{"channel:chat-*":["subscribe"],"channel:updates":["publish"]}'`,
   ];
 
   static flags = {
@@ -31,14 +38,10 @@ export default class KeysCreateCommand extends ControlBaseCommand {
       description:
         "Capabilities as JSON object (per-channel) or comma-separated list (all channels)",
     }),
-    name: Flags.string({
-      description: "Name of the key",
-      required: true,
-    }),
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(KeysCreateCommand);
+    const { args, flags } = await this.parse(KeysCreateCommand);
 
     const appId = await this.requireAppId(flags);
 
@@ -52,13 +55,13 @@ export default class KeysCreateCommand extends ControlBaseCommand {
     try {
       const controlApi = this.createControlApi(flags);
       this.logProgress(
-        `Creating key ${formatResource(flags.name)} for app ${formatResource(appId)}`,
+        `Creating key ${formatResource(args.keyName)} for app ${formatResource(appId)}`,
         flags,
       );
 
       const key = await controlApi.createKey(appId, {
         capability: capabilities,
-        name: flags.name,
+        name: args.keyName,
       });
 
       if (this.shouldOutputJson(flags)) {

@@ -212,7 +212,7 @@ describe("Spaces E2E Tests", () => {
           };
 
           const setLocationResult = await runBackgroundProcessAndGetOutput(
-            `bin/run.js spaces locations set ${testSpaceId} --location '${JSON.stringify(locationData)}' --client-id ${client2Id} --duration 5`,
+            `bin/run.js spaces locations set ${testSpaceId} '${JSON.stringify(locationData)}' --client-id ${client2Id} --duration 5`,
             process.env.CI ? 15000 : 15000, // Timeout for the command
           );
 
@@ -254,7 +254,7 @@ describe("Spaces E2E Tests", () => {
           };
 
           const updateLocationResult = await runBackgroundProcessAndGetOutput(
-            `bin/run.js spaces locations set ${testSpaceId} --location '${JSON.stringify(newLocationData)}' --client-id ${client2Id} --duration 5`,
+            `bin/run.js spaces locations set ${testSpaceId} '${JSON.stringify(newLocationData)}' --client-id ${client2Id} --duration 5`,
             process.env.CI ? 15000 : 15000, // Increased local timeout
           );
 

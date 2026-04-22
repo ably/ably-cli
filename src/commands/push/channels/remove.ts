@@ -1,4 +1,4 @@
-import { Flags } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { forceFlag, productApiFlags } from "../../../flags.js";
@@ -9,18 +9,21 @@ import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 export default class PushChannelsRemove extends AblyBaseCommand {
   static override description = "Remove a push channel subscription";
 
+  static override args = {
+    channelName: Args.string({
+      description: "Channel name to unsubscribe from",
+      required: true,
+    }),
+  };
+
   static override examples = [
-    "<%= config.bin %> <%= command.id %> --channel my-channel --device-id device-123",
-    "<%= config.bin %> <%= command.id %> --channel my-channel --client-id client-1 --force",
-    "<%= config.bin %> <%= command.id %> --channel my-channel --device-id device-123 --json",
+    '<%= config.bin %> <%= command.id %> "my-channel" --device-id device-123',
+    '<%= config.bin %> <%= command.id %> "my-channel" --client-id client-1 --force',
+    '<%= config.bin %> <%= command.id %> "my-channel" --device-id device-123 --json',
   ];
 
   static override flags = {
     ...productApiFlags,
-    channel: Flags.string({
-      description: "Channel name to unsubscribe from",
-      required: true,
-    }),
     "device-id": Flags.string({
       description: "Device ID to unsubscribe",
       exclusive: ["client-id"],
@@ -33,7 +36,7 @@ export default class PushChannelsRemove extends AblyBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(PushChannelsRemove);
+    const { args, flags } = await this.parse(PushChannelsRemove);
 
     if (!flags["device-id"] && !flags["client-id"]) {
       this.fail(
@@ -62,7 +65,7 @@ export default class PushChannelsRemove extends AblyBaseCommand {
 
       if (!flags.force && !this.shouldOutputJson(flags)) {
         const confirmed = await promptForConfirmation(
-          `Are you sure you want to unsubscribe ${target} from channel ${flags.channel}?`,
+          `Are you sure you want to unsubscribe ${target} from channel ${args.channelName}?`,
         );
 
         if (!confirmed) {
@@ -72,12 +75,12 @@ export default class PushChannelsRemove extends AblyBaseCommand {
       }
 
       this.logProgress(
-        `Removing subscription from channel ${formatResource(flags.channel)}`,
+        `Removing subscription from channel ${formatResource(args.channelName)}`,
         flags,
       );
 
       const subscription: Record<string, string> = {
-        channel: flags.channel,
+        channel: args.channelName,
       };
       if (flags["device-id"]) subscription.deviceId = flags["device-id"];
       if (flags["client-id"]) subscription.clientId = flags["client-id"];
@@ -89,7 +92,7 @@ export default class PushChannelsRemove extends AblyBaseCommand {
           {
             subscription: {
               removed: true,
-              channel: flags.channel,
+              channel: args.channelName,
               ...subscription,
             },
           },
@@ -97,7 +100,7 @@ export default class PushChannelsRemove extends AblyBaseCommand {
         );
       } else {
         this.logSuccessMessage(
-          `Subscription removed from channel ${formatResource(flags.channel)}.`,
+          `Subscription removed from channel ${formatResource(args.channelName)}.`,
           flags,
         );
       }

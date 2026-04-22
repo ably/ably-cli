@@ -46,7 +46,7 @@ describe("Push Config E2E Tests", () => {
     // Let setup failures propagate — only missing credentials should skip
     const appName = `E2E Push Config Test ${Date.now()}`;
     const createResult = await runCommand(
-      ["apps", "create", "--name", appName, "--json"],
+      ["apps", "create", appName, "--json"],
       {
         env: { ABLY_ACCESS_TOKEN: accessToken },
       },

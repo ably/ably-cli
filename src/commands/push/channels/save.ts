@@ -1,4 +1,4 @@
-import { Flags } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
@@ -9,18 +9,21 @@ export default class PushChannelsSave extends AblyBaseCommand {
   static override description =
     "Subscribe a device or client to push notifications on a channel";
 
+  static override args = {
+    channelName: Args.string({
+      description: "Channel name to subscribe to",
+      required: true,
+    }),
+  };
+
   static override examples = [
-    "<%= config.bin %> <%= command.id %> --channel my-channel --device-id device-123",
-    "<%= config.bin %> <%= command.id %> --channel my-channel --client-id client-1",
-    "<%= config.bin %> <%= command.id %> --channel my-channel --device-id device-123 --json",
+    '<%= config.bin %> <%= command.id %> "my-channel" --device-id device-123',
+    '<%= config.bin %> <%= command.id %> "my-channel" --client-id client-1',
+    '<%= config.bin %> <%= command.id %> "my-channel" --device-id device-123 --json',
   ];
 
   static override flags = {
     ...productApiFlags,
-    channel: Flags.string({
-      description: "Channel name to subscribe to",
-      required: true,
-    }),
     "device-id": Flags.string({
       description: "Device ID to subscribe",
       exclusive: ["client-id"],
@@ -32,7 +35,7 @@ export default class PushChannelsSave extends AblyBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(PushChannelsSave);
+    const { args, flags } = await this.parse(PushChannelsSave);
 
     if (!flags["device-id"] && !flags["client-id"]) {
       this.fail(
@@ -47,12 +50,12 @@ export default class PushChannelsSave extends AblyBaseCommand {
       if (!rest) return;
 
       this.logProgress(
-        `Subscribing to channel ${formatResource(flags.channel)}`,
+        `Subscribing to channel ${formatResource(args.channelName)}`,
         flags,
       );
 
       const subscription: Record<string, string> = {
-        channel: flags.channel,
+        channel: args.channelName,
       };
       if (flags["device-id"]) subscription.deviceId = flags["device-id"];
       if (flags["client-id"]) subscription.clientId = flags["client-id"];
@@ -67,7 +70,7 @@ export default class PushChannelsSave extends AblyBaseCommand {
         this.logJsonResult({ subscription }, flags);
       } else {
         this.logSuccessMessage(
-          `Subscribed ${target} to channel ${formatResource(flags.channel)}.`,
+          `Subscribed ${target} to channel ${formatResource(args.channelName)}.`,
           flags,
         );
       }

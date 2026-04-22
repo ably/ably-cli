@@ -45,6 +45,7 @@ This is the Ably CLI npm package (`@ably/cli`), built with the [oclif framework]
 6. **NODE_ENV** - To check if the CLI is in test mode, use the `isTestMode()` helper function.
 7. **`process.exit`** - When creating a command, use `this.exit()` for consistent test mode handling.
 8. **`console.log` / `console.error`** - In commands, always use `this.log()` (stdout) for data/results and the logging helpers (`this.logProgress()`, `this.logSuccessMessage()`, `this.logListening()`, `this.logHolding()`, `this.logWarning()`) for status messages. `console.*` bypasses oclif and can't be captured by tests.
+9. **Use `Args.string()` for primary entity identifiers** - If the value is "what is being acted on" (name, ID, channel), represent it as a positional `Args.string()`, not a `Flags.string()`. Primary entity identifiers should always use camelCase.
 
 ## Correct Practices
 
@@ -105,23 +106,43 @@ Flags are NOT global. Each command explicitly declares only the flags it needs v
 - **`timeRangeFlags`** — `--start`, `--end`. Use for history and stats commands. Parse with `parseTimestamp()` from `src/utils/time.ts`. Accepts ISO 8601, Unix ms, or relative (e.g., `"1h"`, `"30m"`, `"2d"`).
 - **`endpointFlag`** — `--endpoint`. Hidden, only on `accounts login` and `accounts switch`.
 
+**Flags vs positional arguments (POSIX / docopt convention):**
+- If a value answers **"what is being created/deleted/acted on?"** → **positional argument** (`Args.string()`)
+- If a value answers **"how should the operation be performed?"** → **flag** (`Flags.string()`)
+- The primary entity identifier (name, ID, channel) must always be a positional argument, never a `--flag`.
+- Exceptions where required flags are correct: enum-constrained config values (e.g., `--rule-type` on `integrations create`), file path inputs (e.g., `--service-account` on `push config set-fcm`).
+
 **When creating a new command:**
 ```typescript
 // Product API command (channels, spaces, rooms, etc.)
 import { productApiFlags, clientIdFlag, durationFlag, rewindFlag } from "../../flags.js";
+static override args = {
+  // entityName should always be camelCase for `Args.*`.
+  entityName: Args.string({
+    description: "The primary entity being acted on",
+    required: true,  // or false if interactive fallback exists
+  }),
+};
 static override flags = {
   ...productApiFlags,
   ...clientIdFlag,  // Only if command needs client identity
   ...durationFlag,  // Only if long-running (subscribe/stream commands)
   ...rewindFlag,    // Only if supports message replay
-  // command-specific flags...
+  // command-specific flags (modifiers only, NOT primary entity identifiers)...
 };
 
 // Control API command (apps, keys, queues, etc.)
 // controlApiFlags come from ControlBaseCommand.globalFlags automatically
+static args = {
+  // entityName should always be camelCase for `Args.*`
+  entityName: Args.string({
+    description: "The primary entity being acted on",
+    required: true,
+  }),
+};
 static flags = {
   ...ControlBaseCommand.globalFlags,
-  // command-specific flags...
+  // command-specific flags (modifiers only, NOT primary entity identifiers)...
 };
 ```
 

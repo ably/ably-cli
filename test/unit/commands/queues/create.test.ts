@@ -56,7 +56,7 @@ describe("queues:create command", () => {
         .reply(201, createMockQueueResponse(appId));
 
       const { stdout, stderr } = await runCommand(
-        ["queues:create", "--name", mockQueueName],
+        ["queues:create", mockQueueName],
         import.meta.url,
       );
 
@@ -99,7 +99,6 @@ describe("queues:create command", () => {
       const { stdout, stderr } = await runCommand(
         [
           "queues:create",
-          "--name",
           mockQueueName,
           "--max-length",
           "5000",
@@ -134,7 +133,7 @@ describe("queues:create command", () => {
         .reply(201, createMockQueueResponse(appId));
 
       const { stdout } = await runCommand(
-        ["queues:create", "--name", mockQueueName, "--json"],
+        ["queues:create", mockQueueName, "--json"],
         import.meta.url,
       );
 
@@ -171,7 +170,7 @@ describe("queues:create command", () => {
         });
 
       const { stderr } = await runCommand(
-        ["queues:create", "--name", mockQueueName, "--app", "custom-app-id"],
+        ["queues:create", mockQueueName, "--app", "custom-app-id"],
         import.meta.url,
       );
 
@@ -210,7 +209,7 @@ describe("queues:create command", () => {
         .reply(201, createMockQueueResponse(appId));
 
       const { stderr } = await runCommand(
-        ["queues:create", "--name", mockQueueName],
+        ["queues:create", mockQueueName],
         import.meta.url,
       );
 
@@ -220,7 +219,7 @@ describe("queues:create command", () => {
 
   describe("error handling", () => {
     standardControlApiErrorTests({
-      commandArgs: ["queues:create", "--name", mockQueueName],
+      commandArgs: ["queues:create", mockQueueName],
       importMetaUrl: import.meta.url,
       setupNock: (scenario) => {
         const mockConfig = getMockConfigManager();
@@ -258,7 +257,7 @@ describe("queues:create command", () => {
         .reply(403, { error: "Forbidden" });
 
       const { error } = await runCommand(
-        ["queues:create", "--name", mockQueueName],
+        ["queues:create", mockQueueName],
         import.meta.url,
       );
 
@@ -284,7 +283,7 @@ describe("queues:create command", () => {
         .reply(404, { error: "App not found" });
 
       const { error } = await runCommand(
-        ["queues:create", "--name", mockQueueName],
+        ["queues:create", mockQueueName],
         import.meta.url,
       );
 
@@ -293,12 +292,11 @@ describe("queues:create command", () => {
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
-    it("should require name parameter", async () => {
+    it("should require queue name argument", async () => {
       const { error } = await runCommand(["queues:create"], import.meta.url);
 
       expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Missing required flag/);
-      expect(error?.message).toMatch(/name/);
+      expect(error?.message).toMatch(/Missing 1 required arg/);
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -306,7 +304,7 @@ describe("queues:create command", () => {
       getMockConfigManager().clearAccounts();
 
       const { error } = await runCommand(
-        ["queues:create", "--name", mockQueueName],
+        ["queues:create", mockQueueName],
         import.meta.url,
       );
 
@@ -332,7 +330,7 @@ describe("queues:create command", () => {
       });
 
       const { error } = await runCommand(
-        ["queues:create", "--name", mockQueueName],
+        ["queues:create", mockQueueName],
         import.meta.url,
       );
 
@@ -359,7 +357,7 @@ describe("queues:create command", () => {
       });
 
       const { error } = await runCommand(
-        ["queues:create", "--name", mockQueueName],
+        ["queues:create", mockQueueName],
         import.meta.url,
       );
 
@@ -396,15 +394,7 @@ describe("queues:create command", () => {
         });
 
       const { stdout, stderr } = await runCommand(
-        [
-          "queues:create",
-          "--name",
-          mockQueueName,
-          "--max-length",
-          "1",
-          "--ttl",
-          "1",
-        ],
+        ["queues:create", mockQueueName, "--max-length", "1", "--ttl", "1"],
         import.meta.url,
       );
 
@@ -442,7 +432,6 @@ describe("queues:create command", () => {
       const { stdout, stderr } = await runCommand(
         [
           "queues:create",
-          "--name",
           mockQueueName,
           "--max-length",
           "10000",
@@ -462,7 +451,7 @@ describe("queues:create command", () => {
 
     it("should reject max-length exceeding 10000", async () => {
       const { error } = await runCommand(
-        ["queues:create", "--name", mockQueueName, "--max-length", "10001"],
+        ["queues:create", mockQueueName, "--max-length", "10001"],
         import.meta.url,
       );
 
@@ -472,7 +461,7 @@ describe("queues:create command", () => {
 
     it("should reject ttl exceeding 3600", async () => {
       const { error } = await runCommand(
-        ["queues:create", "--name", mockQueueName, "--ttl", "3601"],
+        ["queues:create", mockQueueName, "--ttl", "3601"],
         import.meta.url,
       );
 
@@ -483,5 +472,5 @@ describe("queues:create command", () => {
 
   standardHelpTests("queues:create", import.meta.url);
   standardArgValidationTests("queues:create", import.meta.url);
-  standardFlagTests("queues:create", import.meta.url, ["--name", "--json"]);
+  standardFlagTests("queues:create", import.meta.url, ["--json"]);
 });

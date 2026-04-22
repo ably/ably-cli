@@ -180,17 +180,12 @@ describe("spaces commands", () => {
       expect(stdout).toContain("SPACE_NAME");
     });
 
-    it("should set location with --location flag", async () => {
+    it("should set location with positional argument", async () => {
       const spacesMock = getMockAblySpaces();
       const space = spacesMock._getSpace("test-space");
 
       const { stderr } = await runCommand(
-        [
-          "spaces:locations:set",
-          "test-space",
-          "--location",
-          '{"x":100,"y":200}',
-        ],
+        ["spaces:locations:set", "test-space", '{"x":100,"y":200}'],
         import.meta.url,
       );
 

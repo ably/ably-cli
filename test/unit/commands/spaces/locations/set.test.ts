@@ -32,7 +32,6 @@ describe("spaces:locations:set command", () => {
       const args = [
         "spaces:locations:set",
         "test-space",
-        "--location",
         '{"x":1}',
         "--unknown-flag-xyz",
       ];
@@ -41,23 +40,21 @@ describe("spaces:locations:set command", () => {
       expect(error?.message).toMatch(/unknown|Nonexistent flag/i);
     });
 
-    it("should require --location flag", async () => {
+    it("should require location argument", async () => {
       const { error } = await runCommand(
         ["spaces:locations:set", "test-space"],
         import.meta.url,
       );
 
       expect(error).toBeDefined();
-      expect(error?.message).toMatch(
-        /--location.*required|Missing required flag/i,
-      );
+      expect(error?.message).toMatch(/Missing 1 required arg/i);
     });
   });
 
   describe("functionality", () => {
-    it("should error on invalid --location JSON", async () => {
+    it("should error on invalid location JSON", async () => {
       const { error } = await runCommand(
-        ["spaces:locations:set", "test-space", "--location", "not-valid-json"],
+        ["spaces:locations:set", "test-space", "not-valid-json"],
         import.meta.url,
       );
 
@@ -74,12 +71,7 @@ describe("spaces:locations:set command", () => {
       const location = { x: 10, y: 20, sectionId: "main" };
 
       const { stderr } = await runCommand(
-        [
-          "spaces:locations:set",
-          "test-space",
-          "--location",
-          JSON.stringify(location),
-        ],
+        ["spaces:locations:set", "test-space", JSON.stringify(location)],
         import.meta.url,
       );
 
@@ -94,7 +86,7 @@ describe("spaces:locations:set command", () => {
       spacesMock._getSpace("test-space");
 
       const { stderr } = await runCommand(
-        ["spaces:locations:set", "test-space", "--location", '{"x":1}'],
+        ["spaces:locations:set", "test-space", '{"x":1}'],
         import.meta.url,
       );
 
@@ -114,7 +106,6 @@ describe("spaces:locations:set command", () => {
         [
           "spaces:locations:set",
           "test-space",
-          "--location",
           JSON.stringify(location),
           "--json",
         ],
@@ -136,13 +127,7 @@ describe("spaces:locations:set command", () => {
 
     it("should output JSON error on invalid location", async () => {
       const { stdout, error } = await runCommand(
-        [
-          "spaces:locations:set",
-          "test-space",
-          "--location",
-          "not-valid-json",
-          "--json",
-        ],
+        ["spaces:locations:set", "test-space", "not-valid-json", "--json"],
         import.meta.url,
       );
 
@@ -168,7 +153,7 @@ describe("spaces:locations:set command", () => {
       );
 
       const { error } = await runCommand(
-        ["spaces:locations:set", "test-space", "--location", '{"x":10,"y":20}'],
+        ["spaces:locations:set", "test-space", '{"x":10,"y":20}'],
         import.meta.url,
       );
 

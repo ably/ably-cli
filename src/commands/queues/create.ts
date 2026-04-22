@@ -1,4 +1,4 @@
-import { Flags } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { formatLabel, formatResource } from "../../utils/output.js";
@@ -6,11 +6,18 @@ import { formatLabel, formatResource } from "../../utils/output.js";
 export default class QueuesCreateCommand extends ControlBaseCommand {
   static description = "Create a queue";
 
+  static args = {
+    queueName: Args.string({
+      description: "Name of the queue",
+      required: true,
+    }),
+  };
+
   static examples = [
-    '$ ably queues create --name "my-queue"',
-    '$ ably queues create --name "my-queue" --ttl 300 --max-length 5000',
-    '$ ably queues create --name "my-queue" --region "eu-west-1-a" --app "My App"',
-    '$ ably queues create --name "my-queue" --json',
+    '$ ably queues create "my-queue"',
+    '$ ably queues create "my-queue" --ttl 300 --max-length 5000',
+    '$ ably queues create "my-queue" --region "eu-west-1-a" --app "My App"',
+    '$ ably queues create "my-queue" --json',
   ];
 
   static flags = {
@@ -23,10 +30,6 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
       default: 10_000,
       description: "Maximum number of messages in the queue (max: 10000)",
       required: false,
-    }),
-    name: Flags.string({
-      description: "Name of the queue",
-      required: true,
     }),
     region: Flags.string({
       default: "us-east-1-a",
@@ -41,8 +44,8 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(QueuesCreateCommand);
-    if (!flags.name.trim()) {
+    const { args, flags } = await this.parse(QueuesCreateCommand);
+    if (!args.queueName.trim()) {
       this.fail("Queue name cannot be empty", flags, "parse");
     }
 
@@ -60,7 +63,7 @@ export default class QueuesCreateCommand extends ControlBaseCommand {
       const controlApi = this.createControlApi(flags);
       const queueData = {
         maxLength: flags["max-length"],
-        name: flags.name,
+        name: args.queueName,
         region: flags.region,
         ttl: flags.ttl,
       };
