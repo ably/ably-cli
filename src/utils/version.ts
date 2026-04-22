@@ -4,6 +4,7 @@
 import chalk from "chalk";
 // Import package.json directly - TypeScript will resolve this at compile time
 import packageJson from "../../package.json" with { type: "json" };
+import isWebCliMode from "./web-mode.js";
 
 /**
  * Get the CLI version from package.json
@@ -11,6 +12,15 @@ import packageJson from "../../package.json" with { type: "json" };
  */
 export function getCliVersion(): string {
   return packageJson.version;
+}
+
+/**
+ * Agent name used in Ably-Agent headers and SDK agents option. Distinguishes
+ * traffic from the local CLI vs the hosted Web CLI so it can be attributed
+ * separately in Ably's analytics.
+ */
+export function getAgentName(): string {
+  return isWebCliMode() ? "ably-web-cli" : "ably-cli";
 }
 
 /**
