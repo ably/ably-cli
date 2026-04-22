@@ -1,5 +1,4 @@
-import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
+import { Flags } from "@oclif/core";
 import * as https from "node:https";
 
 import { AblyBaseCommand } from "../../base-command.js";
@@ -8,43 +7,62 @@ import { formatLabel, formatResource } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class RevokeTokenCommand extends AblyBaseCommand {
-  static args = {
-    token: Args.string({
-      description: "Token to revoke",
-      name: "token",
-      required: true,
-    }),
-  };
-
-  static description = "Revoke a token";
+  static description = "Revoke tokens by client ID or revocation key";
 
   static examples = [
-    "$ ably auth revoke-token TOKEN",
-    "$ ably auth revoke-token TOKEN --force",
-    "$ ably auth revoke-token TOKEN --client-id clientid",
-    "$ ably auth revoke-token TOKEN --json --force",
-    "$ ably auth revoke-token TOKEN --pretty-json --force",
+    "$ ably auth revoke-token --client-id user@example.com",
+    "$ ably auth revoke-token --client-id user@example.com --force",
+    "$ ably auth revoke-token --revocation-key group1",
+    "$ ably auth revoke-token --client-id user@example.com --allow-reauth-margin",
+    "$ ably auth revoke-token --client-id user@example.com --json --force",
   ];
 
   static flags = {
     ...productApiFlags,
+    ...forceFlag,
     app: Flags.string({
       description: "The app ID or name (defaults to current app)",
       env: "ABLY_APP_ID",
     }),
-
     "client-id": Flags.string({
       char: "c",
-      description: "Revoke all tokens for given Client ID",
+      description: "Revoke all tokens issued to this client ID",
+      exclusive: ["revocation-key"],
     }),
-    ...forceFlag,
+    "revocation-key": Flags.string({
+      char: "r",
+      description:
+        "Revoke all tokens matching this revocation key (JWT tokens only)",
+      exclusive: ["client-id"],
+    }),
+    "allow-reauth-margin": Flags.boolean({
+      default: false,
+      description:
+        "Delay enforcement by 30s so connected clients can obtain a new token before disconnection",
+    }),
   };
 
-  // Property to store the Ably client
-  private ablyClient?: Ably.Realtime;
-
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(RevokeTokenCommand);
+    const { flags } = await this.parse(RevokeTokenCommand);
+
+    const clientId = flags["client-id"];
+    const revocationKey = flags["revocation-key"];
+
+    // Require at least one target specifier
+    if (!clientId && !revocationKey) {
+      this.fail(
+        "Either --client-id or --revocation-key is required. See https://ably.com/docs/auth/revocation for details.",
+        flags,
+        "revokeToken",
+      );
+    }
+
+    // Build target specifier
+    const targetSpecifier = clientId
+      ? `clientId:${clientId}`
+      : `revocationKey:${revocationKey}`;
+    const targetLabel = clientId ? "Client ID" : "Revocation Key";
+    const targetValue = (clientId ?? revocationKey)!;
 
     // Get app and key
     const appAndKey = await this.ensureAppAndKey(flags);
@@ -53,7 +71,6 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
     }
 
     const { apiKey } = appAndKey;
-    const { token } = args;
 
     // JSON mode guard
     if (!flags.force && this.shouldOutputJson(flags)) {
@@ -66,19 +83,11 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
 
     // Interactive confirmation
     if (!flags.force && !this.shouldOutputJson(flags)) {
-      this.log(`\nYou are about to revoke tokens matching:`);
-      if (flags["client-id"]) {
-        this.log(
-          `${formatLabel("Client ID")} ${formatResource(flags["client-id"])}`,
-        );
-      } else {
-        const truncatedToken =
-          token.length > 15 ? token.slice(0, 15) + "..." : token;
-        this.log(`${formatLabel("Token")} ${formatResource(truncatedToken)}`);
-      }
+      this.log(`\nYou are about to revoke all tokens matching:`);
+      this.log(`${formatLabel(targetLabel)} ${formatResource(targetValue)}`);
 
       const confirmed = await promptForConfirmation(
-        "\nThis will permanently revoke this token and any applications using it need to be re-issued a new token. Are you sure?",
+        "\nThis will permanently revoke all matching tokens, and any applications using those tokens will need to be issued new tokens. Are you sure?",
       );
 
       if (!confirmed) {
@@ -88,47 +97,26 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
     }
 
     try {
-      // Create Ably Realtime client
-      const client = await this.createAblyRealtimeClient(flags);
-      if (!client) return;
-
-      this.ablyClient = client;
-
-      const clientId = flags["client-id"] || token;
-
-      if (!flags["client-id"]) {
-        // We need to warn the user that we're using the token as a client ID
-        this.logWarning(
-          "Revoking a specific token is only possible if it has a client ID or revocation key.",
-          flags,
-        );
-        this.logWarning(
-          "For advanced token revocation options, see: https://ably.com/docs/auth/revocation.",
-          flags,
-        );
-        this.logWarning(
-          "Using the token argument as a client ID for this operation.",
-          flags,
-        );
-      }
-
       // Extract the keyName (appId.keyId) from the API key
       const keyParts = apiKey.split(":");
       if (keyParts.length !== 2) {
         this.fail(
           "Invalid API key format. Expected format: appId.keyId:secret",
           flags,
-          "tokenRevoke",
+          "revokeToken",
         );
       }
 
-      const keyName = keyParts[0]!; // This gets the appId.keyId portion
+      const keyName = keyParts[0]!;
       const secret = keyParts[1]!;
 
-      // Create the properly formatted body for token revocation
-      const requestBody = {
-        targets: [`clientId:${clientId}`],
+      const requestBody: Record<string, unknown> = {
+        targets: [targetSpecifier],
       };
+
+      if (flags["allow-reauth-margin"]) {
+        requestBody.allowReauthMargin = true;
+      }
 
       try {
         // Make direct HTTPS request to Ably REST API
@@ -143,27 +131,33 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
             {
               revocation: {
                 message: "Token revocation processed successfully",
+                target: targetSpecifier,
                 response,
               },
             },
             flags,
           );
         } else {
-          this.logSuccessMessage("Token successfully revoked.", flags);
+          this.logSuccessMessage(
+            `Tokens matching ${targetLabel.toLowerCase()} ${formatResource(targetValue)} have been revoked.`,
+            flags,
+          );
         }
       } catch (requestError: unknown) {
-        // Handle specific API errors
         const error = requestError as Error;
         if (error.message && error.message.includes("token_not_found")) {
-          this.fail("Token not found or already revoked", flags, "tokenRevoke");
+          this.fail(
+            "No matching tokens found or already revoked",
+            flags,
+            "revokeToken",
+          );
         } else {
           throw requestError;
         }
       }
     } catch (error) {
-      this.fail(error, flags, "tokenRevoke");
+      this.fail(error, flags, "revokeToken");
     }
-    // Client cleanup is handled by base class finally() method
   }
 
   // Helper method to make a direct HTTP request to the Ably REST API
