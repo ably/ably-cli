@@ -26,13 +26,7 @@ describe.skipIf(SHOULD_SKIP_CONTROL_E2E)("Integrations E2E Tests", () => {
 
     // Create a test app for integration operations
     const createResult = await runCommand(
-      [
-        "apps",
-        "create",
-        "--name",
-        `e2e-integrations-test-${Date.now()}`,
-        "--json",
-      ],
+      ["apps", "create", `e2e-integrations-test-${Date.now()}`, "--json"],
       {
         env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
       },

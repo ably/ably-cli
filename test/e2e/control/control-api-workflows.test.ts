@@ -311,10 +311,9 @@ describe("Control API E2E Workflow Tests", () => {
           "auth",
           "keys",
           "create",
+          keyName,
           "--app",
           testAppId,
-          "--name",
-          keyName,
           "--capabilities",
           '{"[*]*":["*"]}',
           "--json",
@@ -362,10 +361,9 @@ describe("Control API E2E Workflow Tests", () => {
           "auth",
           "keys",
           "create",
+          keyName,
           "--app",
           testAppId,
-          "--name",
-          keyName,
           "--capabilities",
           '{"*":["*"]}',
           "--json",
@@ -432,10 +430,9 @@ describe("Control API E2E Workflow Tests", () => {
           "auth",
           "keys",
           "create",
+          keyName,
           "--app",
           testAppId,
-          "--name",
-          keyName,
           "--capabilities",
           '{"[*]*":["*"]}',
           "--json",
@@ -496,10 +493,9 @@ describe("Control API E2E Workflow Tests", () => {
           "auth",
           "keys",
           "create",
+          keyName,
           "--app",
           testAppId,
-          "--name",
-          keyName,
           "--capabilities",
           '{"*":["*"]}',
           "--json",
@@ -1065,7 +1061,9 @@ describe("Control API E2E Workflow Tests", () => {
       });
 
       expect(result.exitCode).not.toBe(0);
-      expect(result.stderr + result.stdout).toContain("Missing required flag");
+      expect(result.stderr + result.stdout).toMatch(
+        /Missing (1 )?required (arg|flag)/,
+      );
     });
   });
 

@@ -20,13 +20,7 @@ describe.skipIf(SHOULD_SKIP_CONTROL_E2E)(
 
       // Create a dedicated app so scoped keys have no interference
       const createApp = await runCommand(
-        [
-          "apps",
-          "create",
-          "--name",
-          `e2e-capability-scoping-${Date.now()}`,
-          "--json",
-        ],
+        ["apps", "create", `e2e-capability-scoping-${Date.now()}`, "--json"],
         {
           env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
         },
@@ -43,10 +37,9 @@ describe.skipIf(SHOULD_SKIP_CONTROL_E2E)(
           "auth",
           "keys",
           "create",
+          "publish-only-allowed-prefix",
           "--app",
           testAppId,
-          "--name",
-          "publish-only-allowed-prefix",
           "--capabilities",
           '{"allowed-*":["publish"]}',
           "--json",

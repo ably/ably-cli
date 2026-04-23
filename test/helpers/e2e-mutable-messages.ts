@@ -32,7 +32,6 @@ export async function setupMutableMessagesRule(): Promise<void> {
       "apps",
       "rules",
       "create",
-      "--name",
       MUTABLE_NAMESPACE,
       "--mutable-messages",
       "--app",

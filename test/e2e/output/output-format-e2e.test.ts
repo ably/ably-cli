@@ -231,7 +231,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("--json error envelope consistency", () => {
 
       // Create throwaway app
       const appCreate = await runCommand(
-        ["apps", "create", "--name", `e2e-hint-test-${Date.now()}`, "--json"],
+        ["apps", "create", `e2e-hint-test-${Date.now()}`, "--json"],
         {
           env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
         },
@@ -249,10 +249,9 @@ describe.skipIf(SHOULD_SKIP_E2E)("--json error envelope consistency", () => {
             "auth",
             "keys",
             "create",
+            "hint-scoped-key",
             "--app",
             appId,
-            "--name",
-            "hint-scoped-key",
             "--capabilities",
             '{"allowed-*":["publish"]}',
             "--json",

@@ -26,7 +26,7 @@ describe.skipIf(SHOULD_SKIP_CONTROL_E2E)("Auth Keys E2E Tests", () => {
 
     // Create a test app for key operations
     const createResult = await runCommand(
-      ["apps", "create", "--name", `e2e-keys-test-${Date.now()}`, "--json"],
+      ["apps", "create", `e2e-keys-test-${Date.now()}`, "--json"],
       {
         env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
       },
@@ -91,16 +91,7 @@ describe.skipIf(SHOULD_SKIP_CONTROL_E2E)("Auth Keys E2E Tests", () => {
 
     const keyName = `e2e-test-key-${Date.now()}`;
     const createResult = await runCommand(
-      [
-        "auth",
-        "keys",
-        "create",
-        "--app",
-        testAppId,
-        "--name",
-        keyName,
-        "--json",
-      ],
+      ["auth", "keys", "create", keyName, "--app", testAppId, "--json"],
       {
         env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
       },
@@ -124,16 +115,7 @@ describe.skipIf(SHOULD_SKIP_CONTROL_E2E)("Auth Keys E2E Tests", () => {
     // First create a key to get
     const keyName = `e2e-get-key-${Date.now()}`;
     const createResult = await runCommand(
-      [
-        "auth",
-        "keys",
-        "create",
-        "--app",
-        testAppId,
-        "--name",
-        keyName,
-        "--json",
-      ],
+      ["auth", "keys", "create", keyName, "--app", testAppId, "--json"],
       {
         env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
       },
@@ -170,16 +152,7 @@ describe.skipIf(SHOULD_SKIP_CONTROL_E2E)("Auth Keys E2E Tests", () => {
     // First create a key to update
     const originalName = `e2e-update-key-${Date.now()}`;
     const createResult = await runCommand(
-      [
-        "auth",
-        "keys",
-        "create",
-        "--app",
-        testAppId,
-        "--name",
-        originalName,
-        "--json",
-      ],
+      ["auth", "keys", "create", originalName, "--app", testAppId, "--json"],
       {
         env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
       },

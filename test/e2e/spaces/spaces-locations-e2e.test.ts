@@ -67,7 +67,6 @@ describe.skipIf(SHOULD_SKIP_E2E)(
                 "locations",
                 "set",
                 spaceName,
-                "--location",
                 '{"slide":1}',
                 "--client-id",
                 clientId,
