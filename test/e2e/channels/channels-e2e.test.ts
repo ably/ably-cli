@@ -1,12 +1,4 @@
-import {
-  describe,
-  it,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  expect,
-} from "vitest";
+import { describe, it, beforeEach, afterEach, beforeAll, expect } from "vitest";
 import * as Ably from "ably";
 import {
   E2E_API_KEY,
@@ -14,7 +6,6 @@ import {
   getUniqueChannelName,
   createAblyClient,
   publishTestMessage,
-  forceExit,
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
@@ -76,7 +67,6 @@ describe("Channel E2E Tests", () => {
     if (SHOULD_SKIP_E2E) {
       return;
     }
-    process.on("SIGINT", forceExit);
 
     try {
       // Set up unique channel names for the tests
@@ -97,10 +87,6 @@ describe("Channel E2E Tests", () => {
       );
       // Don't fail the entire test suite, let individual tests fail if needed
     }
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
   });
 
   beforeEach(() => {

@@ -1,16 +1,7 @@
-import {
-  describe,
-  it,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  expect,
-} from "vitest";
+import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import stripAnsi from "strip-ansi";
 import { runCommand } from "../../helpers/command-helpers.js";
 import {
-  forceExit,
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
@@ -54,14 +45,6 @@ const _parseJsonFromOutput = (output: string): unknown => {
 
 // These tests check the basic CLI functionality in a real environment
 describe("Basic CLI E2E", () => {
-  beforeAll(() => {
-    process.on("SIGINT", forceExit);
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
-  });
-
   beforeEach(() => {
     resetTestTracking();
     // Clear tracked output files and commands for this test

@@ -11,7 +11,6 @@ import * as Ably from "ably";
 import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
-  forceExit,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
@@ -26,8 +25,6 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Channel Subscriptions E2E Tests", () => {
   let testDeviceId: string;
 
   beforeAll(async () => {
-    process.on("SIGINT", forceExit);
-
     // Generate unique device ID base for this test run
     testDeviceIdBase = `cli-e2e-channel-test-${Date.now()}`;
     testDeviceId = `${testDeviceIdBase}-device`;
@@ -57,8 +54,6 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Channel Subscriptions E2E Tests", () => {
     } catch {
       // Ignore cleanup errors
     }
-
-    process.removeListener("SIGINT", forceExit);
   });
 
   beforeEach(() => {

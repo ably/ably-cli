@@ -1,17 +1,8 @@
-import {
-  describe,
-  it,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  expect,
-} from "vitest";
+import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import {
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
   getUniqueClientId,
-  forceExit,
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
@@ -28,15 +19,6 @@ import {
 import { CliRunner } from "../../helpers/cli-runner.js";
 
 describe("Rooms E2E Tests", () => {
-  // Skip all tests if API key not available
-  beforeAll(() => {
-    process.on("SIGINT", forceExit);
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
-  });
-
   let testRoom: string;
   let client1Id: string;
   let client2Id: string;

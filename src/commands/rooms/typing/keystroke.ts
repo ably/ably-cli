@@ -157,20 +157,23 @@ export default class TypingKeystroke extends ChatBaseCommand {
             );
           });
         }, KEYSTROKE_INTERVAL);
+
+        this.logCliEvent(
+          flags,
+          "typing",
+          "listening",
+          "Maintaining typing status...",
+        );
+
+        // Wait until the user interrupts, duration elapses, or the room fails
+        await Promise.race([
+          this.waitAndTrackCleanup(flags, "typing", flags.duration),
+          failurePromise,
+        ]);
+      } else {
+        // Suppress unhandled rejection — failurePromise exists from setupRoomStatusHandler
+        failurePromise.catch(() => {});
       }
-
-      this.logCliEvent(
-        flags,
-        "typing",
-        "listening",
-        "Maintaining typing status...",
-      );
-
-      // Wait until the user interrupts, duration elapses, or the room fails
-      await Promise.race([
-        this.waitAndTrackCleanup(flags, "typing", flags.duration),
-        failurePromise,
-      ]);
     } catch (error) {
       this.fail(error, flags, "roomTypingKeystroke", { room: args.roomName });
     }

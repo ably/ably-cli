@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { parse, stringify } from "smol-toml";
+import { extractKeyNameFromApiKey } from "../utils/api-key.js";
 import isTestMode from "../utils/test-mode.js";
 
 // Updated to include key and app metadata
@@ -265,7 +266,7 @@ export class TomlConfigManager implements ConfigManager {
     }
 
     if (appConfig.apiKey) {
-      return appConfig.apiKey.split(":")[0];
+      return extractKeyNameFromApiKey(appConfig.apiKey);
     }
 
     return undefined;
@@ -444,7 +445,7 @@ export class TomlConfigManager implements ConfigManager {
       ...this.config.accounts[alias].apps[appId],
       apiKey,
       appName: metadata?.appName,
-      keyId: metadata?.keyId || apiKey.split(":")[0], // Extract key ID if not provided
+      keyId: metadata?.keyId || extractKeyNameFromApiKey(apiKey),
       keyName: metadata?.keyName,
     };
 

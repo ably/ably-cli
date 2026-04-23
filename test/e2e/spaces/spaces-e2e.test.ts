@@ -1,12 +1,4 @@
-import {
-  describe,
-  it,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  expect,
-} from "vitest";
+import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import {
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
@@ -16,7 +8,6 @@ import {
   readProcessOutput,
   runBackgroundProcessAndGetOutput,
   killProcess,
-  forceExit,
   cleanupTrackedResources,
   trackTestOutputFile,
   testOutputFiles,
@@ -27,15 +18,6 @@ import {
 import { ChildProcess } from "node:child_process";
 
 describe("Spaces E2E Tests", () => {
-  // Skip all tests if API key not available
-  beforeAll(() => {
-    process.on("SIGINT", forceExit);
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
-  });
-
   let testSpaceId: string;
   let client1Id: string;
   let client2Id: string;
