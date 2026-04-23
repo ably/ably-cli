@@ -1,18 +1,9 @@
-import {
-  describe,
-  it,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  expect,
-} from "vitest";
+import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
   getUniqueClientId,
-  forceExit,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
@@ -29,14 +20,6 @@ import { parseNdjsonLines } from "../../helpers/ndjson.js";
 describe.skipIf(SHOULD_SKIP_E2E)(
   "Spaces Locations, Cursors, and Locks E2E Tests",
   () => {
-    beforeAll(() => {
-      process.on("SIGINT", forceExit);
-    });
-
-    afterAll(() => {
-      process.removeListener("SIGINT", forceExit);
-    });
-
     let spaceName: string;
     let clientId: string;
 

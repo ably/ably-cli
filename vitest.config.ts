@@ -68,6 +68,7 @@ export default defineConfig({
             "**/dist/**",
             "test/e2e/web-cli/**/*.test.ts",
           ],
+          setupFiles: ["./test/setup.ts", "./test/e2e/setup.ts"],
           env: {
             ABLY_API_KEY: undefined,
           },

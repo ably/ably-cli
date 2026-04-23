@@ -10,52 +10,26 @@ import {
 import {
   E2E_ACCESS_TOKEN,
   SHOULD_SKIP_CONTROL_E2E,
-  forceExit,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
 import { parseNdjsonLines } from "../../helpers/ndjson.js";
+import { createTestApp } from "../../helpers/e2e-test-app.js";
 
 describe.skipIf(SHOULD_SKIP_CONTROL_E2E)("Integrations E2E Tests", () => {
   let testAppId: string;
+  let teardown: (() => Promise<void>) | undefined;
 
   beforeAll(async () => {
-    process.on("SIGINT", forceExit);
-
-    // Create a test app for integration operations
-    const createResult = await runCommand(
-      ["apps", "create", `e2e-integrations-test-${Date.now()}`, "--json"],
-      {
-        env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
-      },
-    );
-
-    if (createResult.exitCode !== 0) {
-      throw new Error(`Failed to create test app: ${createResult.stderr}`);
-    }
-    const result = parseNdjsonLines(createResult.stdout).find(
-      (r) => r.type === "result",
-    ) as Record<string, unknown>;
-    const app = result.app as Record<string, unknown>;
-    testAppId = (app.id ?? app.appId) as string;
-    if (!testAppId) {
-      throw new Error(`No app ID found in result: ${JSON.stringify(result)}`);
-    }
+    ({ appId: testAppId, teardown } = await createTestApp(
+      "e2e-integrations-test",
+    ));
   });
 
   afterAll(async () => {
-    if (testAppId) {
-      try {
-        await runCommand(["apps", "delete", testAppId, "--force"], {
-          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
-        });
-      } catch {
-        // Ignore cleanup errors — the app may already be deleted
-      }
-    }
-    process.removeListener("SIGINT", forceExit);
+    await teardown?.();
   });
 
   beforeEach(() => {

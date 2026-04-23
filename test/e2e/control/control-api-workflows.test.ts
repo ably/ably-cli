@@ -11,7 +11,6 @@ import { ControlApi } from "../../../src/services/control-api.js";
 import {
   E2E_ACCESS_TOKEN,
   runBackgroundProcessAndGetOutput,
-  forceExit,
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
@@ -19,6 +18,7 @@ import {
   resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
+import { createTestApp } from "../../helpers/e2e-test-app.js";
 import { parseNdjsonLines } from "../../helpers/ndjson.js";
 
 describe("Control API E2E Workflow Tests", () => {
@@ -35,8 +35,6 @@ describe("Control API E2E Workflow Tests", () => {
   let shouldSkip = false;
 
   beforeAll(async () => {
-    process.on("SIGINT", forceExit);
-
     const accessToken = E2E_ACCESS_TOKEN;
     if (!accessToken) {
       console.log(
@@ -129,7 +127,6 @@ describe("Control API E2E Workflow Tests", () => {
         console.warn(`Failed to delete app ${appId}:`, error);
       }
     }
-    process.removeListener("SIGINT", forceExit);
   });
 
   beforeEach(() => {
@@ -232,35 +229,16 @@ describe("Control API E2E Workflow Tests", () => {
   describe("API Key Management Workflow", () => {
     let testAppId: string;
 
+    let teardownApp: (() => Promise<void>) | undefined;
+
     beforeAll(async () => {
       if (shouldSkip) return;
-
-      // Create a test app first
-      const appName = `E2E Key Test App ${Date.now()}`;
-      const createResult = await runCommand(
-        ["apps", "create", appName, "--json"],
-        {
-          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
-        },
-      );
-
-      const result = parseNdjsonLines(createResult.stdout).find(
-        (r) => r.type === "result",
-      ) as Record<string, unknown>;
-      testAppId = (result.app as Record<string, unknown>).id as string;
+      ({ appId: testAppId, teardown: teardownApp } =
+        await createTestApp("e2e-key-test"));
     });
 
     afterAll(async () => {
-      // Clean up test app if created
-      if (testAppId) {
-        try {
-          await runCommand(["apps", "delete", testAppId, "--force"], {
-            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
-          });
-        } catch (error) {
-          console.log("Error cleaning up test app:", error);
-        }
-      }
+      await teardownApp?.();
     });
 
     it("should create a new API key", async () => {
@@ -569,35 +547,16 @@ describe("Control API E2E Workflow Tests", () => {
   describe("Queue Management Workflow", () => {
     let testAppId: string;
 
+    let teardownApp: (() => Promise<void>) | undefined;
+
     beforeAll(async () => {
       if (shouldSkip) return;
-
-      // Create a test app first
-      const appName = `E2E Queue Test App ${Date.now()}`;
-      const createResult = await runCommand(
-        ["apps", "create", appName, "--json"],
-        {
-          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
-        },
-      );
-
-      const result = parseNdjsonLines(createResult.stdout).find(
-        (r) => r.type === "result",
-      ) as Record<string, unknown>;
-      testAppId = (result.app as Record<string, unknown>).id as string;
+      ({ appId: testAppId, teardown: teardownApp } =
+        await createTestApp("e2e-queue-test"));
     });
 
     afterAll(async () => {
-      // Clean up test app if created
-      if (testAppId) {
-        try {
-          await runCommand(["apps", "delete", testAppId, "--force"], {
-            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
-          });
-        } catch (error) {
-          console.log("Error cleaning up test app:", error);
-        }
-      }
+      await teardownApp?.();
     });
 
     it("should create a new queue", async () => {
@@ -700,35 +659,17 @@ describe("Control API E2E Workflow Tests", () => {
   describe("Integration Rules Workflow", () => {
     let testAppId: string;
 
+    let teardownApp: (() => Promise<void>) | undefined;
+
     beforeAll(async () => {
       if (shouldSkip) return;
-
-      // Create a test app first
-      const appName = `E2E Integration Test App ${Date.now()}`;
-      const createResult = await runCommand(
-        ["apps", "create", appName, "--json"],
-        {
-          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
-        },
-      );
-
-      const result = parseNdjsonLines(createResult.stdout).find(
-        (r) => r.type === "result",
-      ) as Record<string, unknown>;
-      testAppId = (result.app as Record<string, unknown>).id as string;
+      ({ appId: testAppId, teardown: teardownApp } = await createTestApp(
+        "e2e-integration-test",
+      ));
     });
 
     afterAll(async () => {
-      // Clean up test app if created
-      if (testAppId) {
-        try {
-          await runCommand(["apps", "delete", testAppId, "--force"], {
-            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
-          });
-        } catch (error) {
-          console.log("Error cleaning up test app:", error);
-        }
-      }
+      await teardownApp?.();
     });
 
     it("should create a new integration rule", async () => {
@@ -794,35 +735,16 @@ describe("Control API E2E Workflow Tests", () => {
   describe("Rules Workflow", () => {
     let testAppId: string;
 
+    let teardownApp: (() => Promise<void>) | undefined;
+
     beforeAll(async () => {
       if (shouldSkip) return;
-
-      // Create a test app first
-      const appName = `E2E Rules Test App ${Date.now()}`;
-      const createResult = await runCommand(
-        ["apps", "create", appName, "--json"],
-        {
-          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
-        },
-      );
-
-      const result = parseNdjsonLines(createResult.stdout).find(
-        (r) => r.type === "result",
-      ) as Record<string, unknown>;
-      testAppId = (result.app as Record<string, unknown>).id as string;
+      ({ appId: testAppId, teardown: teardownApp } =
+        await createTestApp("e2e-rules-test"));
     });
 
     afterAll(async () => {
-      // Clean up test app if created
-      if (testAppId) {
-        try {
-          await runCommand(["apps", "delete", testAppId, "--force"], {
-            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
-          });
-        } catch (error) {
-          console.log("Error cleaning up test app:", error);
-        }
-      }
+      await teardownApp?.();
     });
 
     it(

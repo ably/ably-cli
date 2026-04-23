@@ -10,7 +10,6 @@ import {
 import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
-  forceExit,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
@@ -32,8 +31,6 @@ describe.skipIf(SHOULD_SKIP_E2E || SHOULD_SKIP_MUTABLE_TESTS)(
     let messageSerial: string;
 
     beforeAll(async () => {
-      process.on("SIGINT", forceExit);
-
       // Create channel rule with mutableMessages enabled
       await setupMutableMessagesRule();
 
@@ -44,7 +41,6 @@ describe.skipIf(SHOULD_SKIP_E2E || SHOULD_SKIP_MUTABLE_TESTS)(
 
     afterAll(async () => {
       await teardownMutableMessagesRule();
-      process.removeListener("SIGINT", forceExit);
     });
 
     beforeEach(() => {

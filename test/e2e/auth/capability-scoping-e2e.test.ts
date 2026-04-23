@@ -2,10 +2,10 @@ import { describe, it, beforeAll, afterAll, expect } from "vitest";
 import {
   E2E_ACCESS_TOKEN,
   SHOULD_SKIP_CONTROL_E2E,
-  forceExit,
   setupTestFailureHandler,
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
+import { createTestApp } from "../../helpers/e2e-test-app.js";
 import { parseAllJsonRecords } from "../../helpers/ndjson.js";
 import stripAnsi from "strip-ansi";
 
@@ -13,23 +13,13 @@ describe.skipIf(SHOULD_SKIP_CONTROL_E2E)(
   "Auth Capability Scoping E2E Tests",
   () => {
     let testAppId: string;
+    let teardownApp: (() => Promise<void>) | undefined;
     let publishOnlyKey: string;
 
     beforeAll(async () => {
-      process.on("SIGINT", forceExit);
-
-      // Create a dedicated app so scoped keys have no interference
-      const createApp = await runCommand(
-        ["apps", "create", `e2e-capability-scoping-${Date.now()}`, "--json"],
-        {
-          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
-        },
-      );
-      const appResult = parseAllJsonRecords(stripAnsi(createApp.stdout)).find(
-        (r) => r.type === "result",
-      ) as Record<string, unknown>;
-      const app = appResult.app as Record<string, unknown>;
-      testAppId = app.id as string;
+      ({ appId: testAppId, teardown: teardownApp } = await createTestApp(
+        "e2e-capability-scoping",
+      ));
 
       // Create a key with publish-only capability scoped to "allowed-*"
       const createKey = await runCommand(
@@ -61,16 +51,7 @@ describe.skipIf(SHOULD_SKIP_CONTROL_E2E)(
     }, 30000);
 
     afterAll(async () => {
-      if (testAppId) {
-        try {
-          await runCommand(["apps", "delete", testAppId, "--force"], {
-            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
-          });
-        } catch {
-          // Ignore cleanup errors
-        }
-      }
-      process.removeListener("SIGINT", forceExit);
+      await teardownApp?.();
     });
 
     it(

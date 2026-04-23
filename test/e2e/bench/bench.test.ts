@@ -1,14 +1,5 @@
+import { describe, it, beforeEach, afterEach, beforeAll, expect } from "vitest";
 import {
-  describe,
-  it,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  expect,
-} from "vitest";
-import {
-  forceExit,
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
@@ -33,7 +24,6 @@ describe("E2E: ably bench publisher and subscriber", () => {
   let shouldSkip = false;
 
   beforeAll(async () => {
-    process.on("SIGINT", forceExit);
     const envApiKey = process.env.E2E_ABLY_API_KEY;
     if (!envApiKey) {
       console.log(
@@ -44,10 +34,6 @@ describe("E2E: ably bench publisher and subscriber", () => {
     }
     apiKey = envApiKey;
     testChannel = `cli-e2e-bench-${Date.now()}`;
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
   });
 
   beforeEach(() => {

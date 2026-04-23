@@ -7,27 +7,23 @@ import {
   afterAll,
   expect,
 } from "vitest";
-import { ControlApi } from "../../../src/services/control-api.js";
 import {
-  forceExit,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
+import { createTestApp } from "../../helpers/e2e-test-app.js";
 import { parseNdjsonLines } from "../../helpers/ndjson.js";
 import { resolve } from "node:path";
 
 describe("Push Config E2E Tests", () => {
-  let controlApi: ControlApi;
   let testAppId: string;
+  let teardownApp: (() => Promise<void>) | undefined;
   let shouldSkip = false;
 
   beforeAll(async () => {
-    process.on("SIGINT", forceExit);
-
-    const accessToken = process.env.E2E_ABLY_ACCESS_TOKEN;
-    if (!accessToken) {
+    if (!process.env.E2E_ABLY_ACCESS_TOKEN) {
       console.log(
         "E2E_ABLY_ACCESS_TOKEN not available, skipping Push Config E2E tests",
       );
@@ -35,38 +31,13 @@ describe("Push Config E2E Tests", () => {
       return;
     }
 
-    controlApi = new ControlApi({
-      accessToken,
-      logErrors: false,
-    });
-
-    // Create a dedicated test app for push config tests
-    // Let setup failures propagate — only missing credentials should skip
-    const appName = `E2E Push Config Test ${Date.now()}`;
-    const createResult = await runCommand(
-      ["apps", "create", appName, "--json"],
-      {
-        env: { ABLY_ACCESS_TOKEN: accessToken },
-      },
-    );
-
-    const result = parseNdjsonLines(createResult.stdout).find(
-      (r) => r.type === "result",
-    )!;
-    testAppId = (result.app as Record<string, unknown>).id as string;
-    console.log(`Created test app for push config: ${testAppId}`);
+    ({ appId: testAppId, teardown: teardownApp } = await createTestApp(
+      "e2e-push-config-test",
+    ));
   });
 
   afterAll(async () => {
-    if (testAppId) {
-      try {
-        await controlApi.deleteApp(testAppId);
-        console.log(`Deleted test app: ${testAppId}`);
-      } catch (error) {
-        console.warn(`Failed to delete test app ${testAppId}:`, error);
-      }
-    }
-    process.removeListener("SIGINT", forceExit);
+    await teardownApp?.();
   });
 
   beforeEach(() => {

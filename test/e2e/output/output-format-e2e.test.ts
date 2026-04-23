@@ -1,13 +1,13 @@
-import { describe, it, beforeAll, afterAll, expect } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   E2E_API_KEY,
   E2E_ACCESS_TOKEN,
   SHOULD_SKIP_E2E,
   SHOULD_SKIP_CONTROL_E2E,
-  forceExit,
   setupTestFailureHandler,
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
+import { createTestApp } from "../../helpers/e2e-test-app.js";
 import { parseAllJsonRecords } from "../../helpers/ndjson.js";
 import stripAnsi from "strip-ansi";
 
@@ -40,14 +40,6 @@ function assertErrorEnvelope(
 }
 
 describe.skipIf(SHOULD_SKIP_E2E)("--pretty-json output shape", () => {
-  beforeAll(() => {
-    process.on("SIGINT", forceExit);
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
-  });
-
   it(
     "channels publish emits multi-line, indented, parseable JSON under --pretty-json",
     { timeout: 20000 },
@@ -147,14 +139,6 @@ describe.skipIf(SHOULD_SKIP_E2E)("--pretty-json output shape", () => {
 });
 
 describe.skipIf(SHOULD_SKIP_E2E)("--json error envelope consistency", () => {
-  beforeAll(() => {
-    process.on("SIGINT", forceExit);
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
-  });
-
   // `channels publish` reports per-message errors inline; `channels history`
   // funnels through this.fail() and emits the error envelope.
   it(
@@ -230,16 +214,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("--json error envelope consistency", () => {
       );
 
       // Create throwaway app
-      const appCreate = await runCommand(
-        ["apps", "create", `e2e-hint-test-${Date.now()}`, "--json"],
-        {
-          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
-        },
-      );
-      const appRecord = parseAllJsonRecords(stripAnsi(appCreate.stdout)).find(
-        (r) => r.type === "result",
-      ) as Record<string, unknown>;
-      const appId = (appRecord.app as Record<string, unknown>).id as string;
+      const { appId, teardown } = await createTestApp("e2e-hint-test");
       expect(appId).toBeTruthy();
 
       try {
@@ -282,9 +257,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("--json error envelope consistency", () => {
         // The 40160 hint directs users at the auth keys list workflow
         expect(err.hint as string).toMatch(/ably auth keys list/);
       } finally {
-        await runCommand(["apps", "delete", appId, "--force"], {
-          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
-        });
+        await teardown();
       }
     },
   );

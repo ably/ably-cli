@@ -1,18 +1,9 @@
-import {
-  describe,
-  it,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  expect,
-} from "vitest";
+import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
   getUniqueClientId,
-  forceExit,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
@@ -27,14 +18,6 @@ import type { CliRunner } from "../../helpers/cli-runner.js";
 
 describe.skipIf(SHOULD_SKIP_E2E)("Channel Presence Subscribe E2E Tests", () => {
   const runners: CliRunner[] = [];
-
-  beforeAll(() => {
-    process.on("SIGINT", forceExit);
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
-  });
 
   beforeEach(() => {
     resetTestTracking();

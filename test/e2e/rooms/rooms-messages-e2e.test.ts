@@ -1,18 +1,9 @@
-import {
-  describe,
-  it,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  expect,
-} from "vitest";
+import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
   getUniqueClientId,
-  forceExit,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
@@ -21,14 +12,6 @@ import { runCommand } from "../../helpers/command-helpers.js";
 import { parseNdjsonLines } from "../../helpers/ndjson.js";
 
 describe.skipIf(SHOULD_SKIP_E2E)("Rooms Messages E2E Tests", () => {
-  beforeAll(() => {
-    process.on("SIGINT", forceExit);
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
-  });
-
   let testRoom: string;
   let clientId: string;
 
@@ -166,6 +149,31 @@ describe.skipIf(SHOULD_SKIP_E2E)("Rooms Messages E2E Tests", () => {
       );
 
       expect(updateResult.exitCode).toBe(0);
+
+      // Wait for the update to land in history, then verify via history
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const historyResult = await runCommand(
+        ["rooms", "messages", "history", testRoom, "--json"],
+        {
+          env: { ABLY_API_KEY: E2E_API_KEY || "" },
+          timeoutMs: 30000,
+        },
+      );
+      expect(historyResult.exitCode).toBe(0);
+
+      const historyLines = parseNdjsonLines(historyResult.stdout);
+      const historyRecord = historyLines.find((l) => l.type === "result");
+      expect(historyRecord).toBeDefined();
+      const messages = historyRecord!.messages as Array<{
+        serial: string;
+        text: string;
+        action: string;
+      }>;
+      const updated = messages.find((m) => m.serial === serial);
+      expect(updated).toBeDefined();
+      expect(updated!.text).toBe("updated-msg");
+      expect(updated!.action).toBe("message.update");
     });
 
     it("should delete a room message", { timeout: 60000 }, async () => {
@@ -221,6 +229,29 @@ describe.skipIf(SHOULD_SKIP_E2E)("Rooms Messages E2E Tests", () => {
       );
 
       expect(deleteResult.exitCode).toBe(0);
+
+      // Wait for the delete to land in history, then verify via history
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const historyResult = await runCommand(
+        ["rooms", "messages", "history", testRoom, "--json"],
+        {
+          env: { ABLY_API_KEY: E2E_API_KEY || "" },
+          timeoutMs: 30000,
+        },
+      );
+      expect(historyResult.exitCode).toBe(0);
+
+      const historyLines = parseNdjsonLines(historyResult.stdout);
+      const historyRecord = historyLines.find((l) => l.type === "result");
+      expect(historyRecord).toBeDefined();
+      const messages = historyRecord!.messages as Array<{
+        serial: string;
+        action: string;
+      }>;
+      const deleted = messages.find((m) => m.serial === serial);
+      expect(deleted).toBeDefined();
+      expect(deleted!.action).toBe("message.delete");
     });
   });
 });

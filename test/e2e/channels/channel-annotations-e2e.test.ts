@@ -10,7 +10,6 @@ import {
 import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
-  forceExit,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
@@ -43,8 +42,6 @@ describe.skipIf(SHOULD_SKIP_E2E || SHOULD_SKIP_MUTABLE_TESTS)(
     let messageSerial: string;
 
     beforeAll(async () => {
-      process.on("SIGINT", forceExit);
-
       // Create channel rule with mutableMessages enabled
       await setupMutableMessagesRule();
 
@@ -55,7 +52,6 @@ describe.skipIf(SHOULD_SKIP_E2E || SHOULD_SKIP_MUTABLE_TESTS)(
 
     afterAll(async () => {
       await teardownMutableMessagesRule();
-      process.removeListener("SIGINT", forceExit);
     });
 
     beforeEach(() => {
@@ -262,6 +258,61 @@ describe.skipIf(SHOULD_SKIP_E2E || SHOULD_SKIP_MUTABLE_TESTS)(
 
           // Wait for the annotation event to appear in subscriber output
           await waitForOutput(subscriber, "total.v1", 15000);
+        } finally {
+          if (subscriber) {
+            await cleanupRunners([subscriber]);
+          }
+        }
+      },
+    );
+
+    it(
+      "should receive a message.summary event when an annotation is published",
+      { timeout: 60000 },
+      async () => {
+        setupTestFailureHandler(
+          "should receive a message.summary event when an annotation is published",
+        );
+
+        // Use a fresh channel + message so we get the summary in isolation,
+        // not mixed with summaries caused by earlier tests in this suite.
+        const summaryChannel = getMutableChannelName("summary");
+        const summarySerial = await publishAndGetSerial(
+          summaryChannel,
+          "summarise-me",
+        );
+
+        let subscriber: CliRunner | null = null;
+        try {
+          subscriber = await startSubscribeCommand(
+            ["channels", "subscribe", summaryChannel, "--duration", "30"],
+            /Subscribed to channel/,
+            {
+              env: { ABLY_API_KEY: E2E_API_KEY || "" },
+              timeoutMs: 30000,
+            },
+          );
+
+          const publishResult = await runCommand(
+            [
+              "channels",
+              "annotations",
+              "publish",
+              summaryChannel,
+              summarySerial,
+              "reactions:flag.v1",
+              "--json",
+            ],
+            {
+              env: { ABLY_API_KEY: E2E_API_KEY || "" },
+              timeoutMs: 30000,
+            },
+          );
+          expect(publishResult.exitCode).toBe(0);
+
+          // The server rolls the annotation up into a message.summary event
+          // and delivers it on the regular channel (no annotation_subscribe mode needed).
+          await waitForOutput(subscriber, "message.summary", 15000);
         } finally {
           if (subscriber) {
             await cleanupRunners([subscriber]);

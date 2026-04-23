@@ -9,6 +9,10 @@ import {
   createConfigManager,
 } from "./services/config-manager.js";
 import { ControlApi } from "./services/control-api.js";
+import {
+  extractAppIdFromApiKey,
+  extractKeyNameFromApiKey,
+} from "./utils/api-key.js";
 import { CommandError } from "./errors/command-error.js";
 import { getFriendlyAblyErrorHint } from "./utils/errors.js";
 import { coreGlobalFlags } from "./flags.js";
@@ -665,7 +669,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           const apiKey =
             flags["api-key"] || this.configManager.getApiKey(appId);
           if (apiKey) {
-            const keyId = apiKey.split(":")[0]!; // Extract key ID (part before colon)
+            const keyId = extractKeyNameFromApiKey(apiKey);
             const keyName =
               this.configManager.getKeyName(appId) || "Default Key";
             // Format the full key name (app_id.key_id)
@@ -731,12 +735,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       }
 
       // Debug log the API key format (masking the secret part)
-      const keyParts = apiKey.split(":");
-      const maskedKey = keyParts.length > 1 ? `${keyParts[0]}:***` : apiKey;
+      const keyName = extractKeyNameFromApiKey(apiKey);
+      const maskedKey = keyName ? `${keyName}:***` : apiKey;
       this.debug(`Using API key format: ${maskedKey}`);
 
-      // The app ID is the part before the first period in the key
-      const appId = apiKey.split(".")[0] || "";
+      const appId = extractAppIdFromApiKey(apiKey);
       if (!appId) {
         this.log("Failed to extract app ID from API key");
         return null;
@@ -752,7 +755,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
 
     // When apiKey comes from ABLY_API_KEY env var but appId is missing, extract it from the key
     if (apiKey && !appId) {
-      appId = apiKey.split(".")[0] || "";
+      appId = extractAppIdFromApiKey(apiKey);
     }
 
     // If we have both, return them

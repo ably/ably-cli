@@ -1,16 +1,7 @@
-import {
-  describe,
-  it,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  expect,
-} from "vitest";
+import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
-  forceExit,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
@@ -36,14 +27,6 @@ function parseJsonLines(stdout: string): Record<string, unknown>[] {
 describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
   "Stats E2E Tests",
   () => {
-    beforeAll(() => {
-      process.on("SIGINT", forceExit);
-    });
-
-    afterAll(() => {
-      process.removeListener("SIGINT", forceExit);
-    });
-
     beforeEach(() => {
       resetTestTracking();
     });

@@ -1,6 +1,10 @@
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import {
+  extractAppIdFromApiKey,
+  extractKeyNameFromApiKey,
+} from "../../utils/api-key.js";
 import { errorMessage } from "../../utils/errors.js";
 import { ControlApi } from "../../services/control-api.js";
 import { formatLabel } from "../../utils/output.js";
@@ -68,7 +72,8 @@ export default class AccountsCurrent extends ControlBaseCommand {
         const apiKey = this.configManager.getApiKey(currentAppId);
         if (apiKey) {
           const keyId =
-            this.configManager.getKeyId(currentAppId) || apiKey.split(":")[0]!;
+            this.configManager.getKeyId(currentAppId) ||
+            extractKeyNameFromApiKey(apiKey);
           const keyName =
             this.configManager.getKeyName(currentAppId) || "Unnamed key";
           const formattedKeyName = keyId.includes(".")
@@ -198,8 +203,8 @@ export default class AccountsCurrent extends ControlBaseCommand {
         let keyId = "";
 
         if (apiKey) {
-          appId = apiKey.split(".")[0]!;
-          keyId = apiKey.split(":")[0]!; // This includes APP_ID.KEY_ID
+          appId = extractAppIdFromApiKey(apiKey);
+          keyId = extractKeyNameFromApiKey(apiKey);
         }
 
         this.log(

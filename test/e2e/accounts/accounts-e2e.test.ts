@@ -1,16 +1,7 @@
-import {
-  describe,
-  it,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  expect,
-} from "vitest";
+import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import {
   E2E_ACCESS_TOKEN,
   SHOULD_SKIP_CONTROL_E2E,
-  forceExit,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
@@ -18,14 +9,6 @@ import {
 import { runCommand } from "../../helpers/command-helpers.js";
 
 describe.skipIf(SHOULD_SKIP_CONTROL_E2E)("Accounts E2E Tests", () => {
-  beforeAll(() => {
-    process.on("SIGINT", forceExit);
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
-  });
-
   beforeEach(() => {
     resetTestTracking();
   });

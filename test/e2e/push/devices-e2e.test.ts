@@ -11,7 +11,6 @@ import * as Ably from "ably";
 import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
-  forceExit,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
@@ -25,17 +24,11 @@ describe.skipIf(SHOULD_SKIP_E2E)("Push Devices E2E Tests", () => {
   let client: Ably.Rest;
 
   beforeAll(async () => {
-    process.on("SIGINT", forceExit);
-
     // Generate unique device ID base for this test run
     testDeviceIdBase = `cli-e2e-test-${Date.now()}`;
 
     // Create Ably client for verification
     client = createAblyClient();
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
   });
 
   beforeEach(() => {
