@@ -118,7 +118,7 @@ describe("auth:revoke-token command", () => {
       expect(result).toHaveProperty("revocation");
       expect(result.revocation).toHaveProperty(
         "message",
-        "Token revocation processed successfully",
+        `Tokens matching client id ${mockClientId} have been revoked.`,
       );
       expect(result.revocation).toHaveProperty(
         "target",

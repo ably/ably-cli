@@ -116,8 +116,11 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
         targets: [targetSpecifier],
       };
 
+      let reauthNote = "";
       if (flags["allow-reauth-margin"]) {
         requestBody.allowReauthMargin = true;
+        reauthNote =
+          " Connected clients have a 30s grace period to obtain new tokens before disconnection.";
       }
 
       try {
@@ -127,12 +130,14 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
           secret,
           requestBody,
         );
+        const successMessage = `Tokens matching ${targetLabel.toLowerCase()} ${formatResource(targetValue)} have been revoked.${reauthNote}`;
 
         if (this.shouldOutputJson(flags)) {
           this.logJsonResult(
             {
               revocation: {
-                message: "Token revocation processed successfully",
+                allowReauthMargin: flags["allow-reauth-margin"],
+                message: successMessage,
                 target: targetSpecifier,
                 response,
               },
@@ -140,10 +145,7 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
             flags,
           );
         } else {
-          this.logSuccessMessage(
-            `Tokens matching ${targetLabel.toLowerCase()} ${formatResource(targetValue)} have been revoked.`,
-            flags,
-          );
+          this.logSuccessMessage(successMessage, flags);
         }
       } catch (requestError: unknown) {
         const error = requestError as Error;
