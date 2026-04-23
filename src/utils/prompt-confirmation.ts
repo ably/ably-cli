@@ -6,7 +6,8 @@ import * as readline from "node:readline";
  * Accepts both "y" and "yes" as affirmative responses (case-insensitive).
  *
  * @param message - The confirmation message to display to the user
- * @param defaultValue - The value returned when the user presses Enter without typing (default: false)
+ * @param defaultValue - The value returned when the user presses Enter without typing (default: false).
+ *   Note: SIGINT and close always resolve to false regardless of defaultValue, since cancellation should never confirm.
  * @returns Promise<boolean> - true if user confirms (y/yes), false otherwise
  */
 export function promptForConfirmation(
@@ -44,11 +45,11 @@ export function promptForConfirmation(
     };
 
     rl.on("SIGINT", () => {
-      finish(defaultValue);
+      finish(false);
     });
 
     rl.on("close", () => {
-      finish(defaultValue);
+      finish(false);
     });
 
     rl.question(promptMessage, (answer) => {
