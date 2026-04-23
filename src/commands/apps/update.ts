@@ -43,7 +43,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
         "At least one update parameter (--name or --tls-only) must be provided",
         flags,
         "appUpdate",
-        { appId: args.appNameOrId },
+        { appNameOrId: args.appNameOrId },
       );
     }
 

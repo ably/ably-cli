@@ -28,11 +28,14 @@ export default class AppsSwitch extends ControlBaseCommand {
     const { args, flags } = await this.parse(AppsSwitch);
 
     try {
-      const controlApi = this.createControlApi({});
+      const controlApi = this.createControlApi(flags);
 
       // If app name or ID is provided, resolve and switch directly
       if (args.appNameOrId) {
-        const appId = await this.resolveAppIdFromNameOrId(args.appNameOrId, {});
+        const appId = await this.resolveAppIdFromNameOrId(
+          args.appNameOrId,
+          flags,
+        );
         await this.switchToApp(appId, controlApi, flags);
         return;
       }
