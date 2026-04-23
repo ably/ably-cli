@@ -8,7 +8,7 @@ import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class RulesDeleteCommand extends ControlBaseCommand {
   static args = {
-    nameOrId: Args.string({
+    ruleNameOrId: Args.string({
       description: "Name or ID of the rule to delete",
       required: true,
     }),
@@ -42,12 +42,18 @@ export default class RulesDeleteCommand extends ControlBaseCommand {
       const controlApi = this.createControlApi(flags);
       // Find the namespace by name or ID
       const namespaces = await controlApi.listNamespaces(appId);
-      const namespace = namespaces.find((n) => n.id === args.nameOrId);
+      const namespace = namespaces.find((n) => n.id === args.ruleNameOrId);
 
       if (!namespace) {
-        this.fail(`Rule "${args.nameOrId}" not found`, flags, "ruleDelete", {
-          appId,
-        });
+        this.fail(
+          `Rule "${args.ruleNameOrId}" not found`,
+          flags,
+          "ruleDelete",
+          {
+            appId,
+            hint: 'Run "ably apps rules list" to see available rules.',
+          },
+        );
       }
 
       // In JSON mode, require --force to prevent accidental destructive actions

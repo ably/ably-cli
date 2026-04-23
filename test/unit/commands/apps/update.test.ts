@@ -4,6 +4,7 @@ import nock from "nock";
 import {
   nockControl,
   controlApiCleanup,
+  mockAppResolution,
   CONTROL_HOST,
 } from "../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
@@ -32,6 +33,9 @@ describe("apps:update command", () => {
       const accountId = mock.getCurrentAccount()!.accountId;
       const appId = mock.getCurrentAppId()!;
       const updatedName = "UpdatedAppName";
+
+      // Mock the resolve step (GET /v1/me + GET /v1/accounts/:id/apps)
+      mockAppResolution(appId);
 
       // Mock the app update endpoint
       nockControl()
@@ -63,6 +67,9 @@ describe("apps:update command", () => {
       const accountId = mock.getCurrentAccount()!.accountId;
       const appId = mock.getCurrentAppId()!;
 
+      // Mock the resolve step (GET /v1/me + GET /v1/accounts/:id/apps)
+      mockAppResolution(appId);
+
       // Mock the app update endpoint
       nockControl()
         .patch(`/v1/apps/${appId}`, {
@@ -92,6 +99,9 @@ describe("apps:update command", () => {
       const accountId = mock.getCurrentAccount()!.accountId;
       const appId = mock.getCurrentAppId()!;
       const updatedName = "UpdatedAppName";
+
+      // Mock the resolve step (GET /v1/me + GET /v1/accounts/:id/apps)
+      mockAppResolution(appId);
 
       // Mock the app update endpoint
       nockControl()
@@ -135,6 +145,9 @@ describe("apps:update command", () => {
         tlsOnly: false,
       };
 
+      // Mock the resolve step (GET /v1/me + GET /v1/accounts/:id/apps)
+      mockAppResolution(appId);
+
       // Mock the app update endpoint
       nockControl().patch(`/v1/apps/${appId}`).reply(200, mockApp);
 
@@ -166,6 +179,25 @@ describe("apps:update command", () => {
       const updatedName = "UpdatedAppName";
 
       process.env.ABLY_ACCESS_TOKEN = customToken;
+
+      // Mock the resolve step (GET /v1/me + GET /v1/accounts/:id/apps) with custom token
+      nock(CONTROL_HOST, {
+        reqheaders: {
+          authorization: `Bearer ${customToken}`,
+        },
+      })
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: accountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
+      nock(CONTROL_HOST, {
+        reqheaders: {
+          authorization: `Bearer ${customToken}`,
+        },
+      })
+        .get(`/v1/accounts/${accountId}/apps`)
+        .reply(200, [{ id: appId, name: "Test App", accountId }]);
 
       // Mock the app update endpoint with custom token
       nock(CONTROL_HOST, {
@@ -212,6 +244,8 @@ describe("apps:update command", () => {
       importMetaUrl: import.meta.url,
       setupNock: (scenario) => {
         const appId = getMockConfigManager().getCurrentAppId()!;
+        // Mock the resolve step (GET /v1/me + GET /v1/accounts/:id/apps)
+        mockAppResolution(appId);
         if (scenario === "401") {
           nockControl()
             .patch(`/v1/apps/${appId}`)
@@ -278,6 +312,9 @@ describe("apps:update command", () => {
       const mock = getMockConfigManager();
       const appId = mock.getCurrentAppId()!;
 
+      // Mock the resolve step (GET /v1/me + GET /v1/accounts/:id/apps)
+      mockAppResolution(appId);
+
       // Mock forbidden response
       nockControl()
         .patch(`/v1/apps/${appId}`)
@@ -296,6 +333,9 @@ describe("apps:update command", () => {
       const mock = getMockConfigManager();
       const appId = mock.getCurrentAppId()!;
 
+      // Mock the resolve step (GET /v1/me + GET /v1/accounts/:id/apps)
+      mockAppResolution(appId);
+
       // Mock not found response
       nockControl()
         .patch(`/v1/apps/${appId}`)
@@ -313,6 +353,9 @@ describe("apps:update command", () => {
     it("should handle JSON error output for API errors", async () => {
       const mock = getMockConfigManager();
       const appId = mock.getCurrentAppId()!;
+
+      // Mock the resolve step (GET /v1/me + GET /v1/accounts/:id/apps)
+      mockAppResolution(appId);
 
       // Mock server error
       nockControl()
@@ -345,6 +388,9 @@ describe("apps:update command", () => {
       const accountId = mock.getCurrentAccount()!.accountId;
       const appId = mock.getCurrentAppId()!;
 
+      // Mock the resolve step (GET /v1/me + GET /v1/accounts/:id/apps)
+      mockAppResolution(appId);
+
       // Mock the app update endpoint with APNS cert info
       nockControl().patch(`/v1/apps/${appId}`).reply(200, {
         id: appId,
@@ -369,6 +415,9 @@ describe("apps:update command", () => {
       const mock = getMockConfigManager();
       const accountId = mock.getCurrentAccount()!.accountId;
       const appId = mock.getCurrentAppId()!;
+
+      // Mock the resolve step (GET /v1/me + GET /v1/accounts/:id/apps)
+      mockAppResolution(appId);
 
       // Mock the app update endpoint with APNS cert info
       nockControl().patch(`/v1/apps/${appId}`).reply(200, {

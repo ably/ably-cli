@@ -54,6 +54,26 @@ describe("queues:delete command", () => {
       expect(stderr).toContain("Queue deleted:");
     });
 
+    it("should delete a queue by name", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
+
+      nockControl()
+        .get(`/v1/apps/${appId}/queues`)
+        .reply(200, [createMockQueue(appId, mockQueueId)]);
+
+      nockControl()
+        .delete(`/v1/apps/${appId}/queues/${mockQueueId}`)
+        .reply(204);
+
+      const { stderr } = await runCommand(
+        ["queues:delete", mockQueueName, "--force"],
+        import.meta.url,
+      );
+
+      expect(stderr).toContain("Queue deleted:");
+    });
+
     it("should delete a queue with custom app ID", async () => {
       const accountId = getMockConfigManager().getCurrentAccount()!.accountId;
       const customAppId = "custom-app-id";
@@ -188,6 +208,7 @@ describe("queues:delete command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/Queue.*not found/);
+      expect(error?.message).toContain("ably queues list");
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -213,7 +234,7 @@ describe("queues:delete command", () => {
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
-    it("should require queue ID argument", async () => {
+    it("should require queue name argument", async () => {
       const { error } = await runCommand(["queues:delete"], import.meta.url);
 
       expect(error).toBeDefined();
@@ -234,7 +255,7 @@ describe("queues:delete command", () => {
       expect(error?.message).toMatch(/No access token|No app|not logged in/i);
     });
 
-    it("should handle when specific queue ID is not found in list", async () => {
+    it("should handle when queue is not found by name or ID in list", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockQueueId = `${appId}:us-east-1-a:${mockQueueName}`;
 
@@ -275,9 +296,8 @@ describe("queues:delete command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error?.message).toMatch(
-        `Queue with ID "${mockQueueId}" not found`,
-      );
+      expect(error?.message).toMatch(`Queue "${mockQueueId}" not found`);
+      expect(error?.message).toContain("ably queues list");
       expect(error?.oclif?.exit).toBeGreaterThan(0);
     });
 
@@ -398,7 +418,7 @@ describe("queues:delete command", () => {
 
   standardHelpTests("queues:delete", import.meta.url);
   standardArgValidationTests("queues:delete", import.meta.url, {
-    requiredArgs: ["test-queue-id"],
+    requiredArgs: ["test-queue"],
   });
   standardFlagTests("queues:delete", import.meta.url, ["--json"]);
 });

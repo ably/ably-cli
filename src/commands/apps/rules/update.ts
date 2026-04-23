@@ -6,7 +6,7 @@ import { formatLabel, formatResource } from "../../../utils/output.js";
 
 export default class RulesUpdateCommand extends ControlBaseCommand {
   static args = {
-    nameOrId: Args.string({
+    ruleNameOrId: Args.string({
       description: "Name or ID of the rule to update",
       required: true,
     }),
@@ -122,12 +122,18 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
       const controlApi = this.createControlApi(flags);
       // Find the namespace by name or ID
       const namespaces = await controlApi.listNamespaces(appId);
-      const namespace = namespaces.find((n) => n.id === args.nameOrId);
+      const namespace = namespaces.find((n) => n.id === args.ruleNameOrId);
 
       if (!namespace) {
-        this.fail(`Rule "${args.nameOrId}" not found`, flags, "ruleUpdate", {
-          appId,
-        });
+        this.fail(
+          `Rule "${args.ruleNameOrId}" not found`,
+          flags,
+          "ruleUpdate",
+          {
+            appId,
+            hint: 'Run "ably apps rules list" to see available rules.',
+          },
+        );
       }
 
       // Prepare update data

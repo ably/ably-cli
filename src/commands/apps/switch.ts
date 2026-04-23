@@ -6,8 +6,8 @@ import { formatResource } from "../../utils/output.js";
 
 export default class AppsSwitch extends ControlBaseCommand {
   static override args = {
-    appId: Args.string({
-      description: "ID of the app to switch to",
+    appNameOrId: Args.string({
+      description: "App name or ID to switch to",
       required: false,
     }),
   };
@@ -15,9 +15,9 @@ export default class AppsSwitch extends ControlBaseCommand {
   static override description = "Switch to a different Ably app";
 
   static override examples = [
-    "<%= config.bin %> <%= command.id %> APP_ID",
+    '<%= config.bin %> <%= command.id %> "My App"',
+    "<%= config.bin %> <%= command.id %> app-id",
     "<%= config.bin %> <%= command.id %>",
-    "<%= config.bin %> <%= command.id %> APP_ID --json",
   ];
 
   static override flags = {
@@ -30,9 +30,10 @@ export default class AppsSwitch extends ControlBaseCommand {
     try {
       const controlApi = this.createControlApi({});
 
-      // If app ID is provided, switch directly
-      if (args.appId) {
-        await this.switchToApp(args.appId, controlApi, flags);
+      // If app name or ID is provided, resolve and switch directly
+      if (args.appNameOrId) {
+        const appId = await this.resolveAppIdFromNameOrId(args.appNameOrId, {});
+        await this.switchToApp(appId, controlApi, flags);
         return;
       }
 

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   nockControl,
   controlApiCleanup,
+  mockAppResolution,
 } from "../../../helpers/control-api-test-helpers.js";
 import { runCommand } from "@oclif/test";
 import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
@@ -42,6 +43,7 @@ describe("stats:app command", () => {
 
   describe("functionality", () => {
     it("should display app stats successfully", async () => {
+      mockAppResolution(appId);
       const scope = nockControl()
         .get(`/v1/apps/${appId}/stats`)
         .query(true)
@@ -58,6 +60,7 @@ describe("stats:app command", () => {
     });
 
     it("should accept ISO 8601 for --start and --end", async () => {
+      mockAppResolution(appId);
       const scope = nockControl()
         .get(`/v1/apps/${appId}/stats`)
         .query(true)
@@ -80,6 +83,7 @@ describe("stats:app command", () => {
     });
 
     it("should accept relative time for --start", async () => {
+      mockAppResolution(appId);
       const scope = nockControl()
         .get(`/v1/apps/${appId}/stats`)
         .query(true)
@@ -95,6 +99,7 @@ describe("stats:app command", () => {
     });
 
     it("should accept Unix ms for --start", async () => {
+      mockAppResolution(appId);
       const scope = nockControl()
         .get(`/v1/apps/${appId}/stats`)
         .query(true)

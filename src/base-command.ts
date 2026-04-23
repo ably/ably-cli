@@ -1729,12 +1729,24 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       },
     );
 
-    const friendlyHint = getFriendlyAblyErrorHint(
+    // Resolve hint: Ably error code hint takes priority, then custom hint from context
+    const ablyHint = getFriendlyAblyErrorHint(
       cmdError.code ??
         (typeof cmdError.context.errorCode === "number"
           ? cmdError.context.errorCode
           : undefined),
     );
+    const customHint =
+      typeof cmdError.context.hint === "string"
+        ? cmdError.context.hint
+        : undefined;
+    const friendlyHint = ablyHint ?? customHint;
+
+    // Remove hint from context so it doesn't appear twice in JSON output
+    // (it already goes into the error object via toJsonData)
+    if (customHint) {
+      delete cmdError.context.hint;
+    }
 
     if (this.shouldOutputJson(flags)) {
       const jsonData = cmdError.toJsonData(friendlyHint);
