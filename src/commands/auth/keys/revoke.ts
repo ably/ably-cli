@@ -3,13 +3,13 @@ import { Args, Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { forceFlag } from "../../../flags.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
-import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
 import { formatLabel, formatResource } from "../../../utils/output.js";
 
 export default class KeysRevokeCommand extends ControlBaseCommand {
   static args = {
-    keyName: Args.string({
-      description: "Key name (APP_ID.KEY_ID) of the key to revoke",
+    keyNameOrValue: Args.string({
+      description:
+        "Key name (APP_ID.KEY_ID), key ID, key label (e.g. Root), or full key value",
       required: true,
     }),
   };
@@ -18,10 +18,10 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
 
   static examples = [
     "$ ably auth keys revoke APP_ID.KEY_ID",
+    '$ ably auth keys revoke Root --app "My App"',
     "$ ably auth keys revoke KEY_ID --app APP_ID",
     "$ ably auth keys revoke APP_ID.KEY_ID --force",
     "$ ably auth keys revoke APP_ID.KEY_ID --json",
-    "$ ably auth keys revoke APP_ID.KEY_ID --pretty-json",
   ];
 
   static flags = {
@@ -36,15 +36,28 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(KeysRevokeCommand);
 
-    const parsed = parseKeyIdentifier(args.keyName);
-    const keyId = parsed.keyId;
+    let appId: string | undefined;
+    const keyIdentifier = args.keyNameOrValue;
 
-    const appId = parsed.appId ?? (await this.requireAppId(flags));
+    if (flags.app) {
+      appId = await this.resolveAppIdFromNameOrId(flags.app, flags);
+    }
+
+    if (!appId && keyIdentifier.includes(".") && !keyIdentifier.includes(":")) {
+      const parts = keyIdentifier.split(".");
+      if (parts.length === 2) {
+        appId = parts[0];
+      }
+    }
+
+    if (!appId) {
+      appId = await this.requireAppId(flags);
+    }
 
     try {
       const controlApi = this.createControlApi(flags);
       // Get the key details first to show info to the user
-      const key = await controlApi.getKey(appId, keyId);
+      const key = await controlApi.getKey(appId, keyIdentifier);
 
       const keyName = `${key.appId}.${key.id}`;
 
@@ -83,7 +96,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
         }
       }
 
-      await controlApi.revokeKey(appId, keyId);
+      await controlApi.revokeKey(appId, key.id);
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
@@ -120,7 +133,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "keyRevoke", { appId, keyId });
+      this.fail(error, flags, "keyRevoke", { appId, keyIdentifier });
     }
   }
 }

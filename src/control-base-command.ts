@@ -124,6 +124,36 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
   }
 
   /**
+   * Resolve an account alias or ID to the account alias.
+   * Matches by alias first (exact), then by accountId (exact).
+   * Returns the alias string needed by configManager methods.
+   */
+  protected resolveAccountAlias(aliasOrId: string, flags: BaseFlags): string {
+    const accounts = this.configManager.listAccounts();
+
+    // Try alias match first
+    const byAlias = accounts.find((a) => a.alias === aliasOrId);
+    if (byAlias) return byAlias.alias;
+
+    // Try accountId match
+    const byId = accounts.find((a) => a.account.accountId === aliasOrId);
+    if (byId) return byId.alias;
+
+    this.fail(
+      `Account "${aliasOrId}" not found. Use "ably accounts list" to see available accounts.`,
+      flags,
+      "account",
+      {
+        availableAccounts: accounts.map(({ account, alias }) => ({
+          alias,
+          id: account.accountId,
+          name: account.accountName,
+        })),
+      },
+    );
+  }
+
+  /**
    * Prompts the user to select an app
    */
   protected async promptForApp(flags: BaseFlags = {}): Promise<string> {

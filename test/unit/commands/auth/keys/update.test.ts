@@ -58,6 +58,31 @@ describe("auth:keys:update command", () => {
       expect(stdout).toContain(`Key Label: "OldName" → "NewName"`);
     });
 
+    it("should update key by label", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      mockKeysList(appId, [buildMockKey(appId, mockKeyId, { name: "Root" })]);
+
+      nockControl()
+        .patch(`/v1/apps/${appId}/keys/${mockKeyId}`)
+        .reply(200, {
+          id: mockKeyId,
+          appId,
+          name: "NewName",
+          key: `${appId}.${mockKeyId}:secret`,
+          capability: { "*": ["publish", "subscribe"] },
+          created: Date.now(),
+          modified: Date.now(),
+        });
+
+      const { stdout } = await runCommand(
+        ["auth:keys:update", "Root", "--name=NewName"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
+      expect(stdout).toContain(`Key Label: "Root" → "NewName"`);
+    });
+
     it("should update key capabilities", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       mockKeysList(appId, [buildMockKey(appId, mockKeyId)]);
@@ -206,7 +231,7 @@ describe("auth:keys:update command", () => {
   standardFlagTests("auth:keys:update", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
-    it("should require keyName argument", async () => {
+    it("should require key identifier argument", async () => {
       const { error } = await runCommand(
         ["auth:keys:update", "--name", "Test"],
         import.meta.url,

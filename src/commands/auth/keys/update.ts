@@ -2,16 +2,14 @@ import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatCapabilityInline } from "../../../utils/key-display.js";
-import {
-  parseCapabilities,
-  parseKeyIdentifier,
-} from "../../../utils/key-parsing.js";
+import { parseCapabilities } from "../../../utils/key-parsing.js";
 import { formatLabel, formatResource } from "../../../utils/output.js";
 
 export default class KeysUpdateCommand extends ControlBaseCommand {
   static args = {
-    keyName: Args.string({
-      description: "Key name (APP_ID.KEY_ID) of the key to update",
+    keyNameOrValue: Args.string({
+      description:
+        "Key name (APP_ID.KEY_ID), key ID, key label (e.g. Root), or full key value",
       required: true,
     }),
   };
@@ -20,9 +18,9 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
 
   static examples = [
     '$ ably auth keys update APP_ID.KEY_ID --name "New Name"',
+    '$ ably auth keys update Root --app APP_ID --name "New Name"',
     '$ ably auth keys update KEY_ID --app APP_ID --capabilities "publish,subscribe"',
-    '$ ably auth keys update APP_ID.KEY_ID --name "New Name" --capabilities "publish,subscribe"',
-    `$ ably auth keys update APP_ID.KEY_ID --name "New Name" --capabilities '{"channel1":["publish"],"channel2":["subscribe"]}'`,
+    `$ ably auth keys update APP_ID.KEY_ID --capabilities '{"channel1":["publish"],"channel2":["subscribe"]}'`,
     '$ ably auth keys update APP_ID.KEY_ID --name "New Name" --json',
   ];
 
@@ -55,15 +53,28 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
       );
     }
 
-    const parsed = parseKeyIdentifier(args.keyName);
-    const keyId = parsed.keyId;
+    let appId: string | undefined;
+    const keyIdentifier = args.keyNameOrValue;
 
-    const appId = parsed.appId ?? (await this.requireAppId(flags));
+    if (flags.app) {
+      appId = await this.resolveAppIdFromNameOrId(flags.app, flags);
+    }
+
+    if (!appId && keyIdentifier.includes(".") && !keyIdentifier.includes(":")) {
+      const parts = keyIdentifier.split(".");
+      if (parts.length === 2) {
+        appId = parts[0];
+      }
+    }
+
+    if (!appId) {
+      appId = await this.requireAppId(flags);
+    }
 
     try {
       const controlApi = this.createControlApi(flags);
       // Get original key details
-      const originalKey = await controlApi.getKey(appId, keyId);
+      const originalKey = await controlApi.getKey(appId, keyIdentifier);
 
       // Prepare the update data
       const updateData: {
@@ -84,7 +95,11 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
       }
 
       // Update the key
-      const updatedKey = await controlApi.updateKey(appId, keyId, updateData);
+      const updatedKey = await controlApi.updateKey(
+        appId,
+        originalKey.id,
+        updateData,
+      );
 
       const keyName = `${updatedKey.appId}.${updatedKey.id}`;
 

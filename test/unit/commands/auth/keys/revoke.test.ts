@@ -71,6 +71,39 @@ describe("auth:keys:revoke command", () => {
       expect(stdout).toContain("Key Label: Test Key");
     });
 
+    it("should revoke key by label", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      mockKeysList(appId, [buildMockKey(appId, mockKeyId, { name: "Root" })]);
+
+      nockControl()
+        .post(`/v1/apps/${appId}/keys/${mockKeyId}/revoke`)
+        .reply(200, {});
+
+      const { stdout } = await runCommand(
+        ["auth:keys:revoke", "Root", "--force"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
+      expect(stdout).toContain("Key Label: Root");
+    });
+
+    it("should revoke key by full key value", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      mockKeysList(appId, [buildMockKey(appId, mockKeyId)]);
+
+      nockControl()
+        .post(`/v1/apps/${appId}/keys/${mockKeyId}/revoke`)
+        .reply(200, {});
+
+      const { stdout } = await runCommand(
+        ["auth:keys:revoke", `${appId}.${mockKeyId}:secret`, "--force"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
+    });
+
     it("should output JSON format when --json flag is used", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       mockKeysList(appId, [buildMockKey(appId, mockKeyId)]);
@@ -101,7 +134,7 @@ describe("auth:keys:revoke command", () => {
   standardFlagTests("auth:keys:revoke", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
-    it("should require keyName argument", async () => {
+    it("should require key identifier argument", async () => {
       const { error } = await runCommand(
         ["auth:keys:revoke", "--force"],
         import.meta.url,
