@@ -5,6 +5,7 @@ import { forceFlag } from "../../../flags.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
 import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
 import { formatLabel, formatResource } from "../../../utils/output.js";
+import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class KeysRevokeCommand extends ControlBaseCommand {
   static args = {
@@ -73,8 +74,8 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
       }
 
       if (!flags.force && !this.shouldOutputJson(flags)) {
-        const confirmed = await this.interactiveHelper.confirm(
-          "This will permanently revoke this key and any applications using it will stop working. Continue?",
+        const confirmed = await promptForConfirmation(
+          "\nThis will permanently revoke this key and any applications using it will stop working. Are you sure?",
         );
 
         if (!confirmed) {
@@ -109,7 +110,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
           // Auto-remove in JSON mode — key is already revoked, can't be used
           this.configManager.removeApiKey(appId);
         } else {
-          const shouldRemove = await this.interactiveHelper.confirm(
+          const shouldRemove = await promptForConfirmation(
             "The revoked key was your current key for this app. Remove it from configuration?",
           );
 
