@@ -1,12 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 let mockQuestion: (query: string, callback: (answer: string) => void) => void;
+let mockOnHandlers: Record<string, (() => void)[]>;
 
 vi.mock("node:readline", () => ({
   createInterface: () => ({
+    closed: false,
     close: vi.fn(),
     question: (query: string, callback: (answer: string) => void) => {
       mockQuestion(query, callback);
+    },
+    on: (event: string, handler: () => void) => {
+      if (!mockOnHandlers[event]) {
+        mockOnHandlers[event] = [];
+      }
+      mockOnHandlers[event].push(handler);
     },
   }),
 }));
@@ -16,6 +24,7 @@ import { promptForConfirmation } from "../../../src/utils/prompt-confirmation.js
 describe("promptForConfirmation", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    mockOnHandlers = {};
   });
 
   it.each(["y", "yes", "Y", "YES", " yes "])(
@@ -44,5 +53,103 @@ describe("promptForConfirmation", () => {
     };
     await promptForConfirmation("Are you sure?");
     expect(capturedQuery).toBe("Are you sure? [y/n]");
+  });
+
+  describe("defaultValue parameter", () => {
+    it("returns true for empty input when defaultValue is true", async () => {
+      mockQuestion = (_query, callback) => callback("");
+      const result = await promptForConfirmation("Did you mean X?", true);
+      expect(result).toBe(true);
+    });
+
+    it("returns false for empty input when defaultValue is false", async () => {
+      mockQuestion = (_query, callback) => callback("");
+      const result = await promptForConfirmation("Delete this?", false);
+      expect(result).toBe(false);
+    });
+
+    it("explicit 'n' overrides defaultValue true", async () => {
+      mockQuestion = (_query, callback) => callback("n");
+      const result = await promptForConfirmation("Did you mean X?", true);
+      expect(result).toBe(false);
+    });
+
+    it("explicit 'y' overrides defaultValue false", async () => {
+      mockQuestion = (_query, callback) => callback("y");
+      const result = await promptForConfirmation("Delete this?", false);
+      expect(result).toBe(true);
+    });
+
+    it("appends [Y/n] suffix when defaultValue is true", async () => {
+      let capturedQuery = "";
+      mockQuestion = (query, callback) => {
+        capturedQuery = query;
+        callback("y");
+      };
+      await promptForConfirmation("Did you mean X?", true);
+      expect(capturedQuery).toBe("Did you mean X? [Y/n]");
+    });
+
+    it("appends [y/n] suffix when defaultValue is false", async () => {
+      let capturedQuery = "";
+      mockQuestion = (query, callback) => {
+        capturedQuery = query;
+        callback("n");
+      };
+      await promptForConfirmation("Delete this?", false);
+      expect(capturedQuery).toBe("Delete this? [y/n]");
+    });
+
+    it("does not double-append suffix when message already contains [Y/n]", async () => {
+      let capturedQuery = "";
+      mockQuestion = (query, callback) => {
+        capturedQuery = query;
+        callback("y");
+      };
+      await promptForConfirmation("Continue? [Y/n]", true);
+      expect(capturedQuery).toBe("Continue? [Y/n]");
+    });
+  });
+
+  describe("SIGINT and close handling", () => {
+    it("returns false on SIGINT even when defaultValue is true", async () => {
+      mockQuestion = () => {
+        for (const handler of mockOnHandlers["SIGINT"] ?? []) {
+          handler();
+        }
+      };
+      const result = await promptForConfirmation("Did you mean X?", true);
+      expect(result).toBe(false);
+    });
+
+    it("returns false on close even when defaultValue is true", async () => {
+      mockQuestion = () => {
+        for (const handler of mockOnHandlers["close"] ?? []) {
+          handler();
+        }
+      };
+      const result = await promptForConfirmation("Did you mean X?", true);
+      expect(result).toBe(false);
+    });
+
+    it("returns false on SIGINT with default defaultValue", async () => {
+      mockQuestion = () => {
+        for (const handler of mockOnHandlers["SIGINT"] ?? []) {
+          handler();
+        }
+      };
+      const result = await promptForConfirmation("Delete this?");
+      expect(result).toBe(false);
+    });
+
+    it("returns false on close with default defaultValue", async () => {
+      mockQuestion = () => {
+        for (const handler of mockOnHandlers["close"] ?? []) {
+          handler();
+        }
+      };
+      const result = await promptForConfirmation("Delete this?");
+      expect(result).toBe(false);
+    });
   });
 });

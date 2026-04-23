@@ -1,4 +1,4 @@
-import inquirer from "inquirer";
+import { promptForSelection } from "../utils/prompt-selection.js";
 import type { ConfigManager, AccountConfig } from "./config-manager.js";
 import type { App, ControlApi, Key } from "./control-api.js";
 
@@ -19,22 +19,6 @@ export class InteractiveHelper {
   }
 
   /**
-   * Confirm an action with the user
-   */
-  async confirm(message: string): Promise<boolean> {
-    const { confirmed } = await inquirer.prompt<{ confirmed: boolean }>([
-      {
-        default: false,
-        message,
-        name: "confirmed",
-        type: "confirm",
-      },
-    ]);
-
-    return confirmed;
-  }
-
-  /**
    * Interactively select an account from the list of configured accounts
    */
   async selectAccount(): Promise<{
@@ -52,26 +36,17 @@ export class InteractiveHelper {
         return null;
       }
 
-      const { selectedAccount } = await inquirer.prompt<{
-        selectedAccount: { account: AccountConfig; alias: string };
-      }>([
-        {
-          choices: accounts.map((account) => {
-            const isCurrent = account.alias === currentAlias;
-            const accountInfo = account.account.accountName;
-            const userInfo = account.account.userEmail;
-            return {
-              name: `${isCurrent ? "* " : "  "}${account.alias} (${accountInfo}, ${userInfo})`,
-              value: account,
-            };
-          }),
-          message: "Select an account:",
-          name: "selectedAccount",
-          type: "list",
-        },
-      ]);
+      const choices = accounts.map((account) => {
+        const isCurrent = account.alias === currentAlias;
+        const accountInfo = account.account.accountName;
+        const userInfo = account.account.userEmail;
+        return {
+          name: `${isCurrent ? "* " : "  "}${account.alias} (${accountInfo}, ${userInfo})`,
+          value: account,
+        };
+      });
 
-      return selectedAccount;
+      return await promptForSelection("Select an account:", choices);
     } catch (error) {
       if (this.logErrors) {
         console.error("Error selecting account:", error);
@@ -94,19 +69,12 @@ export class InteractiveHelper {
         return null;
       }
 
-      const { selectedApp } = await inquirer.prompt<{ selectedApp: App }>([
-        {
-          choices: apps.map((app) => ({
-            name: `${app.name} (${app.id})`,
-            value: app,
-          })),
-          message: "Select an app:",
-          name: "selectedApp",
-          type: "list",
-        },
-      ]);
+      const choices = apps.map((app) => ({
+        name: `${app.name} (${app.id})`,
+        value: app,
+      }));
 
-      return selectedApp;
+      return await promptForSelection("Select an app:", choices);
     } catch (error) {
       if (this.logErrors) {
         console.error("Error fetching apps:", error);
@@ -127,19 +95,12 @@ export class InteractiveHelper {
         return null;
       }
 
-      const { selectedKey } = await inquirer.prompt<{ selectedKey: Key }>([
-        {
-          choices: keys.map((key) => ({
-            name: `${key.name || "Unnamed key"} (${key.id})`,
-            value: key,
-          })),
-          message: "Select a key:",
-          name: "selectedKey",
-          type: "list",
-        },
-      ]);
+      const choices = keys.map((key) => ({
+        name: `${key.name || "Unnamed key"} (${key.id})`,
+        value: key,
+      }));
 
-      return selectedKey;
+      return await promptForSelection("Select a key:", choices);
     } catch (error) {
       if (this.logErrors) {
         console.error("Error fetching keys:", error);
