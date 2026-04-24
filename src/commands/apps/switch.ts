@@ -30,7 +30,14 @@ export default class AppsSwitch extends ControlBaseCommand {
     try {
       const controlApi = this.createControlApi(flags);
 
-      // If app name or ID is provided, resolve and switch directly
+      // If app name or ID is provided, resolve and switch directly.
+      // The appNameOrId arg accepts two formats:
+      //   1. App name  — e.g. "My App"  (human-readable, may contain spaces)
+      //   2. App ID    — e.g. "s57drg"  (the Ably-assigned app ID)
+      //
+      // Resolution is handled by resolveAppIdFromNameOrId() which lists all
+      // apps and matches by name or ID. When omitted, an interactive prompt
+      // is shown.
       if (args.appNameOrId) {
         const appId = await this.resolveAppIdFromNameOrId(
           args.appNameOrId,

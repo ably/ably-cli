@@ -41,7 +41,13 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
 
     try {
       const controlApi = this.createControlApi(flags);
-      // Get all queues and find by name or ID
+      // Resolve the queue. The queueNameOrId arg accepts two formats:
+      //   1. Queue name  — e.g. "my-queue"                 (human-readable)
+      //   2. Queue ID    — e.g. "28AB1a:my-queue"          (Ably-assigned)
+      //
+      // Name is tried first since it's the more common input. Queues have
+      // distinct name and id fields, unlike channel rules where they are
+      // the same value.
       const queues = await controlApi.listQueues(appId);
       const queue =
         queues.find((q) => q.name === args.queueNameOrId) ??

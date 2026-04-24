@@ -47,6 +47,12 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
       );
     }
 
+    // The appNameOrId arg accepts two formats:
+    //   1. App name  — e.g. "My App"  (human-readable, may contain spaces)
+    //   2. App ID    — e.g. "s57drg"  (the Ably-assigned app ID)
+    //
+    // Resolution is handled by resolveAppIdFromNameOrId() which lists all
+    // apps and matches by name or ID, always returning the app ID.
     const appId = await this.resolveAppIdFromNameOrId(args.appNameOrId, flags);
 
     try {

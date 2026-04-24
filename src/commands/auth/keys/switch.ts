@@ -2,14 +2,13 @@ import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { ControlApi } from "../../../services/control-api.js";
-import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
 import { formatResource } from "../../../utils/output.js";
 
 export default class KeysSwitchCommand extends ControlBaseCommand {
   static args = {
     keyNameOrValue: Args.string({
       description:
-        "Key name (APP_ID.KEY_ID) or full value of the key to switch to",
+        "Key name (APP_ID.KEY_ID), key ID, key label (e.g. Root), or full key value",
       required: false,
     }),
   };
@@ -19,6 +18,7 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
   static examples = [
     "$ ably auth keys switch",
     "$ ably auth keys switch APP_ID.KEY_ID",
+    '$ ably auth keys switch Root --app "My App"',
     "$ ably auth keys switch KEY_ID --app APP_ID",
     "$ ably auth keys switch --json",
   ];
@@ -34,27 +34,50 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(KeysSwitchCommand);
 
-    let keyId: string | undefined = args.keyNameOrValue;
-    let extractedAppId: string | undefined;
+    const keyIdentifier = args.keyNameOrValue;
+    let appId: string | undefined;
 
-    if (args.keyNameOrValue) {
-      const parsed = parseKeyIdentifier(args.keyNameOrValue);
-      if (parsed.appId) extractedAppId = parsed.appId;
-      keyId = parsed.keyId;
+    // Resolve appId. The keyNameOrValue arg accepts four formats:
+    //   1. Full key value  — "APP_ID.KEY_ID:SECRET"  (contains ":" and ".")
+    //   2. Key name        — "APP_ID.KEY_ID"          (contains ".", no ":")
+    //   3. Key ID          — "KEY_ID"                  (no "." or ":")
+    //   4. Key label       — "Root"                    (free-text, no "." or ":")
+    //
+    // For formats 1 & 2 the appId is embedded in the identifier and extracted
+    // below. For formats 3 & 4 an explicit --app flag or current app is needed.
+    // The actual key matching (by all four formats) is handled by getKey().
+    if (flags.app) {
+      appId = await this.resolveAppIdFromNameOrId(flags.app, flags);
     }
 
-    const appId = extractedAppId ?? (await this.requireAppId(flags));
+    if (!appId && keyIdentifier?.includes(".")) {
+      if (keyIdentifier.includes(":")) {
+        // Format 1: full key value — extract appId before the first dot
+        appId = keyIdentifier.split(".")[0];
+      } else {
+        // Format 2: key name — extract appId when exactly "APP_ID.KEY_ID"
+        const parts = keyIdentifier.split(".");
+        if (parts.length === 2) {
+          appId = parts[0];
+        }
+      }
+    }
+
+    // Formats 3 & 4 (key ID or label) — fall back to --app or current app
+    if (!appId) {
+      appId = await this.requireAppId(flags);
+    }
 
     try {
       const controlApi = this.createControlApi(flags);
       // Get current app name (if available) to preserve it
       const existingAppName = this.configManager.getAppName(appId);
 
-      // If key ID or value is provided, switch directly
-      if (args.keyNameOrValue && keyId) {
+      // If a key identifier is provided, resolve and switch directly
+      if (keyIdentifier) {
         await this.switchToKey(
           appId,
-          keyId,
+          keyIdentifier,
           controlApi,
           flags,
           existingAppName,

@@ -41,23 +41,33 @@ export default class KeysGetCommand extends ControlBaseCommand {
     let appId: string | undefined;
     const keyIdentifier = args.keyNameOrValue;
 
-    // If flags.app is set, resolve it (could be a name or ID)
+    // Resolve appId. The keyNameOrValue arg accepts four formats:
+    //   1. Full key value  — "APP_ID.KEY_ID:SECRET"  (contains ":" and ".")
+    //   2. Key name        — "APP_ID.KEY_ID"          (contains ".", no ":")
+    //   3. Key ID          — "KEY_ID"                  (no "." or ":")
+    //   4. Key label       — "Root"                    (free-text, no "." or ":")
+    //
+    // For formats 1 & 2 the appId is embedded in the identifier and extracted
+    // below. For formats 3 & 4 an explicit --app flag or current app is needed.
+    // The actual key matching (by all four formats) is handled by getKey().
     if (flags.app) {
       appId = await this.resolveAppIdFromNameOrId(flags.app, flags);
     }
 
-    // If keyNameOrValue is in APP_ID.KEY_ID format (one period, no colon), extract appId.
-    // Only attempt this when no appId is already known (from --app flag or current app),
-    // to avoid misinterpreting labels containing periods (e.g. "v1.0") as APP_ID.KEY_ID.
-    // When appId IS known, the full identifier is passed to getKey() which matches by
-    // label, key ID, APP_ID.KEY_ID format, or full key value.
-    if (!appId && keyIdentifier.includes(".") && !keyIdentifier.includes(":")) {
-      const parts = keyIdentifier.split(".");
-      if (parts.length === 2) {
-        appId = parts[0];
+    if (!appId && keyIdentifier.includes(".")) {
+      if (keyIdentifier.includes(":")) {
+        // Format 1: full key value — extract appId before the first dot
+        appId = keyIdentifier.split(".")[0];
+      } else {
+        // Format 2: key name — extract appId when exactly "APP_ID.KEY_ID"
+        const parts = keyIdentifier.split(".");
+        if (parts.length === 2) {
+          appId = parts[0];
+        }
       }
     }
 
+    // Formats 3 & 4 (key ID or label) — fall back to --app or current app
     if (!appId) {
       appId = await this.requireAppId(flags);
     }

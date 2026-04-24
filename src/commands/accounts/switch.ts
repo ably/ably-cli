@@ -49,7 +49,13 @@ export default class AccountsSwitch extends ControlBaseCommand {
       return;
     }
 
-    // If alias or ID is provided, resolve and switch directly
+    // If alias or ID is provided, resolve and switch directly.
+    // The accountAliasOrId arg accepts two formats:
+    //   1. Account alias  — e.g. "mycompany" (the label set during login)
+    //   2. Account ID     — e.g. "VgQpOZ"    (the Ably-assigned account ID)
+    //
+    // Resolution is handled by resolveAccountAlias() which matches alias
+    // first, then accountId. When omitted, an interactive prompt is shown.
     if (args.accountAliasOrId) {
       const resolvedAlias = this.resolveAccountAlias(
         args.accountAliasOrId,

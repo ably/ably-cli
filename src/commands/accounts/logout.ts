@@ -31,7 +31,13 @@ export default class AccountsLogout extends ControlBaseCommand {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(AccountsLogout);
 
-    // Determine which account to log out from
+    // Determine which account to log out from. The accountAliasOrId arg
+    // accepts two formats:
+    //   1. Account alias  — e.g. "mycompany" (the label set during login)
+    //   2. Account ID     — e.g. "VgQpOZ"    (the Ably-assigned account ID)
+    //
+    // Resolution is handled by resolveAccountAlias() which matches alias
+    // first, then accountId. When omitted, the current account is used.
     let targetAlias: string;
     if (args.accountAliasOrId) {
       targetAlias = this.resolveAccountAlias(args.accountAliasOrId, flags);
