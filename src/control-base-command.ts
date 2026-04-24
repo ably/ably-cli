@@ -110,7 +110,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
       }
 
       this.fail(
-        `App "${appNameOrId}" not found. Please provide a valid app ID or name.`,
+        `App "${appNameOrId}" not found. Run "ably apps list" to see available apps.`,
         flags,
         "app",
       );
@@ -206,7 +206,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
 
       if (apps.length === 0) {
         this.fail(
-          "No apps found in your account. Please create an app first.",
+          'No apps found in your account. Run "ably apps create" to create one.',
           flags,
           "app",
         );

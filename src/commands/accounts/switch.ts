@@ -68,7 +68,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
     // Otherwise, show interactive selection if not in JSON mode
     if (this.shouldOutputJson(flags)) {
       this.fail(
-        "No account alias or ID provided. Please specify an account alias or ID to switch to.",
+        'No account alias or ID provided. Run "ably accounts list" to see available accounts.',
         flags,
         "accountSwitch",
         {
@@ -130,7 +130,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
       const accessToken = this.configManager.getAccessToken();
       if (!accessToken) {
         this.fail(
-          "No access token found for this account. Please log in again.",
+          'No access token found for this account. Run "ably accounts login" to log in again.',
           flags,
           "accountSwitch",
         );

@@ -167,7 +167,7 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
       );
     } catch {
       this.fail(
-        `Key "${keyIdentifier}" not found or access denied.`,
+        `Key "${keyIdentifier}" not found or access denied. Run "ably auth keys list" to see available keys.`,
         flags,
         "keySwitch",
       );

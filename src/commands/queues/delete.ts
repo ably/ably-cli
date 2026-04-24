@@ -55,10 +55,9 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
 
       if (!queue) {
         this.fail(
-          `Queue "${args.queueNameOrId}" not found`,
+          `Queue "${args.queueNameOrId}" not found. Run "ably queues list" to see available queues.`,
           flags,
           "queueDelete",
-          { hint: 'Run "ably queues list" to see available queues.' },
         );
       }
 

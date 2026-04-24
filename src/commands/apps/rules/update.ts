@@ -129,13 +129,10 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
 
       if (!namespace) {
         this.fail(
-          `Rule "${args.ruleNameOrId}" not found`,
+          `Rule "${args.ruleNameOrId}" not found. Run "ably apps rules list" to see available rules.`,
           flags,
           "ruleUpdate",
-          {
-            appId,
-            hint: 'Run "ably apps rules list" to see available rules.',
-          },
+          { appId },
         );
       }
 

@@ -49,13 +49,10 @@ export default class RulesDeleteCommand extends ControlBaseCommand {
 
       if (!namespace) {
         this.fail(
-          `Rule "${args.ruleNameOrId}" not found`,
+          `Rule "${args.ruleNameOrId}" not found. Run "ably apps rules list" to see available rules.`,
           flags,
           "ruleDelete",
-          {
-            appId,
-            hint: 'Run "ably apps rules list" to see available rules.',
-          },
+          { appId },
         );
       }
 

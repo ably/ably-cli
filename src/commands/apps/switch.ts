@@ -42,7 +42,7 @@ export default class AppsSwitch extends ControlBaseCommand {
 
         if (!matchedApp) {
           this.fail(
-            `App "${args.appNameOrId}" not found. Please provide a valid app ID or name.`,
+            `App "${args.appNameOrId}" not found. Run "ably apps list" to see available apps.`,
             flags,
             "appSwitch",
           );
