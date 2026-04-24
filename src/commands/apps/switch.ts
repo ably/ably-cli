@@ -1,7 +1,6 @@
 import { Args } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { ControlApi } from "../../services/control-api.js";
 import { formatResource } from "../../utils/output.js";
 
 export default class AppsSwitch extends ControlBaseCommand {
@@ -35,15 +34,21 @@ export default class AppsSwitch extends ControlBaseCommand {
       //   1. App name  — e.g. "My App"  (human-readable, may contain spaces)
       //   2. App ID    — e.g. "s57drg"  (the Ably-assigned app ID)
       //
-      // Resolution is handled by resolveAppIdFromNameOrId() which lists all
-      // apps and matches by name or ID. When omitted, an interactive prompt
-      // is shown.
       if (args.appNameOrId) {
-        const appId = await this.resolveAppIdFromNameOrId(
-          args.appNameOrId,
-          flags,
+        const apps = await controlApi.listApps();
+        const matchedApp = apps.find(
+          (a) => a.name === args.appNameOrId || a.id === args.appNameOrId,
         );
-        await this.switchToApp(appId, controlApi, flags);
+
+        if (!matchedApp) {
+          this.fail(
+            `App "${args.appNameOrId}" not found. Please provide a valid app ID or name.`,
+            flags,
+            "appSwitch",
+          );
+        }
+
+        this.saveAndReportSwitch(matchedApp, flags);
         return;
       }
 
@@ -54,22 +59,7 @@ export default class AppsSwitch extends ControlBaseCommand {
       const selectedApp = await this.interactiveHelper.selectApp(controlApi);
 
       if (selectedApp) {
-        // Save the app info and set as current
-        this.configManager.setCurrentApp(selectedApp.id);
-        this.configManager.storeAppInfo(selectedApp.id, {
-          appName: selectedApp.name,
-        });
-        if (this.shouldOutputJson(flags)) {
-          this.logJsonResult(
-            { app: { id: selectedApp.id, name: selectedApp.name } },
-            flags,
-          );
-        } else {
-          this.logSuccessMessage(
-            `Switched to app ${formatResource(selectedApp.name)} (${selectedApp.id}).`,
-            flags,
-          );
-        }
+        this.saveAndReportSwitch(selectedApp, flags);
       } else {
         this.logWarning("App switch cancelled.", flags);
       }
@@ -78,31 +68,20 @@ export default class AppsSwitch extends ControlBaseCommand {
     }
   }
 
-  private async switchToApp(
-    appId: string,
-    controlApi: ControlApi,
+  private saveAndReportSwitch(
+    app: { id: string; name: string },
     flags: Record<string, unknown>,
-  ): Promise<void> {
-    try {
-      // Verify the app exists and get full details for display
-      const app = await controlApi.getApp(appId);
+  ): void {
+    this.configManager.setCurrentApp(app.id);
+    this.configManager.storeAppInfo(app.id, { appName: app.name });
 
-      // Save app info and set as current
-      this.configManager.setCurrentApp(appId);
-      this.configManager.storeAppInfo(appId, { appName: app.name });
-
-      if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ app: { id: app.id, name: app.name } }, flags);
-      } else {
-        this.logSuccessMessage(
-          `Switched to app ${formatResource(app.name)} (${app.id}).`,
-          flags,
-        );
-      }
-    } catch (error) {
-      this.fail(error, flags, "appSwitch", {
-        context: `switching to app "${appId}"`,
-      });
+    if (this.shouldOutputJson(flags)) {
+      this.logJsonResult({ app: { id: app.id, name: app.name } }, flags);
+    } else {
+      this.logSuccessMessage(
+        `Switched to app ${formatResource(app.name)} (${app.id}).`,
+        flags,
+      );
     }
   }
 }

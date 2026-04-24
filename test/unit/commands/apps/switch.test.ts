@@ -37,11 +37,9 @@ describe("apps:switch command", () => {
 
   describe("functionality", () => {
     it("should switch to an app when appId is provided", async () => {
-      // resolveAppIdFromNameOrId and switchToApp->getApp both call listApps(),
-      // which hits /v1/me then /v1/accounts/:id/apps
+      // Single listApps() call: GET /v1/me + GET /v1/accounts/:id/apps
       nockControl()
         .get("/v1/me")
-        .times(2)
         .reply(200, {
           account: { id: mockAccountId, name: mockAccountName },
           user: { email: mockUserEmail },
@@ -49,7 +47,6 @@ describe("apps:switch command", () => {
 
       nockControl()
         .get(`/v1/accounts/${mockAccountId}/apps`)
-        .times(2)
         .reply(200, [
           {
             id: mockAppId,
@@ -73,11 +70,9 @@ describe("apps:switch command", () => {
     });
 
     it("should output JSON when --json flag is used", async () => {
-      // resolveAppIdFromNameOrId and switchToApp->getApp both call listApps(),
-      // which hits /v1/me then /v1/accounts/:id/apps
+      // Single listApps() call: GET /v1/me + GET /v1/accounts/:id/apps
       nockControl()
         .get("/v1/me")
-        .times(2)
         .reply(200, {
           account: { id: mockAccountId, name: mockAccountName },
           user: { email: mockUserEmail },
@@ -85,7 +80,6 @@ describe("apps:switch command", () => {
 
       nockControl()
         .get(`/v1/accounts/${mockAccountId}/apps`)
-        .times(2)
         .reply(200, [
           {
             id: mockAppId,
