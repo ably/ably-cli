@@ -51,9 +51,9 @@ export default class KeysGetCommand extends ControlBaseCommand {
       this.logProgress("Fetching key details", flags);
 
       const controlApi = this.createControlApi(flags);
-      const key = await controlApi.getKey(appId, keyIdentifier);
+      const fullKeyObject = await controlApi.getKey(appId, keyIdentifier);
 
-      const keyName = `${key.appId}.${key.id}`;
+      const keyName = `${fullKeyObject.appId}.${fullKeyObject.id}`;
 
       // Check if env var overrides the current key
       const currentKeyId = this.configManager.getKeyId(appId);
@@ -67,9 +67,9 @@ export default class KeysGetCommand extends ControlBaseCommand {
         this.logJsonResult(
           {
             key: {
-              ...key,
-              created: new Date(key.created).toISOString(),
-              modified: new Date(key.modified).toISOString(),
+              ...fullKeyObject,
+              created: new Date(fullKeyObject.created).toISOString(),
+              modified: new Date(fullKeyObject.modified).toISOString(),
               keyName,
               ...(hasEnvOverride
                 ? {
@@ -86,17 +86,23 @@ export default class KeysGetCommand extends ControlBaseCommand {
       } else {
         this.log(formatHeading("Key Details"));
         this.log(`${formatLabel("Key Name")} ${formatResource(keyName)}`);
-        this.log(`${formatLabel("Key Label")} ${key.name || "Unnamed key"}`);
+        this.log(
+          `${formatLabel("Key Label")} ${fullKeyObject.name || "Unnamed key"}`,
+        );
 
         for (const line of formatCapabilities(
-          key.capability as Record<string, string[] | string>,
+          fullKeyObject.capability as Record<string, string[] | string>,
         )) {
           this.log(line);
         }
 
-        this.log(`${formatLabel("Created")} ${this.formatDate(key.created)}`);
-        this.log(`${formatLabel("Updated")} ${this.formatDate(key.modified)}`);
-        this.log(`${formatLabel("Full key")} ${key.key}`);
+        this.log(
+          `${formatLabel("Created")} ${this.formatDate(fullKeyObject.created)}`,
+        );
+        this.log(
+          `${formatLabel("Updated")} ${this.formatDate(fullKeyObject.modified)}`,
+        );
+        this.log(`${formatLabel("Full key")} ${fullKeyObject.key}`);
 
         if (hasEnvOverride) {
           this.logToStderr("");

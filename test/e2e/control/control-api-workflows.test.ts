@@ -747,7 +747,7 @@ describe("Control API E2E Workflow Tests", () => {
       );
 
       expect(result.exitCode).not.toBe(0);
-      expect(result.stderr + result.stdout).toContain("404");
+      expect(result.stderr + result.stdout).toContain("not found");
     });
 
     it("should validate required parameters", { timeout: 10000 }, async () => {

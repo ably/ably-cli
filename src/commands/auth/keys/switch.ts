@@ -116,16 +116,16 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
 
   private async switchToKey(
     appId: string,
-    keyIdOrValue: string,
+    keyIdentifier: string,
     controlApi: ControlApi,
     flags: Record<string, unknown>,
     existingAppName?: string,
   ): Promise<void> {
     try {
       // Verify the key exists and get full details
-      const key = await controlApi.getKey(appId, keyIdOrValue);
+      const fullKeyObject = await controlApi.getKey(appId, keyIdentifier);
 
-      const keyName = `${appId}.${key.id}`;
+      const keyName = `${appId}.${fullKeyObject.id}`;
 
       // Get app details to ensure we have the app name
       let appName = existingAppName;
@@ -142,10 +142,10 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
       }
 
       // Save to config with metadata
-      this.configManager.storeAppKey(appId, key.key, {
+      this.configManager.storeAppKey(appId, fullKeyObject.key, {
         appName,
-        keyId: key.id,
-        keyName: key.name || "Unnamed key",
+        keyId: fullKeyObject.id,
+        keyName: fullKeyObject.name || "Unnamed key",
       });
 
       if (this.shouldOutputJson(flags)) {
@@ -154,7 +154,7 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
             key: {
               appId,
               keyName,
-              keyLabel: key.name || "Unnamed key",
+              keyLabel: fullKeyObject.name || "Unnamed key",
             },
           },
           flags,
@@ -167,7 +167,7 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
       );
     } catch {
       this.fail(
-        `Key "${keyIdOrValue}" not found or access denied.`,
+        `Key "${keyIdentifier}" not found or access denied.`,
         flags,
         "keySwitch",
       );

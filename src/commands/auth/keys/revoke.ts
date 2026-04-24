@@ -45,18 +45,20 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
     try {
       const controlApi = this.createControlApi(flags);
       // Get the key details first to show info to the user
-      const key = await controlApi.getKey(appId, keyIdentifier);
+      const fullKeyObject = await controlApi.getKey(appId, keyIdentifier);
 
-      const keyName = `${key.appId}.${key.id}`;
+      const keyName = `${fullKeyObject.appId}.${fullKeyObject.id}`;
 
       if (!this.shouldOutputJson(flags)) {
         this.log(`Key to revoke:`);
         this.log(`${formatLabel("Key Name")} ${formatResource(keyName)}`);
-        this.log(`${formatLabel("Key Label")} ${key.name || "Unnamed key"}`);
-        this.log(`${formatLabel("Full key")} ${key.key}`);
+        this.log(
+          `${formatLabel("Key Label")} ${fullKeyObject.name || "Unnamed key"}`,
+        );
+        this.log(`${formatLabel("Full key")} ${fullKeyObject.key}`);
 
         for (const line of formatCapabilities(
-          key.capability as Record<string, string[] | string>,
+          fullKeyObject.capability as Record<string, string[] | string>,
         )) {
           this.log(line);
         }
@@ -84,7 +86,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
         }
       }
 
-      await controlApi.revokeKey(appId, key.id);
+      await controlApi.revokeKey(appId, fullKeyObject.id);
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
@@ -105,7 +107,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
 
       // Check if the revoked key is the current key for this app
       const currentKey = this.configManager.getApiKey(appId);
-      if (currentKey === key.key) {
+      if (currentKey === fullKeyObject.key) {
         if (this.shouldOutputJson(flags)) {
           // Auto-remove in JSON mode — key is already revoked, can't be used
           this.configManager.removeApiKey(appId);

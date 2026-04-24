@@ -62,7 +62,7 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
     try {
       const controlApi = this.createControlApi(flags);
       // Get original key details
-      const originalKey = await controlApi.getKey(appId, keyIdentifier);
+      const fullKeyObject = await controlApi.getKey(appId, keyIdentifier);
 
       // Prepare the update data
       const updateData: {
@@ -85,7 +85,7 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
       // Update the key
       const updatedKey = await controlApi.updateKey(
         appId,
-        originalKey.id,
+        fullKeyObject.id,
         updateData,
       );
 
@@ -95,13 +95,13 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
         const keyData: Record<string, unknown> = { keyName };
         if (flags.name) {
           keyData.name = {
-            before: originalKey.name || "Unnamed key",
+            before: fullKeyObject.name || "Unnamed key",
             after: updatedKey.name || "Unnamed key",
           };
         }
         if (flags.capabilities) {
           keyData.capabilities = {
-            before: originalKey.capability,
+            before: fullKeyObject.capability,
             after: updatedKey.capability,
           };
         }
@@ -111,14 +111,14 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
 
         if (flags.name) {
           this.log(
-            `${formatLabel("Key Label")} "${originalKey.name || "Unnamed key"}" → "${updatedKey.name || "Unnamed key"}"`,
+            `${formatLabel("Key Label")} "${fullKeyObject.name || "Unnamed key"}" → "${updatedKey.name || "Unnamed key"}"`,
           );
         }
 
         if (flags.capabilities) {
           this.log(`${formatLabel("Capabilities")}`);
           this.log(
-            `  ${formatLabel("Before")} ${formatCapabilityInline(originalKey.capability as Record<string, string[]>)}`,
+            `  ${formatLabel("Before")} ${formatCapabilityInline(fullKeyObject.capability as Record<string, string[]>)}`,
           );
           this.log(
             `  ${formatLabel("After")} ${formatCapabilityInline(updatedKey.capability as Record<string, string[]>)}`,
