@@ -1,13 +1,12 @@
 import { Args } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
-import { ControlApi } from "../../services/control-api.js";
 import { formatResource } from "../../utils/output.js";
 
 export default class AppsSwitch extends ControlBaseCommand {
   static override args = {
-    appId: Args.string({
-      description: "ID of the app to switch to",
+    appNameOrId: Args.string({
+      description: "App name or ID to switch to",
       required: false,
     }),
   };
@@ -15,9 +14,9 @@ export default class AppsSwitch extends ControlBaseCommand {
   static override description = "Switch to a different Ably app";
 
   static override examples = [
-    "<%= config.bin %> <%= command.id %> APP_ID",
+    '<%= config.bin %> <%= command.id %> "My App"',
+    "<%= config.bin %> <%= command.id %> app-id",
     "<%= config.bin %> <%= command.id %>",
-    "<%= config.bin %> <%= command.id %> APP_ID --json",
   ];
 
   static override flags = {
@@ -28,11 +27,28 @@ export default class AppsSwitch extends ControlBaseCommand {
     const { args, flags } = await this.parse(AppsSwitch);
 
     try {
-      const controlApi = this.createControlApi({});
+      const controlApi = this.createControlApi(flags);
 
-      // If app ID is provided, switch directly
-      if (args.appId) {
-        await this.switchToApp(args.appId, controlApi, flags);
+      // If app name or ID is provided, resolve and switch directly.
+      // The appNameOrId arg accepts two formats:
+      //   1. App name  — e.g. "My App"  (human-readable, may contain spaces)
+      //   2. App ID    — e.g. "s57drg"  (the Ably-assigned app ID)
+      //
+      if (args.appNameOrId) {
+        const apps = await controlApi.listApps();
+        const matchedApp = apps.find(
+          (a) => a.name === args.appNameOrId || a.id === args.appNameOrId,
+        );
+
+        if (!matchedApp) {
+          this.fail(
+            `App "${args.appNameOrId}" not found. Run "ably apps list" to see available apps.`,
+            flags,
+            "appSwitch",
+          );
+        }
+
+        this.saveAndReportSwitch(matchedApp, flags);
         return;
       }
 
@@ -43,22 +59,7 @@ export default class AppsSwitch extends ControlBaseCommand {
       const selectedApp = await this.interactiveHelper.selectApp(controlApi);
 
       if (selectedApp) {
-        // Save the app info and set as current
-        this.configManager.setCurrentApp(selectedApp.id);
-        this.configManager.storeAppInfo(selectedApp.id, {
-          appName: selectedApp.name,
-        });
-        if (this.shouldOutputJson(flags)) {
-          this.logJsonResult(
-            { app: { id: selectedApp.id, name: selectedApp.name } },
-            flags,
-          );
-        } else {
-          this.logSuccessMessage(
-            `Switched to app ${formatResource(selectedApp.name)} (${selectedApp.id}).`,
-            flags,
-          );
-        }
+        this.saveAndReportSwitch(selectedApp, flags);
       } else {
         this.logWarning("App switch cancelled.", flags);
       }
@@ -67,31 +68,20 @@ export default class AppsSwitch extends ControlBaseCommand {
     }
   }
 
-  private async switchToApp(
-    appId: string,
-    controlApi: ControlApi,
+  private saveAndReportSwitch(
+    app: { id: string; name: string },
     flags: Record<string, unknown>,
-  ): Promise<void> {
-    try {
-      // Verify the app exists
-      const app = await controlApi.getApp(appId);
+  ): void {
+    this.configManager.setCurrentApp(app.id);
+    this.configManager.storeAppInfo(app.id, { appName: app.name });
 
-      // Save app info and set as current
-      this.configManager.setCurrentApp(appId);
-      this.configManager.storeAppInfo(appId, { appName: app.name });
-
-      if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ app: { id: app.id, name: app.name } }, flags);
-      } else {
-        this.logSuccessMessage(
-          `Switched to app ${formatResource(app.name)} (${app.id}).`,
-          flags,
-        );
-      }
-    } catch (error) {
-      this.fail(error, flags, "appSwitch", {
-        context: `switching to app "${appId}"`,
-      });
+    if (this.shouldOutputJson(flags)) {
+      this.logJsonResult({ app: { id: app.id, name: app.name } }, flags);
+    } else {
+      this.logSuccessMessage(
+        `Switched to app ${formatResource(app.name)} (${app.id}).`,
+        flags,
+      );
     }
   }
 }

@@ -53,6 +53,31 @@ describe("accounts:switch command", () => {
       expect(stdout).toContain(mockUserEmail);
     });
 
+    it("should switch to existing account by account ID", async () => {
+      const mock = getMockConfigManager();
+
+      mock.storeAccount("token_second", "second", {
+        accountId: mockAccountId,
+        accountName: mockAccountName,
+        userEmail: mockUserEmail,
+      });
+
+      nockControl()
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: mockAccountId, name: mockAccountName },
+          user: { email: mockUserEmail },
+        });
+
+      const { stderr } = await runCommand(
+        ["accounts:switch", mockAccountId],
+        import.meta.url,
+      );
+
+      expect(stderr).toContain("Switched to account");
+      expect(mock.getCurrentAccountAlias()).toBe("second");
+    });
+
     it("should error on nonexistent alias", async () => {
       const { error } = await runCommand(
         ["accounts:switch", "nonexistent-alias"],

@@ -7,8 +7,8 @@ import { formatResource } from "../../utils/output.js";
 
 export default class AccountsSwitch extends ControlBaseCommand {
   static override args = {
-    accountAlias: Args.string({
-      description: "Alias of the account to switch to",
+    accountAliasOrId: Args.string({
+      description: "Alias or ID of the account to switch to",
       required: false,
     }),
   };
@@ -18,6 +18,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
   static override examples = [
     "<%= config.bin %> <%= command.id %>",
     "<%= config.bin %> <%= command.id %> mycompany",
+    "<%= config.bin %> <%= command.id %> VgQpOZ",
     "<%= config.bin %> <%= command.id %> --json",
     "<%= config.bin %> <%= command.id %> --pretty-json",
   ];
@@ -48,16 +49,26 @@ export default class AccountsSwitch extends ControlBaseCommand {
       return;
     }
 
-    // If alias is provided, switch directly
-    if (args.accountAlias) {
-      await this.switchToAccount(args.accountAlias, accounts, flags);
+    // If alias or ID is provided, resolve and switch directly.
+    // The accountAliasOrId arg accepts two formats:
+    //   1. Account alias  — e.g. "mycompany" (the label set during login)
+    //   2. Account ID     — e.g. "VgQpOZ"    (the Ably-assigned account ID)
+    //
+    // Resolution is handled by resolveAccountAlias() which matches alias
+    // first, then accountId. When omitted, an interactive prompt is shown.
+    if (args.accountAliasOrId) {
+      const resolvedAlias = this.resolveAccountAlias(
+        args.accountAliasOrId,
+        flags,
+      );
+      await this.switchToAccount(resolvedAlias, accounts, flags);
       return;
     }
 
     // Otherwise, show interactive selection if not in JSON mode
     if (this.shouldOutputJson(flags)) {
       this.fail(
-        "No account alias provided. Please specify an account alias to switch to.",
+        'No account alias or ID provided. Run "ably accounts list" to see available accounts.',
         flags,
         "accountSwitch",
         {
@@ -119,7 +130,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
       const accessToken = this.configManager.getAccessToken();
       if (!accessToken) {
         this.fail(
-          "No access token found for this account. Please log in again.",
+          'No access token found for this account. Run "ably accounts login" to log in again.',
           flags,
           "accountSwitch",
         );

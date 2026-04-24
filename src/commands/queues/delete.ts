@@ -7,8 +7,8 @@ import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class QueuesDeleteCommand extends ControlBaseCommand {
   static args = {
-    queueId: Args.string({
-      description: "ID of the queue to delete",
+    queueNameOrId: Args.string({
+      description: "Name or ID of the queue to delete",
       required: true,
     }),
   };
@@ -16,10 +16,10 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
   static description = "Delete a queue";
 
   static examples = [
-    "$ ably queues delete appAbc:us-east-1-a:foo",
-    '$ ably queues delete appAbc:us-east-1-a:foo --app "My App"',
-    "$ ably queues delete appAbc:us-east-1-a:foo --force",
-    "$ ably queues delete appAbc:us-east-1-a:foo --json",
+    '$ ably queues delete "my-queue"',
+    '$ ably queues delete "my-queue" --app "My App"',
+    '$ ably queues delete "my-queue" --force',
+    '$ ably queues delete "my-queue" --json',
   ];
 
   static flags = {
@@ -33,21 +33,29 @@ export default class QueuesDeleteCommand extends ControlBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(QueuesDeleteCommand);
-    if (!args.queueId.trim()) {
-      this.fail("Queue ID cannot be empty", flags, "parse");
+    if (!args.queueNameOrId.trim()) {
+      this.fail("Queue name or ID cannot be empty", flags, "parse");
     }
 
     const appId = await this.requireAppId(flags);
 
     try {
       const controlApi = this.createControlApi(flags);
-      // Get all queues and find the one we want to delete by ID
+      // Resolve the queue. The queueNameOrId arg accepts two formats:
+      //   1. Queue name  — e.g. "my-queue"                 (human-readable)
+      //   2. Queue ID    — e.g. "28AB1a:my-queue"          (Ably-assigned)
+      //
+      // Name is tried first since it's the more common input. Queues have
+      // distinct name and id fields, unlike channel rules where they are
+      // the same value.
       const queues = await controlApi.listQueues(appId);
-      const queue = queues.find((q) => q.id === args.queueId);
+      const queue =
+        queues.find((q) => q.name === args.queueNameOrId) ??
+        queues.find((q) => q.id === args.queueNameOrId);
 
       if (!queue) {
         this.fail(
-          `Queue with ID "${args.queueId}" not found`,
+          `Queue "${args.queueNameOrId}" not found. Run "ably queues list" to see available queues.`,
           flags,
           "queueDelete",
         );

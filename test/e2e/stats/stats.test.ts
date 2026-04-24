@@ -229,8 +229,7 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
 
           // Either success or an error about no app ID selected (which is expected without config)
           expect(
-            result.exitCode === 0 ||
-              result.stderr.includes("No app ID provided"),
+            result.exitCode === 0 || result.stderr.includes("No app specified"),
           ).toBe(true);
         },
       );

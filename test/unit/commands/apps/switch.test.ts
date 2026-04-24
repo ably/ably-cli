@@ -14,12 +14,17 @@ import {
 
 describe("apps:switch command", () => {
   let mockAccountId: string;
+  let mockAccountName: string;
+  let mockUserEmail: string;
   let mockAppId: string;
   const mockAppName = "Switched App";
 
   beforeEach(() => {
     const mockConfig = getMockConfigManager();
-    mockAccountId = mockConfig.getCurrentAccount()!.accountId!;
+    const account = mockConfig.getCurrentAccount()!;
+    mockAccountId = account.accountId!;
+    mockAccountName = account.accountName!;
+    mockUserEmail = account.userEmail!;
     mockAppId = mockConfig.getCurrentAppId()!;
   });
 
@@ -32,11 +37,12 @@ describe("apps:switch command", () => {
 
   describe("functionality", () => {
     it("should switch to an app when appId is provided", async () => {
+      // Single listApps() call: GET /v1/me + GET /v1/accounts/:id/apps
       nockControl()
         .get("/v1/me")
         .reply(200, {
-          account: { id: mockAccountId, name: "Test Account" },
-          user: { email: "test@example.com" },
+          account: { id: mockAccountId, name: mockAccountName },
+          user: { email: mockUserEmail },
         });
 
       nockControl()
@@ -64,11 +70,12 @@ describe("apps:switch command", () => {
     });
 
     it("should output JSON when --json flag is used", async () => {
+      // Single listApps() call: GET /v1/me + GET /v1/accounts/:id/apps
       nockControl()
         .get("/v1/me")
         .reply(200, {
-          account: { id: mockAccountId, name: "Test Account" },
-          user: { email: "test@example.com" },
+          account: { id: mockAccountId, name: mockAccountName },
+          user: { email: mockUserEmail },
         });
 
       nockControl()
@@ -110,8 +117,8 @@ describe("apps:switch command", () => {
       nockControl()
         .get("/v1/me")
         .reply(200, {
-          account: { id: mockAccountId, name: "Test Account" },
-          user: { email: "test@example.com" },
+          account: { id: mockAccountId, name: mockAccountName },
+          user: { email: mockUserEmail },
         });
 
       nockControl().get(`/v1/accounts/${mockAccountId}/apps`).reply(200, []);
