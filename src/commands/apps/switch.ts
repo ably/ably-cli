@@ -84,7 +84,7 @@ export default class AppsSwitch extends ControlBaseCommand {
     flags: Record<string, unknown>,
   ): Promise<void> {
     try {
-      // Verify the app exists
+      // Verify the app exists and get full details for display
       const app = await controlApi.getApp(appId);
 
       // Save app info and set as current

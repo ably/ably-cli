@@ -50,7 +50,9 @@ export default class AccountsLogout extends ControlBaseCommand {
           "accountLogout",
         );
       }
-      targetAlias = currentAlias;
+      // Validate that the current alias still exists in the accounts list.
+      // This catches stale config where current.account points to a removed alias.
+      targetAlias = this.resolveAccountAlias(currentAlias, flags);
     }
 
     // In JSON mode, require --force to prevent accidental destructive actions

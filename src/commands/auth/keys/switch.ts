@@ -35,38 +35,10 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
     const { args, flags } = await this.parse(KeysSwitchCommand);
 
     const keyIdentifier = args.keyNameOrValue;
-    let appId: string | undefined;
 
-    // Resolve appId. The keyNameOrValue arg accepts four formats:
-    //   1. Full key value  — "APP_ID.KEY_ID:SECRET"  (contains ":" and ".")
-    //   2. Key name        — "APP_ID.KEY_ID"          (contains ".", no ":")
-    //   3. Key ID          — "KEY_ID"                  (no "." or ":")
-    //   4. Key label       — "Root"                    (free-text, no "." or ":")
-    //
-    // For formats 1 & 2 the appId is embedded in the identifier and extracted
-    // below. For formats 3 & 4 an explicit --app flag or current app is needed.
-    // The actual key matching (by all four formats) is handled by getKey().
-    if (flags.app) {
-      appId = await this.resolveAppIdFromNameOrId(flags.app, flags);
-    }
-
-    if (!appId && keyIdentifier?.includes(".")) {
-      if (keyIdentifier.includes(":")) {
-        // Format 1: full key value — extract appId before the first dot
-        appId = keyIdentifier.split(".")[0];
-      } else {
-        // Format 2: key name — extract appId when exactly "APP_ID.KEY_ID"
-        const parts = keyIdentifier.split(".");
-        if (parts.length === 2) {
-          appId = parts[0];
-        }
-      }
-    }
-
-    // Formats 3 & 4 (key ID or label) — fall back to --app or current app
-    if (!appId) {
-      appId = await this.requireAppId(flags);
-    }
+    // Resolve appId from the key identifier (handles all four formats:
+    // full key value, key name, key ID, key label). See resolveAppIdForKey().
+    const appId = await this.resolveAppIdForKey(keyIdentifier, flags);
 
     try {
       const controlApi = this.createControlApi(flags);
