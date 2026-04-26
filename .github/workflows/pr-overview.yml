@@ -12,7 +12,11 @@ permissions:
 jobs:
   generate-overview:
     name: Generate PR Overview
-    if: github.event.pull_request.draft == false
+    # Dependabot PRs don't have access to CLAUDE_APP_ID / CLAUDE_APP_PRIVATE_KEY
+    # (those secrets aren't mirrored into the Dependabot secret scope), so the
+    # job would always fail with "'client-id' input must be set to a non-empty
+    # string". A generated overview isn't useful for dependency bumps anyway.
+    if: github.event.pull_request.draft == false && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
