@@ -171,6 +171,46 @@ describe("apps:update command", () => {
       expect(result!.app).toHaveProperty("name", updatedName);
     });
 
+    it("should update an app by name", async () => {
+      const mock = getMockConfigManager();
+      const accountId = mock.getCurrentAccount()!.accountId;
+      const appId = mock.getCurrentAppId()!;
+      const updatedName = "UpdatedAppName";
+      const appName = "TestApp";
+
+      // Mock app resolution with a matching app name
+      nockControl()
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: accountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
+      nockControl()
+        .get(`/v1/accounts/${accountId}/apps`)
+        .reply(200, [{ id: appId, name: appName, accountId }]);
+
+      nockControl()
+        .patch(`/v1/apps/${appId}`, {
+          name: updatedName,
+        })
+        .reply(200, {
+          id: appId,
+          accountId: accountId,
+          name: updatedName,
+          status: "active",
+          created: Date.now(),
+          modified: Date.now(),
+          tlsOnly: false,
+        });
+
+      const { stderr } = await runCommand(
+        ["apps:update", appName, "--name", updatedName],
+        import.meta.url,
+      );
+
+      expect(stderr).toContain("App updated successfully");
+    });
+
     it("should use ABLY_ACCESS_TOKEN environment variable when provided", async () => {
       const mock = getMockConfigManager();
       const accountId = mock.getCurrentAccount()!.accountId;

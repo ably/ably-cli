@@ -59,6 +59,37 @@ describe("stats:app command", () => {
       expect(stdout).toContain("2023-01-01");
     });
 
+    it("should display app stats by app name", async () => {
+      const mockConfig = getMockConfigManager();
+      const accountId = mockConfig.getCurrentAccount()!.accountId;
+      const appName = "TestApp";
+
+      // Mock app resolution returning an app whose name matches
+      nockControl()
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: accountId, name: "Test Account" },
+          user: { email: "test@example.com" },
+        });
+      nockControl()
+        .get(`/v1/accounts/${accountId}/apps`)
+        .reply(200, [{ id: appId, name: appName, accountId }]);
+
+      const scope = nockControl()
+        .get(`/v1/apps/${appId}/stats`)
+        .query(true)
+        .reply(200, mockStatsData);
+
+      const { stdout, error } = await runCommand(
+        ["stats:app", appName, "--start", "1h"],
+        import.meta.url,
+      );
+
+      expect(error).toBeUndefined();
+      expect(scope.isDone()).toBe(true);
+      expect(stdout).toContain("2023-01-01");
+    });
+
     it("should accept ISO 8601 for --start and --end", async () => {
       mockAppResolution(appId);
       const scope = nockControl()

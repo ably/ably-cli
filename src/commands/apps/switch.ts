@@ -33,7 +33,6 @@ export default class AppsSwitch extends ControlBaseCommand {
       // The appNameOrId arg accepts two formats:
       //   1. App name  — e.g. "My App"  (human-readable, may contain spaces)
       //   2. App ID    — e.g. "s57drg"  (the Ably-assigned app ID)
-      //
       if (args.appNameOrId) {
         const apps = await controlApi.listApps();
         const matchedApp = apps.find(

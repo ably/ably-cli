@@ -37,7 +37,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
     if (accounts.length === 0) {
       if (this.shouldOutputJson(flags)) {
         this.fail(
-          'No accounts configured. Use "ably accounts login" to add an account.',
+          'No accounts configured. Run "ably accounts login" to add an account.',
           flags,
           "accountSwitch",
         );
@@ -53,15 +53,12 @@ export default class AccountsSwitch extends ControlBaseCommand {
     // The accountAliasOrId arg accepts two formats:
     //   1. Account alias  — e.g. "mycompany" (the label set during login)
     //   2. Account ID     — e.g. "VgQpOZ"    (the Ably-assigned account ID)
-    //
-    // Resolution is handled by resolveAccountAlias() which matches alias
-    // first, then accountId. When omitted, an interactive prompt is shown.
     if (args.accountAliasOrId) {
       const resolvedAlias = this.resolveAccountAlias(
         args.accountAliasOrId,
         flags,
       );
-      await this.switchToAccount(resolvedAlias, accounts, flags);
+      await this.switchToAccount(resolvedAlias, flags);
       return;
     }
 
@@ -85,7 +82,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
     const selectedAccount = await this.interactiveHelper.selectAccount();
 
     if (selectedAccount) {
-      await this.switchToAccount(selectedAccount.alias, accounts, flags);
+      await this.switchToAccount(selectedAccount.alias, flags);
     } else {
       this.logWarning("Account switch cancelled.", flags);
     }
@@ -93,31 +90,10 @@ export default class AccountsSwitch extends ControlBaseCommand {
 
   private async switchToAccount(
     alias: string,
-    accounts: Array<{
-      account: { accountId: string; accountName: string };
-      alias: string;
-    }>,
     flags: Record<string, unknown>,
   ): Promise<void> {
-    // Check if account exists
-    const accountExists = accounts.some((account) => account.alias === alias);
-
-    if (!accountExists) {
-      this.fail(
-        `Account with alias "${alias}" not found. Use "ably accounts list" to see available accounts.`,
-        flags,
-        "accountSwitch",
-        {
-          availableAccounts: accounts.map(({ account, alias }) => ({
-            alias,
-            id: account.accountId,
-            name: account.accountName,
-          })),
-        },
-      );
-    }
-
-    // Switch to the account
+    // Alias is already validated by resolveAccountAlias() or interactive
+    // selection before reaching this method.
     this.configManager.switchAccount(alias);
 
     // Store custom endpoint if provided

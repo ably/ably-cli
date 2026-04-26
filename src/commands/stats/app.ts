@@ -55,9 +55,6 @@ export default class StatsAppCommand extends StatsBaseCommand {
     // The appNameOrId arg accepts two formats:
     //   1. App name  — e.g. "My App"  (human-readable, may contain spaces)
     //   2. App ID    — e.g. "s57drg"  (the Ably-assigned app ID)
-    //
-    // Resolution is handled by resolveAppIdFromNameOrId() which lists all
-    // apps and matches by name or ID. When omitted, the current app is used.
     if (args.appNameOrId) {
       this.appId = await this.resolveAppIdFromNameOrId(args.appNameOrId, flags);
     } else {

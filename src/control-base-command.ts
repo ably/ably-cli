@@ -140,7 +140,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
     if (byId) return byId.alias;
 
     this.fail(
-      `Account "${aliasOrId}" not found. Use "ably accounts list" to see available accounts.`,
+      `Account "${aliasOrId}" not found. Run "ably accounts list" to see available accounts.`,
       flags,
       "account",
       {

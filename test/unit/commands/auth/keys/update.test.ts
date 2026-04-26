@@ -83,6 +83,33 @@ describe("auth:keys:update command", () => {
       expect(stdout).toContain(`Key Label: "Root" → "NewName"`);
     });
 
+    it("should update key by full key value", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      mockKeysList(appId, [
+        buildMockKey(appId, mockKeyId, { name: "OldName" }),
+      ]);
+
+      nockControl()
+        .patch(`/v1/apps/${appId}/keys/${mockKeyId}`)
+        .reply(200, {
+          id: mockKeyId,
+          appId,
+          name: "NewName",
+          key: `${appId}.${mockKeyId}:secret`,
+          capability: { "*": ["publish", "subscribe"] },
+          created: Date.now(),
+          modified: Date.now(),
+        });
+
+      const { stdout } = await runCommand(
+        ["auth:keys:update", `${appId}.${mockKeyId}:secret`, "--name=NewName"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
+      expect(stdout).toContain(`Key Label: "OldName" → "NewName"`);
+    });
+
     it("should update key capabilities", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       mockKeysList(appId, [buildMockKey(appId, mockKeyId)]);
