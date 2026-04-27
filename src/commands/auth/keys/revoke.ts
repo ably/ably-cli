@@ -1,4 +1,4 @@
-import { Args, Flags } from "@oclif/core";
+import { Args } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { forceFlag } from "../../../flags.js";
@@ -9,7 +9,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
   static args = {
     keyNameOrValue: Args.string({
       description:
-        "Key name (APP_ID.KEY_ID), key ID, key label (e.g. Root), or full key value",
+        'Key name "<appId>.<keyId>" or value "<appId>.<keyId>:<keySecret>"',
       required: true,
     }),
   };
@@ -18,18 +18,12 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
 
   static examples = [
     "$ ably auth keys revoke APP_ID.KEY_ID",
-    '$ ably auth keys revoke Root --app "My App"',
-    "$ ably auth keys revoke KEY_ID --app APP_ID",
     "$ ably auth keys revoke APP_ID.KEY_ID --force",
     "$ ably auth keys revoke APP_ID.KEY_ID --json",
   ];
 
   static flags = {
     ...ControlBaseCommand.globalFlags,
-    app: Flags.string({
-      description: "The app ID or name (defaults to current app)",
-      env: "ABLY_APP_ID",
-    }),
     ...forceFlag,
   };
 
@@ -38,9 +32,8 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
 
     const keyIdentifier = args.keyNameOrValue;
 
-    // Resolve appId from the key identifier (handles all four formats:
-    // full key value, key name, key ID, key label). See resolveAppIdForKey().
-    const appId = await this.resolveAppIdForKey(keyIdentifier, flags);
+    // Extract appId from the key identifier (key name or key value)
+    const appId = this.resolveAppIdForKey(keyIdentifier, flags);
 
     try {
       const controlApi = this.createControlApi(flags);

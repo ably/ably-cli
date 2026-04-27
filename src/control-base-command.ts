@@ -154,46 +154,32 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
   }
 
   /**
-   * Resolve the appId from a key identifier and flags.
+   * Extract the appId from a key identifier.
    *
-   * The keyNameOrValue arg accepts four formats:
-   *   1. Full key value  — "APP_ID.KEY_ID:SECRET"  (contains ":" and ".")
-   *   2. Key name        — "APP_ID.KEY_ID"          (contains ".", no ":")
-   *   3. Key ID          — "KEY_ID"                  (no "." or ":")
-   *   4. Key label       — "Root"                    (free-text, no "." or ":")
-   *
-   * For formats 1 & 2 the appId is embedded in the identifier and extracted.
-   * For formats 3 & 4 an explicit --app flag or current app is needed.
+   * Accepts two formats — both embed the appId:
+   *   1. Key name        — "<appId>.<keyId>"              (contains ".", no ":")
+   *   2. Full key value  — "<appId>.<keyId>:<keySecret>"  (contains ":" and ".")
    */
-  protected async resolveAppIdForKey(
-    keyIdentifier: string | undefined,
+  protected resolveAppIdForKey(
+    keyNameOrValue: string,
     flags: BaseFlags,
-  ): Promise<string> {
-    let appId: string | undefined;
-
-    if (flags.app) {
-      appId = await this.resolveAppIdFromNameOrId(flags.app, flags);
+  ): string {
+    // Both accepted formats always contain "." — reject bare identifiers
+    if (!keyNameOrValue || !keyNameOrValue.includes(".")) {
+      this.fail(
+        `Invalid key identifier "${keyNameOrValue}". Expected key name "<appId>.<keyId>" or full key value "<appId>.<keyId>:<keySecret>". Run "ably auth keys list" to see available keys.`,
+        flags,
+        "keyResolve",
+      );
     }
 
-    if (!appId && keyIdentifier?.includes(".")) {
-      if (keyIdentifier.includes(":")) {
-        // Format 1: full key value — extract appId before the first dot
-        appId = keyIdentifier.split(".")[0];
-      } else {
-        // Format 2: key name — extract appId when exactly "APP_ID.KEY_ID"
-        const parts = keyIdentifier.split(".");
-        if (parts.length === 2) {
-          appId = parts[0];
-        }
-      }
+    if (keyNameOrValue.includes(":")) {
+      // Full key value — appId is before the first dot
+      return keyNameOrValue.split(".")[0]!;
     }
 
-    // Formats 3 & 4 (key ID or label) — fall back to --app or current app
-    if (!appId) {
-      appId = await this.requireAppId(flags);
-    }
-
-    return appId;
+    // Key name — appId is the first segment
+    return keyNameOrValue.split(".")[0]!;
   }
 
   /**

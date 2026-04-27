@@ -8,7 +8,7 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
   static args = {
     keyNameOrValue: Args.string({
       description:
-        "Key name (APP_ID.KEY_ID), key ID, key label (e.g. Root), or full key value",
+        'Key name "<appId>.<keyId>" or value "<appId>.<keyId>:<keySecret>"',
       required: false,
     }),
   };
@@ -18,8 +18,6 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
   static examples = [
     "$ ably auth keys switch",
     "$ ably auth keys switch APP_ID.KEY_ID",
-    '$ ably auth keys switch Root --app "My App"',
-    "$ ably auth keys switch KEY_ID --app APP_ID",
     "$ ably auth keys switch --json",
   ];
 
@@ -36,16 +34,17 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
 
     const keyIdentifier = args.keyNameOrValue;
 
-    // Resolve appId from the key identifier (handles all four formats:
-    // full key value, key name, key ID, key label). See resolveAppIdForKey().
-    const appId = await this.resolveAppIdForKey(keyIdentifier, flags);
+    // When a key identifier is provided, extract appId from it.
+    // Otherwise, resolve appId from --app flag or current app for interactive selection.
+    const appId = keyIdentifier
+      ? this.resolveAppIdForKey(keyIdentifier, flags)
+      : await this.requireAppId(flags);
 
     try {
       const controlApi = this.createControlApi(flags);
-      // Get current app name (if available) to preserve it
       const existingAppName = this.configManager.getAppName(appId);
 
-      // If a key identifier is provided, resolve and switch directly
+      // Key identifier provided — switch directly
       if (keyIdentifier) {
         await this.switchToKey(
           appId,
@@ -57,7 +56,8 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
         return;
       }
 
-      // Otherwise, show interactive selection
+      // No key identifier — show interactive key selection
+
       if (!this.shouldOutputJson(flags)) {
         this.log("Select a key to switch to:");
       }

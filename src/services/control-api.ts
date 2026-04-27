@@ -354,25 +354,25 @@ export class ControlApi {
     return this.request<AppStats[]>(`/apps/${appId}/stats${queryString}`);
   }
 
-  // Get a specific key by ID, key value, key name (APP_ID.KEY_ID), or label
-  async getKey(appId: string, keyIdOrValue: string): Promise<Key> {
+  // Get KEY by Key name "<appId>.<keyId>" or value "<appId>.<keyId>:<keySecret>", keyId or key label
+  async getKey(appId: string, keyIdentifier: string): Promise<Key> {
     const keys = await this.listKeys(appId);
 
     const matchingKey = keys.find((k) => {
       // Full key value (contains colon) e.g. "s57drg.3bnE1Q:secretpart"
-      if (keyIdOrValue.includes(":") && k.key === keyIdOrValue) return true;
+      if (keyIdentifier.includes(":") && k.key === keyIdentifier) return true;
       // Full key name e.g. "s57drg.3bnE1Q"
-      if (keyIdOrValue.includes(".") && `${k.appId}.${k.id}` === keyIdOrValue)
+      if (keyIdentifier.includes(".") && `${k.appId}.${k.id}` === keyIdentifier)
         return true;
       // Key ID only e.g. "3bnE1Q"
-      if (k.id === keyIdOrValue) return true;
+      if (k.id === keyIdentifier) return true;
       // Key label/name e.g. "Root"
-      if (k.name === keyIdOrValue) return true;
+      if (k.name === keyIdentifier) return true;
       return false;
     });
 
     if (!matchingKey) {
-      throw new Error(`Key "${keyIdOrValue}" not found`);
+      throw new Error(`Key "${keyIdentifier}" not found`);
     }
 
     return matchingKey;

@@ -1,4 +1,4 @@
-import { Args, Flags } from "@oclif/core";
+import { Args } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
@@ -13,7 +13,7 @@ export default class KeysGetCommand extends ControlBaseCommand {
   static args = {
     keyNameOrValue: Args.string({
       description:
-        "Key name (APP_ID.KEY_ID), key ID, key label (e.g. Root), or full key value to get details for",
+        'Key name "<appId>.<keyId>" or value "<appId>.<keyId>:<keySecret>"',
       required: true,
     }),
   };
@@ -22,17 +22,11 @@ export default class KeysGetCommand extends ControlBaseCommand {
 
   static examples = [
     "$ ably auth keys get APP_ID.KEY_ID",
-    "$ ably auth keys get Root --app APP_ID",
-    "$ ably auth keys get KEY_ID --app APP_ID",
     "$ ably auth keys get APP_ID.KEY_ID --json",
   ];
 
   static flags = {
     ...ControlBaseCommand.globalFlags,
-    app: Flags.string({
-      description: "The app ID or name (defaults to current app)",
-      env: "ABLY_APP_ID",
-    }),
   };
 
   async run(): Promise<void> {
@@ -40,9 +34,8 @@ export default class KeysGetCommand extends ControlBaseCommand {
 
     const keyIdentifier = args.keyNameOrValue;
 
-    // Resolve appId from the key identifier (handles all four formats:
-    // full key value, key name, key ID, key label). See resolveAppIdForKey().
-    const appId = await this.resolveAppIdForKey(keyIdentifier, flags);
+    // Extract appId from the key identifier (key name or key value)
+    const appId = this.resolveAppIdForKey(keyIdentifier, flags);
 
     // Display authentication information (after app resolution so name→ID is correct)
     await this.showAuthInfoIfNeeded(flags);

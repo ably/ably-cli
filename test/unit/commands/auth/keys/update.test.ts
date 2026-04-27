@@ -3,7 +3,6 @@ import { runCommand } from "@oclif/test";
 import {
   nockControl,
   controlApiCleanup,
-  mockAppResolution,
 } from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 import { parseJsonOutput } from "../../../../helpers/ndjson.js";
@@ -56,31 +55,6 @@ describe("auth:keys:update command", () => {
 
       expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
       expect(stdout).toContain(`Key Label: "OldName" → "NewName"`);
-    });
-
-    it("should update key by label", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      mockKeysList(appId, [buildMockKey(appId, mockKeyId, { name: "Root" })]);
-
-      nockControl()
-        .patch(`/v1/apps/${appId}/keys/${mockKeyId}`)
-        .reply(200, {
-          id: mockKeyId,
-          appId,
-          name: "NewName",
-          key: `${appId}.${mockKeyId}:secret`,
-          capability: { "*": ["publish", "subscribe"] },
-          created: Date.now(),
-          modified: Date.now(),
-        });
-
-      const { stdout } = await runCommand(
-        ["auth:keys:update", "Root", "--name=NewName"],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
-      expect(stdout).toContain(`Key Label: "Root" → "NewName"`);
     });
 
     it("should update key by full key value", async () => {
@@ -217,9 +191,8 @@ describe("auth:keys:update command", () => {
       expect(result.key.name.after).toBe("NewName");
     });
 
-    it("should update key with --app flag", async () => {
+    it("should update key by key name", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      mockAppResolution(appId);
       mockKeysList(appId, [
         buildMockKey(appId, mockKeyId, {
           name: "OldName",
@@ -240,7 +213,7 @@ describe("auth:keys:update command", () => {
         });
 
       const { stdout } = await runCommand(
-        ["auth:keys:update", mockKeyId, "--app", appId, "--name=UpdatedName"],
+        ["auth:keys:update", `${appId}.${mockKeyId}`, "--name=UpdatedName"],
         import.meta.url,
       );
 
