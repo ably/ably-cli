@@ -226,7 +226,7 @@ Property 'x' does not exist on type 'Y'
 **Solution**:
 - Check the exit code to understand what happened (see [Exit Codes documentation](Exit-Codes.md) and [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md#ably_interactive_mode) for interactive mode env vars)
 - Common exit codes:
-  - Exit code 0: Normal successful command completion
+  - Exit code 0: Wrapper (`ably-interactive`) terminated normally
   - Exit code 42: User typed 'exit' in interactive mode (signals wrapper to terminate)
   - Exit code 130: SIGINT/Ctrl+C (double Ctrl+C or force quit)
   - Exit code 143: SIGTERM received

@@ -243,7 +243,7 @@ The system automatically tracks CLI runners per test and provides comprehensive 
 
 ## Related
 
-- [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md) — Complete reference of all CLI environment variables; E2E tests use `E2E_ABLY_API_KEY` and `E2E_ABLY_ACCESS_TOKEN` (mapped internally to `ABLY_API_KEY`/`ABLY_ACCESS_TOKEN`) (see [precedence and resolution details](ENV_VARIABLES_USAGE.md#ably_api_key))
+- [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md) — Complete reference of all CLI environment variables; E2E tests use `E2E_ABLY_API_KEY` (mapped automatically to `ABLY_API_KEY` by the CLI runner) and `E2E_ABLY_ACCESS_TOKEN` (passed explicitly as `ABLY_ACCESS_TOKEN` in test env options) (see [precedence and resolution details](ENV_VARIABLES_USAGE.md#ably_api_key))
 - [Testing Guide](Testing.md) — Test layers, auth in tests, duration defaults, and running tests
 - [Debugging Guide](Debugging.md) — General debugging tips including `DEBUG` env var and Node inspector
 - [Troubleshooting](Troubleshooting.md) — Solutions for common build and test errors (WebSocket mocking, HTTP mocking, memory leaks)

@@ -1,6 +1,6 @@
 # Environment Variables
 
-The Ably CLI supports 25 environment variables for authentication, configuration, behavioral control, and development. This document provides a comprehensive reference for each variable, organized into two main sections:
+The Ably CLI supports following environment variables for authentication, configuration, behavioral control, and development. This document provides a comprehensive reference for each variable, organized into two main sections:
 
 - **[General Usage](#general-usage)** — Variables intended for end users, CI/CD pipelines, and scripts
 - **[Development Stage Usage](#development-stage-usage)** — Variables for CLI contributors, testing, debugging, and internal modes
@@ -20,7 +20,7 @@ The Ably CLI supports 25 environment variables for authentication, configuration
 | [`ABLY_CLI_CONFIG_DIR`](#ably_cli_config_dir) | Configuration | Custom config directory | `~/.ably` |
 | [`ABLY_HISTORY_FILE`](#ably_history_file) | Configuration | Custom history file location | `~/.ably/history` |
 | [`ABLY_CLI_DEFAULT_DURATION`](#ably_cli_default_duration) | Behavior | Auto-exit long-running commands (seconds) | None (forever) |
-| [`ABLY_CLI_NON_INTERACTIVE`](#ably_cli_non_interactive) | Behavior | Skip confirmation prompts | Not set |
+| [`ABLY_CLI_NON_INTERACTIVE`](#ably_cli_non_interactive) | Behavior | Auto-confirm "Did you mean?" prompts | Not set |
 | [`ABLY_ENDPOINT`](#ably_endpoint) | Host Override | Override Realtime/REST API endpoint | SDK default |
 | [`ABLY_CONTROL_HOST`](#ably_control_host) | Host Override | Override Control API host | `control.ably.net` |
 | [`ABLY_DASHBOARD_HOST`](#ably_dashboard_host) | Host Override | Override Ably dashboard URL | `https://ably.com` |
@@ -28,7 +28,7 @@ The Ably CLI supports 25 environment variables for authentication, configuration
 | [`DEBUG`](#debug) | Debugging | oclif framework debug output | Not set |
 | [`TERMINAL_DIAGNOSTICS`](#terminal_diagnostics) | Debugging | Terminal state diagnostics | Not set |
 | [`ABLY_CLI_TEST_MODE`](#ably_cli_test_mode) | Testing | Enable test mode | Not set |
-| [`SKIP_CONFIRMATION`](#skip_confirmation) | Testing | Skip prompts (test alias) | Not set |
+| [`SKIP_CONFIRMATION`](#skip_confirmation) | Testing | Auto-confirm prompts (test alias for `ABLY_CLI_NON_INTERACTIVE`) | Not set |
 | [`GENERATING_DOC`](#generating_doc) | Tooling | Doc generation mode | Not set |
 | [`CI`](#ci) | Environment | CI detection | Not set |
 | [`ABLY_INTERACTIVE_MODE`](#ably_interactive_mode) | Internal | Interactive shell mode flag | Not set |
@@ -54,7 +54,7 @@ Authenticate data plane commands with an Ably API key. Bypasses the login workfl
 | Property | Value |
 | --- | --- |
 | **Format** | `APP_ID.KEY_ID:KEY_SECRET` |
-| **Applicable commands** | `channels`, `rooms`, `spaces`, `connections`, `bench`, `logs`, `stats`, `auth issue-ably-token`, `auth issue-jwt-token`, `auth revoke-token` |
+| **Applicable commands** | `channels`, `rooms`, `spaces`, `connections`, `bench`, `logs`, `auth issue-ably-token`, `auth issue-jwt-token`, `auth revoke-token` |
 | **Precedence** | `ABLY_TOKEN` > **`ABLY_API_KEY`** > config file > interactive prompt |
 
 **Behavior:**
@@ -66,7 +66,7 @@ Authenticate data plane commands with an Ably API key. Bypasses the login workfl
 
 **Key format validation:**
 
-The expected format is `APP_ID.KEY_ID:KEY_SECRET` (exactly one colon and one period separator). In local CLI mode, keys are accepted as-is. A malformed key produces a warning but is still attempted — the Ably SDK returns error code 40100 at connection time if invalid. Invalid keys are automatically removed from local config after a failed connection (auto-removed in JSON mode; user-prompted in interactive mode).
+The expected format is `APP_ID.KEY_ID:KEY_SECRET` (exactly one colon and one period separator). In local CLI mode, keys are accepted without format validation. In web CLI mode, a malformed key produces a warning but is still attempted. In both cases, the Ably SDK returns error code 40100 at connection time if the key is invalid. Keys stored in local config (not env vars) are automatically removed after a failed connection (auto-removed in JSON mode; user-prompted in interactive mode).
 
 **Client ID behavior:**
 
@@ -95,14 +95,14 @@ Authenticate data plane commands with an Ably token or JWT. Has the **highest pr
 | --- | --- |
 | **Format** | Ably token string or JWT string |
 | **Applicable commands** | Same as `ABLY_API_KEY` (data plane commands) |
-| **Precedence** | **`ABLY_TOKEN`** > `ABLY_API_KEY` > `--api-key` flag > config file |
+| **Precedence** | **`ABLY_TOKEN`** > `ABLY_API_KEY` > config file > interactive prompt |
 
 **Behavior:**
 
 - Token is passed directly to the Ably SDK. Skips the interactive app and key selection flow entirely.
 - `--client-id` is **ignored** when `ABLY_TOKEN` is set — the client ID is embedded in the token. A warning is logged if `--client-id` is passed.
 - No `ably accounts login` required.
-- Silently overrides `ABLY_API_KEY` and `--api-key` flag (no conflict warning).
+- Silently overrides `ABLY_API_KEY` and any configured API key (no conflict warning).
 
 **Accepted formats:**
 
@@ -135,7 +135,7 @@ ABLY_TOKEN="$(ably auth issue-ably-token --capability '{"my-channel":["publish",
 
 > **Note:** `ABLY_TOKEN` alone does **not** suppress the "You are not logged in" help prompt (only `ABLY_ACCESS_TOKEN` and `ABLY_API_KEY` do). This does not affect command execution.
 
-> **Important:** `ABLY_TOKEN` cannot be used to issue new tokens. The `auth issue-ably-token` command requires an API key, so `ABLY_TOKEN` is bypassed for that command.
+> **Important:** `ABLY_TOKEN` cannot be used to issue new tokens. The `auth issue-ably-token` command requires an API key. Since `ABLY_TOKEN` has the highest auth priority, it overrides any API key in the client options. If `ABLY_TOKEN` is set while issuing tokens, unset it first or the token issuance will fail: `unset ABLY_TOKEN && ably auth issue-ably-token`.
 
 ---
 
@@ -146,7 +146,7 @@ Authenticate Control API commands with an access token. Used for account-level o
 | Property | Value |
 | --- | --- |
 | **Format** | OAuth 2.0 bearer token string |
-| **Applicable commands** | `accounts`, `apps`, `auth keys`, `integrations`, `queues`, `push` |
+| **Applicable commands** | `accounts`, `apps`, `auth keys`, `integrations`, `queues`, `push`, `stats` |
 | **Precedence** | **`ABLY_ACCESS_TOKEN`** > config file access token |
 
 **Behavior:**
@@ -179,7 +179,7 @@ If you use `ABLY_API_KEY` or `ABLY_TOKEN` without `ABLY_ACCESS_TOKEN` or a logge
 ABLY_ACCESS_TOKEN="your-token" ably apps list --json
 
 # Create a new app
-ABLY_ACCESS_TOKEN="your-token" ably apps create --name "my-new-app"
+ABLY_ACCESS_TOKEN="your-token" ably apps create "my-new-app"
 ```
 
 ---
@@ -190,9 +190,8 @@ ABLY_ACCESS_TOKEN="your-token" ably apps create --name "my-new-app"
 
 1. `ABLY_TOKEN` environment variable (token auth)
 2. `ABLY_API_KEY` environment variable (API key auth)
-3. `--api-key` flag
-4. API key from logged-in account configuration (`~/.ably/config`)
-5. Interactive prompt to select app and key (requires `ABLY_ACCESS_TOKEN` or logged-in account)
+3. API key from logged-in account configuration (`~/.ably/config`)
+4. Interactive prompt to select app and key (requires `ABLY_ACCESS_TOKEN` or logged-in account)
 
 **Control API commands** (accounts, apps, auth keys, etc.):
 
@@ -333,16 +332,17 @@ Skip confirmation prompts for non-interactive/automated use.
 | **Format** | `"true"` |
 
 Specifically affects:
-- Confirmation prompts before destructive operations
-- "Did you mean...?" confirmation for mistyped commands
+- "Did you mean...?" confirmation for mistyped commands (auto-confirms the suggestion)
+- Topic command disambiguation when a parent command is invoked directly
 
-Does **not** affect output formatting, spinners, or other interactive features.
+Does **not** affect destructive operation prompts (those require the `--force` flag), output formatting, spinners, or other interactive features.
 
 **Example:**
 
 ```shell
+# Auto-confirms "Did you mean...?" suggestions without prompting
 export ABLY_CLI_NON_INTERACTIVE=true
-ably apps delete --app my-app --force
+ably chanels publish my-channel "Hello"  # Typo auto-corrects to "channels publish"
 ```
 
 ---
@@ -563,13 +563,13 @@ Used by the test harness (set automatically during test runs). Enables mock conf
 
 #### `SKIP_CONFIRMATION`
 
-Skip confirmation prompts. Functionally identical to `ABLY_CLI_NON_INTERACTIVE`.
+Auto-confirm "Did you mean...?" and topic command prompts. Functionally identical to `ABLY_CLI_NON_INTERACTIVE`.
 
 | Property | Value |
 | --- | --- |
 | **Format** | `"true"` |
 
-Primarily used in test code. For production/CI use, prefer `ABLY_CLI_NON_INTERACTIVE`.
+Primarily used in test code. For production/CI use, prefer `ABLY_CLI_NON_INTERACTIVE`. Does **not** skip destructive operation prompts (use `--force` for those).
 
 ---
 
@@ -716,10 +716,9 @@ Only set when `DEBUG` is not active.
 | `channels` | publish, subscribe, list, history, occupancy, inspect, presence, annotations |
 | `rooms` | messages, presence, typing, reactions, occupancy |
 | `spaces` | locks, cursors, members, locations, occupancy |
-| `connections` | list |
+| `connections` | test |
 | `bench` | publish, subscribe |
 | `logs` | channel-lifecycle, connection-lifecycle, push |
-| `stats` | (all) |
 | `auth` | issue-ably-token, issue-jwt-token, revoke-token |
 
 ### Control API (`ABLY_ACCESS_TOKEN`)
@@ -732,6 +731,7 @@ Only set when `DEBUG` is not active.
 | `integrations` | list, create, delete, update |
 | `queues` | list, create, delete |
 | `push` | device registrations, channel subscriptions, config |
+| `stats` | app, account |
 
 ### Hybrid
 
@@ -750,7 +750,7 @@ Any data plane command when no API key is configured triggers the interactive ap
 | `src/services/config-manager.ts` | `ABLY_CLI_CONFIG_DIR`, `ABLY_API_KEY` |
 | `src/services/history-manager.ts` | `ABLY_HISTORY_FILE` |
 | `src/flags.ts` | `ABLY_SHOW_DEV_FLAGS`, `ABLY_CONTROL_HOST`, `ABLY_DASHBOARD_HOST` |
-| `src/commands/auth/*.ts` (12 files) | `ABLY_APP_ID` |
+| `src/commands/auth/*.ts`, `src/commands/apps/delete.ts`, `src/commands/channels/inspect.ts` (12 files) | `ABLY_APP_ID` |
 | `src/utils/long-running.ts` | `ABLY_CLI_DEFAULT_DURATION` |
 | `src/utils/web-mode.ts` | `ABLY_WEB_CLI_MODE` |
 | `src/utils/test-mode.ts` | `ABLY_CLI_TEST_MODE` |
