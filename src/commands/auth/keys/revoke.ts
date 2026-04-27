@@ -9,7 +9,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
   static args = {
     keyNameOrValue: Args.string({
       description:
-        'Key name "<appId>.<keyId>" or value "<appId>.<keyId>:<keySecret>"',
+        'Key name "<APP_ID>.<KEY_ID>" or value "<APP_ID>.<KEY_ID>:<KEY_SECRET>"',
       required: true,
     }),
   };
@@ -17,9 +17,10 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
   static description = "Revoke an API key (permanently disables the key)";
 
   static examples = [
-    "$ ably auth keys revoke APP_ID.KEY_ID",
-    "$ ably auth keys revoke APP_ID.KEY_ID --force",
-    "$ ably auth keys revoke APP_ID.KEY_ID --json",
+    '$ ably auth keys revoke "APP_ID.KEY_ID"',
+    '$ ably auth keys revoke "APP_ID.KEY_ID:KEY_SECRET"',
+    '$ ably auth keys revoke "APP_ID.KEY_ID" --force',
+    '$ ably auth keys revoke "APP_ID.KEY_ID" --json',
   ];
 
   static flags = {

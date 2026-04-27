@@ -8,7 +8,7 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
   static args = {
     keyNameOrValue: Args.string({
       description:
-        'Key name "<appId>.<keyId>" or value "<appId>.<keyId>:<keySecret>"',
+        'Key name "<APP_ID>.<KEY_ID>" or value "<APP_ID>.<KEY_ID>:<KEY_SECRET>"',
       required: false,
     }),
   };
@@ -17,7 +17,8 @@ export default class KeysSwitchCommand extends ControlBaseCommand {
 
   static examples = [
     "$ ably auth keys switch",
-    "$ ably auth keys switch APP_ID.KEY_ID",
+    '$ ably auth keys switch "APP_ID.KEY_ID"',
+    '$ ably auth keys switch "APP_ID.KEY_ID:KEY_SECRET"',
     "$ ably auth keys switch --json",
   ];
 

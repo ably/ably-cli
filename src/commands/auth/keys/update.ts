@@ -9,7 +9,7 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
   static args = {
     keyNameOrValue: Args.string({
       description:
-        'Key name "<appId>.<keyId>" or value "<appId>.<keyId>:<keySecret>"',
+        'Key name "<APP_ID>.<KEY_ID>" or value "<APP_ID>.<KEY_ID>:<KEY_SECRET>"',
       required: true,
     }),
   };
@@ -17,9 +17,10 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
   static description = "Update a key's properties";
 
   static examples = [
-    '$ ably auth keys update APP_ID.KEY_ID --name "New Name"',
-    `$ ably auth keys update APP_ID.KEY_ID --capabilities '{"channel1":["publish"],"channel2":["subscribe"]}'`,
-    '$ ably auth keys update APP_ID.KEY_ID --name "New Name" --json',
+    '$ ably auth keys update "APP_ID.KEY_ID" --name "New Name"',
+    '$ ably auth keys update "APP_ID.KEY_ID:KEY_SECRET" --name "New Name"',
+    `$ ably auth keys update "APP_ID.KEY_ID" --capabilities '{"channel1":["publish"],"channel2":["subscribe"]}'`,
+    '$ ably auth keys update "APP_ID.KEY_ID" --name "New Name" --json',
   ];
 
   static flags = {

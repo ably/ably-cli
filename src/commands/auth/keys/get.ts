@@ -13,7 +13,7 @@ export default class KeysGetCommand extends ControlBaseCommand {
   static args = {
     keyNameOrValue: Args.string({
       description:
-        'Key name "<appId>.<keyId>" or value "<appId>.<keyId>:<keySecret>"',
+        'Key name "<APP_ID>.<KEY_ID>" or value "<APP_ID>.<KEY_ID>:<KEY_SECRET>"',
       required: true,
     }),
   };
@@ -21,8 +21,9 @@ export default class KeysGetCommand extends ControlBaseCommand {
   static description = "Get details for a specific key";
 
   static examples = [
-    "$ ably auth keys get APP_ID.KEY_ID",
-    "$ ably auth keys get APP_ID.KEY_ID --json",
+    '$ ably auth keys get "APP_ID.KEY_ID"',
+    '$ ably auth keys get "APP_ID.KEY_ID:KEY_SECRET"',
+    '$ ably auth keys get "APP_ID.KEY_ID" --json',
   ];
 
   static flags = {
