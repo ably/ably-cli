@@ -1,17 +1,8 @@
-import {
-  describe,
-  it,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  expect,
-} from "vitest";
+import { describe, it, beforeEach, afterEach, beforeAll, expect } from "vitest";
 import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
-  forceExit,
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
@@ -26,11 +17,6 @@ describe("Channel History E2E Tests", () => {
     if (SHOULD_SKIP_E2E) {
       return;
     }
-    process.on("SIGINT", forceExit);
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
   });
 
   beforeEach(() => {

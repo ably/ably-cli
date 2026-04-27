@@ -1,15 +1,6 @@
-import {
-  describe,
-  it,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  expect,
-} from "vitest";
+import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import { runCommand } from "../../helpers/command-helpers.js";
 import {
-  forceExit,
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
@@ -25,14 +16,6 @@ const commandOptions = {
 
 // Very simple tests to see if the CLI works at all
 describe("Minimal CLI E2E Tests", () => {
-  beforeAll(() => {
-    process.on("SIGINT", forceExit);
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
-  });
-
   beforeEach(() => {
     resetTestTracking();
     // Clear tracked output files and commands for this test

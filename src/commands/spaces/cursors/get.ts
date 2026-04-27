@@ -49,6 +49,7 @@ export default class SpacesCursorsGet extends SpacesBaseCommand {
         flags,
       );
 
+      await this.waitForCursorsChannelAttachment(flags);
       const allCursors = await this.space!.cursors.getAll();
 
       const cursors: CursorUpdate[] = Object.values(allCursors).filter(

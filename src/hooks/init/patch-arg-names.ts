@@ -3,18 +3,18 @@ import { Hook } from "@oclif/core";
 import { camelToSnake } from "../../help.js";
 
 /**
- * When generating docs (GENERATING_DOC=true), patch camelCase arg names to
- * snake_case so oclif's toUpperCase() produces UPPER_SNAKE_CASE in headings/TOC.
+ * oclif init hook (registered in package.json under oclif.hooks.init).
+ * Runs on every CLI invocation after loading the manifest, before command execution.
  *
- * This complements the same patch in CustomHelp.formatCommand() (src/help.ts),
- * which only covers the help body. The readme generator's commandUsage() has its
- * own toUpperCase() call that runs before formatCommand, so we patch here — in
- * the init hook — to cover all code paths.
+ * Converts camelCase arg names to snake_case on config.commands metadata
+ * (e.g., keyName → key_name) so oclif renders UPPER_SNAKE_CASE in USAGE and
+ * ARGUMENTS sections. This covers missing-arg error output and doc generation
+ * (`pnpm generate-doc`), both of which use the base Help class and bypass our
+ * CustomHelp. CustomHelp.formatCommand() applies the same idempotent transform
+ * for the --help path.
  */
 // eslint-disable-next-line @typescript-eslint/require-await -- oclif Hook type requires async
 const hook: Hook<"init"> = async function ({ config }) {
-  if (process.env.GENERATING_DOC !== "true") return;
-
   for (const command of config.commands) {
     for (const arg of Object.values(command.args)) {
       arg.name = camelToSnake(arg.name);

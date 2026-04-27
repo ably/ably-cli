@@ -1,12 +1,4 @@
-import {
-  describe,
-  it,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  expect,
-} from "vitest";
+import { describe, it, beforeEach, afterEach, beforeAll, expect } from "vitest";
 import {
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
@@ -14,7 +6,6 @@ import {
   runLongRunningBackgroundProcess,
   runBackgroundProcessAndGetOutput,
   killProcess,
-  forceExit,
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
@@ -29,11 +20,6 @@ describe("Channel Occupancy E2E Tests", () => {
     if (SHOULD_SKIP_E2E) {
       return;
     }
-    process.on("SIGINT", forceExit);
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
   });
 
   let occupancyChannel: string;

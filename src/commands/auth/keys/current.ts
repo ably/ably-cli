@@ -2,6 +2,10 @@ import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
+import {
+  extractAppIdFromApiKey,
+  extractKeyNameFromApiKey,
+} from "../../../utils/api-key.js";
 import { resolveCurrentKeyName } from "../../../utils/key-parsing.js";
 import { formatLabel } from "../../../utils/output.js";
 
@@ -45,8 +49,8 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
       );
     }
 
-    // Extract the key ID (part before the colon)
-    const keyId = this.configManager.getKeyId(appId) || apiKey.split(":")[0]!;
+    const keyId =
+      this.configManager.getKeyId(appId) || extractKeyNameFromApiKey(apiKey);
     const keyLabel = this.configManager.getKeyName(appId) || "Unnamed key";
     const appName = this.configManager.getAppName(appId) || appId;
 
@@ -98,8 +102,8 @@ export default class KeysCurrentCommand extends ControlBaseCommand {
     }
 
     // Parse components from the API key
-    const appId = apiKey.split(".")[0]!;
-    const keyComponents = apiKey.split(":")[0]!.split(".");
+    const appId = extractAppIdFromApiKey(apiKey);
+    const keyComponents = extractKeyNameFromApiKey(apiKey).split(".");
     const keyId = keyComponents.length > 1 ? keyComponents[1] : null;
     const keyName = `${appId}.${keyId || ""}`;
 
