@@ -267,10 +267,12 @@ describe("Auth Info Display", function () {
         controlHost: customHost,
       });
       configManagerStub.getCurrentAppId.mockReturnValue(appId);
-      configManagerStub.getAppName.mockReturnValue();
-      configManagerStub.getApiKey.mockReturnValue();
+      // Reset the parent beforeEach's "Test App" defaults so we exercise the
+      // missing-app-name branch (where ControlApi is consulted).
+      configManagerStub.getAppName.mockReset();
+      configManagerStub.getApiKey.mockReset();
+      configManagerStub.getAppConfig.mockReset();
       configManagerStub.getAccessToken.mockReturnValue("review-access-token");
-      configManagerStub.getAppConfig.mockReturnValue();
 
       const reviewScope = nock(`https://${customHost}`)
         .get("/api/v1/me")
