@@ -193,12 +193,9 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
         }
       }
       if (flags["show-others"]) {
-        this.logListening(
-          "Listening for presence events. Press Ctrl+C to exit.",
-          flags,
-        );
+        this.logListening("Listening for presence events.", flags);
       } else {
-        this.logHolding("Holding presence. Press Ctrl+C to exit.", flags);
+        this.logHolding("Holding presence.", flags);
       }
 
       // Wait until the user interrupts or the optional duration elapses

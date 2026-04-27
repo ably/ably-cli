@@ -273,9 +273,7 @@ export default class SpacesCursorsSet extends SpacesBaseCommand {
 
       // Hold in both simulate and non-simulate modes
       this.logHolding(
-        flags.simulate
-          ? "Simulating cursor movement. Press Ctrl+C to exit."
-          : "Holding cursor. Press Ctrl+C to exit.",
+        flags.simulate ? "Simulating cursor movement." : "Holding cursor.",
         flags,
       );
 

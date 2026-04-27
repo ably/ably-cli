@@ -70,7 +70,7 @@ export default class SpacesLocationsSet extends SpacesBaseCommand {
         );
         this.log(`${formatLabel("Location")} ${JSON.stringify(location)}`);
       }
-      this.logHolding("Holding location. Press Ctrl+C to exit.", flags);
+      this.logHolding("Holding location.", flags);
 
       await this.waitAndTrackCleanup(flags, "location", flags.duration);
     } catch (error) {
