@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Config } from "@oclif/core";
+import nock from "nock";
 
 import { AblyBaseCommand } from "../../../src/base-command.js";
 import { BaseFlags } from "../../../src/types/cli.js";
@@ -63,6 +64,11 @@ describe("Auth Info Display", function () {
     getApiKey: ReturnType<typeof vi.fn>;
     getEndpoint: ReturnType<typeof vi.fn>;
     getKeyName: ReturnType<typeof vi.fn>;
+    getAccessToken: ReturnType<typeof vi.fn>;
+    getAppConfig: ReturnType<typeof vi.fn>;
+    storeAppInfo: ReturnType<typeof vi.fn>;
+    storeAppKey: ReturnType<typeof vi.fn>;
+    getAuthMethod: ReturnType<typeof vi.fn>;
   };
   let logStub: ReturnType<typeof vi.fn>;
   let debugStub: ReturnType<typeof vi.fn>;
@@ -76,6 +82,11 @@ describe("Auth Info Display", function () {
       getApiKey: vi.fn(),
       getEndpoint: vi.fn(),
       getKeyName: vi.fn(),
+      getAccessToken: vi.fn(),
+      getAppConfig: vi.fn(),
+      storeAppInfo: vi.fn(),
+      storeAppKey: vi.fn(),
+      getAuthMethod: vi.fn(),
     };
 
     // Initialize command with stubs
@@ -242,6 +253,59 @@ describe("Auth Info Display", function () {
       expect(outputWithUsingPrefix).not.toContain("Account=");
       expect(outputWithUsingPrefix).toContain("App=");
       expect(outputWithUsingPrefix).toContain("Key=");
+    });
+
+    it("uses the stored account controlHost when fetching a missing app name", async function () {
+      const customHost = "review-abc.herokuapp.com";
+      const appId = "review-app-id";
+      const accountId = "review-account-id";
+
+      shouldHideAccountInfoStub.mockReturnValue(false);
+      configManagerStub.getCurrentAccount.mockReturnValue({
+        accountId,
+        accountName: "Review Account",
+        controlHost: customHost,
+      });
+      configManagerStub.getCurrentAppId.mockReturnValue(appId);
+      configManagerStub.getAppName.mockReturnValue();
+      configManagerStub.getApiKey.mockReturnValue();
+      configManagerStub.getAccessToken.mockReturnValue("review-access-token");
+      configManagerStub.getAppConfig.mockReturnValue();
+
+      const reviewScope = nock(`https://${customHost}`)
+        .get("/api/v1/me")
+        .reply(200, {
+          account: { id: accountId, name: "Review Account" },
+          user: { email: "review@example.com" },
+        })
+        .get(`/api/v1/accounts/${accountId}/apps`)
+        .reply(200, [{ id: appId, name: "Review App", accountId }]);
+
+      // Fail loud if anything reaches the production control plane.
+      const productionTrap = nock("https://control.ably.net")
+        .get(/.*/)
+        .reply(404);
+
+      try {
+        await command.testDisplayAuthInfo({});
+
+        const banner = logStub.mock.calls
+          .map((call) => call[0])
+          .find(
+            (output) => typeof output === "string" && output.includes("Using:"),
+          ) as string | undefined;
+
+        expect(reviewScope.isDone()).toBe(true);
+        expect(productionTrap.isDone()).toBe(false);
+        expect(banner).toBeDefined();
+        expect(banner).toContain("Review App");
+        expect(banner).not.toContain("Unknown App");
+        expect(configManagerStub.storeAppInfo).toHaveBeenCalledWith(appId, {
+          appName: "Review App",
+        });
+      } finally {
+        nock.cleanAll();
+      }
     });
   });
 

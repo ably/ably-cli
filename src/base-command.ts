@@ -621,10 +621,19 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
               this.configManager.getAccessToken();
 
             if (accessToken) {
+              // Mirror createControlApi's host precedence (flag → env → stored
+              // account host) so the banner's app-name lookup honours the host
+              // the user picked at login. Without the account fallback this
+              // call silently targets control.ably.net even when the user
+              // logged in against a review/staging deployment, the lookup
+              // 404s, and the banner downgrades to "Unknown App".
+              const account = this.configManager.getCurrentAccount();
               const controlApi = new ControlApi({
                 accessToken,
                 controlHost:
-                  flags["control-host"] || process.env.ABLY_CONTROL_HOST,
+                  flags["control-host"] ??
+                  process.env.ABLY_CONTROL_HOST ??
+                  account?.controlHost,
               });
               const app = await controlApi.getApp(appId);
               appName = app.name;
