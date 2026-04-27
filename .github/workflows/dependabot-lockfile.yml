@@ -64,7 +64,7 @@ jobs:
 
       - name: Set up pnpm
         if: steps.guard.outputs.skip != 'true'
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
         with:
           version: 10
 
