@@ -164,7 +164,7 @@ const events = await waitForJsonEvents(
 
 When tests fail, the system automatically outputs:
 
-```
+```text
 === E2E TEST FAILURE DEBUG ===
 Test: should handle presence events
 Error: Timeout waiting for pattern "Action: enter"
@@ -237,4 +237,13 @@ await waitForOutput(subscriber, 'target event');
 - **Better CI reliability with proper process management**
 - **Clear separation of concerns with helper functions**
 
-The system automatically tracks CLI runners per test and provides comprehensive debugging output when tests fail, making it much easier to diagnose issues in CI environments. 
+The system automatically tracks CLI runners per test and provides comprehensive debugging output when tests fail, making it much easier to diagnose issues in CI environments.
+
+---
+
+## Related
+
+- [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md) — Complete reference of all CLI environment variables; E2E tests use `E2E_ABLY_API_KEY` and `E2E_ABLY_ACCESS_TOKEN` (mapped internally to `ABLY_API_KEY`/`ABLY_ACCESS_TOKEN`) (see [precedence and resolution details](ENV_VARIABLES_USAGE.md#ably_api_key))
+- [Testing Guide](Testing.md) — Test layers, auth in tests, duration defaults, and running tests
+- [Debugging Guide](Debugging.md) — General debugging tips including `DEBUG` env var and Node inspector
+- [Troubleshooting](Troubleshooting.md) — Solutions for common build and test errors (WebSocket mocking, HTTP mocking, memory leaks)

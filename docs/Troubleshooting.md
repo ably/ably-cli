@@ -11,7 +11,7 @@ This document provides solutions for common issues encountered when developing o
 **Problem**: Tests failing with errors about modules not being found or incorrect paths.
 
 **Example Error**:
-```
+```text
 Error: Cannot find module '../commands/publish'
 ```
 
@@ -37,7 +37,7 @@ import MyCommand from '../../src/commands/my-command.js'
 **Problem**: Tests fail with memory errors or hang indefinitely.
 
 **Example Error**:
-```
+```text
 FATAL ERROR: JavaScript heap out of memory
 ```
 
@@ -68,7 +68,7 @@ afterEach(async () => {
 **Problem**: Tests involving WebSocket connections fail or hang.
 
 **Example Error**:
-```
+```text
 Timeout of 2000ms exceeded
 ```
 
@@ -106,7 +106,7 @@ afterEach(() => {
 **Problem**: Tests involving HTTP requests fail with network errors.
 
 **Example Error**:
-```
+```text
 Error: connect ECONNREFUSED
 ```
 
@@ -166,6 +166,10 @@ afterEach(() => {
   ```bash
   ABLY_API_KEY=your_key ably channels list
   ```
+- Override the config directory entirely:
+  ```bash
+  ABLY_CLI_CONFIG_DIR=/path/to/custom/config ably accounts login
+  ```
 
 ---
 
@@ -190,7 +194,7 @@ afterEach(() => {
 **Problem**: TypeScript compilation errors.
 
 **Example Error**:
-```
+```text
 Property 'x' does not exist on type 'Y'
 ```
 
@@ -220,10 +224,10 @@ Property 'x' does not exist on type 'Y'
 **Problem**: The interactive mode exits with unexpected error codes.
 
 **Solution**:
-- Check the exit code to understand what happened (see [Exit Codes documentation](Exit-Codes.md))
+- Check the exit code to understand what happened (see [Exit Codes documentation](Exit-Codes.md) and [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md#ably_interactive_mode) for interactive mode env vars)
 - Common exit codes:
-  - Exit code 0: Normal exit (usually from 'exit' command)
-  - Exit code 42: User typed 'exit' (special code for wrapper)
+  - Exit code 0: Normal successful command completion
+  - Exit code 42: User typed 'exit' in interactive mode (signals wrapper to terminate)
   - Exit code 130: SIGINT/Ctrl+C (double Ctrl+C or force quit)
   - Exit code 143: SIGTERM received
 
@@ -243,8 +247,8 @@ Property 'x' does not exist on type 'Y'
 
 **Solution**:
 - Check that `~/.ably/history` file exists and is writable
-- Verify the `ABLY_HISTORY_FILE` environment variable if using custom location
-- Ensure the history file isn't exceeding size limits (default: 1000 commands)
+- Verify the `ABLY_HISTORY_FILE` environment variable if using custom location (see [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md#ably_history_file))
+- Ensure the history file isn't exceeding size limits (default: 1000 commands, auto-trimmed at 2000 lines)
 
 ---
 
@@ -253,3 +257,14 @@ Property 'x' does not exist on type 'Y'
 If you find errors in documentation or rules, please update them using the proper workflow and submit a pull request.
 
 See `AGENTS.md` for more details on the development workflow.
+
+---
+
+## Related
+
+- [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md) — Complete reference of all 25 environment variables, including authentication resolution order, login bypass behavior, and host overrides
+- [Debugging Guide](Debugging.md) — Debugging tips including `DEBUG`, `TERMINAL_DIAGNOSTICS`, and Node inspector
+- [Testing Guide](Testing.md) — Test layers, running tests, and debugging failures
+- [Exit Codes](Exit-Codes.md) — Exit codes used by the CLI, particularly in interactive mode
+- [Interactive REPL](Interactive-REPL.md) — Interactive mode architecture and wrapper script design
+- [Auto-completion](Auto-completion.md) — Shell tab completion setup and troubleshooting

@@ -108,3 +108,12 @@ If you don't see any suggestions, verify that:
 - Auto-completion works with all Ably CLI commands and flags
 - The completion system is context-aware and will only suggest valid options
 - Custom aliases are not included in auto-completion
+- Hidden development flags (e.g., `--control-host`, `--dashboard-host`) are excluded from auto-completion unless `ABLY_SHOW_DEV_FLAGS=true` is set
+
+---
+
+## Related
+
+- [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md) — `ABLY_SHOW_DEV_FLAGS` controls visibility of hidden flags in help output and auto-completion
+- [Interactive REPL](Interactive-REPL.md) — Interactive mode provides its own tab completion for commands and flags
+- [Troubleshooting](Troubleshooting.md) — General troubleshooting for CLI issues

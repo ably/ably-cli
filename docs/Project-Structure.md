@@ -167,3 +167,13 @@ This document outlines the directory structure of the Ably CLI project.
 ├── LICENSE
 └── README.md
 ```
+
+---
+
+## Related
+
+- [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md) — Complete reference of all 25 environment variables used across the source files listed above
+- [Testing Guide](Testing.md) — Test layers and directory layout (`test/unit/`, `test/e2e/`, `test/tty/`, `test/integration/`)
+- [Debugging Guide](Debugging.md) — Debugging tips for CLI development
+- [Interactive REPL](Interactive-REPL.md) — Architecture of `src/commands/interactive.ts` and `bin/ably-interactive`
+- [Exit Codes](Exit-Codes.md) — Exit codes handled in `src/commands/interactive.ts` and `src/utils/sigint-exit.ts`

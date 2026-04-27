@@ -55,4 +55,21 @@ Refer to [Testing.md](Testing.md) for how to run specific tests.
     ```bash
     DEBUG=oclif* bin/run.js [command]
     ```
+*   **Terminal Diagnostics:** Enable terminal state logging for TTY/stdin/stdout issues:
+    ```bash
+    TERMINAL_DIAGNOSTICS=1 ably-interactive
+    ```
 *   **Check Configuration:** Use `ably config show` to view stored credentials or `ably config path` to find the config file location.
+*   **Override Configuration:** Use environment variables to override config for testing:
+    ```bash
+    ABLY_API_KEY=your_key ably channels list
+    ```
+
+---
+
+## Related
+
+- [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md) — Complete reference of all 25 environment variables, including `DEBUG`, `TERMINAL_DIAGNOSTICS`, and `ABLY_SHOW_DEV_FLAGS`
+- [Testing Guide](Testing.md) — Test layers, running tests, and debugging E2E failures
+- [E2E Testing CLI Runner](E2E-Testing-CLI-Runner.md) — E2E test runner debugging flags (`E2E_DEBUG`, `ABLY_CLI_TEST_SHOW_OUTPUT`)
+- [Troubleshooting](Troubleshooting.md) — Solutions for common build, test, and runtime issues
