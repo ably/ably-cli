@@ -472,7 +472,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     // Make sure we have authentication after potentially modifying options
     if (!clientOptions.key && !clientOptions.token) {
       this.fail(
-        "Authentication required. Please provide either an API key, a token, or log in first.",
+        'Authentication required. Please provide either an API key, a token, or log in first. Run "ably accounts login" to configure authentication.',
         flags,
         "auth",
       );

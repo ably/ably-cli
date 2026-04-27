@@ -100,9 +100,9 @@ describe.skipIf(SHOULD_SKIP_CONTROL_E2E)("Auth Keys E2E Tests", () => {
     const createdKey = createRecord.key as Record<string, unknown>;
     const keyFullName = createdKey.keyName as string;
 
-    // Now get that key by its name
+    // Now get that key by its name (appId is embedded in keyFullName)
     const getResult = await runCommand(
-      ["auth", "keys", "get", keyFullName, "--app", testAppId, "--json"],
+      ["auth", "keys", "get", keyFullName, "--json"],
       {
         env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
       },
@@ -139,18 +139,9 @@ describe.skipIf(SHOULD_SKIP_CONTROL_E2E)("Auth Keys E2E Tests", () => {
 
     // Update the key name
     const updatedName = `updated-key-${Date.now()}`;
+    // appId is embedded in keyFullName, no --app needed
     const updateResult = await runCommand(
-      [
-        "auth",
-        "keys",
-        "update",
-        keyFullName,
-        "--app",
-        testAppId,
-        "--name",
-        updatedName,
-        "--json",
-      ],
+      ["auth", "keys", "update", keyFullName, "--name", updatedName, "--json"],
       {
         env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
       },
