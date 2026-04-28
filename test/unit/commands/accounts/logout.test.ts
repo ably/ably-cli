@@ -89,6 +89,23 @@ describe("accounts:logout command", () => {
       const config = mock.getConfig();
       expect(config.accounts["testaccount"]).toBeUndefined();
     });
+
+    it("should logout specific account by account ID with --force and --json", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:logout", "acc-123", "--force", "--json"],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find(
+        (r) => r.type === "result" || r.type === "error",
+      )!;
+      expect(result).toHaveProperty("success", true);
+      expect(result.account).toHaveProperty("alias", "testaccount");
+
+      const mock = getMockConfigManager();
+      const config = mock.getConfig();
+      expect(config.accounts["testaccount"]).toBeUndefined();
+    });
   });
 
   describe("with multiple logged in accounts", () => {
@@ -160,6 +177,24 @@ describe("accounts:logout command", () => {
       expect(config.accounts["primary"].accountName).toBe("Primary Account");
       // Current account should still be primary
       expect(config.current?.account).toBe("primary");
+    });
+
+    it("should logout specific account by account ID", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:logout", "acc-secondary", "--force", "--json"],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find(
+        (r) => r.type === "result" || r.type === "error",
+      )!;
+      expect(result).toHaveProperty("success", true);
+      expect(result.account).toHaveProperty("alias", "secondary");
+
+      const mock = getMockConfigManager();
+      const config = mock.getConfig();
+      expect(config.accounts["secondary"]).toBeUndefined();
+      expect(config.accounts["primary"]).toBeDefined();
     });
   });
 

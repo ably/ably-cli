@@ -10,8 +10,8 @@ import { pickUniqueAlias, slugifyAccountName } from "../../utils/slugify.js";
 
 export default class AccountsSwitch extends ControlBaseCommand {
   static override args = {
-    accountAlias: Args.string({
-      description: "Alias of the account to switch to",
+    accountAliasOrId: Args.string({
+      description: "Alias or ID of the account to switch to",
       required: false,
     }),
   };
@@ -21,6 +21,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
   static override examples = [
     "<%= config.bin %> <%= command.id %>",
     "<%= config.bin %> <%= command.id %> mycompany",
+    "<%= config.bin %> <%= command.id %> VgQpOZ",
     "<%= config.bin %> <%= command.id %> --json",
     "<%= config.bin %> <%= command.id %> --pretty-json",
   ];
@@ -38,7 +39,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
     if (localAccounts.length === 0) {
       if (this.shouldOutputJson(flags)) {
         this.fail(
-          'No accounts configured. Use "ably accounts login" to add an account.',
+          'No accounts configured. Run "ably accounts login" to add an account.',
           flags,
           "accountSwitch",
         );
@@ -50,16 +51,23 @@ export default class AccountsSwitch extends ControlBaseCommand {
       return;
     }
 
-    // If alias is provided, switch directly
-    if (args.accountAlias) {
-      await this.switchToLocalAccount(args.accountAlias, localAccounts, flags);
+    // If alias or ID is provided, resolve and switch directly.
+    // The accountAliasOrId arg accepts two formats:
+    //   1. Account alias  — e.g. "mycompany" (the label set during login)
+    //   2. Account ID     — e.g. "VgQpOZ"    (the Ably-assigned account ID)
+    if (args.accountAliasOrId) {
+      const resolvedAlias = this.resolveAccountAlias(
+        args.accountAliasOrId,
+        flags,
+      );
+      await this.switchToLocalAccount(resolvedAlias, flags);
       return;
     }
 
     // JSON mode requires an explicit alias
     if (this.shouldOutputJson(flags)) {
       this.fail(
-        "No account alias provided. Please specify an account alias to switch to.",
+        'No account alias or ID provided. Run "ably accounts list" to see available accounts.',
         flags,
         "accountSwitch",
         {
@@ -162,16 +170,7 @@ export default class AccountsSwitch extends ControlBaseCommand {
     };
 
     if (selected.type === "local") {
-      const validAccounts = localAccounts
-        .filter((a) => a.account.accountId && a.account.accountName)
-        .map((a) => ({
-          account: {
-            accountId: a.account.accountId!,
-            accountName: a.account.accountName!,
-          },
-          alias: a.alias,
-        }));
-      await this.switchToLocalAccount(selected.alias, validAccounts, flags);
+      await this.switchToLocalAccount(selected.alias, flags);
       return true;
     }
 
@@ -253,29 +252,10 @@ export default class AccountsSwitch extends ControlBaseCommand {
 
   private async switchToLocalAccount(
     alias: string,
-    accounts: Array<{
-      account: { accountId: string; accountName: string };
-      alias: string;
-    }>,
     flags: Record<string, unknown>,
   ): Promise<void> {
-    const accountExists = accounts.some((account) => account.alias === alias);
-
-    if (!accountExists) {
-      this.fail(
-        `Account with alias "${alias}" not found. Use "ably accounts list" to see available accounts.`,
-        flags,
-        "accountSwitch",
-        {
-          availableAccounts: accounts.map(({ account, alias }) => ({
-            alias,
-            id: account.accountId,
-            name: account.accountName,
-          })),
-        },
-      );
-    }
-
+    // Alias is already validated by resolveAccountAlias() or interactive
+    // selection before reaching this method.
     this.configManager.switchAccount(alias);
 
     // Store custom endpoint if provided

@@ -3,7 +3,6 @@ import { runCommand } from "@oclif/test";
 import {
   nockControl,
   controlApiCleanup,
-  mockAppResolution,
 } from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 import {
@@ -14,7 +13,6 @@ import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
-  standardControlApiErrorTests,
 } from "../../../../helpers/standard-tests.js";
 import { parseJsonOutput } from "../../../../helpers/ndjson.js";
 
@@ -51,64 +49,12 @@ describe("auth:keys:get command", () => {
       expect(stdout).toContain("Key Label: Test Key");
     });
 
-    it("should get key details with --app flag", async () => {
+    it("should get key details by full key value", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      mockAppResolution(appId);
       mockKeysList(appId, [buildMockKey(appId, mockKeyId)]);
 
       const { stdout } = await runCommand(
-        ["auth:keys:get", mockKeyId, "--app", appId],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
-      expect(stdout).toContain("Key Label: Test Key");
-    });
-
-    it("should get key details by label name", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      mockAppResolution(appId);
-      mockKeysList(appId, [
-        buildMockKey(appId, mockKeyId, { name: "Root" }),
-        buildMockKey(appId, "otherkey", { name: "Secondary" }),
-      ]);
-
-      const { stdout } = await runCommand(
-        ["auth:keys:get", "Root", "--app", appId],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
-      expect(stdout).toContain("Key Label: Root");
-    });
-
-    it("should get key details by label containing a period (e.g. v1.0)", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      mockAppResolution(appId);
-      mockKeysList(appId, [
-        buildMockKey(appId, mockKeyId, { name: "v1.0" }),
-        buildMockKey(appId, "otherkey", { name: "Secondary" }),
-      ]);
-
-      const { stdout } = await runCommand(
-        ["auth:keys:get", "v1.0", "--app", appId],
-        import.meta.url,
-      );
-
-      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
-      expect(stdout).toContain("Key Label: v1.0");
-    });
-
-    it("should get key details by key ID only", async () => {
-      const appId = getMockConfigManager().getCurrentAppId()!;
-      mockAppResolution(appId);
-      mockKeysList(appId, [
-        buildMockKey(appId, mockKeyId),
-        buildMockKey(appId, "otherkey", { name: "Secondary" }),
-      ]);
-
-      const { stdout } = await runCommand(
-        ["auth:keys:get", mockKeyId, "--app", appId],
+        ["auth:keys:get", `${appId}.${mockKeyId}:secret`],
         import.meta.url,
       );
 
@@ -174,7 +120,7 @@ describe("auth:keys:get command", () => {
       process.env.ABLY_API_KEY = `${appId}.differentkey:secret`;
 
       const { stderr } = await runCommand(
-        ["auth:keys:get", mockKeyId, "--app", appId],
+        ["auth:keys:get", `${appId}.${mockKeyId}`],
         import.meta.url,
       );
 
@@ -255,17 +201,43 @@ describe("auth:keys:get command", () => {
       expect(error?.message).toMatch(/not found/);
     });
 
-    standardControlApiErrorTests({
-      commandArgs: ["auth:keys:get", mockKeyId],
-      importMetaUrl: import.meta.url,
-      setupNock: (scenario) => {
-        const appId = getMockConfigManager().getCurrentAppId()!;
-        const scope = nockControl().get(`/v1/apps/${appId}/keys`);
-        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
-        else if (scenario === "500")
-          scope.reply(500, { error: "Internal Server Error" });
-        else scope.replyWithError("Network error");
-      },
+    it("should handle 401 authentication error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .get(`/v1/apps/${appId}/keys`)
+        .reply(401, { error: "Unauthorized" });
+
+      const { error } = await runCommand(
+        ["auth:keys:get", `${appId}.${mockKeyId}`],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+    });
+
+    it("should handle 500 server error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .get(`/v1/apps/${appId}/keys`)
+        .reply(500, { error: "Internal Server Error" });
+
+      const { error } = await runCommand(
+        ["auth:keys:get", `${appId}.${mockKeyId}`],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+    });
+
+    it("should handle network error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .get(`/v1/apps/${appId}/keys`)
+        .replyWithError("Network error");
+
+      const { error } = await runCommand(
+        ["auth:keys:get", `${appId}.${mockKeyId}`],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
     });
   });
 });

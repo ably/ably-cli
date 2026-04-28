@@ -2,36 +2,30 @@ import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatCapabilityInline } from "../../../utils/key-display.js";
-import {
-  parseCapabilities,
-  parseKeyIdentifier,
-} from "../../../utils/key-parsing.js";
+import { parseCapabilities } from "../../../utils/key-parsing.js";
 import { formatLabel, formatResource } from "../../../utils/output.js";
 
 export default class KeysUpdateCommand extends ControlBaseCommand {
   static args = {
-    keyName: Args.string({
-      description: "Key name (APP_ID.KEY_ID) of the key to update",
+    keyNameOrValue: Args.string({
+      description:
+        'Key name "<APP_ID>.<KEY_ID>" or value "<APP_ID>.<KEY_ID>:<KEY_SECRET>"',
       required: true,
     }),
   };
 
-  static description = "Update a key's properties";
+  static description = "Update the name or capabilities of a key";
 
   static examples = [
-    '$ ably auth keys update APP_ID.KEY_ID --name "New Name"',
-    '$ ably auth keys update KEY_ID --app APP_ID --capabilities "publish,subscribe"',
-    '$ ably auth keys update APP_ID.KEY_ID --name "New Name" --capabilities "publish,subscribe"',
-    `$ ably auth keys update APP_ID.KEY_ID --name "New Name" --capabilities '{"channel1":["publish"],"channel2":["subscribe"]}'`,
-    '$ ably auth keys update APP_ID.KEY_ID --name "New Name" --json',
+    '$ ably auth keys update "APP_ID.KEY_ID" --name "New Name"',
+    '$ ably auth keys update "APP_ID.KEY_ID:KEY_SECRET" --name "New Name"',
+    `$ ably auth keys update "APP_ID.KEY_ID" --capabilities '{"channel1":["publish"],"channel2":["subscribe"]}'`,
+    '$ ably auth keys update "APP_ID.KEY_ID" --capabilities "publish,subscribe,history"',
+    '$ ably auth keys update "APP_ID.KEY_ID" --name "New Name" --capabilities "publish,subscribe" --json',
   ];
 
   static flags = {
     ...ControlBaseCommand.globalFlags,
-    app: Flags.string({
-      description: "The app ID or name (defaults to current app)",
-      env: "ABLY_APP_ID",
-    }),
     capabilities: Flags.string({
       description:
         "New capabilities as JSON object (per-channel) or comma-separated list (all channels)",
@@ -55,15 +49,15 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
       );
     }
 
-    const parsed = parseKeyIdentifier(args.keyName);
-    const keyId = parsed.keyId;
+    const keyIdentifier = args.keyNameOrValue;
 
-    const appId = parsed.appId ?? (await this.requireAppId(flags));
+    // Extract appId from the key identifier (key name or key value)
+    const appId = this.resolveAppIdForKey(keyIdentifier, flags);
 
     try {
       const controlApi = this.createControlApi(flags);
       // Get original key details
-      const originalKey = await controlApi.getKey(appId, keyId);
+      const fullKeyObject = await controlApi.getKey(appId, keyIdentifier);
 
       // Prepare the update data
       const updateData: {
@@ -84,7 +78,11 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
       }
 
       // Update the key
-      const updatedKey = await controlApi.updateKey(appId, keyId, updateData);
+      const updatedKey = await controlApi.updateKey(
+        appId,
+        fullKeyObject.id,
+        updateData,
+      );
 
       const keyName = `${updatedKey.appId}.${updatedKey.id}`;
 
@@ -92,13 +90,13 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
         const keyData: Record<string, unknown> = { keyName };
         if (flags.name) {
           keyData.name = {
-            before: originalKey.name || "Unnamed key",
+            before: fullKeyObject.name || "Unnamed key",
             after: updatedKey.name || "Unnamed key",
           };
         }
         if (flags.capabilities) {
           keyData.capabilities = {
-            before: originalKey.capability,
+            before: fullKeyObject.capability,
             after: updatedKey.capability,
           };
         }
@@ -108,14 +106,14 @@ export default class KeysUpdateCommand extends ControlBaseCommand {
 
         if (flags.name) {
           this.log(
-            `${formatLabel("Key Label")} "${originalKey.name || "Unnamed key"}" → "${updatedKey.name || "Unnamed key"}"`,
+            `${formatLabel("Key Label")} "${fullKeyObject.name || "Unnamed key"}" → "${updatedKey.name || "Unnamed key"}"`,
           );
         }
 
         if (flags.capabilities) {
           this.log(`${formatLabel("Capabilities")}`);
           this.log(
-            `  ${formatLabel("Before")} ${formatCapabilityInline(originalKey.capability as Record<string, string[]>)}`,
+            `  ${formatLabel("Before")} ${formatCapabilityInline(fullKeyObject.capability as Record<string, string[]>)}`,
           );
           this.log(
             `  ${formatLabel("After")} ${formatCapabilityInline(updatedKey.capability as Record<string, string[]>)}`,

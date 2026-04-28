@@ -7,9 +7,9 @@ import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class AccountsLogout extends ControlBaseCommand {
   static override args = {
-    accountAlias: Args.string({
+    accountAliasOrId: Args.string({
       description:
-        "Alias of the account to log out from (defaults to current account)",
+        "Alias or ID of the account to log out from (defaults to current account)",
       required: false,
     }),
   };
@@ -19,6 +19,7 @@ export default class AccountsLogout extends ControlBaseCommand {
   static override examples = [
     "<%= config.bin %> <%= command.id %>",
     "<%= config.bin %> <%= command.id %> mycompany",
+    "<%= config.bin %> <%= command.id %> VgQpOZ",
     "<%= config.bin %> <%= command.id %> --json",
     "<%= config.bin %> <%= command.id %> --pretty-json",
   ];
@@ -31,29 +32,24 @@ export default class AccountsLogout extends ControlBaseCommand {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(AccountsLogout);
 
-    // Determine which account to log out from
-    const targetAlias =
-      args.accountAlias || this.configManager.getCurrentAccountAlias();
-
-    if (!targetAlias) {
-      this.fail(
-        'No account is currently selected and no alias provided. Use "ably accounts list" to see available accounts.',
-        flags,
-        "accountLogout",
-      );
-    }
-
-    const accounts = this.configManager.listAccounts();
-    const accountExists = accounts.some(
-      (account) => account.alias === targetAlias,
-    );
-
-    if (!accountExists) {
-      this.fail(
-        `Account with alias "${targetAlias}" not found. Use "ably accounts list" to see available accounts.`,
-        flags,
-        "accountLogout",
-      );
+    // The accountAliasOrId arg accepts two formats:
+    //   1. Account alias  — e.g. "mycompany" (the label set during login)
+    //   2. Account ID     — e.g. "VgQpOZ"    (the Ably-assigned account ID)
+    let targetAlias: string;
+    if (args.accountAliasOrId) {
+      targetAlias = this.resolveAccountAlias(args.accountAliasOrId, flags);
+    } else {
+      const currentAlias = this.configManager.getCurrentAccountAlias();
+      if (!currentAlias) {
+        this.fail(
+          'No account is currently selected and no alias or ID provided. Run "ably accounts list" to see available accounts.',
+          flags,
+          "accountLogout",
+        );
+      }
+      // Validate that the current alias still exists in the accounts list.
+      // This catches stale config where current.account points to a removed alias.
+      targetAlias = this.resolveAccountAlias(currentAlias, flags);
     }
 
     // In JSON mode, require --force to prevent accidental destructive actions

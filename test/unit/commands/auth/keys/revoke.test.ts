@@ -3,7 +3,6 @@ import { runCommand } from "@oclif/test";
 import {
   nockControl,
   controlApiCleanup,
-  mockAppResolution,
 } from "../../../../helpers/control-api-test-helpers.js";
 import { getMockConfigManager } from "../../../../helpers/mock-config-manager.js";
 import {
@@ -14,7 +13,6 @@ import {
   standardHelpTests,
   standardArgValidationTests,
   standardFlagTests,
-  standardControlApiErrorTests,
 } from "../../../../helpers/standard-tests.js";
 import { parseNdjsonLines } from "../../../../helpers/ndjson.js";
 
@@ -49,9 +47,8 @@ describe("auth:keys:revoke command", () => {
       expect(stdout).toContain("Key Label: Test Key");
     });
 
-    it("should revoke key with --app flag", async () => {
+    it("should revoke key by key name", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
-      mockAppResolution(appId);
       mockKeysList(appId, [
         buildMockKey(appId, mockKeyId, {
           capability: { "*": ["publish"] },
@@ -63,12 +60,28 @@ describe("auth:keys:revoke command", () => {
         .reply(200, {});
 
       const { stdout } = await runCommand(
-        ["auth:keys:revoke", mockKeyId, "--app", appId, "--force"],
+        ["auth:keys:revoke", `${appId}.${mockKeyId}`, "--force"],
         import.meta.url,
       );
 
       expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
       expect(stdout).toContain("Key Label: Test Key");
+    });
+
+    it("should revoke key by full key value", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      mockKeysList(appId, [buildMockKey(appId, mockKeyId)]);
+
+      nockControl()
+        .post(`/v1/apps/${appId}/keys/${mockKeyId}/revoke`)
+        .reply(200, {});
+
+      const { stdout } = await runCommand(
+        ["auth:keys:revoke", `${appId}.${mockKeyId}:secret`, "--force"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain(`Key Name: ${appId}.${mockKeyId}`);
     });
 
     it("should output JSON format when --json flag is used", async () => {
@@ -101,7 +114,7 @@ describe("auth:keys:revoke command", () => {
   standardFlagTests("auth:keys:revoke", import.meta.url, ["--json"]);
 
   describe("error handling", () => {
-    it("should require keyName argument", async () => {
+    it("should require key identifier argument", async () => {
       const { error } = await runCommand(
         ["auth:keys:revoke", "--force"],
         import.meta.url,
@@ -125,17 +138,43 @@ describe("auth:keys:revoke command", () => {
       expect(error?.message).toMatch(/not found/);
     });
 
-    standardControlApiErrorTests({
-      commandArgs: ["auth:keys:revoke", mockKeyId, "--force"],
-      importMetaUrl: import.meta.url,
-      setupNock: (scenario) => {
-        const appId = getMockConfigManager().getCurrentAppId()!;
-        const scope = nockControl().get(`/v1/apps/${appId}/keys`);
-        if (scenario === "401") scope.reply(401, { error: "Unauthorized" });
-        else if (scenario === "500")
-          scope.reply(500, { error: "Internal Server Error" });
-        else scope.replyWithError("Network error");
-      },
+    it("should handle 401 authentication error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .get(`/v1/apps/${appId}/keys`)
+        .reply(401, { error: "Unauthorized" });
+
+      const { error } = await runCommand(
+        ["auth:keys:revoke", `${appId}.${mockKeyId}`, "--force"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+    });
+
+    it("should handle 500 server error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .get(`/v1/apps/${appId}/keys`)
+        .reply(500, { error: "Internal Server Error" });
+
+      const { error } = await runCommand(
+        ["auth:keys:revoke", `${appId}.${mockKeyId}`, "--force"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
+    });
+
+    it("should handle network error", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .get(`/v1/apps/${appId}/keys`)
+        .replyWithError("Network error");
+
+      const { error } = await runCommand(
+        ["auth:keys:revoke", `${appId}.${mockKeyId}`, "--force"],
+        import.meta.url,
+      );
+      expect(error).toBeDefined();
     });
   });
 });

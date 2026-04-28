@@ -6,7 +6,7 @@ import { formatLabel, formatResource } from "../../../utils/output.js";
 
 export default class RulesUpdateCommand extends ControlBaseCommand {
   static args = {
-    nameOrId: Args.string({
+    ruleNameOrId: Args.string({
       description: "Name or ID of the rule to update",
       required: true,
     }),
@@ -120,14 +120,19 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
 
     try {
       const controlApi = this.createControlApi(flags);
-      // Find the namespace by name or ID
+      // Resolve the rule. The ruleNameOrId arg accepts the rule identifier which serves as both the name and ID
+      // (e.g. "chat", "events"). For channel rules, the namespace ID is the rule name — they are the
+      // same value — so a single match on n.id covers both cases.
       const namespaces = await controlApi.listNamespaces(appId);
-      const namespace = namespaces.find((n) => n.id === args.nameOrId);
+      const namespace = namespaces.find((n) => n.id === args.ruleNameOrId);
 
       if (!namespace) {
-        this.fail(`Rule "${args.nameOrId}" not found`, flags, "ruleUpdate", {
-          appId,
-        });
+        this.fail(
+          `Rule "${args.ruleNameOrId}" not found. Run "ably apps rules list" to see available rules.`,
+          flags,
+          "ruleUpdate",
+          { appId },
+        );
       }
 
       // Prepare update data

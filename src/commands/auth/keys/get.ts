@@ -1,4 +1,4 @@
-import { Args, Flags } from "@oclif/core";
+import { Args } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
@@ -13,7 +13,7 @@ export default class KeysGetCommand extends ControlBaseCommand {
   static args = {
     keyNameOrValue: Args.string({
       description:
-        "Key name (APP_ID.KEY_ID), key ID, key label (e.g. Root), or full key value to get details for",
+        'Key name "<APP_ID>.<KEY_ID>" or value "<APP_ID>.<KEY_ID>:<KEY_SECRET>"',
       required: true,
     }),
   };
@@ -21,46 +21,22 @@ export default class KeysGetCommand extends ControlBaseCommand {
   static description = "Get details for a specific key";
 
   static examples = [
-    "$ ably auth keys get APP_ID.KEY_ID",
-    "$ ably auth keys get Root --app APP_ID",
-    "$ ably auth keys get KEY_ID --app APP_ID",
-    "$ ably auth keys get APP_ID.KEY_ID --json",
+    '$ ably auth keys get "APP_ID.KEY_ID"',
+    '$ ably auth keys get "APP_ID.KEY_ID:KEY_SECRET"',
+    '$ ably auth keys get "APP_ID.KEY_ID" --json',
   ];
 
   static flags = {
     ...ControlBaseCommand.globalFlags,
-    app: Flags.string({
-      description: "The app ID or name (defaults to current app)",
-      env: "ABLY_APP_ID",
-    }),
   };
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(KeysGetCommand);
 
-    let appId: string | undefined;
     const keyIdentifier = args.keyNameOrValue;
 
-    // If flags.app is set, resolve it (could be a name or ID)
-    if (flags.app) {
-      appId = await this.resolveAppIdFromNameOrId(flags.app, flags);
-    }
-
-    // If keyNameOrValue is in APP_ID.KEY_ID format (one period, no colon), extract appId.
-    // Only attempt this when no appId is already known (from --app flag or current app),
-    // to avoid misinterpreting labels containing periods (e.g. "v1.0") as APP_ID.KEY_ID.
-    // When appId IS known, the full identifier is passed to getKey() which matches by
-    // label, key ID, APP_ID.KEY_ID format, or full key value.
-    if (!appId && keyIdentifier.includes(".") && !keyIdentifier.includes(":")) {
-      const parts = keyIdentifier.split(".");
-      if (parts.length === 2) {
-        appId = parts[0];
-      }
-    }
-
-    if (!appId) {
-      appId = await this.requireAppId(flags);
-    }
+    // Extract appId from the key identifier (key name or key value)
+    const appId = this.resolveAppIdForKey(keyIdentifier, flags);
 
     // Display authentication information (after app resolution so name→ID is correct)
     await this.showAuthInfoIfNeeded(flags);
@@ -69,9 +45,9 @@ export default class KeysGetCommand extends ControlBaseCommand {
       this.logProgress("Fetching key details", flags);
 
       const controlApi = this.createControlApi(flags);
-      const key = await controlApi.getKey(appId, keyIdentifier);
+      const fullKeyObject = await controlApi.getKey(appId, keyIdentifier);
 
-      const keyName = `${key.appId}.${key.id}`;
+      const keyName = `${fullKeyObject.appId}.${fullKeyObject.id}`;
 
       // Check if env var overrides the current key
       const currentKeyId = this.configManager.getKeyId(appId);
@@ -85,9 +61,9 @@ export default class KeysGetCommand extends ControlBaseCommand {
         this.logJsonResult(
           {
             key: {
-              ...key,
-              created: new Date(key.created).toISOString(),
-              modified: new Date(key.modified).toISOString(),
+              ...fullKeyObject,
+              created: new Date(fullKeyObject.created).toISOString(),
+              modified: new Date(fullKeyObject.modified).toISOString(),
               keyName,
               ...(hasEnvOverride
                 ? {
@@ -104,17 +80,23 @@ export default class KeysGetCommand extends ControlBaseCommand {
       } else {
         this.log(formatHeading("Key Details"));
         this.log(`${formatLabel("Key Name")} ${formatResource(keyName)}`);
-        this.log(`${formatLabel("Key Label")} ${key.name || "Unnamed key"}`);
+        this.log(
+          `${formatLabel("Key Label")} ${fullKeyObject.name || "Unnamed key"}`,
+        );
 
         for (const line of formatCapabilities(
-          key.capability as Record<string, string[] | string>,
+          fullKeyObject.capability as Record<string, string[] | string>,
         )) {
           this.log(line);
         }
 
-        this.log(`${formatLabel("Created")} ${this.formatDate(key.created)}`);
-        this.log(`${formatLabel("Updated")} ${this.formatDate(key.modified)}`);
-        this.log(`${formatLabel("Full key")} ${key.key}`);
+        this.log(
+          `${formatLabel("Created")} ${this.formatDate(fullKeyObject.created)}`,
+        );
+        this.log(
+          `${formatLabel("Updated")} ${this.formatDate(fullKeyObject.modified)}`,
+        );
+        this.log(`${formatLabel("Full key")} ${fullKeyObject.key}`);
 
         if (hasEnvOverride) {
           this.logToStderr("");
