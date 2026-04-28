@@ -1,22 +1,29 @@
 import { AblyBaseCommand } from "./base-command.js";
-import { controlApiFlags } from "./flags.js";
+import { controlApiFlags, oauthHostFlag } from "./flags.js";
 import { ControlApi, App } from "./services/control-api.js";
+import { OAuthClient } from "./services/oauth-client.js";
+import { TokenRefreshMiddleware } from "./services/token-refresh-middleware.js";
 import { BaseFlags } from "./types/cli.js";
 import { errorMessage } from "./utils/errors.js";
 import isWebCliMode from "./utils/web-mode.js";
 
 export abstract class ControlBaseCommand extends AblyBaseCommand {
-  // Control API commands get core + hidden control API flags
-  static globalFlags = { ...controlApiFlags };
+  // Control API commands get core + hidden control API flags + oauth-host
+  // (so token refresh can target the authorization server that minted the
+  // token even when --control-host points elsewhere).
+  static globalFlags = { ...controlApiFlags, ...oauthHostFlag };
 
   /**
    * Create a Control API instance for making requests
    */
   protected createControlApi(flags: BaseFlags): ControlApi {
     let accessToken = process.env.ABLY_ACCESS_TOKEN;
+    let tokenRefreshMiddleware: TokenRefreshMiddleware | undefined;
+    const account = accessToken
+      ? undefined
+      : this.configManager.getCurrentAccount();
 
     if (!accessToken) {
-      const account = this.configManager.getCurrentAccount();
       if (!account) {
         this.fail(
           `No access token provided. Please set the ABLY_ACCESS_TOKEN environment variable or configure an account with "ably accounts login".`,
@@ -25,7 +32,24 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
         );
       }
 
-      accessToken = account.accessToken;
+      accessToken = this.configManager.getAccessToken();
+
+      // Set up token refresh middleware for OAuth accounts.
+      // The OAuth issuer is an immutable property of the token — only the host
+      // that minted it can refresh it. Prefer the stored oauthHost so a
+      // --control-host override (intended for control-plane routing) does not
+      // silently direct refresh traffic at the wrong authorization server,
+      // which would return invalid_grant and wipe a valid session.
+      if (this.configManager.getAuthMethod() === "oauth") {
+        const oauthHost = account.oauthHost ?? flags["oauth-host"];
+        const oauthClient = new OAuthClient({
+          oauthHost,
+        });
+        tokenRefreshMiddleware = new TokenRefreshMiddleware(
+          this.configManager,
+          oauthClient,
+        );
+      }
     }
 
     if (!accessToken) {
@@ -44,9 +68,16 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
       );
     }
 
+    // Prefer the stored account host (what the user picked at login time) so
+    // later commands don't silently target the default control plane when the
+    // user originally logged in against a review / staging deployment. The
+    // flag still wins if explicitly passed, to allow one-off overrides.
+    const controlHost = flags["control-host"] ?? account?.controlHost;
+
     return new ControlApi({
       accessToken,
-      controlHost: flags["control-host"],
+      controlHost,
+      tokenRefreshMiddleware,
     });
   }
 

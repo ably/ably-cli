@@ -166,7 +166,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   constructor(argv: string[], config: CommandConfig) {
     super(argv, config);
     this.configManager = createConfigManager();
-    this.interactiveHelper = new InteractiveHelper(this.configManager);
+    this.interactiveHelper = new InteractiveHelper(this.configManager, {
+      log: this.log.bind(this),
+    });
     // Check if we're running in web CLI mode
     this.isWebCliMode = isWebCliMode();
   }
@@ -614,15 +616,24 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
         if (!appName) {
           try {
             // Get access token for control API
-            const currentAccount = this.configManager.getCurrentAccount();
             const accessToken =
-              process.env.ABLY_ACCESS_TOKEN || currentAccount?.accessToken;
+              process.env.ABLY_ACCESS_TOKEN ||
+              this.configManager.getAccessToken();
 
             if (accessToken) {
+              // Mirror createControlApi's host precedence (flag → env → stored
+              // account host) so the banner's app-name lookup honours the host
+              // the user picked at login. Without the account fallback this
+              // call silently targets control.ably.net even when the user
+              // logged in against a review/staging deployment, the lookup
+              // 404s, and the banner downgrades to "Unknown App".
+              const account = this.configManager.getCurrentAccount();
               const controlApi = new ControlApi({
                 accessToken,
                 controlHost:
-                  flags["control-host"] || process.env.ABLY_CONTROL_HOST,
+                  flags["control-host"] ??
+                  process.env.ABLY_CONTROL_HOST ??
+                  account?.controlHost,
               });
               const app = await controlApi.getApp(appId);
               appName = app.name;

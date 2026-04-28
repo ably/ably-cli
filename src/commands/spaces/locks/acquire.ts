@@ -123,7 +123,7 @@ export default class SpacesLocksAcquire extends SpacesBaseCommand {
           );
           this.log(formatLockBlock(lock));
         }
-        this.logHolding("Holding lock. Press Ctrl+C to exit.", flags);
+        this.logHolding("Holding lock.", flags);
       } catch (error) {
         this.fail(error, flags, "lockAcquire", {
           lockId,
