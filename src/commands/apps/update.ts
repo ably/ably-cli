@@ -11,12 +11,13 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
     }),
   };
 
-  static description = "Update an app";
+  static description = "Update the name or TLS setting of an app";
 
   static examples = [
-    '$ ably apps update "My App" --name "Updated App Name"',
-    "$ ably apps update app-id --tls-only",
-    '$ ably apps update "My App" --name "Updated App Name" --json',
+    '$ ably apps update "My App" --name "New App Name"',
+    "$ ably apps update my-app-id --tls-only",
+    "$ ably apps update my-app-id --no-tls-only",
+    '$ ably apps update "My App" --name "New App Name" --tls-only --json',
   ];
 
   static flags = {
@@ -25,6 +26,7 @@ export default class AppsUpdateCommand extends ControlBaseCommand {
       description: "New name for the app",
     }),
     "tls-only": Flags.boolean({
+      allowNo: true,
       description: "Whether the app should accept TLS connections only",
     }),
   };
